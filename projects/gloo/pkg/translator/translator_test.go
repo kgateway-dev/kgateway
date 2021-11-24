@@ -1776,10 +1776,10 @@ var _ = Describe("Translator", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(metadata.Fields).To(HaveLen(4))
-			Expect(metadata.Fields[dc(east)].GetKind()).To(Equal(trueValue.GetKind()))
-			Expect(metadata.Fields[dc(west)].GetKind()).To(Equal(falseValue.GetKind()))
-			Expect(metadata.Fields[tag(dev)].GetKind()).To(Equal(falseValue.GetKind()))
-			Expect(metadata.Fields[tag(prod)].GetKind()).To(Equal(trueValue.GetKind()))
+			Expect(metadata.Fields[dc(east)]).To(MatchProto(trueValue))
+			Expect(metadata.Fields[dc(west)]).To(MatchProto(falseValue))
+			Expect(metadata.Fields[tag(dev)]).To(MatchProto(falseValue))
+			Expect(metadata.Fields[tag(prod)]).To(MatchProto(trueValue))
 		})
 	})
 
