@@ -432,7 +432,7 @@ var _ = Describe("Translator", func() {
 			translate()
 			fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
 			Expect(fooRoute.Match.GetPrefix()).To(Equal("/foo"))
-			Expect(fooRoute.Match.CaseSensitive).To(Equal(&wrappers.BoolValue{Value: true}))
+			Expect(fooRoute.Match.CaseSensitive.Value).To(Equal(true))
 		})
 
 		It("should translate path matcher with case insensitive", func() {
@@ -1404,7 +1404,8 @@ var _ = Describe("Translator", func() {
 
 				metadataMatch := routeConfiguration.VirtualHosts[0].Routes[0].GetRoute().GetMetadataMatch()
 				fields := metadataMatch.FilterMetadata["envoy.lb"].Fields
-				Expect(fields).To(HaveKeyWithValue("testkey", sv("testvalue")))
+				Expect(fields).To(HaveKey("testkey"))
+				Expect(fields["testkey"]).To(MatchProto(sv("testvalue")))
 			})
 		})
 
@@ -1773,11 +1774,12 @@ var _ = Describe("Translator", func() {
 			Expect(routeAction.Route.MetadataMatch).NotTo(BeNil())
 			metadata, ok := routeAction.Route.MetadataMatch.FilterMetadata[EnvoyLb]
 			Expect(ok).To(BeTrue())
+
 			Expect(metadata.Fields).To(HaveLen(4))
-			Expect(metadata.Fields[dc(east)]).To(Equal(trueValue))
-			Expect(metadata.Fields[dc(west)]).To(Equal(falseValue))
-			Expect(metadata.Fields[tag(dev)]).To(Equal(falseValue))
-			Expect(metadata.Fields[tag(prod)]).To(Equal(trueValue))
+			Expect(metadata.Fields[dc(east)]).To(MatchProto(trueValue))
+			Expect(metadata.Fields[dc(west)]).To(MatchProto(falseValue))
+			Expect(metadata.Fields[tag(dev)]).To(MatchProto(falseValue))
+			Expect(metadata.Fields[tag(prod)]).To(MatchProto(trueValue))
 		})
 	})
 
@@ -2072,7 +2074,7 @@ var _ = Describe("Translator", func() {
 
 			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
 			Expect(routeConfiguration.VirtualHosts[0].Routes[0].ResponseHeadersToAdd).To(HaveLen(1))
-			Expect(routeConfiguration.VirtualHosts[0].Routes[0].ResponseHeadersToAdd).To(ConsistOf(
+			Expect(routeConfiguration.VirtualHosts[0].Routes[0].ResponseHeadersToAdd[0]).To(MatchProto(
 				&envoy_config_core_v3.HeaderValueOption{
 					Header: &envoy_config_core_v3.HeaderValue{
 						Key:   "client-id",
