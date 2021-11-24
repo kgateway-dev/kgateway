@@ -2,6 +2,7 @@ package sanitizer
 
 import (
 	"context"
+	"github.com/solo-io/solo-kit/test/matchers"
 	"net/http"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -250,7 +251,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		listenersWithFallback := listeners.Items[fallbackListenerName]
 		clustersWithFallback := clusters.Items[fallbackClusterName]
 
-		Expect(sanitizedRoutes.ResourceProto()).To(Equal(expectedRoutes))
+		Expect(sanitizedRoutes.ResourceProto()).To(matchers.MatchProto(expectedRoutes))
 		Expect(listenersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackListener))
 		Expect(clustersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackCluster))
 	})
@@ -318,7 +319,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		listenersWithFallback := listeners.Items[fallbackListenerName]
 		clustersWithFallback := clusters.Items[fallbackClusterName]
 
-		Expect(sanitizedRoutes.ResourceProto()).To(Equal(expectedRoutes))
+		Expect(sanitizedRoutes.ResourceProto()).To(matchers.MatchProto(expectedRoutes))
 		Expect(listenersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackListener))
 		Expect(clustersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackCluster))
 
