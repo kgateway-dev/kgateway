@@ -121,7 +121,7 @@ To install Gloo Edge Enterprise in an air-gapped environment:
    ```shell
    export GLOO_EE_VERSION={{< readfile file="static/content/gee_version_latest.md" markdown="true">}}
    ```
-2. Download the Gloo Edge Enterprise images.
+2. On the connected device, download the Gloo Edge Enterprise images.
    ```shell
    wget https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-${GLOO_EE_VERSION}.tgz
    tar zxvf gloo-ee-${GLOO_EE_VERSION}.tgz
