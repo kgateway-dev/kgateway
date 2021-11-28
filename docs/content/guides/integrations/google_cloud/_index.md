@@ -322,7 +322,7 @@ Finally, let's test the connectivity through the Load Balancer:
 ```bash
 APP_IP=$(gcloud compute addresses describe my-gloo-edge-loadbalancer-address-nlb --global --format=json | jq -r '.address')
 
-curl -k https://34.117.34.186/get -H "Host: my-gloo-edge.com"
+curl -k https://${APP_IP}/get -H "Host: my-gloo-edge.com"
 ```
 
 The application should be accessible through the Load Balancer.
