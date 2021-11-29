@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5502
+    resolvesIssue: false
+    description: Validate route tables that are delegated to via a selector.
