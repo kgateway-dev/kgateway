@@ -98,3 +98,26 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 
 	return vs, routeTables
 }
+
+func RouteTableWithLabelsAndPrefix(name, namespace, prefix string, labels map[string]string) *v1.RouteTable {
+	return &v1.RouteTable{
+		Metadata: &core.Metadata{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Routes: []*v1.Route{
+			{
+				Matchers: []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: prefix,
+						},
+					},
+				},
+				Action: &v1.Route_DirectResponseAction{
+					DirectResponseAction: &gloov1.DirectResponseAction{Status: 200}},
+			},
+		},
+	}
+}
