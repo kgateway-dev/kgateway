@@ -254,6 +254,7 @@ func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1.ApiSna
 	fcm := fc.GetFilterChainMatch()
 	if fcm == nil {
 		fcm = &envoy_config_listener_v3.FilterChainMatch{}
+		fc.FilterChainMatch = fcm
 	}
 
 	if sslConfig := matcher.GetSslConfig(); sslConfig != nil {
