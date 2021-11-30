@@ -17,7 +17,7 @@ func MatchedRouteConfigName(listener *v1.Listener, matcher *v1.Matcher) string {
 	}
 
 	for i, mg := range hybridListener.GetMatchedListeners() {
-		if mg.GetMatcher() == matcher {
+		if mg.GetMatcher().Equal(matcher) {
 			return fmt.Sprintf("%s-%d", RouteConfigName(listener), i)
 		}
 	}
