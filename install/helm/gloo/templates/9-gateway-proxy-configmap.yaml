@@ -140,7 +140,6 @@ data:
                       - name: envoy.filters.http.router
 {{- end}} {{- /* if $spec.readConfig */}}
       clusters:
-# cluster referenced by graphql plugin but is unused as an actual cluster
       - name: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}:{{ .Values.gloo.deployment.xdsPort }}
         alt_stat_name: xds_cluster
         connect_timeout: 5.000s
