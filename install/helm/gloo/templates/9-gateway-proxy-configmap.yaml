@@ -144,13 +144,6 @@ data:
       - name: graphql.dummy.cluster
         load_assignment:
           cluster_name: graphql.dummy.cluster
-          endpoints:
-          - lb_endpoints:
-            - endpoint:
-                address:
-                  socket_address:
-                    address: 127.0.0.1
-                    port_value: 80
         http2_protocol_options: {}
         upstream_connection_options:
           tcp_keepalive: {}
