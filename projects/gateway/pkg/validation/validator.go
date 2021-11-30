@@ -840,12 +840,32 @@ func routesContainRefs(list []*v1.Route, refs refSet) bool {
 
 func gatewayListContainsVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) bool {
 	for _, gw := range gwList {
-		contains, err := translator.GatewayContainsVirtualService(gw, vs)
-		if err != nil {
+		if gw.GetTcpGateway() != nil {
 			return false
 		}
-		if contains {
-			return true
+		if httpGateway := gw.GetHttpGateway(); httpGateway != nil {
+			contains, err := translator.HttpGatewayContainsVirtualService(httpGateway, vs, gw.GetSsl())
+			if err != nil {
+				return false
+			}
+			if contains {
+				return true
+			}
+
+		}
+		if hybridGateway := gw.GetHybridGateway(); hybridGateway != nil {
+			for _, mg := range hybridGateway.GetMatchedGateways() {
+				if httpGateway := mg.GetHttpGateway(); httpGateway != nil {
+					contains, err := translator.HttpGatewayContainsVirtualService(httpGateway, vs, mg.GetMatcher().GetSslConfig() != nil)
+					if err != nil {
+						return false
+					}
+					if contains {
+						return true
+					}
+
+				}
+			}
 		}
 	}
 
