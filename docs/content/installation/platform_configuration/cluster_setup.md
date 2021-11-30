@@ -204,28 +204,81 @@ Additionally, OpenShift requires additional SCC configuration for workloads that
 
 Gloo Edge provides support for running the `gateway-proxy` (i.e. Envoy) as an unprivileged container and without needing the `NET_BIND_SERVICE` capability (note that this means the proxy can not bind to ports below 1024).
 
-Here is an example `values.yaml` file for Helm which will use floating user IDs for all Gloo Edge components along with not requiring any special security rules:
-```yaml
+The following Helm chart `values.yaml` file uses floating user IDs for all Gloo Edge components, and does not require any special security rules. For more details regarding these Helm values, see the [Helm reference documentation]({{< versioned_link_path fromRoot="/reference/helm_chart_values" >}}).
+
+You can use this Helm chart `values.yaml` file while following the [Gloo Edge installation guide]({{< versioned_link_path fromRoot="/installation" >}}).
+
+{{< tabs >}}
+{{< tab name="Enterprise" codelang="yaml" >}}
+global:
+  extensions:
+    extAuth:
+      deployment:
+        floatingUserId: true
+        fsGroup: ""
+    rateLimit:
+      deployment:
+        floatingUserId: true
+oberservability:
+  deployment:
+    floatingUserId: true
+redis:
+  deployment:
+    floatingUserId: true
+    enablePodSecurityContext: false
+gloo:
+  gloo:
+    deployment:
+      floatingUserId: true
+  discovery:
+    deployment:
+      floatingUserId: true
+      enablePodSecurityContext: false
+  gateway:
+    deployment:
+      floatingUserId: true
+    certGenJob:
+      floatingUserId: true
+  observability:
+    deployment:
+      floatingUserId: true
+  gatewayProxies:
+    gatewayProxy:
+      podTemplate:
+        floatingUserId: true
+        enablePodSecurityContext: false
+gloo-fed:
+  enabled: false
+  glooFedApiserver:
+    floatingUserId: true
+prometheus:
+  enabled: false
+grafana:
+  defaultInstallationEnabled: false
+{{< /tab >}}
+{{< tab name="Open Source" codelang="yaml">}}
 gloo:
   deployment:
     floatingUserId: true
 discovery:
   deployment:
     floatingUserId: true
+    enablePodSecurityContext: false
 gateway:
+  deployment:
+    floatingUserId: true
+  certGenJob:
+    floatingUserId: true
+observability:
   deployment:
     floatingUserId: true
 gatewayProxies:
   gatewayProxy:
     podTemplate:
       floatingUserId: true
-      disableNetBind: true
-      runUnprivileged: true
-```
-
-You can find more details regarding these Helm values [here]({{< versioned_link_path fromRoot="/reference/helm_chart_values" >}}).
-
-You can use these Helm values while following the Gloo Edge installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
+      enablePodSecurityContext: false
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 

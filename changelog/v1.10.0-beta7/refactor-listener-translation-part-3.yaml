@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5324
+    resolvesIssue: false
+    description: |
+      - Remove unimplemented ListenerFilterPlugin
+      - Rename StagedListenerFilter to StagedNetworkFilter to accurately reflect contents
+      - Create NetworkFilterTranslator
+      - Document HttpFilter translation

@@ -3,9 +3,11 @@ package syncer
 import (
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	discoveryRegistry "github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/registry"
+	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"time"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -38,10 +40,14 @@ func RunFDS(opts bootstrap.Opts) error {
 }
 
 func RunFDSWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
-	fdsMode := getFdsMode(opts.Settings)
+	fdsMode := syncerutils.GetFdsMode(opts.Settings)
 	if fdsMode == v1.Settings_DiscoveryOptions_DISABLED {
-		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Info("function discovery disabled. to enable, modify "+
-			"gloo.solo.io/Settings %v", opts.Settings.GetMetadata().Ref())
+		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Function discovery "+
+			"(settings.discovery.fdsMode) disabled. To enable, modify "+
+			"gloo.solo.io/Settings - %v", opts.Settings.GetMetadata().Ref())
+		if err := syncerutils.ErrorIfDiscoveryServiceUnused(&opts); err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -157,13 +163,6 @@ func reconcileUpgradedDiscoveryFactories(factoryList []fds.FunctionDiscoveryFact
 		}
 	}
 	return factoriesWithUpgrades
-}
-
-func getFdsMode(settings *v1.Settings) v1.Settings_DiscoveryOptions_FdsMode {
-	if settings == nil || settings.GetDiscovery() == nil {
-		return v1.Settings_DiscoveryOptions_WHITELIST
-	}
-	return settings.GetDiscovery().GetFdsMode()
 }
 
 // TODO: consider using regular solo-kit namespace client instead of KubeNamespace client

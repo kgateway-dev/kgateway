@@ -333,3 +333,35 @@ func GatewaySnapshotWithDelegateChain(us *core.ResourceRef, namespace string) *g
 	snap.RouteTables = rtList
 	return snap
 }
+
+func GatewaySnapshotWithDelegateSelector(us *core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
+	vsRoutes := []*gwv1.Route{
+		{
+			Matchers: []*matchers.Matcher{
+				{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo",
+					},
+				},
+			},
+			Action: &gwv1.Route_DelegateAction{
+				DelegateAction: &gwv1.DelegateAction{
+					DelegationType: &gwv1.DelegateAction_Selector{
+						Selector: &gwv1.RouteTableSelector{
+							Namespaces: []string{namespace},
+							Labels:     map[string]string{"pick": "me"},
+						},
+					},
+				},
+			},
+		},
+	}
+	snap := SimpleGatewaySnapshot(us, namespace)
+	snap.VirtualServices.Each(func(element *gwv1.VirtualService) {
+		element.GetVirtualHost().Routes = append(element.GetVirtualHost().GetRoutes(), vsRoutes...)
+	})
+
+	rt := RouteTableWithLabelsAndPrefix("route1", namespace, "/foo/a", map[string]string{"pick": "me"})
+	snap.RouteTables = []*gwv1.RouteTable{rt}
+	return snap
+}

@@ -38,8 +38,9 @@ type Params struct {
 
 type VirtualHostParams struct {
 	Params
-	Proxy    *v1.Proxy
-	Listener *v1.Listener
+	Proxy        *v1.Proxy
+	Listener     *v1.Listener
+	HttpListener *v1.HttpListener
 }
 
 type RouteParams struct {
@@ -105,54 +106,54 @@ type ListenerPlugin interface {
 	ProcessListener(params Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error
 }
 
-type ListenerFilterPlugin interface {
-	Plugin
-	ProcessListenerFilter(params Params, in *v1.Listener) ([]StagedListenerFilter, error)
+type StagedNetworkFilter struct {
+	NetworkFilter *envoy_config_listener_v3.Filter
+	Stage         FilterStage
 }
 
-type StagedListenerFilter struct {
-	ListenerFilter *envoy_config_listener_v3.Filter
-	Stage          FilterStage
-}
+type StagedNetworkFilterList []StagedNetworkFilter
 
-type StagedListenerFilterList []StagedListenerFilter
-
-func (s StagedListenerFilterList) Len() int {
+func (s StagedNetworkFilterList) Len() int {
 	return len(s)
 }
 
 // filters by Relative Stage, Weighting, Name, and (to ensure stability) index
-func (s StagedListenerFilterList) Less(i, j int) bool {
+func (s StagedNetworkFilterList) Less(i, j int) bool {
 	switch FilterStageComparison(s[i].Stage, s[j].Stage) {
 	case -1:
 		return true
 	case 1:
 		return false
 	}
-	if s[i].ListenerFilter.GetName() < s[j].ListenerFilter.GetName() {
+	if s[i].NetworkFilter.GetName() < s[j].NetworkFilter.GetName() {
 		return true
 	}
-	if s[i].ListenerFilter.GetName() > s[j].ListenerFilter.GetName() {
+	if s[i].NetworkFilter.GetName() > s[j].NetworkFilter.GetName() {
 		return false
 	}
-	if s[i].ListenerFilter.String() < s[j].ListenerFilter.String() {
+	if s[i].NetworkFilter.String() < s[j].NetworkFilter.String() {
 		return true
 	}
-	if s[i].ListenerFilter.String() > s[j].ListenerFilter.String() {
+	if s[i].NetworkFilter.String() > s[j].NetworkFilter.String() {
 		return false
 	}
 	// ensure stability
 	return i < j
 }
 
-func (s StagedListenerFilterList) Swap(i, j int) {
+func (s StagedNetworkFilterList) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-// Currently only supported for TCP listeners, plan to change this in the future
-type ListenerFilterChainPlugin interface {
+type TcpFilterChainPlugin interface {
 	Plugin
-	ProcessListenerFilterChain(params Params, in *v1.Listener) ([]*envoy_config_listener_v3.FilterChain, error)
+	CreateTcpFilterChains(params Params, parentListener *v1.Listener, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error)
+}
+
+// HttpConnectionManager Plugins
+type HttpConnectionManagerPlugin interface {
+	Plugin
+	ProcessHcmNetworkFilter(params Params, parentListener *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error
 }
 
 type HttpFilterPlugin interface {
@@ -271,4 +272,19 @@ type ResourceGeneratorPlugin interface {
 		inRouteConfigurations []*envoy_config_route_v3.RouteConfiguration,
 		inListeners []*envoy_config_listener_v3.Listener,
 	) ([]*envoy_config_cluster_v3.Cluster, []*envoy_config_endpoint_v3.ClusterLoadAssignment, []*envoy_config_route_v3.RouteConfiguration, []*envoy_config_listener_v3.Listener, error)
+}
+
+// A PluginRegistry is used to provide Plugins to relevant translators
+// Historically, all plugins were passed around as an argument, and each translator
+// would iterate over all plugins, and only apply the relevant ones.
+// This interface enables translators to only know of the relevant plugins
+// NOTE:
+// 	This is not complete. As translators are modified, we can gradually expose
+//	more methods on a PluginRegistry
+type PluginRegistry interface {
+	GetPlugins() []Plugin
+	GetListenerPlugins() []ListenerPlugin
+	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
+	GetHttpFilterPlugins() []HttpFilterPlugin
+	GetHttpConnectionManagerPlugins() []HttpConnectionManagerPlugin
 }

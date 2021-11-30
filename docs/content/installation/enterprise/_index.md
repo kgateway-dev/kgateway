@@ -5,25 +5,24 @@ description: How to install Gloo Edge to run in Gateway Mode on Kubernetes (Defa
 weight: 60
 ---
 
-## Installing the Gloo Edge on Kubernetes
+Review how to install Gloo Edge Enterprise.
+## Before you begin
 
-These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
-
-Note: For certain providers with more strict multi-tenant security, like OpenShift, be sure to follow the cluster set up accordingly. 
+1. Make sure that you prepared your Kubernetes cluster according to the [instructions for platform configuration]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
+   {{% notice note %}}
+   Pay attention to provider-specific information in the setup guide. For example, [OpenShift]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#openshift" >}}) requires stricter multi-tenant support, so the setup guide includes an example Helm chart `values.yaml` file that you must supply while installing Gloo Edge Enterprise.
+   {{% /notice %}}
+2. Get your Gloo Edge Enterprise license key. If you don't have one already, you may request a trial license key [here](https://www.solo.io/products/gloo/#enterprise-trial).
+   {{% notice info %}}
+   You must provide the license key during the installation process. When you install Gloo Edge, a Kubernetes secret is created to store the license key. Note that each trial license key is typically valid for **30 days**. When the license key expires, you can request a new license key by contacting your Account Representative or filling out [this form](https://lp.solo.io/request-trial). For more information, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).
+   {{% /notice %}}
+3. Install or upgrade `glooctl` with the following instructions.
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
-{{% notice note %}}
-To install Gloo Edge Enterprise, you need a license key. If you don't have one already, you may request a trial license key [here](https://www.solo.io/products/gloo/#enterprise-trial).
-{{% /notice %}}
+## Installing Gloo Edge Enterprise on Kubernetes {#install-steps}
 
-{{% notice info %}}
-Each trial license key is typically valid for **30 days**. You can request a new key if your current key has expired. When the license key expires, you can request a new license key by contacting your Account Representative or filling out [this form](https://lp.solo.io/request-trial). You must provide the license key during the installation process. When you install Gloo Edge, a Kubernetes secret is created to store the license key. When the key is about to expire, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).
-{{% /notice %}}
-
-Before starting installation, please ensure that you've prepared your Kubernetes cluster per the community
-[Prep Kubernetes]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup" >}}) instructions.
-
+Review the following steps to install Gloo Edge Enterprise with `glooctl` or with Helm.
 
 ### Installing on Kubernetes with `glooctl`
 
@@ -32,6 +31,10 @@ Once your Kubernetes cluster is up and running, run the following command to dep
 ```bash
 glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY
 ```
+
+{{% notice note %}}
+For OpenShift clusters, make sure to include the `--values values.yaml` option to point to the [Helm chart custom values file]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#openshift" >}}) that you created.
+{{% /notice %}}
 
 <details>
 <summary>Special Instructions to Install Gloo Edge Enterprise on Kind</summary>
@@ -80,11 +83,9 @@ the Kubernetes manifests (as `yaml`) that `glooctl` will
 apply to the cluster instead of installing them.
 {{% /notice %}}
 
-
 ### Installing on Kubernetes with Helm
 
-
-This is the recommended method for installing Gloo Edge to your production environment as it offers rich customization to
+This is the recommended method for installing Gloo Edge Enterprise to your production environment as it offers rich customization to
 the Gloo Edge control plane and the proxies Gloo Edge manages.
 
 As a first step, you have to add the Gloo Edge repository to the list of known chart repositories:
@@ -100,17 +101,82 @@ helm install gloo glooe/gloo-ee --namespace gloo-system \
   --create-namespace --set-string license_key=YOUR_LICENSE_KEY
 ```
 
+{{% notice note %}}
+For OpenShift clusters, make sure to include the `--values values.yaml` option to point to the [Helm chart custom values file]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#openshift" >}}) that you created.
+{{% /notice %}}
+
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge v1.8.0.
+Using Helm 2 is not supported in Gloo Edge v1.8.0 or later.
 {{% /notice %}}
 
 Once you've installed Gloo Edge, please be sure [to verify your installation](#verify-your-installation).
 
-#### Customizing your installation with Helm
+### Airgap installation
 
-You can customize the Gloo Edge installation by providing your own value file.
+You can install Gloo Edge Enterprise in an air-gapped environment, such as an on-premises datacenter, clusters that run on an intranet or private network only, or other disconnected environments.
 
-For example, you can create a file named `value-overrides.yaml` with the following content:
+Before you begin, make sure that you have the following setup:
+* A connected device that can pull the required images from the internet.
+* An air-gapped or disconnected device that you want to install Gloo Edge Enterprise in.
+* A private image registry such as Sonatype Nexus Repository or JFrog Artifactory that both the connected and disconnected devices can connect to.
+
+To install Gloo Edge Enterprise in an air-gapped environment:
+
+1. Set the Gloo Edge Enterprise version that you want to use as an environment variable, such as the latest version in the following example.
+   ```shell
+   export GLOO_EE_VERSION={{< readfile file="static/content/gee_version_latest.md" markdown="true">}}
+   ```
+2. On the connected device, download the Gloo Edge Enterprise images.
+   ```shell
+   wget https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-${GLOO_EE_VERSION}.tgz
+   tar zxvf gloo-ee-${GLOO_EE_VERSION}.tgz
+   find gloo-ee -name "values.yaml" | while read file; do
+     cat $file | yq eval -j | jq -r '.. | .image? | select(. != null) | [.registry?, .repository?, .tag?] | @csv'
+   done | grep -v ",," | sort -u
+   ```
+   
+   The example output includes the list of images.
+   ```
+   "docker.io","redis","6.2.4"
+   "quay.io/solo-io","gloo-fed","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   "quay.io/solo-io","gloo-fed-apiserver","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   "quay.io/solo-io","gloo-fed-apiserver-envoy","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   "quay.io/solo-io","gloo-fed-rbac-validating-webhook","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   "quay.io/solo-io","gloo-federation-console","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"",
+   ,"access-logger","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"busybox","1.31.1"
+   ,"certgen","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"discovery","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"extauth-ee","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"gateway","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"gloo","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"gloo-ee","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"gloo-ee-envoy-wrapper","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"gloo-envoy-wrapper","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"grafana/grafana","8.2.1"
+   ,"grafana/grafana-image-renderer","latest"
+   ,"ingress","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"jimmidyson/configmap-reload","v0.5.0"
+   ,"observability-ee","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"prom/pushgateway","v1.3.1"
+   ,"quay.io/coreos/kube-state-metrics","v1.9.7"
+   ,"quay.io/kiwigrid/k8s-sidecar","1.12.3"
+   ,"quay.io/prometheus/alertmanager","v0.21.0"
+   ,"quay.io/prometheus/node-exporter","v1.0.1"
+   ,"quay.io/prometheus/prometheus","v2.24.0"
+   ,"rate-limit-ee","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ,"sds","{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}"
+   ```
+3. Push the images from the connected device to a private registry that the disconnected device can pull from. For instructions and any credentials you must set up to complete this step, consult your registry provider, such as [Nexus Repository Manager](https://help.sonatype.com/repomanager3/formats/docker-registry/pushing-images) or [JFrog Artifactory](https://www.jfrog.com/confluence/display/JFROG/Getting+Started+with+Artifactory+as+a+Docker+Registry).
+4. Optional: You might want to set up your private registry so that you can also pull the Helm charts. For instructions, consult your registry provider, such as [Nexus Repository Manager](https://help.sonatype.com/repomanager3/formats/helm-repositories) or [JFrog Artifactory](https://www.jfrog.com/confluence/display/JFROG/Kubernetes+Helm+Chart+Repositories).
+5. When you [install Gloo Edge Enterprise with a custom Helm chart values file](#customizing-your-installation-with-helm), make sure to use the specific images that you downloaded and stored in your private registry in the previous steps.
+
+## Customizing your installation with Helm
+
+You can customize the Gloo Edge installation by providing your own Helm chart values file.
+
+For example, you can create a file named `value-overrides.yaml` with the following content.
 
 ```yaml
 global:
@@ -122,7 +188,7 @@ settings:
   writeNamespace: my-custom-namespace
 ```
 
-and use it to override default values in the Gloo Edge Helm chart with Helm 3:
+Then, refer to the file during installation to override default values in the Gloo Edge Helm chart.
 
 ```shell
 helm install gloo glooe/gloo-ee --namespace gloo-system \
@@ -130,17 +196,20 @@ helm install gloo glooe/gloo-ee --namespace gloo-system \
 ```
 
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge v1.8.0.
+Using Helm 2 is not supported in Gloo Edge v1.8.0 or later.
 {{% /notice %}}
 
-#### List of Gloo Edge Helm chart values
+### List of Gloo Edge Helm chart values
 
-The table below describes the most important enterprise-only values that you can override in your custom values file.
+The following table describes the most important enterprise-only values that you can override in your custom values file.
 
-The table for gloo open-source overrides (also available in enterprise) is [here]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}). To make customizations that are not part of the helm chart, please see our [advanced customization guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/helm_advanced/" %}})
+For more information, see the following resources:
+* [Gloo Edge Open Source overrides]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}) (also available in Enterprise). 
+* [Advanced customization guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/helm_advanced/" %}}).
+* [Enterprise Helm chart reference document]({{% versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" %}}).
 
 {{% notice note %}}
-Open source helm values in Gloo Edge enterprise must be prefixed with `gloo`, unless they are the Gloo Edge settings (i.e., `settings.<rest of helm value>`).
+Gloo Edge Open Source Helm values in Enterprise must be prefixed with `gloo`, unless they are the Gloo Edge settings, such as `settings.<rest of helm value>`.
 {{% /notice %}}
 
 | option                                                    | type     | description                                                                                                                                                                                                                                                    |
@@ -251,16 +320,18 @@ NOT opening the listener ports when there are no listeners (routes) is by design
 
 ## Uninstall {#uninstall}
 
-To uninstall Gloo Edge and all related components, simply run the following.
-
-```shell
-glooctl uninstall
-```
-
-If you installed Gloo Edge to a different namespace, you will have to specify that namespace using the `-n` option:
+To uninstall Gloo Edge, you can use the `glooctl` CLI. If you installed Gloo Edge to a different namespace, include the `-n` option.
 
 ```shell
 glooctl uninstall -n my-namespace
+```
+
+{{% notice warning %}}
+Make sure that your cluster has no other instances of Gloo Edge running, such as by running `kubectl get pods --all-namespaces`. If you remove the CRDs while Gloo Edge is still installed, you will experience errors.
+{{% /notice %}}
+
+```shell
+glooctl uninstall --all
 ```
 
 ## Next Steps
