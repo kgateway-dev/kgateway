@@ -1,9 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/2829
-    resolvesIssue: false
-    description: > 
-      Due to an upstream envoy issue where the cors filter is disabled on direct response action routes, we are switching the way in which 
-      we configure graphql routes. Previously they used a direct response action, but now they will use a graphql "dummy" cluster. This cluster is
-      never used, similar to the direct response action, but is simply a destination which is required for the route configuration. The graphql
-      filter will handle routing, so this is not an important change but merely one needed to make CORS work.
