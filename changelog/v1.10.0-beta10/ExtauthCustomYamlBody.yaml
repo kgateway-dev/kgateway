@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/5629
+    resolvesIssue: false
+    description: Add support for generic yaml insertion in Enterprise
