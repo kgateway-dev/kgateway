@@ -6,30 +6,26 @@ import (
 	"sync"
 	"time"
 
-	utils2 "github.com/solo-io/gloo/pkg/utils"
-	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
-
-	"github.com/hashicorp/go-multierror"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
-
 	"github.com/avast/retry-go"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
-	"go.uber.org/multierr"
-
+	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"
+	utils2 "github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type Reports struct {
@@ -534,10 +530,11 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef *core.Re
 		return nil
 	}
 
-	refsToDelete := refSet{gloo_translator.UpstreamToClusterName(rtRef): rtRef}
+	refsToDelete := sets.NewString(gloo_translator.UpstreamToClusterName(rtRef))
 
 	var parentVirtualServices []*core.ResourceRef
 	snap.VirtualServices.Each(func(element *v1.VirtualService) {
+		// for each VS, check if its routes contain a ref to deleted rt
 		if routesContainRefs(element.GetVirtualHost().GetRoutes(), refsToDelete) {
 			parentVirtualServices = append(parentVirtualServices, element.GetMetadata().Ref())
 		}
@@ -545,6 +542,7 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef *core.Re
 
 	var parentRouteTables []*core.ResourceRef
 	snap.RouteTables.Each(func(element *v1.RouteTable) {
+		// for each RT, check if its routes contain a ref to deleted rt
 		if routesContainRefs(element.GetRoutes(), refsToDelete) {
 			parentRouteTables = append(parentRouteTables, element.GetMetadata().Ref())
 		}
@@ -774,68 +772,115 @@ func proxiesForRouteTable(gwList v1.GatewayList, vsList v1.VirtualServiceList, r
 	return proxiesToConsider
 }
 
-type refSet map[string]*core.ResourceRef
+type routeTableSet map[string]*v1.RouteTable
 
-func virtualServicesForRouteTable(rt *v1.RouteTable, allVirtualServices v1.VirtualServiceList, allRoutes v1.RouteTableList) v1.VirtualServiceList {
-	// this route table + its parents
-	refsContainingRouteTable := refSet{gloo_translator.UpstreamToClusterName(rt.GetMetadata().Ref()): rt.GetMetadata().Ref()}
+// gets all the virtual services that have the given route table as a descendent via delegation
+func virtualServicesForRouteTable(rt *v1.RouteTable, allVirtualServices v1.VirtualServiceList, allRouteTables v1.RouteTableList) v1.VirtualServiceList {
+	// To determine all the virtual services that delegate to this route table (either directly or via a delegate
+	// chain), we first find all the ancestor route tables that are part of a delegate chain leading to this route
+	// table, and then find all the virtual services that delegate (via ref or selector) to any of those routes.
+
+	// build up a set of route tables including this route table and its ancestors
+	relevantRouteTables := routeTableSet{gloo_translator.UpstreamToClusterName(rt.GetMetadata().Ref()): rt}
 
 	// keep going until the ref list stops expanding
-	for countedRefs := 0; countedRefs != len(refsContainingRouteTable); {
-		countedRefs = len(refsContainingRouteTable)
-		for _, route := range allRoutes {
-			if routesContainRefs(route.GetRoutes(), refsContainingRouteTable) {
-				refsContainingRouteTable[gloo_translator.UpstreamToClusterName(route.GetMetadata().Ref())] = route.GetMetadata().Ref()
+	for countedRefs := 0; countedRefs != len(relevantRouteTables); {
+		countedRefs = len(relevantRouteTables)
+		for _, candidateRt := range allRouteTables {
+			// for each RT, if it delegates to any of the relevant RTs, add it to the set of relevant RTs
+			if routesContainSelectorsOrRefs(candidateRt.GetRoutes(), candidateRt.GetMetadata().GetNamespace(), relevantRouteTables) {
+				relevantRouteTables[gloo_translator.UpstreamToClusterName(candidateRt.GetMetadata().Ref())] = candidateRt
 			}
 		}
 	}
 
 	var parentVirtualServices v1.VirtualServiceList
-	allVirtualServices.Each(func(element *v1.VirtualService) {
-		if routesContainRefs(element.GetVirtualHost().GetRoutes(), refsContainingRouteTable) {
-			parentVirtualServices = append(parentVirtualServices, element)
+	for _, candidateVs := range allVirtualServices {
+		// for each VS, check if its routes delegate to any of the relevant RTs
+		if routesContainSelectorsOrRefs(candidateVs.GetVirtualHost().GetRoutes(), candidateVs.GetMetadata().GetNamespace(), relevantRouteTables) {
+			parentVirtualServices = append(parentVirtualServices, candidateVs)
 		}
-	})
+	}
 
 	return parentVirtualServices
 }
 
-func routesContainRefs(list []*v1.Route, refs refSet) bool {
-	for _, r := range list {
-
+// Returns true if any of the given routes delegate to any of the given route tables via a direct reference.
+// This is used to determine which route tables are affected when a route table is deleted. Since selectors do not
+// represent hard referential constraints, we only need to check direct references here (we can safely remove a route
+// table that matches via a selector).
+func routesContainRefs(routes []*v1.Route, refs sets.String) bool {
+	for _, r := range routes {
 		delegate := r.GetDelegateAction()
 		if delegate == nil {
 			continue
 		}
 
-		var routeTableRef *core.ResourceRef
-		// handle deprecated route table resource reference format
-		// TODO(marco): remove when we remove the deprecated fields from the API
-		if delegate.GetNamespace() != "" || delegate.GetName() != "" {
-			routeTableRef = &core.ResourceRef{
-				Namespace: delegate.GetNamespace(),
-				Name:      delegate.GetName(),
-			}
-		} else {
-			switch selectorType := delegate.GetDelegationType().(type) {
-			case *v1.DelegateAction_Selector:
-				// Selectors do not represent hard referential constraints, i.e. we can safely remove
-				// a route table even when it is matches by one or more selectors. Hence, skip this check.
-				continue
-			case *v1.DelegateAction_Ref:
-				routeTableRef = selectorType.Ref
-			}
-		}
-
-		if routeTableRef == nil {
+		rtRef := getDelegateRef(delegate)
+		if rtRef == nil {
 			continue
 		}
 
-		if _, ok := refs[gloo_translator.UpstreamToClusterName(routeTableRef)]; ok {
+		if _, ok := refs[gloo_translator.UpstreamToClusterName(rtRef)]; ok {
 			return true
 		}
 	}
 	return false
+}
+
+// Returns true if any of the given routes delegate to any of the given route tables via either a direct reference
+// or a selector. This is used to determine which route tables are affected when a route table is added/modified.
+func routesContainSelectorsOrRefs(routes []*v1.Route, parentNamespace string, routeTables routeTableSet) bool {
+	// convert to list for passing into translator func
+	rtList := make([]*v1.RouteTable, 0, len(routeTables))
+	for _, rt := range routeTables {
+		rtList = append(rtList, rt)
+	}
+
+	for _, r := range routes {
+		delegate := r.GetDelegateAction()
+		if delegate == nil {
+			continue
+		}
+
+		// check if this route delegates to any of the given route tables via ref
+		rtRef := getDelegateRef(delegate)
+		if rtRef != nil {
+			if _, ok := routeTables[gloo_translator.UpstreamToClusterName(rtRef)]; ok {
+				return true
+			}
+			continue
+		}
+
+		// check if this route delegates to any of the given route tables via selector
+		rtSelector := delegate.GetSelector()
+		if rtSelector != nil {
+			// this will return the subset of the RT list that matches the selector
+			selectedRtList, err := translator.RouteTablesForSelector(rtList, rtSelector, parentNamespace)
+			if err != nil {
+				return false
+			}
+
+			if len(selectedRtList) > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func getDelegateRef(delegate *v1.DelegateAction) *core.ResourceRef {
+	// handle deprecated route table resource reference format
+	// TODO(marco): remove when we remove the deprecated fields from the API
+	if delegate.GetNamespace() != "" || delegate.GetName() != "" {
+		return &core.ResourceRef{
+			Namespace: delegate.GetNamespace(),
+			Name:      delegate.GetName(),
+		}
+	} else if delegate.GetRef() != nil {
+		return delegate.GetRef()
+	}
+	return nil
 }
 
 func gatewayListContainsVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) bool {
