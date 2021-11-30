@@ -302,16 +302,9 @@ kubectl port-forward -n gloo-system deploy/gateway-proxy 8080
 
 8. Point your favorite GraphQL client at the following URL.
 
+Send a request to the endpoint to verify that the request is successfully resolved by Envoy.
 
-
-3. Send a request to the endpoint to verify that the request is successfully resolved by Envoy.
-   ```shell
-   curl "http://localhost:8080/graphql" -H 'Content-Type: application/json' -d '{"query":"{pets{name}}"}'
-   ```
-   Example successful response:
-   ```json
-   {"data":{"pets":[{"name":"Dog"},{"name":"Cat"}]}}
-   ```
+http://localhost:8080/graphql
 
 ## Next steps
 
