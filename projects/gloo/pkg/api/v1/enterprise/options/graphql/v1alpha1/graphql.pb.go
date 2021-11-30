@@ -80,7 +80,7 @@ func (ValueProvider_TypedValueProvider_Type) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{1, 2, 0}
 }
 
-// used to reference into json structures by key(s)
+// used to reference into json structures by key(s).
 type PathSegment struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -158,14 +158,17 @@ type isPathSegment_Segment interface {
 }
 
 type PathSegment_Key struct {
+	// Key is used to extract named values from a map
 	Key string `protobuf:"bytes,1,opt,name=key,proto3,oneof"`
 }
 
 type PathSegment_Index struct {
+	// Index is used to extract an element at a certain index from a list
 	Index uint32 `protobuf:"varint,2,opt,name=index,proto3,oneof"`
 }
 
 type PathSegment_All struct {
+	// all selects all from the current element at in the path. This is useful for extracting list arguments / object arguments.
 	All bool `protobuf:"varint,3,opt,name=all,proto3,oneof"`
 }
 
@@ -557,13 +560,8 @@ type RequestTemplate struct {
 	// character issues. Additionally, we may be providing values not known until
 	// the request is being executed (e.g., graphql parent info).
 	QueryParams map[string]*ValueProvider `protobuf:"bytes,2,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// implementation specific, gRPC will want gRPC message and struct to instantiate
-	//  oneof outgoing_body {
-	//    // json representation of outgoing body.
-	//    // empty string key can be used to signal parsing the value as json and using it
-	//    // as the whole json body.
-	//    JsonNode json = 3;
-	//  }
+	// Used to construct the outgoing body to the upstream from the
+	// graphql value providers.
 	OutgoingBody *JsonValue `protobuf:"bytes,3,opt,name=outgoing_body,json=outgoingBody,proto3" json:"outgoing_body,omitempty"`
 }
 

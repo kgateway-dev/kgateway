@@ -56,9 +56,9 @@ used to reference into json structures by key(s)
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `key` | `string` |  Only one of `key`, `index`, or `all` can be set. |
-| `index` | `int` |  Only one of `index`, `key`, or `all` can be set. |
-| `all` | `bool` |  Only one of `all`, `key`, or `index` can be set. |
+| `key` | `string` | Key is used to extract named values from a map. Only one of `key`, `index`, or `all` can be set. |
+| `index` | `int` | Index is used to extract an element at a certain index from a list. Only one of `index`, `key`, or `all` can be set. |
+| `all` | `bool` | all selects all from the current element at in the path. This is useful for extracting list arguments / object arguments. Only one of `all`, `key`, or `index` can be set. |
 
 
 
@@ -259,7 +259,7 @@ Defines a configuration for generating outgoing requests for a resolver.
 | ----- | ---- | ----------- | 
 | `headers` | `map<string, .envoy.config.filter.http.graphql.v2.ValueProvider>` | Use this attribute to set request headers to your REST service. It consists of a map of strings to value providers. The string key determines the name of the resulting header, the value provided will be the value. at least need ":method" and ":path". |
 | `queryParams` | `map<string, .envoy.config.filter.http.graphql.v2.ValueProvider>` | Use this attribute to set query parameters to your REST service. It consists of a map of strings to value providers. The string key determines the name of the query param, the provided value will be the value. This value is appended to any value set to the :path header in `headers`. Interpolation is done in envoy rather than the control plane to prevent escaped character issues. Additionally, we may be providing values not known until the request is being executed (e.g., graphql parent info). |
-| `outgoingBody` | [.envoy.config.filter.http.graphql.v2.JsonValue](../graphql.proto.sk/#jsonvalue) | implementation specific, gRPC will want gRPC message and struct to instantiate oneof outgoing_body { // json representation of outgoing body. // empty string key can be used to signal parsing the value as json and using it // as the whole json body. JsonNode json = 3; // Other idea for the future: // Apply a template to the body //InjaTemplate body = 4; }. |
+| `outgoingBody` | [.envoy.config.filter.http.graphql.v2.JsonValue](../graphql.proto.sk/#jsonvalue) | Used to construct the outgoing body to the upstream from the graphql value providers. |
 
 
 

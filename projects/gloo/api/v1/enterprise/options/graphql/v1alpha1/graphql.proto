@@ -21,12 +21,15 @@ import "validate/validate.proto";
 
 import "google/protobuf/empty.proto";
 
-// used to reference into json structures by key(s)
+// used to reference into json structures by key(s).
 message PathSegment {
   oneof segment {
     option (validate.required) = true;
+    // Key is used to extract named values from a map
     string key = 1 [(validate.rules).string = {min_len: 1}];
+    // Index is used to extract an element at a certain index from a list
     uint32 index = 2;
+    // all selects all from the current element at in the path. This is useful for extracting list arguments / object arguments.
     bool all = 3;
   }
 }
@@ -143,13 +146,8 @@ message RequestTemplate {
   // the request is being executed (e.g., graphql parent info).
   map<string, ValueProvider> query_params = 2;
 
-  // implementation specific, gRPC will want gRPC message and struct to instantiate
-//  oneof outgoing_body {
-//    // json representation of outgoing body.
-//    // empty string key can be used to signal parsing the value as json and using it
-//    // as the whole json body.
-//    JsonNode json = 3;
-//  }
+  // Used to construct the outgoing body to the upstream from the
+  // graphql value providers.
   JsonValue outgoing_body = 3;
 }
 
