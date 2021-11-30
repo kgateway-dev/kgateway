@@ -416,6 +416,33 @@ var _ = Describe("Validator", func() {
 				Expect(*(reports.ProxyReports)).To(HaveLen(0))
 			})
 		})
+
+		Context("route table delegation with selectors", func() {
+			It("accepts route table with valid prefix", func() {
+				vc.validate = acceptProxy
+				us := samples.SimpleUpstream()
+				snap := samples.GatewaySnapshotWithDelegateSelector(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				rt := samples.RouteTableWithLabelsAndPrefix("route2", ns, "/foo/2", map[string]string{"pick": "me"})
+				_, err = v.ValidateRouteTable(context.TODO(), rt, false)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("rejects route table with invalid prefix", func() {
+				vc.validate = acceptProxy
+				us := samples.SimpleUpstream()
+				snap := samples.GatewaySnapshotWithDelegateSelector(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				// the prefix doesn't start with the parent's prefix so validation will fail
+				rt := samples.RouteTableWithLabelsAndPrefix("route2", ns, "/not", map[string]string{"pick": "me"})
+				_, err = v.ValidateRouteTable(context.TODO(), rt, false)
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 
 	Context("delete a route table", func() {

@@ -6,12 +6,14 @@ import (
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_req_without_query "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 const (
@@ -107,6 +109,15 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, alsSettings *als.A
 
 func copyFileSettings(cfg *envoyalfile.FileAccessLog, alsSettings *als.AccessLog_FileSink) error {
 	cfg.Path = alsSettings.FileSink.GetPath()
+
+	query := &envoy_req_without_query.ReqWithoutQuery{}
+	formatterExtensions := []*envoycore.TypedExtensionConfig{
+		{
+			Name:        "envoy.formatter.req_without_query",
+			TypedConfig: utils.MustMessageToAny(query),
+		},
+	}
+
 	switch fileSinkType := alsSettings.FileSink.GetOutputFormat().(type) {
 	case *als.FileSink_StringFormat:
 		if fileSinkType.StringFormat != "" {
@@ -115,6 +126,7 @@ func copyFileSettings(cfg *envoyalfile.FileAccessLog, alsSettings *als.AccessLog
 					Format: &envoycore.SubstitutionFormatString_TextFormat{
 						TextFormat: fileSinkType.StringFormat,
 					},
+					Formatters: formatterExtensions,
 				},
 			}
 		}
@@ -124,6 +136,7 @@ func copyFileSettings(cfg *envoyalfile.FileAccessLog, alsSettings *als.AccessLog
 				Format: &envoycore.SubstitutionFormatString_JsonFormat{
 					JsonFormat: fileSinkType.JsonFormat,
 				},
+				Formatters: formatterExtensions,
 			},
 		}
 	}
