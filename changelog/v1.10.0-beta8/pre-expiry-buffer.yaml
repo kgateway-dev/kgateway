@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4447
+    resolvesIssue: false
+    description: >-
+      Add pre_expiry_buffer to extauth API to allow for refreshing id-tokens moments
+      before they're going to expire.

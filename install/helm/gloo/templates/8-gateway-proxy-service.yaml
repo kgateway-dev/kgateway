@@ -73,6 +73,10 @@ spec:
     nodePort: {{ $spec.failover.nodePort }}
 {{- end }} {{- /* if failover.enabled */}}
 {{- end }} {{- /* if failover */}}
+{{- if .Values.global.glooStats.serviceMonitor }}
+  - name: http-monitoring
+    port: 8081
+{{- end }}
 {{- if $spec.service.customPorts }}
 {{ toYaml $spec.service.customPorts | indent 2 }}
 {{- end}}

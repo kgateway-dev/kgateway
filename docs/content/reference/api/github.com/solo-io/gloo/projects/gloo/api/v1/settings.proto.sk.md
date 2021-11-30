@@ -20,6 +20,7 @@ weight: 5
 - [Directory](#directory)
 - [KnativeOptions](#knativeoptions)
 - [DiscoveryOptions](#discoveryoptions)
+- [UdsOptions](#udsoptions)
 - [FdsMode](#fdsmode)
 - [ConsulConfiguration](#consulconfiguration)
 - [ServiceDiscoveryOptions](#servicediscoveryoptions)
@@ -272,12 +273,31 @@ This option determines the root of the directory tree used to this end.
 
 ```yaml
 "fdsMode": .gloo.solo.io.Settings.DiscoveryOptions.FdsMode
+"udsOptions": .gloo.solo.io.Settings.DiscoveryOptions.UdsOptions
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk/#fdsmode) |  |
+| `udsOptions` | [.gloo.solo.io.Settings.DiscoveryOptions.UdsOptions](../settings.proto.sk/#udsoptions) |  |
+
+
+
+
+---
+### UdsOptions
+
+
+
+```yaml
+"enabled": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `enabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable upstream discovery service. Defaults to true. |
 
 
 

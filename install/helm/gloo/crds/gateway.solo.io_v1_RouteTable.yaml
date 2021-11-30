@@ -13,6 +13,7 @@ spec:
     plural: routetables
     shortNames:
     - rt
+    - grt
     singular: routetable
   scope: Namespaced
   versions:
