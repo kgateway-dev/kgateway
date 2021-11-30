@@ -3,10 +3,11 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"google.golang.org/grpc"
 	"net"
 	"net/http"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"google.golang.org/grpc"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -36,7 +37,7 @@ var _ = Describe("Hybrid", func() {
 	)
 
 	Context("match for http", func() {
-			BeforeEach(func() {
+		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
 
 			// Initialize Envoy instance
