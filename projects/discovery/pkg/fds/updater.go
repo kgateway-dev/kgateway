@@ -269,10 +269,10 @@ func (u *updaterUpdater) dependencies() Dependencies {
 func (u *updaterUpdater) Run() error {
 	// more than one discovery can operate on an upstream, e.g. Swagger discovery and openapi spec -> graphql schema discovery
 	// this is a (temporary?) work around
-	var discoveriesForUpstream []*UpstreamFunctionDiscovery
+	var discoveriesForUpstream []UpstreamFunctionDiscovery
 	for _, fp := range u.functionalPlugins {
 		if fp.IsFunctional() {
-			discoveriesForUpstream = append(discoveriesForUpstream, &fp)
+			discoveriesForUpstream = append(discoveriesForUpstream, fp)
 		}
 	}
 	upstreamSave := func(m UpstreamMutator) error {
@@ -301,7 +301,7 @@ func (u *updaterUpdater) Run() error {
 			}
 			return err
 		}
-		discoveriesForUpstream = append(discoveriesForUpstream, &res.fp)
+		discoveriesForUpstream = append(discoveriesForUpstream, res.fp)
 		upstreamSave(func(upstream *v1.Upstream) error {
 			servicespecupstream, ok := upstream.GetUpstreamType().(v1.ServiceSpecSetter)
 			if !ok {
@@ -312,7 +312,7 @@ func (u *updaterUpdater) Run() error {
 		})
 	}
 	for _, discoveryForUpstream := range discoveriesForUpstream {
-		err := (*discoveryForUpstream).DetectFunctions(context.Background(), resolvedUrl, u.dependencies, upstreamSave)
+		err := discoveryForUpstream.DetectFunctions(context.Background(), resolvedUrl, u.dependencies, upstreamSave)
 		if err != nil {
 			return eris.Wrapf(err, "Error doing discovery %T", discoveryForUpstream)
 		}
