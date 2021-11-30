@@ -7,7 +7,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"time"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -133,36 +132,12 @@ func GetFunctionDiscoveriesWithExtensions(opts bootstrap.Opts, extensions Extens
 
 func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts bootstrap.Opts, registryDiscFacts func(opts bootstrap.Opts) []fds.FunctionDiscoveryFactory, extensions Extensions) []fds.FunctionDiscoveryFactory {
 	pluginfuncs := extensions.DiscoveryFactoryFuncs
-	upgradedDiscoveryFactories := make(map[string]bool)
 	discFactories := registryDiscFacts(opts)
 	for _, discoveryFactoryExtension := range pluginfuncs {
 		pe := discoveryFactoryExtension()
-		if uPlug, ok := pe.(fds.Upgradable); ok && uPlug.IsUpgrade() {
-			upgradedDiscoveryFactories[uPlug.FunctionDiscoveryFactoryName()] = true
-		}
 		discFactories = append(discFactories, pe)
 	}
-	return reconcileUpgradedDiscoveryFactories(discFactories, upgradedDiscoveryFactories)
-}
-
-func reconcileUpgradedDiscoveryFactories(factoryList []fds.FunctionDiscoveryFactory, upgradedFactories map[string]bool) []fds.FunctionDiscoveryFactory {
-	var factoriesWithUpgrades []fds.FunctionDiscoveryFactory
-	for _, fac := range factoryList {
-		if uFactory, upgradable := fac.(fds.Upgradable); upgradable {
-			_, hasRegisteredUpgrade := upgradedFactories[uFactory.FunctionDiscoveryFactoryName()]
-			if (hasRegisteredUpgrade && uFactory.IsUpgrade()) || !hasRegisteredUpgrade {
-				// if this is the upgraded version of the plugin
-				// or this plugin does not have a registered upgrade
-				// then add it to the final factory list
-				factoriesWithUpgrades = append(factoriesWithUpgrades, fac)
-			}
-		} else {
-			// if it's not an upgradable plugin, we don't need to worry about replacing it with an upgrade
-			// so we can add it to the final factory list
-			factoriesWithUpgrades = append(factoriesWithUpgrades, fac)
-		}
-	}
-	return factoriesWithUpgrades
+	return discFactories
 }
 
 // TODO: consider using regular solo-kit namespace client instead of KubeNamespace client

@@ -13,14 +13,6 @@ import (
 
 type UpstreamMutator func(*v1.Upstream) error
 
-// Upgradable function discovery factories are those which can be
-// replaced by another version with enhanced functionality,
-// identified by PluginName()
-type Upgradable interface {
-	FunctionDiscoveryFactoryName() string
-	IsUpgrade() bool
-}
-
 type AdditionalClients struct {
 	GraphqlClient v1alpha1.GraphQLSchemaClient
 }

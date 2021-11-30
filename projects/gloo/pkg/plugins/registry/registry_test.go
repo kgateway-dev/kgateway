@@ -15,7 +15,7 @@ func TestPlugins(t *testing.T) {
 		pluginType := reflect.TypeOf(plugin)
 		pluginTypes[pluginType] = index
 	}
-	if len(plugins) > len(pluginTypes) {
+	if len(plugins) != len(pluginTypes) {
 		t.Errorf("Multiple plugins with the same type.")
 	}
 }

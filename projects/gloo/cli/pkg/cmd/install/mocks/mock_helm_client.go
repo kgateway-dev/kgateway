@@ -5,11 +5,12 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	install "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	chart "helm.sh/helm/v3/pkg/chart"
 	cli "helm.sh/helm/v3/pkg/cli"
-	reflect "reflect"
 )
 
 // MockHelmClient is a mock of HelmClient interface
