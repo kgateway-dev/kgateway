@@ -3,6 +3,9 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"google.golang.org/grpc"
+	"net"
 	"net/http"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -29,6 +32,7 @@ var _ = FDescribe("Hybrid", func() {
 		cancel        context.CancelFunc
 		envoyInstance *services.EnvoyInstance
 		testClients   services.TestClients
+		srv           *grpc.Server
 	)
 
 	BeforeEach(func() {
@@ -38,6 +42,28 @@ var _ = FDescribe("Hybrid", func() {
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
+
+		// Start custom tcp server and create upstream for it
+		srv, err = startTcpServer(8095)
+		Expect(err).NotTo(HaveOccurred())
+
+		tcpServerUs := &gloov1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "tcp",
+				Namespace: "default",
+			},
+			UseHttp2: &wrappers.BoolValue{Value: true},
+			UpstreamType: &gloov1.Upstream_Static{
+				Static: &static.UpstreamSpec{
+					Hosts: []*static.Host{{
+						// this is a safe way of referring to localhost
+						Addr: envoyInstance.GlooAddr,
+						Port: 8095,
+					}},
+				},
+			},
+		}
+		tcpUsRef := tcpServerUs.Metadata.Ref()
 
 		// Start Gloo
 		testClients = services.RunGlooGatewayUdsFds(ctx, &services.RunOptions{
@@ -50,12 +76,17 @@ var _ = FDescribe("Hybrid", func() {
 			},
 		})
 
+		// Create static upstream for tcp server
+		_, err = testClients.UpstreamClient.Write(tcpServerUs, clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
 		// Run envoy
 		err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
+
 		// Create a hybrid proxy routing to the upstream and wait for it to be accepted
-		proxy := getProxyHybrid("default", "proxy", defaults.HttpPort)
+		proxy := getProxyHybrid("default", "proxy", defaults.HttpPort, tcpUsRef, true)
 
 		_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -71,6 +102,8 @@ var _ = FDescribe("Hybrid", func() {
 		if envoyInstance != nil {
 			_ = envoyInstance.Clean()
 		}
+
+		srv.GracefulStop()
 	})
 
 	It("works as expected", func() {
@@ -90,8 +123,19 @@ var _ = FDescribe("Hybrid", func() {
 	})
 })
 
-func getProxyHybrid(namespace, name string, envoyPort uint32) *gloov1.Proxy {
-	return &gloov1.Proxy{
+func getProxyHybrid(namespace, name string, envoyPort uint32, tcpUpsteam *core.ResourceRef, matchTcp bool) *gloov1.Proxy {
+	matcher := &gloov1.Matcher{
+		SourcePrefixRanges: []*v3.CidrRange{
+			{
+				AddressPrefix: "1.2.3.4",
+				PrefixLen: &wrappers.UInt32Value{
+					Value: 32,
+				},
+			},
+		},
+	}
+
+	proxy := &gloov1.Proxy{
 		Metadata: &core.Metadata{
 			Name:      name,
 			Namespace: namespace,
@@ -123,7 +167,7 @@ func getProxyHybrid(namespace, name string, envoyPort uint32) *gloov1.Proxy {
 													},
 													Action: &gloov1.Route_DirectResponseAction{
 														DirectResponseAction: &gloov1.DirectResponseAction{
-															Status: http.StatusTeapot,
+															Status: http.StatusOK,
 														},
 													},
 												},
@@ -132,39 +176,18 @@ func getProxyHybrid(namespace, name string, envoyPort uint32) *gloov1.Proxy {
 									},
 								},
 							},
-							Matcher: &gloov1.Matcher{
-								SourcePrefixRanges: []*v3.CidrRange{
-									{
-										AddressPrefix: "1.2.3.4",
-										PrefixLen: &wrappers.UInt32Value{
-											Value: 32,
-										},
-									},
-								},
-							},
 						},
 						{
-							ListenerType: &gloov1.MatchedListener_HttpListener{
-								HttpListener: &gloov1.HttpListener{
-
-									VirtualHosts: []*gloov1.VirtualHost{
+							ListenerType: &gloov1.MatchedListener_TcpListener{
+								TcpListener: &gloov1.TcpListener{
+									TcpHosts: []*gloov1.TcpHost{
 										{
-											Name:    "gloo-system.virt2",
-											Domains: []string{"*"},
-											Options: &gloov1.VirtualHostOptions{},
-											Routes: []*gloov1.Route{
-												{
-													Matchers: []*matchers.Matcher{{
-														PathSpecifier: &matchers.Matcher_Prefix{
-															Prefix: "/",
-														},
-													}},
-													Options: &gloov1.RouteOptions{
-														PrefixRewrite: &wrappers.StringValue{Value: "/"},
-													},
-													Action: &gloov1.Route_DirectResponseAction{
-														DirectResponseAction: &gloov1.DirectResponseAction{
-															Status: http.StatusOK,
+											Name: "test",
+											Destination: &gloov1.TcpHost_TcpAction{
+												Destination: &gloov1.TcpHost_TcpAction_Single{
+													Single: &gloov1.Destination{
+														DestinationType: &gloov1.Destination_Upstream{
+															Upstream: tcpUpsteam,
 														},
 													},
 												},
@@ -179,4 +202,28 @@ func getProxyHybrid(namespace, name string, envoyPort uint32) *gloov1.Proxy {
 			},
 		}},
 	}
+
+	if matchTcp {
+		proxy.Listeners[0].GetHybridListener().MatchedListeners[1].Matcher = matcher
+	} else {
+		proxy.Listeners[0].GetHybridListener().MatchedListeners[0].Matcher = matcher
+	}
+	return proxy
+}
+
+func startTcpServer(port uint) (*grpc.Server, error) {
+	srv := grpc.NewServer()
+
+	addr := fmt.Sprintf(":%d", port)
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		defer GinkgoRecover()
+		err := srv.Serve(lis)
+		Expect(err).ToNot(HaveOccurred())
+	}()
+	return srv, nil
 }
