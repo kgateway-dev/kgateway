@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Removes an unmaintained OPA script.
+    issueLink: https://github.com/solo-io/gloo/issues/5640
