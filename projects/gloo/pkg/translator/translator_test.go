@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
 	"github.com/onsi/ginkgo/extensions/table"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -224,6 +226,103 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}
+		hybridListener := &v1.Listener{
+			Name:        "hybrid-listener",
+			BindAddress: "127.0.0.1",
+			BindPort:    8888,
+			ListenerType: &v1.Listener_HybridListener{
+				HybridListener: &v1.HybridListener{
+					MatchedListeners: []*v1.MatchedListener{
+						{
+							Matcher: &v1.Matcher{
+								SslConfig: &v1.SslConfig{
+									SslSecrets: &v1.SslConfig_SslFiles{
+										SslFiles: &v1.SSLFiles{
+											TlsCert: "cert1",
+											TlsKey:  "key1",
+										},
+									},
+									SniDomains: []string{
+										"sni1",
+									},
+								},
+								SourcePrefixRanges: []*v3.CidrRange{
+									{
+										AddressPrefix: "1.2.3.4",
+										PrefixLen: &wrappers.UInt32Value{
+											Value: 32,
+										},
+									},
+								},
+							},
+							ListenerType: &v1.MatchedListener_TcpListener{
+								TcpListener: &v1.TcpListener{
+									TcpHosts: []*v1.TcpHost{
+										{
+											Destination: &v1.TcpHost_TcpAction{
+												Destination: &v1.TcpHost_TcpAction_Single{
+													Single: &v1.Destination{
+														DestinationType: &v1.Destination_Upstream{
+															Upstream: &core.ResourceRef{
+																Name:      "test",
+																Namespace: "gloo-system",
+															},
+														},
+													},
+												},
+											},
+											SslConfig: &v1.SslConfig{
+												SslSecrets: &v1.SslConfig_SslFiles{
+													SslFiles: &v1.SSLFiles{
+														TlsCert: "cert1",
+														TlsKey:  "key1",
+													},
+												},
+												SniDomains: []string{
+													"sni1",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Matcher: &v1.Matcher{
+								SslConfig: &v1.SslConfig{
+									SslSecrets: &v1.SslConfig_SslFiles{
+										SslFiles: &v1.SSLFiles{
+											TlsCert: "cert2",
+											TlsKey:  "key2",
+										},
+									},
+									SniDomains: []string{
+										"sni2",
+									},
+								},
+								SourcePrefixRanges: []*v3.CidrRange{
+									{
+										AddressPrefix: "5.6.7.8",
+										PrefixLen: &wrappers.UInt32Value{
+											Value: 32,
+										},
+									},
+								},
+							},
+							ListenerType: &v1.MatchedListener_HttpListener{
+								HttpListener: &v1.HttpListener{
+									VirtualHosts: []*v1.VirtualHost{{
+										Name:    virtualHostName,
+										Domains: []string{"*"},
+										Routes:  routes,
+									}},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
 		proxy = &v1.Proxy{
 			Metadata: &core.Metadata{
 				Name:      "test",
@@ -232,6 +331,7 @@ var _ = Describe("Translator", func() {
 			Listeners: []*v1.Listener{
 				httpListener,
 				tcpListener,
+				hybridListener,
 			},
 		}
 	})
@@ -298,6 +398,27 @@ var _ = Describe("Translator", func() {
 		Expect(routeConfiguration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
 	})
 
+	It("sanitizes an invalid virtual host name in a hybrid listener", func() {
+		proxyClone := proto.Clone(proxy).(*v1.Proxy)
+		proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetHttpListener().GetVirtualHosts()[0].Name = "invalid.name"
+
+		snap, errs, report, err := translator.Translate(params, proxyClone)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(errs.Validate()).NotTo(HaveOccurred())
+		Expect(snap).NotTo(BeNil())
+		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
+
+		routes := snap.GetResources(resource.RouteTypeV3)
+		expRouteConfigName := glooutils.MatchedRouteConfigName(proxyClone.GetListeners()[2], proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())
+		Expect(routes.Items).To(HaveKey(expRouteConfigName))
+		routeResource := routes.Items[expRouteConfigName]
+		routeConfiguration = routeResource.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
+		Expect(routeConfiguration).NotTo(BeNil())
+		Expect(routeConfiguration.GetVirtualHosts()).To(HaveLen(1))
+		Expect(routeConfiguration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
+	})
+
 	It("translates listener options", func() {
 		proxyClone := proto.Clone(proxy).(*v1.Proxy)
 
@@ -322,6 +443,24 @@ var _ = Describe("Translator", func() {
 		It("will error if auth config is missing", func() {
 			proxyClone := proto.Clone(proxy).(*v1.Proxy)
 			proxyClone.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Options =
+				&v1.VirtualHostOptions{
+					Extauth: &extauth.ExtAuthExtension{
+						Spec: &extauth.ExtAuthExtension_ConfigRef{
+							ConfigRef: &core.ResourceRef{},
+						},
+					},
+				}
+
+			_, errs, _, err := translator.Translate(params, proxyClone)
+
+			Expect(err).To(BeNil())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring("VirtualHost Error: ProcessingError. Reason: auth config not found:"))
+		})
+
+		It("will error if auth config is missing from a hybrid listener", func() {
+			proxyClone := proto.Clone(proxy).(*v1.Proxy)
+			proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetHttpListener().GetVirtualHosts()[0].Options =
 				&v1.VirtualHostOptions{
 					Extauth: &extauth.ExtAuthExtension{
 						Spec: &extauth.ExtAuthExtension_ConfigRef{
@@ -364,7 +503,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 		})
-		It("should error when path math is missing", func() {
+		It("should error when path match is missing", func() {
 			_, errs, report, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
@@ -377,9 +516,9 @@ var _ = Describe("Translator", func() {
 					Reason: fmt.Sprintf("no path specifier provided. Route Name: %s", invalidMatcherName),
 				},
 			}
-			Expect(report).To(Equal(expectedReport))
+			Expect(report.ListenerReports[0]).To(Equal(expectedReport.ListenerReports[0])) // hybridReports may not match due to map order
 		})
-		It("should error when path math is missing even if we have grpc spec", func() {
+		It("should error when path match is missing even if we have grpc spec", func() {
 			dest := routes[0].GetRouteAction().GetSingle()
 			dest.DestinationSpec = &v1.DestinationSpec{
 				DestinationType: &v1.DestinationSpec_Grpc{
@@ -413,7 +552,7 @@ var _ = Describe("Translator", func() {
 					Reason: fmt.Sprintf("*grpc.plugin: missing path for grpc route. Route Name: %s", processingErrorName),
 				},
 			}
-			Expect(report).To(Equal(expectedReport))
+			Expect(report.ListenerReports[0]).To(Equal(expectedReport.ListenerReports[0]))
 		})
 	})
 
@@ -1180,7 +1319,7 @@ var _ = Describe("Translator", func() {
 					Reason: "invalid destination in weighted destination list: *v1.Upstream { gloo-system.notexist } not found",
 				},
 			}
-			Expect(report).To(Equal(expectedReport))
+			Expect(report.ListenerReports[0]).To(Equal(expectedReport.ListenerReports[0]))
 		})
 
 		It("should use upstreamGroup's namespace as default if namespace is omitted on upstream destination", func() {
@@ -1457,7 +1596,7 @@ var _ = Describe("Translator", func() {
 						Reason: fmt.Sprintf("route has a subset config, but none of the subsets in the upstream match it. Route Name: %s", processingErrorName),
 					},
 				}
-				Expect(report).To(Equal(expectedReport))
+				Expect(report.ListenerReports[0]).To(Equal(expectedReport.ListenerReports[0]))
 			})
 		})
 
@@ -1494,7 +1633,7 @@ var _ = Describe("Translator", func() {
 					},
 				}
 
-				Expect(report).To(Equal(expectedReport))
+				Expect(report.ListenerReports[0]).To(Equal(expectedReport.ListenerReports[0]))
 			})
 		})
 	})
@@ -2110,6 +2249,44 @@ var _ = Describe("Translator", func() {
 			clusterSpec := typedCfg.GetCluster()
 			Expect(clusterSpec).To(Equal("test_gloo-system"))
 			Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
+		})
+	})
+	Context("Hybrid", func() {
+		It("can properly create a hybrid listener", func() {
+			translate()
+			listeners := snapshot.GetResources(resource.ListenerTypeV3).Items
+			Expect(listeners).NotTo(HaveLen(0))
+			val, found := listeners["hybrid-listener"]
+			Expect(found).To(BeTrue())
+			listener, ok := val.ResourceProto().(*envoy_config_listener_v3.Listener)
+			Expect(ok).To(BeTrue())
+			Expect(listener.GetName()).To(Equal("hybrid-listener"))
+			Expect(listener.GetFilterChains()).To(HaveLen(2))
+
+			// tcp
+			tcpFc := listener.GetFilterChains()[0]
+			Expect(tcpFc.Filters).To(HaveLen(1))
+			tcpFilter := tcpFc.Filters[0]
+			tcpCfg := tcpFilter.GetTypedConfig()
+			Expect(tcpCfg).NotTo(BeNil())
+			var tcpTypedCfg envoytcp.TcpProxy
+			Expect(ParseTypedConfig(tcpFilter, &tcpTypedCfg)).NotTo(HaveOccurred())
+			clusterSpec := tcpTypedCfg.GetCluster()
+			Expect(clusterSpec).To(Equal("test_gloo-system"))
+			Expect(listener.GetListenerFilters()).To(HaveLen(1))
+			Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
+
+			// http
+			httpFc := listener.GetFilterChains()[1]
+			Expect(httpFc.Filters).To(HaveLen(1))
+			hcmFilter := httpFc.Filters[0]
+			hcmCfg := hcmFilter.GetConfigType()
+			Expect(hcmCfg).NotTo(BeNil())
+			var hcmTypedCfg envoyhttp.HttpConnectionManager
+			Expect(ParseTypedConfig(hcmFilter, &hcmTypedCfg)).NotTo(HaveOccurred())
+			Expect(hcmTypedCfg.GetRds()).NotTo(BeNil())
+			Expect(hcmTypedCfg.GetRds().RouteConfigName).To(Equal(glooutils.MatchedRouteConfigName(proxy.GetListeners()[2], proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())))
+			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(6)) // TODO: is this the right number? is there more we can/should do to ensure correctness?
 		})
 	})
 

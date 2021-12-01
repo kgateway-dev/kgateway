@@ -3,6 +3,8 @@ package validation_test
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -160,7 +162,7 @@ var _ = Describe("validation utils", func() {
 							},
 						},
 					}
-					mlr, ok := hybridListenerReports[expMatcher.String()]
+					mlr, ok := hybridListenerReports[utils.MatchedRouteConfigName(proxy.GetListeners()[i], expMatcher)]
 					Expect(ok).To(BeTrue())
 					if matchPrefix == "tcp" {
 						tcpListenerReport := mlr.GetTcpListenerReport()
@@ -219,7 +221,8 @@ var _ = Describe("validation utils", func() {
 			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; HttpListener Error: ProcessingError. Reason: bad http plugin"))
 		})
 		It("aggregates the errors at every level for hybrid listener", func() {
-			rpt := MakeReport(makeProxy(false, false))
+			proxy := makeProxy(false, false)
+			rpt := MakeReport(proxy)
 
 			rpt.ListenerReports[1].Errors = append(rpt.ListenerReports[1].Errors,
 				&validation.ListenerReport_Error{
@@ -234,13 +237,14 @@ var _ = Describe("validation utils", func() {
 					},
 				},
 			}
-			httpListenerReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[httpMatcher.String()].GetHttpListenerReport()
+
+			httpListenerReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[utils.MatchedRouteConfigName(proxy.GetListeners()[2], httpMatcher)].GetHttpListenerReport()
 			httpListenerReport.Errors = append(httpListenerReport.Errors, &validation.HttpListenerReport_Error{
 				Type:   validation.HttpListenerReport_Error_ProcessingError,
 				Reason: "bad http plugin",
 			})
 
-			virtualHostReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[httpMatcher.String()].GetHttpListenerReport().VirtualHostReports[2]
+			virtualHostReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[utils.MatchedRouteConfigName(proxy.GetListeners()[2], httpMatcher)].GetHttpListenerReport().VirtualHostReports[2]
 
 			virtualHostReport.Errors = append(virtualHostReport.Errors,
 				&validation.VirtualHostReport_Error{
@@ -248,7 +252,7 @@ var _ = Describe("validation utils", func() {
 					Reason: "domains not unique",
 				},
 			)
-			routeReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[httpMatcher.String()].GetHttpListenerReport().VirtualHostReports[3].RouteReports[2]
+			routeReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[utils.MatchedRouteConfigName(proxy.GetListeners()[2], httpMatcher)].GetHttpListenerReport().VirtualHostReports[3].RouteReports[2]
 
 			routeReport.Warnings = append(routeReport.Warnings,
 				&validation.RouteReport_Warning{

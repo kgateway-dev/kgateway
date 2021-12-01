@@ -48,6 +48,8 @@ func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context,
 	case *v1.Listener_TcpListener:
 		return l.GetTcpListenerTranslators(ctx, listener, listenerReport)
 
+	case *v1.Listener_HybridListener:
+		return l.GetHybridListenerTranslators(ctx, listener, listenerReport)
 	default:
 		// This case should never occur
 		return &emptyListenerTranslator{}, &emptyRouteConfigurationTranslator{}
@@ -66,7 +68,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 	// The routeConfigurationName is used to match the RouteConfiguration
 	// to an implementation of the HttpConnectionManager NetworkFilter
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/rds#config-http-conn-man-rds
-	routeConfigurationName := routeConfigName(listener)
+	routeConfigurationName := utils.RouteConfigName(listener)
 
 	// This translator produces NetworkFilters
 	// Most notably, this includes the HttpConnectionManager NetworkFilter
@@ -146,6 +148,43 @@ func (l *ListenerSubsystemTranslatorFactory) GetTcpListenerTranslators(ctx conte
 
 	// A TcpListener does not produce any RouteConfiguration
 	routeConfigurationTranslator := &emptyRouteConfigurationTranslator{}
+
+	return listenerTranslator, routeConfigurationTranslator
+}
+
+func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx context.Context, listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
+	ListenerTranslator,
+	RouteConfigurationTranslator,
+) {
+	hybridListenerReport := listenerReport.GetHybridListenerReport()
+	if hybridListenerReport == nil {
+		contextutils.LoggerFrom(ctx).DPanic("internal error: listener report was not hybrid type")
+	}
+
+	listenerTranslator := &listenerTranslatorInstance{
+		listener: listener,
+		report:   listenerReport,
+		plugins:  l.pluginRegistry.GetListenerPlugins(),
+		filterChainTranslator: &matcherFilterChainTranslator{
+			httpPlugins:         l.pluginRegistry.GetHttpFilterPlugins(),
+			hcmPlugins:          l.pluginRegistry.GetHttpConnectionManagerPlugins(),
+			parentReport:        listenerReport,
+			sslConfigTranslator: l.sslConfigTranslator,
+			tcpPlugins:          l.pluginRegistry.GetTcpFilterChainPlugins(),
+			listener:            listener.GetHybridListener(),
+			parentListener:      listener,
+			report:              hybridListenerReport,
+		},
+	}
+
+	routeConfigurationTranslator := &hybridRouteConfigurationTranslator{
+		plugins:        l.pluginRegistry.GetPlugins(),
+		proxy:          l.proxy,
+		parentListener: listener,
+		listener:       listener.GetHybridListener(),
+		parentReport:   listenerReport,
+		report:         hybridListenerReport,
+	}
 
 	return listenerTranslator, routeConfigurationTranslator
 }
