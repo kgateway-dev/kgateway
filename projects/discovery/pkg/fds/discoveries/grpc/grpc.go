@@ -39,6 +39,13 @@ func getgrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
 	return grpc
 }
 
+func NewFunctionDiscoveryFactory() fds.FunctionDiscoveryFactory {
+	return &FunctionDiscoveryFactory{
+		DetectionTimeout: time.Minute,
+		FunctionPollTime: time.Second * 15,
+	}
+}
+
 // ilackarms: this is the root object
 type FunctionDiscoveryFactory struct {
 	// TODO: yuval-k: integrate backoff stuff here
@@ -49,7 +56,7 @@ type FunctionDiscoveryFactory struct {
 	Artifacts v1.ArtifactClient
 }
 
-func (f *FunctionDiscoveryFactory) NewFunctionDiscovery(u *v1.Upstream) fds.UpstreamFunctionDiscovery {
+func (f *FunctionDiscoveryFactory) NewFunctionDiscovery(u *v1.Upstream, _ fds.AdditionalClients) fds.UpstreamFunctionDiscovery {
 	return &UpstreamFunctionDiscovery{
 		upstream: u,
 	}

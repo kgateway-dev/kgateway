@@ -1,15 +1,14 @@
 package syncer
 
 import (
-	"time"
-
+	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	discoveryRegistry "github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/registry"
 	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
-	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/aws"
-	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/grpc"
-	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/swagger"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
@@ -19,7 +18,27 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 )
 
+type Extensions struct {
+	DiscoveryFactoryFuncs []func() fds.FunctionDiscoveryFactory
+}
+
+func NewSetupFunc() setuputils.SetupFunc {
+	return setup.NewSetupFuncWithRunAndExtensions(RunFDS, nil)
+}
+
+// Used as extension point for external repo
+func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
+	runWithExtensions := func(opts bootstrap.Opts) error {
+		return RunFDSWithExtensions(opts, extensions)
+	}
+	return setup.NewSetupFuncWithRunAndExtensions(runWithExtensions, nil)
+}
+
 func RunFDS(opts bootstrap.Opts) error {
+	return RunFDSWithExtensions(opts, Extensions{})
+}
+
+func RunFDSWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	fdsMode := syncerutils.GetFdsMode(opts.Settings)
 	if fdsMode == v1.Settings_DiscoveryOptions_DISABLED {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Function discovery "+
@@ -48,6 +67,13 @@ func RunFDS(opts bootstrap.Opts) error {
 	if err := secretClient.Register(); err != nil {
 		return err
 	}
+	graphqlClient, err := v1alpha1.NewGraphQLSchemaClient(watchOpts.Ctx, opts.GraphQLSchemas)
+	if err != nil {
+		return err
+	}
+	if err := graphqlClient.Register(); err != nil {
+		return err
+	}
 
 	var nsClient skkube.KubeNamespaceClient
 	if opts.KubeClient != nil && opts.KubeCoreCache.NamespaceLister() != nil {
@@ -67,22 +93,10 @@ func RunFDS(opts bootstrap.Opts) error {
 	}
 
 	// TODO: unhardcode
-	functionalPlugins := []fds.FunctionDiscoveryFactory{
-		&aws.AWSLambdaFunctionDiscoveryFactory{
-			PollingTime: time.Second,
-		},
-		&swagger.SwaggerFunctionDiscoveryFactory{
-			DetectionTimeout: time.Minute,
-			FunctionPollTime: time.Second * 15,
-		},
-		&grpc.FunctionDiscoveryFactory{
-			DetectionTimeout: time.Minute,
-			FunctionPollTime: time.Second * 15,
-		},
-	}
+	functionalPlugins := GetFunctionDiscoveriesWithExtensions(opts, extensions)
 
 	// TODO(yuval-k): max Concurrency here
-	updater := fds.NewUpdater(watchOpts.Ctx, resolvers, upstreamClient, 0, functionalPlugins)
+	updater := fds.NewUpdater(watchOpts.Ctx, resolvers, graphqlClient, upstreamClient, 0, functionalPlugins)
 	disc := fds.NewFunctionDiscovery(updater)
 
 	sync := NewDiscoverySyncer(disc, fdsMode)
@@ -110,6 +124,20 @@ func RunFDS(opts bootstrap.Opts) error {
 		}
 	}()
 	return nil
+}
+
+func GetFunctionDiscoveriesWithExtensions(opts bootstrap.Opts, extensions Extensions) []fds.FunctionDiscoveryFactory {
+	return GetFunctionDiscoveriesWithExtensionsAndRegistry(opts, discoveryRegistry.Plugins, extensions)
+}
+
+func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts bootstrap.Opts, registryDiscFacts func(opts bootstrap.Opts) []fds.FunctionDiscoveryFactory, extensions Extensions) []fds.FunctionDiscoveryFactory {
+	pluginfuncs := extensions.DiscoveryFactoryFuncs
+	discFactories := registryDiscFacts(opts)
+	for _, discoveryFactoryExtension := range pluginfuncs {
+		pe := discoveryFactoryExtension()
+		discFactories = append(discFactories, pe)
+	}
+	return discFactories
 }
 
 // TODO: consider using regular solo-kit namespace client instead of KubeNamespace client

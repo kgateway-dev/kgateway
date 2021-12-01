@@ -1,3 +1,4 @@
+//go:build tools
 // +build tools
 
 /*
@@ -20,6 +21,8 @@ import (
 	_ "github.com/cratonica/2goarray"
 	_ "github.com/envoyproxy/protoc-gen-validate"
 	_ "github.com/golang/mock/mockgen"
+	_ "github.com/saiskee/gettercheck"
+	_ "github.com/sam-heilbron/protoc-gen-openapi"
 	_ "github.com/solo-io/protoc-gen-ext"
 	_ "github.com/solo-io/solo-apis"
 	_ "golang.org/x/tools/cmd/goimports"

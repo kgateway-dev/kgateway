@@ -4,12 +4,18 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 type UpstreamMutator func(*v1.Upstream) error
+
+type AdditionalClients struct {
+	GraphqlClient v1alpha1.GraphQLSchemaClient
+}
 
 /*
 upstreams can be obviously functional like AWS λ, fission,...  or an upstream that was already detected and marked as such.
@@ -21,7 +27,7 @@ or potentially like static upstreams.
 // we want to bake sure that detect upstream for aws doesn't do anything
 // perhaps we can do just that
 type FunctionDiscoveryFactory interface {
-	NewFunctionDiscovery(u *v1.Upstream) UpstreamFunctionDiscovery
+	NewFunctionDiscovery(u *v1.Upstream, clients AdditionalClients) UpstreamFunctionDiscovery
 }
 
 type Dependencies struct {
@@ -31,7 +37,7 @@ type Dependencies struct {
 type UpstreamFunctionDiscovery interface {
 	// if this returns true we can skip DetectUpstreamType and go straight to DetectFunctions
 	// if this returns false we should call detect upstream type.
-	// if detect upstream type returns true, we have the type!
+	// if detect Upstream type returns true, we have the type!
 	// if it returns false and nil error, it means it was detected to not be of this type -
 	// ideally this means that this detector will no longer be used with this upstream. in practice this can be logged/ignored.
 	// if it returns false and some error, try again later with back-off/timeout.

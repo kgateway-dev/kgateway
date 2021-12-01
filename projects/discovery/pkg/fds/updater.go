@@ -7,6 +7,10 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/rotisserie/eris"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
@@ -42,6 +46,7 @@ type Updater struct {
 	logger            *zap.SugaredLogger
 
 	upstreamWriter UpstreamWriterClient
+	graphqlclient  v1alpha1.GraphQLSchemaClient
 
 	maxInParallelSemaphore chan struct{}
 
@@ -62,7 +67,7 @@ func getConcurrencyChan(maxoncurrency uint) chan struct{} {
 
 }
 
-func NewUpdater(ctx context.Context, resolver Resolver, upstreamclient UpstreamWriterClient, maxconncurrency uint, functionalPlugins []FunctionDiscoveryFactory) *Updater {
+func NewUpdater(ctx context.Context, resolver Resolver, graphqlClient v1alpha1.GraphQLSchemaClient, upstreamclient UpstreamWriterClient, maxconncurrency uint, functionalPlugins []FunctionDiscoveryFactory) *Updater {
 	ctx = contextutils.WithLogger(ctx, "function-discovery-updater")
 	return &Updater{
 		logger:                 contextutils.LoggerFrom(ctx),
@@ -72,6 +77,7 @@ func NewUpdater(ctx context.Context, resolver Resolver, upstreamclient UpstreamW
 		activeupstreams:        make(map[string]*updaterUpdater),
 		maxInParallelSemaphore: getConcurrencyChan(maxconncurrency),
 		upstreamWriter:         upstreamclient,
+		graphqlclient:          graphqlClient,
 	}
 }
 
@@ -97,7 +103,9 @@ func (u *Updater) GetSecrets() v1.SecretList {
 func (u *Updater) createDiscoveries(upstream *v1.Upstream) []UpstreamFunctionDiscovery {
 	var ret []UpstreamFunctionDiscovery
 	for _, e := range u.functionalPlugins {
-		ret = append(ret, e.NewFunctionDiscovery(upstream))
+		ret = append(ret, e.NewFunctionDiscovery(upstream, AdditionalClients{
+			GraphqlClient: u.graphqlclient,
+		}))
 	}
 	return ret
 }
@@ -167,7 +175,7 @@ func (u *updaterUpdater) saveUpstream(mutator UpstreamMutator) error {
 			return err
 		}
 	} else {
-		u.upstream = newupstream
+		mutator(u.upstream)
 		return nil
 	}
 	// try again with the new one
@@ -184,7 +192,7 @@ func (u *updaterUpdater) saveUpstream(mutator UpstreamMutator) error {
 	if err != nil {
 		logger.Warnw("error updating upstream on second try", "upstream", u.upstream.GetMetadata().GetName(), "error", err)
 	} else {
-		u.upstream = newupstream
+		mutator(u.upstream)
 	}
 	// TODO: if write failed, we are retrying. we should consider verifying that the error is indeed due to resource conflict,
 
@@ -259,22 +267,20 @@ func (u *updaterUpdater) dependencies() Dependencies {
 }
 
 func (u *updaterUpdater) Run() error {
-	// see if anyone likes this upstream:
-	var discoveryForUpstream UpstreamFunctionDiscovery
+	// more than one discovery can operate on an upstream, e.g. Swagger discovery and openapi spec -> graphql schema discovery
+	// this is a (temporary?) work around
+	var discoveriesForUpstream []UpstreamFunctionDiscovery
 	for _, fp := range u.functionalPlugins {
 		if fp.IsFunctional() {
-			discoveryForUpstream = fp
-			break
+			discoveriesForUpstream = append(discoveriesForUpstream, fp)
 		}
 	}
-
 	upstreamSave := func(m UpstreamMutator) error {
 		return u.saveUpstream(m)
 	}
 
 	resolvedUrl, resolvedErr := u.parent.resolver.Resolve(u.upstream)
-
-	if discoveryForUpstream == nil {
+	if len(discoveriesForUpstream) == 0 {
 		// TODO: this is probably not going to work unless the upstream type will also have the method required
 		_, ok := u.upstream.GetUpstreamType().(v1.ServiceSpecSetter)
 		if !ok {
@@ -295,7 +301,7 @@ func (u *updaterUpdater) Run() error {
 			}
 			return err
 		}
-		discoveryForUpstream = res.fp
+		discoveriesForUpstream = append(discoveriesForUpstream, res.fp)
 		upstreamSave(func(upstream *v1.Upstream) error {
 			servicespecupstream, ok := upstream.GetUpstreamType().(v1.ServiceSpecSetter)
 			if !ok {
@@ -305,6 +311,11 @@ func (u *updaterUpdater) Run() error {
 			return nil
 		})
 	}
-
-	return discoveryForUpstream.DetectFunctions(u.ctx, resolvedUrl, u.dependencies, upstreamSave)
+	for _, discoveryForUpstream := range discoveriesForUpstream {
+		err := discoveryForUpstream.DetectFunctions(context.Background(), resolvedUrl, u.dependencies, upstreamSave)
+		if err != nil {
+			return eris.Wrapf(err, "Error doing discovery %T", discoveryForUpstream)
+		}
+	}
+	return nil
 }

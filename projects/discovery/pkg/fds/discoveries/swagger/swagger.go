@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+
 	"github.com/go-openapi/loads"
 	openapi "github.com/go-openapi/spec"
 	"github.com/go-openapi/swag"
@@ -35,13 +37,21 @@ var commonSwaggerURIs = []string{
 // TODO(yuval-k): run this in a back off for a limited amount of time, with high initial retry.
 // maybe backoff with initial 1 minute a total of 10 minutes till giving up. this should probably be configurable
 
+func NewFunctionDiscoveryFactory() fds.FunctionDiscoveryFactory {
+	return &SwaggerFunctionDiscoveryFactory{
+		DetectionTimeout: time.Minute,
+		FunctionPollTime: time.Second * 15,
+	}
+}
+
 type SwaggerFunctionDiscoveryFactory struct {
 	DetectionTimeout time.Duration
 	FunctionPollTime time.Duration
 	SwaggerUrisToTry []string
+	GraphqlClient    v1alpha1.GraphQLSchemaClient
 }
 
-func (f *SwaggerFunctionDiscoveryFactory) NewFunctionDiscovery(u *v1.Upstream) fds.UpstreamFunctionDiscovery {
+func (f *SwaggerFunctionDiscoveryFactory) NewFunctionDiscovery(u *v1.Upstream, _ fds.AdditionalClients) fds.UpstreamFunctionDiscovery {
 	return &SwaggerFunctionDiscovery{
 		detectionTimeout: f.DetectionTimeout,
 		functionPollTime: f.FunctionPollTime,

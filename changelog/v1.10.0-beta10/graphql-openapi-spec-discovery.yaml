@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5646
+    description: >
+      Adds extensible discovery component to OSS Gloo Edge to allow for enterprise Graphql Openapi spec discovery.
+    resolvesIssue: false

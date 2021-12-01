@@ -263,6 +263,12 @@ apis:
   envoy.config.filter.http.graphql.v2.JsonNode:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#JsonNode
     package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.JsonValue:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#JsonValue
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.JsonValueList:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#JsonValueList
+    package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.graphql.v2.PathSegment:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#PathSegment
     package: envoy.config.filter.http.graphql.v2
@@ -811,6 +817,12 @@ apis:
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.JsonNode:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonNode
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.JsonValue:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonValue
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.JsonValueList:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonValueList
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.PathSegment:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#PathSegment
