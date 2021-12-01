@@ -17,9 +17,9 @@ weight: 5
 - [GraphQLParentExtraction](#graphqlparentextraction)
 - [TypedValueProvider](#typedvalueprovider)
 - [Type](#type)
-- [JsonKeyValue](#jsonkeyvalue)
 - [JsonValueList](#jsonvaluelist)
 - [JsonValue](#jsonvalue)
+- [JsonKeyValue](#jsonkeyvalue)
 - [JsonNode](#jsonnode)
 - [RequestTemplate](#requesttemplate)
 - [RESTResolver](#restresolver)
@@ -41,18 +41,20 @@ weight: 5
 ### PathSegment
 
  
-used to reference into json structures by key(s)
+used to reference into json structures by key(s).
 
 ```yaml
 "key": string
 "index": int
+"all": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `key` | `string` |  Only one of `key` or `index` can be set. |
-| `index` | `int` |  Only one of `index` or `key` can be set. |
+| `key` | `string` | Key is used to extract named values from a map. Only one of `key`, `index`, or `all` can be set. |
+| `index` | `int` | Index is used to extract an element at a certain index from a list. Only one of `index`, `key`, or `all` can be set. |
+| `all` | `bool` | all selects all from the current element at in the path. This is useful for extracting list arguments / object arguments. Only one of `all`, `key`, or `index` can be set. |
 
 
 
@@ -89,6 +91,7 @@ In the future we may add support for regex and subgroups
 ```yaml
 "argName": string
 "path": []graphql.gloo.solo.io.PathSegment
+"required": bool
 
 ```
 
@@ -96,6 +99,7 @@ In the future we may add support for regex and subgroups
 | ----- | ---- | ----------- | 
 | `argName` | `string` | The argument name to fetch. The argument value fetched will have a type from the schema that we validate in envoy. If the name is invalid, returns the zero-value primitive or null. |
 | `path` | [[]graphql.gloo.solo.io.PathSegment](../graphql.proto.sk/#pathsegment) | Optional: fetches the value in the argument selected at this key. If the key is invalid, returns the zero-value primitive or null. |
+| `required` | `bool` | If this is set to true, then a schema error will be returned to user when the graphql arg is not found. Defaults to false, so schema error will not be returned to user when the graphql arg is not found. |
 
 
 
@@ -160,37 +164,18 @@ this value will be cast to an int type.
 
 
 ---
-### JsonKeyValue
-
-
-
-```yaml
-"key": string
-"value": .graphql.gloo.solo.io.JsonKeyValue.JsonValue
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `key` | `string` |  |
-| `value` | [.graphql.gloo.solo.io.JsonKeyValue.JsonValue](../graphql.proto.sk/#jsonvalue) |  |
-
-
-
-
----
 ### JsonValueList
 
 
 
 ```yaml
-"values": []graphql.gloo.solo.io.JsonKeyValue.JsonValue
+"values": []graphql.gloo.solo.io.JsonValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `values` | [[]graphql.gloo.solo.io.JsonKeyValue.JsonValue](../graphql.proto.sk/#jsonvalue) |  |
+| `values` | [[]graphql.gloo.solo.io.JsonValue](../graphql.proto.sk/#jsonvalue) |  |
 
 
 
@@ -203,7 +188,7 @@ this value will be cast to an int type.
 ```yaml
 "node": .graphql.gloo.solo.io.JsonNode
 "valueProvider": .graphql.gloo.solo.io.ValueProvider
-"list": .graphql.gloo.solo.io.JsonKeyValue.JsonValueList
+"list": .graphql.gloo.solo.io.JsonValueList
 
 ```
 
@@ -211,7 +196,26 @@ this value will be cast to an int type.
 | ----- | ---- | ----------- | 
 | `node` | [.graphql.gloo.solo.io.JsonNode](../graphql.proto.sk/#jsonnode) |  Only one of `node`, `valueProvider`, or `list` can be set. |
 | `valueProvider` | [.graphql.gloo.solo.io.ValueProvider](../graphql.proto.sk/#valueprovider) |  Only one of `valueProvider`, `node`, or `list` can be set. |
-| `list` | [.graphql.gloo.solo.io.JsonKeyValue.JsonValueList](../graphql.proto.sk/#jsonvaluelist) |  Only one of `list`, `node`, or `valueProvider` can be set. |
+| `list` | [.graphql.gloo.solo.io.JsonValueList](../graphql.proto.sk/#jsonvaluelist) |  Only one of `list`, `node`, or `valueProvider` can be set. |
+
+
+
+
+---
+### JsonKeyValue
+
+
+
+```yaml
+"key": string
+"value": .graphql.gloo.solo.io.JsonValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` |  |
+| `value` | [.graphql.gloo.solo.io.JsonValue](../graphql.proto.sk/#jsonvalue) |  |
 
 
 
@@ -243,7 +247,7 @@ Defines a configuration for generating outgoing requests for a resolver.
 ```yaml
 "headers": map<string, .graphql.gloo.solo.io.ValueProvider>
 "queryParams": map<string, .graphql.gloo.solo.io.ValueProvider>
-"json": .graphql.gloo.solo.io.JsonNode
+"outgoingBody": .graphql.gloo.solo.io.JsonValue
 
 ```
 
@@ -251,7 +255,7 @@ Defines a configuration for generating outgoing requests for a resolver.
 | ----- | ---- | ----------- | 
 | `headers` | `map<string, .graphql.gloo.solo.io.ValueProvider>` | Use this attribute to set request headers to your REST service. It consists of a map of strings to value providers. The string key determines the name of the resulting header, the value provided will be the value. at least need ":method" and ":path". |
 | `queryParams` | `map<string, .graphql.gloo.solo.io.ValueProvider>` | Use this attribute to set query parameters to your REST service. It consists of a map of strings to value providers. The string key determines the name of the query param, the provided value will be the value. This value is appended to any value set to the :path header in `headers`. Interpolation is done in envoy rather than the control plane to prevent escaped character issues. Additionally, we may be providing values not known until the request is being executed (e.g., graphql parent info). |
-| `json` | [.graphql.gloo.solo.io.JsonNode](../graphql.proto.sk/#jsonnode) | json representation of outgoing body. empty string key can be used to signal parsing the value as json and using it as the whole json body. |
+| `outgoingBody` | [.graphql.gloo.solo.io.JsonValue](../graphql.proto.sk/#jsonvalue) | Used to construct the outgoing body to the upstream from the graphql value providers. |
 
 
 

@@ -26,11 +26,17 @@ const (
 	AWS_REGION                  = "AWS_REGION"
 )
 
+func NewFunctionDiscoveryFactory() fds.FunctionDiscoveryFactory {
+	return &AWSLambdaFunctionDiscoveryFactory{
+		PollingTime: time.Second,
+	}
+}
+
 type AWSLambdaFunctionDiscoveryFactory struct {
 	PollingTime time.Duration
 }
 
-func (f *AWSLambdaFunctionDiscoveryFactory) NewFunctionDiscovery(u *v1.Upstream) fds.UpstreamFunctionDiscovery {
+func (f *AWSLambdaFunctionDiscoveryFactory) NewFunctionDiscovery(u *v1.Upstream, _ fds.AdditionalClients) fds.UpstreamFunctionDiscovery {
 	return &AWSLambdaFunctionDiscovery{
 		timetowait: f.PollingTime,
 		upstream:   u,

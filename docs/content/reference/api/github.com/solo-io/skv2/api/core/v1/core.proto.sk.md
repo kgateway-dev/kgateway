@@ -12,11 +12,15 @@ weight: 5
 
 
 - [ObjectRef](#objectref)
+- [ObjectRefList](#objectreflist)
 - [ClusterObjectRef](#clusterobjectref)
 - [TypedObjectRef](#typedobjectref)
 - [TypedClusterObjectRef](#typedclusterobjectref)
 - [Status](#status)
 - [State](#state)
+- [ObjectSelector](#objectselector)
+- [Expression](#expression)
+- [Operator](#operator)
   
 
 
@@ -43,6 +47,25 @@ Resource reference for an object
 | ----- | ---- | ----------- | 
 | `name` | `string` | name of the resource being referenced. |
 | `namespace` | `string` | namespace of the resource being referenced. |
+
+
+
+
+---
+### ObjectRefList
+
+ 
+Object providing a list of object refs.
+Used to store lists of refs inside a map.
+
+```yaml
+"refs": []core.skv2.solo.io.ObjectRef
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `refs` | [[]core.skv2.solo.io.ObjectRef](../core.proto.sk/#objectref) |  |
 
 
 
@@ -158,6 +181,70 @@ The State of a reconciled object
 | `INVALID` | Invalid parameters supplied, will not continue. |
 | `FAILED` | Failed during processing. |
 | `ACCEPTED` | Finished processing successfully. |
+
+
+
+
+---
+### ObjectSelector
+
+ 
+Select K8s Objects by namespace, labels, or both.
+
+```yaml
+"namespaces": []string
+"labels": map<string, string>
+"expressions": []core.skv2.solo.io.ObjectSelector.Expression
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `namespaces` | `[]string` | Select Objects in these namespaces. If omitted, Gloo Mesh will only select Objects in the same namespace as the parent resource (e.g. VirtualGateway) that owns this selector. The reserved value "*" can be used to select objects in all namespaces watched by Gloo Mesh. |
+| `labels` | `map<string, string>` | Select objects whose labels match the ones specified here. |
+| `expressions` | [[]core.skv2.solo.io.ObjectSelector.Expression](../core.proto.sk/#expression) | Expressions allow for more flexible object label matching, such as equality-based requirements, set-based requirements, or a combination of both. https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement. |
+
+
+
+
+---
+### Expression
+
+
+
+```yaml
+"key": string
+"operator": .core.skv2.solo.io.ObjectSelector.Expression.Operator
+"values": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | Kubernetes label key, must conform to Kubernetes syntax requirements https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set. |
+| `operator` | [.core.skv2.solo.io.ObjectSelector.Expression.Operator](../core.proto.sk/#operator) | The operator can only be in, notin, =, ==, !=, exists, ! (DoesNotExist), gt (GreaterThan), lt (LessThan). |
+| `values` | `[]string` |  |
+
+
+
+
+---
+### Operator
+
+ 
+Object Selector expression operator, while the set-based syntax differs from Kubernetes (kubernetes: `key: !mylabel`, gloo: `key: mylabel, operator: "!"` | kubernetes: `key: mylabel`, gloo: `key: mylabel, operator: exists`), the functionality remains the same.
+
+| Name | Description |
+| ----- | ----------- | 
+| `Equals` | = |
+| `DoubleEquals` | == |
+| `NotEquals` | != |
+| `In` | in |
+| `NotIn` | notin |
+| `Exists` | exists |
+| `DoesNotExist` | ! |
+| `GreaterThan` | gt |
+| `LessThan` | lt |
 
 
 
