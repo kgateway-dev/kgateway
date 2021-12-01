@@ -13,6 +13,7 @@ spec:
     plural: gateways
     shortNames:
     - gw
+    - ggw
     singular: gateway
   scope: Namespaced
   versions:

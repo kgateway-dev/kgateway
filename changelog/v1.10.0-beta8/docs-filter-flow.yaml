@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Adding filter flow docs.
+    issueLink: https://github.com/solo-io/gloo/issues/5562

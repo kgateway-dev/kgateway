@@ -8,31 +8,16 @@ Gloo Edge has a powerful routing engine that can handle simple use cases like AP
 
 Gloo Edge can route requests directly to functions, which can be: a serverless function call (e.g. AWS Lambda, Google Cloud Function, Microsoft Azure Function) or an API call on a microservice or a legacy service (e.g. a REST API call, OpenAPI operation, gRPC operation). This unique ability is what makes Gloo Edge the only API gateway that supports hybrid apps, as well as the only one that does not tie the user to a specific paradigm.
 
-Routes are the primary building block of the *Virtual Service*. A route contains matchers and an upstream which could be a single destination, a list of weighted destinations, or an upstream group. 
+## Concepts
 
-There are many types of **matchers**, including **Path Matching**, **Header Matching**, **Query Parameter Matching**, and **HTTP Method Matching**. Matchers can be combined in a single rule to further refine which requests will be matched against that rule.
+Review the following pages to understand the basic concepts for Gloo Edge traffic management.
 
-Gloo Edge is capable of sending matching requests to many different types of *Upstreams*, including **Single Upstream**, **Multiple Upstream**, **Upstream Groups**, Kubernetes services, and Consul services. The ability to route a request to multiple *Upstreams* or *Upstream Groups* allows Gloo Edge to load balance requests and perform Canary Releases.
+* [Traffic management]({{% versioned_link_path fromRoot="/introduction/traffic_management/" %}}): Descriptions about the primary Gloo Edge traffic management components, including gateways, virtual services, routes, and upstreams.
+* [Traffic processing]({{% versioned_link_path fromRoot="/introduction/traffic_filter/" %}}): Description of the types of transformations that Gloo Edge can apply to traffic, including an overview of the filter flow for policies, external authorization and authentication, rate limiting, and other transformations.
 
-Gloo Edge can also alter requests before sending them to a destination, including **Transformation**, **Fault Injection**, response header editing, and **Prefix Rewrite**. The ability to edit requests on the fly gives Gloo Edge the power to specify the proper parameters for a function or transform and error check incoming requests before passing them along.
+## Examples
 
----
-
-## Gloo Edge Configuration
-
-Let's see what underpins Gloo Edge routing with a high-level look at the layout of the Gloo Edge configuration. This can be seen as 3 layers: the *Gateway listeners*, *Virtual Services*, and *Upstreams*. Mostly, you'll be interacting with [Virtual Services]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#virtual-services" %}}), which allow you to configure the details of the API you wish to expose on the Gateway and how routing happens to the backends. [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#upstreams" %}}) represent those backends. [Gateway]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#gateways" %}}) objects help you control the listeners for incoming traffic.
-
-![Structure of gateway configurations with virtual service]({{% versioned_link_path fromRoot="/img/gloo-routing-concepts-overview.png" %}})
-
-## Route Rules
-
-Configuring the routing engine is done with defined predicates that match on incoming requests. The contents of a request, such as headers, path, method, etc., are examined to see if they match the predicates of a route rule. If they do, the request is processed based on enabled routing features and routed to an Upstream destinations such as REST or gRPC services running in Kubernetes, EC2, etc. or Cloud Functions like Lambda. In the [Traffic Management section]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}) we'll dig into this process further.
-
-![Structure of gateway configurations with virtual service]({{% versioned_link_path fromRoot="/img/gloo-routing-overview.png" %}})
-
-## Examples and Concepts
-
-Now that you have a basic framework for understanding what Gloo Edge routing does, let's get started with a [Hello World]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) example. Once you're comfortable implementing a basic configuration, you can move to more advanced use cases and expand your understanding of core concepts in Gloo Edge like [Traffic Management]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}) and [Network Security]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}).
+Now that you have a basic framework for understanding what Gloo Edge routing does, let's get started with a [Hello World]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) example. After you're comfortable implementing a basic configuration, you can move to more advanced use cases and expand your understanding of core concepts in Gloo Edge like [Transformations]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}}) and [Network Security]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}).
 
 ---
 

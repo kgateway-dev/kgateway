@@ -325,10 +325,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 		routesProto = append(routesProto, resource.NewEnvoyResource(proto.Clone(routeCfg)))
 	}
 
-	routesVersion, err := hashstructure.Hash(routesProto, nil)
-	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for routes envoy snapshot components"))
-	}
+	routesVersion := EnvoyCacheResourcesListToFnvHash(routesProto)
 	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }
 

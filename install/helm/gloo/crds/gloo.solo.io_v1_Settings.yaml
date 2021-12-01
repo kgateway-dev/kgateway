@@ -15,6 +15,7 @@ spec:
     plural: settings
     shortNames:
     - st
+    - gst
   scope: Namespaced
   versions:
   - name: v1

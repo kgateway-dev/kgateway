@@ -13,6 +13,7 @@ spec:
     plural: upstreams
     shortNames:
     - us
+    - gus
     singular: upstream
   scope: Namespaced
   versions:

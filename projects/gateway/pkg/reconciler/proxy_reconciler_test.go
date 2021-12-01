@@ -3,6 +3,8 @@ package reconciler_test
 import (
 	"context"
 
+	"google.golang.org/grpc"
+
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
@@ -73,7 +75,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		mockCtrl := gomock.NewController(GinkgoT())
 		validationClient = mock_validation.NewMockGlooValidationServiceClient(mockCtrl)
 		validationClient.EXPECT().Validate(ctx, gomock.Any()).DoAndReturn(
-			func(_ context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
+			func(_ context.Context, req *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
 				return &validation.GlooValidationServiceResponse{
 					ValidationReports: []*validation.ValidationReport{
 						{

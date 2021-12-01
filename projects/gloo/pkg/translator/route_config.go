@@ -41,6 +41,7 @@ type RouteConfigurationTranslator interface {
 
 var _ RouteConfigurationTranslator = new(emptyRouteConfigurationTranslator)
 var _ RouteConfigurationTranslator = new(httpRouteConfigurationTranslator)
+var _ RouteConfigurationTranslator = new(hybridRouteConfigurationTranslator)
 
 type emptyRouteConfigurationTranslator struct {
 }
@@ -466,6 +467,56 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 	clusterSpecifier.WeightedClusters.TotalWeight = &wrappers.UInt32Value{Value: totalWeight}
 
 	return nil
+}
+
+type hybridRouteConfigurationTranslator struct {
+	plugins []plugins.Plugin
+	proxy   *v1.Proxy
+
+	parentListener *v1.Listener
+	listener       *v1.HybridListener
+
+	parentReport *validationapi.ListenerReport
+	report       *validationapi.HybridListenerReport
+
+	requireTlsOnVirtualHosts bool
+}
+
+func (h *hybridRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
+	var outRouteConfigs []*envoy_config_route_v3.RouteConfiguration
+	for _, matchedListener := range h.listener.GetMatchedListeners() {
+		httpListener := matchedListener.GetHttpListener()
+		if httpListener == nil {
+			continue
+		}
+		matcher := matchedListener.GetMatcher()
+		rcName := utils.MatchedRouteConfigName(h.parentListener, matcher)
+
+		params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+rcName)
+
+		matchedListenerRouteConfigurationTranslator := &httpRouteConfigurationTranslator{
+			plugins: h.plugins,
+			proxy:   h.proxy,
+
+			parentListener: h.parentListener,
+			listener:       httpListener,
+
+			parentReport: h.parentReport,
+			report:       h.report.GetMatchedListenerReports()[utils.MatchedRouteConfigName(h.parentListener, matcher)].GetHttpListenerReport(),
+
+			routeConfigName:          rcName,
+			requireTlsOnVirtualHosts: matcher.GetSslConfig() != nil,
+		}
+		virtualHosts := matchedListenerRouteConfigurationTranslator.computeVirtualHosts(params)
+
+		outRouteConfigs = append(outRouteConfigs, &envoy_config_route_v3.RouteConfiguration{
+			Name:                           rcName,
+			VirtualHosts:                   virtualHosts,
+			MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
+		})
+	}
+
+	return outRouteConfigs
 }
 
 // TODO(marco): when we update the routing API we should move this to a RouteActionPlugin
