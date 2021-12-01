@@ -293,11 +293,12 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		}
 
 	case *v1.Route_GraphqlSchemaRef:
-		out.Action = &envoy_config_route_v3.Route_DirectResponse{
-			DirectResponse: &envoy_config_route_v3.DirectResponseAction{
-				Status: 200, // unused
-				Body: &envoy_config_core_v3.DataSource{
-					Specifier: &envoy_config_core_v3.DataSource_InlineString{InlineString: "unused, graphql overtakes router filter"},
+		// Envoy needs the route to have an action, so we use a dummy cluster here
+		// But this cluster doesn't really exist.
+		out.Action = &envoy_config_route_v3.Route_Route{
+			Route: &envoy_config_route_v3.RouteAction{
+				ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
+					Cluster: "graphql.dummy.cluster",
 				},
 			},
 		}

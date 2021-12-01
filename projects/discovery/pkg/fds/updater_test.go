@@ -29,6 +29,16 @@ func (t *testUpstreamWriterClient) Read(namespace, name string, opts clients.Rea
 	return nil, fmt.Errorf("test - no upstream")
 }
 
+type testGraphqlSchemaWriterClient struct{}
+
+func (t *testGraphqlSchemaWriterClient) Write(resource *v1.Upstream, opts clients.WriteOpts) (*v1.Upstream, error) {
+	return resource, nil
+}
+
+func (t *testGraphqlSchemaWriterClient) Read(namespace, name string, opts clients.ReadOpts) (*v1.Upstream, error) {
+	return nil, fmt.Errorf("test - no upstream")
+}
+
 type functionsCalled struct {
 	isUpstreamFunctional bool
 	detectUpstreamType   bool
@@ -53,7 +63,7 @@ func (t *testDiscovery) setFunctionsCalled(f functionsCalled) {
 	t.functionsCalled.Store(f)
 }
 
-func (t *testDiscovery) NewFunctionDiscovery(u *v1.Upstream) UpstreamFunctionDiscovery {
+func (t *testDiscovery) NewFunctionDiscovery(u *v1.Upstream, _ AdditionalClients) UpstreamFunctionDiscovery {
 	return t
 }
 
@@ -112,7 +122,7 @@ var _ = Describe("Updater", func() {
 		}
 		testDisc = &testDiscovery{}
 		testDisc.functionsCalled.Store(functionsCalled{})
-		updater = NewUpdater(ctx, resolver, upstreamWriterClient, 0, []FunctionDiscoveryFactory{testDisc})
+		updater = NewUpdater(ctx, resolver, nil, upstreamWriterClient, 0, []FunctionDiscoveryFactory{testDisc})
 		up = &v1.Upstream{
 			Metadata: &core_solo_io.Metadata{
 				Namespace: "ns",
