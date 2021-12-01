@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
 	"github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -712,6 +715,110 @@ var _ = Describe("Gateway", func() {
 				})
 			})
 
+		})
+
+		Context("hybrid gateway", func() {
+
+			var (
+				envoyInstance *services.EnvoyInstance
+				tu            *v1helpers.TestUpstream
+			)
+
+			BeforeEach(func() {
+				// Use hybrid gateway instead of default
+				defaultGateway := gatewaydefaults.DefaultHybridGateway(writeNamespace)
+
+				_, err := testClients.GatewayClient.Write(defaultGateway, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+
+				// wait for the gateway to be created
+				Eventually(func() (gatewayv1.GatewayList, error) {
+					return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
+				}, "10s", "0.1s").Should(HaveLen(1), "Gateway should be present")
+
+				envoyInstance, err = envoyFactory.NewEnvoyInstance()
+				Expect(err).NotTo(HaveOccurred())
+
+				tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+
+				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("should create a hybrid listener", func() {
+
+				gatewayClient := testClients.GatewayClient
+				gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				for _, g := range gw {
+					hybridGateway := g.GetHybridGateway()
+					if hybridGateway != nil {
+						hybridGateway.MatchedGateways = []*gatewayv1.MatchedGateway{
+							{
+								Matcher: &gatewayv1.Matcher{
+									SourcePrefixRanges: []*v3.CidrRange{
+										{
+											AddressPrefix: "1.2.3.4",
+											PrefixLen: &wrappers.UInt32Value{
+												Value: 32,
+											},
+										},
+									},
+								},
+								GatewayType: &gatewayv1.MatchedGateway_HttpGateway{
+									HttpGateway: &gatewayv1.HttpGateway{},
+								},
+							},
+							{
+								Matcher: &gatewayv1.Matcher{
+									SourcePrefixRanges: []*v3.CidrRange{
+										{
+											AddressPrefix: "5.6.7.8",
+											PrefixLen: &wrappers.UInt32Value{
+												Value: 32,
+											},
+										},
+									},
+								},
+								GatewayType: &gatewayv1.MatchedGateway_TcpGateway{
+									TcpGateway: &gatewayv1.TcpGateway{},
+								},
+							},
+						}
+					}
+
+					_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
+				}
+
+				// write a virtual service so we have a proxy
+				vs := getTrivialVirtualServiceForUpstream("gloo-system", &core.ResourceRef{Name: "test", Namespace: "test"})
+				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// make sure it propagates to proxy
+				Eventually(
+					func() (bool, error) {
+						proxy, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+						if err != nil {
+							return false, err
+						}
+						for _, l := range proxy.Listeners {
+							if hl := l.GetHybridListener(); hl != nil {
+								if len(hl.MatchedListeners) != 2 ||
+									hl.MatchedListeners[0].GetHttpListener() == nil ||
+									hl.MatchedListeners[1].GetTcpListener() == nil {
+									continue
+								}
+								return true, nil
+							}
+						}
+						return false, nil
+					}, "5s", "0.1s").Should(BeTrue())
+			})
 		})
 	})
 })
