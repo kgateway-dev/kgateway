@@ -4,6 +4,8 @@ weight: 120
 description: Enables graphql resolution
 ---
 
+Set up API gateway and GraphQL server functionality for your apps without running in the same process as Gloo Edge.
+
 {{% notice note %}}
 This feature is available only in Gloo Edge Enterprise version 1.10.0-beta1 and later.
 {{% /notice %}}
@@ -33,7 +35,7 @@ With Gloo Edge, route-level customization logic is embedded into the API gateway
 
 ## Installing GraphQL
 
-GraphQL resolution is a beta feature included in Gloo Edge Enterprise version 1.10.0-beta1 and later.
+GraphQL resolution is an experimental feature included in Gloo Edge Enterprise version 1.10.0-beta1 and later.
 
 To try out GraphQL, install Gloo Edge in a development environment. Note that you currenty cannot update an existing installation to use GraphQL. Be sure to specify version 1.10.0-beta1 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
 ```
@@ -300,11 +302,13 @@ EOF
 kubectl port-forward -n gloo-system deploy/gateway-proxy 8080
 ```
 
-8. Point your favorite GraphQL client at the following URL.
+8. Point your favorite GraphQL client to `http://localhost:8080/graphql`. For example, you might go to `https://studio.apollographql.com/sandbox/explorer` to specify this URL for the GraphQL server.
 
-Send a request to the endpoint to verify that the request is successfully resolved by Envoy.
+TODO: any recommendations for playing around in apollo?
 
-http://localhost:8080/graphql
+## Try it yourself
+
+TODO: need guidance on how to develop the `GraphQLSchema` CR for their own use cases and apps
 
 ## Next steps
 
