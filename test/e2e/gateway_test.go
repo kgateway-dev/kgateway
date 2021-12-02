@@ -810,6 +810,7 @@ var _ = Describe("Gateway", func() {
 							if hl := l.GetHybridListener(); hl != nil {
 								if len(hl.MatchedListeners) != 2 ||
 									hl.MatchedListeners[0].GetHttpListener() == nil ||
+									len(hl.MatchedListeners[0].GetHttpListener().GetVirtualHosts()) != 1 ||
 									hl.MatchedListeners[1].GetTcpListener() == nil {
 									continue
 								}
@@ -819,6 +820,127 @@ var _ = Describe("Gateway", func() {
 						return false, nil
 					}, "5s", "0.1s").Should(BeTrue())
 			})
+
+			Context("tcp ssl", func() {
+
+				TestUpstreamSslReachableTcp := func() {
+					cert := gloohelpers.Certificate()
+					v1helpers.TestUpstreamReachable(defaults.HttpPort, tu, &cert)
+				}
+
+				FIt("should work with ssl", func() {
+					// Check tls inspector has not been added yet
+					Eventually(func() (string, error) {
+						envoyConfig := ""
+						resp, err := envoyInstance.EnvoyConfig()
+						if err != nil {
+							return "", err
+						}
+						p := new(bytes.Buffer)
+						if _, err := io.Copy(p, resp.Body); err != nil {
+							return "", err
+						}
+						defer resp.Body.Close()
+						envoyConfig = p.String()
+						return envoyConfig, nil
+					}, "10s", "0.1s").Should(Not(MatchRegexp("type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector")))
+
+					secret := &gloov1.Secret{
+						Metadata: &core.Metadata{
+							Name:      "secret",
+							Namespace: "default",
+						},
+						Kind: &gloov1.Secret_Tls{
+							Tls: &gloov1.TlsSecret{
+								CertChain:  gloohelpers.Certificate(),
+								PrivateKey: gloohelpers.PrivateKey(),
+							},
+						},
+					}
+					createdSecret, err := testClients.SecretClient.Write(secret, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
+
+					host := &gloov1.TcpHost{
+						Name: "one",
+						Destination: &gloov1.TcpHost_TcpAction{
+							Destination: &gloov1.TcpHost_TcpAction_Single{
+								Single: &gloov1.Destination{
+									DestinationType: &gloov1.Destination_Upstream{
+										Upstream: tu.Upstream.Metadata.Ref(),
+									},
+								},
+							},
+						},
+						SslConfig: &gloov1.SslConfig{
+							SslSecrets: &gloov1.SslConfig_SecretRef{
+								SecretRef: &core.ResourceRef{
+									Name:      createdSecret.Metadata.Name,
+									Namespace: createdSecret.Metadata.Namespace,
+								},
+							},
+							AlpnProtocols: []string{"http/1.1"},
+						},
+					}
+
+					// Update gateway with tcp hosts
+					gatewayClient := testClients.GatewayClient
+					gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
+					Expect(err).NotTo(HaveOccurred())
+
+					for _, g := range gw {
+						hybridGateway := g.GetHybridGateway()
+						if hybridGateway != nil {
+							hybridGateway.MatchedGateways = []*gatewayv1.MatchedGateway{
+								{
+									Matcher: &gatewayv1.Matcher{
+										SourcePrefixRanges: []*v3.CidrRange{
+											{
+												AddressPrefix: "1.2.3.4",
+												PrefixLen: &wrappers.UInt32Value{
+													Value: 32,
+												},
+											},
+										},
+									},
+									GatewayType: &gatewayv1.MatchedGateway_HttpGateway{
+										HttpGateway: &gatewayv1.HttpGateway{},
+									},
+								},
+								{
+									Matcher: &gatewayv1.Matcher{},
+									GatewayType: &gatewayv1.MatchedGateway_TcpGateway{
+										TcpGateway: &gatewayv1.TcpGateway{
+											TcpHosts: []*gloov1.TcpHost{host},
+										},
+									},
+								},
+							}
+						}
+
+						_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					// Check tls inspector is correctly configured
+					Eventually(func() (string, error) {
+						envoyConfig := ""
+						resp, err := envoyInstance.EnvoyConfig()
+						if err != nil {
+							return "", err
+						}
+						p := new(bytes.Buffer)
+						if _, err := io.Copy(p, resp.Body); err != nil {
+							return "", err
+						}
+						defer resp.Body.Close()
+						envoyConfig = p.String()
+						return envoyConfig, nil
+					}, "100s", "0.1s").Should(MatchRegexp("type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector"))
+
+					TestUpstreamSslReachableTcp()
+				})
+			})
+
 		})
 	})
 })
