@@ -20,7 +20,7 @@ In this guide, you create a simple OPA policy that dictates that all virtual ser
 ## Before you begin
 
 1. [Install Gloo Edge in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
-2. [Follow the OPA documentation](https://www.openpolicyagent.org/docs/latest/kubernetes-tutorial/) to set up OPA as an admission controller in your cluster. In this mode, OPA validates Kubernetes objects before they become visible to other controllers that act on them, including Gloo Edge.
+2. [Follow the OPA documentation](https://www.openpolicyagent.org/docs/latest/kubernetes-tutorial/) to set up OPA as an admission controller in your cluster. Then, OPA validates Kubernetes objects before they become visible to other controllers that act on them, including Gloo Edge.
 
 Depending on your security preferences, you might want to create a separate cluster role and role binding to restrict Gloo Edge resources to view-only permissions, such as in the following example.
 
@@ -73,12 +73,12 @@ _Table: Understanding this Rego policy_
 
 | Part of the policy | Description |
 | ------------------ | ----------- |
-| operations = {"CREATE", "UPDATE"} | Applies the policy only to objects that are created or updated. |
-| deny[msg] { | Starts a policy to deny to creating or updating objects, if all of the conditions in the braces are met. |
-| input.request.kind.kind == "VirtualService" | Specifies that the object must be a VirtualService. |
-| operations[input.request.operation] | Specifies that the object has a create or update operation. |
-| input.request.object.spec.virtualHost.routes[_].options.prefixRewrite | Specifies that the object has a prefixRewrite stanza. |
-| msg := "prefix re-write not allowed" | Returns the `"prefix re-write not allowed"` message when all the conditions are true and the object is denied. |
+| `operations = {"CREATE", "UPDATE"}` | Applies the policy only to objects that are created or updated. |
+| `deny[msg] {}` | Starts a policy to deny to creating or updating objects, if all of the conditions in the braces are met. |
+| `input.request.kind.kind == "VirtualService"` | Specifies that the object must be a VirtualService. |
+| `operations[input.request.operation]` | Specifies that the object has a create or update operation. |
+| `input.request.object.spec.virtualHost.routes[_].options.prefixRewrite` | Specifies that the object has a prefixRewrite stanza. |
+| `msg := "prefix re-write not allowed"` | Returns the `"prefix re-write not allowed"` message when all the conditions are true and the object is denied. |
 
 ---
 
@@ -122,7 +122,7 @@ Time to test!
 
 1. Click and save the following two virtual service configuration files to test valid and denied scenarios.
 
-{{% expand "Valid VirtualService (`vs-ok.yaml`)." %}}
+{{% expand "Valid VirtualService (vs-ok.yaml)." %}}
 
 ```
 {{< readfile file="guides/security/opa/vs-ok.yaml" >}}
@@ -130,7 +130,7 @@ Time to test!
 
 {{% /expand %}}
 
-{{% expand "Denied VirtualService (`vs-err.yaml`), includes a prefix rewrite." %}}
+{{% expand "Denied VirtualService (vs-err.yaml), includes a prefix rewrite." %}}
 
 ```
 {{< readfile file="guides/security/opa/vs-err.yaml" >}}
@@ -169,7 +169,7 @@ If you no longer want the OPA admission controller, you can uninstall it from yo
 
 ## Next Steps
 
-Now that you know how to configure a basic policy with OPA, you can go further down the rabbit hole of policies, or check out some of the other security features in Gloo Edge.
+Now that you know how to configure a basic policy with OPA, you can continue learning about policies, or check out some of the other security features in Gloo Edge.
 
 * [**Web Application Firewall**]({{% versioned_link_path fromRoot="/guides/security/waf/" %}})
 * [**Data Loss Prevention**]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}})
