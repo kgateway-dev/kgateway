@@ -6,10 +6,10 @@ description: Define fine-grained policies to control Gloo Edge configuration its
 
 In Kubernetes, Gloo Edge stores its configuration as Custom Resource Definitions (CRDs). Because these CRDs are Kubernetes objects, you can use normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability to create Gloo Edge resources, such as a VirtualService object. 
 
-However, RBAC only allows administrators to grant permissions to entire objects. With the Open Policy Agent, you can specify very fine-grained control over Gloo Edge objects. Compare the differences in the following examples.
+However, RBAC only allows administrators to grant permissions to entire objects. With the Open Policy Agent (OPA), you can specify fine-grained control over Gloo Edge objects. Compare the differences in the following examples.
 
 * **RBAC**: User `john@example.com` is allowed to create virtual service. 
-* **OPA**: User `john@example.com` is only allowed to create virtual services that point to the domain `example.com`.
+* **OPA**: User `john@example.com` is allowed to create virtual services that only point to the domain `example.com`.
 
 You can use both Kubernetes RBAC and OPA together.
 
