@@ -80,7 +80,13 @@ func DefaultHybridGateway(writeNamespace string) *v1.Gateway {
 		},
 		GatewayType: &v1.Gateway_HybridGateway{
 			HybridGateway: &v1.HybridGateway{
-				MatchedGateways: []*v1.MatchedGateway{},
+				MatchedGateways: []*v1.MatchedGateway{
+					{
+						GatewayType: &v1.MatchedGateway_HttpGateway{
+							HttpGateway: &v1.HttpGateway{},
+						},
+					},
+				},
 			},
 		},
 		ProxyNames:    []string{GatewayProxyName},

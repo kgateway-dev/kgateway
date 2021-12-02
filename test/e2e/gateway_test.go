@@ -747,7 +747,7 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("should create a hybrid listener", func() {
+			It("should create a hybrid listener with http and tcp matched listeners", func() {
 
 				gatewayClient := testClients.GatewayClient
 				gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
@@ -821,6 +821,54 @@ var _ = Describe("Gateway", func() {
 					}, "5s", "0.1s").Should(BeTrue())
 			})
 
+
+			It("correctly configures gateway for a virtual service which contains a route to a service", func() {
+				// Create a service so gloo can generate "fake" upstreams for it
+				svc := kubernetes.NewService("default", "my-service")
+				svc.Spec = corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 1234}}}
+				svc, err := testClients.ServiceClient.Write(svc, clients.WriteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Create a virtual service with a route pointing to the above service
+				vs := getTrivialVirtualServiceForService("gloo-system", kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
+				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Wait for proxy to be accepted
+				var proxy *gloov1.Proxy
+				Eventually(
+					func() (bool, error) {
+						proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+						if err != nil {
+							return false, err
+						}
+						for _, l := range proxy.Listeners {
+							if hl := l.GetHybridListener(); hl != nil {
+								if len(hl.MatchedListeners) != 1 {
+									continue
+								}
+								return true, nil
+							}
+						}
+						return false, nil
+					}, "5s", "0.1s").Should(BeTrue())
+
+				// Verify that the proxy has the expected route
+				Expect(proxy.Listeners).To(HaveLen(1))
+				listener := proxy.Listeners[0]
+
+				Expect(listener.GetHybridListener().GetMatchedListeners()[0].GetHttpListener()).NotTo(BeNil())
+				httpListener := listener.GetHybridListener().GetMatchedListeners()[0].GetHttpListener()
+				Expect(httpListener.VirtualHosts).To(HaveLen(1))
+				Expect(httpListener.VirtualHosts[0].Routes).To(HaveLen(1))
+				Expect(httpListener.VirtualHosts[0].Routes[0].GetRouteAction()).NotTo(BeNil())
+				Expect(httpListener.VirtualHosts[0].Routes[0].GetRouteAction().GetSingle()).NotTo(BeNil())
+				service := httpListener.VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetKube()
+				Expect(service.Ref.Namespace).To(Equal(svc.Namespace))
+				Expect(service.Ref.Name).To(Equal(svc.Name))
+				Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
+			})
+
 			Context("tcp ssl", func() {
 
 				TestUpstreamSslReachableTcp := func() {
@@ -828,7 +876,7 @@ var _ = Describe("Gateway", func() {
 					v1helpers.TestUpstreamReachable(defaults.HttpPort, tu, &cert)
 				}
 
-				FIt("should work with ssl", func() {
+				It("should work with ssl", func() {
 					// Check tls inspector has not been added yet
 					Eventually(func() (string, error) {
 						envoyConfig := ""
