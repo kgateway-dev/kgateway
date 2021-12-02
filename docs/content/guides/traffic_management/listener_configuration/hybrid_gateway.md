@@ -8,7 +8,38 @@ Hybrid Gateways allow you to define multiple HTTP or TCP Gateways for a single G
 
 ---
 
-If we add a virtual service to the Hello World setup called `client-ip-reject`, in this example with a direct response action that responds `401`, then we can ensure that traffic originating from a particular IP, and only that IP, gets the `401` response rather than reaching the petstore upstream, by creating a hybrid gateway can be created by editing the `Gateway` CRD like so:
+## Only accept requests from a particular IP
+
+Hybrid Gateways allow us to treat traffic from particular IPs differently.
+
+In this example we will demonstrate how to only allow requests from one IP to reach an upstream while short-circuiting all other IPs with a direct response action.
+
+We will pick up where the [Hello World guide]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world" >}}) leaves off.
+
+To start we will add a second VirtualService that also matches the `/all-pets` endpoint but which has a directResponseAction:
+
+```yaml
+kubectl apply -f - << EOF
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: 'client-ip-reject'
+  namespace: 'gloo-system'
+spec:
+  virtualHost:
+    domains:
+      - '*'
+    routes:
+      - matchers:
+          - exact: /all-pets
+        directResponseAction:
+          status: 401
+          body: 'client ip forbidden'
+EOF
+```
+
+
+Next let's update the existing `gateway-proxy` Gateway CRD, replacing the default `httpGateway` with a [`hybridGateway`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#hybridgateway" >}}) as follows:
 
 {{< highlight yaml "hl_lines=7-21" >}}
 apiVersion: gateway.solo.io/v1
@@ -23,15 +54,17 @@ spec:
           virtualServices:
             - name: default
               namespace: gloo-system
-        matcher: {}
-      - httpGateway:
-          virtualServices:
-            - name: client-ip-reject
-              namespace: gloo-system
         matcher:
           sourcePrefixRanges:
             - addressPrefix: 1.2.3.4
               prefixLen: 32
+      - httpGateway:
+          virtualServices:
+            - name: client-ip-reject
+              namespace: gloo-system
+        matcher: {}
+  proxyNames:
+  - gateway-proxy
   useProxyProto: false
 status: # collapsed for brevity
 {{< /highlight >}}
@@ -48,63 +81,43 @@ spec:
     bindPort: 8080
     hybridListener:
       matchedListeners:
-      - httpListener:
-          virtualHosts:
-          - domains:
-            - '*'
-            metadata:
-              sources:
-              - kind: '*v1.VirtualService'
-                name: default
-                namespace: gloo-system
-                observedGeneration: 13
-            name: gloo-system.default
-            routes:
-            - matchers:
-              - exact: /all-pets
-              metadata:
-                sources:
-                - kind: '*v1.VirtualService'
-                  name: default
-                  namespace: gloo-system
-                  observedGeneration: 13
-              options:
-                prefixRewrite: /api/pets
-              routeAction:
-                single:
-                  upstream:
-                    name: default-petstore-8080
-                    namespace: gloo-system
-        matcher: {}
-      - httpListener:
-          virtualHosts:
-          - domains:
-            - '*'
-            metadata:
-              sources:
-              - kind: '*v1.VirtualService'
-                name: client-ip-reject
-                namespace: gloo-system
-                observedGeneration: 1
-            name: gloo-system.client-ip-reject
-            routes:
-            - directResponseAction:
-                body: sni domain forbidden
-                status: 401
-              matchers:
-              - exact: /all-pets
-              metadata:
-                sources:
-                - kind: '*v1.VirtualService'
-                  name: client-ip-reject
-                  namespace: gloo-system
-                  observedGeneration: 1
-              options:
-                prefixRewrite: /api/pets
-        matcher:
-          sourcePrefixRanges:
-          - addressPrefix: 1.2.3.4
-            prefixLen: 32
+        - httpListener:
+            virtualHosts:
+              - domains:
+                  - '*'
+                metadata: # collapsed for bevity
+                name: gloo-system.default
+                routes:
+                  - matchers:
+                      - exact: /all-pets
+                    metadata: # collapsed for bevity
+                    options:
+                      prefixRewrite: /api/pets
+                    routeAction:
+                      single:
+                        upstream:
+                          name: default-petstore-8080
+                          namespace: gloo-system
+          matcher:
+            sourcePrefixRanges:
+              - addressPrefix: 1.2.3.4
+                prefixLen: 32
+        - httpListener:
+            virtualHosts:
+              - domains:
+                  - '*'
+                metadata: # collapsed for bevity
+                name: gloo-system.client-ip-reject
+                routes:
+                  - directResponseAction:
+                      body: client ip forbidden
+                      status: 401
+                    matchers:
+                      - exact: /all-pets
+                    metadata: # collapsed for bevity
+                    options:
+                      prefixRewrite: /api/pets
+          matcher: {}
     metadata: # collapsed for bevity
     name: listener-::-8080
     useProxyProto: false
@@ -114,3 +127,14 @@ spec:
     metadata: # collapsed for bevity
 status: # collapsed for bevity
 ```
+
+We can make a request to the proxy and will find that we get the `401` response:
+
+```bash
+$ curl "$(glooctl proxy url)/all-pets"
+client ip forbidden
+```
+
+This is expected since the IP of our client is not `1.2.3.4`.
+
+TODO: IP spoof in order to hit the other filter chain.
