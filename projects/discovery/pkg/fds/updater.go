@@ -87,7 +87,7 @@ type detectResult struct {
 
 func (u *Updater) SetSecrets(secretList v1.SecretList) {
 	// set secrets should send a secrets update to all the upstreams.
-	// reload all upstreams for now, figureout something better later?
+	// reload all upstreams for now, figure out something better later?
 	u.secrets.Store(secretList)
 }
 

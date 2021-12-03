@@ -65,7 +65,7 @@ func RunUDS(opts bootstrap.Opts) error {
 	emit := make(chan struct{})
 	emitter := v1.NewDiscoveryEmitterWithEmit(upstreamClient, nsClient, secretClient, emit)
 
-	// jump to start all the watches
+	// jumpstart all the watches
 	go func() {
 		emit <- struct{}{}
 	}()
