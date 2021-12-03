@@ -2,6 +2,7 @@ package translator
 
 import (
 	"context"
+	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
@@ -9,6 +10,12 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+)
+
+var (
+	EmptyHybridGatewayErr = func() error {
+		return errors.Errorf("hybrid gateway does not have any populated matched gateways")
+	}
 )
 
 type HybridTranslator struct {
@@ -70,6 +77,11 @@ func (t *HybridTranslator) GenerateListeners(ctx context.Context, proxyName stri
 					},
 				})
 			}
+		}
+
+		if len(hybridListener.GetMatchedListeners()) == 0 {
+				reports.AddError(gateway, EmptyHybridGatewayErr())
+				continue
 		}
 
 		listener.ListenerType = &gloov1.Listener_HybridListener{
