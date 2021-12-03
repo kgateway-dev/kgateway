@@ -8,20 +8,18 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
-
 	"github.com/go-openapi/loads"
 	openapi "github.com/go-openapi/spec"
 	"github.com/go-openapi/swag"
 	"github.com/hashicorp/go-multierror"
-
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
 
-	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	rest_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 )
@@ -67,7 +65,7 @@ type SwaggerFunctionDiscovery struct {
 	swaggerUrisToTry []string
 }
 
-func getswagspec(u *v1.Upstream) *rest_plugins.ServiceSpec_SwaggerInfo {
+func getSwagSpec(u *v1.Upstream) *rest_plugins.ServiceSpec_SwaggerInfo {
 	spec, ok := u.GetUpstreamType().(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
@@ -76,16 +74,16 @@ func getswagspec(u *v1.Upstream) *rest_plugins.ServiceSpec_SwaggerInfo {
 	if serviceSpec == nil {
 		return nil
 	}
-	restwrapper, ok := serviceSpec.GetPluginType().(*plugins.ServiceSpec_Rest)
+	restWrapper, ok := serviceSpec.GetPluginType().(*plugins.ServiceSpec_Rest)
 	if !ok {
 		return nil
 	}
-	rest := restwrapper.Rest
+	rest := restWrapper.Rest
 	return rest.GetSwaggerInfo()
 }
 
 func (f *SwaggerFunctionDiscovery) IsFunctional() bool {
-	return getswagspec(f.upstream) != nil
+	return getSwagSpec(f.upstream) != nil
 }
 
 func (f *SwaggerFunctionDiscovery) DetectType(ctx context.Context, baseurl *url.URL) (*plugins.ServiceSpec, error) {
@@ -171,9 +169,9 @@ func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 
 }
 
-func (f *SwaggerFunctionDiscovery) DetectFunctions(ctx context.Context, url *url.URL, _ func() fds.Dependencies, updatecb func(fds.UpstreamMutator) error) error {
+func (f *SwaggerFunctionDiscovery) DetectFunctions(ctx context.Context, _ *url.URL, _ func() fds.Dependencies, updatecb func(fds.UpstreamMutator) error) error {
 	in := f.upstream
-	spec := getswagspec(in)
+	spec := getSwagSpec(in)
 	if spec == nil || spec.GetSwaggerSpec() == nil {
 		// TODO: make this a fatal error that avoids restarts?
 		return errors.New("upstream doesn't have a swagger spec")
@@ -206,7 +204,7 @@ func (f *SwaggerFunctionDiscovery) detectFunctionsFromUrl(ctx context.Context, u
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			// ignore other erros as we would like to continue forever.
+			// ignore other errors as we would like to continue forever.
 		}
 
 		if err := contextutils.Sleep(ctx, f.functionPollTime); err != nil {
@@ -260,15 +258,15 @@ func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(ctx context.Context, 
 		if spec == nil {
 			spec = &plugins.ServiceSpec{}
 		}
-		restspec, ok := spec.GetPluginType().(*plugins.ServiceSpec_Rest)
+		restSpec, ok := spec.GetPluginType().(*plugins.ServiceSpec_Rest)
 		if !ok {
-			restspec = &plugins.ServiceSpec_Rest{
+			restSpec = &plugins.ServiceSpec_Rest{
 				Rest: &rest_plugins.ServiceSpec{},
 			}
 		}
 
-		restspec.Rest.Transformations = funcs
-		spec.PluginType = restspec
+		restSpec.Rest.Transformations = funcs
+		spec.PluginType = restSpec
 
 		upstreamSpec.SetServiceSpec(spec)
 		return nil

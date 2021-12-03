@@ -6,13 +6,14 @@ import (
 	"strings"
 
 	"github.com/go-openapi/spec"
-	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/go-utils/log"
+
+	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 )
 
 func createFunctionsForPath(pathFunctions map[string]*transformation_plugins.TransformationTemplate, basePath, functionPath string, path spec.PathItemProps, definitions spec.Definitions) {
 	appendFunction := func(method string, operation *spec.Operation) {
-		name, trans := createFunctionForOpertaion(method, basePath, functionPath, operation.OperationProps, definitions)
+		name, trans := createFunctionForOperation(method, basePath, functionPath, operation.OperationProps, definitions)
 		pathFunctions[name] = trans
 	}
 	if path.Get != nil {
@@ -38,7 +39,7 @@ func createFunctionsForPath(pathFunctions map[string]*transformation_plugins.Tra
 	}
 }
 
-func createFunctionForOpertaion(method string, basePath, functionPath string, operation spec.OperationProps, definitions spec.Definitions) (string, *transformation_plugins.TransformationTemplate) {
+func createFunctionForOperation(method string, basePath, functionPath string, operation spec.OperationProps, definitions spec.Definitions) (string, *transformation_plugins.TransformationTemplate) {
 	var queryParams, headerParams []string
 	//bodyParams := make(map[string]spec.SchemaProps)
 	var body *string
@@ -108,23 +109,23 @@ func createFunctionForOpertaion(method string, basePath, functionPath string, op
 	if !needsTransformation {
 		return fnName, nil
 	}
-	transtemplate := &transformation_plugins.TransformationTemplate{
+	transTemplate := &transformation_plugins.TransformationTemplate{
 		Headers: headerTemplatesForTransform,
 	}
 
 	if method == "POST" || method == "PATCH" || method == "PUT" {
-		transtemplate.BodyTransformation = &transformation_plugins.TransformationTemplate_Passthrough{
+		transTemplate.BodyTransformation = &transformation_plugins.TransformationTemplate_Passthrough{
 			Passthrough: &transformation_plugins.Passthrough{}}
 	}
 
 	if body != nil {
-		transtemplate.BodyTransformation = &transformation_plugins.TransformationTemplate_Body{
+		transTemplate.BodyTransformation = &transformation_plugins.TransformationTemplate_Body{
 			Body: &transformation_plugins.InjaTemplate{
 				Text: *body,
 			}}
 	}
 
-	return fnName, transtemplate
+	return fnName, transTemplate
 }
 
 func getBodyTemplate(parent string, schema spec.SchemaProps, definitions spec.Definitions) string {
