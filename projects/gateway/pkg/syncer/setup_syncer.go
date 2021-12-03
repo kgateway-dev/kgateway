@@ -146,7 +146,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	warnOnDelegateMatcherErrors := false
 	invalidCfgPolicy := settings.GetGloo().GetInvalidConfigPolicy()
 	if invalidCfgPolicy != nil {
-		warnOnDelegateMatcherErrors = invalidCfgPolicy.ReplaceInvalidRoutes
+		warnOnDelegateMatcherErrors = invalidCfgPolicy.GetReplaceInvalidRoutes()
 	}
 
 	opts := translator.Opts{
