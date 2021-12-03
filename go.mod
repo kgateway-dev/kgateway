@@ -73,7 +73,6 @@ require (
 	github.com/rotisserie/eris v0.4.0
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
-	github.com/sam-heilbron/protoc-gen-openapi v0.0.0-20210826234431-905e0eb8fa8e
 	github.com/sergi/go-diff v1.1.0
 	github.com/sirupsen/logrus v1.8.0 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
@@ -81,6 +80,7 @@ require (
 	github.com/solo-io/go-utils v0.21.24
 	github.com/solo-io/k8s-utils v0.0.11
 	github.com/solo-io/protoc-gen-ext v0.0.16
+	github.com/solo-io/protoc-gen-openapi v0.0.1
 	github.com/solo-io/skv2 v0.21.6
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
