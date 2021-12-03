@@ -40,7 +40,7 @@ var _ = Describe("Route converter", func() {
 				},
 			}
 
-			rv := translator.NewRouteConverter(nil, nil)
+			rv := translator.NewRouteConverter(nil, nil, false)
 			_, err := rv.ConvertVirtualService(vs, gw, "proxy1", snapshot, reports)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -158,6 +158,7 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, gw, "proxy1", snapshot, rpt)
 			Expect(err).NotTo(HaveOccurred())
@@ -195,6 +196,7 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, gw, "proxy1", snapshot, rpt)
 			Expect(err).NotTo(HaveOccurred())
@@ -238,6 +240,7 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, gw, "proxy1", snapshot, rpt)
 			Expect(err).NotTo(HaveOccurred())
@@ -292,6 +295,7 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, gw, "proxy1", snapshot, rpt)
 
@@ -348,6 +352,7 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, gw, "proxy1", snapshot, rpt)
 
@@ -435,6 +440,7 @@ var _ = Describe("Route converter", func() {
 				rv = translator.NewRouteConverter(
 					translator.NewRouteTableSelector(v1.RouteTableList{rt}),
 					translator.NewRouteTableIndexer(),
+					false,
 				)
 			})
 
@@ -518,6 +524,7 @@ var _ = Describe("Route converter", func() {
 				rv = translator.NewRouteConverter(
 					translator.NewRouteTableSelector(v1.RouteTableList{rt, rt2, rt3}),
 					translator.NewRouteTableIndexer(),
+					false,
 				)
 
 				expectedHeaders := append(rtOnlyHeaders, vsOnlyHeaders...)
@@ -554,6 +561,7 @@ var _ = Describe("Route converter", func() {
 				rv = translator.NewRouteConverter(
 					translator.NewRouteTableSelector(v1.RouteTableList{rt}),
 					translator.NewRouteTableIndexer(),
+					false,
 				)
 
 				// parent has /foo matcher
@@ -588,6 +596,7 @@ var _ = Describe("Route converter", func() {
 				rv = translator.NewRouteConverter(
 					translator.NewRouteTableSelector(v1.RouteTableList{rt}),
 					translator.NewRouteTableIndexer(),
+					false,
 				)
 
 				// parent has /foo matcher
@@ -749,6 +758,7 @@ var _ = Describe("Route converter", func() {
 				rv = translator.NewRouteConverter(
 					translator.NewRouteTableSelector(v1.RouteTableList{rt}),
 					translator.NewRouteTableIndexer(),
+					false,
 				)
 
 			})
@@ -881,6 +891,7 @@ var _ = Describe("Route converter", func() {
 			rv = translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{rt}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 		})
 
@@ -1347,6 +1358,48 @@ var _ = Describe("Route converter", func() {
 				Expect(rpt).To(HaveLen(0))
 			})
 		})
+
+		When("invalid route replacement is enabled", func() {
+			JustBeforeEach(func() {
+				rv = translator.NewRouteConverter(
+					translator.NewRouteTableSelector(v1.RouteTableList{rt}),
+					translator.NewRouteTableIndexer(),
+					true,
+				)
+			})
+			It("reports warnings on prefix mismatch", func() {
+				rt.Routes[0].Matchers = []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/foo/bar",
+						},
+					},
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/invalid",
+						},
+					},
+				}
+
+				rpt := reporter.ResourceReports{}
+				converted, err := rv.ConvertVirtualService(vs, gw, "proxy1", snapshot, rpt)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(BeNil())
+				Expect(rpt).To(HaveLen(2))
+
+				expectedWarning := translator.InvalidRouteTableForDelegatePrefixErr("/foo", "/invalid").Error()
+
+				_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
+				Expect(vsReport.Errors).NotTo(HaveOccurred())
+				Expect(vsReport.Warnings).To(HaveLen(1))
+				Expect(vsReport.Warnings[0]).To(ContainSubstring(expectedWarning))
+
+				_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
+				Expect(rtReport.Errors).NotTo(HaveOccurred())
+				Expect(rtReport.Warnings).To(HaveLen(1))
+				Expect(rtReport.Warnings[0]).To(ContainSubstring(expectedWarning))
+			})
+		})
 	})
 
 	Describe("route table selection", func() {
@@ -1396,6 +1449,7 @@ var _ = Describe("Route converter", func() {
 			visitor = translator.NewRouteConverter(
 				translator.NewRouteTableSelector(allRouteTables),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 		})
 

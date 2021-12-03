@@ -20,6 +20,7 @@ type Opts struct {
 	ValidationServerAddress       string
 	DevMode                       bool
 	ReadGatewaysFromAllNamespaces bool
+	WarnOnDelegateMatcherErrors   bool
 	Validation                    *ValidationOpts
 }
 

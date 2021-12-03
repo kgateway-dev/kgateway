@@ -143,6 +143,12 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		}
 	}
 
+	warnOnDelegateMatcherErrors := false
+	invalidCfgPolicy := settings.GetGloo().GetInvalidConfigPolicy()
+	if invalidCfgPolicy != nil {
+		warnOnDelegateMatcherErrors = invalidCfgPolicy.ReplaceInvalidRoutes
+	}
+
 	opts := translator.Opts{
 		GlooNamespace:           settings.GetMetadata().GetNamespace(),
 		WriteNamespace:          writeNamespace,
@@ -160,6 +166,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		},
 		DevMode:                       true,
 		ReadGatewaysFromAllNamespaces: settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
+		WarnOnDelegateMatcherErrors:   warnOnDelegateMatcherErrors,
 		Validation:                    validation,
 	}
 

@@ -70,10 +70,11 @@ type RouteConverter interface {
 	ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gatewayv1.ApiSnapshot, reports reporter.ResourceReports) ([]*gloov1.Route, error)
 }
 
-func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer) RouteConverter {
+func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer, warnOnDelegateMatcherErrors bool) RouteConverter {
 	return &routeVisitor{
-		routeTableSelector: selector,
-		routeTableIndexer:  indexer,
+		routeTableSelector:          selector,
+		routeTableIndexer:           indexer,
+		warnOnDelegateMatcherErrors: warnOnDelegateMatcherErrors,
 	}
 }
 
@@ -109,6 +110,10 @@ type routeVisitor struct {
 	routeTableSelector RouteTableSelector
 	// Used to sort route tables when multiple ones are matched by a selector.
 	routeTableIndexer RouteTableIndexer
+	// If true, then delegated route table errors related to parent-child matcher incompatibility will be treated as
+	// warnings during translation, and left to the route replacing sanitizer to clean up. This is set to true when
+	// invalid route replacement is enabled.
+	warnOnDelegateMatcherErrors bool
 }
 
 // Helper object used to store information about previously visited routes.
@@ -214,7 +219,11 @@ func (rv *routeVisitor) visit(
 			var err error
 			routeClone, err = validateAndMergeParentRoute(routeClone, parentRoute)
 			if err != nil {
-				reporterHelper.addError(resource.InputResource(), err)
+				if rv.warnOnDelegateMatcherErrors {
+					reporterHelper.addWarning(resource.InputResource(), err)
+				} else {
+					reporterHelper.addError(resource.InputResource(), err)
+				}
 				continue
 			}
 		} else {

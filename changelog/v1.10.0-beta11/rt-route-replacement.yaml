@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5502
+    description: >-
+      When invalid route replacement is enabled, treat delegated RouteTable matcher errors as warnings during
+      translation, allowing the route replacing sanitizer to take care of the invalid routes.

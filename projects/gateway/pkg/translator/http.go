@@ -77,7 +77,8 @@ var (
 )
 
 type HttpTranslator struct {
-	WarnOnRouteShortCircuiting bool
+	WarnOnRouteShortCircuiting  bool
+	WarnOnDelegateMatcherErrors bool
 }
 
 func (t *HttpTranslator) GenerateListeners(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
@@ -310,7 +311,7 @@ func (t *HttpTranslator) desiredListenerForHttp(gateway *v1.Gateway, proxyName s
 }
 
 func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, gateway *v1.Gateway, proxyName string, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
-	converter := NewRouteConverter(NewRouteTableSelector(snapshot.RouteTables), NewRouteTableIndexer())
+	converter := NewRouteConverter(NewRouteTableSelector(snapshot.RouteTables), NewRouteTableIndexer(), t.WarnOnDelegateMatcherErrors)
 	t.mergeDelegatedVirtualHostOptions(vs, snapshot.VirtualHostOptions, reports)
 
 	routes, err := converter.ConvertVirtualService(vs, gateway, proxyName, snapshot, reports)
