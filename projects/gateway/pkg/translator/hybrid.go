@@ -2,6 +2,7 @@ package translator
 
 import (
 	"context"
+
 	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -80,8 +81,8 @@ func (t *HybridTranslator) GenerateListeners(ctx context.Context, proxyName stri
 		}
 
 		if len(hybridListener.GetMatchedListeners()) == 0 {
-				reports.AddError(gateway, EmptyHybridGatewayErr())
-				continue
+			reports.AddError(gateway, EmptyHybridGatewayErr())
+			continue
 		}
 
 		listener.ListenerType = &gloov1.Listener_HybridListener{
