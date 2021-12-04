@@ -12,16 +12,17 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/grpcreflect"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/go-utils/contextutils"
+	"google.golang.org/grpc"
+	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
+
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	grpc_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
-	"github.com/solo-io/go-utils/contextutils"
-	"google.golang.org/grpc"
-	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
-func getgrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
+func getGrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
 	upstreamType, ok := u.GetUpstreamType().(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
@@ -31,12 +32,11 @@ func getgrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
 		return nil
 	}
 
-	grpcwrapper, ok := upstreamType.GetServiceSpec().GetPluginType().(*plugins.ServiceSpec_Grpc)
+	grpcWrapper, ok := upstreamType.GetServiceSpec().GetPluginType().(*plugins.ServiceSpec_Grpc)
 	if !ok {
 		return nil
 	}
-	grpc := grpcwrapper.Grpc
-	return grpc
+	return grpcWrapper.Grpc
 }
 
 func NewFunctionDiscoveryFactory() fds.FunctionDiscoveryFactory {
@@ -46,6 +46,7 @@ func NewFunctionDiscoveryFactory() fds.FunctionDiscoveryFactory {
 	}
 }
 
+// FunctionDiscoveryFactory returns a FunctionDiscovery that can be used to discover functions
 // ilackarms: this is the root object
 type FunctionDiscoveryFactory struct {
 	// TODO: yuval-k: integrate backoff stuff here
@@ -56,25 +57,28 @@ type FunctionDiscoveryFactory struct {
 	Artifacts v1.ArtifactClient
 }
 
+// NewFunctionDiscovery returns a FunctionDiscovery that can be used to discover functions
 func (f *FunctionDiscoveryFactory) NewFunctionDiscovery(u *v1.Upstream, _ fds.AdditionalClients) fds.UpstreamFunctionDiscovery {
 	return &UpstreamFunctionDiscovery{
 		upstream: u,
 	}
 }
 
+// UpstreamFunctionDiscovery represents a function discovery for upstream
 type UpstreamFunctionDiscovery struct {
 	upstream *v1.Upstream
 }
 
+// IsFunctional returns true if the upstream is functional
 func (f *UpstreamFunctionDiscovery) IsFunctional() bool {
-	return getgrpcspec(f.upstream) != nil
+	return getGrpcspec(f.upstream) != nil
 }
 
 func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL) (*plugins.ServiceSpec, error) {
 	log := contextutils.LoggerFrom(ctx)
 	log.Debugf("attempting to detect GRPC for %s", f.upstream.GetMetadata().GetName())
 
-	refClient, closeConn, err := getclient(ctx, url)
+	refClient, closeConn, err := getClient(ctx, url)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +125,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 
 	log.Infof("%v discovered as a gRPC service", url)
 
-	refClient, closeConn, err := getclient(ctx, url)
+	refClient, closeConn, err := getClient(ctx, url)
 	if err != nil {
 		return err
 	}
@@ -134,7 +138,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 
 	descriptors := &descriptor.FileDescriptorSet{}
 
-	var grpcservices []*grpc_plugins.ServiceSpec_GrpcService
+	var grpcServices []*grpc_plugins.ServiceSpec_GrpcService
 
 	for _, s := range services {
 		// ignore the reflection descriptor
@@ -153,7 +157,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 		parts := strings.Split(s, ".")
 		serviceName := parts[len(parts)-1]
 		servicePackage := strings.Join(parts[:len(parts)-1], ".")
-		grpcservice := &grpc_plugins.ServiceSpec_GrpcService{
+		grpcService := &grpc_plugins.ServiceSpec_GrpcService{
 			PackageName: servicePackage,
 			ServiceName: serviceName,
 		}
@@ -162,12 +166,12 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 			if svc.GetName() == serviceName {
 				methods := svc.GetMethods()
 				for _, method := range methods {
-					methodname := method.GetName()
-					grpcservice.FunctionNames = append(grpcservice.GetFunctionNames(), methodname)
+					methodName := method.GetName()
+					grpcService.FunctionNames = append(grpcService.GetFunctionNames(), methodName)
 				}
 			}
 		}
-		grpcservices = append(grpcservices, grpcservice)
+		grpcServices = append(grpcServices, grpcService)
 	}
 
 	rawDescriptors, err := proto.Marshal(descriptors)
@@ -178,25 +182,25 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	encodedDescriptors := []byte(base64.StdEncoding.EncodeToString(rawDescriptors))
 
 	return updatecb(func(out *v1.Upstream) error {
-		svcspec := getgrpcspec(out)
-		if svcspec == nil {
+		svcSpec := getGrpcspec(out)
+		if svcSpec == nil {
 			return errors.New("not a GRPC upstream")
 		}
 		// TODO(yuval-k): ideally GrpcServices should be google.protobuf.FileDescriptorSet
 		//  but that doesn't work with gogoproto.equal_all.
-		svcspec.GrpcServices = grpcservices
-		svcspec.Descriptors = encodedDescriptors
+		svcSpec.GrpcServices = grpcServices
+		svcSpec.Descriptors = encodedDescriptors
 		return nil
 	})
 }
 
-func getclient(ctx context.Context, url *url.URL) (*grpcreflect.Client, func() error, error) {
-	var dialopts []grpc.DialOption
+func getClient(ctx context.Context, url *url.URL) (*grpcreflect.Client, func() error, error) {
+	var dialOpts []grpc.DialOption
 	if url.Scheme != "https" {
-		dialopts = append(dialopts, grpc.WithInsecure())
+		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
 
-	cc, err := grpc.Dial(url.Host, dialopts...)
+	cc, err := grpc.Dial(url.Host, dialOpts...)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "dialing grpc on %v", url.Host)
 	}
