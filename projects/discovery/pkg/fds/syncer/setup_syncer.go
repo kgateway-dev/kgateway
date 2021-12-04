@@ -1,21 +1,23 @@
 package syncer
 
 import (
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	discoveryRegistry "github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/registry"
 	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/errutils"
+	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
+	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errutils"
-	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
-	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 )
 
 type Extensions struct {
@@ -26,7 +28,7 @@ func NewSetupFunc() setuputils.SetupFunc {
 	return setup.NewSetupFuncWithRunAndExtensions(RunFDS, nil)
 }
 
-// Used as extension point for external repo
+// NewSetupFuncWithExtensions used as extension point for external repo
 func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
 		return RunFDSWithExtensions(opts, extensions)
@@ -140,8 +142,8 @@ func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts bootstrap.Opts, regist
 	return discFactories
 }
 
+// FakeKubeNamespaceWatcher to eliminate the need for this fake client for non kube environments
 // TODO: consider using regular solo-kit namespace client instead of KubeNamespace client
-// to eliminate the need for this fake client for non kube environments
 type FakeKubeNamespaceWatcher struct{}
 
 func (f *FakeKubeNamespaceWatcher) Watch(opts clients.WatchOpts) (<-chan skkube.KubeNamespaceList, <-chan error, error) {

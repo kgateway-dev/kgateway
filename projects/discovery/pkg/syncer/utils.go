@@ -7,7 +7,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 )
 
-// If discovery is enabled, but both UDS & FDS are disabled, we should error loudly as the
+// ErrorIfDiscoveryServiceUnused returns an error if the discovery service is not used by any upstreams.
+// if discovery is enabled, but both UDS & FDS are disabled, we should error loudly as the
 // discovery pod is being deployed for no reason.
 func ErrorIfDiscoveryServiceUnused(opts *bootstrap.Opts) error {
 	settings := opts.Settings
