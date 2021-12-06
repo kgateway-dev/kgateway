@@ -91,16 +91,25 @@ func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort st
 	}
 
 	var host, port string
-	// gateway-proxy is an externally load-balanced service
-	if len(svc.Status.LoadBalancer.Ingress) == 0 || localCluster {
-		// assume nodeport on kubernetes
+	serviceType := svc.Spec.Type
+	if localCluster {
+		serviceType = v1.ServiceTypeNodePort
+	}
+	switch serviceType {
+	case v1.ServiceTypeClusterIP:
+		host = svc.Spec.ClusterIP
+		port = fmt.Sprintf("%v", svcPort.Port)
+	case v1.ServiceTypeNodePort:
 		// TODO: support more types of NodePort services
 		host, err = getNodeIp(ctx, svc, kube, clusterName)
 		if err != nil {
 			return "", errors.Wrapf(err, "")
 		}
 		port = fmt.Sprintf("%v", svcPort.NodePort)
-	} else {
+	case v1.ServiceTypeLoadBalancer:
+		if len(svc.Status.LoadBalancer.Ingress) == 0 {
+			return "", errors.Errorf(" load balancer ingress not found on service %v", proxyName)
+		}
 		host = svc.Status.LoadBalancer.Ingress[0].Hostname
 		if host == "" {
 			host = svc.Status.LoadBalancer.Ingress[0].IP
