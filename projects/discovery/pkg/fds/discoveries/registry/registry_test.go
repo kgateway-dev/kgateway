@@ -16,6 +16,6 @@ func TestPlugins(t *testing.T) {
 		pluginTypes[pluginType] = index
 	}
 	if len(plugins) != len(pluginTypes) {
-		t.Errorf("Multiple plugins with the same type.")
+		t.Errorf("Multiple plugins with the same type. plugins: %+v\n, pluginTypes: %+v", plugins, pluginTypes)
 	}
 }

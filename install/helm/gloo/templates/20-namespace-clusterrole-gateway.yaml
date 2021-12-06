@@ -107,6 +107,20 @@ rules:
   resources: ["gateways"]
   # update is needed for status updates, create for creating the default ones.
   verbs: ["get", "list", "watch", "create", "update"]
-
+---
+kind: {{ include "gloo.roleKind" . }}
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-graphqlschema-mutator{{ include "gloo.rbacNameSuffix" . }}
+  {{- if .Values.global.glooRbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    app: gloo
+    gloo: rbac
+rules:
+  - apiGroups: ["graphql.gloo.solo.io"]
+    resources: ["graphqlschemas","graphqlschemas/status"]
+    verbs: ["get", "list", "watch", "update", "create"]
 {{- end -}}
 {{- end -}}

@@ -66,6 +66,15 @@ func (m *PathSegment) Equal(that interface{}) bool {
 			return false
 		}
 
+	case *PathSegment_All:
+		if _, ok := target.Segment.(*PathSegment_All); !ok {
+			return false
+		}
+
+		if m.GetAll() != target.GetAll() {
+			return false
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.Segment != target.Segment {
@@ -151,6 +160,125 @@ func (m *ValueProvider) Equal(that interface{}) bool {
 	default:
 		// m is nil but target is not nil
 		if m.Provider != target.Provider {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *JsonValueList) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*JsonValueList)
+	if !ok {
+		that2, ok := that.(JsonValueList)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetValues()) != len(target.GetValues()) {
+		return false
+	}
+	for idx, v := range m.GetValues() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetValues()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetValues()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *JsonValue) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*JsonValue)
+	if !ok {
+		that2, ok := that.(JsonValue)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.JsonVal.(type) {
+
+	case *JsonValue_Node:
+		if _, ok := target.JsonVal.(*JsonValue_Node); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetNode()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetNode()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetNode(), target.GetNode()) {
+				return false
+			}
+		}
+
+	case *JsonValue_ValueProvider:
+		if _, ok := target.JsonVal.(*JsonValue_ValueProvider); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetValueProvider()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetValueProvider()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetValueProvider(), target.GetValueProvider()) {
+				return false
+			}
+		}
+
+	case *JsonValue_List:
+		if _, ok := target.JsonVal.(*JsonValue_List); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetList()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetList()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetList(), target.GetList()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.JsonVal != target.JsonVal {
 			return false
 		}
 	}
@@ -292,26 +420,12 @@ func (m *RequestTemplate) Equal(that interface{}) bool {
 
 	}
 
-	switch m.OutgoingBody.(type) {
-
-	case *RequestTemplate_Json:
-		if _, ok := target.OutgoingBody.(*RequestTemplate_Json); !ok {
+	if h, ok := interface{}(m.GetOutgoingBody()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOutgoingBody()) {
 			return false
 		}
-
-		if h, ok := interface{}(m.GetJson()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetJson()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetJson(), target.GetJson()) {
-				return false
-			}
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.OutgoingBody != target.OutgoingBody {
+	} else {
+		if !proto.Equal(m.GetOutgoingBody(), target.GetOutgoingBody()) {
 			return false
 		}
 	}
@@ -584,6 +698,10 @@ func (m *ValueProvider_GraphQLArgExtraction) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetRequired() != target.GetRequired() {
+		return false
+	}
+
 	return true
 }
 
@@ -676,125 +794,6 @@ func (m *ValueProvider_TypedValueProvider) Equal(that interface{}) bool {
 	default:
 		// m is nil but target is not nil
 		if m.ValProvider != target.ValProvider {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *JsonKeyValue_JsonValueList) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*JsonKeyValue_JsonValueList)
-	if !ok {
-		that2, ok := that.(JsonKeyValue_JsonValueList)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetValues()) != len(target.GetValues()) {
-		return false
-	}
-	for idx, v := range m.GetValues() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetValues()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetValues()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	return true
-}
-
-// Equal function
-func (m *JsonKeyValue_JsonValue) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*JsonKeyValue_JsonValue)
-	if !ok {
-		that2, ok := that.(JsonKeyValue_JsonValue)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	switch m.JsonVal.(type) {
-
-	case *JsonKeyValue_JsonValue_Node:
-		if _, ok := target.JsonVal.(*JsonKeyValue_JsonValue_Node); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetNode()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetNode()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetNode(), target.GetNode()) {
-				return false
-			}
-		}
-
-	case *JsonKeyValue_JsonValue_ValueProvider:
-		if _, ok := target.JsonVal.(*JsonKeyValue_JsonValue_ValueProvider); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetValueProvider()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetValueProvider()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetValueProvider(), target.GetValueProvider()) {
-				return false
-			}
-		}
-
-	case *JsonKeyValue_JsonValue_List:
-		if _, ok := target.JsonVal.(*JsonKeyValue_JsonValue_List); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetList()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetList()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetList(), target.GetList()) {
-				return false
-			}
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.JsonVal != target.JsonVal {
 			return false
 		}
 	}
