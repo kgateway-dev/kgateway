@@ -53,6 +53,13 @@ func (m *PathSegment) Hash(hasher hash.Hash64) (uint64, error) {
 			return 0, err
 		}
 
+	case *PathSegment_All:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetAll())
+		if err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil
@@ -135,6 +142,132 @@ func (m *ValueProvider) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("GraphqlParent")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *JsonValueList) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.JsonValueList")); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetValues() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *JsonValue) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.JsonValue")); err != nil {
+		return 0, err
+	}
+
+	switch m.JsonVal.(type) {
+
+	case *JsonValue_Node:
+
+		if h, ok := interface{}(m.GetNode()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Node")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetNode(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Node")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *JsonValue_ValueProvider:
+
+		if h, ok := interface{}(m.GetValueProvider()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("ValueProvider")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetValueProvider(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("ValueProvider")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *JsonValue_List:
+
+		if h, ok := interface{}(m.GetList()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("List")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetList(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("List")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -319,30 +452,24 @@ func (m *RequestTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	switch m.OutgoingBody.(type) {
-
-	case *RequestTemplate_Json:
-
-		if h, ok := interface{}(m.GetJson()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Json")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
+	if h, ok := interface{}(m.GetOutgoingBody()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("OutgoingBody")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetOutgoingBody(), nil); err != nil {
+			return 0, err
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetJson(), nil); err != nil {
+			if _, err = hasher.Write([]byte("OutgoingBody")); err != nil {
 				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("Json")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
 			}
 		}
-
 	}
 
 	return hasher.Sum64(), nil
@@ -622,6 +749,11 @@ func (m *ValueProvider_GraphQLArgExtraction) Hash(hasher hash.Hash64) (uint64, e
 
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetRequired())
+	if err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -695,132 +827,6 @@ func (m *ValueProvider_TypedValueProvider) Hash(hasher hash.Hash64) (uint64, err
 
 		if _, err = hasher.Write([]byte(m.GetValue())); err != nil {
 			return 0, err
-		}
-
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *JsonKeyValue_JsonValueList) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.JsonKeyValue_JsonValueList")); err != nil {
-		return 0, err
-	}
-
-	for _, v := range m.GetValues() {
-
-		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *JsonKeyValue_JsonValue) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.JsonKeyValue_JsonValue")); err != nil {
-		return 0, err
-	}
-
-	switch m.JsonVal.(type) {
-
-	case *JsonKeyValue_JsonValue_Node:
-
-		if h, ok := interface{}(m.GetNode()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Node")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetNode(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("Node")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	case *JsonKeyValue_JsonValue_ValueProvider:
-
-		if h, ok := interface{}(m.GetValueProvider()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("ValueProvider")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetValueProvider(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("ValueProvider")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	case *JsonKeyValue_JsonValue_List:
-
-		if h, ok := interface{}(m.GetList()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("List")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetList(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("List")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
 		}
 
 	}

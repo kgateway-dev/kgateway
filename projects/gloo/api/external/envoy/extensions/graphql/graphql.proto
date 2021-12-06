@@ -19,8 +19,12 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/
 message PathSegment {
   oneof segment {
     option (validate.required) = true;
+    // Key is used to extract named values from a map
     string key = 1 [(validate.rules).string = {min_len: 1}];
+    // Index is used to extract an element at a certain index from a list
     uint32 index = 2;
+    // all selects all from the current element at in the path. This is useful for extracting list arguments / object arguments.
+    bool all = 3;
   }
 }
 
@@ -35,6 +39,9 @@ message ValueProvider {
     // Optional: fetches the value in the argument selected at this key.
     // If the key is invalid, returns the zero-value primitive or null.
     repeated PathSegment path = 2;
+    // If this is set to true, then a schema error will be returned to user when the graphql arg is not found.
+    // Defaults to false, so schema error will not be returned to user when the graphql arg is not found.
+    bool required = 3;
   }
 
   // Does not do type coercion, but instead if the type does not match the
@@ -85,19 +92,19 @@ message ValueProvider {
   string provider_template = 4;
 }
 
+message JsonValueList {
+  repeated JsonValue values = 1;
+}
+
+message JsonValue {
+  oneof json_val {
+    JsonNode node = 1;
+    ValueProvider value_provider = 2;
+    JsonValueList list = 3;
+  }
+}
+
 message JsonKeyValue {
-  message JsonValueList {
-    repeated JsonValue values = 1;
-  }
-
-  message JsonValue {
-    oneof json_val {
-      JsonNode node = 1;
-      ValueProvider value_provider = 2;
-      JsonValueList list = 3;
-    }
-  }
-
   // PARTIALLY IMPLEMENTED
   // if empty, the value will be parsed as json and replace the entire
   // previously-parsed json value --> this part is only needed for gRPC
@@ -137,17 +144,9 @@ message RequestTemplate {
   // the request is being executed (e.g., graphql parent info).
   map<string, ValueProvider> query_params = 2;
 
-  // implementation specific, gRPC will want gRPC message and struct to instantiate
-  oneof outgoing_body {
-    // json representation of outgoing body.
-    // empty string key can be used to signal parsing the value as json and using it
-    // as the whole json body.
-    JsonNode json = 3;
-
-    // Other idea for the future:
-    // Apply a template to the body
-    //InjaTemplate body = 4;
-  }
+  // Used to construct the outgoing body to the upstream from the
+  // graphql value providers.
+  JsonValue outgoing_body = 3;
 }
 
 // NOT IMPLEMENTED
