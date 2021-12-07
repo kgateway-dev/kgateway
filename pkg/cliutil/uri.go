@@ -100,7 +100,7 @@ func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort st
 		// There are a few edge cases where glooctl could be run in an environment where this is not a fatal error
 		// However the service type ClusterIP does not accept incoming traffic which doesnt work as a ingress
 		logger := GetLogger()
-		logger.Write([]byte(""Warning: Potentially invalid proxy configuration, proxy may not accepting incoming connections"))
+		logger.Write([]byte("Warning: Potentially invalid proxy configuration, proxy may not accepting incoming connections"))
 		host = svc.Spec.ClusterIP
 		port = fmt.Sprintf("%v", svcPort.Port)
 	case v1.ServiceTypeNodePort:
