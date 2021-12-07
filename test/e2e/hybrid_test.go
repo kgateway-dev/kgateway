@@ -154,6 +154,12 @@ var _ = Describe("Hybrid", func() {
 			proxy.Listeners[0].GetHybridListener().GetMatchedListeners()[0].Matcher = &gloov1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
 					{
+						AddressPrefix: "0.0.0.0",
+						PrefixLen: &wrappers.UInt32Value{
+							Value: 1,
+						},
+					},
+					{
 						AddressPrefix: "255.0.0.0",
 						PrefixLen: &wrappers.UInt32Value{
 							Value: 1,
