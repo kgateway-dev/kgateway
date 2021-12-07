@@ -225,7 +225,6 @@ type Discovery struct {
 	Deployment     *DiscoveryDeployment `json:"deployment,omitempty"`
 	FdsMode        *string              `json:"fdsMode,omitempty" desc:"mode for function discovery (blacklist or whitelist). See more info in the settings docs"`
 	UdsOptions     *UdsOptions          `json:"udsOptions,omitempty" desc:"Configuration options for the Upstream Discovery Service (UDS)."`
-	watchLabels    map[string]string    `json:"watchLabels,omitempty" desc:"Map of Kubernetes labels to watch. Only services which match all of the selectors specified here will be discovered by UDS."`
 	Enabled        *bool                `json:"enabled,omitempty" desc:"enable Discovery features"`
 	ServiceAccount `json:"serviceAccount,omitempty" `
 	LogLevel       *string `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
@@ -244,7 +243,8 @@ type DiscoveryDeployment struct {
 
 // Configuration options for the Upstream Discovery Service (UDS).
 type UdsOptions struct {
-	Enabled *bool `json:"enabled,omitempty" desc:"Enable upstream discovery service. Defaults to true."`
+	Enabled     *bool             `json:"enabled,omitempty" desc:"Enable upstream discovery service. Defaults to true."`
+	WatchLabels map[string]string `json:"watchLabels,omitempty" desc:"Map of labels to watch. Only services which match all of the selectors specified here will be discovered by UDS."`
 }
 
 type Gateway struct {
