@@ -4,13 +4,18 @@ weight: 10
 description: Define multiple HTTP or TCP Gateways within a single Gateway CRD
 ---
 
-Hybrid Gateways allow you to define multiple HTTP or TCP Gateways for a single Gateway CRD with distinct matching criteria.
+Hybrid Gateways allow users to define multiple HTTP or TCP Gateways for a single Gateway CRD with distinct matching criteria. 
 
 ---
+
+Hybrid Gateways provide all of the functionality of HTTP and TCP Gateways with the added ability to dynamically select which Gateway a given request is routed to based on request properties.
+Selection is done based on `Matcher` fields, which map to a subset of Envoy [`FilterChainMatch`](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#config-listener-v3-filterchainmatch) fields.
 
 ## Only accept requests from a particular CIDR range
 
 Hybrid Gateways allow us to treat traffic from particular IPs differently.
+One case where this might come in handy is if a set of clients are at different stages of migrating to TLS >=1.2 support, and therefore we want to enforce different TLS requirements depending on the client.
+If the clients originate from the same domain, it may be necessary to dynamically route traffic to the appropriate Gateway based on source IP.
 
 In this example we will demonstrate how to only allow requests from one IP to reach an upstream while short-circuiting all other IPs with a direct response action.
 
@@ -31,7 +36,7 @@ spec:
       - '*'
     routes:
       - matchers:
-          - exact: /all-pets
+          - prefix: /
         directResponseAction:
           status: 403
           body: "client ip forbidden\n"
