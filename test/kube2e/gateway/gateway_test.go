@@ -1230,7 +1230,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 		})
 
-		It("Discovers upstream with label that matches watched annotations", func() {
+		It("Discovers upstream with label that matches watched labels", func() {
 			watchedKey := "A"
 			watchedValue := "B"
 			watchedLabels := map[string]string{watchedKey: watchedValue}
@@ -1241,10 +1241,10 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			Eventually(func() (*gloov1.Upstream, error) {
 				return getUpstream(svcName)
-			}, "15s", "0.5s").ShouldNot(BeNil())
+			}, "15s", "0.5s").ShouldNot(HaveOccurred())
 		})
 
-		It("Does not discover upstream with no label when watched annotations are set", func() {
+		It("Does not discover upstream with no label when watched labels are set", func() {
 			watchedKey := "A"
 			watchedValue := "B"
 			watchedLabels := map[string]string{watchedKey: watchedValue}
@@ -1256,7 +1256,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			Consistently(func() error {
 				_, err := getUpstream(svcName)
 				return err
-			}, "15s", "0.5s").ShouldNot(BeNil())
+			}, "15s", "0.5s").ShouldNot(HaveOccurred())
 		})
 
 		It("Does not discover upstream with mismatched label value", func() {
@@ -1273,7 +1273,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			Consistently(func() error {
 				_, err := getUpstream(svcName)
 				return err
-			}, "15s", "0.5s").ShouldNot(BeNil())
+			}, "15s", "0.5s").ShouldNot(HaveOccurred())
 		})
 	})
 
