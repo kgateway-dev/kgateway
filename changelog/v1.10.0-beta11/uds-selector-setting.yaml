@@ -1,4 +1,4 @@
 changelog: 
   - type: NEW_FEATURE
-    description: You can now set a map of K8s labels for UDS to filter against via Settings.DiscoveryOptions.watchAnnotations
+    description: You can now set a map of K8s labels for UDS to filter against via Settings.DiscoveryOptions.watchLabels
     issueLink: https://github.com/solo-io/gloo/issues/5025
