@@ -2,6 +2,8 @@ package create_test
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -146,6 +148,38 @@ var _ = Describe("Upstream", func() {
 
 	Context("Kube", func() {
 
+		FIt("demonstrate clone functionality", func() {
+
+			// This is the type we manually create (a kube upstream spec with an empty map of selectors)
+			emptySliceType := &kubernetes.UpstreamSpec{
+				Selector: make(map[string]string),
+			}
+
+			// this is the type we read after we create the above type (a kube upstream spec with a nil map)
+			nilSliceType := &kubernetes.UpstreamSpec{
+				Selector: nil,
+			}
+
+			// Our old implementation uses protobuf.Clone to clone a value
+			// This demonstrates that the old method treated empty and nil as interchangeable (and nillable)
+			// compare protobuf.Clone(type)
+			Expect(proto.Clone(emptySliceType).(*kubernetes.UpstreamSpec).Selector).To(BeNil())
+			Expect(proto.Clone(nilSliceType).(*kubernetes.UpstreamSpec).Selector).To(BeNil())
+
+			// Proto.Clone uses the Zero type, and the Zero type for both of these are identical
+			emptyZeroType := emptySliceType.ProtoReflect().Type().Zero().Interface()
+			nilZeroType := nilSliceType.ProtoReflect().Type().Zero().Interface()
+			Expect(emptyZeroType).To(Equal(nilZeroType))
+			Expect(emptyZeroType).To(BeNil())
+
+
+			// Our new implementation uses type.Clone() to clone a value
+			// This demonstrates that the new method no longer treats empty and nil as interchangeable
+			// compare type.Clone()
+			Expect(emptySliceType.Clone().(*kubernetes.UpstreamSpec).Selector).To(BeEquivalentTo(make(map[string]string)))
+			Expect(nilSliceType.Clone().(*kubernetes.UpstreamSpec).Selector).To(BeNil())
+		})
+
 		It("should error when service name not provided", func() {
 			err := testutils.Glooctl("create upstream kube --name kube-upstream")
 			Expect(err).To(HaveOccurred())
@@ -157,7 +191,7 @@ var _ = Describe("Upstream", func() {
 			Expect(kubeSpec.ServiceName).To(Equal(name))
 			Expect(kubeSpec.ServiceNamespace).To(Equal(namespace))
 			Expect(kubeSpec.ServicePort).To(Equal(port))
-			Expect(kubeSpec.Selector).To(BeEquivalentTo(selector))
+			Expect(kubeSpec.GetSelector()).To(BeEquivalentTo(selector))
 		}
 
 		It("should create kube upstream with default namespace and port", func() {
