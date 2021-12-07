@@ -30,6 +30,7 @@ func RunUDS(opts bootstrap.Opts) error {
 	}
 	watchOpts := opts.WatchOpts.WithDefaults()
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "uds")
+	watchOpts.Selector = syncerutils.GetWatchLabels(opts.Settings)
 
 	upstreamClient, err := v1.NewUpstreamClient(watchOpts.Ctx, opts.Upstreams)
 	if err != nil {
