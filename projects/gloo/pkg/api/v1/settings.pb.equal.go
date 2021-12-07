@@ -944,6 +944,17 @@ func (m *Settings_DiscoveryOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetWatchAnnotations()) != len(target.GetWatchAnnotations()) {
+		return false
+	}
+	for k, v := range m.GetWatchAnnotations() {
+
+		if strings.Compare(v, target.GetWatchAnnotations()[k]) != 0 {
+			return false
+		}
+
+	}
+
 	return true
 }
 

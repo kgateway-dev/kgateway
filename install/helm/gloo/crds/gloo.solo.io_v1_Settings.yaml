@@ -117,6 +117,10 @@ spec:
                         nullable: true
                         type: boolean
                     type: object
+                  watchAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                 type: object
               discoveryNamespace:
                 type: string

@@ -274,6 +274,7 @@ This option determines the root of the directory tree used to this end.
 ```yaml
 "fdsMode": .gloo.solo.io.Settings.DiscoveryOptions.FdsMode
 "udsOptions": .gloo.solo.io.Settings.DiscoveryOptions.UdsOptions
+"watchAnnotations": map<string, string>
 
 ```
 
@@ -281,6 +282,7 @@ This option determines the root of the directory tree used to this end.
 | ----- | ---- | ----------- | 
 | `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk/#fdsmode) |  |
 | `udsOptions` | [.gloo.solo.io.Settings.DiscoveryOptions.UdsOptions](../settings.proto.sk/#udsoptions) |  |
+| `watchAnnotations` | `map<string, string>` | Map of Kubernetes labels to watch. Only services which match all of the selectors specified here will be discovered by UDS. |
 
 
 
