@@ -4,86 +4,94 @@ weight: 80
 description: Define fine-grained policies to control Gloo Edge configuration itself.
 ---
 
-In Kubernetes, Gloo Edge stores its configuration as Custom Resource Definitions (CRDs). You can use normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability to create a Gloo Edge VirtualService. RBAC only allows administrators to grant permissions to entire objects. With the Open Policy Agent, one can specify very fine-grained control over Gloo Edge objects. For example, with RBAC you can say, "user john@example.com is allowed to create virtual service" With OPA, in addition to specifying access,  you can say "virtual services must point to the domain example.com". 
+In Kubernetes, Gloo Edge stores its configuration as Custom Resource Definitions (CRDs). Because these CRDs are Kubernetes objects, you can use normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability to create Gloo Edge resources, such as a VirtualService object. 
 
-You can of-course combine both, as you see fit.
+However, RBAC only allows administrators to grant permissions to entire objects. With the Open Policy Agent (OPA), you can specify fine-grained control over Gloo Edge objects. Compare the differences in the following examples.
 
-In this document we will show a simple OPA policy that dictates that all virtual services must not have a prefix re-write.
+* **RBAC**: User `john@example.com` is allowed to create virtual service. 
+* **OPA**: User `john@example.com` is allowed to create virtual services that only point to the domain `example.com`.
+
+You can use both Kubernetes RBAC and OPA together.
+
+In this guide, you create a simple OPA policy that dictates that all virtual services must not have a prefix re-write.
 
 ---
 
-### Prerequisites
+## Before you begin
 
-Before you get started, you will need to have Gloo Edge running in a Kubernetes cluster. For more information, you can follow this [installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+1. [Install Gloo Edge in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+2. [Follow the OPA documentation](https://www.openpolicyagent.org/docs/latest/kubernetes-tutorial/) to set up OPA as an admission controller in your cluster. Then, OPA validates Kubernetes objects before they become visible to other controllers that act on them, including Gloo Edge.
 
-### Setup
+Depending on your security preferences, you might want to create a separate cluster role and role binding to restrict Gloo Edge resources to view-only permissions, such as in the following example.
 
-First, setup OPA as a validating web hook. In this mode, OPA validates the Kubernetes objects before they are visible to the controllers that act on them (Gloo Edge in our case).
+{{% expand "Click for an example YAML file for a cluster role and cluster role binding you might add to your OPA admission controller setup." %}}
 
-You can use the [setup.sh](setup.sh) script for that purpose.
-
-This script follows the docs outlined in [official OPA docs](https://www.openpolicyagent.org/docs/latest/kubernetes-admission-control/) with some small adaptations for the Gloo Edge API.
-
-{{% expand "Click to see the full setup.sh file that should be used for this project." %}}
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gloo-view
+rules:
+- apiGroups:
+  - gateway.solo.io
+  resources:
+  - virtualservices
+  verbs:
+  - get
+  - list
+  - watch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: opa-gloo-viewer
+roleRef:
+  kind: ClusterRole
+  name: gloo-view
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: Group
+  name: system:serviceaccounts:opa
+  apiGroup: rbac.authorization.k8s.io
 ```
-{{% readfile file="guides/security/opa/setup.sh" %}}
-```
+
 {{% /expand %}}
 
 ---
 
 ## Policy
 
-OPA Policies are written in `Rego`. A language specifically designed for policy decisions.
+OPA Policies are written in `Rego`, a language specifically designed for policy decisions.
 
-Let's apply [this](vs-no-prefix-rewrite.rego) policy, forbidding virtual service with prefix re-write:
+Write a [Rego policy](vs-no-prefix-rewrite.rego), which denies virtual services that include a prefix re-write.
 
 ```
 {{% readfile file="guides/security/opa/vs-no-prefix-rewrite.rego" %}}
 ```
 
-Let's break this down:
-```
-operations = {"CREATE", "UPDATE"}
-```
-This policy only applies to objects that are created or updated.
+_Table: Understanding this Rego policy_
 
-```
-deny[msg] {
-```
-Start a policy to deny to object creation \ update, if all conditions in the braces hold.
-
-The conditions are:
-```
-	input.request.kind.kind == "VirtualService"
-```
-(1) This object is a VirtualService
-
-```
-	operations[input.request.operation]
-```
-(2) This object is created or updated.
-
-```
-	input.request.object.spec.virtualHost.routes[_].options.prefixRewrite
-```
-(3) This object has a prefixRewrite stanza.
-
-If all these conditions are true, the object will be denied with this message:
-```
-	msg := "prefix re-write not allowed"
-```
+| Part of the policy | Description |
+| ------------------ | ----------- |
+| `operations = {"CREATE", "UPDATE"}` | Applies the policy only to objects that are created or updated. |
+| `deny[msg] {}` | Starts a policy to deny to creating or updating objects, if all of the conditions in the braces are met. |
+| `input.request.kind.kind == "VirtualService"` | Specifies that the object must be a VirtualService. |
+| `operations[input.request.operation]` | Specifies that the object has a create or update operation. |
+| `input.request.object.spec.virtualHost.routes[_].options.prefixRewrite` | Specifies that the object has a prefixRewrite stanza. |
+| `msg := "prefix re-write not allowed"` | Returns the `"prefix re-write not allowed"` message when all the conditions are true and the object is denied. |
 
 ---
 
 ## Apply Policy
 
-You can use this command to apply the policy, by writing it to a configmap in the `opa` namespace
+Apply the policy by writing it to a configmap in the `opa` namespace.
+
 ```shell
 kubectl --namespace=opa create configmap vs-no-prefix-rewrite --from-file=vs-no-prefix-rewrite.rego
 ```
 
-Give it a second, and you will see the policy status changes to ok:
+After a moment, check that the policy status changes to **ok**.
+
 ```shell
 kubectl get configmaps -n opa vs-no-prefix-rewrite -o yaml
 ```
@@ -112,9 +120,9 @@ metadata:
 
 Time to test!
 
-We have prepared two virtual services for testing (click on each to see the content):
+1. Click and save the following two virtual service configuration files to test valid and denied scenarios.
 
-{{% expand "Valid VirtualService (vs-ok.yaml)" %}}
+{{% expand "Valid VirtualService (vs-ok.yaml)." %}}
 
 ```
 {{< readfile file="guides/security/opa/vs-ok.yaml" >}}
@@ -122,7 +130,7 @@ We have prepared two virtual services for testing (click on each to see the cont
 
 {{% /expand %}}
 
-{{% expand "Denied VirtualService (vs-err.yaml)" %}}
+{{% expand "Denied VirtualService (vs-err.yaml), includes a prefix rewrite." %}}
 
 ```
 {{< readfile file="guides/security/opa/vs-err.yaml" >}}
@@ -130,12 +138,13 @@ We have prepared two virtual services for testing (click on each to see the cont
 
 {{% /expand %}}
 
-Try it:
+2. Apply the valid virtual service in your cluster, and verify that the virtual service is created.
 ```shell
 kubectl apply -f vs-ok.yaml
 virtualservice.gateway.solo.io/default created
 ```
 
+3. Apply the denied virtual service in your cluster. Verify that the virtual service is denied because it includes a prefix rewrite that your OPA policy does not allow.
 ```shell
 kubectl apply -f vs-err.yaml
 Error from server (prefix re-write not allowed): error when applying patch:
@@ -150,9 +159,8 @@ for: "vs-err.yaml": admission webhook "validating-webhook.openpolicyagent.org" d
 ---
 
 ## Cleanup
-you can use the [teardown.sh](teardown.sh) to clean-up the resources created in this document.
+If you no longer want the OPA admission controller, you can uninstall it from your cluster. For example, you might use a [teardown script](teardown.sh), such as the following example.
 
-For your convenience, here's the content of teardown.sh:
 ```
 {{% readfile file="guides/security/opa/teardown.sh" %}}
 ```
@@ -161,10 +169,10 @@ For your convenience, here's the content of teardown.sh:
 
 ## Next Steps
 
-Now that you've see how to configure a basic policy with OPA, you can go further down the rabbit hole of policies, or check out some of the other security features in Gloo Edge.
+Now that you know how to configure a basic policy with OPA, you can continue learning about policies, or check out some of the other security features in Gloo Edge.
 
 * [**Web Application Firewall**]({{% versioned_link_path fromRoot="/guides/security/waf/" %}})
 * [**Data Loss Prevention**]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}})
 * [**Cross-Origin Resource Sharing**]({{% versioned_link_path fromRoot="/guides/security/cors/" %}})
 
-Or you might want to learn more about the various features available to Routes on a Virtual Service in our [Traffic Management guides]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}).
+You might also want to learn about the various features available to Routes on a Virtual Service in the [Traffic Management guides]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}).

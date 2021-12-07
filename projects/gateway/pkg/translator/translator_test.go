@@ -43,7 +43,7 @@ var _ = Describe("Translator", func() {
 
 	Context("translator", func() {
 		BeforeEach(func() {
-			translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}, &HybridTranslator{}}, Opts{})
+			translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}, &HybridTranslator{&HttpTranslator{}}}, Opts{})
 			snap = &v1.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
@@ -169,7 +169,15 @@ var _ = Describe("Translator", func() {
 				&v1.Gateway{
 					Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
 					GatewayType: &v1.Gateway_HybridGateway{
-						HybridGateway: &v1.HybridGateway{},
+						HybridGateway: &v1.HybridGateway{
+							MatchedGateways: []*v1.MatchedGateway{
+								{
+									GatewayType: &v1.MatchedGateway_HttpGateway{
+										HttpGateway: &v1.HttpGateway{},
+									},
+								},
+							},
+						},
 					},
 					BindPort: 3,
 				},
@@ -1966,6 +1974,41 @@ var _ = Describe("Translator", func() {
 			Expect(listener.MatchedListeners[1].GetTcpListener().Options).To(Equal(tcpListenerOptions))
 			Expect(listener.MatchedListeners[1].GetTcpListener().TcpHosts).To(HaveLen(1))
 			Expect(listener.MatchedListeners[1].GetTcpListener().TcpHosts[0]).To(Equal(tcpHost))
+		})
+
+		It("skips hybrid gateways that have no sub-gateways", func() {
+			snap.Gateways = v1.GatewayList{
+				{
+					Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+					GatewayType: &v1.Gateway_HybridGateway{
+						HybridGateway: &v1.HybridGateway{},
+					},
+					BindPort: 1,
+				},
+				{
+					Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+					GatewayType: &v1.Gateway_HybridGateway{
+						HybridGateway: &v1.HybridGateway{
+							MatchedGateways: []*v1.MatchedGateway{
+								{
+									Matcher: &v1.Matcher{
+										SourcePrefixRanges: []*v3.CidrRange{
+											{
+												AddressPrefix: "match1",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					BindPort: 2,
+				},
+			}
+
+			proxy, _ := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+			Expect(proxy.GetListeners()).To(BeNil())
 		})
 
 	})

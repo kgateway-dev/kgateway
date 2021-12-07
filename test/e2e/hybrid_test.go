@@ -6,11 +6,11 @@ import (
 	"net"
 	"net/http"
 
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"google.golang.org/grpc"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -29,65 +29,83 @@ import (
 var _ = Describe("Hybrid", func() {
 
 	var (
+		err error
+
 		ctx           context.Context
 		cancel        context.CancelFunc
 		envoyInstance *services.EnvoyInstance
 		testClients   services.TestClients
 		srv           *grpc.Server
+
+		proxy *gloov1.Proxy
 	)
 
-	Context("match for http", func() {
-		BeforeEach(func() {
-			ctx, cancel = context.WithCancel(context.Background())
+	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
 
-			// Initialize Envoy instance
-			var err error
-			envoyInstance, err = envoyFactory.NewEnvoyInstance()
-			Expect(err).NotTo(HaveOccurred())
+		// Initialize Envoy instance
+		var err error
+		envoyInstance, err = envoyFactory.NewEnvoyInstance()
+		Expect(err).NotTo(HaveOccurred())
 
-			// Start custom tcp server and create upstream for it
-			srv, err = startTcpServer(8095)
-			Expect(err).NotTo(HaveOccurred())
+		// Start custom tcp server and create upstream for it
+		srv, err = startTcpServer(8095)
+		Expect(err).NotTo(HaveOccurred())
 
-			tcpServerUs := &gloov1.Upstream{
-				Metadata: &core.Metadata{
-					Name:      "tcp",
-					Namespace: "default",
+		tcpServerUs := &gloov1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "tcp",
+				Namespace: "default",
+			},
+			UseHttp2: &wrappers.BoolValue{Value: true},
+			UpstreamType: &gloov1.Upstream_Static{
+				Static: &static.UpstreamSpec{
+					Hosts: []*static.Host{{
+						// this is a safe way of referring to localhost
+						Addr: envoyInstance.GlooAddr,
+						Port: 8095,
+					}},
 				},
-				UseHttp2: &wrappers.BoolValue{Value: true},
-				UpstreamType: &gloov1.Upstream_Static{
-					Static: &static.UpstreamSpec{
-						Hosts: []*static.Host{{
-							// this is a safe way of referring to localhost
-							Addr: envoyInstance.GlooAddr,
-							Port: 8095,
-						}},
+			},
+		}
+		tcpUsRef := tcpServerUs.Metadata.Ref()
+
+		// Start Gloo
+		testClients = services.RunGlooGatewayUdsFds(ctx, &services.RunOptions{
+			NsToWrite: defaults.GlooSystem,
+			NsToWatch: []string{"default", defaults.GlooSystem},
+			WhatToRun: services.What{
+				DisableGateway: true,
+				DisableFds:     true,
+				DisableUds:     true,
+			},
+		})
+
+		// Create static upstream for tcp server
+		_, err = testClients.UpstreamClient.Write(tcpServerUs, clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		// Run envoy
+		err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Create a hybrid proxy routing to the upstream and wait for it to be accepted
+		proxy = getProxyHybridNoMatcher("default", "proxy", defaults.HttpPort, tcpUsRef)
+	})
+
+	Context("catchall match for http", func() {
+		BeforeEach(func() {
+			// TcpGateway gets a matcher our request *will not* hit
+			proxy.Listeners[0].GetHybridListener().GetMatchedListeners()[1].Matcher = &gloov1.Matcher{
+				SourcePrefixRanges: []*v3.CidrRange{
+					{
+						AddressPrefix: "1.2.3.4",
+						PrefixLen: &wrappers.UInt32Value{
+							Value: 32,
+						},
 					},
 				},
 			}
-			tcpUsRef := tcpServerUs.Metadata.Ref()
-
-			// Start Gloo
-			testClients = services.RunGlooGatewayUdsFds(ctx, &services.RunOptions{
-				NsToWrite: defaults.GlooSystem,
-				NsToWatch: []string{"default", defaults.GlooSystem},
-				WhatToRun: services.What{
-					DisableGateway: true,
-					DisableFds:     true,
-					DisableUds:     true,
-				},
-			})
-
-			// Create static upstream for tcp server
-			_, err = testClients.UpstreamClient.Write(tcpServerUs, clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-
-			// Run envoy
-			err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Create a hybrid proxy routing to the upstream and wait for it to be accepted
-			proxy := getProxyHybrid("default", "proxy", defaults.HttpPort, tcpUsRef, true) // matchTcp ensures catchall goes to HTTP
 
 			_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -130,58 +148,74 @@ var _ = Describe("Hybrid", func() {
 
 	})
 
-	Context("match for tcp", func() {
+	Context("SourcePrefixRanges match for http", func() {
 		BeforeEach(func() {
-			ctx, cancel = context.WithCancel(context.Background())
-
-			// Initialize Envoy instance
-			var err error
-			envoyInstance, err = envoyFactory.NewEnvoyInstance()
-			Expect(err).NotTo(HaveOccurred())
-
-			// Start custom tcp server and create upstream for it
-			srv, err = startTcpServer(8095)
-			Expect(err).NotTo(HaveOccurred())
-
-			tcpServerUs := &gloov1.Upstream{
-				Metadata: &core.Metadata{
-					Name:      "tcp",
-					Namespace: "default",
-				},
-				UseHttp2: &wrappers.BoolValue{Value: true},
-				UpstreamType: &gloov1.Upstream_Static{
-					Static: &static.UpstreamSpec{
-						Hosts: []*static.Host{{
-							// this is a safe way of referring to localhost
-							Addr: envoyInstance.GlooAddr,
-							Port: 8095,
-						}},
+			// HttpGateway gets a matcher our request will hit
+			proxy.Listeners[0].GetHybridListener().GetMatchedListeners()[0].Matcher = &gloov1.Matcher{
+				SourcePrefixRanges: []*v3.CidrRange{
+					{
+						AddressPrefix: "255.0.0.0",
+						PrefixLen: &wrappers.UInt32Value{
+							Value: 1,
+						},
 					},
 				},
 			}
-			tcpUsRef := tcpServerUs.Metadata.Ref()
 
-			// Start Gloo
-			testClients = services.RunGlooGatewayUdsFds(ctx, &services.RunOptions{
-				NsToWrite: defaults.GlooSystem,
-				NsToWatch: []string{"default", defaults.GlooSystem},
-				WhatToRun: services.What{
-					DisableGateway: true,
-					DisableFds:     true,
-					DisableUds:     true,
-				},
+			_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 			})
+		})
 
-			// Create static upstream for tcp server
-			_, err = testClients.UpstreamClient.Write(tcpServerUs, clients.WriteOpts{Ctx: ctx})
+		AfterEach(func() {
+			cancel()
+
+			if envoyInstance != nil {
+				_ = envoyInstance.Clean()
+			}
+
+			srv.GracefulStop()
+		})
+
+		It("http request works as expected", func() {
+			client := &http.Client{}
+
+			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Run envoy
-			err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
-			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() (int, error) {
+				resp, err := client.Do(req)
+				if err != nil {
+					return 0, err
+				}
+				return resp.StatusCode, nil
+			}, "5s", "0.5s").Should(Equal(http.StatusOK))
 
-			// Create a hybrid proxy routing to the upstream and wait for it to be accepted
-			proxy := getProxyHybrid("default", "proxy", defaults.HttpPort, tcpUsRef, false) // matchTcp false ensures catchall goes to TCP
+		})
+
+		//It("tcp connection fails", func() {
+		//	_, err := net.Dial("tcp", fmt.Sprintf("%s:%d/", "localhost", defaults.HttpPort))
+		//	Expect(err).To(HaveOccurred())
+		//})
+
+	})
+
+	Context("catchall match for tcp", func() {
+		BeforeEach(func() {
+			// HttpGateway gets a filter our request *will not* hit
+			proxy.Listeners[0].GetHybridListener().GetMatchedListeners()[0].Matcher = &gloov1.Matcher{
+				SourcePrefixRanges: []*v3.CidrRange{
+					{
+						AddressPrefix: "1.2.3.4",
+						PrefixLen: &wrappers.UInt32Value{
+							Value: 32,
+						},
+					},
+				},
+			}
 
 			_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -226,18 +260,7 @@ var _ = Describe("Hybrid", func() {
 
 })
 
-func getProxyHybrid(namespace, name string, envoyPort uint32, tcpUpsteam *core.ResourceRef, matchTcp bool) *gloov1.Proxy {
-	matcher := &gloov1.Matcher{
-		SourcePrefixRanges: []*v3.CidrRange{
-			{
-				AddressPrefix: "1.2.3.4",
-				PrefixLen: &wrappers.UInt32Value{
-					Value: 32,
-				},
-			},
-		},
-	}
-
+func getProxyHybridNoMatcher(namespace, name string, envoyPort uint32, tcpUpsteam *core.ResourceRef) *gloov1.Proxy {
 	proxy := &gloov1.Proxy{
 		Metadata: &core.Metadata{
 			Name:      name,
@@ -306,11 +329,6 @@ func getProxyHybrid(namespace, name string, envoyPort uint32, tcpUpsteam *core.R
 		}},
 	}
 
-	if matchTcp {
-		proxy.Listeners[0].GetHybridListener().MatchedListeners[1].Matcher = matcher
-	} else {
-		proxy.Listeners[0].GetHybridListener().MatchedListeners[0].Matcher = matcher
-	}
 	return proxy
 }
 
