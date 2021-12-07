@@ -16,9 +16,10 @@ In this example we will demonstrate how to only allow requests from one IP to re
 
 We will pick up where the [Hello World guide]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world" >}}) leaves off.
 
-To start we will add a second VirtualService that also matches the `/all-pets` endpoint but which has a directResponseAction:
+To start we will add a second VirtualService that also matches all requests and has a directResponseAction:
 
 ```yaml
+kubectl apply -n gloo-system -f - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -39,6 +40,9 @@ EOF
 
 
 Next let's update the existing `gateway-proxy` Gateway CRD, replacing the default `httpGateway` with a [`hybridGateway`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#hybridgateway" >}}) as follows:
+```bash
+kubectl edit -n gloo-system gateway gateway-proxy
+```
 
 {{< highlight yaml "hl_lines=7-21" >}}
 apiVersion: gateway.solo.io/v1
@@ -115,7 +119,7 @@ spec:
                       client ip forbidden
                     status: 403
                   matchers:
-                  - exact: /all-pets
+                  - prefix: /
                   metadata: # collapsed for brevity
             matcher: {}
     metadata: # collapsed for brevity
@@ -135,8 +139,22 @@ $ curl "$(glooctl proxy url)/all-pets"
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
+Also observe that if we make a request to an endpoint not matched by the `default` VirtualService we get a `404` response and _do not_ hit the `client-ip-reject` VirtualService:
+```bash
+$ curl -i "$(glooctl proxy url)/foo"
+HTTP/1.1 404 Not Found
+date: Tue, 07 Dec 2021 17:48:49 GMT
+server: envoy
+content-length: 0
+```
+This is because the `Matcher`s in the `HybridGateway` determine which `MatchedGateway` a request will be routed to, regardless of what routes that gateway has.
+
+### Observe that request from unmatched IP hits catchall gateway 
 If we update the matcher to have a specific IP range that our client's IP is not a member of, we will expect our request to miss the matcher and fall through to the catchall gateway which is configured to respond `403`.
 
+```bash
+kubectl edit -n gloo-system gateway gateway-proxy
+```
 {{< highlight yaml "hl_lines=15-16" >}}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -167,10 +185,15 @@ status: # collapsed for brevity
 
 The Proxy will update accordingly.
 
-We can make a request to the proxy and will find that we get the `403` response:
+We can now make a request to the proxy and will find that we get the `403` response for any endpoint:
 
 ```bash
 $ curl "$(glooctl proxy url)/all-pets"
+client ip forbidden
+```
+
+```bash
+$ curl "$(glooctl proxy url)/foo"
 client ip forbidden
 ```
 
