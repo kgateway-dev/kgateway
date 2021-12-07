@@ -33,7 +33,7 @@ var _ = Describe("UDS setup syncer tests", func() {
 			Expect(RunUDS(opts)).To(HaveOccurred())
 		})
 
-		It("returns an error when both UDS and FDS are disabled", func() {
+		It("Does not return an error when WatchLabels are set", func() {
 			memcache := memory.NewInMemoryResourceCache()
 			f := &factory.MemoryResourceClientFactory{
 				Cache: memcache,
@@ -49,8 +49,8 @@ var _ = Describe("UDS setup syncer tests", func() {
 						UdsOptions: &v1.Settings_DiscoveryOptions_UdsOptions{
 							Enabled: &wrappers.BoolValue{Value: true},
 						},
-						FdsMode:          v1.Settings_DiscoveryOptions_DISABLED,
-						WatchAnnotations: map[string]string{"A": "B"},
+						FdsMode:     v1.Settings_DiscoveryOptions_DISABLED,
+						WatchLabels: map[string]string{"A": "B"},
 					},
 				},
 				Upstreams: f,

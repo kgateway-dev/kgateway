@@ -1181,11 +1181,11 @@ var _ = Describe("Kube2e: gateway", func() {
 			return upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 		}
 
-		// Update the Gloo Discovery WatchAnnotations setting to the specified value
-		setWatchAnnotations := func(watchAnnotations map[string]string) {
+		// Update the Gloo Discovery WatchLabels setting to the specified value
+		setWatchLabels := func(watchLabels map[string]string) {
 			kube2e.UpdateSettings(func(settings *gloov1.Settings) {
 				Expect(settings.GetDiscovery()).NotTo(BeNil())
-				settings.GetDiscovery().WatchAnnotations = watchAnnotations
+				settings.GetDiscovery().WatchLabels = watchLabels
 			}, ctx, testHelper.InstallNamespace)
 		}
 		AfterEach(func() {
@@ -1193,7 +1193,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, svcName, metav1.DeleteOptions{})
 			}
 
-			setWatchAnnotations(nil)
+			setWatchLabels(nil)
 		})
 
 		It("should preserve discovery", func() {
@@ -1234,7 +1234,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			watchedKey := "A"
 			watchedValue := "B"
 			watchedAnnotations := map[string]string{watchedKey: watchedValue}
-			setWatchAnnotations(watchedAnnotations)
+			setWatchLabels(watchedAnnotations)
 
 			svcName := "uds-test-service"
 			createServiceWithWatchedAnnotations(svcName, watchedAnnotations)
@@ -1248,7 +1248,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			watchedKey := "A"
 			watchedValue := "B"
 			watchedAnnotations := map[string]string{watchedKey: watchedValue}
-			setWatchAnnotations(watchedAnnotations)
+			setWatchLabels(watchedAnnotations)
 
 			svcName := "uds-test-service"
 			createServiceWithWatchedAnnotations(svcName, nil)
@@ -1264,7 +1264,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			watchedValue := "B"
 			unwatchedValue := "C"
 			watchedAnnotations := map[string]string{watchedKey: watchedValue}
-			setWatchAnnotations(watchedAnnotations)
+			setWatchLabels(watchedAnnotations)
 
 			svcName := "uds-test-service"
 			unwatchedAnnotations := map[string]string{watchedKey: unwatchedValue}

@@ -50,7 +50,7 @@ var _ = Describe("Discovery Syncer Utils Tests", func() {
 		})
 	})
 
-	Context("GetWatchAnnotations", func() {
+	Context("GetWatchLabels", func() {
 		It("returns nil when settings is nil", func() {
 			Expect(GetWatchLabels(nil)).To(BeNil())
 		})
@@ -62,11 +62,11 @@ var _ = Describe("Discovery Syncer Utils Tests", func() {
 			Expect(GetWatchLabels(settings)).To(BeNil())
 		})
 
-		It("returns WatchAnnotations when set", func() {
-			watchAnnotations := map[string]string{"A": "B"}
+		It("returns WatchLabels when set", func() {
+			watchLabels := map[string]string{"A": "B"}
 			settings := &v1.Settings{
 				Discovery: &v1.Settings_DiscoveryOptions{
-					WatchAnnotations: watchAnnotations,
+					WatchLabels: watchLabels,
 				},
 			}
 			Expect(GetWatchLabels(settings)).To(BeEquivalentTo(map[string]string{"A": "B"}))
