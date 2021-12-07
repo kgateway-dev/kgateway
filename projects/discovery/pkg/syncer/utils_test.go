@@ -50,6 +50,31 @@ var _ = Describe("Discovery Syncer Utils Tests", func() {
 		})
 	})
 
+	Context("GetWatchLabels", func() {
+		It("returns nil when settings is nil", func() {
+			Expect(GetWatchLabels(nil)).To(BeNil())
+		})
+
+		It("returns nil when settings.discovery is nil", func() {
+			settings := &v1.Settings{
+				Discovery: nil,
+			}
+			Expect(GetWatchLabels(settings)).To(BeNil())
+		})
+
+		It("returns WatchLabels when set", func() {
+			watchLabels := map[string]string{"A": "B"}
+			settings := &v1.Settings{
+				Discovery: &v1.Settings_DiscoveryOptions{
+					UdsOptions: &v1.Settings_DiscoveryOptions_UdsOptions{
+						WatchLabels: watchLabels,
+					},
+				},
+			}
+			Expect(GetWatchLabels(settings)).To(BeEquivalentTo(map[string]string{"A": "B"}))
+		})
+	})
+
 })
 
 // Helper for creating settings object with only the necessary fields
