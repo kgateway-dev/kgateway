@@ -1185,7 +1185,9 @@ var _ = Describe("Kube2e: gateway", func() {
 		setWatchLabels := func(watchLabels map[string]string) {
 			kube2e.UpdateSettings(func(settings *gloov1.Settings) {
 				Expect(settings.GetDiscovery()).NotTo(BeNil())
-				settings.GetDiscovery().GetUdsOptions().WatchLabels = watchLabels
+				settings.GetDiscovery().UdsOptions = &gloov1.Settings_DiscoveryOptions_UdsOptions{
+					WatchLabels: watchLabels,
+				}
 			}, ctx, testHelper.InstallNamespace)
 		}
 		AfterEach(func() {
