@@ -1217,7 +1217,7 @@ func (m *Settings_DiscoveryOptions) Hash(hasher hash.Hash64) (uint64, error) {
 	{
 		var result uint64
 		innerHash := fnv.New64()
-		for k, v := range m.GetWatchAnnotations() {
+		for k, v := range m.GetWatchLabels() {
 			innerHash.Reset()
 
 			if _, err = innerHash.Write([]byte(v)); err != nil {

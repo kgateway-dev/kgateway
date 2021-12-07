@@ -52,14 +52,14 @@ var _ = Describe("Discovery Syncer Utils Tests", func() {
 
 	Context("GetWatchAnnotations", func() {
 		It("returns nil when settings is nil", func() {
-			Expect(GetWatchAnnotations(nil)).To(BeNil())
+			Expect(GetWatchLabels(nil)).To(BeNil())
 		})
 
 		It("returns nil when settings.discovery is nil", func() {
 			settings := &v1.Settings{
 				Discovery: nil,
 			}
-			Expect(GetWatchAnnotations(settings)).To(BeNil())
+			Expect(GetWatchLabels(settings)).To(BeNil())
 		})
 
 		It("returns WatchAnnotations when set", func() {
@@ -69,7 +69,7 @@ var _ = Describe("Discovery Syncer Utils Tests", func() {
 					WatchAnnotations: watchAnnotations,
 				},
 			}
-			Expect(GetWatchAnnotations(settings)).To(BeEquivalentTo(map[string]string{"A": "B"}))
+			Expect(GetWatchLabels(settings)).To(BeEquivalentTo(map[string]string{"A": "B"}))
 		})
 	})
 

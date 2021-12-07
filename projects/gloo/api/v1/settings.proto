@@ -183,7 +183,7 @@ message Settings {
         UdsOptions uds_options = 2;
 
         // Map of Kubernetes labels to watch. Only services which match all of the selectors specified here will be discovered by UDS.
-        map<string, string> watch_annotations = 3;
+        map<string, string> watch_labels = 3;
     }
 
     // Options for configuring Gloo's Discovery service

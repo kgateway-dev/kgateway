@@ -117,7 +117,7 @@ spec:
                         nullable: true
                         type: boolean
                     type: object
-                  watchAnnotations:
+                  watchLabels:
                     additionalProperties:
                       type: string
                     type: object
