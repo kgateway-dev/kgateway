@@ -3835,11 +3835,11 @@ metadata:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					It("allows setting watchedAnnotations for discovery", func() {
-						settings := makeUnstructureFromTemplateFile("fixtures/settings/watched_discovery_annotations.yaml", namespace)
+					It("allows setting watchedLabels for discovery", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/watched_discovery_labels.yaml", namespace)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"discovery.watchAnnotations.A=B",
+								"discovery.watchLabels.A=B",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))

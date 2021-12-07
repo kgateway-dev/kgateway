@@ -9,7 +9,7 @@ metadata:
 spec:
   discovery:
     fdsMode: WHITELIST
-    watchAnnotations:
+    watchLabels:
       A: B
   gateway:
     readGatewaysFromAllNamespaces: false
