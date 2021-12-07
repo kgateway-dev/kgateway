@@ -9,8 +9,9 @@ metadata:
 spec:
   discovery:
     fdsMode: WHITELIST
-    watchLabels:
-      A: B
+    udsOptions:
+      watchLabels:
+        A: B
   gateway:
     readGatewaysFromAllNamespaces: false
     validation:

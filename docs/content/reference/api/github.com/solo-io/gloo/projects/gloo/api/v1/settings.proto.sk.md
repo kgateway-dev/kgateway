@@ -274,7 +274,6 @@ This option determines the root of the directory tree used to this end.
 ```yaml
 "fdsMode": .gloo.solo.io.Settings.DiscoveryOptions.FdsMode
 "udsOptions": .gloo.solo.io.Settings.DiscoveryOptions.UdsOptions
-"watchLabels": map<string, string>
 
 ```
 
@@ -282,7 +281,6 @@ This option determines the root of the directory tree used to this end.
 | ----- | ---- | ----------- | 
 | `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk/#fdsmode) |  |
 | `udsOptions` | [.gloo.solo.io.Settings.DiscoveryOptions.UdsOptions](../settings.proto.sk/#udsoptions) |  |
-| `watchLabels` | `map<string, string>` | Map of Kubernetes labels to watch. Only services which match all of the selectors specified here will be discovered by UDS. |
 
 
 
@@ -294,12 +292,14 @@ This option determines the root of the directory tree used to this end.
 
 ```yaml
 "enabled": .google.protobuf.BoolValue
+"watchLabels": map<string, string>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `enabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable upstream discovery service. Defaults to true. |
+| `watchLabels` | `map<string, string>` | Map of labels to watch. Only services which match all of the selectors specified here will be discovered by UDS. |
 
 
 

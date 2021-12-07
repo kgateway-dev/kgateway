@@ -66,7 +66,9 @@ var _ = Describe("Discovery Syncer Utils Tests", func() {
 			watchLabels := map[string]string{"A": "B"}
 			settings := &v1.Settings{
 				Discovery: &v1.Settings_DiscoveryOptions{
-					WatchLabels: watchLabels,
+					UdsOptions: &v1.Settings_DiscoveryOptions_UdsOptions{
+						WatchLabels: watchLabels,
+					},
 				},
 			}
 			Expect(GetWatchLabels(settings)).To(BeEquivalentTo(map[string]string{"A": "B"}))

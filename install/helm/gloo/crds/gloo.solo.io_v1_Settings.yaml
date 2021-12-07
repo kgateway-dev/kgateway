@@ -116,10 +116,10 @@ spec:
                       enabled:
                         nullable: true
                         type: boolean
-                    type: object
-                  watchLabels:
-                    additionalProperties:
-                      type: string
+                      watchLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
                     type: object
                 type: object
               discoveryNamespace:

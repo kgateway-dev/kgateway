@@ -944,17 +944,6 @@ func (m *Settings_DiscoveryOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if len(m.GetWatchLabels()) != len(target.GetWatchLabels()) {
-		return false
-	}
-	for k, v := range m.GetWatchLabels() {
-
-		if strings.Compare(v, target.GetWatchLabels()[k]) != 0 {
-			return false
-		}
-
-	}
-
 	return true
 }
 
@@ -1209,6 +1198,17 @@ func (m *Settings_DiscoveryOptions_UdsOptions) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetEnabled(), target.GetEnabled()) {
 			return false
 		}
+	}
+
+	if len(m.GetWatchLabels()) != len(target.GetWatchLabels()) {
+		return false
+	}
+	for k, v := range m.GetWatchLabels() {
+
+		if strings.Compare(v, target.GetWatchLabels()[k]) != 0 {
+			return false
+		}
+
 	}
 
 	return true

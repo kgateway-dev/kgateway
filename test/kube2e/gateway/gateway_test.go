@@ -1185,7 +1185,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		setWatchLabels := func(watchLabels map[string]string) {
 			kube2e.UpdateSettings(func(settings *gloov1.Settings) {
 				Expect(settings.GetDiscovery()).NotTo(BeNil())
-				settings.GetDiscovery().WatchLabels = watchLabels
+				settings.GetDiscovery().GetUdsOptions().WatchLabels = watchLabels
 			}, ctx, testHelper.InstallNamespace)
 		}
 		AfterEach(func() {
@@ -1253,9 +1253,8 @@ var _ = Describe("Kube2e: gateway", func() {
 			svcName := "uds-test-service"
 			createServiceWithWatchedLabels(svcName, nil)
 
-			Consistently(func() error {
-				_, err := getUpstream(svcName)
-				return err
+			Consistently(func() (*gloov1.Upstream, error) {
+				return getUpstream(svcName)
 			}, "15s", "0.5s").ShouldNot(HaveOccurred())
 		})
 
