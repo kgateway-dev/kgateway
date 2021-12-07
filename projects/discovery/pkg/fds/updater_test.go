@@ -9,14 +9,13 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	core_solo_io "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	kubernetes_plugins_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	core_solo_io "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 type testUpstreamWriterClient struct{}
@@ -26,6 +25,16 @@ func (t *testUpstreamWriterClient) Write(resource *v1.Upstream, opts clients.Wri
 }
 
 func (t *testUpstreamWriterClient) Read(namespace, name string, opts clients.ReadOpts) (*v1.Upstream, error) {
+	return nil, fmt.Errorf("test - no upstream")
+}
+
+type testGraphqlSchemaWriterClient struct{}
+
+func (t *testGraphqlSchemaWriterClient) Write(resource *v1.Upstream, opts clients.WriteOpts) (*v1.Upstream, error) {
+	return resource, nil
+}
+
+func (t *testGraphqlSchemaWriterClient) Read(namespace, name string, opts clients.ReadOpts) (*v1.Upstream, error) {
 	return nil, fmt.Errorf("test - no upstream")
 }
 
@@ -53,7 +62,7 @@ func (t *testDiscovery) setFunctionsCalled(f functionsCalled) {
 	t.functionsCalled.Store(f)
 }
 
-func (t *testDiscovery) NewFunctionDiscovery(u *v1.Upstream) UpstreamFunctionDiscovery {
+func (t *testDiscovery) NewFunctionDiscovery(u *v1.Upstream, _ AdditionalClients) UpstreamFunctionDiscovery {
 	return t
 }
 
@@ -112,7 +121,7 @@ var _ = Describe("Updater", func() {
 		}
 		testDisc = &testDiscovery{}
 		testDisc.functionsCalled.Store(functionsCalled{})
-		updater = NewUpdater(ctx, resolver, upstreamWriterClient, 0, []FunctionDiscoveryFactory{testDisc})
+		updater = NewUpdater(ctx, resolver, nil, upstreamWriterClient, 0, []FunctionDiscoveryFactory{testDisc})
 		up = &v1.Upstream{
 			Metadata: &core_solo_io.Metadata{
 				Namespace: "ns",

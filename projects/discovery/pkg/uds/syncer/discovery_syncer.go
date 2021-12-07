@@ -2,16 +2,15 @@ package syncer
 
 import (
 	"context"
+	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
 
-	"time"
-
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-	"github.com/solo-io/go-utils/contextutils"
 )
 
 type syncer struct {

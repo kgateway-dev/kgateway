@@ -35,6 +35,7 @@ Name|Version|License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.11.0|Apache License 2.0
 [prometheus/prometheus](https://github.com/prometheus/prometheus)|v2.5.0+incompatible|Apache License 2.0
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.4.0|MIT License
+[saiskee/gettercheck](https://github.com/saiskee/gettercheck)|v0.0.0-20210820204958-38443d06ebe0|MIT License
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.1.0|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.6.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.1.3|Apache License 2.0
