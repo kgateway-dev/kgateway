@@ -89,6 +89,12 @@ func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAc
 		[]string{"gloo.solo.io"},
 		[]string{"upstreams"},
 		[]string{"get", "list", "watch", "create", "update", "delete"})
+	permissions.AddExpectedPermission(
+		"gloo-system.discovery",
+		namespace,
+		[]string{"graphql.gloo.solo.io"},
+		[]string{"graphqlschemas", "graphqlschemas/status"},
+		[]string{"get", "list", "watch", "update", "create"})
 
 	return permissions
 }

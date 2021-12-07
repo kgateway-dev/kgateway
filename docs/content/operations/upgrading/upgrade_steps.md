@@ -44,11 +44,11 @@ Example of differing open source and enterprise versions for Gloo Edge:
 
 ```bash
 ~ > glooctl version
-Client: {"version":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}"}
-Server: {"type":"Gateway","enterprise":true,"kubernetes":...,{"Tag":"{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}","Name":"grpcserver-ee","Registry":"quay.io/solo-io"},...,{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},...}
+Client: {"version":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}"}
+Server: {"type":"Gateway","enterprise":true,"kubernetes":...,{"Tag":"{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}","Name":"grpcserver-ee","Registry":"quay.io/solo-io"},...,{"Tag":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},...}
 
-# The API server runs the Gloo Edge Enterprise version {{< readfile file="static/content/gee_version_latest.md" markdown="true">}},
-# which pulls in Gloo Edge Open Source version {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}} as a dependency.
+# The API server runs the Gloo Edge Enterprise version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}},
+# which pulls in Gloo Edge Open Source version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} as a dependency.
 ```
 
 ### Consider settings to avoid downtime.
@@ -81,28 +81,28 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
    ```bash
    glooctl version
    ```
-   Example output: Notice that the client version {{< readfile file="static/content/geoss_version_n-1.md" markdown="true">}} for `glooctl` does not match the server version {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}} of Gloo Edge that runs in the cluster.
+   Example output: Notice that the client version {{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}} for `glooctl` does not match the server version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} of Gloo Edge that runs in the cluster.
    ```bash
-   Client: {"version":"{{< readfile file="static/content/geoss_version_n-1.md" markdown="true">}}"}
-   Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
+   Client: {"version":"{{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}"}
+   Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
    ```
 2. Upgrade your version of `glooctl`.
    ```bash
-   glooctl upgrade --release v{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}
+   glooctl upgrade --release v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
    ```
    Example output:
    ```bash
-   downloading glooctl-darwin-amd64 from release tag v{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}
-   successfully downloaded and installed glooctl version v{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}} to /usr/local/bin/glooctl
+   downloading glooctl-darwin-amd64 from release tag v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
+   successfully downloaded and installed glooctl version v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} to /usr/local/bin/glooctl
    ```   
 3. Confirm that the version is upgraded.
    ```bash
    glooctl version
    ```
-   Example output: Notice that the client version is now {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}.
+   Example output: Notice that the client version is now {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}.
    ```bash
-   Client: {"version":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}"}
-   Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
+   Client: {"version":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}"}
+   Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
    ```
 4. Check that your Gloo Edge components are **OK**. If a problem is reported by `glooctl check`, Gloo Edge might not work properly or Envoy might not get the updated configuration.
    ```bash
@@ -156,7 +156,7 @@ Looking to upgrade from an open source to an enterprise deployment? You can use 
 
 ### Upgrades across minor versions
 
-If you are upgrading across minor versions, such as to version {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}} from {{< readfile file="static/content/geoss_version_n-1.md" markdown="true">}} or older, the upgrade process does not work. 
+If you are upgrading across minor versions, such as to version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} from {{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}} or older, the upgrade process does not work. 
 
 Newer versions can add CRDs that Helm upgrades cannot handle seamlessly. Instead, review the version-specific upgrading docs.
    * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.9.0/" >}})
@@ -171,7 +171,7 @@ The following steps assume that you already installed Gloo Edge as a Helm releas
 
    **Gloo Edge Open Source example:**
    ```shell script
-   ~ > helm upgrade -n gloo-system gloo gloo/gloo --version=v{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}
+   ~ > helm upgrade -n gloo-system gloo gloo/gloo --version=v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
    Release "gloo" has been upgraded. Happy Helming!
    NAME: gloo
    LAST DEPLOYED: Thu Dec 12 12:22:16 2019
@@ -183,7 +183,7 @@ The following steps assume that you already installed Gloo Edge as a Helm releas
 
    **Gloo Edge Enterprise example:**
    ```shell script
-   ~ > helm upgrade -n gloo-system gloo glooe/gloo-ee --version=v{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}
+   ~ > helm upgrade -n gloo-system gloo glooe/gloo-ee --version=v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
    Release "gloo" has been upgraded. Happy Helming!
    NAME: gloo
    LAST DEPLOYED: Thu Dec 12 12:22:16 2019
@@ -195,7 +195,7 @@ The following steps assume that you already installed Gloo Edge as a Helm releas
 2. Verify that Gloo Edge has the upgraded version.
    ```shell script
    ~ > kubectl -n gloo-system get pod -l gloo=gloo -ojsonpath='{.items[0].spec.containers[0].image}'
-   quay.io/solo-io/gloo:{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}
+   quay.io/solo-io/gloo:{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
    ```
 3. Check that your Gloo Edge components are **OK**. If a problem is reported by `glooctl check`, Gloo Edge might not work properly or Envoy might not get the updated configuration.
    ```bash
