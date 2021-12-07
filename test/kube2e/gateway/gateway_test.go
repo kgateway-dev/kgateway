@@ -1150,18 +1150,56 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 		}
 
+		createServiceWithWatchedLabels := func(svcName string, watchedLabels map[string]string) {
+			// merge watchedLabels into service labels
+			labels := map[string]string{"gloo": svcName}
+			for key, val := range watchedLabels {
+				labels[key] = val
+			}
+			// Write service
+			service := &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   svcName,
+					Labels: labels,
+				},
+				Spec: corev1.ServiceSpec{
+					Selector: map[string]string{
+						"gloo": svcName,
+					},
+					Ports: []corev1.ServicePort{{
+						Port: helper.TestRunnerPort,
+					}},
+				},
+			}
+			service, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).Create(ctx, service, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			createdServices = append(createdServices, service.Name)
+		}
+
+		getUpstream := func(svcname string) (*gloov1.Upstream, error) {
+			upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
+			return upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
+		}
+
+		// Update the Gloo Discovery WatchLabels setting to the specified value
+		setWatchLabels := func(watchLabels map[string]string) {
+			kube2e.UpdateSettings(func(settings *gloov1.Settings) {
+				Expect(settings.GetDiscovery()).NotTo(BeNil())
+				settings.GetDiscovery().UdsOptions = &gloov1.Settings_DiscoveryOptions_UdsOptions{
+					WatchLabels: watchLabels,
+				}
+			}, ctx, testHelper.InstallNamespace)
+		}
 		AfterEach(func() {
 			for _, svcName := range createdServices {
 				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, svcName, metav1.DeleteOptions{})
 			}
+
+			setWatchLabels(nil)
 		})
 
 		It("should preserve discovery", func() {
 			createServicesForPod(helper.TestrunnerName, helper.TestRunnerPort)
-			getUpstream := func(svcname string) (*gloov1.Upstream, error) {
-				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
-				return upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
-			}
 
 			for _, svc := range createdServices {
 				Eventually(func() (*gloov1.Upstream, error) { return getUpstream(svc) }, "15s", "0.5s").ShouldNot(BeNil())
@@ -1192,6 +1230,52 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(spec).ToNot(BeNil())
 				Expect(spec.GetGrpc()).ToNot(BeNil())
 			}
+		})
+
+		It("Discovers upstream with label that matches watched labels", func() {
+			watchedKey := "A"
+			watchedValue := "B"
+			watchedLabels := map[string]string{watchedKey: watchedValue}
+			setWatchLabels(watchedLabels)
+
+			svcName := "uds-test-service"
+			createServiceWithWatchedLabels(svcName, watchedLabels)
+
+			Eventually(func() (*gloov1.Upstream, error) {
+				return getUpstream(svcName)
+			}, "15s", "0.5s").ShouldNot(BeNil())
+		})
+
+		It("Does not discover upstream with no label when watched labels are set", func() {
+			watchedKey := "A"
+			watchedValue := "B"
+			watchedLabels := map[string]string{watchedKey: watchedValue}
+			setWatchLabels(watchedLabels)
+
+			svcName := "uds-test-service"
+			createServiceWithWatchedLabels(svcName, nil)
+
+			Consistently(func() error {
+				_, err := getUpstream(svcName)
+				return err
+			}, "15s", "0.5s").Should(HaveOccurred())
+		})
+
+		It("Does not discover upstream with mismatched label value", func() {
+			watchedKey := "A"
+			watchedValue := "B"
+			unwatchedValue := "C"
+			watchedLabels := map[string]string{watchedKey: watchedValue}
+			setWatchLabels(watchedLabels)
+
+			svcName := "uds-test-service"
+			unwatchedLabels := map[string]string{watchedKey: unwatchedValue}
+			createServiceWithWatchedLabels(svcName, unwatchedLabels)
+
+			Consistently(func() error {
+				_, err := getUpstream(svcName)
+				return err
+			}, "15s", "0.5s").Should(HaveOccurred())
 		})
 	})
 
