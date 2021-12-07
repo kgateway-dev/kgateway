@@ -1150,10 +1150,10 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 		}
 
-		createServiceWithWatchedAnnotations := func(svcName string, watchedAnnotations map[string]string) {
-			// merge watchedAnnotations into service labels
+		createServiceWithWatchedLabels := func(svcName string, watchedLabels map[string]string) {
+			// merge watchedLabels into service labels
 			labels := map[string]string{"gloo": svcName}
-			for key, val := range watchedAnnotations {
+			for key, val := range watchedLabels {
 				labels[key] = val
 			}
 			// Write service
@@ -1233,11 +1233,11 @@ var _ = Describe("Kube2e: gateway", func() {
 		It("Discovers upstream with label that matches watched annotations", func() {
 			watchedKey := "A"
 			watchedValue := "B"
-			watchedAnnotations := map[string]string{watchedKey: watchedValue}
-			setWatchLabels(watchedAnnotations)
+			watchedLabels := map[string]string{watchedKey: watchedValue}
+			setWatchLabels(watchedLabels)
 
 			svcName := "uds-test-service"
-			createServiceWithWatchedAnnotations(svcName, watchedAnnotations)
+			createServiceWithWatchedLabels(svcName, watchedLabels)
 
 			Eventually(func() (*gloov1.Upstream, error) {
 				return getUpstream(svcName)
@@ -1247,11 +1247,11 @@ var _ = Describe("Kube2e: gateway", func() {
 		It("Does not discover upstream with no label when watched annotations are set", func() {
 			watchedKey := "A"
 			watchedValue := "B"
-			watchedAnnotations := map[string]string{watchedKey: watchedValue}
-			setWatchLabels(watchedAnnotations)
+			watchedLabels := map[string]string{watchedKey: watchedValue}
+			setWatchLabels(watchedLabels)
 
 			svcName := "uds-test-service"
-			createServiceWithWatchedAnnotations(svcName, nil)
+			createServiceWithWatchedLabels(svcName, nil)
 
 			Consistently(func() error {
 				_, err := getUpstream(svcName)
@@ -1263,12 +1263,12 @@ var _ = Describe("Kube2e: gateway", func() {
 			watchedKey := "A"
 			watchedValue := "B"
 			unwatchedValue := "C"
-			watchedAnnotations := map[string]string{watchedKey: watchedValue}
-			setWatchLabels(watchedAnnotations)
+			watchedLabels := map[string]string{watchedKey: watchedValue}
+			setWatchLabels(watchedLabels)
 
 			svcName := "uds-test-service"
-			unwatchedAnnotations := map[string]string{watchedKey: unwatchedValue}
-			createServiceWithWatchedAnnotations(svcName, unwatchedAnnotations)
+			unwatchedLabels := map[string]string{watchedKey: unwatchedValue}
+			createServiceWithWatchedLabels(svcName, unwatchedLabels)
 
 			Consistently(func() error {
 				_, err := getUpstream(svcName)
