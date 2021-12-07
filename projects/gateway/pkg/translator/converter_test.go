@@ -905,7 +905,7 @@ var _ = Describe("Route converter", func() {
 				Expect(converted).To(BeNil())
 				Expect(rpt).To(HaveLen(2))
 
-				expectedWarning := translator.InvalidRouteTableForDelegatePrefixErr("/foo", "/invalid").Error()
+				expectedWarning := translator.InvalidRouteTableForDelegatePrefixWarning("/foo", "/invalid").Error()
 
 				_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
 				Expect(vsReport.Errors).NotTo(HaveOccurred())
@@ -937,7 +937,7 @@ var _ = Describe("Route converter", func() {
 				Expect(converted).To(BeNil())
 				Expect(rpt).To(HaveLen(2))
 
-				expectedWarning := translator.InvalidRouteTableForDelegateCaseSensitivePathMatchErr(rtCaseSensitivity, nil).Error()
+				expectedWarning := translator.InvalidRouteTableForDelegateCaseSensitivePathMatchWarning(rtCaseSensitivity, nil).Error()
 
 				_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
 				Expect(vsReport.Errors).NotTo(HaveOccurred())
@@ -1032,7 +1032,7 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedWarning := translator.InvalidRouteTableForDelegateHeadersErr(headers, []*matchers.HeaderMatcher{}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateHeadersWarning(headers, []*matchers.HeaderMatcher{}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
 					Expect(vsReport.Errors).NotTo(HaveOccurred())
@@ -1071,7 +1071,7 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedWarning := translator.InvalidRouteTableForDelegateHeadersErr(headers, []*matchers.HeaderMatcher{mismatchedHeader}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateHeadersWarning(headers, []*matchers.HeaderMatcher{mismatchedHeader}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
 					Expect(vsReport.Errors).NotTo(HaveOccurred())
@@ -1168,7 +1168,7 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedWarning := translator.InvalidRouteTableForDelegateQueryParamsErr(queryParams, []*matchers.QueryParameterMatcher{}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateQueryParamsWarning(queryParams, []*matchers.QueryParameterMatcher{}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
 					Expect(vsReport.Errors).NotTo(HaveOccurred())
@@ -1207,7 +1207,7 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedWarning := translator.InvalidRouteTableForDelegateQueryParamsErr(queryParams, []*matchers.QueryParameterMatcher{mismatchedQueryParams}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateQueryParamsWarning(queryParams, []*matchers.QueryParameterMatcher{mismatchedQueryParams}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
 					Expect(vsReport.Errors).NotTo(HaveOccurred())
@@ -1297,7 +1297,7 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedWarning := translator.InvalidRouteTableForDelegateMethodsErr(methods, []string{}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateMethodsWarning(methods, []string{}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
 					Expect(vsReport.Errors).NotTo(HaveOccurred())
@@ -1334,7 +1334,7 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedWarning := translator.InvalidRouteTableForDelegateMethodsErr(methods, []string{methods[0]}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateMethodsWarning(methods, []string{methods[0]}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
 					Expect(vsReport.Errors).NotTo(HaveOccurred())
@@ -1358,7 +1358,7 @@ var _ = Describe("Route converter", func() {
 				Expect(converted).To(BeNil())
 				Expect(rpt).To(HaveLen(2))
 
-				expectedWarning := translator.InvalidRouteTableForDelegatePrefixErr("/foo", "/").Error()
+				expectedWarning := translator.InvalidRouteTableForDelegatePrefixWarning("/foo", "/").Error()
 
 				_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
 				Expect(vsReport.Errors).NotTo(HaveOccurred())
