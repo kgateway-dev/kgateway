@@ -47,10 +47,10 @@ var _ = Describe("UDS setup syncer tests", func() {
 					},
 					Discovery: &v1.Settings_DiscoveryOptions{
 						UdsOptions: &v1.Settings_DiscoveryOptions_UdsOptions{
-							Enabled: &wrappers.BoolValue{Value: true},
+							Enabled:     &wrappers.BoolValue{Value: true},
+							WatchLabels: map[string]string{"A": "B"},
 						},
-						FdsMode:     v1.Settings_DiscoveryOptions_DISABLED,
-						WatchLabels: map[string]string{"A": "B"},
+						FdsMode: v1.Settings_DiscoveryOptions_DISABLED,
 					},
 				},
 				Upstreams: f,
