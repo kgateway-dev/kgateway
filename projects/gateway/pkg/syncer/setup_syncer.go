@@ -160,7 +160,6 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		},
 		DevMode:                       true,
 		ReadGatewaysFromAllNamespaces: settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
-		WarnOnDelegateMatcherErrors:   settings.GetGloo().GetInvalidConfigPolicy().GetReplaceInvalidRoutes(),
 		Validation:                    validation,
 	}
 

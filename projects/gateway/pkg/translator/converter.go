@@ -70,11 +70,10 @@ type RouteConverter interface {
 	ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gatewayv1.ApiSnapshot, reports reporter.ResourceReports) ([]*gloov1.Route, error)
 }
 
-func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer, warnOnDelegateMatcherErrors bool) RouteConverter {
+func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer) RouteConverter {
 	return &routeVisitor{
-		routeTableSelector:          selector,
-		routeTableIndexer:           indexer,
-		warnOnDelegateMatcherErrors: warnOnDelegateMatcherErrors,
+		routeTableSelector: selector,
+		routeTableIndexer:  indexer,
 	}
 }
 
@@ -110,10 +109,6 @@ type routeVisitor struct {
 	routeTableSelector RouteTableSelector
 	// Used to sort route tables when multiple ones are matched by a selector.
 	routeTableIndexer RouteTableIndexer
-	// If true, then delegated route table errors related to parent-child matcher incompatibility will be treated as
-	// warnings during translation, and left to the route replacing sanitizer to clean up. This is set to true when
-	// invalid route replacement is enabled.
-	warnOnDelegateMatcherErrors bool
 }
 
 // Helper object used to store information about previously visited routes.
@@ -207,11 +202,7 @@ func (rv *routeVisitor) visit(
 				routeClone.Options = routeOpts.GetOptions()
 				continue
 			}
-			routeClone.Options, err = mergeRouteOptions(routeClone.GetOptions(), routeOpts.GetOptions())
-			if err != nil {
-				reporterHelper.addError(resource.InputResource(), err)
-				continue
-			}
+			routeClone.Options = mergeRouteOptions(routeClone.GetOptions(), routeOpts.GetOptions())
 		}
 
 		// If the parent route is not nil, this route has been delegated to and we need to perform additional operations
@@ -219,11 +210,13 @@ func (rv *routeVisitor) visit(
 			var err error
 			routeClone, err = validateAndMergeParentRoute(routeClone, parentRoute)
 			if err != nil {
-				if rv.warnOnDelegateMatcherErrors {
-					reporterHelper.addWarning(resource.InputResource(), err)
-				} else {
-					reporterHelper.addError(resource.InputResource(), err)
-				}
+				// An error occurs here when a delegated route's matcher is incompatible with its parent route's
+				// matcher. If we were to add this as an error on the resource, it would cause the entire VirtualHost
+				// to get stripped from the Proxy during gateway translation sync, thereby preventing the Proxy from
+				// receiving updates to other valid routes within the same VirtualHost.
+				// Therefore, we treat these as warnings here, allowing other valid routes on the same VirtualHost to
+				// still pass through and get onto the Proxy.
+				reporterHelper.addWarning(resource.InputResource(), err)
 				continue
 			}
 		} else {
@@ -524,13 +517,7 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 
 	// Merge options from parent routes
 	// If an option is defined on a parent route, it will override the child route's option
-	merged, err := mergeRouteOptions(child.GetOptions(), parent.options)
-	if err != nil {
-		// Should never happen
-		return nil, errors.Wrapf(err, "internal error: merging route options from parent to delegated route")
-	}
-
-	child.Options = merged
+	child.Options = mergeRouteOptions(child.GetOptions(), parent.options)
 
 	return child, nil
 }

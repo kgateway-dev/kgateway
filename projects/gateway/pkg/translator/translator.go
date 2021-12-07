@@ -47,7 +47,7 @@ func NewDefaultTranslator(opts Opts) *translator {
 	}
 
 	return NewTranslator([]ListenerFactory{
-		&HttpTranslator{WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting, WarnOnDelegateMatcherErrors: opts.WarnOnDelegateMatcherErrors},
+		&HttpTranslator{WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting},
 		&TcpTranslator{},
 	}, opts)
 }
