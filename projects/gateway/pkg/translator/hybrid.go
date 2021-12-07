@@ -50,9 +50,9 @@ func (t *HybridTranslator) GenerateListeners(ctx context.Context, proxyName stri
 					if !loggedError {
 						snapHash := hashutils.MustHash(snap)
 						contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snapHash)
-						loggedError = true
+						loggedError = true // only log no virtual service error once
 					}
-					continue // TODO: do we want the entire listener to fail or just this matched listener?
+					continue
 				}
 
 				virtualServices := getVirtualServicesForHttpGateway(matchedGateway.GetHttpGateway(), gateway, snap.VirtualServices, reports, matchedGateway.GetMatcher().GetSslConfig() != nil)
