@@ -102,6 +102,11 @@ spec:
     udsOptions:
     {{- toYaml .Values.discovery.udsOptions | nindent 6 }}
 {{- end }} {{/* if .Values.discovery.udsOptions */}}
+
+{{- if .Values.discovery.watchAnnotations }}
+    watchAnnotations:
+    {{- toYaml .Values.discovery.watchAnnotations | nindent 6 }}
+{{- end }} {{/* if .Values.discovery.udsOptions */}}
 {{- end }} {{/* if .Values.discovery */}}
 
 {{- if .Values.settings.extensions }}
