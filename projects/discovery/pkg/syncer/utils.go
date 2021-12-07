@@ -40,3 +40,7 @@ func GetFdsMode(settings *v1.Settings) v1.Settings_DiscoveryOptions_FdsMode {
 func GetFdsEnabled(settings *v1.Settings) bool {
 	return GetFdsMode(settings) != v1.Settings_DiscoveryOptions_DISABLED
 }
+
+func GetWatchLabels(settings *v1.Settings) map[string]string {
+	return settings.GetDiscovery().GetUdsOptions().GetWatchLabels()
+}
