@@ -14,9 +14,8 @@ import (
 	"strings"
 	"time"
 
-	errors "github.com/rotisserie/eris"
-
 	"github.com/hashicorp/go-multierror"
+	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/k8s-utils/kubeutils"
 	v1 "k8s.io/api/core/v1"
@@ -25,8 +24,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// Get the resource identified by the given URI.
-// The URI can either be an http(s) address or a relative/absolute file path.
+// GetResource identified by the given URI.
+// The URI can either be a http(s) address or a relative/absolute file path.
 func GetResource(uri string) (io.ReadCloser, error) {
 	var file io.ReadCloser
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
@@ -97,6 +96,7 @@ func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort st
 	}
 	switch serviceType {
 	case v1.ServiceTypeClusterIP:
+		fmt.Println("Warning: Potentially invalid proxy configuration service type of ClusterIP")
 		host = svc.Spec.ClusterIP
 		port = fmt.Sprintf("%v", svcPort.Port)
 	case v1.ServiceTypeNodePort:
@@ -108,7 +108,7 @@ func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort st
 		port = fmt.Sprintf("%v", svcPort.NodePort)
 	case v1.ServiceTypeLoadBalancer:
 		if len(svc.Status.LoadBalancer.Ingress) == 0 {
-			return "", errors.Errorf(" load balancer ingress not found on service %v", proxyName)
+			return "", errors.Errorf("load balancer ingress not found on service %v", proxyName)
 		}
 		host = svc.Status.LoadBalancer.Ingress[0].Hostname
 		if host == "" {
@@ -169,7 +169,7 @@ func minikubeIp(clusterName string) (string, error) {
 	return strings.TrimSuffix(hostname.String(), "\n"), err
 }
 
-// Call kubectl port-forward. Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
+// PortForward call kubectl port-forward. Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
 func PortForward(namespace string, resource string, localPort string, kubePort string, verbose bool) (*exec.Cmd, error) {
 
 	/** port-forward command **/
@@ -198,7 +198,7 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 
 }
 
-// Call kubectl port-forward and make a GET request.
+// PortForwardGet call kubectl port-forward and make a GET request.
 // Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
 func PortForwardGet(ctx context.Context, namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (string, *exec.Cmd, error) {
 
