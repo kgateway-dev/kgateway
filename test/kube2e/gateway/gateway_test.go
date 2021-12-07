@@ -1243,7 +1243,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			Eventually(func() (*gloov1.Upstream, error) {
 				return getUpstream(svcName)
-			}, "15s", "0.5s").ShouldNot(HaveOccurred())
+			}, "15s", "0.5s").ShouldNot(BeNil())
 		})
 
 		It("Does not discover upstream with no label when watched labels are set", func() {
@@ -1255,9 +1255,10 @@ var _ = Describe("Kube2e: gateway", func() {
 			svcName := "uds-test-service"
 			createServiceWithWatchedLabels(svcName, nil)
 
-			Consistently(func() (*gloov1.Upstream, error) {
-				return getUpstream(svcName)
-			}, "15s", "0.5s").ShouldNot(HaveOccurred())
+			Consistently(func() error {
+				_, err := getUpstream(svcName)
+				return err
+			}, "15s", "0.5s").Should(HaveOccurred())
 		})
 
 		It("Does not discover upstream with mismatched label value", func() {
@@ -1274,7 +1275,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			Consistently(func() error {
 				_, err := getUpstream(svcName)
 				return err
-			}, "15s", "0.5s").ShouldNot(HaveOccurred())
+			}, "15s", "0.5s").Should(HaveOccurred())
 		})
 	})
 
