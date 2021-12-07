@@ -42,9 +42,5 @@ func GetFdsEnabled(settings *v1.Settings) bool {
 }
 
 func GetWatchLabels(settings *v1.Settings) map[string]string {
-	if settings == nil || settings.GetDiscovery() == nil || settings.GetDiscovery().GetUdsOptions() == nil {
-		return nil
-	}
-
 	return settings.GetDiscovery().GetUdsOptions().GetWatchLabels()
 }
