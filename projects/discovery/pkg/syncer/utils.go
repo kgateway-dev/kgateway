@@ -39,3 +39,11 @@ func GetFdsMode(settings *v1.Settings) v1.Settings_DiscoveryOptions_FdsMode {
 func GetFdsEnabled(settings *v1.Settings) bool {
 	return GetFdsMode(settings) != v1.Settings_DiscoveryOptions_DISABLED
 }
+
+func GetWatchAnnotations(settings *v1.Settings) map[string]string {
+	if settings == nil || settings.GetDiscovery() == nil {
+		return nil
+	}
+
+	return settings.GetDiscovery().GetWatchAnnotations()
+}
