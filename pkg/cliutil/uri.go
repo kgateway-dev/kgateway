@@ -56,6 +56,7 @@ func GetResource(uri string) (io.ReadCloser, error) {
 	return file, nil
 }
 
+// GetIngressHost returns the host address of the ingress
 func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort string, localCluster bool, clusterName string) (string, error) {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
@@ -272,7 +273,7 @@ func GetFreePort() (int, error) {
 	defer l.Close()
 	tcpAddr, ok := l.Addr().(*net.TCPAddr)
 	if !ok {
-		return 0, errors.Errorf("Error occured looking for an open tcp port")
+		return 0, errors.Errorf("Error occurred looking for an open tcp port")
 	}
 	return tcpAddr.Port, nil
 }
