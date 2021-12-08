@@ -20,11 +20,9 @@ var _ = Describe("validation utils", func() {
 	numRoutes := 8
 	numTcpListeners := 4
 	numHttpListeners := 2
-	makeProxy := func(http, tcp bool) *v1.Proxy {
+	makeHttpProxy := func() *v1.Proxy {
 		proxy := &v1.Proxy{}
 		for i := 0; i < numListeners; i++ {
-			if http {
-
 				httpListener := &v1.HttpListener{}
 				proxy.Listeners = append(proxy.Listeners, &v1.Listener{
 					ListenerType: &v1.Listener_HttpListener{
@@ -40,21 +38,29 @@ var _ = Describe("validation utils", func() {
 						vh.Routes = append(vh.Routes, &v1.Route{})
 					}
 				}
-			} else if tcp {
+		}
+		return proxy
+	}
+	makeTcpProxy := func() *v1.Proxy {
+		proxy := &v1.Proxy{}
+		for i := 0; i < numListeners; i++ {
+			tcpListener := &v1.TcpListener{}
+			proxy.Listeners = append(proxy.Listeners, &v1.Listener{
+				ListenerType: &v1.Listener_TcpListener{
+					TcpListener: tcpListener,
+				},
+			})
 
-				tcpListener := &v1.TcpListener{}
-				proxy.Listeners = append(proxy.Listeners, &v1.Listener{
-					ListenerType: &v1.Listener_TcpListener{
-						TcpListener: tcpListener,
-					},
-				})
-
-				for j := 0; j < numVhosts; j++ {
-					vh := &v1.TcpHost{}
-					tcpListener.TcpHosts = append(tcpListener.TcpHosts, vh)
-				}
-			} else { // hybrid
-
+			for j := 0; j < numVhosts; j++ {
+				vh := &v1.TcpHost{}
+				tcpListener.TcpHosts = append(tcpListener.TcpHosts, vh)
+			}
+		}
+		return proxy
+	}
+	makeHybridProxy := func() *v1.Proxy {
+		proxy := &v1.Proxy{}
+		for i := 0; i < numListeners; i++ {
 				hybridListener := &v1.HybridListener{}
 				proxy.Listeners = append(proxy.Listeners, &v1.Listener{
 					ListenerType: &v1.Listener_HybridListener{
@@ -106,15 +112,16 @@ var _ = Describe("validation utils", func() {
 						},
 					})
 				}
-			}
 		}
 		return proxy
 	}
 
+
+
 	var _ = Describe("MakeReport", func() {
 		It("generates a report which matches an http proxy", func() {
 
-			proxy := makeProxy(true, false)
+			proxy := makeHttpProxy()
 
 			rpt := MakeReport(proxy)
 			Expect(rpt.ListenerReports).To(HaveLen(len(proxy.Listeners)))
@@ -129,7 +136,7 @@ var _ = Describe("validation utils", func() {
 
 		It("generates a report which matches a tcp proxy", func() {
 
-			proxy := makeProxy(false, true)
+			proxy := makeTcpProxy()
 
 			rpt := MakeReport(proxy)
 			Expect(rpt.ListenerReports).To(HaveLen(len(proxy.Listeners)))
@@ -142,7 +149,7 @@ var _ = Describe("validation utils", func() {
 
 		It("generates a report which matches a hybrid proxy", func() {
 
-			proxy := makeProxy(false, false)
+			proxy := makeHybridProxy()
 
 			rpt := MakeReport(proxy)
 			Expect(rpt.ListenerReports).To(HaveLen(len(proxy.Listeners)))
@@ -185,7 +192,7 @@ var _ = Describe("validation utils", func() {
 
 	var _ = Describe("GetProxyError", func() {
 		It("aggregates the errors at every level for http listener", func() {
-			rpt := MakeReport(makeProxy(true, false))
+			rpt := MakeReport(makeHttpProxy())
 
 			rpt.ListenerReports[1].Errors = append(rpt.ListenerReports[1].Errors,
 				&validation.ListenerReport_Error{
@@ -221,7 +228,7 @@ var _ = Describe("validation utils", func() {
 			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; HttpListener Error: ProcessingError. Reason: bad http plugin"))
 		})
 		It("aggregates the errors at every level for hybrid listener", func() {
-			proxy := makeProxy(false, false)
+			proxy := makeHybridProxy()
 			rpt := MakeReport(proxy)
 
 			rpt.ListenerReports[1].Errors = append(rpt.ListenerReports[1].Errors,
