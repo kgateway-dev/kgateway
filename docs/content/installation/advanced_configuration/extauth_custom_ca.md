@@ -133,90 +133,153 @@ You've successfully added a custom certificate authority for external authentica
 
 To update an existing Gloo Edge Enterprise installation to support an additional trusted root certificate authority, we are going to patch the deployment for the external authentication server. You can do this by using `kubectl patch`. We are going to add three values for the volume, volumeMount, and initialization container.
 
-```bash
-# Get the current image of the extauth pod
-image=$(kubectl get deploy/extauth -n gloo-system -ojson | jq .spec.template.spec.containers[0].image -r)
+1. Get the current image of the external authentication pod.
+   ```sh
+   image=$(kubectl get deploy/extauth -n gloo-system -ojson | jq .spec.template.spec.containers[0].image -r)
+   ```
 
-# Patch the deployment with an initialization pod
-cat  <<EOF | xargs -0 kubectl patch deployment -n gloo-system extauth --type='json' -p
-[
-    {
-        "op": "add",
-        "path": "/spec/template/spec/containers/0/volumeMounts",
-        "value": [
-            {
-                "name": "certs",
-                "mountPath": "/etc/ssl/certs/"
-            }
-        ]
-    },
-    {
-        "op": "add",
-        "path": "/spec/template/spec/volumes",
-        "value": [
-            {
-                "name": "certs",
-                "emptyDir": {}
-            },
-            {
-                "name": "ca-certs",
-                "secret": {
-                    "secretName": "trusted-ca",
-                    "items": [
-                        {
-                            "key": "tls.crt",
-                            "path": "ca.crt"
-                        }
-                    ]
-                }
-            }
-        ]
-    },
-    {
-        "op": "add",
-        "path": "/spec/template/spec/initContainers",
-        "value": [
-            {
-                "name": "add-ca-cert",
-                "image": "$image",
-                "command": [
-                    "sh"
-                ],
-                "args": [
-                    "-c",
-                    "cp -r /etc/ssl/certs/* /certs; cat /etc/ssl/certs/ca-certificates.crt /ca-certs/ca.crt > /certs/ca-certificates.crt"
-                ],
-                "volumeMounts": [
-                    {
-                        "name": "certs",
-                        "mountPath": "/certs"
-                    },
-                    {
-                        "name": "ca-certs",
-                        "mountPath": "/ca-certs"
-                    }
-                ]
-            }
-        ]
-    }
-]
-EOF
+2. Patch the deployment with an initialization pod. When the patch is applied, the external authentication server pods are recreated. Note that the type of patch differs based on whether or not external authentication is running in TLS mode, in which the `envoy-sidecar` and the `sds` containers run in the external authentication pod.
+   {{< tabs >}}
+   {{% tab name="Non-mTLS mode (default)" codelang="shell" %}}
+   cat  <<EOF | xargs -0 kubectl patch deployment -n gloo-system extauth --type='json' -p
+   [
+       {
+           "op": "add",
+           "path": "/spec/template/spec/containers/0/volumeMounts",
+           "value": [
+               {
+                   "name": "certs",
+                   "mountPath": "/etc/ssl/certs/"
+               }
+           ]
+       },
+       {
+           "op": "add",
+           "path": "/spec/template/spec/volumes",
+           "value": [
+               {
+                   "name": "certs",
+                   "emptyDir": {}
+               },
+               {
+                   "name": "ca-certs",
+                   "secret": {
+                       "secretName": "trusted-ca",
+                       "items": [
+                           {
+                               "key": "tls.crt",
+                               "path": "ca.crt"
+                           }
+                       ]
+                   }
+               }
+           ]
+       },
+       {
+           "op": "add",
+           "path": "/spec/template/spec/initContainers",
+           "value": [
+               {
+                   "name": "add-ca-cert",
+                   "image": "$image",
+                   "command": [
+                       "sh"
+                   ],
+                   "args": [
+                       "-c",
+                       "cp -r /etc/ssl/certs/* /certs; cat /etc/ssl/certs/ca-certificates.crt /ca-certs/ca.crt > /certs/ca-certificates.crt"
+                   ],
+                   "volumeMounts": [
+                       {
+                           "name": "certs",
+                           "mountPath": "/certs"
+                       },
+                       {
+                           "name": "ca-certs",
+                           "mountPath": "/ca-certs"
+                       }
+                   ]
+               }
+           ]
+       }
+   ]
+   EOF
+   {{< /tab >}}
+   {{% tab name="mTLS mode" codelang="shell" %}}
+   cat <<EOF | xargs -0 kubectl patch deployment -n gloo-system extauth --type='json' -p
+   [
+     {
+       "op": "add",
+       "path": "/spec/template/spec/volumes/0",
+       "value": { "name": "certs", "emptyDir": {} } 
+     },
+     {
+       "op": "add",
+       "path": "/spec/template/spec/volumes/1",
+       "value": {
+         "name": "ca-certs",
+         "secret": {
+           "secretName": "trusted-ca",
+           "items": [
+             {
+               "key": "ca.crt",
+               "path": "ca.crt"
+             }
+           ]
+         }
+       }
+     },
+     {
+       "op": "add",
+       "path": "/spec/template/spec/containers/0/volumeMounts",
+       "value": [ {
+         "name": "certs",
+         "mountPath": "/etc/ssl/certs/"
+       } ]
+     },
+     {
+       "op": "add",
+       "path": "/spec/template/spec/initContainers",
+       "value": [
+         {
+           "name": "add-ca-cert",
+           "image": "$image",
+           "command": [
+             "sh"
+           ],
+           "args": [
+             "-c",
+             "cp -r /etc/ssl/certs/* /certs; cat /etc/ssl/certs/ca-certificates.crt /ca-certs/ca.crt > /certs/ca-certificates.crt"
+           ],
+           "volumeMounts": [
+             {
+               "name": "certs",
+               "mountPath": "/certs"
+             },
+             {
+               "name": "ca-certs",
+               "mountPath": "/ca-certs"
+             }
+           ]
+         }
+       ]
+     }
+   ]
+   EOF
+   {{< /tab >}}
+   {{< /tabs >}}
 
-```
-
-This will force a recreation of the external authentication server pod(s). We can validate our trusted certificate authority was added by running the following:
-
-```bash
-kubectl describe pods -n gloo-system -l gloo=extauth
-```
-
-You should see the init container `add-ca-cert` has completed its work.
-
-```bash
-  State:          Terminated
-    Reason:       Completed
-    Exit Code:    0
-```
+3. Verify that the trusted certificate authority was added.
+   ```bash
+   kubectl describe pods -n gloo-system -l gloo=extauth
+   ```
+   
+   In the output, the init container `add-ca-cert` is `completed`.
+   ```bash
+     State:          Terminated
+       Reason:       Completed
+       Exit Code:    0
+   ```
 
 You've successfully added a custom certificate authority for external authentication!
 
