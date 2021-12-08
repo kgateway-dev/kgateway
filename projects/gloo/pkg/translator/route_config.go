@@ -488,6 +488,7 @@ func (h *hybridRouteConfigurationTranslator) ComputeRouteConfiguration(params pl
 	for _, matchedListener := range h.listener.GetMatchedListeners() {
 		httpListener := matchedListener.GetHttpListener()
 		if httpListener == nil {
+			// only httpListeners produce RouteConfiguration
 			continue
 		}
 		matcher := matchedListener.GetMatcher()
