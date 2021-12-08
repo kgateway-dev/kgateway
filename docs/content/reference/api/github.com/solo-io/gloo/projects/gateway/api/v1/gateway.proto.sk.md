@@ -146,7 +146,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `matcher` | [.gateway.solo.io.Matcher](../gateway.proto.sk/#matcher) |  |
+| `matcher` | [.gateway.solo.io.Matcher](../gateway.proto.sk/#matcher) | Matchers are used to define unique matching criteria for each MatchedGateway Each MatchedGateway within a HybridGateway must have a unique Matcher If multiple matchers in a HybridGateway are identical, the HybridGateway will not be accepted Empty Matchers are effectively catch-alls, and there can be no more than one empty Matcher per HybridGateway. |
 | `httpGateway` | [.gateway.solo.io.HttpGateway](../gateway.proto.sk/#httpgateway) |  Only one of `httpGateway` or `tcpGateway` can be set. |
 | `tcpGateway` | [.gateway.solo.io.TcpGateway](../gateway.proto.sk/#tcpgateway) |  Only one of `tcpGateway` or `httpGateway` can be set. |
 
@@ -166,8 +166,8 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) |  |
-| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket. |
+| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) | CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange. |
 
 
 
