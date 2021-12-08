@@ -57,5 +57,6 @@ message FractionalPercent {
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3";
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
 option (extproto.equal_all) = true;
 
