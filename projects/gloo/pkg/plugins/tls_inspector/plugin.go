@@ -37,6 +37,7 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		},
 	}
 
+	// the method for inspecting each listener for ssl config varies by listener type
 	if shouldIncludeTlsInspectorListenerFilter(in) {
 		out.ListenerFilters = append(out.GetListenerFilters(), tlsInspector)
 	}
