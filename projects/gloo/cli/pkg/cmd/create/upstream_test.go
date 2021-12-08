@@ -149,7 +149,7 @@ var _ = Describe("Upstream", func() {
 
 	Context("Kube", func() {
 
-		FIt("demonstrate clone functionality", func() {
+		It("demonstrate clone functionality", func() {
 
 			// This is the type we manually create (a kube upstream spec with an empty map of selectors)
 			emptySliceType := &kubernetes.UpstreamSpec{
