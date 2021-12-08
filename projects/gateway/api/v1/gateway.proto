@@ -136,6 +136,10 @@ message HybridGateway {
 }
 
 message MatchedGateway {
+    // Matchers are used to define unique matching criteria for each MatchedGateway
+    // Each MatchedGateway within a HybridGateway must have a unique Matcher
+    // If multiple matchers in a HybridGateway are identical, the HybridGateway will not be accepted
+    // Empty Matchers are effectively catch-alls, and there can be no more than one empty Matcher per HybridGateway
     Matcher matcher = 1;
 
     oneof GatewayType {
@@ -145,8 +149,12 @@ message MatchedGateway {
 }
 
 message Matcher {
+    // Gloo use SNI domains as matching criteria for Gateway selection
+    // The other ssl_config properties will be applied to the outputFilterChain's transport socket
     gloo.solo.io.SslConfig ssl_config = 1;
 
+    // CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range.
+    // See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange
     repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 2;
 }
 
