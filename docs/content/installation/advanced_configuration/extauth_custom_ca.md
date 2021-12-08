@@ -138,7 +138,7 @@ To update an existing Gloo Edge Enterprise installation to support an additional
    image=$(kubectl get deploy/extauth -n gloo-system -ojson | jq .spec.template.spec.containers[0].image -r)
    ```
 
-2. Patch the deployment with an initialization pod. When the patch is applied, the external authentication server pods are recreated. Note that the type of patch differs based on whether or not external authentication is running in TLS mode, in which the `envoy-sidecar` and the `sds` containers run in the external authentication pod.
+2. Patch the `extauth` deployment with an initialization pod. When the patch is applied, the external authentication server pods are recreated. Note that the type of patch differs based on whether or not external authentication is running in TLS mode, in which the `envoy-sidecar` and the `sds` containers run in the external authentication pod.
    {{< tabs >}}
    {{% tab name="Non-mTLS mode (default)" codelang="shell" %}}
    cat  <<EOF | xargs -0 kubectl patch deployment -n gloo-system extauth --type='json' -p
@@ -275,7 +275,7 @@ To update an existing Gloo Edge Enterprise installation to support an additional
    ```
    
    In the output, the init container `add-ca-cert` is `completed`.
-   ```bash
+   ```
      State:          Terminated
        Reason:       Completed
        Exit Code:    0
