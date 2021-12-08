@@ -7,6 +7,7 @@ import "google/protobuf/duration.proto";
 
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
 option (extproto.equal_all) = true;
 
 // Specifies the route’s hashing policy if the upstream cluster uses a hashing load balancer.
