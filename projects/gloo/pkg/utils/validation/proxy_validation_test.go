@@ -23,21 +23,21 @@ var _ = Describe("validation utils", func() {
 	makeHttpProxy := func() *v1.Proxy {
 		proxy := &v1.Proxy{}
 		for i := 0; i < numListeners; i++ {
-				httpListener := &v1.HttpListener{}
-				proxy.Listeners = append(proxy.Listeners, &v1.Listener{
-					ListenerType: &v1.Listener_HttpListener{
-						HttpListener: httpListener,
-					},
-				})
+			httpListener := &v1.HttpListener{}
+			proxy.Listeners = append(proxy.Listeners, &v1.Listener{
+				ListenerType: &v1.Listener_HttpListener{
+					HttpListener: httpListener,
+				},
+			})
 
-				for j := 0; j < numVhosts; j++ {
-					vh := &v1.VirtualHost{}
-					httpListener.VirtualHosts = append(httpListener.VirtualHosts, vh)
+			for j := 0; j < numVhosts; j++ {
+				vh := &v1.VirtualHost{}
+				httpListener.VirtualHosts = append(httpListener.VirtualHosts, vh)
 
-					for k := 0; k < numRoutes; k++ {
-						vh.Routes = append(vh.Routes, &v1.Route{})
-					}
+				for k := 0; k < numRoutes; k++ {
+					vh.Routes = append(vh.Routes, &v1.Route{})
 				}
+			}
 		}
 		return proxy
 	}
@@ -61,62 +61,60 @@ var _ = Describe("validation utils", func() {
 	makeHybridProxy := func() *v1.Proxy {
 		proxy := &v1.Proxy{}
 		for i := 0; i < numListeners; i++ {
-				hybridListener := &v1.HybridListener{}
-				proxy.Listeners = append(proxy.Listeners, &v1.Listener{
-					ListenerType: &v1.Listener_HybridListener{
-						HybridListener: hybridListener,
+			hybridListener := &v1.HybridListener{}
+			proxy.Listeners = append(proxy.Listeners, &v1.Listener{
+				ListenerType: &v1.Listener_HybridListener{
+					HybridListener: hybridListener,
+				},
+			})
+
+			for l := 0; l < numTcpListeners; l++ {
+				tcpListener := &v1.TcpListener{}
+
+				for j := 0; j < numVhosts; j++ {
+					vh := &v1.TcpHost{}
+					tcpListener.TcpHosts = append(tcpListener.TcpHosts, vh)
+				}
+				hybridListener.MatchedListeners = append(hybridListener.MatchedListeners, &v1.MatchedListener{
+					Matcher: &v1.Matcher{
+						SourcePrefixRanges: []*v3.CidrRange{
+							&v3.CidrRange{
+								AddressPrefix: fmt.Sprintf("tcp-%d", l),
+							},
+						},
+					},
+					ListenerType: &v1.MatchedListener_TcpListener{
+						TcpListener: tcpListener,
 					},
 				})
+			}
+			for l := 0; l < numHttpListeners; l++ {
+				httpListener := &v1.HttpListener{}
 
-				for l := 0; l < numTcpListeners; l++ {
-					tcpListener := &v1.TcpListener{}
+				for j := 0; j < numVhosts; j++ {
+					vh := &v1.VirtualHost{}
+					httpListener.VirtualHosts = append(httpListener.VirtualHosts, vh)
 
-					for j := 0; j < numVhosts; j++ {
-						vh := &v1.TcpHost{}
-						tcpListener.TcpHosts = append(tcpListener.TcpHosts, vh)
+					for k := 0; k < numRoutes; k++ {
+						vh.Routes = append(vh.Routes, &v1.Route{})
 					}
-					hybridListener.MatchedListeners = append(hybridListener.MatchedListeners, &v1.MatchedListener{
-						Matcher: &v1.Matcher{
-							SourcePrefixRanges: []*v3.CidrRange{
-								&v3.CidrRange{
-									AddressPrefix: fmt.Sprintf("tcp-%d", l),
-								},
+				}
+				hybridListener.MatchedListeners = append(hybridListener.MatchedListeners, &v1.MatchedListener{
+					Matcher: &v1.Matcher{
+						SourcePrefixRanges: []*v3.CidrRange{
+							&v3.CidrRange{
+								AddressPrefix: fmt.Sprintf("http-%d", l),
 							},
 						},
-						ListenerType: &v1.MatchedListener_TcpListener{
-							TcpListener: tcpListener,
-						},
-					})
-				}
-				for l := 0; l < numHttpListeners; l++ {
-					httpListener := &v1.HttpListener{}
-
-					for j := 0; j < numVhosts; j++ {
-						vh := &v1.VirtualHost{}
-						httpListener.VirtualHosts = append(httpListener.VirtualHosts, vh)
-
-						for k := 0; k < numRoutes; k++ {
-							vh.Routes = append(vh.Routes, &v1.Route{})
-						}
-					}
-					hybridListener.MatchedListeners = append(hybridListener.MatchedListeners, &v1.MatchedListener{
-						Matcher: &v1.Matcher{
-							SourcePrefixRanges: []*v3.CidrRange{
-								&v3.CidrRange{
-									AddressPrefix: fmt.Sprintf("http-%d", l),
-								},
-							},
-						},
-						ListenerType: &v1.MatchedListener_HttpListener{
-							HttpListener: httpListener,
-						},
-					})
-				}
+					},
+					ListenerType: &v1.MatchedListener_HttpListener{
+						HttpListener: httpListener,
+					},
+				})
+			}
 		}
 		return proxy
 	}
-
-
 
 	var _ = Describe("MakeReport", func() {
 		It("generates a report which matches an http proxy", func() {

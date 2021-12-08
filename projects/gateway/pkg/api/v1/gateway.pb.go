@@ -515,6 +515,10 @@ type MatchedGateway struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Matchers are used to define unique matching criteria for each MatchedGateway
+	// Each MatchedGateway within a HybridGateway must have a unique Matcher
+	// If multiple matchers in a HybridGateway are identical, the HybridGateway will not be accepted
+	// Empty Matchers are effectively catch-alls, and there can be no more than one empty Matcher per HybridGateway
 	Matcher *Matcher `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
 	// Types that are assignable to GatewayType:
 	//	*MatchedGateway_HttpGateway
@@ -603,7 +607,11 @@ type Matcher struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SslConfig          *v1.SslConfig   `protobuf:"bytes,1,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
+	// Gloo use SNI domains as matching criteria for Gateway selection
+	// The other ssl_config properties will be applied to the outputFilterChain's transport socket
+	SslConfig *v1.SslConfig `protobuf:"bytes,1,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
+	// CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange
 	SourcePrefixRanges []*v3.CidrRange `protobuf:"bytes,2,rep,name=source_prefix_ranges,json=sourcePrefixRanges,proto3" json:"source_prefix_ranges,omitempty"`
 }
 
