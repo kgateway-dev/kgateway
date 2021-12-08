@@ -3835,6 +3835,16 @@ metadata:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("allows setting watchedLabels for discovery", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/watched_discovery_labels.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.udsOptions.watchLabels.A=B",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					Context("pass image pull secrets", func() {
 						pullSecretName := "test-pull-secret"
 						pullSecret := []v1.LocalObjectReference{

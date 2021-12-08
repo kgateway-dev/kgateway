@@ -1,0 +1,4 @@
+changelog: 
+  - type: NEW_FEATURE
+    description: You can now set a map of labels for UDS to filter against via Settings.DiscoveryOptions.UdsOptions.WatchLabels
+    issueLink: https://github.com/solo-io/gloo/issues/5025
