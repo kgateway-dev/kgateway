@@ -131,14 +131,14 @@ You've successfully added a custom certificate authority for external authentica
 
 ## Update Gloo Edge Enterprise
 
-To update an existing Gloo Edge Enterprise installation to support an additional trusted root certificate authority, we are going to patch the deployment for the external authentication server. You can do this by using `kubectl patch`. We are going to add three values for the volume, volumeMount, and initialization container.
+To update an existing Gloo Edge Enterprise installation to support an additional trusted root certificate authority, you can patch the deployment for the external authentication server. As part of the patch, you add three values for the custom certificate authority: volume, volumeMount, and initialization container.
 
 1. Get the current image of the external authentication pod.
    ```sh
    image=$(kubectl get deploy/extauth -n gloo-system -ojson | jq .spec.template.spec.containers[0].image -r)
    ```
 
-2. Patch the `extauth` deployment with an initialization pod. When the patch is applied, the external authentication server pods are recreated. Note that the type of patch differs based on whether or not external authentication is running in TLS mode, in which the `envoy-sidecar` and the `sds` containers run in the external authentication pod.
+2. Patch the `extauth` deployment with an initialization container. When the patch is applied, the external authentication server pods are recreated. Note that the type of patch differs based on whether or not external authentication is running in TLS mode, in which the `envoy-sidecar` and the `sds` containers run in the external authentication pod.
    {{< tabs >}}
    {{% tab name="Non-mTLS mode (default)" codelang="shell" %}}
    cat  <<EOF | xargs -0 kubectl patch deployment -n gloo-system extauth --type='json' -p
