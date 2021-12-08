@@ -136,6 +136,10 @@ message HybridGateway {
 }
 
 message MatchedGateway {
+    // Matchers are used to define unique matching criteria for each MatchedGateway
+    // Each MatchedGateway within a HybridGateway must have a unique Matcher
+    // If multiple matchers in a HybridGateway are identical, the HybridGateway will not be accepted
+    // Empty Matchers are effectively catch-alls, and there can be no more than one empty Matcher per HybridGateway
     Matcher matcher = 1;
 
     oneof GatewayType {
