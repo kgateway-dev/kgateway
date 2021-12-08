@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update all .proto interfaces to allow usage of ".Clone()"
+    issueLink: https://github.com/solo-io/gloo/issues/5620

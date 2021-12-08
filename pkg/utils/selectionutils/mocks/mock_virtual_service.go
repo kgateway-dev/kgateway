@@ -13,30 +13,30 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-// MockVirtualServiceSelector is a mock of VirtualServiceSelector interface
+// MockVirtualServiceSelector is a mock of VirtualServiceSelector interface.
 type MockVirtualServiceSelector struct {
 	ctrl     *gomock.Controller
 	recorder *MockVirtualServiceSelectorMockRecorder
 }
 
-// MockVirtualServiceSelectorMockRecorder is the mock recorder for MockVirtualServiceSelector
+// MockVirtualServiceSelectorMockRecorder is the mock recorder for MockVirtualServiceSelector.
 type MockVirtualServiceSelectorMockRecorder struct {
 	mock *MockVirtualServiceSelector
 }
 
-// NewMockVirtualServiceSelector creates a new mock instance
+// NewMockVirtualServiceSelector creates a new mock instance.
 func NewMockVirtualServiceSelector(ctrl *gomock.Controller) *MockVirtualServiceSelector {
 	mock := &MockVirtualServiceSelector{ctrl: ctrl}
 	mock.recorder = &MockVirtualServiceSelectorMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockVirtualServiceSelector) EXPECT() *MockVirtualServiceSelectorMockRecorder {
 	return m.recorder
 }
 
-// SelectOrBuildVirtualService mocks base method
+// SelectOrBuildVirtualService mocks base method.
 func (m *MockVirtualServiceSelector) SelectOrBuildVirtualService(arg0 context.Context, arg1 *core.ResourceRef) (*v1.VirtualService, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectOrBuildVirtualService", arg0, arg1)
@@ -45,7 +45,7 @@ func (m *MockVirtualServiceSelector) SelectOrBuildVirtualService(arg0 context.Co
 	return ret0, ret1
 }
 
-// SelectOrBuildVirtualService indicates an expected call of SelectOrBuildVirtualService
+// SelectOrBuildVirtualService indicates an expected call of SelectOrBuildVirtualService.
 func (mr *MockVirtualServiceSelectorMockRecorder) SelectOrBuildVirtualService(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectOrBuildVirtualService", reflect.TypeOf((*MockVirtualServiceSelector)(nil).SelectOrBuildVirtualService), arg0, arg1)

@@ -12,30 +12,30 @@ import (
 	v1 "k8s.io/client-go/listers/core/v1"
 )
 
-// MockKubeCoreCache is a mock of KubeCoreCache interface
+// MockKubeCoreCache is a mock of KubeCoreCache interface.
 type MockKubeCoreCache struct {
 	ctrl     *gomock.Controller
 	recorder *MockKubeCoreCacheMockRecorder
 }
 
-// MockKubeCoreCacheMockRecorder is the mock recorder for MockKubeCoreCache
+// MockKubeCoreCacheMockRecorder is the mock recorder for MockKubeCoreCache.
 type MockKubeCoreCacheMockRecorder struct {
 	mock *MockKubeCoreCache
 }
 
-// NewMockKubeCoreCache creates a new mock instance
+// NewMockKubeCoreCache creates a new mock instance.
 func NewMockKubeCoreCache(ctrl *gomock.Controller) *MockKubeCoreCache {
 	mock := &MockKubeCoreCache{ctrl: ctrl}
 	mock.recorder = &MockKubeCoreCacheMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockKubeCoreCache) EXPECT() *MockKubeCoreCacheMockRecorder {
 	return m.recorder
 }
 
-// ConfigMapLister mocks base method
+// ConfigMapLister mocks base method.
 func (m *MockKubeCoreCache) ConfigMapLister() v1.ConfigMapLister {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConfigMapLister")
@@ -43,25 +43,25 @@ func (m *MockKubeCoreCache) ConfigMapLister() v1.ConfigMapLister {
 	return ret0
 }
 
-// ConfigMapLister indicates an expected call of ConfigMapLister
+// ConfigMapLister indicates an expected call of ConfigMapLister.
 func (mr *MockKubeCoreCacheMockRecorder) ConfigMapLister() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigMapLister", reflect.TypeOf((*MockKubeCoreCache)(nil).ConfigMapLister))
 }
 
-// IsClusterCache mocks base method
+// IsClusterCache mocks base method.
 func (m *MockKubeCoreCache) IsClusterCache() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "IsClusterCache")
 }
 
-// IsClusterCache indicates an expected call of IsClusterCache
+// IsClusterCache indicates an expected call of IsClusterCache.
 func (mr *MockKubeCoreCacheMockRecorder) IsClusterCache() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsClusterCache", reflect.TypeOf((*MockKubeCoreCache)(nil).IsClusterCache))
 }
 
-// NamespaceLister mocks base method
+// NamespaceLister mocks base method.
 func (m *MockKubeCoreCache) NamespaceLister() v1.NamespaceLister {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NamespaceLister")
@@ -69,13 +69,13 @@ func (m *MockKubeCoreCache) NamespaceLister() v1.NamespaceLister {
 	return ret0
 }
 
-// NamespaceLister indicates an expected call of NamespaceLister
+// NamespaceLister indicates an expected call of NamespaceLister.
 func (mr *MockKubeCoreCacheMockRecorder) NamespaceLister() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NamespaceLister", reflect.TypeOf((*MockKubeCoreCache)(nil).NamespaceLister))
 }
 
-// NamespacedConfigMapLister mocks base method
+// NamespacedConfigMapLister mocks base method.
 func (m *MockKubeCoreCache) NamespacedConfigMapLister(arg0 string) cache.ConfigMapLister {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NamespacedConfigMapLister", arg0)
@@ -83,13 +83,13 @@ func (m *MockKubeCoreCache) NamespacedConfigMapLister(arg0 string) cache.ConfigM
 	return ret0
 }
 
-// NamespacedConfigMapLister indicates an expected call of NamespacedConfigMapLister
+// NamespacedConfigMapLister indicates an expected call of NamespacedConfigMapLister.
 func (mr *MockKubeCoreCacheMockRecorder) NamespacedConfigMapLister(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NamespacedConfigMapLister", reflect.TypeOf((*MockKubeCoreCache)(nil).NamespacedConfigMapLister), arg0)
 }
 
-// NamespacedPodLister mocks base method
+// NamespacedPodLister mocks base method.
 func (m *MockKubeCoreCache) NamespacedPodLister(arg0 string) cache.PodLister {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NamespacedPodLister", arg0)
@@ -97,13 +97,13 @@ func (m *MockKubeCoreCache) NamespacedPodLister(arg0 string) cache.PodLister {
 	return ret0
 }
 
-// NamespacedPodLister indicates an expected call of NamespacedPodLister
+// NamespacedPodLister indicates an expected call of NamespacedPodLister.
 func (mr *MockKubeCoreCacheMockRecorder) NamespacedPodLister(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NamespacedPodLister", reflect.TypeOf((*MockKubeCoreCache)(nil).NamespacedPodLister), arg0)
 }
 
-// NamespacedSecretLister mocks base method
+// NamespacedSecretLister mocks base method.
 func (m *MockKubeCoreCache) NamespacedSecretLister(arg0 string) cache.SecretLister {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NamespacedSecretLister", arg0)
@@ -111,13 +111,13 @@ func (m *MockKubeCoreCache) NamespacedSecretLister(arg0 string) cache.SecretList
 	return ret0
 }
 
-// NamespacedSecretLister indicates an expected call of NamespacedSecretLister
+// NamespacedSecretLister indicates an expected call of NamespacedSecretLister.
 func (mr *MockKubeCoreCacheMockRecorder) NamespacedSecretLister(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NamespacedSecretLister", reflect.TypeOf((*MockKubeCoreCache)(nil).NamespacedSecretLister), arg0)
 }
 
-// NamespacedServiceLister mocks base method
+// NamespacedServiceLister mocks base method.
 func (m *MockKubeCoreCache) NamespacedServiceLister(arg0 string) cache.ServiceLister {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NamespacedServiceLister", arg0)
@@ -125,13 +125,13 @@ func (m *MockKubeCoreCache) NamespacedServiceLister(arg0 string) cache.ServiceLi
 	return ret0
 }
 
-// NamespacedServiceLister indicates an expected call of NamespacedServiceLister
+// NamespacedServiceLister indicates an expected call of NamespacedServiceLister.
 func (mr *MockKubeCoreCacheMockRecorder) NamespacedServiceLister(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NamespacedServiceLister", reflect.TypeOf((*MockKubeCoreCache)(nil).NamespacedServiceLister), arg0)
 }
 
-// PodLister mocks base method
+// PodLister mocks base method.
 func (m *MockKubeCoreCache) PodLister() v1.PodLister {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PodLister")
@@ -139,13 +139,13 @@ func (m *MockKubeCoreCache) PodLister() v1.PodLister {
 	return ret0
 }
 
-// PodLister indicates an expected call of PodLister
+// PodLister indicates an expected call of PodLister.
 func (mr *MockKubeCoreCacheMockRecorder) PodLister() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodLister", reflect.TypeOf((*MockKubeCoreCache)(nil).PodLister))
 }
 
-// SecretLister mocks base method
+// SecretLister mocks base method.
 func (m *MockKubeCoreCache) SecretLister() v1.SecretLister {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SecretLister")
@@ -153,13 +153,13 @@ func (m *MockKubeCoreCache) SecretLister() v1.SecretLister {
 	return ret0
 }
 
-// SecretLister indicates an expected call of SecretLister
+// SecretLister indicates an expected call of SecretLister.
 func (mr *MockKubeCoreCacheMockRecorder) SecretLister() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecretLister", reflect.TypeOf((*MockKubeCoreCache)(nil).SecretLister))
 }
 
-// ServiceLister mocks base method
+// ServiceLister mocks base method.
 func (m *MockKubeCoreCache) ServiceLister() v1.ServiceLister {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ServiceLister")
@@ -167,13 +167,13 @@ func (m *MockKubeCoreCache) ServiceLister() v1.ServiceLister {
 	return ret0
 }
 
-// ServiceLister indicates an expected call of ServiceLister
+// ServiceLister indicates an expected call of ServiceLister.
 func (mr *MockKubeCoreCacheMockRecorder) ServiceLister() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServiceLister", reflect.TypeOf((*MockKubeCoreCache)(nil).ServiceLister))
 }
 
-// Subscribe mocks base method
+// Subscribe mocks base method.
 func (m *MockKubeCoreCache) Subscribe() <-chan struct{} {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subscribe")
@@ -181,19 +181,19 @@ func (m *MockKubeCoreCache) Subscribe() <-chan struct{} {
 	return ret0
 }
 
-// Subscribe indicates an expected call of Subscribe
+// Subscribe indicates an expected call of Subscribe.
 func (mr *MockKubeCoreCacheMockRecorder) Subscribe() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockKubeCoreCache)(nil).Subscribe))
 }
 
-// Unsubscribe mocks base method
+// Unsubscribe mocks base method.
 func (m *MockKubeCoreCache) Unsubscribe(arg0 <-chan struct{}) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Unsubscribe", arg0)
 }
 
-// Unsubscribe indicates an expected call of Unsubscribe
+// Unsubscribe indicates an expected call of Unsubscribe.
 func (mr *MockKubeCoreCacheMockRecorder) Unsubscribe(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockKubeCoreCache)(nil).Unsubscribe), arg0)

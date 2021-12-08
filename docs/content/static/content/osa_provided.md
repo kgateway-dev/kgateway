@@ -7,7 +7,7 @@ Name|Version|License
 [udpa/go](https://github.com/cncf/udpa)|v0.0.0-20201120205902-5459f2c99403|Apache License 2.0
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.9.9-0.20210511190911-87d352569d55|Apache License 2.0
-[envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.4.1|Apache License 2.0
+[envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.6.1|Apache License 2.0
 [fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
 [form3tech-oss/jwt-go](https://github.com/form3tech-oss/jwt-go)|v3.2.3+incompatible|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.4.9|BSD 3-clause "New" or "Revised" License
@@ -18,7 +18,7 @@ Name|Version|License
 [go-swagger/go-swagger](https://github.com/go-swagger/go-swagger)|v0.21.0|Apache License 2.0
 [gogo/googleapis](https://github.com/gogo/googleapis)|v1.3.2|Apache License 2.0
 [gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.2|BSD 3-clause "New" or "Revised" License
-[golang/protobuf](https://github.com/golang/protobuf)|v1.4.3|BSD 3-clause "New" or "Revised" License
+[golang/protobuf](https://github.com/golang/protobuf)|v1.5.2|BSD 3-clause "New" or "Revised" License
 [google/go-github](https://github.com/google/go-github)|v17.0.0+incompatible|BSD 3-clause "New" or "Revised" License
 [go-github/v32](https://github.com/google/go-github)|v32.0.0|BSD 3-clause "New" or "Revised" License
 [gorilla/mux](https://github.com/gorilla/mux)|v1.8.0|BSD 3-clause "New" or "Revised" License
@@ -36,20 +36,21 @@ Name|Version|License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.9.0|Apache License 2.0
 [prometheus/prometheus](https://github.com/prometheus/prometheus)|v2.5.0+incompatible|Apache License 2.0
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.4.0|MIT License
+[saiskee/gettercheck](https://github.com/saiskee/gettercheck)|v0.0.0-20210820204958-38443d06ebe0|MIT License
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.1.0|MIT License
-[spf13/afero](https://github.com/spf13/afero)|v1.5.1|Apache License 2.0
+[spf13/afero](https://github.com/spf13/afero)|v1.6.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.1.3|Apache License 2.0
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
 [spf13/viper](https://github.com/spf13/viper)|v1.7.1|MIT License
-[go.opencensus.io](https://go.opencensus.io)|v0.22.6|Apache License 2.0
+[go.opencensus.io](https://go.opencensus.io)|v0.23.0|Apache License 2.0
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.16.0|MIT License
 [x/mod](https://golang.org/x/mod)|v0.4.2|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.0.0-20210220032951-036812b2e83c|BSD 3-clause "New" or "Revised" License
 [x/tools](https://golang.org/x/tools)|v0.1.5|BSD 3-clause "New" or "Revised" License
-[google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20210219173056-d891e3cb3b5b|Apache License 2.0
+[google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20210312152112-fc591d9ea70f|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.36.0|Apache License 2.0
-[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.25.0|BSD 3-clause "New" or "Revised" License
+[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.27.1|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
 [helm/v3](https://helm.sh/helm/v3)|v3.4.2|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.19.6|Apache License 2.0

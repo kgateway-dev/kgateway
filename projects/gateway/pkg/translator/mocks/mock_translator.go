@@ -14,30 +14,30 @@ import (
 	reporter "github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-// MockTranslator is a mock of Translator interface
+// MockTranslator is a mock of Translator interface.
 type MockTranslator struct {
 	ctrl     *gomock.Controller
 	recorder *MockTranslatorMockRecorder
 }
 
-// MockTranslatorMockRecorder is the mock recorder for MockTranslator
+// MockTranslatorMockRecorder is the mock recorder for MockTranslator.
 type MockTranslatorMockRecorder struct {
 	mock *MockTranslator
 }
 
-// NewMockTranslator creates a new mock instance
+// NewMockTranslator creates a new mock instance.
 func NewMockTranslator(ctrl *gomock.Controller) *MockTranslator {
 	mock := &MockTranslator{ctrl: ctrl}
 	mock.recorder = &MockTranslatorMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockTranslator) EXPECT() *MockTranslatorMockRecorder {
 	return m.recorder
 }
 
-// Translate mocks base method
+// Translate mocks base method.
 func (m *MockTranslator) Translate(arg0 context.Context, arg1, arg2 string, arg3 *v1.ApiSnapshot, arg4 v1.GatewayList) (*v10.Proxy, reporter.ResourceReports) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Translate", arg0, arg1, arg2, arg3, arg4)
@@ -46,7 +46,7 @@ func (m *MockTranslator) Translate(arg0 context.Context, arg1, arg2 string, arg3
 	return ret0, ret1
 }
 
-// Translate indicates an expected call of Translate
+// Translate indicates an expected call of Translate.
 func (mr *MockTranslatorMockRecorder) Translate(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Translate", reflect.TypeOf((*MockTranslator)(nil).Translate), arg0, arg1, arg2, arg3, arg4)

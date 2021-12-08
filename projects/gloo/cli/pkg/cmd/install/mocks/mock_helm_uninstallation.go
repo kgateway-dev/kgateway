@@ -11,30 +11,30 @@ import (
 	release "helm.sh/helm/v3/pkg/release"
 )
 
-// MockHelmUninstallation is a mock of HelmUninstallation interface
+// MockHelmUninstallation is a mock of HelmUninstallation interface.
 type MockHelmUninstallation struct {
 	ctrl     *gomock.Controller
 	recorder *MockHelmUninstallationMockRecorder
 }
 
-// MockHelmUninstallationMockRecorder is the mock recorder for MockHelmUninstallation
+// MockHelmUninstallationMockRecorder is the mock recorder for MockHelmUninstallation.
 type MockHelmUninstallationMockRecorder struct {
 	mock *MockHelmUninstallation
 }
 
-// NewMockHelmUninstallation creates a new mock instance
+// NewMockHelmUninstallation creates a new mock instance.
 func NewMockHelmUninstallation(ctrl *gomock.Controller) *MockHelmUninstallation {
 	mock := &MockHelmUninstallation{ctrl: ctrl}
 	mock.recorder = &MockHelmUninstallationMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockHelmUninstallation) EXPECT() *MockHelmUninstallationMockRecorder {
 	return m.recorder
 }
 
-// Run mocks base method
+// Run mocks base method.
 func (m *MockHelmUninstallation) Run(arg0 string) (*release.UninstallReleaseResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Run", arg0)
@@ -43,7 +43,7 @@ func (m *MockHelmUninstallation) Run(arg0 string) (*release.UninstallReleaseResp
 	return ret0, ret1
 }
 
-// Run indicates an expected call of Run
+// Run indicates an expected call of Run.
 func (mr *MockHelmUninstallationMockRecorder) Run(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockHelmUninstallation)(nil).Run), arg0)

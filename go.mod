@@ -19,7 +19,7 @@ require (
 	github.com/docker/docker v20.10.3+incompatible // indirect
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e // indirect
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210511190911-87d352569d55
-	github.com/envoyproxy/protoc-gen-validate v0.4.1
+	github.com/envoyproxy/protoc-gen-validate v0.6.1
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
@@ -30,11 +30,10 @@ require (
 	github.com/go-openapi/spec v0.19.6
 	github.com/go-openapi/swag v0.19.7
 	github.com/go-swagger/go-swagger v0.21.0
-	github.com/go-test/deep v1.0.4 // indirect
 	github.com/gogo/googleapis v1.3.2
 	github.com/gogo/protobuf v1.3.2
-	github.com/golang/mock v1.4.4
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/mock v1.6.0
+	github.com/golang/protobuf v1.5.2
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v32 v32.0.0
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
@@ -74,32 +73,34 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/rotisserie/eris v0.4.0
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.1.0
 	github.com/sirupsen/logrus v1.8.0 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/solo-io/go-list-licenses v0.1.0
-	github.com/solo-io/go-utils v0.21.17
-	github.com/solo-io/k8s-utils v0.0.8
-	github.com/solo-io/protoc-gen-ext v0.0.15
-	github.com/solo-io/skv2 v0.17.17
+	github.com/solo-io/go-utils v0.21.24
+	github.com/solo-io/k8s-utils v0.0.11
+	github.com/solo-io/protoc-gen-ext v0.0.16
+	github.com/solo-io/protoc-gen-openapi v0.0.1
+	github.com/solo-io/skv2 v0.21.6
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
-	github.com/solo-io/solo-kit v0.24.0
+	github.com/solo-io/solo-kit v0.24.2
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
-	github.com/spf13/afero v1.5.1
+	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
-	go.opencensus.io v0.22.6
+	go.opencensus.io v0.23.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20211117180635-dee7805ff2e1 // indirect
 	golang.org/x/tools v0.1.5
-	google.golang.org/genproto v0.0.0-20210219173056-d891e3cb3b5b
+	google.golang.org/genproto v0.0.0-20210312152112-fc591d9ea70f
 	google.golang.org/grpc v1.36.0
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.27.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/ini.v1 v1.56.0 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect

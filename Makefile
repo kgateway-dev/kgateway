@@ -130,7 +130,7 @@ install-go-tools: mod-download
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
-	GOBIN=$(DEPSGOBIN) go install github.com/sam-heilbron/protoc-gen-openapi
+	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-openapi
 	GOBIN=$(DEPSGOBIN) go install github.com/envoyproxy/protoc-gen-validate
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/protobuf/protoc-gen-go
 	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
@@ -184,8 +184,12 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-
 # TODO(EItanya): make mockgen work for gloo
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
-	go mod tidy
-	find * -type f -name '*.sk.md' -exec rm {} \;
+	find * -type f -name '*.sk.md' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.sk.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.hash.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.equal.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.clone.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
 	rm -rf vendor_any
 	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go generate ./...
 	PATH=$(DEPSGOBIN):$$PATH rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
