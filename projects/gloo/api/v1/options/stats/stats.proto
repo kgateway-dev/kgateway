@@ -7,6 +7,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/st
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
 
 // This plugin provides additional configuration options to expose statistics.
 message Stats {

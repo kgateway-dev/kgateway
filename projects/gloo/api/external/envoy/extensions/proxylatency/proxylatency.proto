@@ -7,6 +7,7 @@ import "google/protobuf/wrappers.proto";
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
 
 // Configure the proxy latency filter. This filter measures the latency
 // incurred by the filter chain in a histogram.

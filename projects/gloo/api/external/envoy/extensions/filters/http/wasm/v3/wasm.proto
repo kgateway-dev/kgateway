@@ -12,6 +12,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envo
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
 
 
 option java_package = "io.envoyproxy.envoy.extensions.filters.http.wasm.v3";

@@ -57,8 +57,7 @@ var _ = Describe("MergeOptions", func() {
 			},
 		}
 
-		actual, err := mergeRouteOptions(dst, src)
-		Expect(err).NotTo(HaveOccurred())
+		actual := mergeRouteOptions(dst, src)
 		Expect(actual).To(Equal(expected))
 	})
 
@@ -107,8 +106,7 @@ var _ = Describe("MergeOptions", func() {
 			},
 		}
 
-		actual, err := mergeVirtualHostOptions(dst, src)
-		Expect(err).NotTo(HaveOccurred())
+		actual := mergeVirtualHostOptions(dst, src)
 		Expect(actual).To(Equal(expected))
 	})
 })
