@@ -8,6 +8,7 @@ import "google/protobuf/duration.proto";
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
 
 // Retry Policy applied at the Route and/or Virtual Hosts levels.
 message RetryPolicy {

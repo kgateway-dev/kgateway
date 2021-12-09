@@ -32,3 +32,6 @@ old_docs_temp_dir/
 
 # junit
 junit.xml
+
+# e2e tests
+*.test

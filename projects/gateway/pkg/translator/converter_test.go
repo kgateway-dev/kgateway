@@ -885,7 +885,7 @@ var _ = Describe("Route converter", func() {
 		})
 
 		When("route table has a matcher that doesn't match the prefix of the parent route", func() {
-			It("reports error on the route table and on the virtual service", func() {
+			It("reports warning on the route table and on the virtual service", func() {
 				rt.Routes[0].Matchers = []*matchers.Matcher{
 					{
 						PathSpecifier: &matchers.Matcher_Prefix{
@@ -905,18 +905,22 @@ var _ = Describe("Route converter", func() {
 				Expect(converted).To(BeNil())
 				Expect(rpt).To(HaveLen(2))
 
-				expectedErr := translator.InvalidRouteTableForDelegatePrefixErr("/foo", "/invalid").Error()
+				expectedWarning := translator.InvalidRouteTableForDelegatePrefixWarning("/foo", "/invalid").Error()
 
 				_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-				Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+				Expect(vsReport.Errors).NotTo(HaveOccurred())
+				Expect(vsReport.Warnings).To(HaveLen(1))
+				Expect(vsReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 
 				_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-				Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+				Expect(rtReport.Errors).NotTo(HaveOccurred())
+				Expect(rtReport.Warnings).To(HaveLen(1))
+				Expect(rtReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 			})
 		})
 
 		When("route table has a matcher case sensitivity that doesn't match the prefix case sensitivity of the parent route", func() {
-			It("reports error on the route table and on the virtual service", func() {
+			It("reports warning on the route table and on the virtual service", func() {
 				rtCaseSensitivity := &wrappers.BoolValue{Value: false}
 				rt.Routes[0].Matchers = []*matchers.Matcher{
 					{
@@ -933,13 +937,17 @@ var _ = Describe("Route converter", func() {
 				Expect(converted).To(BeNil())
 				Expect(rpt).To(HaveLen(2))
 
-				expectedErr := translator.InvalidRouteTableForDelegateCaseSensitivePathMatchErr(rtCaseSensitivity, nil).Error()
+				expectedWarning := translator.InvalidRouteTableForDelegateCaseSensitivePathMatchWarning(rtCaseSensitivity, nil).Error()
 
 				_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-				Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+				Expect(vsReport.Errors).NotTo(HaveOccurred())
+				Expect(vsReport.Warnings).To(HaveLen(1))
+				Expect(vsReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 
 				_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-				Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+				Expect(rtReport.Errors).NotTo(HaveOccurred())
+				Expect(rtReport.Warnings).To(HaveLen(1))
+				Expect(rtReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 			})
 		})
 
@@ -1001,7 +1009,7 @@ var _ = Describe("Route converter", func() {
 					vs.VirtualHost.Routes[0].Matchers[0].Headers = headers
 				})
 
-				It("reports error on the route table and on the virtual service if virtual service has headers that aren't on the route table", func() {
+				It("reports warning on the route table and on the virtual service if virtual service has headers that aren't on the route table", func() {
 
 					rt.Routes[0].Matchers = []*matchers.Matcher{
 						{
@@ -1024,16 +1032,20 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedErr := translator.InvalidRouteTableForDelegateHeadersErr(headers, []*matchers.HeaderMatcher{}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateHeadersWarning(headers, []*matchers.HeaderMatcher{}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-					Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(vsReport.Errors).NotTo(HaveOccurred())
+					Expect(vsReport.Warnings).To(HaveLen(1))
+					Expect(vsReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 
 					_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-					Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(rtReport.Errors).NotTo(HaveOccurred())
+					Expect(rtReport.Warnings).To(HaveLen(1))
+					Expect(rtReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 				})
 
-				It("reports error on the route table and on the virtual service if virtual service has headers that aren't equal on the route table", func() {
+				It("reports warning on the route table and on the virtual service if virtual service has headers that aren't equal on the route table", func() {
 
 					mismatchedHeader := proto.Clone(headers[0]).(*matchers.HeaderMatcher)
 					mismatchedHeader.Value = mismatchedHeader.Value + "invalid"
@@ -1059,13 +1071,17 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedErr := translator.InvalidRouteTableForDelegateHeadersErr(headers, []*matchers.HeaderMatcher{mismatchedHeader}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateHeadersWarning(headers, []*matchers.HeaderMatcher{mismatchedHeader}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-					Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(vsReport.Errors).NotTo(HaveOccurred())
+					Expect(vsReport.Warnings).To(HaveLen(1))
+					Expect(vsReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 
 					_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-					Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(rtReport.Errors).NotTo(HaveOccurred())
+					Expect(rtReport.Warnings).To(HaveLen(1))
+					Expect(rtReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 				})
 
 			})
@@ -1129,7 +1145,7 @@ var _ = Describe("Route converter", func() {
 					vs.VirtualHost.Routes[0].Matchers[0].QueryParameters = queryParams
 				})
 
-				It("reports error on the route table and on the virtual service if virtual service has query params that aren't on the route table", func() {
+				It("reports warning on the route table and on the virtual service if virtual service has query params that aren't on the route table", func() {
 
 					rt.Routes[0].Matchers = []*matchers.Matcher{
 						{
@@ -1152,16 +1168,20 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedErr := translator.InvalidRouteTableForDelegateQueryParamsErr(queryParams, []*matchers.QueryParameterMatcher{}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateQueryParamsWarning(queryParams, []*matchers.QueryParameterMatcher{}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-					Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(vsReport.Errors).NotTo(HaveOccurred())
+					Expect(vsReport.Warnings).To(HaveLen(1))
+					Expect(vsReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 
 					_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-					Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(rtReport.Errors).NotTo(HaveOccurred())
+					Expect(rtReport.Warnings).To(HaveLen(1))
+					Expect(rtReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 				})
 
-				It("reports error on the route table and on the virtual service if virtual service has query params that aren't equal on the route table", func() {
+				It("reports warning on the route table and on the virtual service if virtual service has query params that aren't equal on the route table", func() {
 
 					mismatchedQueryParams := proto.Clone(queryParams[0]).(*matchers.QueryParameterMatcher)
 					mismatchedQueryParams.Value = mismatchedQueryParams.Value + "invalid"
@@ -1187,13 +1207,17 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedErr := translator.InvalidRouteTableForDelegateQueryParamsErr(queryParams, []*matchers.QueryParameterMatcher{mismatchedQueryParams}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateQueryParamsWarning(queryParams, []*matchers.QueryParameterMatcher{mismatchedQueryParams}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-					Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(vsReport.Errors).NotTo(HaveOccurred())
+					Expect(vsReport.Warnings).To(HaveLen(1))
+					Expect(vsReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 
 					_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-					Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(rtReport.Errors).NotTo(HaveOccurred())
+					Expect(rtReport.Warnings).To(HaveLen(1))
+					Expect(rtReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 				})
 			})
 
@@ -1250,7 +1274,7 @@ var _ = Describe("Route converter", func() {
 					vs.VirtualHost.Routes[0].Matchers[0].Methods = methods
 				})
 
-				It("reports error on the route table and on the virtual service if virtual service has methods that aren't on the route table", func() {
+				It("reports warning on the route table and on the virtual service if virtual service has methods that aren't on the route table", func() {
 
 					rt.Routes[0].Matchers = []*matchers.Matcher{
 						{
@@ -1273,16 +1297,20 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedErr := translator.InvalidRouteTableForDelegateMethodsErr(methods, []string{}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateMethodsWarning(methods, []string{}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-					Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(vsReport.Errors).NotTo(HaveOccurred())
+					Expect(vsReport.Warnings).To(HaveLen(1))
+					Expect(vsReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 
 					_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-					Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(rtReport.Errors).NotTo(HaveOccurred())
+					Expect(rtReport.Warnings).To(HaveLen(1))
+					Expect(rtReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 				})
 
-				It("reports error on the route table and on the virtual service if virtual service has methods that aren't equal on the route table", func() {
+				It("reports warning on the route table and on the virtual service if virtual service has methods that aren't equal on the route table", func() {
 
 					rt.Routes[0].Matchers = []*matchers.Matcher{
 						{
@@ -1306,33 +1334,41 @@ var _ = Describe("Route converter", func() {
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
 
-					expectedErr := translator.InvalidRouteTableForDelegateMethodsErr(methods, []string{methods[0]}).Error()
+					expectedWarning := translator.InvalidRouteTableForDelegateMethodsWarning(methods, []string{methods[0]}).Error()
 
 					_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-					Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(vsReport.Errors).NotTo(HaveOccurred())
+					Expect(vsReport.Warnings).To(HaveLen(1))
+					Expect(vsReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 
 					_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-					Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+					Expect(rtReport.Errors).NotTo(HaveOccurred())
+					Expect(rtReport.Warnings).To(HaveLen(1))
+					Expect(rtReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 				})
 			})
 
 		})
 
 		When("route table has no matchers and the parent route matcher is not the default one", func() {
-			It("reports error on the route table and on the virtual service", func() {
+			It("reports warning on the route table and on the virtual service", func() {
 				rpt := reporter.ResourceReports{}
 				converted, err := rv.ConvertVirtualService(vs, gw, "proxy1", snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(BeNil())
 				Expect(rpt).To(HaveLen(2))
 
-				expectedErr := translator.InvalidRouteTableForDelegatePrefixErr("/foo", "/").Error()
+				expectedWarning := translator.InvalidRouteTableForDelegatePrefixWarning("/foo", "/").Error()
 
 				_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-				Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+				Expect(vsReport.Errors).NotTo(HaveOccurred())
+				Expect(vsReport.Warnings).To(HaveLen(1))
+				Expect(vsReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 
 				_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-				Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+				Expect(rtReport.Errors).NotTo(HaveOccurred())
+				Expect(rtReport.Warnings).To(HaveLen(1))
+				Expect(rtReport.Warnings[0]).To(ContainSubstring(expectedWarning))
 			})
 		})
 

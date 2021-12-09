@@ -10,6 +10,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/tran
 
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
 option (extproto.equal_all) = true;
 
 message ResponseMatch { 
