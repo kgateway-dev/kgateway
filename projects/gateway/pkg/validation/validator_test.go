@@ -217,7 +217,7 @@ var _ = Describe("Validator", func() {
 
 		Context("route table delegation with selectors", func() {
 			It("accepts route table with valid prefix", func() {
-				vc.validate = acceptProxy
+				vc.validateProxy = acceptProxy
 				us := samples.SimpleUpstream()
 				snap := samples.GatewaySnapshotWithDelegateSelector(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
@@ -229,7 +229,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("rejects route table with invalid prefix", func() {
-				vc.validate = acceptProxy
+				vc.validateProxy = acceptProxy
 				us := samples.SimpleUpstream()
 				snap := samples.GatewaySnapshotWithDelegateSelector(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
