@@ -794,26 +794,6 @@ var _ = Describe("Kube2e: gateway", func() {
 				var goodRt *gatewayv1.RouteTable
 				var badRt *gatewayv1.RouteTable
 
-				EventuallyVirtualServiceStatus := func(namespace string, name string) AsyncAssertion {
-					return Eventually(func() (core.Status_State, error) {
-						vs, err := virtualServiceClient.Read(namespace, name, clients.ReadOpts{})
-						if err != nil {
-							return core.Status_Pending, err
-						}
-						return statusClient.GetStatus(vs).GetState(), nil
-					}, "15s", "0.5s")
-				}
-
-				EventuallyRouteTableStatus := func(namespace string, name string) AsyncAssertion {
-					return Eventually(func() (core.Status_State, error) {
-						rt, err := routeTableClient.Read(namespace, name, clients.ReadOpts{})
-						if err != nil {
-							return core.Status_Pending, err
-						}
-						return statusClient.GetStatus(rt).GetState(), nil
-					}, "15s", "0.5s")
-				}
-
 				AfterEach(func() {
 					// delete VS and 2 RTs
 					err := virtualServiceClient.Delete(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.DeleteOpts{})
@@ -855,9 +835,15 @@ var _ = Describe("Kube2e: gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// the good RT should be accepted, but both the VS and bad RT should have a warning
-					EventuallyVirtualServiceStatus(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName()).Should(Equal(core.Status_Warning))
-					EventuallyRouteTableStatus(goodRt.GetMetadata().GetNamespace(), goodRt.GetMetadata().GetName()).Should(Equal(core.Status_Accepted))
-					EventuallyRouteTableStatus(badRt.GetMetadata().GetNamespace(), badRt.GetMetadata().GetName()).Should(Equal(core.Status_Warning))
+					helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
+						return virtualServiceClient.Read(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return routeTableClient.Read(goodRt.GetMetadata().GetNamespace(), goodRt.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+					helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
+						return routeTableClient.Read(badRt.GetMetadata().GetNamespace(), badRt.GetMetadata().GetName(), clients.ReadOpts{})
+					})
 
 					// the valid route should return the expected direct response
 					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -922,9 +908,15 @@ var _ = Describe("Kube2e: gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// the good RT should be accepted, but both the VS and bad RT should have a warning
-					EventuallyVirtualServiceStatus(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName()).Should(Equal(core.Status_Warning))
-					EventuallyRouteTableStatus(goodRt.GetMetadata().GetNamespace(), goodRt.GetMetadata().GetName()).Should(Equal(core.Status_Accepted))
-					EventuallyRouteTableStatus(badRt.GetMetadata().GetNamespace(), badRt.GetMetadata().GetName()).Should(Equal(core.Status_Warning))
+					helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
+						return virtualServiceClient.Read(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return routeTableClient.Read(goodRt.GetMetadata().GetNamespace(), goodRt.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+					helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
+						return routeTableClient.Read(badRt.GetMetadata().GetNamespace(), badRt.GetMetadata().GetName(), clients.ReadOpts{})
+					})
 
 					// the valid route should return the expected direct response
 					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
