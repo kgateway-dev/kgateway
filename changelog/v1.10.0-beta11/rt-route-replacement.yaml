@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5502
+    description: >-
+      Treat delegated RouteTable matcher errors as warnings during translation, so that updates on other valid
+      routes can still occur.
