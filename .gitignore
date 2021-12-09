@@ -31,3 +31,8 @@ old_docs_temp_dir/
 .vscode/launch.json
 .vscode/settings.json
 
+# junit
+junit.xml
+
+# e2e tests
+*.test

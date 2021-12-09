@@ -41,23 +41,23 @@ var (
 	DelegationCycleErr = func(cycleInfo string) error {
 		return errors.Errorf("invalid route: delegation cycle detected: %s", cycleInfo)
 	}
-	InvalidRouteTableForDelegatePrefixErr = func(delegatePrefix, prefixString string) error {
+	InvalidRouteTableForDelegatePrefixWarning = func(delegatePrefix, prefixString string) error {
 		return errors.Wrapf(InvalidPrefixErr, "required prefix: %v, prefix: %v", delegatePrefix, prefixString)
 	}
-	InvalidRouteTableForDelegateHeadersErr = func(delegateHeaders, childHeaders []*matchersv1.HeaderMatcher) error {
+	InvalidRouteTableForDelegateHeadersWarning = func(delegateHeaders, childHeaders []*matchersv1.HeaderMatcher) error {
 		return errors.Wrapf(InvalidHeaderErr, "required headers: %v, headers: %v", delegateHeaders, childHeaders)
 	}
-	InvalidRouteTableForDelegateQueryParamsErr = func(delegateQueryParams, childQueryParams []*matchersv1.QueryParameterMatcher) error {
+	InvalidRouteTableForDelegateQueryParamsWarning = func(delegateQueryParams, childQueryParams []*matchersv1.QueryParameterMatcher) error {
 		return errors.Wrapf(InvalidQueryParamErr, "required query params: %v, query params: %v", delegateQueryParams, childQueryParams)
 	}
-	InvalidRouteTableForDelegateMethodsErr = func(delegateMethods, childMethods []string) error {
+	InvalidRouteTableForDelegateMethodsWarning = func(delegateMethods, childMethods []string) error {
 		return errors.Wrapf(InvalidMethodErr, "required methods: %v, methods: %v", delegateMethods, childMethods)
 	}
 	TopLevelVirtualResourceErr = func(rtRef *core.Metadata, err error) error {
 		return errors.Wrapf(err, "on sub route table %s", rtRef.Ref().Key())
 	}
 
-	InvalidRouteTableForDelegateCaseSensitivePathMatchErr = func(delegateMatchCaseSensitive, matchCaseSensitive *wrappers.BoolValue) error {
+	InvalidRouteTableForDelegateCaseSensitivePathMatchWarning = func(delegateMatchCaseSensitive, matchCaseSensitive *wrappers.BoolValue) error {
 		return errors.Wrapf(InvalidPathMatchErr, "required caseSensitive: %v, caseSensitive: %v", delegateMatchCaseSensitive, matchCaseSensitive)
 	}
 )
@@ -190,7 +190,13 @@ func (rv *routeVisitor) visit(
 			var err error
 			routeClone, err = validateAndMergeParentRoute(routeClone, parentRoute)
 			if err != nil {
-				reporterHelper.addError(resource.InputResource(), err)
+				// An error occurs here when a delegated route's matcher is incompatible with its parent route's
+				// matcher. If we were to add this as an error on the resource, it would cause the entire VirtualHost
+				// to get stripped from the Proxy during gateway translation sync, thereby preventing the Proxy from
+				// receiving updates to other valid routes within the same VirtualHost.
+				// Therefore, we treat these as warnings here, allowing other valid routes on the same VirtualHost to
+				// still pass through and get onto the Proxy.
+				reporterHelper.addWarning(resource.InputResource(), err)
 				continue
 			}
 		}
@@ -475,13 +481,8 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 	}
 
 	// Merge options from parent routes
-	merged, err := mergeRouteOptions(child.GetOptions(), parent.options)
-	if err != nil {
-		// Should never happen
-		return nil, errors.Wrapf(err, "internal error: merging route options from parent to delegated route")
-	}
-
-	child.Options = merged
+	// If an option is defined on a parent route, it will override the child route's option
+	child.Options = mergeRouteOptions(child.GetOptions(), parent.options)
 
 	return child, nil
 }
@@ -491,12 +492,12 @@ func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, chil
 	for _, childMatch := range childRoute.Matchers {
 		// ensure all sub-routes in the delegated route table match the parent prefix
 		if pathString := glooutils.PathAsString(childMatch); !strings.HasPrefix(pathString, parentMatcher.GetPrefix()) {
-			return InvalidRouteTableForDelegatePrefixErr(parentMatcher.GetPrefix(), pathString)
+			return InvalidRouteTableForDelegatePrefixWarning(parentMatcher.GetPrefix(), pathString)
 		}
 
 		// ensure all sub-routes matches in the delegated route match the parent case sensitivity
 		if !proto.Equal(childMatch.GetCaseSensitive(), parentMatcher.GetCaseSensitive()) {
-			return InvalidRouteTableForDelegateCaseSensitivePathMatchErr(childMatch.CaseSensitive, parentMatcher.CaseSensitive)
+			return InvalidRouteTableForDelegateCaseSensitivePathMatchWarning(childMatch.GetCaseSensitive(), parentMatcher.GetCaseSensitive())
 		}
 
 		// ensure all headers in the delegated route table are a superset of those from the parent route resource
@@ -506,9 +507,9 @@ func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, chil
 		}
 		for _, parentHeader := range parentMatcher.Headers {
 			if childHeader, ok := childHeaderNameToHeader[parentHeader.GetName()]; !ok {
-				return InvalidRouteTableForDelegateHeadersErr(parentMatcher.Headers, childMatch.Headers)
+				return InvalidRouteTableForDelegateHeadersWarning(parentMatcher.GetHeaders(), childMatch.GetHeaders())
 			} else if !parentHeader.Equal(childHeader) {
-				return InvalidRouteTableForDelegateHeadersErr(parentMatcher.Headers, childMatch.Headers)
+				return InvalidRouteTableForDelegateHeadersWarning(parentMatcher.GetHeaders(), childMatch.GetHeaders())
 			}
 		}
 
@@ -519,16 +520,16 @@ func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, chil
 		}
 		for _, parentQueryParameter := range parentMatcher.QueryParameters {
 			if childQueryParam, ok := childQueryParamNameToHeader[parentQueryParameter.GetName()]; !ok {
-				return InvalidRouteTableForDelegateQueryParamsErr(parentMatcher.QueryParameters, childMatch.QueryParameters)
+				return InvalidRouteTableForDelegateQueryParamsWarning(parentMatcher.GetQueryParameters(), childMatch.GetQueryParameters())
 			} else if !parentQueryParameter.Equal(childQueryParam) {
-				return InvalidRouteTableForDelegateQueryParamsErr(parentMatcher.QueryParameters, childMatch.QueryParameters)
+				return InvalidRouteTableForDelegateQueryParamsWarning(parentMatcher.GetQueryParameters(), childMatch.GetQueryParameters())
 			}
 		}
 
 		// ensure all HTTP methods in the delegated route table are a superset of those from the parent route resource
-		childMethodsSet := sets.NewString(childMatch.Methods...)
-		if !childMethodsSet.HasAll(parentMatcher.Methods...) {
-			return InvalidRouteTableForDelegateMethodsErr(parentMatcher.Methods, childMatch.Methods)
+		childMethodsSet := sets.NewString(childMatch.GetMethods()...)
+		if !childMethodsSet.HasAll(parentMatcher.GetMethods()...) {
+			return InvalidRouteTableForDelegateMethodsWarning(parentMatcher.GetMethods(), childMatch.GetMethods())
 		}
 	}
 	return nil
