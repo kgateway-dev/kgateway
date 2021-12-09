@@ -353,10 +353,7 @@ func (t *HttpTranslator) mergeDelegatedVirtualHostOptions(vs *v1.VirtualService,
 			vs.GetVirtualHost().Options = vhOption.GetOptions()
 			continue
 		}
-		vs.GetVirtualHost().Options, err = mergeVirtualHostOptions(vs.GetVirtualHost().GetOptions(), vhOption.GetOptions())
-		if err != nil {
-			reports.AddError(vs, err)
-		}
+		vs.GetVirtualHost().Options = mergeVirtualHostOptions(vs.GetVirtualHost().GetOptions(), vhOption.GetOptions())
 	}
 }
 

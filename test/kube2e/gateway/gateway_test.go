@@ -724,67 +724,229 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		Context("with a mix of valid and invalid routes on a single virtual service", func() {
 
-			var vs *gatewayv1.VirtualService
+			Context("route destination is nonexistent upstream", func() {
+				var vs *gatewayv1.VirtualService
 
-			BeforeEach(func() {
-				kube2e.UpdateReplaceInvalidRoutes(ctx, true, testHelper.InstallNamespace)
+				BeforeEach(func() {
+					kube2e.UpdateReplaceInvalidRoutes(ctx, true, testHelper.InstallNamespace)
 
-				vs = withRoute(&gatewayv1.Route{
-					Matchers: []*matchers.Matcher{{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/invalid-route"}}},
-					Action: &gatewayv1.Route_RouteAction{RouteAction: &gloov1.RouteAction{
-						Destination: &gloov1.RouteAction_Single{Single: &gloov1.Destination{
-							DestinationType: &gloov1.Destination_Upstream{
-								Upstream: &core.ResourceRef{
-									Namespace: testHelper.InstallNamespace,
-									Name:      "does-not-exist",
+					vs = withRoute(&gatewayv1.Route{
+						Matchers: []*matchers.Matcher{{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/invalid-route"}}},
+						Action: &gatewayv1.Route_RouteAction{RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_Single{Single: &gloov1.Destination{
+								DestinationType: &gloov1.Destination_Upstream{
+									Upstream: &core.ResourceRef{
+										Namespace: testHelper.InstallNamespace,
+										Name:      "does-not-exist",
+									},
 								},
-							},
+							}},
 						}},
-					}},
-				}, getVirtualService(&gloov1.Destination{
-					DestinationType: &gloov1.Destination_Upstream{
-						Upstream: &core.ResourceRef{
-							Namespace: testHelper.InstallNamespace,
-							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+					}, getVirtualService(&gloov1.Destination{
+						DestinationType: &gloov1.Destination_Upstream{
+							Upstream: &core.ResourceRef{
+								Namespace: testHelper.InstallNamespace,
+								Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+							},
 						},
-					},
-				}, nil))
+					}, nil))
 
-				_, err := virtualServiceClient.Write(vs, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
+					_, err := virtualServiceClient.Write(vs, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					_ = virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{})
+					helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+						return virtualServiceClient.Read(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.ReadOpts{})
+					}, "15s", "0.5s")
+
+					kube2e.UpdateReplaceInvalidRoutes(ctx, false, testHelper.InstallNamespace)
+				})
+
+				It("serves a direct response for the invalid route response", func() {
+					// the valid route should work
+					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+						Protocol:          "http",
+						Path:              "/",
+						Method:            "GET",
+						Service:           gatewayProxy,
+						Port:              gatewayPort,
+						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+						WithoutStats:      true,
+					}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+
+					// the invalid route should respond with the direct response
+					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+						Protocol:          "http",
+						Path:              "/invalid-route",
+						Method:            "GET",
+						Service:           gatewayProxy,
+						Port:              gatewayPort,
+						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+						WithoutStats:      true,
+					}, "Gloo Gateway has invalid configuration", 1, 60*time.Second, 1*time.Second)
+				})
 			})
 
-			AfterEach(func() {
-				_ = virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{})
-				helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
-					return virtualServiceClient.Read(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.ReadOpts{})
-				}, "15s", "0.5s")
+			Context("route prefix is invalid", func() {
+				var vs *gatewayv1.VirtualService
+				var goodRt *gatewayv1.RouteTable
+				var badRt *gatewayv1.RouteTable
 
-				kube2e.UpdateReplaceInvalidRoutes(ctx, false, testHelper.InstallNamespace)
-			})
+				AfterEach(func() {
+					// delete VS and 2 RTs
+					err := virtualServiceClient.Delete(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.DeleteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+						return virtualServiceClient.Read(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.ReadOpts{})
+					}, "15s", "0.5s")
 
-			It("serves a direct response for the invalid route response", func() {
-				// the valid route should work
-				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-					Protocol:          "http",
-					Path:              "/",
-					Method:            "GET",
-					Service:           gatewayProxy,
-					Port:              gatewayPort,
-					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
-					WithoutStats:      true,
-				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+					err = routeTableClient.Delete(testHelper.InstallNamespace, "good-rt", clients.DeleteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+						return routeTableClient.Read(goodRt.GetMetadata().GetNamespace(), goodRt.GetMetadata().GetName(), clients.ReadOpts{})
+					}, "15s", "0.5s")
 
-				// the invalid route should respond with the direct response
-				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-					Protocol:          "http",
-					Path:              "/invalid-route",
-					Method:            "GET",
-					Service:           gatewayProxy,
-					Port:              gatewayPort,
-					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
-					WithoutStats:      true,
-				}, "Gloo Gateway has invalid configuration", 1, 60*time.Second, 1*time.Second)
+					err = routeTableClient.Delete(testHelper.InstallNamespace, "bad-rt", clients.DeleteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+						return routeTableClient.Read(badRt.GetMetadata().GetNamespace(), badRt.GetMetadata().GetName(), clients.ReadOpts{})
+					}, "15s", "0.5s")
+				})
+
+				It("invalid route delegated via ref does not prevent updates to valid routes", func() {
+					// create a VS with 2 delegated RTs
+					goodVsRoute := getRouteWithDelegateRef("good-rt", "/route-1")
+					badVsRoute := getRouteWithDelegateRef("bad-rt", "/route-2")
+					vs = getVirtualServiceWithRoute(goodVsRoute, nil)
+					vs = withRoute(badVsRoute, vs)
+
+					goodRt = getRouteTable("good-rt", nil, getRouteWithDirectResponse("Good response", "/route-1"))
+					// bad RT's prefix does not start with parent's prefix, which should be a warning
+					badRt = getRouteTable("bad-rt", nil, getRouteWithDirectResponse("Bad response", "/does-not-match"))
+
+					// write the VS and RTs
+					_, err := virtualServiceClient.Write(vs, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					_, err = routeTableClient.Write(goodRt, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					_, err = routeTableClient.Write(badRt, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+
+					// the good RT should be accepted, but both the VS and bad RT should have a warning
+					helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
+						return virtualServiceClient.Read(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return routeTableClient.Read(goodRt.GetMetadata().GetNamespace(), goodRt.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+					helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
+						return routeTableClient.Read(badRt.GetMetadata().GetNamespace(), badRt.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+
+					// the valid route should return the expected direct response
+					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+						Protocol:          "http",
+						Path:              "/route-1",
+						Method:            "GET",
+						Service:           gatewayProxy,
+						Port:              gatewayPort,
+						ConnectionTimeout: 1,
+						WithoutStats:      true,
+					}, "Good response", 1, 60*time.Second, 1*time.Second)
+
+					// the invalid route should return a 404
+					res, err := testHelper.Curl(helper.CurlOpts{
+						Protocol:          "http",
+						Path:              "/route-2",
+						Method:            "GET",
+						Service:           gatewayProxy,
+						Port:              gatewayPort,
+						ConnectionTimeout: 1,
+						WithoutStats:      true,
+						ReturnHeaders:     true,
+					})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(res).To(ContainSubstring("404 Not Found"))
+
+					// update the response of the good RT
+					goodRt, err = routeTableClient.Read(testHelper.InstallNamespace, "good-rt", clients.ReadOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					goodRt.Routes[0] = getRouteWithDirectResponse("Updated good response", "/route-1")
+					_, err = routeTableClient.Write(goodRt, clients.WriteOpts{OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
+
+					// make sure it returns the new response
+					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+						Protocol:          "http",
+						Path:              "/route-1",
+						Method:            "GET",
+						Service:           gatewayProxy,
+						Port:              gatewayPort,
+						ConnectionTimeout: 1,
+						WithoutStats:      true,
+					}, "Updated good response", 1, 60*time.Second, 1*time.Second)
+				})
+
+				It("invalid route delegated via selector does not prevent updates to valid routes", func() {
+					// create a VS that selects delegate RTs via labels
+					labels := map[string]string{"select": "me"}
+					vsRoute := getRouteWithDelegateSelector(labels, "/foo")
+					vs = getVirtualServiceWithRoute(vsRoute, nil)
+
+					goodRt = getRouteTable("good-rt", labels, getRouteWithDirectResponse("Good response", "/foo/a"))
+					// bad RT's prefix does not start with parent's prefix, which should be a warning
+					badRt = getRouteTable("bad-rt", labels, getRouteWithDirectResponse("Bad response", "/does-not-match"))
+
+					// write the VS and RTs
+					_, err := virtualServiceClient.Write(vs, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					_, err = routeTableClient.Write(goodRt, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					_, err = routeTableClient.Write(badRt, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+
+					// the good RT should be accepted, but both the VS and bad RT should have a warning
+					helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
+						return virtualServiceClient.Read(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return routeTableClient.Read(goodRt.GetMetadata().GetNamespace(), goodRt.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+					helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
+						return routeTableClient.Read(badRt.GetMetadata().GetNamespace(), badRt.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+
+					// the valid route should return the expected direct response
+					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+						Protocol:          "http",
+						Path:              "/foo/a",
+						Method:            "GET",
+						Service:           gatewayProxy,
+						Port:              gatewayPort,
+						ConnectionTimeout: 1,
+						WithoutStats:      true,
+					}, "Good response", 1, 60*time.Second, 1*time.Second)
+
+					// update the response of the good RT
+					goodRt, err = routeTableClient.Read(testHelper.InstallNamespace, "good-rt", clients.ReadOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					goodRt.Routes[0] = getRouteWithDirectResponse("Updated good response", "/foo/a")
+					_, err = routeTableClient.Write(goodRt, clients.WriteOpts{OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
+
+					// make sure it returns the new response
+					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+						Protocol:          "http",
+						Path:              "/foo/a",
+						Method:            "GET",
+						Service:           gatewayProxy,
+						Port:              gatewayPort,
+						ConnectionTimeout: 1,
+						WithoutStats:      true,
+					}, "Updated good response", 1, 60*time.Second, 1*time.Second)
+				})
 			})
 		})
 	})
@@ -811,9 +973,9 @@ var _ = Describe("Kube2e: gateway", func() {
 				},
 			}
 
-			rt2 := getRouteTable("rt2", getRouteWithDest(dest, "/root/rt1/rt2"))
-			rt1 := getRouteTable("rt1", getRouteWithDelegate(rt2.Metadata.Name, "/root/rt1"))
-			vs := getVirtualServiceWithRoute(addPrefixRewrite(getRouteWithDelegate(rt1.Metadata.Name, "/root"), "/"), nil)
+			rt2 := getRouteTable("rt2", nil, getRouteWithDest(dest, "/root/rt1/rt2"))
+			rt1 := getRouteTable("rt1", nil, getRouteWithDelegateRef(rt2.Metadata.Name, "/root/rt1"))
+			vs := getVirtualServiceWithRoute(addPrefixRewrite(getRouteWithDelegateRef(rt1.Metadata.Name, "/root"), "/"), nil)
 
 			_, err := routeTableClient.Write(rt1, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -2100,13 +2262,30 @@ func getVirtualServiceWithRoute(route *gatewayv1.Route, sslConfig *gloov1.SslCon
 	}
 }
 
-func getRouteTable(name string, route *gatewayv1.Route) *gatewayv1.RouteTable {
+func getRouteTable(name string, labels map[string]string, route *gatewayv1.Route) *gatewayv1.RouteTable {
 	return &gatewayv1.RouteTable{
 		Metadata: &core.Metadata{
 			Name:      name,
 			Namespace: testHelper.InstallNamespace,
+			Labels:    labels,
 		},
 		Routes: []*gatewayv1.Route{route},
+	}
+}
+
+func getRouteWithDirectResponse(message string, path string) *gatewayv1.Route {
+	return &gatewayv1.Route{
+		Matchers: []*matchers.Matcher{{
+			PathSpecifier: &matchers.Matcher_Prefix{
+				Prefix: path,
+			},
+		}},
+		Action: &gatewayv1.Route_DirectResponseAction{
+			DirectResponseAction: &gloov1.DirectResponseAction{
+				Status: 200,
+				Body:   message,
+			},
+		},
 	}
 }
 
@@ -2127,7 +2306,7 @@ func getRouteWithDest(dest *gloov1.Destination, path string) *gatewayv1.Route {
 	}
 }
 
-func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
+func getRouteWithDelegateRef(delegate string, path string) *gatewayv1.Route {
 	return &gatewayv1.Route{
 		Matchers: []*matchers.Matcher{{
 			PathSpecifier: &matchers.Matcher_Prefix{
@@ -2140,6 +2319,26 @@ func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 					Ref: &core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
 						Name:      delegate,
+					},
+				},
+			},
+		},
+	}
+}
+
+func getRouteWithDelegateSelector(labels map[string]string, path string) *gatewayv1.Route {
+	return &gatewayv1.Route{
+		Matchers: []*matchers.Matcher{{
+			PathSpecifier: &matchers.Matcher_Prefix{
+				Prefix: path,
+			},
+		}},
+		Action: &gatewayv1.Route_DelegateAction{
+			DelegateAction: &gatewayv1.DelegateAction{
+				DelegationType: &gatewayv1.DelegateAction_Selector{
+					Selector: &gatewayv1.RouteTableSelector{
+						Namespaces: []string{testHelper.InstallNamespace},
+						Labels:     labels,
 					},
 				},
 			},

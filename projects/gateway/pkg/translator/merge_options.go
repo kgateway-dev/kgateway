@@ -9,13 +9,13 @@ import (
 
 // Merges the fields of src into dst.
 // The fields in dst that have non-zero values will not be overwritten.
-func mergeRouteOptions(dst, src *v1.RouteOptions) (*v1.RouteOptions, error) {
+func mergeRouteOptions(dst, src *v1.RouteOptions) *v1.RouteOptions {
 	if src == nil {
-		return dst, nil
+		return dst
 	}
 
 	if dst == nil {
-		return proto.Clone(src).(*v1.RouteOptions), nil
+		return proto.Clone(src).(*v1.RouteOptions)
 	}
 
 	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
@@ -25,18 +25,18 @@ func mergeRouteOptions(dst, src *v1.RouteOptions) (*v1.RouteOptions, error) {
 		shallowMerge(dstField, srcField, false)
 	}
 
-	return dst, nil
+	return dst
 }
 
 // Merges the fields of src into dst.
 // The fields in dst that have non-zero values will not be overwritten.
-func mergeVirtualHostOptions(dst, src *v1.VirtualHostOptions) (*v1.VirtualHostOptions, error) {
+func mergeVirtualHostOptions(dst, src *v1.VirtualHostOptions) *v1.VirtualHostOptions {
 	if src == nil {
-		return dst, nil
+		return dst
 	}
 
 	if dst == nil {
-		return proto.Clone(src).(*v1.VirtualHostOptions), nil
+		return proto.Clone(src).(*v1.VirtualHostOptions)
 	}
 
 	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
@@ -46,7 +46,7 @@ func mergeVirtualHostOptions(dst, src *v1.VirtualHostOptions) (*v1.VirtualHostOp
 		shallowMerge(dstField, srcField, false)
 	}
 
-	return dst, nil
+	return dst
 }
 
 // Sets dst to the value of src, if src is non-zero and dest is zero-valued or overwrite=true.
