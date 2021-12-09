@@ -39,7 +39,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	. "github.com/solo-io/solo-kit/test/matchers"
@@ -842,15 +841,27 @@ var _ = Describe("Kube2e: gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// the good RT should be accepted, but both the VS and bad RT should have a warning
-					helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
-						return virtualServiceClient.Read(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.ReadOpts{})
-					})
-					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-						return routeTableClient.Read(goodRt.GetMetadata().GetNamespace(), goodRt.GetMetadata().GetName(), clients.ReadOpts{})
-					})
-					helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
-						return routeTableClient.Read(badRt.GetMetadata().GetNamespace(), badRt.GetMetadata().GetName(), clients.ReadOpts{})
-					})
+					Eventually(func() (core.Status_State, error) {
+						vs, err = virtualServiceClient.Read(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.ReadOpts{})
+						if err != nil {
+							return 0, err
+						}
+						return vs.GetStatus().GetState(), nil
+					}, "15s", "0.5s").Should(Equal(core.Status_Warning))
+					Eventually(func() (core.Status_State, error) {
+						goodRt, err = routeTableClient.Read(goodRt.GetMetadata().GetNamespace(), goodRt.GetMetadata().GetName(), clients.ReadOpts{})
+						if err != nil {
+							return 0, err
+						}
+						return goodRt.GetStatus().GetState(), nil
+					}, "15s", "0.5s").Should(Equal(core.Status_Accepted))
+					Eventually(func() (core.Status_State, error) {
+						badRt, err = routeTableClient.Read(badRt.GetMetadata().GetNamespace(), badRt.GetMetadata().GetName(), clients.ReadOpts{})
+						if err != nil {
+							return 0, err
+						}
+						return badRt.GetStatus().GetState(), nil
+					}, "15s", "0.5s").Should(Equal(core.Status_Warning))
 
 					// the valid route should return the expected direct response
 					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
