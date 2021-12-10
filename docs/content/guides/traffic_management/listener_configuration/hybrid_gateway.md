@@ -8,7 +8,7 @@ Hybrid Gateways allow users to define multiple HTTP or TCP Gateways for a single
 
 ---
 
-Hybrid gateways expand the functionality of HTTP and TCP gateways by letting you use request properties to choose which gateway the request routes to.
+Hybrid gateways expand the functionality of HTTP and TCP gateways by exposing multiple gateways on the same port and letting you use request properties to choose which gateway the request routes to.
 Selection is done based on `Matcher` fields, which map to a subset of Envoy [`FilterChainMatch`](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#config-listener-v3-filterchainmatch) fields.
 
 ## Only accept requests from a particular CIDR range
@@ -17,7 +17,7 @@ Hybrid Gateways allow us to treat traffic from particular IPs differently.
 One case where this might come in handy is if a set of clients are at different stages of migrating to TLS >=1.2 support, and therefore we want to enforce different TLS requirements depending on the client.
 If the clients originate from the same domain, it may be necessary to dynamically route traffic to the appropriate Gateway based on source IP.
 
-In this example, we will allow requests only from one IP to reach an upstream, while short-circuiting requests from all other IPs by using a direct response action.
+In this example, we will allow requests only from a particular CIDR range to reach an upstream, while short-circuiting requests from all other IPs by using a direct response action.
 
 **Before you begin**: Complete the [Hello World guide]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world" >}}) demo setup.
 
