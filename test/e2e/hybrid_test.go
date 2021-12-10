@@ -141,11 +141,6 @@ var _ = Describe("Hybrid", func() {
 
 		})
 
-		//It("tcp connection fails", func() {
-		//	_, err := net.Dial("tcp", fmt.Sprintf("%s:%d/", "localhost", defaults.HttpPort))
-		//	Expect(err).To(HaveOccurred())
-		//})
-
 	})
 
 	Context("SourcePrefixRanges match for http", func() {
@@ -209,7 +204,7 @@ var _ = Describe("Hybrid", func() {
 
 	})
 
-	Context("catchall match for tcp", func() {
+	Context("SourcePrefixRanges miss for tcp", func() {
 		BeforeEach(func() {
 			// HttpGateway gets a filter our request *will not* hit
 			proxy.Listeners[0].GetHybridListener().GetMatchedListeners()[0].Matcher = &gloov1.Matcher{
@@ -256,11 +251,6 @@ var _ = Describe("Hybrid", func() {
 			}, "3s", "0.5s").Should(HaveOccurred())
 
 		})
-
-		//It("tcp connection succeeds", func() {
-		//	_, err := net.Dial("tcp", fmt.Sprintf(":%d/", defaults.HttpPort))
-		//	Expect(err).NotTo(HaveOccurred())
-		//})
 
 	})
 
