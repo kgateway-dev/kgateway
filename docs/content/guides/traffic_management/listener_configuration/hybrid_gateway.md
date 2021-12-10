@@ -8,7 +8,7 @@ Hybrid Gateways allow users to define multiple HTTP or TCP Gateways for a single
 
 ---
 
-Hybrid Gateways provide all of the functionality of HTTP and TCP Gateways with the added ability to dynamically select which Gateway a given request is routed to based on request properties.
+Hybrid gateways expand the functionality of HTTP and TCP gateways by letting you use request properties to choose which gateway the request routes to.
 Selection is done based on `Matcher` fields, which map to a subset of Envoy [`FilterChainMatch`](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#config-listener-v3-filterchainmatch) fields.
 
 ## Only accept requests from a particular CIDR range
@@ -17,9 +17,9 @@ Hybrid Gateways allow us to treat traffic from particular IPs differently.
 One case where this might come in handy is if a set of clients are at different stages of migrating to TLS >=1.2 support, and therefore we want to enforce different TLS requirements depending on the client.
 If the clients originate from the same domain, it may be necessary to dynamically route traffic to the appropriate Gateway based on source IP.
 
-In this example we will demonstrate how to only allow requests from one IP to reach an upstream while short-circuiting all other IPs with a direct response action.
+In this example, we will allow requests only from one IP to reach an upstream, while short-circuiting requests from all other IPs by using a direct response action.
 
-We will pick up where the [Hello World guide]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world" >}}) leaves off.
+**Before you begin**: Complete the [Hello World guide]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world" >}}) demo setup.
 
 To start we will add a second VirtualService that also matches all requests and has a directResponseAction:
 
@@ -77,7 +77,7 @@ spec:
 status: # collapsed for brevity
 {{< /highlight >}}
 
-Note: We use a range of 0.0.0.0/1 in order to have a high chance of matching the client's IP without knowing it specifically. A different and/or narrower range may be used if we know more about the client's IP.
+Note: The range of 0.0.0.0/1 provides a high chance of matching the client's IP without knowing the specific IP. If you know more about the client's IP, you can specify a different, narrower range.
 
 This results in a proxy that looks like:
 
@@ -137,14 +137,14 @@ spec:
 status: # collapsed for brevity
 ```
 
-We can make a request to the proxy and will find that we get the `200` response:
+Make a request to the proxy, which returns a `200` response because the client IP address matches to the 0.0.0.0/1 range:
 
 ```bash
 $ curl "$(glooctl proxy url)/all-pets"
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-Also observe that if we make a request to an endpoint not matched by the `default` VirtualService we get a `404` response and _do not_ hit the `client-ip-reject` VirtualService:
+Note that a request to an endpoint that is not matched by the `default` VirtualService returns a `404` response, and the request _does not_ hit the `client-ip-reject` VirtualService:
 ```bash
 $ curl -i "$(glooctl proxy url)/foo"
 HTTP/1.1 404 Not Found
@@ -154,8 +154,8 @@ content-length: 0
 ```
 This is because the `Matcher`s in the `HybridGateway` determine which `MatchedGateway` a request will be routed to, regardless of what routes that gateway has.
 
-### Observe that request from unmatched IP hits catchall gateway 
-If we update the matcher to have a specific IP range that our client's IP is not a member of, we will expect our request to miss the matcher and fall through to the catchall gateway which is configured to respond `403`.
+### Route requests from non-matching IPs to a catchall gateway 
+Next, update the matcher to use a specific IP range that our client's IP is not a member of. Requests from this client IP will now skip this matcher, and will instead match to a catchall gateway that is configured to respond with `403`.
 
 ```bash
 kubectl edit -n gloo-system gateway gateway-proxy
@@ -190,7 +190,7 @@ status: # collapsed for brevity
 
 The Proxy will update accordingly.
 
-We can now make a request to the proxy and will find that we get the `403` response for any endpoint:
+Make a request to the proxy, which now returns a `403` response for any endpoint:
 
 ```bash
 $ curl "$(glooctl proxy url)/all-pets"
