@@ -2369,6 +2369,26 @@ func (m *UserSession_RedisSession) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPreExpiryBuffer()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("PreExpiryBuffer")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetPreExpiryBuffer(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("PreExpiryBuffer")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
