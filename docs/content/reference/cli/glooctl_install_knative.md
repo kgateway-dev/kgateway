@@ -22,9 +22,9 @@ glooctl install knative [flags]
   -f, --file string                     Install Gloo from this Helm chart archive file rather than from a release
   -h, --help                            help for knative
   -e, --install-eventing                Bundle Knative-Eventing with your Gloo installation. Requires install-knative to be true
-      --install-eventing-version true   Version of Knative Eventing to install, when --install-eventing is set to true (default "0.10.0")
+      --install-eventing-version true   Version of Knative Eventing to install, when --install-eventing is set to true (default "0.26.1")
   -k, --install-knative                 Bundle Knative-Serving with your Gloo installation (default true)
-      --install-knative-version true    Version of Knative Serving to install, when --install-knative is set to true. This version will also be used to install Knative Monitoring, --install-monitoring is set (default "0.10.0")
+      --install-knative-version true    Version of Knative Serving to install, when --install-knative is set to true. This version will also be used to install Knative Monitoring, --install-monitoring is set (default "0.26.1")
   -m, --install-monitoring              Bundle Knative-Monitoring with your Gloo installation. Requires install-knative to be true
   -n, --namespace string                namespace to install gloo into (default "gloo-system")
       --release-name string             helm release name (default "gloo")
