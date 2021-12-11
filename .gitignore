@@ -4,6 +4,7 @@ _output
 example/proxycontroller/_output
 _local
 _test
+_unit_test
 _artifacts
 .idea
 .vscode
