@@ -36,10 +36,6 @@ import (
 const (
 	installedByUsAnnotationKey = "gloo.solo.io/glooctl_install_info"
 
-	servingReleaseUrlTemplate    = "https://github.com/knative/serving/releases/download/v%v/serving.yaml"
-	eventingReleaseUrlTemplate   = "https://github.com/knative/eventing/releases/download/v%v/release.yaml"
-	monitoringReleaseUrlTemplate = "https://github.com/knative/serving/releases/download/v%v/monitoring.yaml"
-
 	knativeIngressProviderLabel = "networking.knative.dev/ingress-provider"
 	knativeIngressProviderIstio = "istio"
 
@@ -214,38 +210,131 @@ func checkKnativeInstallation(ctx context.Context, kubeclient ...kubernetes.Inte
 	return false, nil, nil
 }
 
-// used by e2e test
+type ManifestPathSource interface {
+	GetPaths() []string
+}
+
+var _ ManifestPathSource = new(EmptyManifestSource)
+var _ ManifestPathSource = new(ServingManifestSource)
+var _ ManifestPathSource = new(EventingManifestSource)
+
+type ServingManifestSource struct {
+	version           string
+	installMonitoring bool
+}
+
+const servingTemplate = "https://github.com/knative/serving/releases/download/v%v/serving.yaml"
+const servingCoreTemplate = "https://github.com/knative/serving/releases/download/v%v/serving-core.yaml"
+const servingCrdsTemplate = "https://github.com/knative/serving/releases/download/v%v/serving-crds.yaml"
+const monitoringTemplate = "https://github.com/knative/serving/releases/download/v%v/monitoring.yaml"
+
+func (s *ServingManifestSource) GetPaths() []string {
+	if s.version <= "0.15.1" {
+		// v0.15.1 shipped serving.yaml for the last time: https://github.com/knative/serving/releases/tag/v0.15.1
+		// In later versions, this is split into separate artifacts
+		return s.getPre16Paths()
+	}
+
+	if s.version < "0.19.0" {
+		// v0.19.0 removed the monitoring bundle: https://github.com/knative/serving/releases/tag/v0.19.0
+		return s.getPre19Paths()
+	}
+
+	return s.getLatestPaths()
+}
+
+func (s *ServingManifestSource) getPre16Paths() []string {
+	paths := []string{
+		fmt.Sprintf(servingTemplate, s.version),
+	}
+
+	if s.installMonitoring {
+		paths = append(paths, fmt.Sprintf(monitoringTemplate, s.version))
+	}
+	return paths
+}
+
+func (s *ServingManifestSource) getPre19Paths() []string {
+	paths := []string{
+		fmt.Sprintf(servingCoreTemplate, s.version),
+		fmt.Sprintf(servingCrdsTemplate, s.version),
+	}
+
+	if s.installMonitoring {
+		paths = append(paths, fmt.Sprintf(monitoringTemplate, s.version))
+	}
+
+	return paths
+}
+
+func (s *ServingManifestSource) getLatestPaths() []string {
+	return []string{
+		fmt.Sprintf(servingCoreTemplate, s.version),
+		fmt.Sprintf(servingCrdsTemplate, s.version),
+	}
+}
+
+type EventingManifestSource struct {
+	version string
+}
+
+func (e *EventingManifestSource) GetPaths() []string {
+	template := "https://github.com/knative/eventing/releases/download/v%v/release.yaml"
+	if e.version >= "0.12.0" {
+		// In 0.12.0, the knative/eventing components bundle was renamed
+		// https://github.com/knative/eventing/releases/tag/v0.12.0
+		template = "https://github.com/knative/eventing/releases/download/v%v/eventing.yaml"
+	}
+	return []string{fmt.Sprintf(template, e.version)}
+}
+
+type EmptyManifestSource struct {
+}
+
+func (m *EmptyManifestSource) GetPaths() []string {
+	return []string{}
+}
+
 func RenderKnativeManifests(opts options.Knative) (string, error) {
-	knativeVersion := opts.InstallKnativeVersion
-	eventing := opts.InstallKnativeEventing
-	monitoring := opts.InstallKnativeMonitoring
+	// choose a path source for the manifest URLs based on the serving and eventing knative versions
+	servingManifestPathSource, eventingManifestPathSource := getKnativeManifestPathSources(opts)
 
-	servingReleaseUrl := fmt.Sprintf(servingReleaseUrlTemplate, knativeVersion)
-	servingManifest, err := getManifestForInstallation(servingReleaseUrl)
-	if err != nil {
-		return "", err
-	}
-	outputManifests := []string{servingManifest}
+	// aggregate all manifest URLs
+	var manifestPaths = append(
+		servingManifestPathSource.GetPaths(),
+		eventingManifestPathSource.GetPaths()...)
 
-	if eventing {
-		eventingReleaseUrl := fmt.Sprintf(eventingReleaseUrlTemplate, opts.InstallKnativeEventingVersion)
-		eventingManifest, err := getManifestForInstallation(eventingReleaseUrl)
+	// aggregate all manifests
+	var knativeManifests []string
+	for _, manifestPath := range manifestPaths {
+		manifest, err := getManifestForInstallation(manifestPath)
 		if err != nil {
 			return "", err
 		}
-		outputManifests = append(outputManifests, eventingManifest)
+
+		knativeManifests = append(knativeManifests, manifest)
 	}
 
-	if monitoring {
-		monitoringReleaseUrl := fmt.Sprintf(monitoringReleaseUrlTemplate, knativeVersion)
-		monitoringManifest, err := getManifestForInstallation(monitoringReleaseUrl)
-		if err != nil {
-			return "", err
+	return strings.Join(knativeManifests, yamlJoiner), nil
+}
+
+func getKnativeManifestPathSources(opts options.Knative) (ManifestPathSource, ManifestPathSource) {
+	var servingManifestSource, eventingManifestSource ManifestPathSource
+
+	servingManifestSource = &ServingManifestSource{
+		version: opts.InstallKnativeVersion,
+		// In later versions of Knative, monitoring is removed
+		// I opted to keep the flag in glooctl and just make it a no-op
+		installMonitoring: opts.InstallKnativeMonitoring,
+	}
+
+	eventingManifestSource = &EmptyManifestSource{}
+	if opts.InstallKnativeEventing {
+		eventingManifestSource = &EventingManifestSource{
+			version: opts.InstallKnativeEventingVersion,
 		}
-		outputManifests = append(outputManifests, monitoringManifest)
 	}
-
-	return strings.Join(outputManifests, yamlJoiner), nil
+	return servingManifestSource, eventingManifestSource
 }
 
 func getManifestForInstallation(url string) (string, error) {

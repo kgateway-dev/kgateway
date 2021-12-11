@@ -17,8 +17,8 @@ import (
 
 var _ = Describe("Knative", func() {
 	knativeInstallOpts := options.Knative{
-		InstallKnativeVersion:         "0.10.0",
-		InstallKnativeEventingVersion: "0.10.0",
+		InstallKnativeVersion:         "0.26.1",
+		InstallKnativeEventingVersion: "0.26.1",
 		InstallKnativeEventing:        true,
 		InstallKnativeMonitoring:      true,
 	}
@@ -34,12 +34,14 @@ var _ = Describe("Knative", func() {
 	AfterEach(func() { cancel() })
 
 	Context("RenderKnativeManifests", func() {
+
 		It("renders manifests for each knative component", func() {
 			manifests, err := RenderKnativeManifests(knativeInstallOpts)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(manifests).To(Equal(expected0100Manifests))
 		})
 	})
+
 	Context("checkKnativeInstallation", func() {
 		It("returns true, opts if knative was installed by us", func() {
 			optsJson, err := json.Marshal(knativeInstallOpts)
@@ -89,7 +91,7 @@ var expected0100Manifests = func() string {
 	if err != nil {
 		panic(err)
 	}
-	knativeTestYaml := filepath.Join(filepath.Dir(currentFile), "knative_test_yaml.yaml")
+	knativeTestYaml := filepath.Join(filepath.Dir(currentFile), "knative_test_v0-26-1_manifests.yaml")
 	b, err := ioutil.ReadFile(knativeTestYaml)
 	if err != nil {
 		panic(err)

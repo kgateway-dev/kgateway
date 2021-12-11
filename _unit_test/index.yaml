@@ -1,0 +1,28 @@
+apiVersion: v1
+entries:
+  gloo:
+  - apiVersion: v1
+    created: "2021-12-11T14:07:36.05824-05:00"
+    description: Gloo Helm chart for Kubernetes
+    digest: fb752b4832084e78e91fdae7122f3539f90ae031975e37a34079654c75f89754
+    home: https://gloo.solo.io/
+    icon: https://raw.githubusercontent.com/solo-io/gloo/master/docs/content/img/Gloo-01.png
+    name: gloo
+    sources:
+    - https://github.com/solo-io/gloo
+    urls:
+    - gloo-1.10.0-beta10-8-ga8684658c-dirty.tgz
+    version: 1.10.0-beta10-8-ga8684658c-dirty
+  - apiVersion: v1
+    created: "2021-12-11T14:07:36.053644-05:00"
+    description: Gloo Helm chart for Kubernetes
+    digest: 9d6e059770e76cb5efdffa2dea7e7c1c1daa55256b4247c83c9d3bc3b15bb35b
+    home: https://gloo.solo.io/
+    icon: https://raw.githubusercontent.com/solo-io/gloo/master/docs/content/img/Gloo-01.png
+    name: gloo
+    sources:
+    - https://github.com/solo-io/gloo
+    urls:
+    - gloo-0.0.0-knative.tgz
+    version: 0.0.0-knative
+generated: "2021-12-11T14:07:36.048805-05:00"

@@ -56,7 +56,7 @@ Check that the Gloo Edge and Knative pods and services have been created:
 kubectl get all -n gloo-system
 
 NAME                                        READY     STATUS    RESTARTS   AGE
-pod/knative-proxy-65485cd8f4-gg9qq   1/1       Running   0          10m
+pod/knative-proxy-65485cd8f4-gg9qq          1/1       Running   0          10m
 pod/discovery-5cf7c45fb7-ndj29              1/1       Running   0          10m
 pod/gateway-7b48fdfbd8-trwvg                1/1       Running   1          10m
 pod/gateway-proxy-984bcf497-29jl8           1/1       Running   0          10m
@@ -65,13 +65,13 @@ pod/ingress-6d8d8f595c-smql8                1/1       Running   0          10m
 pod/ingress-proxy-5fc45b8f6d-cckw4          1/1       Running   0          10m
 
 NAME                           TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
-service/knative-proxy   LoadBalancer   10.96.196.217    <pending>     80:31639/TCP,443:31025/TCP   14m
+service/knative-proxy          LoadBalancer   10.96.196.217    <pending>     80:31639/TCP,443:31025/TCP   14m
 service/gateway-proxy          LoadBalancer   10.109.135.176   <pending>     8080:32722/TCP               14m
 service/gloo                   ClusterIP      10.103.179.64    <none>        9977/TCP                     14m
 service/ingress-proxy          LoadBalancer   10.110.100.99    <pending>     80:31738/TCP,443:31769/TCP   14m
 
 NAME                                   DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/knative-proxy   1         1         1            1           14m
+deployment.apps/knative-proxy          1         1         1            1           14m
 deployment.apps/discovery              1         1         1            1           14m
 deployment.apps/gateway                1         1         1            1           14m
 deployment.apps/gateway-proxy          1         1         1            1           14m

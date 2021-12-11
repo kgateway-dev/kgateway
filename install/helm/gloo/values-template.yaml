@@ -15,7 +15,7 @@ settings:
   integrations:
     knative:
       enabled: false
-      version: "0.10.0"
+      version: "0.26.1"
       proxy:
         loopBackAddress: 127.0.0.1
         image:
