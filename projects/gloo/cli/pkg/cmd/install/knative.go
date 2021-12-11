@@ -225,7 +225,6 @@ type ServingManifestSource struct {
 
 const servingTemplate = "https://github.com/knative/serving/releases/download/v%v/serving.yaml"
 const servingCoreTemplate = "https://github.com/knative/serving/releases/download/v%v/serving-core.yaml"
-const servingCrdsTemplate = "https://github.com/knative/serving/releases/download/v%v/serving-crds.yaml"
 const monitoringTemplate = "https://github.com/knative/serving/releases/download/v%v/monitoring.yaml"
 
 func (s *ServingManifestSource) GetPaths() []string {
@@ -255,10 +254,7 @@ func (s *ServingManifestSource) getPre16Paths() []string {
 }
 
 func (s *ServingManifestSource) getPre19Paths() []string {
-	paths := []string{
-		fmt.Sprintf(servingCoreTemplate, s.version),
-		fmt.Sprintf(servingCrdsTemplate, s.version),
-	}
+	paths := []string{fmt.Sprintf(servingCoreTemplate, s.version)}
 
 	if s.installMonitoring {
 		paths = append(paths, fmt.Sprintf(monitoringTemplate, s.version))
@@ -268,10 +264,7 @@ func (s *ServingManifestSource) getPre19Paths() []string {
 }
 
 func (s *ServingManifestSource) getLatestPaths() []string {
-	return []string{
-		fmt.Sprintf(servingCoreTemplate, s.version),
-		fmt.Sprintf(servingCrdsTemplate, s.version),
-	}
+	return []string{fmt.Sprintf(servingCoreTemplate, s.version)}
 }
 
 type EventingManifestSource struct {
