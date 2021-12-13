@@ -71,7 +71,7 @@ The listeners on a gateway typically listen for HTTP requests coming in on a spe
 
 Gloo Edge can be configured to act as a gateway on layer 7 (HTTP/S) or layer 4 (TCP). The majority of services will likely be using HTTP, but there may be some cases where applications either do not use HTTP or should be presented as a TCP endpoint. When Gloo Edge operates as a TCP Proxy, the options for traffic management are greatly reduced. Gloo Edge currently supports standard routing, SSL, and Server Name Indication (SNI) domain matching. Applications not using HTTP can be configured using the [TCP Proxy guide]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/tcp_proxy/" %}}).
 
-Gloo Edge is meant to serve as an abstraction layer, simplifying the configuration of the underlying Envoy proxy and adding new functionality. The advanced options on Envoy are not exposed by default, but they can be accessed by adding an `httpGateway` or `hybridGateway` section to your listener configuration. 
+Gloo Edge is meant to serve as an abstraction layer, simplifying the configuration of the underlying Envoy proxy and adding new functionality. The advanced options on Envoy are not exposed by default, but they can be accessed by adding an `httpGateway` section to your listener configuration. 
 
 ```yaml
 apiVersion: gateway.solo.io/v1

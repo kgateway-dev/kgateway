@@ -1,10 +1,10 @@
 ---
 title: Hybrid Gateway
 weight: 10
-description: Define multiple HTTP or TCP Gateways within a single Gateway CRD
+description: Define multiple HTTP or TCP Gateways within a single Gateway
 ---
 
-Hybrid Gateways allow users to define multiple HTTP or TCP Gateways for a single Gateway CRD with distinct matching criteria. 
+Hybrid Gateways allow users to define multiple HTTP or TCP Gateways for a single Gateway with distinct matching criteria. 
 
 ---
 
@@ -44,7 +44,7 @@ EOF
 ```
 
 
-Next let's update the existing `gateway-proxy` Gateway CRD, replacing the default `httpGateway` with a [`hybridGateway`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#hybridgateway" >}}) as follows:
+Next let's update the existing `gateway-proxy` Gateway CR, replacing the default `httpGateway` with a [`hybridGateway`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#hybridgateway" >}}) as follows:
 ```bash
 kubectl edit -n gloo-system gateway gateway-proxy
 ```
@@ -78,64 +78,6 @@ status: # collapsed for brevity
 {{< /highlight >}}
 
 Note: The range of 0.0.0.0/1 provides a high chance of matching the client's IP without knowing the specific IP. If you know more about the client's IP, you can specify a different, narrower range.
-
-This results in a proxy that looks like:
-
-```yaml
-apiVersion: gloo.solo.io/v1
-kind: Proxy
-metadata: # collapsed for brevity
-spec:
-  listeners:
-  - bindAddress: '::'
-    bindPort: 8080
-    hybridListener:
-      matchedListeners:
-        - httpListener:
-            virtualHosts:
-              - domains:
-                  - '*'
-                metadata: # collapsed for brevity
-                name: gloo-system.default
-                routes:
-                  - matchers:
-                      - exact: /all-pets
-                    metadata: # collapsed for brevity
-                    options:
-                      prefixRewrite: /api/pets
-                    routeAction:
-                      single:
-                        upstream:
-                          name: default-petstore-8080
-                          namespace: gloo-system
-          matcher:
-            sourcePrefixRanges:
-              - addressPrefix: 0.0.0.0
-                prefixLen: 1
-        - httpListener:
-            virtualHosts:
-              - domains:
-                  - '*'
-                metadata: # collapsed for brevity
-                name: gloo-system.client-ip-reject
-                routes:
-                - directResponseAction:
-                    body: |
-                      client ip forbidden
-                    status: 403
-                  matchers:
-                  - prefix: /
-                  metadata: # collapsed for brevity
-            matcher: {}
-    metadata: # collapsed for brevity
-    name: listener-::-8080
-    useProxyProto: false
-  - bindAddress: '::'
-    bindPort: 8443
-    httpListener: {}
-    metadata: # collapsed for brevity
-status: # collapsed for brevity
-```
 
 Make a request to the proxy, which returns a `200` response because the client IP address matches to the 0.0.0.0/1 range:
 
