@@ -77,7 +77,9 @@ spec:
 status: # collapsed for brevity
 {{< /highlight >}}
 
-Note: The range of 0.0.0.0/1 provides a high chance of matching the client's IP without knowing the specific IP. If you know more about the client's IP, you can specify a different, narrower range.
+{{% notice note %}}
+The range of 0.0.0.0/1 provides a high chance of matching the client's IP without knowing the specific IP. If you know more about the client's IP, you can specify a different, narrower range.
+{{% /notice %}}
 
 Make a request to the proxy, which returns a `200` response because the client IP address matches to the 0.0.0.0/1 range:
 
