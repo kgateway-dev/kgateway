@@ -166,7 +166,7 @@ func installKnativeServing(opts *options.Options) error {
 		return eris.Wrapf(err, "waiting for knative CRDs to be registered")
 	}
 
-	fmt.Fprintln(os.Stderr, "installing Knative...")
+	fmt.Fprintln(os.Stderr, "i nstalling Knative...")
 
 	if err := install.KubectlApply([]byte(manifests), "-v"); err != nil {
 		fmt.Fprintln(os.Stderr, "Kubectl apply failed. retrying...")
@@ -347,7 +347,7 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 func getKnativeManifestPathSources(opts options.Knative) (ManifestPathSource, ManifestPathSource, error) {
 	var servingManifestSource, eventingManifestSource ManifestPathSource
 
-	servingVersion, err := versionutils.ParseVersion(opts.InstallKnativeVersion)
+	servingVersion, err := versionutils.ParseVersion(fmt.Sprintf("v%s", opts.InstallKnativeVersion))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -361,7 +361,7 @@ func getKnativeManifestPathSources(opts options.Knative) (ManifestPathSource, Ma
 
 	eventingManifestSource = &EmptyManifestSource{}
 	if opts.InstallKnativeEventing {
-		eventingVersion, err := versionutils.ParseVersion(opts.InstallKnativeEventingVersion)
+		eventingVersion, err := versionutils.ParseVersion(fmt.Sprintf("v%s", opts.InstallKnativeEventingVersion))
 		if err != nil {
 			return nil, nil, err
 		}
