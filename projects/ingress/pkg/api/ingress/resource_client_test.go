@@ -14,9 +14,8 @@ import (
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
 	kubev1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
@@ -55,40 +54,44 @@ var _ = Describe("ResourceClient", func() {
 		cancel()
 	})
 
-	It("can CRUD on v1beta1 ingresses", func() {
+	It("can CRUD on v1 ingresses", func() {
 		kube, err := kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 		baseClient := NewResourceClient(kube, &v1.Ingress{})
 		ingressClient := v1.NewIngressClientWithBase(baseClient)
 		Expect(err).NotTo(HaveOccurred())
-		kubeIngressClient := kube.ExtensionsV1beta1().Ingresses(namespace)
-		backend := &v1beta1.IngressBackend{
-			ServiceName: "foo",
-			ServicePort: intstr.IntOrString{
-				IntVal: 8080,
+		kubeIngressClient := kube.NetworkingV1().Ingresses(namespace)
+		backend := &networkingv1.IngressBackend{
+			Service: &networkingv1.IngressServiceBackend{
+				Name: "foo",
+				Port: networkingv1.ServiceBackendPort{
+					Number: 8080,
+				},
 			},
 		}
-		kubeIng, err := kubeIngressClient.Create(ctx, &v1beta1.Ingress{
+		pathType := networkingv1.PathTypeImplementationSpecific
+		kubeIng, err := kubeIngressClient.Create(ctx, &networkingv1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "rusty",
 				Namespace: namespace,
 			},
-			Spec: v1beta1.IngressSpec{
-				Backend: backend,
-				TLS: []v1beta1.IngressTLS{
+			Spec: networkingv1.IngressSpec{
+				DefaultBackend: backend,
+				TLS: []networkingv1.IngressTLS{
 					{
 						Hosts:      []string{"some.host"},
 						SecretName: "doesntexistanyway",
 					},
 				},
-				Rules: []v1beta1.IngressRule{
+				Rules: []networkingv1.IngressRule{
 					{
 						Host: "some.host",
-						IngressRuleValue: v1beta1.IngressRuleValue{
-							HTTP: &v1beta1.HTTPIngressRuleValue{
-								Paths: []v1beta1.HTTPIngressPath{
+						IngressRuleValue: networkingv1.IngressRuleValue{
+							HTTP: &networkingv1.HTTPIngressRuleValue{
+								Paths: []networkingv1.HTTPIngressPath{
 									{
-										Backend: *backend,
+										PathType: &pathType,
+										Backend:  *backend,
 									},
 								},
 							},
