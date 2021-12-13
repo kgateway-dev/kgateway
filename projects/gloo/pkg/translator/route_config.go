@@ -66,12 +66,14 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plug
 
 	virtualHosts := h.computeVirtualHosts(params)
 
-	// validate ssl config if the listener specifies any
-	if err := validateListenerSslConfig(params, h.parentListener); err != nil {
-		validation.AppendListenerError(h.parentReport,
-			validationapi.ListenerReport_Error_SSLConfigError,
-			err.Error(),
-		)
+	// validate ssl config if the parent listener specifies any and is not a hybrid listener
+	if h.parentListener.GetHybridListener() == nil {
+		if err := validateListenerSslConfig(params, h.parentListener); err != nil {
+			validation.AppendListenerError(h.parentReport,
+				validationapi.ListenerReport_Error_SSLConfigError,
+				err.Error(),
+			)
+		}
 	}
 
 	return []*envoy_config_route_v3.RouteConfiguration{{
@@ -509,13 +511,8 @@ func (h *hybridRouteConfigurationTranslator) ComputeRouteConfiguration(params pl
 			routeConfigName:          rcName,
 			requireTlsOnVirtualHosts: matcher.GetSslConfig() != nil,
 		}
-		virtualHosts := matchedListenerRouteConfigurationTranslator.computeVirtualHosts(params)
 
-		outRouteConfigs = append(outRouteConfigs, &envoy_config_route_v3.RouteConfiguration{
-			Name:                           rcName,
-			VirtualHosts:                   virtualHosts,
-			MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
-		})
+		outRouteConfigs = append(outRouteConfigs, matchedListenerRouteConfigurationTranslator.ComputeRouteConfiguration(params)...)
 	}
 
 	return outRouteConfigs
