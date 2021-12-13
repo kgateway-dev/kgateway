@@ -50,6 +50,7 @@ var _ = BeforeSuite(func() {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
 		defaults.InstallNamespace = "knative-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
+		defaults.Verbose = true // TEMP: for debugging
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())
