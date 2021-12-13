@@ -717,6 +717,8 @@ var _ = Describe("Gateway", func() {
 
 		})
 
+		// These tests are meant to test the hybrid-specific functionality
+		// The underlying Http and Tcp logic is tested independently
 		Context("hybrid gateway", func() {
 
 			BeforeEach(func() {
