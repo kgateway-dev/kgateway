@@ -219,7 +219,7 @@ func (m *matcherFilterChainTranslator) ComputeFilterChains(params plugins.Params
 				utils.MatchedRouteConfigName(m.parentListener, matchedListener.GetMatcher()))
 			networkFilters := nft.ComputeNetworkFilters(params)
 			if len(networkFilters) == 0 {
-				return nil
+				continue
 			}
 
 			outFilterChains = append(outFilterChains, m.computeFilterChainFromMatchedListener(params.Snapshot, networkFilters, matchedListener.GetMatcher()))
@@ -233,10 +233,11 @@ func (m *matcherFilterChainTranslator) ComputeFilterChains(params plugins.Params
 				report: m.report.GetMatchedListenerReports()[utils.MatchedRouteConfigName(m.parentListener, matchedListener.GetMatcher())].GetTcpListenerReport(),
 			}
 
-			unmatchedFilterChains := sublistenerFilterChainTranslator.ComputeFilterChains(params)
-			for _, fc := range unmatchedFilterChains {
-				outFilterChains = append(outFilterChains, m.applyMatcherToFilterChain(params.Snapshot, matchedListener.GetMatcher(), fc))
+			tcpFilterChains := sublistenerFilterChainTranslator.ComputeFilterChains(params)
+			for _, fc := range tcpFilterChains {
+				m.applyMatcherToFilterChain(params.Snapshot, matchedListener.GetMatcher(), fc)
 			}
+			outFilterChains = append(outFilterChains, tcpFilterChains...)
 		}
 	}
 
@@ -247,10 +248,11 @@ func (m *matcherFilterChainTranslator) computeFilterChainFromMatchedListener(sna
 	fc := &envoy_config_listener_v3.FilterChain{
 		Filters: listenerFilters,
 	}
-	return m.applyMatcherToFilterChain(snap, matcher, fc)
+	m.applyMatcherToFilterChain(snap, matcher, fc)
+	return fc
 }
 
-func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1.ApiSnapshot, matcher *v1.Matcher, fc *envoy_config_listener_v3.FilterChain) *envoy_config_listener_v3.FilterChain {
+func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1.ApiSnapshot, matcher *v1.Matcher, fc *envoy_config_listener_v3.FilterChain) {
 	fcm := fc.GetFilterChainMatch()
 	if fcm == nil {
 		fcm = &envoy_config_listener_v3.FilterChainMatch{}
@@ -263,7 +265,6 @@ func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1.ApiSna
 		if err != nil {
 			validation.AppendListenerError(m.parentReport,
 				validationapi.ListenerReport_Error_SSLConfigError, err.Error())
-			return nil
 		}
 
 		fcm.ServerNames = sslConfig.GetSniDomains()
@@ -286,5 +287,4 @@ func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1.ApiSna
 
 	fcm.SourcePrefixRanges = sourcePrefixRanges
 
-	return fc
 }

@@ -353,6 +353,7 @@ type Listener_TcpListener struct {
 }
 
 type Listener_HybridListener struct {
+	// contains any number of configuration options for Gloo's HTTP and/or TCP-level features
 	HybridListener *HybridListener `protobuf:"bytes,11,opt,name=hybrid_listener,json=hybridListener,proto3,oneof"`
 }
 
@@ -622,6 +623,10 @@ type MatchedListener struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Matchers are used to define unique matching criteria for each MatchedListener
+	// Each MatchedListener within a HybridListener must have a unique Matcher
+	// If multiple matchers in a HybridListener are identical, the HybridListener will not be accepted
+	// Empty Matchers are effectively catch-alls, and there can be no more than one empty Matcher per HybridListener
 	Matcher *Matcher `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
 	// Types that are assignable to ListenerType:
 	//	*MatchedListener_HttpListener
