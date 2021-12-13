@@ -158,7 +158,7 @@ func installKnativeServing(opts *options.Options) error {
 
 	// install crds first
 	fmt.Fprintln(os.Stderr, "installing Knative CRDs...")
-	if err := install.KubectlApply([]byte(knativeCrdManifests), "-v"); err != nil {
+	if err := install.KubectlApply([]byte(knativeCrdManifests), "-v=4"); err != nil {
 		return eris.Wrapf(err, "installing knative crds with kubectl apply")
 	}
 
@@ -168,12 +168,12 @@ func installKnativeServing(opts *options.Options) error {
 
 	fmt.Fprintln(os.Stderr, "i nstalling Knative...")
 
-	if err := install.KubectlApply([]byte(manifests), "-v"); err != nil {
+	if err := install.KubectlApply([]byte(manifests), "-v=4"); err != nil {
 		fmt.Fprintln(os.Stderr, "Kubectl apply failed. retrying...")
 		// may need to retry the apply once in order to work around webhook race issue
 		// https://github.com/knative/serving/issues/6353
 		// https://knative.slack.com/archives/CA9RHBGJX/p1577458311043200
-		if err2 := install.KubectlApply([]byte(manifests), "-v"); err2 != nil {
+		if err2 := install.KubectlApply([]byte(manifests), "-v=4"); err2 != nil {
 			return eris.Wrapf(err, "installing knative resources failed with retried kubectl apply: %v", err2)
 		}
 	}
