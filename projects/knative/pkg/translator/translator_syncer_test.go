@@ -156,7 +156,11 @@ var _ = Describe("TranslatorSyncer", func() {
 		internalIngress := &v1alpha1.Ingress{
 			Ingress: knative.Ingress{
 				ObjectMeta: v12.ObjectMeta{Generation: 1},
-				Spec:       knativev1alpha1.IngressSpec{DeprecatedVisibility: knativev1alpha1.IngressVisibilityClusterLocal},
+				Spec: knativev1alpha1.IngressSpec{
+					Rules: []knativev1alpha1.IngressRule{
+						{Visibility: knativev1alpha1.IngressVisibilityClusterLocal},
+					},
+				},
 			},
 		}
 
