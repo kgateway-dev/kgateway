@@ -89,7 +89,7 @@ var _ = Describe("Hybrid", func() {
 		err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		// Create a hybrid proxy routing to the upstream and wait for it to be accepted
+		// Create a hybrid proxy routing to the upstream
 		proxy = getProxyHybridNoMatcher("default", "proxy", defaults.HttpPort, tcpUsRef)
 	})
 
@@ -110,6 +110,7 @@ var _ = Describe("Hybrid", func() {
 			_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
+			// Wait for proxy to be accepted
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 				return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 			})
