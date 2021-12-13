@@ -134,6 +134,7 @@ type Gateway struct {
 	// The type of gateway being created
 	// HttpGateway creates a listener with an http_connection_manager
 	// TcpGateway creates a listener with a tcp proxy filter
+	// HybridGateway creates a listener with any number of filter chains that each may have either an http_connection_manager or a tcp proxy filter
 	//
 	// Types that are assignable to GatewayType:
 	//	*Gateway_HttpGateway
