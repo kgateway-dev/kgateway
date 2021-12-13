@@ -219,7 +219,7 @@ func (m *matcherFilterChainTranslator) ComputeFilterChains(params plugins.Params
 				utils.MatchedRouteConfigName(m.parentListener, matchedListener.GetMatcher()))
 			networkFilters := nft.ComputeNetworkFilters(params)
 			if len(networkFilters) == 0 {
-				return nil
+				continue
 			}
 
 			outFilterChains = append(outFilterChains, m.computeFilterChainFromMatchedListener(params.Snapshot, networkFilters, matchedListener.GetMatcher()))
