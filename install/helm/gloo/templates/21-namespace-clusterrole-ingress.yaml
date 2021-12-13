@@ -27,7 +27,7 @@ rules:
 - apiGroups: ["graphql.gloo.solo.io"]
   resources: ["graphqlschemas","graphqlschemas/status"]
   verbs: ["get", "list", "watch", "update"]
-- apiGroups: ["extensions", ""]
+- apiGroups: ["networking.k8s.io", ""]
   resources: ["ingresses", "ingresses/status"]
   verbs: ["*"]
 {{- end -}}

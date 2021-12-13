@@ -13,7 +13,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	kubev1 "k8s.io/api/core/v1"
-	extensions "k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -32,7 +32,8 @@ var _ = Describe("Translate", func() {
 			serviceName := "wow-service"
 			servicePort := int32(8080)
 			secretName := "areallygreatsecret"
-			ingress := &extensions.Ingress{
+			pathType := networkingv1.PathTypeImplementationSpecific
+			ingress := &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ing",
 					Namespace: namespace,
@@ -40,20 +41,22 @@ var _ = Describe("Translate", func() {
 						IngressClassKey: "gloo",
 					},
 				},
-				Spec: extensions.IngressSpec{
-					Rules: []extensions.IngressRule{
+				Spec: networkingv1.IngressSpec{
+					Rules: []networkingv1.IngressRule{
 						{
 							Host: "wow.com",
-							IngressRuleValue: extensions.IngressRuleValue{
-								HTTP: &extensions.HTTPIngressRuleValue{
-									Paths: []extensions.HTTPIngressPath{
+							IngressRuleValue: networkingv1.IngressRuleValue{
+								HTTP: &networkingv1.HTTPIngressRuleValue{
+									Paths: []networkingv1.HTTPIngressPath{
 										{
-											Path: "/",
-											Backend: extensions.IngressBackend{
-												ServiceName: serviceName,
-												ServicePort: intstr.IntOrString{
-													Type:   intstr.Int,
-													IntVal: servicePort,
+											Path:     "/",
+											PathType: &pathType,
+											Backend: networkingv1.IngressBackend{
+												Service: &networkingv1.IngressServiceBackend{
+													Name: serviceName,
+													Port: networkingv1.ServiceBackendPort{
+														Number: servicePort,
+													},
 												},
 											},
 										},
@@ -64,7 +67,7 @@ var _ = Describe("Translate", func() {
 					},
 				},
 			}
-			ingressTls := &extensions.Ingress{
+			ingressTls := &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ing-tls",
 					Namespace: namespace,
@@ -72,26 +75,28 @@ var _ = Describe("Translate", func() {
 						IngressClassKey: "gloo",
 					},
 				},
-				Spec: extensions.IngressSpec{
-					TLS: []extensions.IngressTLS{
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
 						{
 							Hosts:      []string{"wow.com"},
 							SecretName: secretName,
 						},
 					},
-					Rules: []extensions.IngressRule{
+					Rules: []networkingv1.IngressRule{
 						{
 							Host: "wow.com",
-							IngressRuleValue: extensions.IngressRuleValue{
-								HTTP: &extensions.HTTPIngressRuleValue{
-									Paths: []extensions.HTTPIngressPath{
+							IngressRuleValue: networkingv1.IngressRuleValue{
+								HTTP: &networkingv1.HTTPIngressRuleValue{
+									Paths: []networkingv1.HTTPIngressPath{
 										{
-											Path: "/basic",
-											Backend: extensions.IngressBackend{
-												ServiceName: serviceName,
-												ServicePort: intstr.IntOrString{
-													Type:   intstr.Int,
-													IntVal: servicePort,
+											Path:     "/basic",
+											PathType: &pathType,
+											Backend: networkingv1.IngressBackend{
+												Service: &networkingv1.IngressServiceBackend{
+													Name: serviceName,
+													Port: networkingv1.ServiceBackendPort{
+														Number: servicePort,
+													},
 												},
 											},
 										},
@@ -102,7 +107,7 @@ var _ = Describe("Translate", func() {
 					},
 				},
 			}
-			ingressTls2 := &extensions.Ingress{
+			ingressTls2 := &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ing-tls-2",
 					Namespace: namespace,
@@ -110,26 +115,28 @@ var _ = Describe("Translate", func() {
 						IngressClassKey: "gloo",
 					},
 				},
-				Spec: extensions.IngressSpec{
-					TLS: []extensions.IngressTLS{
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
 						{
 							Hosts:      []string{"wow.com"},
 							SecretName: secretName,
 						},
 					},
-					Rules: []extensions.IngressRule{
+					Rules: []networkingv1.IngressRule{
 						{
 							Host: "wow.com",
-							IngressRuleValue: extensions.IngressRuleValue{
-								HTTP: &extensions.HTTPIngressRuleValue{
-									Paths: []extensions.HTTPIngressPath{
+							IngressRuleValue: networkingv1.IngressRuleValue{
+								HTTP: &networkingv1.HTTPIngressRuleValue{
+									Paths: []networkingv1.HTTPIngressPath{
 										{
-											Path: "/longestpathshouldcomesecond",
-											Backend: extensions.IngressBackend{
-												ServiceName: serviceName,
-												ServicePort: intstr.IntOrString{
-													Type:   intstr.Int,
-													IntVal: servicePort,
+											Path:     "/longestpathshouldcomesecond",
+											PathType: &pathType,
+											Backend: networkingv1.IngressBackend{
+												Service: &networkingv1.IngressServiceBackend{
+													Name: serviceName,
+													Port: networkingv1.ServiceBackendPort{
+														Number: servicePort,
+													},
 												},
 											},
 										},
@@ -318,7 +325,7 @@ var _ = Describe("Translate", func() {
 
 	It("handles multiple secrets correctly", func() {
 		ingresses := func() v1.IngressList {
-			var ingressList extensions.IngressList
+			var ingressList networkingv1.IngressList
 			err := yaml.Unmarshal([]byte(ingressExampleYaml), &ingressList)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -474,7 +481,14 @@ func getFirstPort(svc *kubev1.Service) int32 {
 }
 
 func makeIng(name, namespace, ingressClass, host string, svcName string, servicePort intstr.IntOrString) *v1.Ingress {
-	ing := &extensions.Ingress{
+	backendPort := networkingv1.ServiceBackendPort{}
+	if servicePort.Type == intstr.Int {
+		backendPort.Number = servicePort.IntVal
+	} else {
+		backendPort.Name = servicePort.StrVal
+	}
+	pathType := networkingv1.PathTypeImplementationSpecific
+	ing := &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -482,18 +496,21 @@ func makeIng(name, namespace, ingressClass, host string, svcName string, service
 				IngressClassKey: ingressClass,
 			},
 		},
-		Spec: extensions.IngressSpec{
-			Rules: []extensions.IngressRule{
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{
 				{
 					Host: host,
-					IngressRuleValue: extensions.IngressRuleValue{
-						HTTP: &extensions.HTTPIngressRuleValue{
-							Paths: []extensions.HTTPIngressPath{
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
 								{
-									Path: "/",
-									Backend: extensions.IngressBackend{
-										ServiceName: svcName,
-										ServicePort: servicePort,
+									Path:     "/",
+									PathType: &pathType,
+									Backend: networkingv1.IngressBackend{
+										Service: &networkingv1.IngressServiceBackend{
+											Name: svcName,
+											Port: backendPort,
+										},
 									},
 								},
 							},
@@ -543,7 +560,7 @@ func makeUpstream(name, namespace string, svc *v1.KubeService) *gloov1.Upstream 
 
 const ingressExampleYaml = `
 items:
-- apiVersion: extensions/v1beta1
+- apiVersion: networking.k8s.io/v1
   kind: Ingress
   metadata:
     annotations:
@@ -554,7 +571,7 @@ items:
     name: amoeba-api-ingress
     namespace: amoeba-dev
     resourceVersion: "26972626"
-    selfLink: /apis/extensions/v1beta1/namespaces/amoeba-dev/ingresses/amoeba-api-ingress
+    selfLink: /apis/networking/v1/namespaces/amoeba-dev/ingresses/amoeba-api-ingress
     uid: 02c06c8f-d329-11e9-bc54-ce36377988a4
   spec:
     rules:
@@ -562,16 +579,19 @@ items:
       http:
         paths:
         - backend:
-            serviceName: api-gateway-amoeba-dev
-            servicePort: 8080
+            service:
+              name: api-gateway-amoeba-dev
+              port:
+                number: 8080
           path: /
+          pathType: ImplementationSpecific
     tls:
     - hosts:
       - api-dev.intellishift.com
       secretName: amoeba-api-ingress-secret
   status:
     loadBalancer: {}
-- apiVersion: extensions/v1beta1
+- apiVersion: networking.k8s.io/v1
   kind: Ingress
   metadata:
     annotations:
@@ -582,7 +602,7 @@ items:
     name: amoeba-ui-ingress
     namespace: amoeba-dev
     resourceVersion: "26972628"
-    selfLink: /apis/extensions/v1beta1/namespaces/amoeba-dev/ingresses/amoeba-ui-ingress
+    selfLink: /apis/networking/v1/namespaces/amoeba-dev/ingresses/amoeba-ui-ingress
     uid: 02c9b69a-d329-11e9-bc54-ce36377988a4
   spec:
     rules:
@@ -590,9 +610,12 @@ items:
       http:
         paths:
         - backend:
-            serviceName: amoeba-ui
-            servicePort: 8080
+            service:
+              name: amoeba-ui
+              port:
+                number: 8080
           path: /
+          pathType: ImplementationSpecific
     tls:
     - hosts:
       - ui-dev.intellishift.com
