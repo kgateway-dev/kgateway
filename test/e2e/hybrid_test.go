@@ -198,11 +198,6 @@ var _ = Describe("Hybrid", func() {
 
 		})
 
-		//It("tcp connection fails", func() {
-		//	_, err := net.Dial("tcp", fmt.Sprintf("%s:%d/", "localhost", defaults.HttpPort))
-		//	Expect(err).To(HaveOccurred())
-		//})
-
 	})
 
 	Context("SourcePrefixRanges miss for tcp", func() {
