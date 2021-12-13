@@ -236,9 +236,9 @@ type ServingManifestSource struct {
 	installMonitoring bool
 }
 
-const servingTemplate = "https://github.com/knative/serving/releases/download/v%v/serving.yaml"
-const servingCoreTemplate = "https://github.com/knative/serving/releases/download/v%v/serving-core.yaml"
-const monitoringTemplate = "https://github.com/knative/serving/releases/download/v%v/monitoring.yaml"
+const servingTemplate = "https://github.com/knative/serving/releases/download/%v/serving.yaml"
+const servingCoreTemplate = "https://github.com/knative/serving/releases/download/%v/serving-core.yaml"
+const monitoringTemplate = "https://github.com/knative/serving/releases/download/%v/monitoring.yaml"
 
 func (s *ServingManifestSource) GetPaths() []string {
 	// v0.15.1 shipped serving.yaml for the last time: https://github.com/knative/serving/releases/tag/v0.15.1
@@ -295,7 +295,7 @@ type EventingManifestSource struct {
 }
 
 func (e *EventingManifestSource) GetPaths() []string {
-	template := "https://github.com/knative/eventing/releases/download/v%v/release.yaml"
+	template := "https://github.com/knative/eventing/releases/download/%v/release.yaml"
 
 	// In 0.12.0, the knative/eventing components bundle was renamed
 	// https://github.com/knative/eventing/releases/tag/v0.12.0
@@ -305,7 +305,7 @@ func (e *EventingManifestSource) GetPaths() []string {
 		Patch: 0,
 	}
 	if e.version.MustIsGreaterThan(renamedManifestVersion) {
-		template = "https://github.com/knative/eventing/releases/download/v%v/eventing.yaml"
+		template = "https://github.com/knative/eventing/releases/download/%v/eventing.yaml"
 	}
 
 	return []string{fmt.Sprintf(template, e.version)}
@@ -379,7 +379,7 @@ func getManifestForInstallation(url string) (string, error) {
 		return "", err
 	}
 	if resp.StatusCode != 200 {
-		return "", eris.Errorf("returned non-200 status code: %v %v", resp.StatusCode, resp.Status)
+		return "", eris.Errorf("[%s] returned non-200 status code [%v]: %v", url, resp.StatusCode, resp.Status)
 	}
 	raw, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
