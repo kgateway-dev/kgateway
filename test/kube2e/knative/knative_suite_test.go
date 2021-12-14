@@ -38,6 +38,8 @@ func preFailKnative() {
 	// 1. Get gloo pod
 	glooPodName, _ := exec.RunCommandOutput(testHelper.RootDir, true, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "--selector=gloo=gloo", "--output=jsonpath={.items..metadata.name}")
 
+	exec.RunCommand(testHelper.RootDir, true, "kubectl", "describe", "nodes")
+
 	// Describe pod
 	exec.RunCommand(testHelper.RootDir, true, "kubectl", "describe", "pod", glooPodName, "-n", testHelper.InstallNamespace)
 
