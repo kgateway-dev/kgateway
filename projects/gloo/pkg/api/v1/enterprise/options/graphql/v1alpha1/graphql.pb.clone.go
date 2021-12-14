@@ -61,6 +61,30 @@ func (m *PathSegment) Clone() proto.Message {
 }
 
 // Clone function
+func (m *Path) Clone() proto.Message {
+	var target *Path
+	if m == nil {
+		return target
+	}
+	target = &Path{}
+
+	if m.GetSegments() != nil {
+		target.Segments = make([]*PathSegment, len(m.GetSegments()))
+		for idx, v := range m.GetSegments() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Segments[idx] = h.Clone().(*PathSegment)
+			} else {
+				target.Segments[idx] = proto.Clone(v).(*PathSegment)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *ValueProvider) Clone() proto.Message {
 	var target *ValueProvider
 	if m == nil {
@@ -68,47 +92,20 @@ func (m *ValueProvider) Clone() proto.Message {
 	}
 	target = &ValueProvider{}
 
-	target.ProviderTemplate = m.GetProviderTemplate()
+	if m.GetProviders() != nil {
+		target.Providers = make(map[string]*ValueProvider_Provider, len(m.GetProviders()))
+		for k, v := range m.GetProviders() {
 
-	switch m.Provider.(type) {
-
-	case *ValueProvider_GraphqlArg:
-
-		if h, ok := interface{}(m.GetGraphqlArg()).(clone.Cloner); ok {
-			target.Provider = &ValueProvider_GraphqlArg{
-				GraphqlArg: h.Clone().(*ValueProvider_GraphQLArgExtraction),
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Providers[k] = h.Clone().(*ValueProvider_Provider)
+			} else {
+				target.Providers[k] = proto.Clone(v).(*ValueProvider_Provider)
 			}
-		} else {
-			target.Provider = &ValueProvider_GraphqlArg{
-				GraphqlArg: proto.Clone(m.GetGraphqlArg()).(*ValueProvider_GraphQLArgExtraction),
-			}
+
 		}
-
-	case *ValueProvider_TypedProvider:
-
-		if h, ok := interface{}(m.GetTypedProvider()).(clone.Cloner); ok {
-			target.Provider = &ValueProvider_TypedProvider{
-				TypedProvider: h.Clone().(*ValueProvider_TypedValueProvider),
-			}
-		} else {
-			target.Provider = &ValueProvider_TypedProvider{
-				TypedProvider: proto.Clone(m.GetTypedProvider()).(*ValueProvider_TypedValueProvider),
-			}
-		}
-
-	case *ValueProvider_GraphqlParent:
-
-		if h, ok := interface{}(m.GetGraphqlParent()).(clone.Cloner); ok {
-			target.Provider = &ValueProvider_GraphqlParent{
-				GraphqlParent: h.Clone().(*ValueProvider_GraphQLParentExtraction),
-			}
-		} else {
-			target.Provider = &ValueProvider_GraphqlParent{
-				GraphqlParent: proto.Clone(m.GetGraphqlParent()).(*ValueProvider_GraphQLParentExtraction),
-			}
-		}
-
 	}
+
+	target.ProviderTemplate = m.GetProviderTemplate()
 
 	return target
 }
@@ -275,6 +272,73 @@ func (m *RequestTemplate) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ResponseTemplate) Clone() proto.Message {
+	var target *ResponseTemplate
+	if m == nil {
+		return target
+	}
+	target = &ResponseTemplate{}
+
+	if m.GetResultRoot() != nil {
+		target.ResultRoot = make([]*PathSegment, len(m.GetResultRoot()))
+		for idx, v := range m.GetResultRoot() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ResultRoot[idx] = h.Clone().(*PathSegment)
+			} else {
+				target.ResultRoot[idx] = proto.Clone(v).(*PathSegment)
+			}
+
+		}
+	}
+
+	if m.GetSetters() != nil {
+		target.Setters = make(map[string]*Path, len(m.GetSetters()))
+		for k, v := range m.GetSetters() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Setters[k] = h.Clone().(*Path)
+			} else {
+				target.Setters[k] = proto.Clone(v).(*Path)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *GrpcRequestTemplate) Clone() proto.Message {
+	var target *GrpcRequestTemplate
+	if m == nil {
+		return target
+	}
+	target = &GrpcRequestTemplate{}
+
+	if h, ok := interface{}(m.GetOutgoingMessageJson()).(clone.Cloner); ok {
+		target.OutgoingMessageJson = h.Clone().(*JsonValue)
+	} else {
+		target.OutgoingMessageJson = proto.Clone(m.GetOutgoingMessageJson()).(*JsonValue)
+	}
+
+	target.ServiceName = m.GetServiceName()
+
+	target.MethodName = m.GetMethodName()
+
+	if m.GetRequestMetadata() != nil {
+		target.RequestMetadata = make(map[string]string, len(m.GetRequestMetadata()))
+		for k, v := range m.GetRequestMetadata() {
+
+			target.RequestMetadata[k] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *RESTResolver) Clone() proto.Message {
 	var target *RESTResolver
 	if m == nil {
@@ -292,6 +356,50 @@ func (m *RESTResolver) Clone() proto.Message {
 		target.RequestTransform = h.Clone().(*RequestTemplate)
 	} else {
 		target.RequestTransform = proto.Clone(m.GetRequestTransform()).(*RequestTemplate)
+	}
+
+	if h, ok := interface{}(m.GetPreExecutionTransform()).(clone.Cloner); ok {
+		target.PreExecutionTransform = h.Clone().(*ResponseTemplate)
+	} else {
+		target.PreExecutionTransform = proto.Clone(m.GetPreExecutionTransform()).(*ResponseTemplate)
+	}
+
+	target.SpanName = m.GetSpanName()
+
+	return target
+}
+
+// Clone function
+func (m *GrpcDescriptorRegistry) Clone() proto.Message {
+	var target *GrpcDescriptorRegistry
+	if m == nil {
+		return target
+	}
+	target = &GrpcDescriptorRegistry{}
+
+	target.ProtoDescriptorsBin = m.GetProtoDescriptorsBin()
+
+	return target
+}
+
+// Clone function
+func (m *GrpcResolver) Clone() proto.Message {
+	var target *GrpcResolver
+	if m == nil {
+		return target
+	}
+	target = &GrpcResolver{}
+
+	if h, ok := interface{}(m.GetUpstreamRef()).(clone.Cloner); ok {
+		target.UpstreamRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.UpstreamRef = proto.Clone(m.GetUpstreamRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	if h, ok := interface{}(m.GetRequestTransform()).(clone.Cloner); ok {
+		target.RequestTransform = h.Clone().(*GrpcRequestTemplate)
+	} else {
+		target.RequestTransform = proto.Clone(m.GetRequestTransform()).(*GrpcRequestTemplate)
 	}
 
 	target.SpanName = m.GetSpanName()
@@ -354,6 +462,18 @@ func (m *Resolution) Clone() proto.Message {
 			}
 		}
 
+	case *Resolution_GrpcResolver:
+
+		if h, ok := interface{}(m.GetGrpcResolver()).(clone.Cloner); ok {
+			target.Resolver = &Resolution_GrpcResolver{
+				GrpcResolver: h.Clone().(*GrpcResolver),
+			}
+		} else {
+			target.Resolver = &Resolution_GrpcResolver{
+				GrpcResolver: proto.Clone(m.GetGrpcResolver()).(*GrpcResolver),
+			}
+		}
+
 	}
 
 	return target
@@ -394,6 +514,64 @@ func (m *GraphQLSchema) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	if h, ok := interface{}(m.GetExecutableSchema()).(clone.Cloner); ok {
+		target.ExecutableSchema = h.Clone().(*ExecutableSchema)
+	} else {
+		target.ExecutableSchema = proto.Clone(m.GetExecutableSchema()).(*ExecutableSchema)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExecutableSchema) Clone() proto.Message {
+	var target *ExecutableSchema
+	if m == nil {
+		return target
+	}
+	target = &ExecutableSchema{}
+
+	target.SchemaDefinition = m.GetSchemaDefinition()
+
+	if h, ok := interface{}(m.GetExecutor()).(clone.Cloner); ok {
+		target.Executor = h.Clone().(*Executor)
+	} else {
+		target.Executor = proto.Clone(m.GetExecutor()).(*Executor)
+	}
+
+	if h, ok := interface{}(m.GetGrpcDescriptorRegistry()).(clone.Cloner); ok {
+		target.GrpcDescriptorRegistry = h.Clone().(*GrpcDescriptorRegistry)
+	} else {
+		target.GrpcDescriptorRegistry = proto.Clone(m.GetGrpcDescriptorRegistry()).(*GrpcDescriptorRegistry)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Executor) Clone() proto.Message {
+	var target *Executor
+	if m == nil {
+		return target
+	}
+	target = &Executor{}
+
+	switch m.Executor.(type) {
+
+	case *Executor_Local_:
+
+		if h, ok := interface{}(m.GetLocal()).(clone.Cloner); ok {
+			target.Executor = &Executor_Local_{
+				Local: h.Clone().(*Executor_Local),
+			}
+		} else {
+			target.Executor = &Executor_Local_{
+				Local: proto.Clone(m.GetLocal()).(*Executor_Local),
+			}
+		}
+
 	}
 
 	return target
@@ -481,6 +659,57 @@ func (m *ValueProvider_TypedValueProvider) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ValueProvider_Provider) Clone() proto.Message {
+	var target *ValueProvider_Provider
+	if m == nil {
+		return target
+	}
+	target = &ValueProvider_Provider{}
+
+	switch m.Provider.(type) {
+
+	case *ValueProvider_Provider_GraphqlArg:
+
+		if h, ok := interface{}(m.GetGraphqlArg()).(clone.Cloner); ok {
+			target.Provider = &ValueProvider_Provider_GraphqlArg{
+				GraphqlArg: h.Clone().(*ValueProvider_GraphQLArgExtraction),
+			}
+		} else {
+			target.Provider = &ValueProvider_Provider_GraphqlArg{
+				GraphqlArg: proto.Clone(m.GetGraphqlArg()).(*ValueProvider_GraphQLArgExtraction),
+			}
+		}
+
+	case *ValueProvider_Provider_TypedProvider:
+
+		if h, ok := interface{}(m.GetTypedProvider()).(clone.Cloner); ok {
+			target.Provider = &ValueProvider_Provider_TypedProvider{
+				TypedProvider: h.Clone().(*ValueProvider_TypedValueProvider),
+			}
+		} else {
+			target.Provider = &ValueProvider_Provider_TypedProvider{
+				TypedProvider: proto.Clone(m.GetTypedProvider()).(*ValueProvider_TypedValueProvider),
+			}
+		}
+
+	case *ValueProvider_Provider_GraphqlParent:
+
+		if h, ok := interface{}(m.GetGraphqlParent()).(clone.Cloner); ok {
+			target.Provider = &ValueProvider_Provider_GraphqlParent{
+				GraphqlParent: h.Clone().(*ValueProvider_GraphQLParentExtraction),
+			}
+		} else {
+			target.Provider = &ValueProvider_Provider_GraphqlParent{
+				GraphqlParent: proto.Clone(m.GetGraphqlParent()).(*ValueProvider_GraphQLParentExtraction),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
 func (m *QueryMatcher_FieldMatcher) Clone() proto.Message {
 	var target *QueryMatcher_FieldMatcher
 	if m == nil {
@@ -491,6 +720,32 @@ func (m *QueryMatcher_FieldMatcher) Clone() proto.Message {
 	target.Type = m.GetType()
 
 	target.Field = m.GetField()
+
+	return target
+}
+
+// Clone function
+func (m *Executor_Local) Clone() proto.Message {
+	var target *Executor_Local
+	if m == nil {
+		return target
+	}
+	target = &Executor_Local{}
+
+	if m.GetResolutions() != nil {
+		target.Resolutions = make([]*Resolution, len(m.GetResolutions()))
+		for idx, v := range m.GetResolutions() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Resolutions[idx] = h.Clone().(*Resolution)
+			} else {
+				target.Resolutions[idx] = proto.Clone(v).(*Resolution)
+			}
+
+		}
+	}
+
+	target.EnableIntrospection = m.GetEnableIntrospection()
 
 	return target
 }
