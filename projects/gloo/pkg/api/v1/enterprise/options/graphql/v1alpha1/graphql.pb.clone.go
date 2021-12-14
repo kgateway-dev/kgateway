@@ -275,6 +275,36 @@ func (m *RequestTemplate) Clone() proto.Message {
 }
 
 // Clone function
+func (m *GrpcRequestTemplate) Clone() proto.Message {
+	var target *GrpcRequestTemplate
+	if m == nil {
+		return target
+	}
+	target = &GrpcRequestTemplate{}
+
+	if h, ok := interface{}(m.GetOutgoingMessageJson()).(clone.Cloner); ok {
+		target.OutgoingMessageJson = h.Clone().(*JsonValue)
+	} else {
+		target.OutgoingMessageJson = proto.Clone(m.GetOutgoingMessageJson()).(*JsonValue)
+	}
+
+	target.ServiceName = m.GetServiceName()
+
+	target.MethodName = m.GetMethodName()
+
+	if m.GetRequestMetadata() != nil {
+		target.RequestMetadata = make(map[string]string, len(m.GetRequestMetadata()))
+		for k, v := range m.GetRequestMetadata() {
+
+			target.RequestMetadata[k] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *RESTResolver) Clone() proto.Message {
 	var target *RESTResolver
 	if m == nil {
@@ -292,6 +322,44 @@ func (m *RESTResolver) Clone() proto.Message {
 		target.RequestTransform = h.Clone().(*RequestTemplate)
 	} else {
 		target.RequestTransform = proto.Clone(m.GetRequestTransform()).(*RequestTemplate)
+	}
+
+	target.SpanName = m.GetSpanName()
+
+	return target
+}
+
+// Clone function
+func (m *GrpcDescriptorRegistry) Clone() proto.Message {
+	var target *GrpcDescriptorRegistry
+	if m == nil {
+		return target
+	}
+	target = &GrpcDescriptorRegistry{}
+
+	target.ProtoDescriptorsBin = m.GetProtoDescriptorsBin()
+
+	return target
+}
+
+// Clone function
+func (m *GrpcResolver) Clone() proto.Message {
+	var target *GrpcResolver
+	if m == nil {
+		return target
+	}
+	target = &GrpcResolver{}
+
+	if h, ok := interface{}(m.GetUpstreamRef()).(clone.Cloner); ok {
+		target.UpstreamRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.UpstreamRef = proto.Clone(m.GetUpstreamRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	if h, ok := interface{}(m.GetRequestTransform()).(clone.Cloner); ok {
+		target.RequestTransform = h.Clone().(*GrpcRequestTemplate)
+	} else {
+		target.RequestTransform = proto.Clone(m.GetRequestTransform()).(*GrpcRequestTemplate)
 	}
 
 	target.SpanName = m.GetSpanName()
@@ -354,6 +422,18 @@ func (m *Resolution) Clone() proto.Message {
 			}
 		}
 
+	case *Resolution_GrpcResolver:
+
+		if h, ok := interface{}(m.GetGrpcResolver()).(clone.Cloner); ok {
+			target.Resolver = &Resolution_GrpcResolver{
+				GrpcResolver: h.Clone().(*GrpcResolver),
+			}
+		} else {
+			target.Resolver = &Resolution_GrpcResolver{
+				GrpcResolver: proto.Clone(m.GetGrpcResolver()).(*GrpcResolver),
+			}
+		}
+
 	}
 
 	return target
@@ -394,6 +474,64 @@ func (m *GraphQLSchema) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	if h, ok := interface{}(m.GetExecutableSchema()).(clone.Cloner); ok {
+		target.ExecutableSchema = h.Clone().(*ExecutableSchema)
+	} else {
+		target.ExecutableSchema = proto.Clone(m.GetExecutableSchema()).(*ExecutableSchema)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExecutableSchema) Clone() proto.Message {
+	var target *ExecutableSchema
+	if m == nil {
+		return target
+	}
+	target = &ExecutableSchema{}
+
+	target.SchemaDefinition = m.GetSchemaDefinition()
+
+	if h, ok := interface{}(m.GetExecutor()).(clone.Cloner); ok {
+		target.Executor = h.Clone().(*Executor)
+	} else {
+		target.Executor = proto.Clone(m.GetExecutor()).(*Executor)
+	}
+
+	if h, ok := interface{}(m.GetGrpcDescriptorRegistry()).(clone.Cloner); ok {
+		target.GrpcDescriptorRegistry = h.Clone().(*GrpcDescriptorRegistry)
+	} else {
+		target.GrpcDescriptorRegistry = proto.Clone(m.GetGrpcDescriptorRegistry()).(*GrpcDescriptorRegistry)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Executor) Clone() proto.Message {
+	var target *Executor
+	if m == nil {
+		return target
+	}
+	target = &Executor{}
+
+	switch m.Executor.(type) {
+
+	case *Executor_Local_:
+
+		if h, ok := interface{}(m.GetLocal()).(clone.Cloner); ok {
+			target.Executor = &Executor_Local_{
+				Local: h.Clone().(*Executor_Local),
+			}
+		} else {
+			target.Executor = &Executor_Local_{
+				Local: proto.Clone(m.GetLocal()).(*Executor_Local),
+			}
+		}
+
 	}
 
 	return target
@@ -491,6 +629,32 @@ func (m *QueryMatcher_FieldMatcher) Clone() proto.Message {
 	target.Type = m.GetType()
 
 	target.Field = m.GetField()
+
+	return target
+}
+
+// Clone function
+func (m *Executor_Local) Clone() proto.Message {
+	var target *Executor_Local
+	if m == nil {
+		return target
+	}
+	target = &Executor_Local{}
+
+	if m.GetResolutions() != nil {
+		target.Resolutions = make([]*Resolution, len(m.GetResolutions()))
+		for idx, v := range m.GetResolutions() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Resolutions[idx] = h.Clone().(*Resolution)
+			} else {
+				target.Resolutions[idx] = proto.Clone(v).(*Resolution)
+			}
+
+		}
+	}
+
+	target.EnableIntrospection = m.GetEnableIntrospection()
 
 	return target
 }

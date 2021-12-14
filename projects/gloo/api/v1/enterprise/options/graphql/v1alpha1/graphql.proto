@@ -20,8 +20,6 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 import "validate/validate.proto";
 
-import "google/protobuf/empty.proto";
-
 // used to reference into json structures by key(s).
 message PathSegment {
   oneof segment {
@@ -152,11 +150,44 @@ message RequestTemplate {
   JsonValue outgoing_body = 3;
 }
 
+// Defines a configuration for generating outgoing requests for a resolver.
+message GrpcRequestTemplate {
+  // json representation of outgoing gRPC message to be sent to gRPC service
+  JsonValue outgoing_message_json = 1;
+
+  // request has shape matching service with name registered in registry
+  // is the full_name(), e.g. main.Bookstore
+  string service_name = 2;
+
+  // make request to method with this name on the grpc service defined above
+  // is just the name(), e.g. GetBook
+  string method_name = 3;
+
+  // in the future, we may want to make this a map<string, ValueProvider>
+  // once we know better what the use cases are
+  map<string, string> request_metadata = 4;
+}
+
 // control-plane API
 message RESTResolver {
   core.solo.io.ResourceRef upstream_ref = 1;
   // configuration used to compose the outgoing request to a REST API
   RequestTemplate request_transform = 2;
+  string span_name = 4;
+}
+
+// Defines a configuration for serializing and deserializing requests for a gRPC resolver.
+// Is a Schema Extension
+message GrpcDescriptorRegistry {
+  // base64 encoded proto descriptor bin
+  string proto_descriptors_bin = 1;
+}
+
+// control-plane API
+message GrpcResolver {
+  core.solo.io.ResourceRef upstream_ref = 1;
+  // configuration used to compose the outgoing request to a REST API
+  GrpcRequestTemplate request_transform = 2;
   string span_name = 4;
 }
 
@@ -185,6 +216,7 @@ message Resolution {
   // The resolver to use.
   oneof resolver {
     RESTResolver rest_resolver = 3;
+    GrpcResolver grpc_resolver = 4;
   }
 }
 
@@ -208,12 +240,42 @@ message GraphQLSchema {
   core.solo.io.Metadata metadata = 2;
 
   // Schema to use in string format.
-  string schema = 3;
+  string schema = 3 [deprecated=true];
   // Do we enable introspection for the schema? general recommendation is to disable this for production
   // and hence it defaults to false.
-  bool enable_introspection = 4;
+  bool enable_introspection = 4 [deprecated=true];
   // The resolver map to use to resolve the schema.
   // Omitted fields will use the default resolver, which looks for a field with that name in the parent's object,
   // and errors if the field cannot be found.
-  repeated Resolution resolutions = 5;
+  repeated Resolution resolutions = 5 [deprecated=true];
+
+  ExecutableSchema executable_schema = 6;
+}
+
+message ExecutableSchema {
+  // Schema to use in string format.
+  string schema_definition = 1;
+
+  // how to execute the schema
+  Executor executor = 2;
+
+  // Schema extensions
+  GrpcDescriptorRegistry grpc_descriptor_registry = 3;
+}
+
+message Executor {
+  // Execute schema using resolvers.
+  message Local {
+    // The resolver map to use to resolve the schema.
+    repeated Resolution resolutions = 1;
+    // Do we enable introspection for the schema? general recommendation is to
+    // disable this for production and hence it defaults to false.
+    bool enable_introspection = 2;
+  }
+
+  oneof executor {
+    Local local = 1;
+    // coming soon, schema stitching:
+    //Remote remote = 2;
+  }
 }
