@@ -86,6 +86,47 @@ func (m *PathSegment) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *Path) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Path)
+	if !ok {
+		that2, ok := that.(Path)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSegments()) != len(target.GetSegments()) {
+		return false
+	}
+	for idx, v := range m.GetSegments() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSegments()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSegments()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ValueProvider) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -106,62 +147,25 @@ func (m *ValueProvider) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetProviderTemplate(), target.GetProviderTemplate()) != 0 {
+	if len(m.GetProviders()) != len(target.GetProviders()) {
 		return false
 	}
+	for k, v := range m.GetProviders() {
 
-	switch m.Provider.(type) {
-
-	case *ValueProvider_GraphqlArg:
-		if _, ok := target.Provider.(*ValueProvider_GraphqlArg); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetGraphqlArg()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetGraphqlArg()) {
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetProviders()[k]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetGraphqlArg(), target.GetGraphqlArg()) {
+			if !proto.Equal(v, target.GetProviders()[k]) {
 				return false
 			}
 		}
 
-	case *ValueProvider_TypedProvider:
-		if _, ok := target.Provider.(*ValueProvider_TypedProvider); !ok {
-			return false
-		}
+	}
 
-		if h, ok := interface{}(m.GetTypedProvider()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetTypedProvider()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetTypedProvider(), target.GetTypedProvider()) {
-				return false
-			}
-		}
-
-	case *ValueProvider_GraphqlParent:
-		if _, ok := target.Provider.(*ValueProvider_GraphqlParent); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetGraphqlParent()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetGraphqlParent()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetGraphqlParent(), target.GetGraphqlParent()) {
-				return false
-			}
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.Provider != target.Provider {
-			return false
-		}
+	if strings.Compare(m.GetProviderTemplate(), target.GetProviderTemplate()) != 0 {
+		return false
 	}
 
 	return true
@@ -434,6 +438,64 @@ func (m *RequestTemplate) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ResponseTemplate) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ResponseTemplate)
+	if !ok {
+		that2, ok := that.(ResponseTemplate)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetResultRoot()) != len(target.GetResultRoot()) {
+		return false
+	}
+	for idx, v := range m.GetResultRoot() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetResultRoot()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetResultRoot()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetSetters()) != len(target.GetSetters()) {
+		return false
+	}
+	for k, v := range m.GetSetters() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSetters()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSetters()[k]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *GrpcRequestTemplate) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -523,6 +585,16 @@ func (m *RESTResolver) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetRequestTransform(), target.GetRequestTransform()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetPreExecutionTransform()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPreExecutionTransform()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPreExecutionTransform(), target.GetPreExecutionTransform()) {
 			return false
 		}
 	}
@@ -1044,6 +1116,84 @@ func (m *ValueProvider_TypedValueProvider) Equal(that interface{}) bool {
 	default:
 		// m is nil but target is not nil
 		if m.ValProvider != target.ValProvider {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ValueProvider_Provider) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ValueProvider_Provider)
+	if !ok {
+		that2, ok := that.(ValueProvider_Provider)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Provider.(type) {
+
+	case *ValueProvider_Provider_GraphqlArg:
+		if _, ok := target.Provider.(*ValueProvider_Provider_GraphqlArg); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGraphqlArg()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGraphqlArg()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGraphqlArg(), target.GetGraphqlArg()) {
+				return false
+			}
+		}
+
+	case *ValueProvider_Provider_TypedProvider:
+		if _, ok := target.Provider.(*ValueProvider_Provider_TypedProvider); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetTypedProvider()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTypedProvider()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetTypedProvider(), target.GetTypedProvider()) {
+				return false
+			}
+		}
+
+	case *ValueProvider_Provider_GraphqlParent:
+		if _, ok := target.Provider.(*ValueProvider_Provider_GraphqlParent); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGraphqlParent()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGraphqlParent()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGraphqlParent(), target.GetGraphqlParent()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Provider != target.Provider {
 			return false
 		}
 	}

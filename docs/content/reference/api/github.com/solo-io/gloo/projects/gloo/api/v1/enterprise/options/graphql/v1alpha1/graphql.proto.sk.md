@@ -12,16 +12,19 @@ weight: 5
 
 
 - [PathSegment](#pathsegment)
+- [Path](#path)
 - [ValueProvider](#valueprovider)
 - [GraphQLArgExtraction](#graphqlargextraction)
 - [GraphQLParentExtraction](#graphqlparentextraction)
 - [TypedValueProvider](#typedvalueprovider)
 - [Type](#type)
+- [Provider](#provider)
 - [JsonValueList](#jsonvaluelist)
 - [JsonValue](#jsonvalue)
 - [JsonKeyValue](#jsonkeyvalue)
 - [JsonNode](#jsonnode)
 - [RequestTemplate](#requesttemplate)
+- [ResponseTemplate](#responsetemplate)
 - [GrpcRequestTemplate](#grpcrequesttemplate)
 - [RESTResolver](#restresolver)
 - [GrpcDescriptorRegistry](#grpcdescriptorregistry)
@@ -66,25 +69,38 @@ used to reference into json structures by key(s).
 
 
 ---
+### Path
+
+
+
+```yaml
+"segments": []graphql.gloo.solo.io.PathSegment
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `segments` | [[]graphql.gloo.solo.io.PathSegment](../graphql.proto.sk/#pathsegment) |  |
+
+
+
+
+---
 ### ValueProvider
 
  
 In the future we may add support for regex and subgroups
 
 ```yaml
-"graphqlArg": .graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction
-"typedProvider": .graphql.gloo.solo.io.ValueProvider.TypedValueProvider
-"graphqlParent": .graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction
+"providers": map<string, .graphql.gloo.solo.io.ValueProvider.Provider>
 "providerTemplate": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `graphqlArg` | [.graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction](../graphql.proto.sk/#graphqlargextraction) | type inferred from schema, no need to provide it. Only one of `graphqlArg`, `typedProvider`, or `graphqlParent` can be set. |
-| `typedProvider` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider](../graphql.proto.sk/#typedvalueprovider) |  Only one of `typedProvider`, `graphqlArg`, or `graphqlParent` can be set. |
-| `graphqlParent` | [.graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. Only one of `graphqlParent`, `graphqlArg`, or `typedProvider` can be set. |
-| `providerTemplate` | `string` | If non-empty, the template to interpolate the extracted value into. For example, if the string is /api/pets/{}/name and the extracted value 123 is the pet ID will then the extracted value is /api/pets/123/name Use {} as the interpolation character (even repeated) regardless of the type of the provided value. |
+| `providers` | `map<string, .graphql.gloo.solo.io.ValueProvider.Provider>` | Map of provider name to provider definition. The name will be used to insert the provider value in the provider_template. |
+| `providerTemplate` | `string` | If non-empty, Inserts named providers into a template string. For example, if the provider_template is '/api/{apiVersionProvider}/pet/{petIdProvider}' and we have to named providers defined in `providers`, apiVersionProvider and petIdProvider, with extracted values 'v2' and '123' respectively, the final resulting value will be '/api/v2/pet/123' Use {PROVIDER_NAME} as the interpolation notation (even repeated) regardless of the type of the provided value. If an undefined PROVIDER_NAME is used in the provider_template, this will nack during configuration. If this is empty, only the value of the first provider will be used as the resulting value. |
 
 
 
@@ -165,6 +181,27 @@ this value will be cast to an int type.
 | `INT` |  |
 | `FLOAT` |  |
 | `BOOLEAN` |  |
+
+
+
+
+---
+### Provider
+
+
+
+```yaml
+"graphqlArg": .graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction
+"typedProvider": .graphql.gloo.solo.io.ValueProvider.TypedValueProvider
+"graphqlParent": .graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `graphqlArg` | [.graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction](../graphql.proto.sk/#graphqlargextraction) | type inferred from schema, no need to provide it. Only one of `graphqlArg`, `typedProvider`, or `graphqlParent` can be set. |
+| `typedProvider` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider](../graphql.proto.sk/#typedvalueprovider) |  Only one of `typedProvider`, `graphqlArg`, or `graphqlParent` can be set. |
+| `graphqlParent` | [.graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. Only one of `graphqlParent`, `graphqlArg`, or `typedProvider` can be set. |
 
 
 
@@ -267,6 +304,27 @@ Defines a configuration for generating outgoing requests for a resolver.
 
 
 ---
+### ResponseTemplate
+
+ 
+Defines a response transformation template.
+modify JSON response from upstream before it is processed by execution engine.
+
+```yaml
+"resultRoot": []graphql.gloo.solo.io.PathSegment
+"setters": map<string, .graphql.gloo.solo.io.Path>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `resultRoot` | [[]graphql.gloo.solo.io.PathSegment](../graphql.proto.sk/#pathsegment) | In cases where the data to populate the graphql type is not in the root object of the result, use result root to specify the path of the response we should use as the root. If {"a": {"b": [1,2,3]}} is the response from the api, setting resultroot as `a.b` will pass on [1,2,3] to the execution engine rather than the whole api response. |
+| `setters` | `map<string, .graphql.gloo.solo.io.Path>` | Example: ``` type Query { getSimple: Simple } type Simple { name String address String }``` if we do `getsimple` and the response we get back from the upstream is ``` {"data": { "people": { "name": "John Doe", "details": { "address": "123 Turnip Rd" } } } } ``` the following response transform would let the graphql execution engine correctly marshal the upstream resposne into the expected graphql response: ` responseTransform: result_root: segments: - key: data - key: people setters: address: segments: - key: details - key: address `yaml. |
+
+
+
+
+---
 ### GrpcRequestTemplate
 
  
@@ -299,6 +357,7 @@ control-plane API
 ```yaml
 "upstreamRef": .core.solo.io.ResourceRef
 "requestTransform": .graphql.gloo.solo.io.RequestTemplate
+"preExecutionTransform": .graphql.gloo.solo.io.ResponseTemplate
 "spanName": string
 
 ```
@@ -307,6 +366,7 @@ control-plane API
 | ----- | ---- | ----------- | 
 | `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `requestTransform` | [.graphql.gloo.solo.io.RequestTemplate](../graphql.proto.sk/#requesttemplate) | configuration used to compose the outgoing request to a REST API. |
+| `preExecutionTransform` | [.graphql.gloo.solo.io.ResponseTemplate](../graphql.proto.sk/#responsetemplate) |  |
 | `spanName` | `string` |  |
 
 
