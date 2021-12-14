@@ -60,7 +60,7 @@ jobs:
     - uses: azure/setup-kubectl@v1
       id: kubectl
       with:
-        version: 'v1.20.2'
+        version: 'v1.20.7'
     - uses: azure/setup-helm@v1
       with:
         version: v3.2.0
@@ -69,7 +69,7 @@ jobs:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
         USE_XDS_RELAY: ${{ matrix.xds-relay }}
         CLUSTER_NAME: 'kind'
-        CLUSTER_NODE_VERSION: 'v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6'
+        CLUSTER_NODE_VERSION: 'v1.20.7@sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9'
         VERSION: '0.0.0-kind'
       run: |
         ./ci/deploy-to-kind-cluster.sh
