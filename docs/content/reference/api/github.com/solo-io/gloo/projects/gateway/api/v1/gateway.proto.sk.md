@@ -55,7 +55,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `ssl` | `bool` | if set to false, only use virtual services without ssl configured. if set to true, only use virtual services with ssl configured. |
+| `ssl` | `bool` | if set to false, only use virtual services without ssl configured. if set to true, only use virtual services with ssl configured. this field is ignored if GatewayType is HybridGateway. |
 | `bindAddress` | `string` | the bind address the gateway should serve traffic on. |
 | `bindPort` | `int` | bind ports must not conflict across gateways for a single proxy. |
 | `options` | [.gloo.solo.io.ListenerOptions](../../../../gloo/api/v1/options.proto.sk/#listeneroptions) | top level optional configuration for all routes on the gateway. |

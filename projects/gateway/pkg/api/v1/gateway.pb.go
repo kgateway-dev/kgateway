@@ -113,6 +113,7 @@ type Gateway struct {
 
 	// if set to false, only use virtual services without ssl configured.
 	// if set to true, only use virtual services with ssl configured.
+	// this field is ignored if GatewayType is HybridGateway.
 	Ssl bool `protobuf:"varint,1,opt,name=ssl,proto3" json:"ssl,omitempty"`
 	// the bind address the gateway should serve traffic on
 	BindAddress string `protobuf:"bytes,3,opt,name=bind_address,json=bindAddress,proto3" json:"bind_address,omitempty"`

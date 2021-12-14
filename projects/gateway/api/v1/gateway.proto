@@ -31,6 +31,7 @@ message Gateway {
 
     // if set to false, only use virtual services without ssl configured.
     // if set to true, only use virtual services with ssl configured.
+    // this field is ignored if GatewayType is HybridGateway.
     bool ssl = 1;
 
     // the bind address the gateway should serve traffic on
