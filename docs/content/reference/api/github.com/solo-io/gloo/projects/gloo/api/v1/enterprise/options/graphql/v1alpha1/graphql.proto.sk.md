@@ -12,21 +12,30 @@ weight: 5
 
 
 - [PathSegment](#pathsegment)
+- [Path](#path)
 - [ValueProvider](#valueprovider)
 - [GraphQLArgExtraction](#graphqlargextraction)
 - [GraphQLParentExtraction](#graphqlparentextraction)
 - [TypedValueProvider](#typedvalueprovider)
 - [Type](#type)
+- [Provider](#provider)
 - [JsonValueList](#jsonvaluelist)
 - [JsonValue](#jsonvalue)
 - [JsonKeyValue](#jsonkeyvalue)
 - [JsonNode](#jsonnode)
 - [RequestTemplate](#requesttemplate)
+- [ResponseTemplate](#responsetemplate)
+- [GrpcRequestTemplate](#grpcrequesttemplate)
 - [RESTResolver](#restresolver)
+- [GrpcDescriptorRegistry](#grpcdescriptorregistry)
+- [GrpcResolver](#grpcresolver)
 - [QueryMatcher](#querymatcher)
 - [FieldMatcher](#fieldmatcher)
 - [Resolution](#resolution)
 - [GraphQLSchema](#graphqlschema) **Top-Level Resource**
+- [ExecutableSchema](#executableschema)
+- [Executor](#executor)
+- [Local](#local)
   
 
 
@@ -60,25 +69,38 @@ used to reference into json structures by key(s).
 
 
 ---
+### Path
+
+
+
+```yaml
+"segments": []graphql.gloo.solo.io.PathSegment
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `segments` | [[]graphql.gloo.solo.io.PathSegment](../graphql.proto.sk/#pathsegment) |  |
+
+
+
+
+---
 ### ValueProvider
 
  
 In the future we may add support for regex and subgroups
 
 ```yaml
-"graphqlArg": .graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction
-"typedProvider": .graphql.gloo.solo.io.ValueProvider.TypedValueProvider
-"graphqlParent": .graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction
+"providers": map<string, .graphql.gloo.solo.io.ValueProvider.Provider>
 "providerTemplate": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `graphqlArg` | [.graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction](../graphql.proto.sk/#graphqlargextraction) | type inferred from schema, no need to provide it. Only one of `graphqlArg`, `typedProvider`, or `graphqlParent` can be set. |
-| `typedProvider` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider](../graphql.proto.sk/#typedvalueprovider) |  Only one of `typedProvider`, `graphqlArg`, or `graphqlParent` can be set. |
-| `graphqlParent` | [.graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. Only one of `graphqlParent`, `graphqlArg`, or `typedProvider` can be set. |
-| `providerTemplate` | `string` | If non-empty, the template to interpolate the extracted value into. For example, if the string is /api/pets/{}/name and the extracted value 123 is the pet ID will then the extracted value is /api/pets/123/name Use {} as the interpolation character (even repeated) regardless of the type of the provided value. |
+| `providers` | `map<string, .graphql.gloo.solo.io.ValueProvider.Provider>` | Map of provider name to provider definition. The name will be used to insert the provider value in the provider_template. |
+| `providerTemplate` | `string` | If non-empty, Inserts named providers into a template string. For example, if the provider_template is '/api/{apiVersionProvider}/pet/{petIdProvider}' and we have to named providers defined in `providers`, apiVersionProvider and petIdProvider, with extracted values 'v2' and '123' respectively, the final resulting value will be '/api/v2/pet/123' Use {PROVIDER_NAME} as the interpolation notation (even repeated) regardless of the type of the provided value. If an undefined PROVIDER_NAME is used in the provider_template, this will nack during configuration. If this is empty, only the value of the first provider will be used as the resulting value. |
 
 
 
@@ -159,6 +181,27 @@ this value will be cast to an int type.
 | `INT` |  |
 | `FLOAT` |  |
 | `BOOLEAN` |  |
+
+
+
+
+---
+### Provider
+
+
+
+```yaml
+"graphqlArg": .graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction
+"typedProvider": .graphql.gloo.solo.io.ValueProvider.TypedValueProvider
+"graphqlParent": .graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `graphqlArg` | [.graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction](../graphql.proto.sk/#graphqlargextraction) | type inferred from schema, no need to provide it. Only one of `graphqlArg`, `typedProvider`, or `graphqlParent` can be set. |
+| `typedProvider` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider](../graphql.proto.sk/#typedvalueprovider) |  Only one of `typedProvider`, `graphqlArg`, or `graphqlParent` can be set. |
+| `graphqlParent` | [.graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. Only one of `graphqlParent`, `graphqlArg`, or `typedProvider` can be set. |
 
 
 
@@ -261,6 +304,51 @@ Defines a configuration for generating outgoing requests for a resolver.
 
 
 ---
+### ResponseTemplate
+
+ 
+Defines a response transformation template.
+modify JSON response from upstream before it is processed by execution engine.
+
+```yaml
+"resultRoot": []graphql.gloo.solo.io.PathSegment
+"setters": map<string, .graphql.gloo.solo.io.Path>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `resultRoot` | [[]graphql.gloo.solo.io.PathSegment](../graphql.proto.sk/#pathsegment) | In cases where the data to populate the graphql type is not in the root object of the result, use result root to specify the path of the response we should use as the root. If {"a": {"b": [1,2,3]}} is the response from the api, setting resultroot as `a.b` will pass on [1,2,3] to the execution engine rather than the whole api response. |
+| `setters` | `map<string, .graphql.gloo.solo.io.Path>` | Example: ``` type Query { getSimple: Simple } type Simple { name String address String }``` if we do `getsimple` and the response we get back from the upstream is ``` {"data": { "people": { "name": "John Doe", "details": { "address": "123 Turnip Rd" } } } } ``` the following response transform would let the graphql execution engine correctly marshal the upstream resposne into the expected graphql response: ` responseTransform: result_root: segments: - key: data - key: people setters: address: segments: - key: details - key: address `yaml. |
+
+
+
+
+---
+### GrpcRequestTemplate
+
+ 
+Defines a configuration for generating outgoing requests for a resolver.
+
+```yaml
+"outgoingMessageJson": .graphql.gloo.solo.io.JsonValue
+"serviceName": string
+"methodName": string
+"requestMetadata": map<string, string>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `outgoingMessageJson` | [.graphql.gloo.solo.io.JsonValue](../graphql.proto.sk/#jsonvalue) | json representation of outgoing gRPC message to be sent to gRPC service. |
+| `serviceName` | `string` | request has shape matching service with name registered in registry is the full_name(), e.g. main.Bookstore. |
+| `methodName` | `string` | make request to method with this name on the grpc service defined above is just the name(), e.g. GetBook. |
+| `requestMetadata` | `map<string, string>` | in the future, we may want to make this a map<string, ValueProvider> once we know better what the use cases are. |
+
+
+
+
+---
 ### RESTResolver
 
  
@@ -269,6 +357,7 @@ control-plane API
 ```yaml
 "upstreamRef": .core.solo.io.ResourceRef
 "requestTransform": .graphql.gloo.solo.io.RequestTemplate
+"preExecutionTransform": .graphql.gloo.solo.io.ResponseTemplate
 "spanName": string
 
 ```
@@ -277,6 +366,48 @@ control-plane API
 | ----- | ---- | ----------- | 
 | `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `requestTransform` | [.graphql.gloo.solo.io.RequestTemplate](../graphql.proto.sk/#requesttemplate) | configuration used to compose the outgoing request to a REST API. |
+| `preExecutionTransform` | [.graphql.gloo.solo.io.ResponseTemplate](../graphql.proto.sk/#responsetemplate) |  |
+| `spanName` | `string` |  |
+
+
+
+
+---
+### GrpcDescriptorRegistry
+
+ 
+Defines a configuration for serializing and deserializing requests for a gRPC resolver.
+Is a Schema Extension
+
+```yaml
+"protoDescriptorsBin": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `protoDescriptorsBin` | `string` | base64 encoded proto descriptor bin. |
+
+
+
+
+---
+### GrpcResolver
+
+ 
+control-plane API
+
+```yaml
+"upstreamRef": .core.solo.io.ResourceRef
+"requestTransform": .graphql.gloo.solo.io.GrpcRequestTemplate
+"spanName": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
+| `requestTransform` | [.graphql.gloo.solo.io.GrpcRequestTemplate](../graphql.proto.sk/#grpcrequesttemplate) | configuration used to compose the outgoing request to a REST API. |
 | `spanName` | `string` |  |
 
 
@@ -332,13 +463,15 @@ if a field with the same name does not exist in the parent, null will be used.
 ```yaml
 "matcher": .graphql.gloo.solo.io.QueryMatcher
 "restResolver": .graphql.gloo.solo.io.RESTResolver
+"grpcResolver": .graphql.gloo.solo.io.GrpcResolver
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `matcher` | [.graphql.gloo.solo.io.QueryMatcher](../graphql.proto.sk/#querymatcher) | Match an object type and field. |
-| `restResolver` | [.graphql.gloo.solo.io.RESTResolver](../graphql.proto.sk/#restresolver) |  |
+| `restResolver` | [.graphql.gloo.solo.io.RESTResolver](../graphql.proto.sk/#restresolver) |  Only one of `restResolver` or `grpcResolver` can be set. |
+| `grpcResolver` | [.graphql.gloo.solo.io.GrpcResolver](../graphql.proto.sk/#grpcresolver) |  Only one of `grpcResolver` or `restResolver` can be set. |
 
 
 
@@ -361,6 +494,7 @@ configure the routes to point to these schema CRs.
 "schema": string
 "enableIntrospection": bool
 "resolutions": []graphql.gloo.solo.io.Resolution
+"executableSchema": .graphql.gloo.solo.io.ExecutableSchema
 
 ```
 
@@ -371,6 +505,65 @@ configure the routes to point to these schema CRs.
 | `schema` | `string` | Schema to use in string format. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
 | `resolutions` | [[]graphql.gloo.solo.io.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. Omitted fields will use the default resolver, which looks for a field with that name in the parent's object, and errors if the field cannot be found. |
+| `executableSchema` | [.graphql.gloo.solo.io.ExecutableSchema](../graphql.proto.sk/#executableschema) |  |
+
+
+
+
+---
+### ExecutableSchema
+
+
+
+```yaml
+"schemaDefinition": string
+"executor": .graphql.gloo.solo.io.Executor
+"grpcDescriptorRegistry": .graphql.gloo.solo.io.GrpcDescriptorRegistry
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `schemaDefinition` | `string` | Schema to use in string format. |
+| `executor` | [.graphql.gloo.solo.io.Executor](../graphql.proto.sk/#executor) | how to execute the schema. |
+| `grpcDescriptorRegistry` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry](../graphql.proto.sk/#grpcdescriptorregistry) | Schema extensions. |
+
+
+
+
+---
+### Executor
+
+
+
+```yaml
+"local": .graphql.gloo.solo.io.Executor.Local
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `local` | [.graphql.gloo.solo.io.Executor.Local](../graphql.proto.sk/#local) |  |
+
+
+
+
+---
+### Local
+
+ 
+Execute schema using resolvers.
+
+```yaml
+"resolutions": []graphql.gloo.solo.io.Resolution
+"enableIntrospection": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `resolutions` | [[]graphql.gloo.solo.io.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. |
+| `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
 
 
 
