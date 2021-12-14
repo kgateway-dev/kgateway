@@ -610,6 +610,7 @@ type Matcher struct {
 
 	// Gloo use SNI domains as matching criteria for Gateway selection
 	// The other ssl_config properties will be applied to the outputFilterChain's transport socket
+	// SslConfig from VirtualServices will be ignored in a MatchedGateway
 	SslConfig *v1.SslConfig `protobuf:"bytes,1,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
 	// CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range.
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange

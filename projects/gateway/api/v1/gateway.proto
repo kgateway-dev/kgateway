@@ -153,6 +153,7 @@ message MatchedGateway {
 message Matcher {
     // Gloo use SNI domains as matching criteria for Gateway selection
     // The other ssl_config properties will be applied to the outputFilterChain's transport socket
+    // SslConfig from VirtualServices will be ignored in a MatchedGateway
     gloo.solo.io.SslConfig ssl_config = 1;
 
     // CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range.

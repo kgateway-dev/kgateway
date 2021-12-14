@@ -166,7 +166,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket. |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket SslConfig from VirtualServices will be ignored in a MatchedGateway. |
 | `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) | CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange. |
 
 
