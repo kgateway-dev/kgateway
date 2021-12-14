@@ -34,6 +34,19 @@ func TestKnative(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "Knative Suite", []Reporter{junitReporter})
 }
 
+func preFailKnative() {
+	// 1. Get gloo pod
+	glooPodName, _ := exec.RunCommandOutput(testHelper.RootDir, true, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "--selector=gloo=gloo", "--output=jsonpath={.items..metadata.name}")
+
+	// Describe pod
+	exec.RunCommand(testHelper.RootDir, true, "kubectl", "describe", "pod", glooPodName, "-n", testHelper.InstallNamespace)
+
+	// Get events
+	exec.RunCommand(testHelper.RootDir, true, "kubectl", "get", "events", fmt.Sprintf("--namespace=%s", testHelper.InstallNamespace))
+
+	exec.RunCommand(testHelper.RootDir, true, "kubectl", "get", "events", fmt.Sprintf("--namespace=%s", "knative-serving"))
+}
+
 var (
 	testHelper *helper.SoloTestHelper
 	ctx        context.Context
@@ -55,8 +68,8 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
-	testHelper.Verbose = true
+	//skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
+	skhelpers.RegisterPreFailHandler(preFailKnative)
 
 	// Define helm overrides
 	valuesOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
