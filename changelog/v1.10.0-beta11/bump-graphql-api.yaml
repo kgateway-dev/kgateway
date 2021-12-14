@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update graphql api to executable schema with extensions to prepare support for grpc resolver
+    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/1350
+    resolvesIssue: false
