@@ -165,7 +165,7 @@ type PathSegment_Index struct {
 }
 
 type PathSegment_All struct {
-	// Extracts all elements from a map or a list
+	// Extracts all elements from a list
 	All bool `protobuf:"varint,3,opt,name=all,proto3,oneof"`
 }
 

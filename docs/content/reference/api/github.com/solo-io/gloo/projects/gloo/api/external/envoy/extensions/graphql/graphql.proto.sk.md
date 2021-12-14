@@ -67,7 +67,7 @@ used to reference into json structures by key(s)
 | ----- | ---- | ----------- | 
 | `key` | `string` | This will extract a key from a Map value. Only one of `key`, `index`, or `all` can be set. |
 | `index` | `int` | Extract element at list. Only one of `index`, `key`, or `all` can be set. |
-| `all` | `bool` | Extracts all elements from a map or a list. Only one of `all`, `key`, or `index` can be set. |
+| `all` | `bool` | Extracts all elements from a list. Only one of `all`, `key`, or `index` can be set. |
 
 
 

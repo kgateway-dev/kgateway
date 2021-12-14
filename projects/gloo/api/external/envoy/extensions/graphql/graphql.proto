@@ -24,7 +24,7 @@ message PathSegment {
     string key = 1 [(validate.rules).string = {min_len: 1}];
     // Extract element at list
     uint32 index = 2;
-    // Extracts all elements from a map or a list
+    // Extracts all elements from a list
     bool all = 3;
   }
 }
