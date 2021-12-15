@@ -95,6 +95,75 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 		})
 
+		Context("config ratelimitBasic HybridListener", func() {
+			JustBeforeEach(func() {
+				ctx, cancel = context.WithCancel(context.Background())
+				var err error
+				helpers.UseMemoryClients()
+				resourceClientFactory := &factory.MemoryResourceClientFactory{
+					Cache: memory.NewInMemoryResourceCache(),
+				}
+
+				proxyClient, err = resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &gloov1.Proxy{}})
+				Expect(err).NotTo(HaveOccurred())
+
+				translator, err = NewTranslatorSyncerExtension(ctx, params)
+				Expect(err).NotTo(HaveOccurred())
+
+				config := &ratelimit.IngressRateLimit{
+					AuthorizedLimits: nil,
+					AnonymousLimits:  nil,
+				}
+
+				proxy = &gloov1.Proxy{
+					Metadata: &skcore.Metadata{
+						Name:      "proxy",
+						Namespace: "gloo-system",
+					},
+					Listeners: []*gloov1.Listener{{
+						Name: "listener-::-8080",
+						ListenerType: &gloov1.Listener_HybridListener{
+							HybridListener: &gloov1.HybridListener{
+								MatchedListeners: []*gloov1.MatchedListener{
+									{
+										ListenerType: &gloov1.MatchedListener_HttpListener{
+											HttpListener: &gloov1.HttpListener{
+												VirtualHosts: []*gloov1.VirtualHost{
+													&gloov1.VirtualHost{
+														Name: "gloo-system.default",
+														Options: &gloov1.VirtualHostOptions{
+															RatelimitBasic: config,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}},
+				}
+
+				proxyClient.Write(proxy, clients.WriteOpts{})
+
+				apiSnapshot = &gloov1.ApiSnapshot{
+					Proxies: []*gloov1.Proxy{proxy},
+				}
+				settings = &gloov1.Settings{}
+			})
+
+			AfterEach(func() {
+				cancel()
+			})
+
+			It("should error when enterprise ratelimitBasic config is set", func() {
+				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'ratelimitBasic' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+			})
+		})
+
 		Context("config RateLimitConfig", func() {
 			JustBeforeEach(func() {
 				ctx, cancel = context.WithCancel(context.Background())
