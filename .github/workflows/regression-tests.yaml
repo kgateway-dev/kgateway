@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        kube-e2e-test-type: ['gateway', 'ingress', 'knative', 'helm', 'gloomtls', 'glooctl', 'eds']
+        kube-e2e-test-type: ['gateway', 'ingress', 'helm', 'gloomtls', 'glooctl', 'eds']
         xds-relay: [ 'false' ]
         include:
           - kube-e2e-test-type: 'gateway'
