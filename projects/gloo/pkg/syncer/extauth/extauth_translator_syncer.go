@@ -65,13 +65,19 @@ func (s *TranslatorSyncerExtension) Sync(
 
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {
-			httpListener, ok := listener.GetListenerType().(*gloov1.Listener_HttpListener)
-			if !ok {
-				// not an http listener - skip it as currently ext auth is only supported for http
-				continue
-			}
+			virtualHosts := []*gloov1.VirtualHost{}
 
-			virtualHosts := httpListener.HttpListener.GetVirtualHosts()
+			switch typedListener := listener.GetListenerType().(type) {
+			case *gloov1.Listener_HttpListener:
+				virtualHosts = typedListener.HttpListener.GetVirtualHosts()
+			case *gloov1.Listener_HybridListener:
+				for _, matchedListener := range typedListener.HybridListener.GetMatchedListeners() {
+					httpListener := matchedListener.GetHttpListener()
+					if httpListener != nil {
+						virtualHosts = append(virtualHosts, httpListener.GetVirtualHosts()...)
+					}
+				}
+			}
 
 			for _, virtualHost := range virtualHosts {
 				if virtualHost.GetOptions().GetExtauth().GetConfigRef() != nil {
