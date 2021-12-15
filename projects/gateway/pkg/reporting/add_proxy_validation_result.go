@@ -4,6 +4,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -35,8 +36,9 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 			return err
 		}
 
-		if httpListenerReport := listenerReport.GetHttpListenerReport(); httpListenerReport != nil {
-			vhReports := httpListenerReport.GetVirtualHostReports()
+		switch listenerReportType := listenerReport.GetListenerTypeReport().(type) {
+		case *validation.ListenerReport_HttpListenerReport:
+			vhReports := listenerReportType.HttpListenerReport.GetVirtualHostReports()
 			virtualHosts := listener.GetHttpListener().GetVirtualHosts()
 
 			if len(vhReports) != len(virtualHosts) {
@@ -50,7 +52,32 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 					return err
 				}
 			}
+		case *validation.ListenerReport_HybridListenerReport:
+			mappedHttpListeners := map[string]*gloov1.HttpListener{}
+			for _, matchedListener := range listener.GetHybridListener().GetMatchedListeners() {
+				mappedHttpListeners[utils.MatchedRouteConfigName(listener, matchedListener.GetMatcher())] = matchedListener.GetHttpListener()
+			}
+
+			for rcName, matchedListenerReport := range listenerReportType.HybridListenerReport.GetMatchedListenerReports() {
+				if httpListenerReport := matchedListenerReport.GetHttpListenerReport(); httpListenerReport != nil {
+					vhReports := httpListenerReport.GetVirtualHostReports()
+					virtualHosts := mappedHttpListeners[rcName].GetVirtualHosts()
+
+					if len(vhReports) != len(virtualHosts) {
+						return invalidReportsVirtualHostsErr
+					}
+
+					for j, vhReport := range vhReports {
+						virtualHost := virtualHosts[j]
+
+						if err := addVirtualHostResult(resourceReports, virtualHost, vhReport); err != nil {
+							return err
+						}
+					}
+				}
+			}
 		}
+
 	}
 
 	return nil
