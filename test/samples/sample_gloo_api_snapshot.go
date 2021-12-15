@@ -174,6 +174,7 @@ func SimpleGatewaySnapshot(us *core.ResourceRef, namespace string) *gwv1.ApiSnap
 		Gateways: []*gwv1.Gateway{
 			defaults.DefaultGateway(namespace),
 			defaults.DefaultSslGateway(namespace),
+			defaults.DefaultHybridGateway(namespace),
 			{
 				Metadata: &core.Metadata{
 					Name:      "tcp-gateway",
