@@ -14,6 +14,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	"github.com/solo-io/gloo/projects/gateway/pkg/validation/metricutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
@@ -38,7 +39,8 @@ var _ = Describe("Validator", func() {
 		t = translator.NewDefaultTranslator(translator.Opts{})
 		vc = &mockValidationClient{}
 		ns = "my-namespace"
-		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))
+		metricOpts := getMetricOpts()
+		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false, metricOpts))
 	})
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil, false)
@@ -299,7 +301,7 @@ var _ = Describe("Validator", func() {
 
 			Context("allowWarnings=false", func() {
 				BeforeEach(func() {
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
+					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false, getMetricOpts()))
 				})
 				It("rejects a vs with missing route table ref", func() {
 					vc.validate = warnProxy
@@ -340,7 +342,7 @@ var _ = Describe("Validator", func() {
 			Context("ignoreProxyValidation=true", func() {
 				It("accepts the rt", func() {
 					vc.validate = communicationErr
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
+					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false, getMetricOpts()))
 					us := samples.SimpleUpstream()
 					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 					err := v.Sync(context.TODO(), snap)
@@ -352,7 +354,7 @@ var _ = Describe("Validator", func() {
 			})
 			Context("allowWarnings=true", func() {
 				BeforeEach(func() {
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, true))
+					v = NewValidator(NewValidatorConfig(t, vc, ns, true, true, getMetricOpts()))
 				})
 				It("accepts a vs with missing route table ref", func() {
 					vc.validate = communicationErr
@@ -645,6 +647,12 @@ var _ = Describe("Validator", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(rows).NotTo(BeEmpty())
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(0))
+
+				// TODO(mitchaman): Write better tests that actually utilize labels
+				rows, err = view.RetrieveData("validation.gateway.solo.io/virtual_service_config_status")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rows).NotTo(BeEmpty())
+				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
 			})
 			It("returns 0 when there are validation warnings and allowWarnings is false", func() {
 				v.allowWarnings = false
@@ -1196,6 +1204,16 @@ var _ = Describe("Validator", func() {
 
 	})
 })
+
+func getMetricOpts() *metricutils.ConfigStatusMetricsOpts {
+	return &metricutils.ConfigStatusMetricsOpts{
+		VirtualServiceLabels: &gloov1.Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels{
+			LabelToPath: map[string]string{
+				"name": "metadata.name",
+			},
+		},
+	}
+}
 
 type mockValidationClient struct {
 	validate func(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error)

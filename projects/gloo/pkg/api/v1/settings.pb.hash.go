@@ -1476,6 +1476,26 @@ func (m *Settings_ObservabilityOptions) Hash(hasher hash.Hash64) (uint64, error)
 		}
 	}
 
+	if h, ok := interface{}(m.GetConfigStatusMetrics()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ConfigStatusMetrics")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetConfigStatusMetrics(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ConfigStatusMetrics")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -1619,6 +1639,81 @@ func (m *Settings_ObservabilityOptions_GrafanaIntegration) Hash(hasher hash.Hash
 				return 0, err
 			}
 		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Settings_ObservabilityOptions_ConfigStatusMetricsOptions) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_ObservabilityOptions_ConfigStatusMetricsOptions")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetVirtualServiceLabels()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("VirtualServiceLabels")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetVirtualServiceLabels(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("VirtualServiceLabels")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels")); err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetLabelToPath() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

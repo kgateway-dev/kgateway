@@ -427,6 +427,16 @@ spec:
                 type: object
               observabilityOptions:
                 properties:
+                  configStatusMetrics:
+                    properties:
+                      virtualServiceLabels:
+                        properties:
+                          labelToPath:
+                            additionalProperties:
+                              type: string
+                            type: object
+                        type: object
+                    type: object
                   grafanaIntegration:
                     properties:
                       defaultDashboardFolderId:

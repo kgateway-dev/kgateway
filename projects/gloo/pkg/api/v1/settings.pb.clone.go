@@ -677,6 +677,12 @@ func (m *Settings_ObservabilityOptions) Clone() proto.Message {
 		target.GrafanaIntegration = proto.Clone(m.GetGrafanaIntegration()).(*Settings_ObservabilityOptions_GrafanaIntegration)
 	}
 
+	if h, ok := interface{}(m.GetConfigStatusMetrics()).(clone.Cloner); ok {
+		target.ConfigStatusMetrics = h.Clone().(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions)
+	} else {
+		target.ConfigStatusMetrics = proto.Clone(m.GetConfigStatusMetrics()).(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions)
+	}
+
 	return target
 }
 
@@ -753,6 +759,43 @@ func (m *Settings_ObservabilityOptions_GrafanaIntegration) Clone() proto.Message
 		target.DefaultDashboardFolderId = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	} else {
 		target.DefaultDashboardFolderId = proto.Clone(m.GetDefaultDashboardFolderId()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_ObservabilityOptions_ConfigStatusMetricsOptions) Clone() proto.Message {
+	var target *Settings_ObservabilityOptions_ConfigStatusMetricsOptions
+	if m == nil {
+		return target
+	}
+	target = &Settings_ObservabilityOptions_ConfigStatusMetricsOptions{}
+
+	if h, ok := interface{}(m.GetVirtualServiceLabels()).(clone.Cloner); ok {
+		target.VirtualServiceLabels = h.Clone().(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels)
+	} else {
+		target.VirtualServiceLabels = proto.Clone(m.GetVirtualServiceLabels()).(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels) Clone() proto.Message {
+	var target *Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels
+	if m == nil {
+		return target
+	}
+	target = &Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels{}
+
+	if m.GetLabelToPath() != nil {
+		target.LabelToPath = make(map[string]string, len(m.GetLabelToPath()))
+		for k, v := range m.GetLabelToPath() {
+
+			target.LabelToPath[k] = v
+
+		}
 	}
 
 	return target

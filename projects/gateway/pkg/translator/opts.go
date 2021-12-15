@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"github.com/solo-io/gloo/projects/gateway/pkg/validation/metricutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 )
@@ -21,6 +22,7 @@ type Opts struct {
 	DevMode                       bool
 	ReadGatewaysFromAllNamespaces bool
 	Validation                    *ValidationOpts
+	ConfigStatusMetricOpts        *metricutils.ConfigStatusMetricsOpts
 }
 
 type ValidationOpts struct {

@@ -1166,6 +1166,16 @@ func (m *Settings_ObservabilityOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetConfigStatusMetrics()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConfigStatusMetrics()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetConfigStatusMetrics(), target.GetConfigStatusMetrics()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -1310,6 +1320,75 @@ func (m *Settings_ObservabilityOptions_GrafanaIntegration) Equal(that interface{
 		if !proto.Equal(m.GetDefaultDashboardFolderId(), target.GetDefaultDashboardFolderId()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_ObservabilityOptions_ConfigStatusMetricsOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions)
+	if !ok {
+		that2, ok := that.(Settings_ObservabilityOptions_ConfigStatusMetricsOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetVirtualServiceLabels()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetVirtualServiceLabels()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetVirtualServiceLabels(), target.GetVirtualServiceLabels()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels)
+	if !ok {
+		that2, ok := that.(Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetLabelToPath()) != len(target.GetLabelToPath()) {
+		return false
+	}
+	for k, v := range m.GetLabelToPath() {
+
+		if strings.Compare(v, target.GetLabelToPath()[k]) != 0 {
+			return false
+		}
+
 	}
 
 	return true
