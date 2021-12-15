@@ -4,5 +4,3 @@ changelog:
     description: |
       Gloo Edge Knative Ingress is deprecated in Gloo Edge 1.10. It will be removed in Gloo Edge 1.11.
       This PR adds warnings into our internal and external facing docs and tools.
-
-
