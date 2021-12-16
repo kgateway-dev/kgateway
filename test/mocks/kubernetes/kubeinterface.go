@@ -24,33 +24,33 @@ import (
 	v2beta2 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta2"
 	v14 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	v1beta13 "k8s.io/client-go/kubernetes/typed/batch/v1beta1"
-	v2alpha1 "k8s.io/client-go/kubernetes/typed/batch/v2alpha1"
 	v15 "k8s.io/client-go/kubernetes/typed/certificates/v1"
 	v1beta14 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 	v16 "k8s.io/client-go/kubernetes/typed/coordination/v1"
 	v1beta15 "k8s.io/client-go/kubernetes/typed/coordination/v1beta1"
 	v17 "k8s.io/client-go/kubernetes/typed/core/v1"
-	v1alpha10 "k8s.io/client-go/kubernetes/typed/discovery/v1alpha1"
+	v18 "k8s.io/client-go/kubernetes/typed/discovery/v1"
 	v1beta16 "k8s.io/client-go/kubernetes/typed/discovery/v1beta1"
-	v18 "k8s.io/client-go/kubernetes/typed/events/v1"
+	v19 "k8s.io/client-go/kubernetes/typed/events/v1"
 	v1beta17 "k8s.io/client-go/kubernetes/typed/events/v1beta1"
 	v1beta18 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
-	v1alpha11 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1alpha1"
+	v1alpha10 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1alpha1"
 	v1beta19 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta1"
-	v19 "k8s.io/client-go/kubernetes/typed/networking/v1"
+	v110 "k8s.io/client-go/kubernetes/typed/networking/v1"
 	v1beta110 "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
-	v110 "k8s.io/client-go/kubernetes/typed/node/v1"
-	v1alpha12 "k8s.io/client-go/kubernetes/typed/node/v1alpha1"
+	v111 "k8s.io/client-go/kubernetes/typed/node/v1"
+	v1alpha11 "k8s.io/client-go/kubernetes/typed/node/v1alpha1"
 	v1beta111 "k8s.io/client-go/kubernetes/typed/node/v1beta1"
+	v112 "k8s.io/client-go/kubernetes/typed/policy/v1"
 	v1beta112 "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
-	v111 "k8s.io/client-go/kubernetes/typed/rbac/v1"
-	v1alpha13 "k8s.io/client-go/kubernetes/typed/rbac/v1alpha1"
+	v113 "k8s.io/client-go/kubernetes/typed/rbac/v1"
+	v1alpha12 "k8s.io/client-go/kubernetes/typed/rbac/v1alpha1"
 	v1beta113 "k8s.io/client-go/kubernetes/typed/rbac/v1beta1"
-	v112 "k8s.io/client-go/kubernetes/typed/scheduling/v1"
-	v1alpha14 "k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1"
+	v114 "k8s.io/client-go/kubernetes/typed/scheduling/v1"
+	v1alpha13 "k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1"
 	v1beta114 "k8s.io/client-go/kubernetes/typed/scheduling/v1beta1"
-	v113 "k8s.io/client-go/kubernetes/typed/storage/v1"
-	v1alpha15 "k8s.io/client-go/kubernetes/typed/storage/v1alpha1"
+	v115 "k8s.io/client-go/kubernetes/typed/storage/v1"
+	v1alpha14 "k8s.io/client-go/kubernetes/typed/storage/v1alpha1"
 	v1beta115 "k8s.io/client-go/kubernetes/typed/storage/v1beta1"
 )
 
@@ -273,20 +273,6 @@ func (mr *MockInterfaceMockRecorder) BatchV1beta1() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchV1beta1", reflect.TypeOf((*MockInterface)(nil).BatchV1beta1))
 }
 
-// BatchV2alpha1 mocks base method.
-func (m *MockInterface) BatchV2alpha1() v2alpha1.BatchV2alpha1Interface {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BatchV2alpha1")
-	ret0, _ := ret[0].(v2alpha1.BatchV2alpha1Interface)
-	return ret0
-}
-
-// BatchV2alpha1 indicates an expected call of BatchV2alpha1.
-func (mr *MockInterfaceMockRecorder) BatchV2alpha1() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchV2alpha1", reflect.TypeOf((*MockInterface)(nil).BatchV2alpha1))
-}
-
 // CertificatesV1 mocks base method.
 func (m *MockInterface) CertificatesV1() v15.CertificatesV1Interface {
 	m.ctrl.T.Helper()
@@ -371,18 +357,18 @@ func (mr *MockInterfaceMockRecorder) Discovery() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Discovery", reflect.TypeOf((*MockInterface)(nil).Discovery))
 }
 
-// DiscoveryV1alpha1 mocks base method.
-func (m *MockInterface) DiscoveryV1alpha1() v1alpha10.DiscoveryV1alpha1Interface {
+// DiscoveryV1 mocks base method.
+func (m *MockInterface) DiscoveryV1() v18.DiscoveryV1Interface {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DiscoveryV1alpha1")
-	ret0, _ := ret[0].(v1alpha10.DiscoveryV1alpha1Interface)
+	ret := m.ctrl.Call(m, "DiscoveryV1")
+	ret0, _ := ret[0].(v18.DiscoveryV1Interface)
 	return ret0
 }
 
-// DiscoveryV1alpha1 indicates an expected call of DiscoveryV1alpha1.
-func (mr *MockInterfaceMockRecorder) DiscoveryV1alpha1() *gomock.Call {
+// DiscoveryV1 indicates an expected call of DiscoveryV1.
+func (mr *MockInterfaceMockRecorder) DiscoveryV1() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryV1alpha1", reflect.TypeOf((*MockInterface)(nil).DiscoveryV1alpha1))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryV1", reflect.TypeOf((*MockInterface)(nil).DiscoveryV1))
 }
 
 // DiscoveryV1beta1 mocks base method.
@@ -400,10 +386,10 @@ func (mr *MockInterfaceMockRecorder) DiscoveryV1beta1() *gomock.Call {
 }
 
 // EventsV1 mocks base method.
-func (m *MockInterface) EventsV1() v18.EventsV1Interface {
+func (m *MockInterface) EventsV1() v19.EventsV1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EventsV1")
-	ret0, _ := ret[0].(v18.EventsV1Interface)
+	ret0, _ := ret[0].(v19.EventsV1Interface)
 	return ret0
 }
 
@@ -442,10 +428,10 @@ func (mr *MockInterfaceMockRecorder) ExtensionsV1beta1() *gomock.Call {
 }
 
 // FlowcontrolV1alpha1 mocks base method.
-func (m *MockInterface) FlowcontrolV1alpha1() v1alpha11.FlowcontrolV1alpha1Interface {
+func (m *MockInterface) FlowcontrolV1alpha1() v1alpha10.FlowcontrolV1alpha1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FlowcontrolV1alpha1")
-	ret0, _ := ret[0].(v1alpha11.FlowcontrolV1alpha1Interface)
+	ret0, _ := ret[0].(v1alpha10.FlowcontrolV1alpha1Interface)
 	return ret0
 }
 
@@ -484,10 +470,10 @@ func (mr *MockInterfaceMockRecorder) InternalV1alpha1() *gomock.Call {
 }
 
 // NetworkingV1 mocks base method.
-func (m *MockInterface) NetworkingV1() v19.NetworkingV1Interface {
+func (m *MockInterface) NetworkingV1() v110.NetworkingV1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NetworkingV1")
-	ret0, _ := ret[0].(v19.NetworkingV1Interface)
+	ret0, _ := ret[0].(v110.NetworkingV1Interface)
 	return ret0
 }
 
@@ -512,10 +498,10 @@ func (mr *MockInterfaceMockRecorder) NetworkingV1beta1() *gomock.Call {
 }
 
 // NodeV1 mocks base method.
-func (m *MockInterface) NodeV1() v110.NodeV1Interface {
+func (m *MockInterface) NodeV1() v111.NodeV1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeV1")
-	ret0, _ := ret[0].(v110.NodeV1Interface)
+	ret0, _ := ret[0].(v111.NodeV1Interface)
 	return ret0
 }
 
@@ -526,10 +512,10 @@ func (mr *MockInterfaceMockRecorder) NodeV1() *gomock.Call {
 }
 
 // NodeV1alpha1 mocks base method.
-func (m *MockInterface) NodeV1alpha1() v1alpha12.NodeV1alpha1Interface {
+func (m *MockInterface) NodeV1alpha1() v1alpha11.NodeV1alpha1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeV1alpha1")
-	ret0, _ := ret[0].(v1alpha12.NodeV1alpha1Interface)
+	ret0, _ := ret[0].(v1alpha11.NodeV1alpha1Interface)
 	return ret0
 }
 
@@ -553,6 +539,20 @@ func (mr *MockInterfaceMockRecorder) NodeV1beta1() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeV1beta1", reflect.TypeOf((*MockInterface)(nil).NodeV1beta1))
 }
 
+// PolicyV1 mocks base method.
+func (m *MockInterface) PolicyV1() v112.PolicyV1Interface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PolicyV1")
+	ret0, _ := ret[0].(v112.PolicyV1Interface)
+	return ret0
+}
+
+// PolicyV1 indicates an expected call of PolicyV1.
+func (mr *MockInterfaceMockRecorder) PolicyV1() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PolicyV1", reflect.TypeOf((*MockInterface)(nil).PolicyV1))
+}
+
 // PolicyV1beta1 mocks base method.
 func (m *MockInterface) PolicyV1beta1() v1beta112.PolicyV1beta1Interface {
 	m.ctrl.T.Helper()
@@ -568,10 +568,10 @@ func (mr *MockInterfaceMockRecorder) PolicyV1beta1() *gomock.Call {
 }
 
 // RbacV1 mocks base method.
-func (m *MockInterface) RbacV1() v111.RbacV1Interface {
+func (m *MockInterface) RbacV1() v113.RbacV1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RbacV1")
-	ret0, _ := ret[0].(v111.RbacV1Interface)
+	ret0, _ := ret[0].(v113.RbacV1Interface)
 	return ret0
 }
 
@@ -582,10 +582,10 @@ func (mr *MockInterfaceMockRecorder) RbacV1() *gomock.Call {
 }
 
 // RbacV1alpha1 mocks base method.
-func (m *MockInterface) RbacV1alpha1() v1alpha13.RbacV1alpha1Interface {
+func (m *MockInterface) RbacV1alpha1() v1alpha12.RbacV1alpha1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RbacV1alpha1")
-	ret0, _ := ret[0].(v1alpha13.RbacV1alpha1Interface)
+	ret0, _ := ret[0].(v1alpha12.RbacV1alpha1Interface)
 	return ret0
 }
 
@@ -610,10 +610,10 @@ func (mr *MockInterfaceMockRecorder) RbacV1beta1() *gomock.Call {
 }
 
 // SchedulingV1 mocks base method.
-func (m *MockInterface) SchedulingV1() v112.SchedulingV1Interface {
+func (m *MockInterface) SchedulingV1() v114.SchedulingV1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SchedulingV1")
-	ret0, _ := ret[0].(v112.SchedulingV1Interface)
+	ret0, _ := ret[0].(v114.SchedulingV1Interface)
 	return ret0
 }
 
@@ -624,10 +624,10 @@ func (mr *MockInterfaceMockRecorder) SchedulingV1() *gomock.Call {
 }
 
 // SchedulingV1alpha1 mocks base method.
-func (m *MockInterface) SchedulingV1alpha1() v1alpha14.SchedulingV1alpha1Interface {
+func (m *MockInterface) SchedulingV1alpha1() v1alpha13.SchedulingV1alpha1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SchedulingV1alpha1")
-	ret0, _ := ret[0].(v1alpha14.SchedulingV1alpha1Interface)
+	ret0, _ := ret[0].(v1alpha13.SchedulingV1alpha1Interface)
 	return ret0
 }
 
@@ -652,10 +652,10 @@ func (mr *MockInterfaceMockRecorder) SchedulingV1beta1() *gomock.Call {
 }
 
 // StorageV1 mocks base method.
-func (m *MockInterface) StorageV1() v113.StorageV1Interface {
+func (m *MockInterface) StorageV1() v115.StorageV1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StorageV1")
-	ret0, _ := ret[0].(v113.StorageV1Interface)
+	ret0, _ := ret[0].(v115.StorageV1Interface)
 	return ret0
 }
 
@@ -666,10 +666,10 @@ func (mr *MockInterfaceMockRecorder) StorageV1() *gomock.Call {
 }
 
 // StorageV1alpha1 mocks base method.
-func (m *MockInterface) StorageV1alpha1() v1alpha15.StorageV1alpha1Interface {
+func (m *MockInterface) StorageV1alpha1() v1alpha14.StorageV1alpha1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StorageV1alpha1")
-	ret0, _ := ret[0].(v1alpha15.StorageV1alpha1Interface)
+	ret0, _ := ret[0].(v1alpha14.StorageV1alpha1Interface)
 	return ret0
 }
 
