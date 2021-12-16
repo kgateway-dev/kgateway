@@ -126,6 +126,21 @@ func getListenerLevelErrors(listenerReport *validation.ListenerReport) []error {
 		for _, hostReport := range tcpListener.GetTcpHostReports() {
 			listenerErrs = append(listenerErrs, validationutils.GetTcpHostErr(hostReport)...)
 		}
+	case *validation.ListenerReport_HybridListenerReport:
+		for _, matchedListenerReport := range listenerType.HybridListenerReport.GetMatchedListenerReports() {
+			switch matchedListenerType := matchedListenerReport.GetListenerReportType().(type) {
+			case *validation.MatchedListenerReport_HttpListenerReport:
+				httpListener := matchedListenerType.HttpListenerReport
+				listenerErrs = append(listenerErrs, validationutils.GetHttpListenerErr(httpListener)...)
+			case * validation.MatchedListenerReport_TcpListenerReport:
+				tcpListener := matchedListenerType.TcpListenerReport
+				listenerErrs = append(listenerErrs, validationutils.GetTcpListenerErr(tcpListener)...)
+
+				for _, hostReport := range tcpListener.GetTcpHostReports() {
+					listenerErrs = append(listenerErrs, validationutils.GetTcpHostErr(hostReport)...)
+				}
+			}
+		}
 	}
 
 	return listenerErrs
