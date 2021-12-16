@@ -392,7 +392,7 @@ message Settings {
             // Defines which labels to apply for a metric.
             message MetricLabels {
                 // Each (key, value) pair in the map defines a label to be applied.
-                //   key:   Specifies the name of the label (i.e. "namespace")
+                //   key:   Specifies the name of the label (e.g. "namespace")
                 //   value: Specifies the jsonpath string corresponding to the field on the resource (i.e. "metadata.namespace")
                 map<string, string> label_to_path = 1;
             }
