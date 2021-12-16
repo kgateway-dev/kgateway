@@ -103,7 +103,7 @@ Represents global settings for all the Gloo components.
 | `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How frequently to resync watches, etc. |
 | `devMode` | `bool` | Enable serving debug data on port 9090. |
 | `linkerd` | `bool` | Enable automatic linkerd upstream header addition for easier routing to linkerd services. |
-| `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk/#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). |
+| `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk/#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). Deprecated: Will not be available in Gloo Edge 1.11. |
 | `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk/#discoveryoptions) | Options for configuring Gloo's Discovery service. |
 | `gloo` | [.gloo.solo.io.GlooOptions](../settings.proto.sk/#gloooptions) | Options for configuring `gloo`, the core Gloo controller, which serves dynamic configuration to Envoy. |
 | `gateway` | [.gloo.solo.io.GatewayOptions](../settings.proto.sk/#gatewayoptions) | Options for configuring `gateway`, the Gateway Gloo controller, which enables the VirtualService/Gateway API in Gloo. |
