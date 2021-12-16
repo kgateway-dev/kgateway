@@ -161,21 +161,10 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 
 			switch listenerType := lis.GetListenerType().(type) {
 			case *gloov1.Listener_HttpListener:
-				var validVhosts []*gloov1.VirtualHost
-
-				if err := forEachVhost(listenerType.HttpListener, reports, func(vhost *gloov1.VirtualHost, accepted bool) {
-					if accepted {
-						validVhosts = append(validVhosts, vhost)
-					} else {
-						logger.Warnw("stripping invalid virtualhost from proxy", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.String("listener", lis.GetName()), zap.String("virtual host", vhost.GetName()))
-					}
-				}); err != nil {
+				validVhosts, err := validHostsFromHttpListener(listenerType.HttpListener, reports, proxy, lis, logger)
+				if err != nil {
 					return nil, err
 				}
-
-				sort.SliceStable(validVhosts, func(i, j int) bool {
-					return validVhosts[i].GetName() < validVhosts[j].GetName()
-				})
 
 				listenerType.HttpListener.VirtualHosts = validVhosts
 			case *gloov1.Listener_HybridListener:
@@ -185,21 +174,10 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 						continue
 					}
 
-					var validVhosts []*gloov1.VirtualHost
-
-					if err := forEachVhost(httpListener, reports, func(vhost *gloov1.VirtualHost, accepted bool) {
-						if accepted {
-							validVhosts = append(validVhosts, vhost)
-						} else {
-							logger.Warnw("stripping invalid virtualhost from proxy", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.String("listener", lis.GetName()), zap.String("virtual host", vhost.GetName()))
-						}
-					}); err != nil {
+					validVhosts, err := validHostsFromHttpListener(httpListener, reports, proxy, lis, logger)
+					if err != nil {
 						return nil, err
 					}
-
-					sort.SliceStable(validVhosts, func(i, j int) bool {
-						return validVhosts[i].GetName() < validVhosts[j].GetName()
-					})
 
 					httpListener.VirtualHosts = validVhosts
 				}
@@ -217,6 +195,26 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 	}
 
 	return strippedProxies, nil
+}
+
+func validHostsFromHttpListener(httpListener *gloov1.HttpListener, reports reporter.ResourceReports, proxy *gloov1.Proxy, lis *gloov1.Listener, logger *zap.SugaredLogger) ([]*gloov1.VirtualHost, error) {
+	var validVhosts []*gloov1.VirtualHost
+
+	if err := forEachVhost(httpListener, reports, func(vhost *gloov1.VirtualHost, accepted bool) {
+		if accepted {
+			validVhosts = append(validVhosts, vhost)
+		} else {
+			logger.Warnw("stripping invalid virtualhost from proxy", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.String("listener", lis.GetName()), zap.String("virtual host", vhost.GetName()))
+		}
+	}); err != nil {
+		return nil, err
+	}
+
+	sort.SliceStable(validVhosts, func(i, j int) bool {
+		return validVhosts[i].GetName() < validVhosts[j].GetName()
+	})
+
+	return validVhosts, nil
 }
 
 // this function is called by the base reconciler to update an existing proxy
