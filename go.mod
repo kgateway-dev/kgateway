@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go v1.34.9
 	github.com/bshuster-repo/logrus-logstash-hook v1.0.0 // indirect
 	github.com/containerd/cgroups v0.0.0-20210114181951-8a68de567b68 // indirect
-	github.com/containerd/containerd v1.5.7 // indirect
+	github.com/containerd/containerd v1.4.11 // indirect
 	github.com/containerd/continuity v0.0.0-20210208174643-50096c924a4e // indirect
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/docker/cli v20.10.10+incompatible // indirect
@@ -126,6 +126,8 @@ replace (
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
+	// version upgrade to 1.40.2 fails a specific unit test
+	// see https://github.com/solo-io/gloo/issues/5719
 	google.golang.org/grpc => google.golang.org/grpc v1.40.0
 
 	// klog is likely unused, but if it is we want to use this fork
