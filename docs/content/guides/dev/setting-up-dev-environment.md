@@ -12,7 +12,7 @@ Developing on Gloo Edge requires the following to be installed on your system:
 
 - [`make`](https://www.gnu.org/software/make/)
 - [`git`](https://git-scm.com/)
-- [`go`](https://golang.org/) (`solo-io` projects are built using version `1.16.3`)
+- [`go`](https://golang.org/) (`solo-io` projects are built using version `1.17.5`)
 - `protoc` (`solo-io` projects are built using version `3.6.1`)
 - the `github.com/gogo/protobuf` go package
 - standard development tools like `gcc`
@@ -61,14 +61,14 @@ go get -u github.com/gogo/protobuf/...
 
 ### Setting up the Solo-Kit and Gloo Edge Repositories
 
-Next, we'll clone the Gloo Edge and Solo-Kit source code. Solo-Kit is required for code generation in Gloo Edge. 
+Next, we'll clone the Gloo Edge and Solo-Kit source code. Solo-Kit is required for code generation in Gloo Edge.
 
 {{% notice info %}}
-Currently, Gloo Edge plugins must live inside the [Gloo Edge repository](https://github.com/solo-io/gloo) itself. 
+Currently, Gloo Edge plugins must live inside the [Gloo Edge repository](https://github.com/solo-io/gloo) itself.
 {{% /notice %}}
 
-Ensure you've installed `go` and have a your `$GOPATH` set. If unset, it will default to `${HOME}/go`. The Gloo Edge repo 
-should live in `${GOPATH}/src/github.com/solo-io/gloo`. 
+Ensure you've installed `go` and have a your `$GOPATH` set. If unset, it will default to `${HOME}/go`. The Gloo Edge repo
+should live in `${GOPATH}/src/github.com/solo-io/gloo`.
 
 To clone your fork of the repository:
 
