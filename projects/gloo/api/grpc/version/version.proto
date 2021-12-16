@@ -13,7 +13,8 @@ enum GlooType {
     Unknown = 0;
     Gateway = 1;
     Ingress = 2;
-    Knative = 3;
+    // Deprecated: Will not be available in Gloo Edge 1.11
+    Knative = 3 [deprecated=true];
 }
 
 message ServerVersion {

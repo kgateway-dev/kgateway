@@ -4,6 +4,10 @@ description: How to install Gloo Edge to run in Knative Mode on Kubernetes.
 weight: 40
 ---
 
+{{% notice warning %}}
+Gloo Edge Knative Ingress is deprecated in 1.10 and will not be available in 1.11
+{{% /notice %}}
+
 For the purpose of running Knative, Gloo Edge can function as a complete replacement for Istio (supporting all documented Knative features), requiring less resource usage and operational overhead. 
 
 This guide walks you through installing Gloo Edge and Knative using either `glooctl` (the Gloo Edge command line) or Helm. 
