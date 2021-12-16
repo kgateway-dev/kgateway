@@ -1653,6 +1653,8 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
 
+	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
+
 	return target
 }
 
