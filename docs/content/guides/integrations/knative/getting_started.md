@@ -4,6 +4,10 @@ description: Deploy and invoke a Hello-World container with Knative and Gloo Edg
 weight: 10
 ---
 
+{{% notice warning %}}
+Gloo Edge Knative Ingress is deprecated in 1.10 and will not be available in 1.11
+{{% /notice %}}
+
 For the purpose of running Knative, Gloo Edge can function as a complete replacement for Istio (supporting all documented Knative features), requiring less resource usage and operational overhead. 
 
 This guide walks you through running a serverless app with Knative, using Gloo Edge as your ingress.
