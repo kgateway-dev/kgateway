@@ -3,12 +3,13 @@ package gloo_mtls_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/kube2e"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
