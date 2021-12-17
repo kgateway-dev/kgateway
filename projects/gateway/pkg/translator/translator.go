@@ -107,13 +107,22 @@ func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualService
 		bindAddress := fmt.Sprintf("%s:%d", gw.GetBindAddress(), gw.GetBindPort())
 		bindAddresses[bindAddress] = append(bindAddresses[bindAddress], gw)
 
-		if httpGw := gw.GetHttpGateway(); httpGw != nil {
-			for _, vs := range httpGw.GetVirtualServices() {
+		gatewayVirtualServices := []*core.ResourceRef{}
+		switch gatewayType := gw.GetGatewayType().(type) {
+		case *v1.Gateway_HttpGateway:
+			gatewayVirtualServices = gatewayType.HttpGateway.GetVirtualServices()
+		case *v1.Gateway_HybridGateway:
+			for _, matchedGateway := range gatewayType.HybridGateway.GetMatchedGateways() {
+				if httpGateway := matchedGateway.GetHttpGateway(); httpGateway != nil {
+					gatewayVirtualServices = append(gatewayVirtualServices, httpGateway.GetVirtualServices()...)
+				}
+			}
+		}
+			for _, vs := range gatewayVirtualServices {
 				if _, err := virtualServices.Find(vs.Strings()); err != nil {
 					reports.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
 				}
 			}
-		}
 	}
 
 	for addr, gateways := range bindAddresses {
