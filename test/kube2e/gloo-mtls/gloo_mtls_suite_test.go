@@ -9,21 +9,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
@@ -73,21 +71,7 @@ var _ = BeforeSuite(func() {
 
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values, "-v"))
 	Expect(err).NotTo(HaveOccurred())
-	Eventually(func() error {
-		opts := &options.Options{
-			Top: options.Top{
-				Ctx: context.Background(),
-			},
-			Metadata: core.Metadata{
-				Namespace: testHelper.InstallNamespace,
-			},
-		}
-		err := check.CheckResources(opts)
-		if err != nil {
-			return errors.Wrapf(err, "glooctl check detected a problem with the installation")
-		}
-		return nil
-	}, 2*time.Minute, "5s").Should(BeNil())
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "2m")
 
 	// Print out the versions of CLI and server components
 	glooctlVersionCommand := []string{
