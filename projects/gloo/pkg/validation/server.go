@@ -285,7 +285,19 @@ func routeErrorToWarnings(resourceReport reporter.ResourceReports, validationRep
 	}
 
 	for _, listenerReport := range validationReport.GetListenerReports() {
-		for _, virtualHostReport := range listenerReport.GetHttpListenerReport().GetVirtualHostReports() {
+		virtualHostReports := []*validation.VirtualHostReport{}
+		switch listenerReportType := listenerReport.GetListenerTypeReport().(type) {
+		case *validation.ListenerReport_HttpListenerReport:
+			virtualHostReports = listenerReportType.HttpListenerReport.GetVirtualHostReports()
+		case *validation.ListenerReport_HybridListenerReport:
+			for _, matchedListenerReport := range listenerReportType.HybridListenerReport.GetMatchedListenerReports() {
+				if httpListenerReport := matchedListenerReport.GetHttpListenerReport(); httpListenerReport != nil {
+					virtualHostReports = append(virtualHostReports, httpListenerReport.GetVirtualHostReports()...)
+				}
+
+			}
+		}
+		for _, virtualHostReport := range virtualHostReports {
 			for _, routeReport := range virtualHostReport.GetRouteReports() {
 				modifiedErrors := make([]*validation.RouteReport_Error, 0)
 				for _, rError := range routeReport.GetErrors() {
