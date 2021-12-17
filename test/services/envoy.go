@@ -490,7 +490,10 @@ func (eic *envoyInstanceConfig) Context() context.Context {
 	return eic.context
 }
 
-func (ei *EnvoyInstance) runWithAll(eic EnvoyInstanceConfig, bootstrapBuilder EnvoyBootstrapBuilder) error {
+func (ei *EnvoyInstance) runWithAll(
+	eic EnvoyInstanceConfig,
+	bootstrapBuilder EnvoyBootstrapBuilder,
+) error {
 	go func() {
 		<-eic.Context().Done()
 		ei.Clean()
@@ -507,7 +510,13 @@ func (ei *EnvoyInstance) runWithAll(eic EnvoyInstanceConfig, bootstrapBuilder En
 		return ei.runContainer(eic.Context())
 	}
 
-	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug", "--bootstrap-version", "3"}
+	args := []string{
+		"--config-yaml",
+		ei.envoycfg,
+		"--disable-hot-restart",
+		"--log-level",
+		"debug",
+	}
 
 	// run directly
 	cmd := exec.CommandContext(eic.Context(), ei.envoypath, args...)
@@ -578,7 +587,8 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 	}
 
 	image := "quay.io/solo-io/gloo-envoy-wrapper:" + envoyImageTag
-	args := []string{"run", "--rm", "--name", containerName,
+	args := []string{
+		"run", "--rm", "--name", containerName,
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpPort, defaults.HttpPort),
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpsPort, defaults.HttpsPort),
 		"-p", fmt.Sprintf("%d:%d", ei.AdminPort, ei.AdminPort),
@@ -597,7 +607,6 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 		image,
 		"--disable-hot-restart",
 		"--log-level", "debug",
-		"--bootstrap-version", "3",
 		"--config-yaml", ei.envoycfg,
 	)
 

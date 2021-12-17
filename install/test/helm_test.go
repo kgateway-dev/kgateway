@@ -315,7 +315,8 @@ var _ = Describe("Helm Test", func() {
 							"settings.integrations.knative.enabled=true",
 							"settings.integrations.knative.version=0.7.0",
 							"settings.integrations.knative.proxy.stats=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+							"global.glooStats.routePrefixRewrite=/stats?format=json",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -339,7 +340,8 @@ var _ = Describe("Helm Test", func() {
 							"settings.integrations.knative.enabled=true",
 							"settings.integrations.knative.version=0.8.0",
 							"settings.integrations.knative.proxy.stats=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+							"global.glooStats.routePrefixRewrite=/stats?format=json",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -372,7 +374,10 @@ var _ = Describe("Helm Test", func() {
 
 				It("should be able to override global defaults", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"discovery.deployment.stats.enabled=true", "global.glooStats.enabled=false"},
+						valuesArgs: []string{
+							"discovery.deployment.stats.enabled=true",
+							"global.glooStats.enabled=false",
+						},
 					})
 
 					// assert that discovery has stats enabled and gloo has stats disabled
@@ -495,7 +500,8 @@ var _ = Describe("Helm Test", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"global.glooStats.enabled=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+							"global.glooStats.routePrefixRewrite=/stats?format=json",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -517,7 +523,8 @@ var _ = Describe("Helm Test", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"gatewayProxies.gatewayProxy.stats.enabled=true",
-							"gatewayProxies.gatewayProxy.stats.routePrefixRewrite=/stats?format=json"},
+							"gatewayProxies.gatewayProxy.stats.routePrefixRewrite=/stats?format=json",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -706,8 +713,10 @@ var _ = Describe("Helm Test", func() {
 
 				It("should add an Istio injection annotation for pods that can be configured for it", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"global.istioIntegration.whitelistDiscovery=true",
-							"global.istioIntegration.disableAutoinjection=false"},
+						valuesArgs: []string{
+							"global.istioIntegration.whitelistDiscovery=true",
+							"global.istioIntegration.disableAutoinjection=false",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -733,8 +742,10 @@ var _ = Describe("Helm Test", func() {
 
 				It("The created namespace can be labeled for Istio discovery", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"namespace.create=true",
-							"global.istioIntegration.labelInstallNamespace=true"},
+						valuesArgs: []string{
+							"namespace.create=true",
+							"global.istioIntegration.labelInstallNamespace=true",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -941,7 +952,7 @@ var _ = Describe("Helm Test", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.disabled=true",
-								//anotherGatewayProxy should exist but not have a value for disabled
+								// anotherGatewayProxy should exist but not have a value for disabled
 								"gatewayProxies.anotherGatewayProxy.loopbackAddress=127.0.0.1",
 							},
 						})
@@ -1644,7 +1655,10 @@ spec:
 					})
 
 					It("sets extra annotations", func() {
-						gatewayProxyServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						gatewayProxyServiceAccount.ObjectMeta.Annotations = map[string]string{
+							"foo": "bar",
+							"bar": "baz",
+						}
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gateway.proxyServiceAccount.extraAnnotations.foo=bar",
@@ -1711,7 +1725,10 @@ spec:
 					})
 
 					It("sets extra annotations", func() {
-						gatewayProxyService.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						gatewayProxyService.ObjectMeta.Annotations = map[string]string{
+							"foo": "bar",
+							"bar": "baz",
+						}
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.service.extraAnnotations.foo=bar",
@@ -1765,7 +1782,10 @@ spec:
 
 					It("sets load balancer source ranges", func() {
 						gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
-						gatewayProxyService.Spec.LoadBalancerSourceRanges = []string{"130.211.204.1/32", "130.211.204.2/32"}
+						gatewayProxyService.Spec.LoadBalancerSourceRanges = []string{
+							"130.211.204.1/32",
+							"130.211.204.2/32",
+						}
 						gatewayProxyService.Annotations = map[string]string{"test": "test"}
 						prepareMakefileFromValuesFile("values/val_lb_source_ranges.yaml")
 						testManifest.ExpectService(gatewayProxyService)
@@ -1828,7 +1848,7 @@ spec:
 						}
 						container := GetQuayContainerSpec("gloo-envoy-wrapper", version, GetPodNamespaceEnvVar(), podname)
 						container.Name = "gateway-proxy"
-						container.Args = []string{"--disable-hot-restart", "--bootstrap-version", "3"}
+						container.Args = []string{"--disable-hot-restart"}
 
 						rb := ResourceBuilder{
 							Namespace:  namespace,
@@ -1846,27 +1866,31 @@ spec:
 							"prometheus.io/port":   "8081",
 							"prometheus.io/scrape": "true",
 						}
-						deploy.Spec.Template.Spec.Volumes = []v1.Volume{{
-							Name: "envoy-config",
-							VolumeSource: v1.VolumeSource{
-								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{
-										Name: "gateway-proxy-envoy-config",
+						deploy.Spec.Template.Spec.Volumes = []v1.Volume{
+							{
+								Name: "envoy-config",
+								VolumeSource: v1.VolumeSource{
+									ConfigMap: &v1.ConfigMapVolumeSource{
+										LocalObjectReference: v1.LocalObjectReference{
+											Name: "gateway-proxy-envoy-config",
+										},
 									},
 								},
 							},
-						}}
+						}
 						deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy = pullPolicy
 						deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
 							{Name: "http", ContainerPort: 8080, Protocol: "TCP"},
 							{Name: "https", ContainerPort: 8443, Protocol: "TCP"},
 						}
-						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
-							Name:      "envoy-config",
-							ReadOnly:  false,
-							MountPath: "/etc/envoy",
-							SubPath:   "",
-						}}
+						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{
+							{
+								Name:      "envoy-config",
+								ReadOnly:  false,
+								MountPath: "/etc/envoy",
+								SubPath:   "",
+							},
+						}
 						truez := true
 						falsez := false
 						defaultUser := int64(10101)
@@ -2044,15 +2068,17 @@ spec:
 						})
 						gatewayProxyDeployment.Spec.Template.Spec.Affinity = &v1.Affinity{
 							PodAntiAffinity: &v1.PodAntiAffinity{
-								PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{{
-									Weight: 100,
-									PodAffinityTerm: v1.PodAffinityTerm{
-										TopologyKey: "kubernetes.io/hostname",
-										LabelSelector: &metav1.LabelSelector{
-											MatchLabels: map[string]string{"gloo": "gateway-proxy"},
+								PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
+									{
+										Weight: 100,
+										PodAffinityTerm: v1.PodAffinityTerm{
+											TopologyKey: "kubernetes.io/hostname",
+											LabelSelector: &metav1.LabelSelector{
+												MatchLabels: map[string]string{"gloo": "gateway-proxy"},
+											},
 										},
 									},
-								}},
+								},
 							},
 						}
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
@@ -2312,7 +2338,7 @@ spec:
 							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-							//get ISTIO_META_MESH_ID env var value
+							// get ISTIO_META_MESH_ID env var value
 							var istioMetaMeshID string
 							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
 								for _, e := range c.Env {
@@ -2349,7 +2375,7 @@ spec:
 							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-							//get ISTIO_META_MESH_ID env var value
+							// get ISTIO_META_MESH_ID env var value
 							var istioMetaMeshID string
 							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
 								for _, e := range c.Env {
@@ -2385,7 +2411,7 @@ spec:
 							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-							//get ISTIO_META_CLUSTER_ID env var value
+							// get ISTIO_META_CLUSTER_ID env var value
 							var istioMetaClusterID string
 							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
 								for _, e := range c.Env {
@@ -2422,7 +2448,7 @@ spec:
 							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-							//get ISTIO_META_CLUSTER_ID env var value
+							// get ISTIO_META_CLUSTER_ID env var value
 							var istioMetaClusterID string
 							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
 								for _, e := range c.Env {
@@ -3067,12 +3093,14 @@ spec:
 					})
 
 					It("creates the certgen job, rbac, and service account", func() {
-						prepareMakefile(namespace, helmValues{valuesArgs: []string{
-							"gateway.certGenJob.resources.requests.memory=64Mi",
-							"gateway.certGenJob.resources.requests.cpu=250m",
-							"gateway.certGenJob.resources.limits.memory=128Mi",
-							"gateway.certGenJob.resources.limits.cpu=500m",
-						}})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.certGenJob.resources.requests.memory=64Mi",
+								"gateway.certGenJob.resources.requests.cpu=250m",
+								"gateway.certGenJob.resources.limits.memory=128Mi",
+								"gateway.certGenJob.resources.limits.cpu=500m",
+							},
+						})
 						job := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
@@ -3271,24 +3299,30 @@ metadata:
 						}
 						deploy := rb.GetDeploymentAppsv1()
 						updateDeployment(deploy)
-						deploy.Spec.Template.Spec.Volumes = []v1.Volume{{
-							Name: "labels-volume",
-							VolumeSource: v1.VolumeSource{
-								DownwardAPI: &v1.DownwardAPIVolumeSource{
-									Items: []v1.DownwardAPIVolumeFile{{
-										Path: "labels",
-										FieldRef: &v1.ObjectFieldSelector{
-											FieldPath: "metadata.labels",
+						deploy.Spec.Template.Spec.Volumes = []v1.Volume{
+							{
+								Name: "labels-volume",
+								VolumeSource: v1.VolumeSource{
+									DownwardAPI: &v1.DownwardAPIVolumeSource{
+										Items: []v1.DownwardAPIVolumeFile{
+											{
+												Path: "labels",
+												FieldRef: &v1.ObjectFieldSelector{
+													FieldPath: "metadata.labels",
+												},
+											},
 										},
-									}},
+									},
 								},
 							},
-						}}
-						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
-							Name:      "labels-volume",
-							MountPath: "/etc/gloo",
-							ReadOnly:  true,
-						}}
+						}
+						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{
+							{
+								Name:      "labels-volume",
+								MountPath: "/etc/gloo",
+								ReadOnly:  true,
+							},
+						}
 						deploy.Spec.Template.Spec.Containers[0].Ports = glooPorts
 						deploy.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
 							Requests: v1.ResourceList{
@@ -3456,7 +3490,10 @@ metadata:
 					})
 
 					It("sets extra annotations", func() {
-						gatewayServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						gatewayServiceAccount.ObjectMeta.Annotations = map[string]string{
+							"foo": "bar",
+							"bar": "baz",
+						}
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gateway.serviceAccount.extraAnnotations.foo=bar",
@@ -3495,24 +3532,30 @@ metadata:
 						updateDeployment(deploy)
 						deploy.Spec.Template.Spec.ServiceAccountName = "gateway"
 
-						deploy.Spec.Template.Spec.Volumes = []v1.Volume{{
-							Name: "validation-certs",
-							VolumeSource: v1.VolumeSource{
-								Secret: &v1.SecretVolumeSource{
-									SecretName:  "gateway-validation-certs",
-									DefaultMode: proto.Int(420),
+						deploy.Spec.Template.Spec.Volumes = []v1.Volume{
+							{
+								Name: "validation-certs",
+								VolumeSource: v1.VolumeSource{
+									Secret: &v1.SecretVolumeSource{
+										SecretName:  "gateway-validation-certs",
+										DefaultMode: proto.Int(420),
+									},
 								},
 							},
-						}}
-						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
-							Name:      "validation-certs",
-							MountPath: "/etc/gateway/validation-certs",
-						}}
-						deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{{
-							Name:          "https",
-							ContainerPort: 8443,
-							Protocol:      "TCP",
-						}}
+						}
+						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{
+							{
+								Name:      "validation-certs",
+								MountPath: "/etc/gateway/validation-certs",
+							},
+						}
+						deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
+							{
+								Name:          "https",
+								ContainerPort: 8443,
+								Protocol:      "TCP",
+							},
+						}
 						deploy.Spec.Template.Spec.Containers[0].Env = append(deploy.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
 							Name:  "VALIDATION_MUST_START",
 							Value: "true",
@@ -3676,7 +3719,10 @@ metadata:
 					})
 
 					It("sets extra annotations", func() {
-						discoveryServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						discoveryServiceAccount.ObjectMeta.Annotations = map[string]string{
+							"foo": "bar",
+							"bar": "baz",
+						}
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"discovery.serviceAccount.extraAnnotations.foo=bar",
@@ -3900,8 +3946,10 @@ metadata:
 				It("is not created if disabled", func() {
 
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"settings.aws.enableServiceAccountCredentials=true",
-							"gatewayProxies.gatewayProxy.disabled=false"},
+						valuesArgs: []string{
+							"settings.aws.enableServiceAccountCredentials=true",
+							"gatewayProxies.gatewayProxy.disabled=false",
+						},
 					})
 					proxySpec := make(map[string]string)
 					proxySpec["envoy.yaml"] = fmt.Sprintf(awsFmtString, "", "")
@@ -4074,8 +4122,10 @@ metadata:
 				Describe("gateway proxy -- readConfigMulticluster config", func() {
 					It("has a service for the gateway proxy config dump port", func() {
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gatewayProxies.gatewayProxy.readConfig=true",
-								"gatewayProxies.gatewayProxy.readConfigMulticluster=true"},
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.readConfig=true",
+								"gatewayProxies.gatewayProxy.readConfigMulticluster=true",
+							},
 						})
 						serviceLabels := map[string]string{
 							"gloo":             "gateway-proxy",
@@ -4197,7 +4247,8 @@ metadata:
 							"ingress.enabled=true",
 							"ingressProxy.deployment.stats=true",
 							"global.glooStats.enabled=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+							"global.glooStats.routePrefixRewrite=/stats?format=json",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -4254,27 +4305,33 @@ metadata:
 									Annotations: statsAnnotations,
 								},
 								Spec: v1.PodSpec{
-									Volumes: []v1.Volume{{
-										Name: "labels-volume",
-										VolumeSource: v1.VolumeSource{
-											DownwardAPI: &v1.DownwardAPIVolumeSource{
-												Items: []v1.DownwardAPIVolumeFile{{
-													Path: "labels",
-													FieldRef: &v1.ObjectFieldSelector{
-														FieldPath: "metadata.labels",
+									Volumes: []v1.Volume{
+										{
+											Name: "labels-volume",
+											VolumeSource: v1.VolumeSource{
+												DownwardAPI: &v1.DownwardAPIVolumeSource{
+													Items: []v1.DownwardAPIVolumeFile{
+														{
+															Path: "labels",
+															FieldRef: &v1.ObjectFieldSelector{
+																FieldPath: "metadata.labels",
+															},
+														},
 													},
-												}},
+												},
 											},
 										},
-									}},
+									},
 									ServiceAccountName: "gloo",
 									Containers: []v1.Container{
 										{
-											VolumeMounts: []v1.VolumeMount{{
-												Name:      "labels-volume",
-												MountPath: "/etc/gloo",
-												ReadOnly:  true,
-											}},
+											VolumeMounts: []v1.VolumeMount{
+												{
+													Name:      "labels-volume",
+													MountPath: "/etc/gloo",
+													ReadOnly:  true,
+												},
+											},
 											Name: "gloo",
 											// Note: this was NOT overwritten
 											Image: fmt.Sprintf("quay.io/solo-io/gloo:%v", version),
@@ -4283,7 +4340,10 @@ metadata:
 												{
 													Name: statusutils.PodNamespaceEnvName,
 													ValueFrom: &v1.EnvVarSource{
-														FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
+														FieldRef: &v1.ObjectFieldSelector{
+															APIVersion: "",
+															FieldPath:  "metadata.namespace",
+														},
 													},
 												},
 												{
@@ -4300,7 +4360,10 @@ metadata:
 											},
 											ImagePullPolicy: "IfNotPresent",
 											SecurityContext: &v1.SecurityContext{
-												Capabilities:             &v1.Capabilities{Add: nil, Drop: []v1.Capability{"ALL"}},
+												Capabilities: &v1.Capabilities{
+													Add:  nil,
+													Drop: []v1.Capability{"ALL"},
+												},
 												RunAsUser:                pointer.Int64Ptr(10101),
 												RunAsNonRoot:             pointer.BoolPtr(true),
 												ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
@@ -4362,7 +4425,10 @@ metadata:
 												{
 													Name: statusutils.PodNamespaceEnvName,
 													ValueFrom: &v1.EnvVarSource{
-														FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
+														FieldRef: &v1.ObjectFieldSelector{
+															APIVersion: "",
+															FieldPath:  "metadata.namespace",
+														},
 													},
 												},
 												{
@@ -4508,7 +4574,10 @@ metadata:
 			})
 
 			Context("Kube resource overrides", func() {
-				DescribeTable("overrides Yaml in generated resources", func(overrideProperty string, extraArgs ...string) {
+				DescribeTable("overrides Yaml in generated resources", func(
+					overrideProperty string,
+					extraArgs ...string,
+				) {
 					// Override property should be the path to `kubeResourceOverride`, like gloo.deployment.kubeResourceOverride
 					valueArg := fmt.Sprintf("%s.metadata.labels.overriddenLabel=label", overrideProperty)
 					prepareMakefile(namespace, helmValues{
@@ -4551,16 +4620,19 @@ metadata:
 					// todo: implement overrides for these if need arises
 					// A named helm template will have to be created for each of the resources
 					// generated in the following files.
-					//Entry("19-gloo-mtls-configmap", ),
-					//Entry("20-namespace-clusterrole-gateway", ""),
-					//Entry("21-namespace-clusterrole-ingress", ""),
-					//Entry("22-namespace-clusterrole-knative", ""),
-					//Entry("23-namespace-clusterrolebinding-gateway", ""),
-					//Entry("24-namespace-clusterrolebinding-ingress", ""),
-					//Entry("25-namespace-clusterrolebinding-knative", ""),
+					// Entry("19-gloo-mtls-configmap", ),
+					// Entry("20-namespace-clusterrole-gateway", ""),
+					// Entry("21-namespace-clusterrole-ingress", ""),
+					// Entry("22-namespace-clusterrole-knative", ""),
+					// Entry("23-namespace-clusterrolebinding-gateway", ""),
+					// Entry("24-namespace-clusterrolebinding-ingress", ""),
+					// Entry("25-namespace-clusterrolebinding-knative", ""),
 				)
 
-				DescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string) {
+				DescribeTable("overrides Yaml in resources for each gateway proxy", func(
+					proxyOverrideProperty string,
+					argsPerProxy []string,
+				) {
 					// Override property should be the path to `kubeResourceOverride`, like gloo.deployment.kubeResourceOverride
 					proxies := []string{"gatewayProxy", "anotherProxy", "proxyThree"}
 					var args []string
@@ -4585,10 +4657,16 @@ metadata:
 					Entry("8-default-gateways httpGateway", "gatewaySettings.httpGatewayKubeOverride", nil),
 					Entry("8-default-gateways httpsGateway", "gatewaySettings.httpsGatewayKubeOverride", nil),
 					Entry("8-default-gateways failoverGateway", "failover.kubeResourceOverride", []string{"failover.enabled=true"}),
-					Entry("8-gateway-proxy-horizontal-pod-autoscaler", "horizontalPodAutoscaler.kubeResourceOverride", []string{"kind.deployment.replicas=2", "horizontalPodAutoscaler.apiVersion=v2"}),
+					Entry("8-gateway-proxy-horizontal-pod-autoscaler", "horizontalPodAutoscaler.kubeResourceOverride", []string{
+						"kind.deployment.replicas=2",
+						"horizontalPodAutoscaler.apiVersion=v2",
+					}),
 					Entry("8-gateway-proxy-pod-disruption-budget", "podDisruptionBudget.kubeResourceOverride", []string{"kind.deployment.replicas=2"}),
 					Entry("8-gateway-proxy-service service", "service.kubeResourceOverride", nil),
-					Entry("8-gateway-proxy-service config-dump-service", "service.configDumpService.kubeResourceOverride", []string{"readConfig=true", "readConfigMulticluster=true"}),
+					Entry("8-gateway-proxy-service config-dump-service", "service.configDumpService.kubeResourceOverride", []string{
+						"readConfig=true",
+						"readConfigMulticluster=true",
+					}),
 					Entry("9-gateway-proxy-configmap", "configMap.kubeResourceOverride", nil),
 				)
 			})
