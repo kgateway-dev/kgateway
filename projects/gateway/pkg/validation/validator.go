@@ -450,11 +450,19 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef *cor
 
 	var parentGateways []*core.ResourceRef
 	snap.Gateways.Each(func(element *v1.Gateway) {
-		http, ok := element.GetGatewayType().(*v1.Gateway_HttpGateway)
-		if !ok {
-			return
+		virtualServices := []*core.ResourceRef{}
+		switch gatewayType := element.GetGatewayType().(type) {
+		case *v1.Gateway_HttpGateway:
+			virtualServices = gatewayType.HttpGateway.GetVirtualServices()
+		case *v1.Gateway_HybridGateway:
+			for _, matchedGateway := range gatewayType.HybridGateway.GetMatchedGateways() {
+				if httpGateway := matchedGateway.GetHttpGateway(); httpGateway != nil {
+					virtualServices = append(virtualServices, httpGateway.GetVirtualServices()...)
+				}
+			}
 		}
-		for _, ref := range http.HttpGateway.GetVirtualServices() {
+
+		for _, ref := range virtualServices {
 			if ref.Equal(vsRef) {
 				// this gateway points at this virtual service
 				parentGateways = append(parentGateways, element.GetMetadata().Ref())
