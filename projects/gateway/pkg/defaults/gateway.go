@@ -74,7 +74,7 @@ func DefaultTcpSslGateway(writeNamespace string) *v1.Gateway {
 func DefaultHybridGateway(writeNamespace string) *v1.Gateway {
 	return &v1.Gateway{
 		Metadata: &core.Metadata{
-			Name:        GatewayProxyName+"-hybrid",
+			Name:        GatewayProxyName + "-hybrid",
 			Namespace:   writeNamespace,
 			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
 		},

@@ -137,7 +137,7 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 				MatchedListeners: []*v1.MatchedListener{
 					{
 						ListenerType: &v1.MatchedListener_HttpListener{
-							HttpListener: 			&v1.HttpListener{
+							HttpListener: &v1.HttpListener{
 								VirtualHosts: []*v1.VirtualHost{{
 									Name:    "virt1",
 									Domains: []string{"*"},

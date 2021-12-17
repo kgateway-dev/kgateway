@@ -132,7 +132,7 @@ func getListenerLevelErrors(listenerReport *validation.ListenerReport) []error {
 			case *validation.MatchedListenerReport_HttpListenerReport:
 				httpListener := matchedListenerType.HttpListenerReport
 				listenerErrs = append(listenerErrs, validationutils.GetHttpListenerErr(httpListener)...)
-			case * validation.MatchedListenerReport_TcpListenerReport:
+			case *validation.MatchedListenerReport_TcpListenerReport:
 				tcpListener := matchedListenerType.TcpListenerReport
 				listenerErrs = append(listenerErrs, validationutils.GetTcpListenerErr(tcpListener)...)
 

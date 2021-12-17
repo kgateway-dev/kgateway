@@ -118,11 +118,11 @@ func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualService
 				}
 			}
 		}
-			for _, vs := range gatewayVirtualServices {
-				if _, err := virtualServices.Find(vs.Strings()); err != nil {
-					reports.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
-				}
+		for _, vs := range gatewayVirtualServices {
+			if _, err := virtualServices.Find(vs.Strings()); err != nil {
+				reports.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
 			}
+		}
 	}
 
 	for addr, gateways := range bindAddresses {
