@@ -12,7 +12,7 @@ This document shows how to instantiate Google Cloud Load Balancers to complement
 - [Prerequisites](#prerequisites)
 - [Network Load Balancer](#network-load-balancer)
 - [HTTPS Load Balancer](#https-load-balancer)
-
+- [Preserve Client IP](#preserve-client-ip)
 
 ### Introduction
 
@@ -598,3 +598,59 @@ curl -k "https://${APP_IP2}/get" -H "Host: my-gloo-edge.com"
 ```
 
 The application should be accessible through the Load Balancer.
+
+### Preserve Client IP
+
+To preserve the client IP you need to configure gloo as follows:
+
+```yaml
+[...]
+gloo:
+  [...]
+  gatewayProxies:
+    [...]
+    gatewayProxy:
+      gatewaySettings:
+        useProxyProto: false
+        # This is be for the default gateway-proxy. Since you have exposed the ssl proxy, it is not needed.
+        #customHttpGateway: 
+        #  options:
+        #    httpConnectionManagerSettings:
+        #      skipXffAppend: false
+        #      useRemoteAddress: true
+        #      xffNumTrustedHops: 2
+        customHttpsGateway: # This is be for the default gateway-proxy-ssl
+          options:
+            httpConnectionManagerSettings:
+              skipXffAppend: false
+              useRemoteAddress: true
+              xffNumTrustedHops: 2
+```
+
+Try to reach the application through tls:
+
+```bash
+APP_IP=$(gcloud compute addresses describe my-gloo-edge-loadbalancer-address-https --global --format=json | jq -r '.address')
+
+curl -k "https://${APP_IP2}/get" -H "Host: my-gloo-edge.com"
+```
+
+And you will retrieve a response as follows:
+
+```json
+{
+  "args": {},
+  "headers": {
+    "Accept": "*/*",
+    "Host": "?.?.?.?",
+    "User-Agent": "curl/7.71.1",
+    "X-Cloud-Trace-Context": "41592735775f098300927fcb246??????/162040?????????",
+    "X-Envoy-Expected-Rq-Timeout-Ms": "15000",
+    "X-Envoy-External-Address": "xxx.xxx.xxx.xxx"
+  },
+  "origin": "xxx.xxx.xxx.xxx, y.y.y.y, z.z.z.z",
+  "url": "https://?.?.?.?/get"
+}
+```
+
+Notice that the `X-Envoy-External-Address` attribute is your own IP.
