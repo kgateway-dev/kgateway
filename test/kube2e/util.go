@@ -141,35 +141,35 @@ func getSnapOut(metricsPort string) string {
 }
 
 func UpdateDisableTransformationValidationSetting(ctx context.Context, shouldDisable bool, installNamespace string) {
-	UpdateSettings(func(settings *v1.Settings) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 		settings.GetGateway().GetValidation().DisableTransformationValidation = &wrappers.BoolValue{Value: shouldDisable}
-	}, ctx, installNamespace)
+	}, installNamespace)
 }
 
 // enable/disable strict validation
 func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNamespace string) {
-	UpdateSettings(func(settings *v1.Settings) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 		settings.GetGateway().GetValidation().AlwaysAccept = &wrappers.BoolValue{Value: alwaysAccept}
-	}, ctx, installNamespace)
+	}, installNamespace)
 }
 
 func UpdateRestEdsSetting(ctx context.Context, enableRestEds bool, installNamespace string) {
-	UpdateSettings(func(settings *v1.Settings) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGloo()).NotTo(BeNil())
 		settings.GetGloo().EnableRestEds = &wrappers.BoolValue{Value: enableRestEds}
-	}, ctx, installNamespace)
+	}, installNamespace)
 }
 
 func UpdateReplaceInvalidRoutes(ctx context.Context, replaceInvalidRoutes bool, installNamespace string) {
-	UpdateSettings(func(settings *v1.Settings) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGloo().GetInvalidConfigPolicy()).NotTo(BeNil())
 		settings.GetGloo().GetInvalidConfigPolicy().ReplaceInvalidRoutes = replaceInvalidRoutes
-	}, ctx, installNamespace)
+	}, installNamespace)
 }
 
-func UpdateSettings(updateSettings func(settings *v1.Settings), ctx context.Context, installNamespace string) {
+func UpdateSettings(ctx context.Context, updateSettings func(settings *v1.Settings), installNamespace string) {
 	// when validation config changes, the validation server restarts -- give time for it to come up again.
 	// without the wait, the validation webhook may temporarily fallback to it's failurePolicy, which is not
 	// what we want to test.
