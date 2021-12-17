@@ -1963,6 +1963,36 @@ var _ = Describe("Kube2e: gateway", func() {
 			ExpectWithOffset(1, string(out)).To(ContainSubstring(expectedErr))
 		}
 
+		// create a VS just so there will be a route and proxy created, otherwise gloo has no proxies to translate
+		// and essentially skips validation
+		vsYaml := `
+		apiVersion: gateway.solo.io/v1
+		kind: VirtualService
+		metadata:
+		 name: valid-vs
+		 namespace: gloo-system
+		spec:
+		 virtualHost:
+		   domains:
+		     - foo
+		   routes:
+		     - matchers:
+		       - prefix: /
+		       directResponseAction:
+		         status: 200
+		         body: "Hello\n"
+		`
+
+		BeforeEach(func() {
+			_, err := install.KubectlApplyOut([]byte(vsYaml))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			err := install.KubectlDelete([]byte(vsYaml))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("rejects bad resources", func() {
 			// specifically avoiding using a DescribeTable here in order to avoid reinstalling
 			// for every test case
