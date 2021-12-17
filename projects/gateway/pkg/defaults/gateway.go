@@ -91,7 +91,7 @@ func DefaultHybridGateway(writeNamespace string) *v1.Gateway {
 		},
 		ProxyNames:    []string{GatewayProxyName},
 		BindAddress:   GatewayBindAddress,
-		BindPort:      defaults.HttpPort + 1,
+		BindPort:      defaults.HybridPort,
 		UseProxyProto: &wrappers.BoolValue{Value: false},
 	}
 }

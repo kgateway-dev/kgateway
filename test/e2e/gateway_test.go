@@ -53,6 +53,7 @@ var _ = Describe("Gateway", func() {
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 		defaults.TcpPort = services.NextBindPort()
+		defaults.HybridPort = services.NextBindPort()
 	})
 
 	AfterEach(func() {
@@ -719,7 +720,7 @@ var _ = Describe("Gateway", func() {
 
 		// These tests are meant to test the hybrid-specific functionality
 		// The underlying Http and Tcp logic is tested independently
-		Context("hybrid gateway", func() {
+		FContext("hybrid gateway", func() {
 
 			BeforeEach(func() {
 				// Use hybrid gateway instead of default
@@ -863,7 +864,7 @@ var _ = Describe("Gateway", func() {
 				)
 
 				TestUpstreamReachable := func() {
-					v1helpers.TestUpstreamReachable(defaults.HttpPort, tu, nil)
+					v1helpers.TestUpstreamReachable(defaults.HybridPort, tu, nil)
 				}
 
 				BeforeEach(func() {
@@ -885,7 +886,7 @@ var _ = Describe("Gateway", func() {
 					}
 				})
 
-				It("works when rapid virtual service creation and deletion causes no race conditions", func() {
+				FIt("works when rapid virtual service creation and deletion causes no race conditions", func() {
 					up := tu.Upstream
 					vs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
 
@@ -954,7 +955,7 @@ var _ = Describe("Gateway", func() {
 					}, "10s", "0.1s").Should(BeTrue())
 
 					// Create a regular request
-					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d", defaults.HttpPort), nil)
+					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d", defaults.HybridPort), nil)
 					Expect(err).NotTo(HaveOccurred())
 					request = request.WithContext(ctx)
 
@@ -976,7 +977,7 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// Create a regular request
-					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
+					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HybridPort), nil)
 					Expect(err).NotTo(HaveOccurred())
 					request = request.WithContext(ctx)
 
@@ -1023,7 +1024,7 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// Create a regular request
-					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
+					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HybridPort), nil)
 					Expect(err).NotTo(HaveOccurred())
 					request = request.WithContext(context.TODO())
 					request.Header.Add("cluster-header-name", upstreamName)
@@ -1043,7 +1044,7 @@ var _ = Describe("Gateway", func() {
 
 					TestUpstreamSslReachable := func() {
 						cert := gloohelpers.Certificate()
-						v1helpers.TestUpstreamReachable(defaults.HttpPort, tu, &cert)
+						v1helpers.TestUpstreamReachable(defaults.HybridPort, tu, &cert)
 					}
 
 					It("should work with ssl if ssl config is present in matcher", func() {
@@ -1168,7 +1169,7 @@ var _ = Describe("Gateway", func() {
 
 				TestUpstreamSslReachableTcp := func() {
 					cert := gloohelpers.Certificate()
-					v1helpers.TestUpstreamReachable(defaults.HttpPort, tu, &cert)
+					v1helpers.TestUpstreamReachable(defaults.HybridPort, tu, &cert)
 				}
 
 				It("should work with ssl", func() {
