@@ -66,8 +66,6 @@ jobs:
         version: v3.6.3
     - name: Setup test env
       env:
-        ACK_GINKGO_RC: true
-        ACK_GINKGO_DEPRECATIONS: 1.16.5
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
         USE_XDS_RELAY: ${{ matrix.xds-relay }}
         CLUSTER_NAME: 'kind'
@@ -78,6 +76,8 @@ jobs:
     - name: Testing - kube e2e regression tests
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
+        ACK_GINKGO_RC: true
+        ACK_GINKGO_DEPRECATIONS: 1.16.5
       run: |
         make run-ci-regression-tests
     - uses: testspace-com/setup-testspace@v1
