@@ -53,10 +53,10 @@ if [ "$4" == "" ]; then
   exit 1
 fi
 
-kind create cluster --name "$1" --image kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
+kind create cluster --name "$1" --image kindest/node:v1.22.4
 
 # Add locality labels to remote kind cluster for discovery
-(cat <<EOF | kind create cluster --name "$2" --image kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6 --config=-
+(cat <<EOF | kind create cluster --name "$2" --image kindest/node:v1.22.4 --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:

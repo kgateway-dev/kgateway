@@ -18,12 +18,12 @@ It accepts a number of environment variables, to control the creation of a kind 
 | Name                  | Default    | Description |
 | ---                   |   ---      |    ---      |
 | CLUSTER_NAME          | kind       | The name of the cluster that will be generated |
-| CLUSTER_NODE_VERSION  | v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6   | The version of the Node Docker image to use for booting the cluster |
+| CLUSTER_NODE_VERSION  | v1.22.4    | The version of the [Node Docker image](https://hub.docker.com/r/kindest/node/) to use for booting the cluster |
 | VERSION               | 0.0.0-kind | The version used to tag Gloo images that are deployed to the cluster |
 
 Example:
 ```bash
-CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6 VERSION=v1.0.0-solo-test ci/deploy-to-kind-cluster.sh
+CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.22.4 VERSION=v1.0.0-solo-test ci/deploy-to-kind-cluster.sh
 ```
 
 #### (Option B) - Manually Run Make Targets

@@ -10,7 +10,7 @@ function cleanup {
 }
 
 function start {
-    kind create cluster --name=$CLUSTER_NAME --wait=2m --image=kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
+    kind create cluster --name=$CLUSTER_NAME --wait=2m --image=kindest/node:v1.22.4
 }
 
 function kind-env {
