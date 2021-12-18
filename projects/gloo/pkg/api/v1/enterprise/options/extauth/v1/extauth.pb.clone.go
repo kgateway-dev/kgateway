@@ -1200,6 +1200,15 @@ func (m *HttpService_Response) Clone() proto.Message {
 		}
 	}
 
+	if m.GetAllowedUpstreamHeadersToAppend() != nil {
+		target.AllowedUpstreamHeadersToAppend = make([]string, len(m.GetAllowedUpstreamHeadersToAppend()))
+		for idx, v := range m.GetAllowedUpstreamHeadersToAppend() {
+
+			target.AllowedUpstreamHeadersToAppend[idx] = v
+
+		}
+	}
+
 	return target
 }
 
