@@ -6,7 +6,7 @@ import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
-	"k8s.io/api/admissionregistration/v1"
+	v1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
