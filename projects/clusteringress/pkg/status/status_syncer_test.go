@@ -37,6 +37,11 @@ var _ = Describe("StatusSyncer", func() {
 	)
 
 	BeforeEach(func() {
+
+		stdout, versionErr := setup.KubectlOut("version")
+		log.Printf("KUBECTL VERSION OUT: %v", stdout)
+		log.Printf("KUBECTL VERSION ERR: %v", versionErr)
+
 		namespace = helpers.RandString(8)
 		ctx, cancel = context.WithCancel(context.Background())
 		var err error
