@@ -178,16 +178,6 @@ message GraphQLSchema {
   // Metadata contains the object metadata for this resource
   core.solo.io.Metadata metadata = 2;
 
-  // Schema to use in string format.
-  string schema = 3 [deprecated=true];
-  // Do we enable introspection for the schema? general recommendation is to disable this for production
-  // and hence it defaults to false.
-  bool enable_introspection = 4 [deprecated=true];
-  // The resolver map to use to resolve the schema.
-  // Omitted fields will use the default resolver, which looks for a field with that name in the parent's object,
-  // and errors if the field cannot be found.
-  repeated Resolution resolutions = 5 [deprecated=true];
-
   ExecutableSchema executable_schema = 6;
 }
 

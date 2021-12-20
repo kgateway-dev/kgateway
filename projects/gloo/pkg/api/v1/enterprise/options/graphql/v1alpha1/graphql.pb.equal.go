@@ -469,31 +469,6 @@ func (m *GraphQLSchema) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetSchema(), target.GetSchema()) != 0 {
-		return false
-	}
-
-	if m.GetEnableIntrospection() != target.GetEnableIntrospection() {
-		return false
-	}
-
-	if len(m.GetResolutions()) != len(target.GetResolutions()) {
-		return false
-	}
-	for idx, v := range m.GetResolutions() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetResolutions()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetResolutions()[idx]) {
-				return false
-			}
-		}
-
-	}
-
 	if h, ok := interface{}(m.GetExecutableSchema()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetExecutableSchema()) {
 			return false

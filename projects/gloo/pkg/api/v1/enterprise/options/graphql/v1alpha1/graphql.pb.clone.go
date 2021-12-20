@@ -277,23 +277,6 @@ func (m *GraphQLSchema) Clone() proto.Message {
 		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.Metadata)
 	}
 
-	target.Schema = m.GetSchema()
-
-	target.EnableIntrospection = m.GetEnableIntrospection()
-
-	if m.GetResolutions() != nil {
-		target.Resolutions = make([]*Resolution, len(m.GetResolutions()))
-		for idx, v := range m.GetResolutions() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Resolutions[idx] = h.Clone().(*Resolution)
-			} else {
-				target.Resolutions[idx] = proto.Clone(v).(*Resolution)
-			}
-
-		}
-	}
-
 	if h, ok := interface{}(m.GetExecutableSchema()).(clone.Cloner); ok {
 		target.ExecutableSchema = h.Clone().(*ExecutableSchema)
 	} else {
