@@ -28,14 +28,14 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 		prevConfigDumpLen   int
 
 		findPetstoreClusterEndpoints = func() int {
-			clusters := kubeutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, clustersPath)
+			clusters := kubeutils.CurlWithEphemeralPodStable(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, clustersPath)
 			petstoreClusterEndpoints := regexp.MustCompile("\ndefault-petstore-8080_gloo-system::[0-9.]+:8080::")
 			matches := petstoreClusterEndpoints.FindAllStringIndex(clusters, -1)
 			fmt.Println(fmt.Sprintf("Number of cluster stats for petstore (i.e., checking for endpoints) on clusters page: %d", len(matches)))
 			return len(matches)
 		}
 		findConfigDumpHttp2Count = func() int {
-			configDump := kubeutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, configDumpPath, "-s")
+			configDump := kubeutils.CurlWithEphemeralPodStable(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, configDumpPath, "-s")
 			http2Configs := regexp.MustCompile("http2_protocol_options")
 			matches := http2Configs.FindAllStringIndex(configDump, -1)
 			fmt.Println(fmt.Sprintf("Number of http2_protocol_options (i.e., clusters) on config dump page: %d", len(matches)))

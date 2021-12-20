@@ -312,7 +312,7 @@ var _ = Describe("Robustness tests", func() {
 			gatewayProxyPodName := testutils.FindPodNameByLabel(cfg, ctx, testHelper.InstallNamespace, "gloo=gateway-proxy")
 			envoyClustersPath := "http://localhost:19000/clusters" // TODO - this should live in envoy test service
 			Eventually(func() bool {
-				clusters := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, "", testHelper.InstallNamespace, gatewayProxyPodName, envoyClustersPath)
+				clusters := testutils.CurlWithEphemeralPodStable(ctx, ioutil.Discard, "", testHelper.InstallNamespace, gatewayProxyPodName, envoyClustersPath)
 
 				fmt.Println(fmt.Sprintf("initial endpoint ips %+v", initialEndpointIPs))
 
