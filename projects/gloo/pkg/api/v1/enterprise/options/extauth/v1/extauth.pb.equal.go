@@ -2166,6 +2166,16 @@ func (m *UserSession_CookieOptions) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetHttpOnly()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttpOnly()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttpOnly(), target.GetHttpOnly()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetPath()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetPath()) {
 			return false
