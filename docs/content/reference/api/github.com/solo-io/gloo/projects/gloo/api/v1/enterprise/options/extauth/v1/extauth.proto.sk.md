@@ -534,6 +534,7 @@ Deprecated: Prefer OAuth2
 ```yaml
 "maxAge": .google.protobuf.UInt32Value
 "notSecure": bool
+"httpOnly": .google.protobuf.BoolValue
 "path": .google.protobuf.StringValue
 "domain": string
 
@@ -543,6 +544,7 @@ Deprecated: Prefer OAuth2
 | ----- | ---- | ----------- | 
 | `maxAge` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Max age for the cookie. Leave unset for a default of 30 days (2592000 seconds). To disable cookie expiry, set explicitly to 0. |
 | `notSecure` | `bool` | Use a non-secure cookie. Note - this should only be used for testing and in trusted environments. |
+| `httpOnly` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set the cookie to be HttpOnly. defaults to true. Set explicity to false to disable. |
 | `path` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a path. |
 | `domain` | `string` | Cookie domain. |
 
