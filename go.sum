@@ -626,8 +626,10 @@ github.com/golang/protobuf v1.4.0-rc.4.0.20200313231945-b860323f09d0/go.mod h1:W
 github.com/golang/protobuf v1.4.0/go.mod h1:jodUvKwWbYaEsadDk5Fwe5c77LiNKVO9IDvqG2KuDX0=
 github.com/golang/protobuf v1.4.1/go.mod h1:U8fpvMrcmy5pZrNK1lt4xCsGvpyWQ/VVv6QDs8UjoX8=
 github.com/golang/protobuf v1.4.2/go.mod h1:oDoupMAO8OvCJWAcko0GGGIgR6R6ocIYbsSw735rRwI=
-github.com/golang/protobuf v1.4.3 h1:JjCZWpVbqXDqFVmTfYWEVTMIYrL/NPdPSCHPJ0T/raM=
 github.com/golang/protobuf v1.4.3/go.mod h1:oDoupMAO8OvCJWAcko0GGGIgR6R6ocIYbsSw735rRwI=
+github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaSAoJOfIk=
+github.com/golang/protobuf v1.5.2 h1:ROPKBNFfQgOUMifHyP+KYbvpjbdoFNs+aK7DXlji0Tw=
+github.com/golang/protobuf v1.5.2/go.mod h1:XVQd3VNwM+JqD3oG2Ue2ip4fOMUkwXdXDdiuN0vRsmY=
 github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
 github.com/golang/snappy v0.0.1 h1:Qgr9rKW7uDUkrbSmQeiDsGa8SjGyCOGtuasMWwvp2P4=
 github.com/golang/snappy v0.0.1/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
@@ -655,8 +657,9 @@ github.com/google/go-cmp v0.4.0/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/go-cmp v0.4.1/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.0/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.1/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
-github.com/google/go-cmp v0.5.2 h1:X2ev0eStA3AbceY54o37/0PQ/UWqKEiiO2dKL5OPaFM=
 github.com/google/go-cmp v0.5.2/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
+github.com/google/go-cmp v0.5.5 h1:Khx7svrCpmxxtHBq5j2mp/xVjsi8hQMfNLvJFAlrGgU=
+github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-github v17.0.0+incompatible h1:N0LgJ1j65A7kfXrZnUDaYCs/Sf4rEjNlfyDHW9dolSY=
 github.com/google/go-github v17.0.0+incompatible/go.mod h1:zLgOLi98H3fifZn+44m+umXrS52loVEgC2AApnigrVQ=
 github.com/google/go-github/v27 v27.0.6/go.mod h1:/0Gr8pJ55COkmv+S/yPKCczSkUPIM/LnFyubufRNIS0=
@@ -935,8 +938,9 @@ github.com/lucas-clemente/quic-go v0.10.2/go.mod h1:hvaRS9IHjFLMq76puFJeWNfmn+H7
 github.com/lucas-clemente/quic-go-certificates v0.0.0-20160823095156-d2f86524cced/go.mod h1:NCcRLrOTZbzhZvixZLlERbJtDtYsmMw8Jc4vS8Z0g58=
 github.com/lyft/protoc-gen-star v0.4.10/go.mod h1:mE8fbna26u7aEA2QCVvvfBU/ZrPgocG1206xAFPcs94=
 github.com/lyft/protoc-gen-star v0.4.14/go.mod h1:mE8fbna26u7aEA2QCVvvfBU/ZrPgocG1206xAFPcs94=
-github.com/lyft/protoc-gen-star v0.5.1 h1:sImehRT+p7lW9n6R7MQc5hVgzWGEkDVZU4AsBQ4Isu8=
 github.com/lyft/protoc-gen-star v0.5.1/go.mod h1:9toiA3cC7z5uVbODF7kEQ91Xn7XNFkVUl+SrEe+ZORU=
+github.com/lyft/protoc-gen-star v0.6.0 h1:xOpFu4vwmIoUeUrRuAtdCrZZymT/6AkW/bsUWA506Fo=
+github.com/lyft/protoc-gen-star v0.6.0/go.mod h1:TGAoBVkt8w7MPG72TrKIu85MIdXwDuzJYeZuUPFPNwA=
 github.com/lyft/protoc-gen-validate v0.0.13/go.mod h1:XbGvPuh87YZc5TdIa2/I4pLk0QoUACkjt2znoq26NVQ=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.1 h1:ZC2Vc7/ZFkGmsVC9KvOjumD+G5lXy2RtTKyzRKO2BQ4=
@@ -1316,8 +1320,8 @@ github.com/solo-io/k8s-utils v0.0.8 h1:GJ+DLBFfR8WRg2WofGQ3o3DVPByDEYgANX9kQYhpr
 github.com/solo-io/k8s-utils v0.0.8/go.mod h1:Cg2ymG0xhLdyS3NJ0D98yxiSWjAKYPNopzPTwVDl7e4=
 github.com/solo-io/protoc-gen-ext v0.0.12/go.mod h1:/U/jMDtVI7R6N323sfaUXK9Mmo54D7SY3pP7JtI/kMo=
 github.com/solo-io/protoc-gen-ext v0.0.13/go.mod h1:/U/jMDtVI7R6N323sfaUXK9Mmo54D7SY3pP7JtI/kMo=
-github.com/solo-io/protoc-gen-ext v0.0.15 h1:OVPo1essSt2hx5crEfnRxYlA5mwsGvrIWynNQDR/4xo=
-github.com/solo-io/protoc-gen-ext v0.0.15/go.mod h1:ch1ZUyVtN45zxAVwpuZUW+F1IR7aG0rCVAp2JrWKDCc=
+github.com/solo-io/protoc-gen-ext v0.0.16 h1:PHPzkmK6FVtMlDe95WSOcSXKSdnfUxuwJMfet/PaLhU=
+github.com/solo-io/protoc-gen-ext v0.0.16/go.mod h1:j5wvKW5B7oes0hf46IxPDEkDK0pNNQ1Nbfrr1P+xBQo=
 github.com/solo-io/reporting-client v0.2.0 h1:v4NheU8EQL9G7kC3qrsKvC/sJzydrJyVr/sW4QN/owk=
 github.com/solo-io/reporting-client v0.2.0/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0FIuvU+NSePj4wJq8=
 github.com/solo-io/skv2 v0.17.0/go.mod h1:52/0ETq6fkr/abuoUYd3qgV8DEFBI72Sd5frl2dFGJs=
@@ -1326,8 +1330,8 @@ github.com/solo-io/skv2 v0.17.2/go.mod h1:8Mo/EqmRGTu3UWb6ldnbN/9QyzI788MyG3SSpP
 github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10 h1:Qbq966MqBQ2hlvrg0RuoB2rWXJOwSJq+kT5z4P3Nk50=
 github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10/go.mod h1:pAKKsh7pWK1nkzSfSV67RlmiynYzZlu+IWAylvEqkUI=
 github.com/solo-io/solo-kit v0.16.0/go.mod h1:zf+vof9HAavbFKRgL80jJ24SeE9PvoB8ooQ7DACtK8I=
-github.com/solo-io/solo-kit v0.20.4 h1:CgTuPVQwpVQRWjaG5UsJ3UMJQospiseB9qY2AmVPiJk=
-github.com/solo-io/solo-kit v0.20.4/go.mod h1:uCOi8RQ3MetHXsRFvVKPzafYySUvFuPxB+gvo7ScRR8=
+github.com/solo-io/solo-kit v0.20.5 h1:W88lXLoxRfhHvQp9KYue/Vma7vTczsnifaCt6Gxg7Zs=
+github.com/solo-io/solo-kit v0.20.5/go.mod h1:+JfPzBF4iSwiAdxOHB18eGSA06JHEb0T2/HvYJ8HSxU=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3 h1:Am1RMaWH7jOug0ys4gUeBCgwR/94NSfZqu90j9u8eTA=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3/go.mod h1:3lckq1wF8I6I2a1Jx5IsEG+PQArE57Jp3wBE2rQnKmw=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
@@ -1966,8 +1970,10 @@ google.golang.org/protobuf v1.22.0/go.mod h1:EGpADcykh3NcUnDUJcl1+ZksZNG86OlYog2
 google.golang.org/protobuf v1.23.0/go.mod h1:EGpADcykh3NcUnDUJcl1+ZksZNG86OlYog2l/sGQquU=
 google.golang.org/protobuf v1.23.1-0.20200526195155-81db48ad09cc/go.mod h1:EGpADcykh3NcUnDUJcl1+ZksZNG86OlYog2l/sGQquU=
 google.golang.org/protobuf v1.24.0/go.mod h1:r/3tXBNzIEhYS9I1OUVjXDlt8tc493IdKGjtUeSXeh4=
-google.golang.org/protobuf v1.25.0 h1:Ejskq+SyPohKW+1uil0JJMtmHCgJPJ/qWTxr8qp+R4c=
 google.golang.org/protobuf v1.25.0/go.mod h1:9JNX74DMeImyA3h4bdi1ymwjUzf21/xIlbajtzgsN7c=
+google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
+google.golang.org/protobuf v1.26.0 h1:bxAC2xTBsZGibn2RTntX0oH50xLsqy1OxA9tTL3p/lk=
+google.golang.org/protobuf v1.26.0/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
 gopkg.in/AlecAivazis/survey.v1 v1.8.2/go.mod h1:iBNOmqKz/NUbZx3bA+4hAGLRC7fSK7tgtVDT4tB22XA=
 gopkg.in/AlecAivazis/survey.v1 v1.8.7 h1:oBJqtgsyBLg9K5FK9twNUbcPnbCPoh+R9a+7nag3qJM=
 gopkg.in/AlecAivazis/survey.v1 v1.8.7/go.mod h1:iBNOmqKz/NUbZx3bA+4hAGLRC7fSK7tgtVDT4tB22XA=
