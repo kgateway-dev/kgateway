@@ -20,6 +20,7 @@ option java_multiple_files = true;
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
 
 // [#protodoc-title: Buffer]
 // Buffer :ref:`configuration overview <config_http_filters_buffer>`.

@@ -5,6 +5,7 @@ package envoy.api.v2.filter.http;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation";
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
 option (extproto.equal_all) = true;
 
 

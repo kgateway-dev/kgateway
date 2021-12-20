@@ -163,13 +163,13 @@ var _ = Describe("Upstream", func() {
 		It("should create kube upstream with default namespace and port", func() {
 			err := testutils.Glooctl("create upstream kube --name kube-upstream --kube-service kube-service")
 			Expect(err).NotTo(HaveOccurred())
-			expectKubeUpstream("kube-service", "default", uint32(80), nil)
+			expectKubeUpstream("kube-service", "default", uint32(80), map[string]string{})
 		})
 
 		It("should create kube upstream with custom namespace and port", func() {
 			err := testutils.Glooctl("create upstream kube --name kube-upstream --kube-service kube-service --kube-service-namespace custom --kube-service-port 100")
 			Expect(err).NotTo(HaveOccurred())
-			expectKubeUpstream("kube-service", "custom", uint32(100), nil)
+			expectKubeUpstream("kube-service", "custom", uint32(100), map[string]string{})
 		})
 
 		It("should create kube upstream with labels selector", func() {

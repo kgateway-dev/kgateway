@@ -45,7 +45,8 @@ def import_and_copy(f):
             f('cp '+path+' ' + dest)
             f("echo '" + option + "' >> " + dest)
             f("echo 'import \"extproto/ext.proto\";' >> " + dest)
-            f("echo 'option (extproto.hash_all) = true;' >> " + dest)
+            f("echo 'option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;' >> " + dest)
             f("echo 'option (extproto.equal_all) = true;' >> " + dest)
 
 def main():

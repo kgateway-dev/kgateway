@@ -32,7 +32,7 @@ require (
 	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.4.4
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/protobuf v1.5.2
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v32 v32.0.0
 	github.com/google/uuid v1.2.0 // indirect
@@ -72,12 +72,12 @@ require (
 	github.com/solo-io/go-list-licenses v0.1.0
 	github.com/solo-io/go-utils v0.21.8
 	github.com/solo-io/k8s-utils v0.0.8
-	github.com/solo-io/protoc-gen-ext v0.0.15
+	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.17.2
 	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10
-	github.com/solo-io/solo-kit v0.20.4
+	github.com/solo-io/solo-kit v0.20.5
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
 	github.com/spf13/cobra v1.1.3
@@ -92,7 +92,7 @@ require (
 	golang.org/x/tools v0.1.5
 	google.golang.org/genproto v0.0.0-20201019141844-1ed22bb0c154
 	google.golang.org/grpc v1.36.0
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.26.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/ini.v1 v1.56.0 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
