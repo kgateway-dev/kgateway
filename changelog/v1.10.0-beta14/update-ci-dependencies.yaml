@@ -1,4 +1,8 @@
 changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.0.12
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/5523
     description: |
