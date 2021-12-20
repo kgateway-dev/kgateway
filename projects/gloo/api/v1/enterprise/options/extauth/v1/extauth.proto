@@ -329,6 +329,8 @@ message UserSession {
         // Use a non-secure cookie. Note - this should only be used for testing and in trusted
         // environments.
         bool not_secure = 2;
+        // Set the cookie to be HttpOnly. defaults to true. Set explicity to false to disable.
+        google.protobuf.BoolValue http_only = 5;
         // Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a
         // path.
         google.protobuf.StringValue path = 3;
