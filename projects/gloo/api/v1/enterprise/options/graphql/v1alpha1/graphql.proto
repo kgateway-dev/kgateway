@@ -26,24 +26,30 @@ import "google/protobuf/struct.proto";
 // Defines a configuration for generating outgoing requests for a resolver.
 message RequestTemplate {
   // Use this attribute to set request headers to your REST service. It consists of a
-  // map of strings to value providers. The string key determines the name of the
+  // map of strings to templated value strings. The string key determines the name of the
   // resulting header, the value provided will be the value.
   //
   // The least needed here is the ":method" and ":path" headers.
+  // for example, if a header is an authorization token, taken from the graphql args,
+  // we can use the following configuration:
+  // headers:
+  //   Authorization: "Bearer {$args.token}"
   map<string, string> headers = 1;
 
   // Use this attribute to set query parameters to your REST service. It consists of a
-  // map of strings to value providers. The string key determines the name of the
+  // map of strings to templated value strings. The string key determines the name of the
   // query param, the provided value will be the value. This value is appended to any
   // value set to the :path header in `headers`.
   //
-  // Interpolation is done in envoy rather than the control plane to prevent escaped
-  // character issues. Additionally, we may be providing values not known until
-  // the request is being executed (e.g., graphql parent info).
+  // for example, if a query parameter is an id, taken from the graphql parent object,
+  // we can use the following configuration:
+  // queryParams:
+  //   id: "{$parent.id}"
   map<string, string> query_params = 2;
 
   // Used to construct the outgoing body to the upstream from the
   // graphql value providers.
+  // All string values can be templated strings.
   google.protobuf.Value body = 3;
 }
 
