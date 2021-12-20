@@ -23,6 +23,29 @@ import "validate/validate.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
 
+/**
+  Using `string` value templates
+
+  When defining resolutions, many instances allow you to use "templated strings", which are strings
+  with extra templating capabilities. The following rules must be followed when using a templated strings:
+  - templated values will be interpolated into the strings they are in
+    * e.g. if `$parent.token` is `ABDEFG`, "Bearer_{$parent.token}" may become "Bearer_ABCDEFG"
+  - templated values must start with `{$`, immediately preceded by
+    - `parent` for extracting a value from the parent object
+    - `args` for extracting a value from the graphql field arguments
+    - `headers` for extracting a value from the request headers.
+  - `headers` extractions can only have one value in the path to represent the header being extracted
+  - for other extractions, e.g. `parent` and `args`, a more complicated path can be used for extracting nested values
+    using the following rules:
+      - use `a.b` to extract key "b" from object "a"
+      - use `a[0]` to extract the 1st element in array "a"
+      - use `a[*].b` to extract key "b" from all objects in array "a"
+      - use `a[*]` to create a list of key-value pairs from object "a"
+      - use `a[*][0]` to create a list of all keys from object "a"
+      - use `a[*][1]` to create a list of all values from object "a"
+
+ */
+
 // Defines a configuration for generating outgoing requests for a resolver.
 message RequestTemplate {
   // Use this attribute to set request headers to your REST service. It consists of a
@@ -161,12 +184,11 @@ message QueryMatcher {
   }
 }
 
-// This is the resolver map for the schema.
-// For each Type.Field, we can define a resolver.
-// if a field does not have resolver, the default resolver will be used.
+// Define a resolution for each (Type).(Field)
+// If a field does not have resolver, the default resolver will be used.
 // the default resolver takes the field with the same name from the parent, and uses that value
 // to resolve the field.
-// if a field with the same name does not exist in the parent, null will be used.
+// If a field with the same name does not exist in the parent, null will be used.
 message Resolution {
   // Match an object type and field
   QueryMatcher matcher = 1;
