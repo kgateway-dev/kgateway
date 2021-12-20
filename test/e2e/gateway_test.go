@@ -53,14 +53,14 @@ var _ = Describe("Gateway", func() {
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 		defaults.TcpPort = services.NextBindPort()
-		defaults.HybridPort = services.NextBindPort()
+		defaults.HybridPort = defaults.HttpPort // TODO: why is this necessary?
 	})
 
 	AfterEach(func() {
 		cancel()
 	})
 
-	Describe("in memory", func() {
+	FDescribe("in memory", func() {
 
 		BeforeEach(func() {
 			validationPort := services.AllocateGlooPort()
@@ -720,14 +720,11 @@ var _ = Describe("Gateway", func() {
 
 		// These tests are meant to test the hybrid-specific functionality
 		// The underlying Http and Tcp logic is tested independently
-		FContext("hybrid gateway", func() {
+		Context("hybrid gateway", func() {
 
 			BeforeEach(func() {
-				// Use hybrid gateway instead of default
-				defaultGateway := gatewaydefaults.DefaultHybridGateway(writeNamespace)
-
-				_, err := testClients.GatewayClient.Write(defaultGateway, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+				err := gloohelpers.WriteDefaultHybridGateway(writeNamespace, testClients.GatewayClient)
+				Expect(err).NotTo(HaveOccurred(), "Should be able to write default hybrid gateway")
 
 				// wait for the gateway to be created
 				Eventually(func() (gatewayv1.GatewayList, error) {
@@ -886,7 +883,7 @@ var _ = Describe("Gateway", func() {
 					}
 				})
 
-				FIt("works when rapid virtual service creation and deletion causes no race conditions", func() {
+				It("works when rapid virtual service creation and deletion causes no race conditions", func() {
 					up := tu.Upstream
 					vs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
 
