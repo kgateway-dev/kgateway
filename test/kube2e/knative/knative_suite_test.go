@@ -22,7 +22,15 @@ import (
 )
 
 func TestKnative(t *testing.T) {
-	if os.Getenv("KUBE2E_TESTS") != "knative" {
+	// Knative support has been deprecated in Gloo Edge 1.10 (https://github.com/solo-io/gloo/issues/5707)
+	// and will be removed in Gloo Edge 1.11.
+	// These tests are not run during CI.
+	if true {
+		log.Warnf("Knative is deprecated and this test is disabled.")
+		return
+	}
+
+	if os.Getenv("KUBE2E_TESTS") != "knative"  {
 		log.Warnf("This test is disabled. " +
 			"To enable, set KUBE2E_TESTS to 'knative' in your env.")
 		return
