@@ -33,22 +33,28 @@ type RequestTemplate struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Use this attribute to set request headers to your REST service. It consists of a
-	// map of strings to value providers. The string key determines the name of the
+	// map of strings to templated value strings. The string key determines the name of the
 	// resulting header, the value provided will be the value.
 	//
 	// The least needed here is the ":method" and ":path" headers.
+	// for example, if a header is an authorization token, taken from the graphql args,
+	// we can use the following configuration:
+	// headers:
+	//   Authorization: "Bearer {$args.token}"
 	Headers map[string]string `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Use this attribute to set query parameters to your REST service. It consists of a
-	// map of strings to value providers. The string key determines the name of the
+	// map of strings to templated value strings. The string key determines the name of the
 	// query param, the provided value will be the value. This value is appended to any
 	// value set to the :path header in `headers`.
 	//
-	// Interpolation is done in envoy rather than the control plane to prevent escaped
-	// character issues. Additionally, we may be providing values not known until
-	// the request is being executed (e.g., graphql parent info).
+	// for example, if a query parameter is an id, taken from the graphql parent object,
+	// we can use the following configuration:
+	// queryParams:
+	//   id: "{$parent.id}"
 	QueryParams map[string]string `protobuf:"bytes,2,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Used to construct the outgoing body to the upstream from the
 	// graphql value providers.
+	// All string values can be templated strings.
 	Body *_struct.Value `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
 }
 
