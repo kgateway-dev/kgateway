@@ -131,13 +131,15 @@ Defines a configuration for serializing and deserializing requests for a gRPC re
 Is a Schema Extension
 
 ```yaml
-"protoDescriptorsBin": string
+"protoDescriptor": string
+"protoDescriptorBin": bytes
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `protoDescriptorsBin` | `string` | base64 encoded proto descriptor bin. |
+| `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor` or `protoDescriptorBin` can be set. |
+| `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin` or `protoDescriptor` can be set. |
 
 
 

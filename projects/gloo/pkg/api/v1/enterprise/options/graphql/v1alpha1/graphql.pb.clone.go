@@ -155,7 +155,29 @@ func (m *GrpcDescriptorRegistry) Clone() proto.Message {
 	}
 	target = &GrpcDescriptorRegistry{}
 
-	target.ProtoDescriptorsBin = m.GetProtoDescriptorsBin()
+	switch m.DescriptorSet.(type) {
+
+	case *GrpcDescriptorRegistry_ProtoDescriptor:
+
+		target.DescriptorSet = &GrpcDescriptorRegistry_ProtoDescriptor{
+			ProtoDescriptor: m.GetProtoDescriptor(),
+		}
+
+	case *GrpcDescriptorRegistry_ProtoDescriptorBin:
+
+		if m.GetProtoDescriptorBin() != nil {
+			newArr := make([]byte, len(m.GetProtoDescriptorBin()))
+			copy(newArr, m.GetProtoDescriptorBin())
+			target.DescriptorSet = &GrpcDescriptorRegistry_ProtoDescriptorBin{
+				ProtoDescriptorBin: newArr,
+			}
+		} else {
+			target.DescriptorSet = &GrpcDescriptorRegistry_ProtoDescriptorBin{
+				ProtoDescriptorBin: nil,
+			}
+		}
+
+	}
 
 	return target
 }

@@ -310,8 +310,20 @@ func (m *GrpcDescriptorRegistry) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetProtoDescriptorsBin())); err != nil {
-		return 0, err
+	switch m.DescriptorSet.(type) {
+
+	case *GrpcDescriptorRegistry_ProtoDescriptor:
+
+		if _, err = hasher.Write([]byte(m.GetProtoDescriptor())); err != nil {
+			return 0, err
+		}
+
+	case *GrpcDescriptorRegistry_ProtoDescriptorBin:
+
+		if _, err = hasher.Write(m.GetProtoDescriptorBin()); err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

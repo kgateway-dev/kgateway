@@ -124,8 +124,20 @@ message RESTResolver {
 // Defines a configuration for serializing and deserializing requests for a gRPC resolver.
 // Is a Schema Extension
 message GrpcDescriptorRegistry {
-  // base64 encoded proto descriptor bin
-  string proto_descriptors_bin = 1;
+  oneof descriptor_set {
+    option (validate.required) = true;
+
+    // Supplies the filename of
+    // :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
+    // services.
+    string proto_descriptor = 1;
+
+    // Supplies the binary content of
+    // :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
+    // services.
+    // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
+    bytes proto_descriptor_bin = 2;
+  }
 }
 
 // control-plane API
