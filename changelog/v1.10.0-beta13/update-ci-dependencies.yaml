@@ -1,9 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/5523
-    description: |
-      Update all references to v1beta1 packages, to ensure that ingress installation succeeds on Kube 1.22
-  - type: NON_USER_FACING
-    description: |
-      Update kind node version used in CI to 1.22.4, to match our client libraries.
-      Update helm version used in CI to 3.6.3, to match our client library.
