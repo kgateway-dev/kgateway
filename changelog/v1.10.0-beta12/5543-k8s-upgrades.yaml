@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: upgrade k8s.io/* libraries to v0.22.4
+    issueLink: https://github.com/solo-io/gloo/issues/5543

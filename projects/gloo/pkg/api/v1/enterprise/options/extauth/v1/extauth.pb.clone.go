@@ -1302,6 +1302,12 @@ func (m *UserSession_CookieOptions) Clone() proto.Message {
 
 	target.NotSecure = m.GetNotSecure()
 
+	if h, ok := interface{}(m.GetHttpOnly()).(clone.Cloner); ok {
+		target.HttpOnly = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.HttpOnly = proto.Clone(m.GetHttpOnly()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	if h, ok := interface{}(m.GetPath()).(clone.Cloner); ok {
 		target.Path = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	} else {
