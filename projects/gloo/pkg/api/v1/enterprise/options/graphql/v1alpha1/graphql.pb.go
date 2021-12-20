@@ -571,12 +571,11 @@ type QueryMatcher_FieldMatcher_ struct {
 
 func (*QueryMatcher_FieldMatcher_) isQueryMatcher_Match() {}
 
-// This is the resolver map for the schema.
-// For each Type.Field, we can define a resolver.
-// if a field does not have resolver, the default resolver will be used.
+// Define a resolution for each (Type).(Field)
+// If a field does not have resolver, the default resolver will be used.
 // the default resolver takes the field with the same name from the parent, and uses that value
 // to resolve the field.
-// if a field with the same name does not exist in the parent, null will be used.
+// If a field with the same name does not exist in the parent, null will be used.
 type Resolution struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
