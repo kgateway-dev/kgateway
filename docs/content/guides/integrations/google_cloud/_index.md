@@ -627,7 +627,7 @@ gloo:
               xffNumTrustedHops: 2
 ```
 
-Try to reach the application through tls:
+2. Try to reach the application through a TLS connection.
 
 ```bash
 APP_IP=$(gcloud compute addresses describe my-gloo-edge-loadbalancer-address-https --global --format=json | jq -r '.address')
