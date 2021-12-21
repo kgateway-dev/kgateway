@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5059
+    resolvesIssue: true
+    description: >
+      Adds parse_callback_path_as_regex to the OidcAuthorizationCodeConfig.
+      When enabled, the enterprise extauth service will parse a callback path as a regular expression.
