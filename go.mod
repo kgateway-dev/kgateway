@@ -30,6 +30,7 @@ require (
 	github.com/go-openapi/spec v0.19.6
 	github.com/go-openapi/swag v0.19.7
 	github.com/go-swagger/go-swagger v0.21.0
+	github.com/go-test/deep v1.0.7 // indirect
 	github.com/gogo/googleapis v1.3.2
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
@@ -77,12 +78,13 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/sirupsen/logrus v1.8.0 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
+	github.com/solo-io/anyvendor v0.0.4 // indirect
 	github.com/solo-io/go-list-licenses v0.1.0
 	github.com/solo-io/go-utils v0.21.24
 	github.com/solo-io/k8s-utils v0.0.11
 	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/protoc-gen-openapi v0.0.1
-	github.com/solo-io/skv2 v0.21.6
+	github.com/solo-io/skv2 v0.17.17
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
 	github.com/solo-io/solo-kit v0.24.2
