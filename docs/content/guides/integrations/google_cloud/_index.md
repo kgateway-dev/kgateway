@@ -627,6 +627,11 @@ gloo:
               xffNumTrustedHops: 2
 ```
 
+{{% notice note %}}
+Notice the `xffNumTrustedHops: 2`. GCP will append additional IPs to `xff`. Those are `<global forwarding rule external IP>` and `<proxy running in GCP>`.
+The number of hops is required in order to obtain your own actual client IP.
+{{% /notice %}}
+
 2. Try to reach the application through a TLS connection.
 
 ```bash
