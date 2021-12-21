@@ -30,7 +30,7 @@ func TestKnative(t *testing.T) {
 		return
 	}
 
-	if os.Getenv("KUBE2E_TESTS") != "knative"  {
+	if os.Getenv("KUBE2E_TESTS") != "knative" {
 		log.Warnf("This test is disabled. " +
 			"To enable, set KUBE2E_TESTS to 'knative' in your env.")
 		return
