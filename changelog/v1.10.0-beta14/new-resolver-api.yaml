@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5718
+    resolvesIssue: false
+    description: |
+      (Enterprise-only) Refactor GraphQL API to allow for less verbosity when configuring resolvers.

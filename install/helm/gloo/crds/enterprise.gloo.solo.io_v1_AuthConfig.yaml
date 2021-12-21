@@ -273,6 +273,9 @@ spec:
                                   properties:
                                     domain:
                                       type: string
+                                    httpOnly:
+                                      nullable: true
+                                      type: boolean
                                     maxAge:
                                       maximum: 4294967295
                                       minimum: 0

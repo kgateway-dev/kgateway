@@ -845,24 +845,6 @@ apis:
   graphql.gloo.solo.io.GrpcResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcResolver
     package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.JsonKeyValue:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonKeyValue
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.JsonNode:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonNode
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.JsonValue:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonValue
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.JsonValueList:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonValueList
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.Path:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#Path
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.PathSegment:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#PathSegment
-    package: graphql.gloo.solo.io
   graphql.gloo.solo.io.QueryMatcher:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#QueryMatcher
     package: graphql.gloo.solo.io
@@ -877,9 +859,6 @@ apis:
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.ResponseTemplate:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#ResponseTemplate
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.ValueProvider:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#ValueProvider
     package: graphql.gloo.solo.io
   grpc.options.gloo.solo.io.DestinationSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto.sk/#DestinationSpec
