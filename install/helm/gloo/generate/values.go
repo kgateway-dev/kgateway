@@ -189,9 +189,11 @@ type Settings struct {
 }
 
 type AwsSettings struct {
-	EnableCredentialsDiscovery      *bool   `json:"enableCredentialsDiscovery,omitempty" desc:"Enable AWS credentials discovery in Envoy for lambda requests. If enableServiceAccountCredentials is also set, it will take precedence as only one may be enabled in Gloo Edge"`
-	EnableServiceAccountCredentials *bool   `json:"enableServiceAccountCredentials,omitempty" desc:"Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo Edge"`
-	StsCredentialsRegion            *string `json:"stsCredentialsRegion,omitempty" desc:"Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint."`
+	EnableCredentialsDiscovery      *bool     `json:"enableCredentialsDiscovery,omitempty" desc:"Enable AWS credentials discovery in Envoy for lambda requests. If enableServiceAccountCredentials is also set, it will take precedence as only one may be enabled in Gloo Edge"`
+	EnableServiceAccountCredentials *bool     `json:"enableServiceAccountCredentials,omitempty" desc:"Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo Edge"`
+	StsCredentialsRegion            *string   `json:"stsCredentialsRegion,omitempty" desc:"Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint."`
+	PropagateOriginalRouting        *bool     `json:"propagateOriginalRouting,omitempty" desc:"Send downstream path and method as x-envoy-original-path and x-envoy-original-method headers on the request to AWS lambda."`
+	CredentialRefreshDelay          *Duration `json:"credential_refresh_delay,omitempty" desc:"Adds a timed refresh to for ServiceAccount credentials in addition to the default filewatch."`
 }
 
 type InvalidConfigPolicy struct {
