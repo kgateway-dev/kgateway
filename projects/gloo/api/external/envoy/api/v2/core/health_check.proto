@@ -20,7 +20,8 @@ import "validate/validate.proto";
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
-// Who needs this anyway
+// the clone option is not enabled for healthcheck as it causes some build issues pertaining to missing imports
+// as this health check's efficiency of cloning is pretty low-priority, we've opted to comment
 // option (extproto.clone_all) = true;
 
 // [#protodoc-title: Health check]

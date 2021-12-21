@@ -196,6 +196,7 @@ $(OUTPUT_DIR)/.generated-code:
 	PATH=$(DEPSGOBIN):$$PATH gofmt -w $(SUBDIRS)
 	PATH=$(DEPSGOBIN):$$PATH goimports -w $(SUBDIRS)
 	PATH=$(DEPSGOBIN):$$PATH gettercheck -ignoretests -ignoregenerated -write ./...
+	go mod tidy
 	mkdir -p $(OUTPUT_DIR)
 	touch $@
 
