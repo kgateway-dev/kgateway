@@ -231,6 +231,10 @@ spec:
                                           items:
                                             type: string
                                           type: array
+                                        allowedUpstreamHeadersToAppend:
+                                          items:
+                                            type: string
+                                          type: array
                                       type: object
                                   type: object
                                 requestBody:
