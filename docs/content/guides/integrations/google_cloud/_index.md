@@ -619,7 +619,7 @@ gloo:
         #      skipXffAppend: false
         #      useRemoteAddress: true
         #      xffNumTrustedHops: 2
-        customHttpsGateway: # This is be for the default gateway-proxy-ssl
+        customHttpsGateway: # Include this section to configure the default gateway-proxy-ssl.
           options:
             httpConnectionManagerSettings:
               skipXffAppend: false
