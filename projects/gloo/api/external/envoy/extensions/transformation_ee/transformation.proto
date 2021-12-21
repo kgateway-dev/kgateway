@@ -30,7 +30,9 @@ message TransformationRule {
     //    match:
     //      prefix: /
     //
-    .solo.io.envoy.api.v2.route.RouteMatch match = 1 [(validate.rules).message = {required: true}];
+    .solo.io.envoy.api.v2.route.RouteMatch match = 1;
+
+    envoy.config.route.v3.RouteMatch match_v3 = 3;
     // transformation to perform
     RouteTransformations route_transformations = 2;
 }
