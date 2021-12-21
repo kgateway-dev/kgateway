@@ -653,4 +653,3 @@ And you will retrieve a response as follows:
 }
 ```
 
-Notice that the `X-Envoy-External-Address` attribute is your own IP.
