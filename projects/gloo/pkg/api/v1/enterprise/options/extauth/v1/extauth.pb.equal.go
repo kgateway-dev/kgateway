@@ -1969,6 +1969,17 @@ func (m *HttpService_Response) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetAllowedUpstreamHeadersToAppend()) != len(target.GetAllowedUpstreamHeadersToAppend()) {
+		return false
+	}
+	for idx, v := range m.GetAllowedUpstreamHeadersToAppend() {
+
+		if strings.Compare(v, target.GetAllowedUpstreamHeadersToAppend()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	return true
 }
 
