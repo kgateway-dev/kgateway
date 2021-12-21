@@ -601,7 +601,7 @@ The application should be accessible through the Load Balancer.
 
 ### Preserve Client IP Address
 
-To preserve the client IP you need to configure gloo as follows:
+1. To preserve the Client IP Address, update your gateway component (`gateway-proxy-ssl` if you installed the system with default values) in your Gloo Edge configuration to include the settings.
 
 ```yaml
 [...]
