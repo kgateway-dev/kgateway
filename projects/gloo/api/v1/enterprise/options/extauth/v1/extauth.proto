@@ -996,6 +996,9 @@ message ExtAuthConfig {
         // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
         // The session id is used as the key for sessions in Redis
         string session_id_header_name = 16;
+
+        // If set, CallbackPath will be evaluated as a regular expression
+        bool parse_callback_path_as_regex = 17;
     }
 
     message AccessTokenValidationConfig {
