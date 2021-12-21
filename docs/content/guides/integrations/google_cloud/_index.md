@@ -12,7 +12,7 @@ This document shows how to instantiate Google Cloud Load Balancers to complement
 - [Prerequisites](#prerequisites)
 - [Network Load Balancer](#network-load-balancer)
 - [HTTPS Load Balancer](#https-load-balancer)
-- [Preserve Client IP](#preserve-client-ip)
+- [Preserve Client IP Address](#preserve-client-ip-address)
 
 ### Introduction
 
