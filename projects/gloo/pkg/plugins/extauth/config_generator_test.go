@@ -320,8 +320,9 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 									HeadersToAdd:        map[string]string{"header": "add"},
 								},
 								Response: &extauthv1.HttpService_Response{
-									AllowedClientHeaders:   []string{"allowed-client-header"},
-									AllowedUpstreamHeaders: []string{"allowed-upstream-header"},
+									AllowedClientHeaders:           []string{"allowed-client-header"},
+									AllowedUpstreamHeaders:         []string{"allowed-upstream-header"},
+									AllowedUpstreamHeadersToAppend: []string{"allowed-upstream-header-to-append"},
 								},
 							},
 						}
@@ -358,6 +359,11 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 										AllowedUpstreamHeaders: &envoymatcher.ListStringMatcher{
 											Patterns: []*envoymatcher.StringMatcher{{
 												MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "allowed-upstream-header"},
+											}},
+										},
+										AllowedUpstreamHeadersToAppend: &envoymatcher.ListStringMatcher{
+											Patterns: []*envoymatcher.StringMatcher{{
+												MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "allowed-upstream-header-to-append"},
 											}},
 										},
 									},
