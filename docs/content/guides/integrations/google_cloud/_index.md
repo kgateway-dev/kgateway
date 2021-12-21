@@ -12,7 +12,7 @@ This document shows how to instantiate Google Cloud Load Balancers to complement
 - [Prerequisites](#prerequisites)
 - [Network Load Balancer](#network-load-balancer)
 - [HTTPS Load Balancer](#https-load-balancer)
-
+- [Preserve Client IP Address](#preserve-client-ip-address)
 
 ### Introduction
 
@@ -598,3 +598,63 @@ curl -k "https://${APP_IP2}/get" -H "Host: my-gloo-edge.com"
 ```
 
 The application should be accessible through the Load Balancer.
+
+### Preserve Client IP Address
+
+1. To preserve the Client IP Address, update your gateway component (`gateway-proxy-ssl` if you installed the system with default values) in your Gloo Edge configuration to include the settings.
+
+```yaml
+[...]
+gloo:
+  [...]
+  gatewayProxies:
+    [...]
+    gatewayProxy:
+      gatewaySettings:
+        useProxyProto: false
+        # Comment out this section about the default gateway-proxy, because you are using the SSL proxy instead.
+        #customHttpGateway: 
+        #  options:
+        #    httpConnectionManagerSettings:
+        #      skipXffAppend: false
+        #      useRemoteAddress: true
+        #      xffNumTrustedHops: 2
+        customHttpsGateway: # Include this section to configure the default gateway-proxy-ssl.
+          options:
+            httpConnectionManagerSettings:
+              skipXffAppend: false
+              useRemoteAddress: true
+              xffNumTrustedHops: 2
+```
+
+{{% notice note %}}
+Notice the `xffNumTrustedHops: 2`. GCP will append additional IPs to `xff`. Those are `<global forwarding rule external IP>` and `<proxy running in GCP>`.
+The number of hops is required in order to obtain your own actual client IP.
+{{% /notice %}}
+
+2. Try to reach the application through a TLS connection.
+
+```bash
+APP_IP=$(gcloud compute addresses describe my-gloo-edge-loadbalancer-address-https --global --format=json | jq -r '.address')
+
+curl -k "https://${APP_IP2}/get" -H "Host: my-gloo-edge.com"
+```
+
+3. In the response, notice that the `X-Envoy-External-Address` attribute is your own, preserved IP address.
+
+```json
+{
+  "args": {},
+  "headers": {
+    "Accept": "*/*",
+    "Host": "?.?.?.?",
+    "User-Agent": "curl/7.71.1",
+    "X-Cloud-Trace-Context": "41592735775f098300927fcb246??????/162040?????????",
+    "X-Envoy-Expected-Rq-Timeout-Ms": "15000",
+    "X-Envoy-External-Address": "xxx.xxx.xxx.xxx"
+  },
+  "origin": "xxx.xxx.xxx.xxx, y.y.y.y, z.z.z.z",
+  "url": "https://?.?.?.?/get"
+}
+```
+
