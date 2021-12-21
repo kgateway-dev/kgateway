@@ -125,8 +125,6 @@ spec:
       containers:
       - args:
           - --disable-hot-restart
-          - --bootstrap-version
-          - "3"
         {{- if $spec.envoyLogLevel }}
           - --log-level {{ $spec.envoyLogLevel }}
         {{- end}}

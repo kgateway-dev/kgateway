@@ -52,6 +52,7 @@ weight: 5
 
 ```yaml
 "match": .solo.io.envoy.api.v2.route.RouteMatch
+"matchV3": .solo.io.envoy.config.route.v3.RouteMatch
 "routeTransformations": .envoy.config.filter.http.transformation_ee.v2.RouteTransformations
 
 ```
@@ -59,6 +60,7 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `match` | [.solo.io.envoy.api.v2.route.RouteMatch](../../../../../../../../../../../envoy/api/v2/route/route.proto.sk/#routematch) | The route matching parameter. Only when the match is satisfied, the "requires" field will apply. For example: following match will match all requests. .. code-block:: yaml match: prefix: /. |
+| `matchV3` | [.solo.io.envoy.config.route.v3.RouteMatch](../../../config/route/v3/route_components.proto.sk/#routematch) |  |
 | `routeTransformations` | [.envoy.config.filter.http.transformation_ee.v2.RouteTransformations](../transformation.proto.sk/#routetransformations) | transformation to perform. |
 
 
