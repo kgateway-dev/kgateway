@@ -11,6 +11,7 @@ import "validate/validate.proto";
 
 import "envoy/api/v2/route/route.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/type/percent.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto";
 
 
 message FilterTransformations {
@@ -30,7 +31,9 @@ message TransformationRule {
     //    match:
     //      prefix: /
     //
-    .solo.io.envoy.api.v2.route.RouteMatch match = 1 [(validate.rules).message = {required: true}];
+    .solo.io.envoy.api.v2.route.RouteMatch match = 1;
+
+    solo.io.envoy.config.route.v3.RouteMatch match_v3 = 3;
     // transformation to perform
     RouteTransformations route_transformations = 2;
 }
