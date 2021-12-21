@@ -60,7 +60,7 @@ var _ = Describe("Gateway", func() {
 		cancel()
 	})
 
-	FDescribe("in memory", func() {
+	Describe("in memory", func() {
 
 		BeforeEach(func() {
 			validationPort := services.AllocateGlooPort()
