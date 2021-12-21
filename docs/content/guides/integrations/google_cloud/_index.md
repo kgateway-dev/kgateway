@@ -635,7 +635,7 @@ APP_IP=$(gcloud compute addresses describe my-gloo-edge-loadbalancer-address-htt
 curl -k "https://${APP_IP2}/get" -H "Host: my-gloo-edge.com"
 ```
 
-And you will retrieve a response as follows:
+3. In the response, notice that the `X-Envoy-External-Address` attribute is your own, preserved IP address.
 
 ```json
 {
