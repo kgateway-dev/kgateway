@@ -261,6 +261,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 ```yaml
 "allowedUpstreamHeaders": []string
 "allowedClientHeaders": []string
+"allowedUpstreamHeadersToAppend": []string
 
 ```
 
@@ -268,6 +269,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 | ----- | ---- | ----------- | 
 | `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream. Note that coexistent headers will be overridden. |
 | `allowedClientHeaders` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. Note that when this list is *not* set, all the authorization response headers, except *Authority (Host)* will be in the response to the client. When a header is included in this list, *Path*, *Status*, *Content-Length*, *WWW-Authenticate* and *Location* are automatically added. |
+| `allowedUpstreamHeadersToAppend` | `[]string` | When this is set, authorization response headers that have a correspondent match will be added to the client's response. Note that coexistent headers will be appended. |
 
 
 
