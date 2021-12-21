@@ -83,6 +83,14 @@ func (m *AWSLambdaConfig) Clone() proto.Message {
 	}
 	target = &AWSLambdaConfig{}
 
+	target.PropagateOriginalRouting = m.GetPropagateOriginalRouting()
+
+	if h, ok := interface{}(m.GetCredentialRefreshDelay()).(clone.Cloner); ok {
+		target.CredentialRefreshDelay = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.CredentialRefreshDelay = proto.Clone(m.GetCredentialRefreshDelay()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
 	switch m.CredentialsFetcher.(type) {
 
 	case *AWSLambdaConfig_UseDefaultCredentials:
