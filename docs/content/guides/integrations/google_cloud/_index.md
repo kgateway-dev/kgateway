@@ -599,7 +599,7 @@ curl -k "https://${APP_IP2}/get" -H "Host: my-gloo-edge.com"
 
 The application should be accessible through the Load Balancer.
 
-### Preserve Client IP
+### Preserve Client IP Address
 
 To preserve the client IP you need to configure gloo as follows:
 
