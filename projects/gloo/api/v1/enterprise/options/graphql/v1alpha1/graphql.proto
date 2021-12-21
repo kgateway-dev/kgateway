@@ -20,212 +20,105 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 import "validate/validate.proto";
 
-// used to reference into json structures by key(s).
-message PathSegment {
-  oneof segment {
-    option (validate.required) = true;
-    // Key is used to extract named values from a map
-    string key = 1 [(validate.rules).string = {min_len: 1}];
-    // Index is used to extract an element at a certain index from a list
-    uint32 index = 2;
-    // all selects all from the current element at in the path. This is useful for extracting list arguments / object arguments.
-    bool all = 3;
-  }
-}
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
 
-message Path {
-  repeated PathSegment segments = 1;
-}
+/**
+  Using `string` value templates
 
-// In the future we may add support for regex and subgroups
-message ValueProvider {
+  When defining resolutions, many instances allow you to use "templated strings", which are strings
+  with extra templating capabilities. The following rules must be followed when using a templated strings:
+  - templated values will be interpolated into the strings they are in
+    * e.g. if `$parent.token` is `ABDEFG`, "Bearer_{$parent.token}" may become "Bearer_ABCDEFG"
+  - templated values must start with `{$`, immediately preceded by
+    - `parent` for extracting a value from the parent object
+    - `args` for extracting a value from the graphql field arguments
+    - `headers` for extracting a value from the request headers.
+  - `headers` extractions can only have one value in the path to represent the header being extracted
+  - for other extractions, e.g. `parent` and `args`, a more complicated path can be used for extracting nested values
+    using the following rules:
+      - use `a.b` to extract key "b" from object "a"
+      - use `a[0]` to extract the 1st element in array "a"
+      - use `a[*].b` to extract key "b" from all objects in array "a"
+      - use `a[*]` to create a list of key-value pairs from object "a"
+      - use `a[*][0]` to create a list of all keys from object "a"
+      - use `a[*][1]` to create a list of all values from object "a"
 
-  message GraphQLArgExtraction {
-    // The argument name to fetch. The argument value fetched
-    // will have a type from the schema that we validate in envoy.
-    // If the name is invalid, returns the zero-value primitive or null.
-    string arg_name = 1;
-    // Optional: fetches the value in the argument selected at this key.
-    // If the key is invalid, returns the zero-value primitive or null.
-    repeated PathSegment path = 2;
-    // If this is set to true, then a schema error will be returned to user when the graphql arg is not found.
-    // Defaults to false, so schema error will not be returned to user when the graphql arg is not found.
-    bool required = 3;
-  }
-
-  // Does not do type coercion, but instead if the type does not match the
-  // expected primitive type we throw an error.
-  // In the future we may add support for type coercion.
-  message GraphQLParentExtraction {
-    // Fetches the value in the graphql parent at this key. The value will
-    // always be accepted since the parent object is not strongly-typed.
-    // If the key is invalid, returns null.
-    repeated PathSegment path = 1;
-  }
-
-  message TypedValueProvider {
-    // Type that the value will be coerced into.
-    // For example if the extracted value is "9", and type is INT,
-    // this value will be cast to an int type.
-    enum Type {
-      STRING = 0;
-      INT = 1;
-      FLOAT = 2;
-      BOOLEAN = 3;
-    }
-    // Type that the value will be coerced into.
-    // For example if the extracted value is "9", and type is INT,
-    // this value will be cast to an int type.
-    Type type = 1;
-    oneof val_provider {
-      // Fetches the request/response header's value. If not found, uses empty string
-      string header = 2;
-      // inline value, use as provided rather than extracting from another source
-      string value = 3;
-    }
-  }
-
-  message Provider {
-    oneof provider {
-      // type inferred from schema, no need to provide it.
-      GraphQLArgExtraction graphql_arg = 1;
-      TypedValueProvider typed_provider = 2;
-      // Fetch value from the graphql_parent of the current field.
-      GraphQLParentExtraction graphql_parent = 3;
-    }
-  }
-
-  // Map of provider name to provider definition.
-  // The name will be used to insert the provider value in the provider_template.
-  map<string, Provider> providers = 3;
-
-  /*
-  If non-empty, Inserts named providers into a template string.
-  For example, if the provider_template is '/api/{apiVersionProvider}/pet/{petIdProvider}'
-  and we have to named providers defined in `providers`, apiVersionProvider and petIdProvider, with extracted values 'v2' and '123' respectively,
-  the final resulting value will be '/api/v2/pet/123'
-  Use {PROVIDER_NAME} as the interpolation notation (even repeated) regardless of the type of the
-  provided value.
-  If an undefined PROVIDER_NAME is used in the provider_template, this will nack during configuration.
-  If this is empty, only the value of the first provider will be used as the resulting value.
-  */
-  string provider_template = 4;
-}
-
-message JsonValueList {
-  repeated JsonValue values = 1;
-}
-
-message JsonValue {
-  oneof json_val {
-    JsonNode node = 1;
-    ValueProvider value_provider = 2;
-    JsonValueList list = 3;
-  }
-}
-
-message JsonKeyValue {
-  string key = 1;
-  JsonValue value = 2;
-}
-
-// Represents a typed JSON structure
-message JsonNode {
-  // if keys repeat, the latest one replaces any earlier values associated
-  // with that key.
-  //
-  // repeated list, rather than a map, to have ordering to allow for merge
-  // semantics within the data plane, for example:
-  // - gRPC input uses special empty string for input key to set entire body
-  // - gRPC wants to replace a certain field in parsed body from GraphQL arg
-  repeated JsonKeyValue key_values = 1;
-}
+ */
 
 // Defines a configuration for generating outgoing requests for a resolver.
 message RequestTemplate {
   // Use this attribute to set request headers to your REST service. It consists of a
-  // map of strings to value providers. The string key determines the name of the
+  // map of strings to templated value strings. The string key determines the name of the
   // resulting header, the value provided will be the value.
   //
-  // at least need ":method" and ":path"
-  map<string, ValueProvider> headers = 1;
+  // The least needed here is the ":method" and ":path" headers.
+  // for example, if a header is an authorization token, taken from the graphql args,
+  // we can use the following configuration:
+  // headers:
+  //   Authorization: "Bearer {$args.token}"
+  map<string, string> headers = 1;
 
   // Use this attribute to set query parameters to your REST service. It consists of a
-  // map of strings to value providers. The string key determines the name of the
+  // map of strings to templated value strings. The string key determines the name of the
   // query param, the provided value will be the value. This value is appended to any
   // value set to the :path header in `headers`.
   //
-  // Interpolation is done in envoy rather than the control plane to prevent escaped
-  // character issues. Additionally, we may be providing values not known until
-  // the request is being executed (e.g., graphql parent info).
-  map<string, ValueProvider> query_params = 2;
+  // for example, if a query parameter is an id, taken from the graphql parent object,
+  // we can use the following configuration:
+  // queryParams:
+  //   id: "{$parent.id}"
+  map<string, string> query_params = 2;
 
   // Used to construct the outgoing body to the upstream from the
   // graphql value providers.
-  JsonValue outgoing_body = 3;
+  // All string values can be templated strings.
+  google.protobuf.Value body = 3;
 }
 
-// Defines a response transformation template.
-// modify JSON response from upstream before it is processed by execution engine.
 message ResponseTemplate {
-  // In cases where the data to populate the graphql type is not in the
-  // root object of the result, use result root to specify the path
-  // of the response we should use as the root.
-  // If {"a": {"b": [1,2,3]}} is the response from the api, setting resultroot as `a.b`
-  // will pass on [1,2,3] to the execution engine rather than the whole api response
-  repeated PathSegment result_root = 1;
-
-  // Set graphql field to a specific path in the JSON response from the upstream
-  // If resultroot is set, uses resultroot as the base path for all setters.
-  // use cases:
-  // - extracting data from a field to a graphql field with a different name / type
   /*
-  Example:
-  ```
-  type Query {
-    getSimple: Simple
-  }
+    Sets the "root" of the upstream response to be turned into a graphql type by the graphql server.
+    For example, if the graphql type is:
 
-  type Simple {
-    name String
-    address String
-  }```
-
-  if we do `getsimple` and the response we get back from the upstream is
-  ```
-  {"data": {
-    "people":
-      {
-        "name": "John Doe",
-        "details": {
-          "address": "123 Turnip Rd"
-        }
-      }
+    type Simple {
+      name String
     }
-  }
-  ```
-  the following response transform would let the graphql execution engine correctly
-  marshal the upstream resposne into the expected graphql response:
-  `
-  responseTransform:
-    result_root:
-      segments:
-        - key: data
-        - key: people
-    setters:
-      address:
-        segments:
-          - key: details
-          - key: address
-  `yaml
+
+    and the upstream response is `{"data": {"simple": {"name": "simple name"}}}`,
+    the graphql server will not be able to marshal the upstream response into the Simple graphql type
+    because it doesn't know where the relevant data is. If we set result_root to "data.simple", we can give the
+    graphql server a hint of where to look in the upstream response for the relevant data that graphql type wants.
   */
-  map<string, Path> setters = 2;
+  string result_root = 1;
+
+  /*
+    Field-specific mapping for a graphql field to a JSON path in the upstream response.
+    For example, if the graphql type is
+
+    type Simple {
+      name String
+      number String
+    }
+
+    and the upstream response is `{"name": "simple name", "details": {"num": "1234567890"}}`,
+    the graphql server will not be able to marshal the upstream response into the Simple graphql type because of the
+    nested `number` field. We can use a simple setter here:
+
+    setters:
+      number: "details.num"
+
+    and the graphql server will be able to extract data for a field given the path to the relevant data
+    in the upstream JSON response. We don't need to have a setter for the `name` field because the JSON
+    response has that field in a position the graphql server can understand automatically.
+  */
+  map<string, string> setters = 2;
 }
 
 // Defines a configuration for generating outgoing requests for a resolver.
 message GrpcRequestTemplate {
   // json representation of outgoing gRPC message to be sent to gRPC service
-  JsonValue outgoing_message_json = 1;
+  google.protobuf.Value outgoing_message_json = 1;
 
   // request has shape matching service with name registered in registry
   // is the full_name(), e.g. main.Bookstore
@@ -244,16 +137,30 @@ message GrpcRequestTemplate {
 message RESTResolver {
   core.solo.io.ResourceRef upstream_ref = 1;
   // configuration used to compose the outgoing request to a REST API
-  RequestTemplate request_transform = 2;
-  ResponseTemplate pre_execution_transform = 3;
+  RequestTemplate request = 2;
+  // configuration used to modify the response from the REST API
+  // before being handled by the graphql server.
+  ResponseTemplate response = 3;
   string span_name = 4;
 }
 
 // Defines a configuration for serializing and deserializing requests for a gRPC resolver.
 // Is a Schema Extension
 message GrpcDescriptorRegistry {
-  // base64 encoded proto descriptor bin
-  string proto_descriptors_bin = 1;
+  oneof descriptor_set {
+    option (validate.required) = true;
+
+    // Supplies the filename of
+    // :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
+    // services.
+    string proto_descriptor = 1;
+
+    // Supplies the binary content of
+    // :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
+    // services.
+    // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
+    bytes proto_descriptor_bin = 2;
+  }
 }
 
 // control-plane API
@@ -277,12 +184,11 @@ message QueryMatcher {
   }
 }
 
-// This is the resolver map for the schema.
-// For each Type.Field, we can define a resolver.
-// if a field does not have resolver, the default resolver will be used.
+// Define a resolution for each (Type).(Field)
+// If a field does not have resolver, the default resolver will be used.
 // the default resolver takes the field with the same name from the parent, and uses that value
 // to resolve the field.
-// if a field with the same name does not exist in the parent, null will be used.
+// If a field with the same name does not exist in the parent, null will be used.
 message Resolution {
   // Match an object type and field
   QueryMatcher matcher = 1;
@@ -311,16 +217,6 @@ message GraphQLSchema {
 
   // Metadata contains the object metadata for this resource
   core.solo.io.Metadata metadata = 2;
-
-  // Schema to use in string format.
-  string schema = 3 [deprecated=true];
-  // Do we enable introspection for the schema? general recommendation is to disable this for production
-  // and hence it defaults to false.
-  bool enable_introspection = 4 [deprecated=true];
-  // The resolver map to use to resolve the schema.
-  // Omitted fields will use the default resolver, which looks for a field with that name in the parent's object,
-  // and errors if the field cannot be found.
-  repeated Resolution resolutions = 5 [deprecated=true];
 
   ExecutableSchema executable_schema = 6;
 }
