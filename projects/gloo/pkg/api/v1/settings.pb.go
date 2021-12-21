@@ -2053,7 +2053,7 @@ type Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels struc
 
 	// Each (key, value) pair in the map defines a label to be applied.
 	//   key:   Specifies the name of the label (e.g. "namespace")
-	//   value: Specifies the jsonpath string corresponding to the field on the resource (i.e. "metadata.namespace")
+	//   value: Specifies the jsonpath string corresponding to the field on the resource (e.g. "{.metadata.namespace}")
 	LabelToPath map[string]string `protobuf:"bytes,1,rep,name=label_to_path,json=labelToPath,proto3" json:"label_to_path,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 

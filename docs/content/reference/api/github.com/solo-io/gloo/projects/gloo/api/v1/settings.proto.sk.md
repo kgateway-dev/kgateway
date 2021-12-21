@@ -522,7 +522,7 @@ Defines which labels to apply for a metric.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `labelToPath` | `map<string, string>` | Each (key, value) pair in the map defines a label to be applied. key: Specifies the name of the label (e.g. "namespace") value: Specifies the jsonpath string corresponding to the field on the resource (i.e. "metadata.namespace"). |
+| `labelToPath` | `map<string, string>` | Each (key, value) pair in the map defines a label to be applied. key: Specifies the name of the label (e.g. "namespace") value: Specifies the jsonpath string corresponding to the field on the resource (e.g. "{.metadata.namespace}"). |
 
 
 

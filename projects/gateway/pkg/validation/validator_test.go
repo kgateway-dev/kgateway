@@ -40,7 +40,9 @@ var _ = Describe("Validator", func() {
 		vc = &mockValidationClient{}
 		ns = "my-namespace"
 		metricOpts := getMetricOpts()
-		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false, metricOpts))
+		var err error
+		v, err = NewValidator(NewValidatorConfig(t, vc, ns, false, false, metricOpts))
+		Expect(err).NotTo(HaveOccurred())
 	})
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil, false)
@@ -301,7 +303,9 @@ var _ = Describe("Validator", func() {
 
 			Context("allowWarnings=false", func() {
 				BeforeEach(func() {
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false, getMetricOpts()))
+					var err error
+					v, err = NewValidator(NewValidatorConfig(t, vc, ns, true, false, getMetricOpts()))
+					Expect(err).NotTo(HaveOccurred())
 				})
 				It("rejects a vs with missing route table ref", func() {
 					vc.validate = warnProxy
@@ -342,10 +346,12 @@ var _ = Describe("Validator", func() {
 			Context("ignoreProxyValidation=true", func() {
 				It("accepts the rt", func() {
 					vc.validate = communicationErr
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false, getMetricOpts()))
+					var err error
+					v, err = NewValidator(NewValidatorConfig(t, vc, ns, true, false, getMetricOpts()))
+					Expect(err).NotTo(HaveOccurred())
 					us := samples.SimpleUpstream()
 					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
-					err := v.Sync(context.TODO(), snap)
+					err = v.Sync(context.TODO(), snap)
 					Expect(err).NotTo(HaveOccurred())
 					reports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 					Expect(err).NotTo(HaveOccurred())
@@ -354,7 +360,9 @@ var _ = Describe("Validator", func() {
 			})
 			Context("allowWarnings=true", func() {
 				BeforeEach(func() {
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, true, getMetricOpts()))
+					var err error
+					v, err = NewValidator(NewValidatorConfig(t, vc, ns, true, true, getMetricOpts()))
+					Expect(err).NotTo(HaveOccurred())
 				})
 				It("accepts a vs with missing route table ref", func() {
 					vc.validate = communicationErr

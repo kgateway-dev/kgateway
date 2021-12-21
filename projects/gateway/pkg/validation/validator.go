@@ -118,8 +118,11 @@ func NewValidatorConfig(translator translator.Translator, validationClient valid
 	}
 }
 
-func NewValidator(cfg ValidatorConfig) *validator {
-	configStatusMetrics := metricutils.NewConfigStatusMetrics(cfg.configStatusMetricsOptions)
+func NewValidator(cfg ValidatorConfig) (*validator, error) {
+	configStatusMetrics, err := metricutils.NewConfigStatusMetrics(cfg.configStatusMetricsOptions)
+	if err != nil {
+		return nil, err
+	}
 	return &validator{
 		translator:                   cfg.translator,
 		validationClient:             cfg.validationClient,
@@ -127,7 +130,7 @@ func NewValidator(cfg ValidatorConfig) *validator {
 		ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure,
 		allowWarnings:                cfg.allowWarnings,
 		configStatusMetrics:          configStatusMetrics,
-	}
+	}, nil
 }
 
 func (v *validator) ready() bool {
