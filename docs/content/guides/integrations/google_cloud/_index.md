@@ -612,7 +612,7 @@ gloo:
     gatewayProxy:
       gatewaySettings:
         useProxyProto: false
-        # This is be for the default gateway-proxy. Since you have exposed the ssl proxy, it is not needed.
+        # Comment out this section about the default gateway-proxy, because you are using the SSL proxy instead.
         #customHttpGateway: 
         #  options:
         #    httpConnectionManagerSettings:
