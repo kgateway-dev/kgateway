@@ -107,7 +107,7 @@ func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualService
 		bindAddress := fmt.Sprintf("%s:%d", gw.GetBindAddress(), gw.GetBindPort())
 		bindAddresses[bindAddress] = append(bindAddresses[bindAddress], gw)
 
-		gatewayVirtualServices := []*core.ResourceRef{}
+		var gatewayVirtualServices []*core.ResourceRef
 		switch gatewayType := gw.GetGatewayType().(type) {
 		case *v1.Gateway_HttpGateway:
 			gatewayVirtualServices = gatewayType.HttpGateway.GetVirtualServices()

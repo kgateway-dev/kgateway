@@ -450,7 +450,7 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef *cor
 
 	var parentGateways []*core.ResourceRef
 	snap.Gateways.Each(func(element *v1.Gateway) {
-		virtualServices := []*core.ResourceRef{}
+		var virtualServices []*core.ResourceRef
 		switch gatewayType := element.GetGatewayType().(type) {
 		case *v1.Gateway_HttpGateway:
 			virtualServices = gatewayType.HttpGateway.GetVirtualServices()
