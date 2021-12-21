@@ -23,7 +23,7 @@ func GetVhostsFromListener(listener *v1.Listener) []*v1.VirtualHost {
 	return virtualHosts
 }
 
-func GetVhostReportsFromListenerReports(listenerReport *validation.ListenerReport) []*validation.VirtualHostReport {
+func GetVhostReportsFromListenerReport(listenerReport *validation.ListenerReport) []*validation.VirtualHostReport {
 	virtualHostReports := []*validation.VirtualHostReport{}
 
 	switch listenerReportType := listenerReport.GetListenerTypeReport().(type) {

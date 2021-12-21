@@ -165,7 +165,7 @@ var _ = Describe("Validation Server", func() {
 			Expect(validation.GetProxyWarning(report2.GetProxyReport())).To(BeEmpty())
 			Expect(validation.GetProxyError(report2.GetProxyReport())).NotTo(HaveOccurred())
 		})
-		It("upstream validation fails", func() {
+		FIt("upstream validation fails", func() {
 			// having no upstreams in the snapshot should cause translation to fail due to a proxy from the snapshot
 			// referencing the "test" upstream. this should cause any new upstreams we try to apply to be rejected
 			params.Snapshot.Upstreams = v1.UpstreamList{}
@@ -189,7 +189,7 @@ var _ = Describe("Validation Server", func() {
 			proxyReport := resp.ValidationReports[0].GetProxyReport()
 			warnings := validation.GetProxyWarning(proxyReport)
 			errors := validation.GetProxyError(proxyReport)
-			Expect(warnings).To(HaveLen(1))
+			Expect(warnings).To(HaveLen(2)) // one each for http and hybrid
 			Expect(errors).To(HaveOccurred())
 		})
 		It("upstream deletion validation succeeds", func() {
