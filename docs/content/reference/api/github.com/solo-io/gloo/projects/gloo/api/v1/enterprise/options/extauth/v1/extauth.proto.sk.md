@@ -261,6 +261,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 ```yaml
 "allowedUpstreamHeaders": []string
 "allowedClientHeaders": []string
+"allowedUpstreamHeadersToAppend": []string
 
 ```
 
@@ -268,6 +269,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 | ----- | ---- | ----------- | 
 | `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream. Note that coexistent headers will be overridden. |
 | `allowedClientHeaders` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. Note that when this list is *not* set, all the authorization response headers, except *Authority (Host)* will be in the response to the client. When a header is included in this list, *Path*, *Status*, *Content-Length*, *WWW-Authenticate* and *Location* are automatically added. |
+| `allowedUpstreamHeadersToAppend` | `[]string` | When this is set, authorization response headers that have a correspondent match will be added to the client's response. Note that coexistent headers will be appended. |
 
 
 
@@ -534,6 +536,7 @@ Deprecated: Prefer OAuth2
 ```yaml
 "maxAge": .google.protobuf.UInt32Value
 "notSecure": bool
+"httpOnly": .google.protobuf.BoolValue
 "path": .google.protobuf.StringValue
 "domain": string
 
@@ -543,6 +546,7 @@ Deprecated: Prefer OAuth2
 | ----- | ---- | ----------- | 
 | `maxAge` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Max age for the cookie. Leave unset for a default of 30 days (2592000 seconds). To disable cookie expiry, set explicitly to 0. |
 | `notSecure` | `bool` | Use a non-secure cookie. Note - this should only be used for testing and in trusted environments. |
+| `httpOnly` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set the cookie to be HttpOnly. defaults to true. Set explicity to false to disable. |
 | `path` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a path. |
 | `domain` | `string` | Cookie domain. |
 

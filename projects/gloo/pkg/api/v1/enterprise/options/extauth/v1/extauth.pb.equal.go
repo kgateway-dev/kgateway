@@ -1969,6 +1969,17 @@ func (m *HttpService_Response) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetAllowedUpstreamHeadersToAppend()) != len(target.GetAllowedUpstreamHeadersToAppend()) {
+		return false
+	}
+	for idx, v := range m.GetAllowedUpstreamHeadersToAppend() {
+
+		if strings.Compare(v, target.GetAllowedUpstreamHeadersToAppend()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	return true
 }
 
@@ -2164,6 +2175,16 @@ func (m *UserSession_CookieOptions) Equal(that interface{}) bool {
 
 	if m.GetNotSecure() != target.GetNotSecure() {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetHttpOnly()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttpOnly()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttpOnly(), target.GetHttpOnly()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetPath()).(equality.Equalizer); ok {

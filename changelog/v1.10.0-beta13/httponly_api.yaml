@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5678
+    resolvesIssue: false
+    description: |
+      Add the API to allow setting auth cookies as not http only.

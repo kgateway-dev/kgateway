@@ -11,7 +11,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/knative/api/external/knative"
 	v1alpha12 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
@@ -56,12 +55,7 @@ var _ = Describe("Translate", func() {
 											},
 										},
 									},
-									AppendHeaders:     map[string]string{"add": "me"},
-									DeprecatedTimeout: &metav1.Duration{Duration: time.Nanosecond}, // good luck
-									DeprecatedRetries: &v1alpha1.HTTPRetry{
-										Attempts:      14,
-										PerTryTimeout: &metav1.Duration{Duration: time.Microsecond},
-									},
+									AppendHeaders: map[string]string{"add": "me"},
 								},
 							},
 						},
@@ -84,12 +78,7 @@ var _ = Describe("Translate", func() {
 											},
 										},
 									},
-									AppendHeaders:     map[string]string{"add": "me"},
-									DeprecatedTimeout: &metav1.Duration{Duration: time.Nanosecond}, // good luck
-									DeprecatedRetries: &v1alpha1.HTTPRetry{
-										Attempts:      14,
-										PerTryTimeout: &metav1.Duration{Duration: time.Microsecond},
-									},
+									AppendHeaders: map[string]string{"add": "me"},
 								},
 							},
 						},
@@ -128,12 +117,7 @@ var _ = Describe("Translate", func() {
 											},
 										},
 									},
-									AppendHeaders:     map[string]string{"add": "me"},
-									DeprecatedTimeout: &metav1.Duration{Duration: time.Nanosecond}, // good luck
-									DeprecatedRetries: &v1alpha1.HTTPRetry{
-										Attempts:      14,
-										PerTryTimeout: &metav1.Duration{Duration: time.Microsecond},
-									},
+									AppendHeaders: map[string]string{"add": "me"},
 								},
 							},
 						},
@@ -209,11 +193,6 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											Options: &gloov1.RouteOptions{
-												Timeout: durptr(1),
-												Retries: &retries.RetryPolicy{
-													NumRetries:    0x0000000e,
-													PerTryTimeout: durptr(1000),
-												},
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_Header{Header: &envoycore_sk.HeaderValue{Key: "add", Value: "me"}}}},
 												},
@@ -263,11 +242,6 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											Options: &gloov1.RouteOptions{
-												Timeout: durptr(1),
-												Retries: &retries.RetryPolicy{
-													NumRetries:    0x0000000e,
-													PerTryTimeout: durptr(1000),
-												},
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_Header{Header: &envoycore_sk.HeaderValue{Key: "add", Value: "me"}}}},
 												},
@@ -326,11 +300,6 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											Options: &gloov1.RouteOptions{
-												Timeout: durptr(1),
-												Retries: &retries.RetryPolicy{
-													NumRetries:    0x0000000e,
-													PerTryTimeout: durptr(1000),
-												},
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_Header{Header: &envoycore_sk.HeaderValue{Key: "add", Value: "me"}}}},
 												},

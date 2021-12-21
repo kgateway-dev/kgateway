@@ -68,10 +68,11 @@ func waitKnativeApiserviceReady() error {
 
 func knativeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "knative",
-		Short:  "install Knative with Gloo on Kubernetes",
-		Long:   "requires kubectl to be installed",
-		PreRun: setVerboseMode(opts),
+		Use:        "knative",
+		Short:      "install Knative with Gloo on Kubernetes",
+		Long:       "requires kubectl to be installed",
+		Deprecated: "Knative with Gloo is deprecated in Gloo Edge 1.10 and will not be available in Gloo Edge 1.11",
+		PreRun:     setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if opts.Install.Knative.InstallKnative {

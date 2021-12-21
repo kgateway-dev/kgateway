@@ -153,7 +153,8 @@ message Settings {
     }
 
     // Configuration options for the Clusteringress Controller (for Knative).
-    KnativeOptions knative = 18;
+    // Deprecated: Will not be available in Gloo Edge 1.11
+    KnativeOptions knative = 18 [deprecated=true];
 
     message DiscoveryOptions {
 

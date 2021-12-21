@@ -180,6 +180,10 @@ message HttpService {
         // (Host)* will be in the response to the client. When a header is included in this list, *Path*,
         // *Status*, *Content-Length*, *WWW-Authenticate* and *Location* are automatically added.
         repeated string allowed_client_headers = 2;
+
+        // When this is set, authorization response headers that have a correspondent match will be added to the client's response.
+        // Note that coexistent headers will be appended.
+        repeated string allowed_upstream_headers_to_append = 3;
     }
     Response response = 3;
 }
@@ -329,6 +333,8 @@ message UserSession {
         // Use a non-secure cookie. Note - this should only be used for testing and in trusted
         // environments.
         bool not_secure = 2;
+        // Set the cookie to be HttpOnly. defaults to true. Set explicity to false to disable.
+        google.protobuf.BoolValue http_only = 5;
         // Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a
         // path.
         google.protobuf.StringValue path = 3;
