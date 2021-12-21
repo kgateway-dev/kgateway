@@ -287,19 +287,8 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList,
 	}
 
 	for _, listener := range proxy.GetListeners() {
-		virtualHosts := []*v1.VirtualHost{}
-		switch listenerType := listener.GetListenerType().(type) {
-		case *v1.Listener_HttpListener:
-			virtualHosts = listenerType.HttpListener.GetVirtualHosts()
-		case *v1.Listener_HybridListener:
-			for _, matchedListener := range listenerType.HybridListener.GetMatchedListeners() {
-				httpListener := matchedListener.GetHttpListener()
-				if httpListener == nil {
-					continue
-				}
-				virtualHosts = append(virtualHosts, httpListener.GetVirtualHosts()...)
-			}
-		}
+		virtualHosts := utils.GetVhostsFromListener(listener)
+
 		for _, virtualHost := range virtualHosts {
 			// Validate all routes to make sure that if they point to a lambda, it exists.
 			for _, route := range virtualHost.GetRoutes() {

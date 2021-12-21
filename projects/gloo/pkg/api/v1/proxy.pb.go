@@ -767,7 +767,7 @@ func (x *Matcher) GetSourcePrefixRanges() []*v3.CidrRange {
 
 //
 // Virtual Hosts group an ordered list of routes under one or more domains.
-// Each Virtual Host has a logical name, which must be unique for the listener. TODO: This does not seem to be true in the hybrid case
+// Each Virtual Host has a logical name, which must be unique for the http listener.
 // An HTTP request is first matched to a virtual host based on its host header, then to a route within the virtual host.
 // If a request is not matched to any virtual host or a route therein, the target proxy will reply with a 404.
 type VirtualHost struct {

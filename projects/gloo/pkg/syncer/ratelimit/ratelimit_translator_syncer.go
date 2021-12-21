@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -52,20 +54,7 @@ func (s *TranslatorSyncerExtension) Sync(
 
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {
-			// TODO: factor out logic also used in extauth_translator_syncer.go
-			virtualHosts := []*gloov1.VirtualHost{}
-
-			switch typedListener := listener.GetListenerType().(type) {
-			case *gloov1.Listener_HttpListener:
-				virtualHosts = typedListener.HttpListener.GetVirtualHosts()
-			case *gloov1.Listener_HybridListener:
-				for _, matchedListener := range typedListener.HybridListener.GetMatchedListeners() {
-					httpListener := matchedListener.GetHttpListener()
-					if httpListener != nil {
-						virtualHosts = append(virtualHosts, httpListener.GetVirtualHosts()...)
-					}
-				}
-			}
+			virtualHosts := utils.GetVhostsFromListener(listener)
 
 			for _, virtualHost := range virtualHosts {
 

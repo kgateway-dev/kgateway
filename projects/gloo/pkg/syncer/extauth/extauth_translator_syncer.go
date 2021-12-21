@@ -3,6 +3,8 @@ package extauth
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	"github.com/rotisserie/eris"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -65,19 +67,7 @@ func (s *TranslatorSyncerExtension) Sync(
 
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {
-			virtualHosts := []*gloov1.VirtualHost{}
-
-			switch typedListener := listener.GetListenerType().(type) {
-			case *gloov1.Listener_HttpListener:
-				virtualHosts = typedListener.HttpListener.GetVirtualHosts()
-			case *gloov1.Listener_HybridListener:
-				for _, matchedListener := range typedListener.HybridListener.GetMatchedListeners() {
-					httpListener := matchedListener.GetHttpListener()
-					if httpListener != nil {
-						virtualHosts = append(virtualHosts, httpListener.GetVirtualHosts()...)
-					}
-				}
-			}
+			virtualHosts := utils.GetVhostsFromListener(listener)
 
 			for _, virtualHost := range virtualHosts {
 				if virtualHost.GetOptions().GetExtauth().GetConfigRef() != nil {

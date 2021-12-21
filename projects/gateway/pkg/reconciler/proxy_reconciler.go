@@ -257,7 +257,8 @@ func transitionFunc(proxiesToWrite GeneratedProxies, statusClient resources.Stat
 			switch subListener := desiredListener.GetListenerType().(type) {
 			case *gloov1.Listener_HttpListener:
 				desiredHttpListener := subListener.HttpListener
-				err := copyRejectedVirtualHosts(originalListener.GetHttpListener(), desiredHttpListener, proxiesToWrite[desired]) // assume originalListener has same type as desiredListener
+				// assume originalListener has same type as desiredListener
+				err := copyRejectedVirtualHosts(originalListener.GetHttpListener(), desiredHttpListener, proxiesToWrite[desired])
 				if err != nil {
 					return false, err
 				}

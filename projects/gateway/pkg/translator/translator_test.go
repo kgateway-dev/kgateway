@@ -253,7 +253,7 @@ var _ = Describe("Translator", func() {
 
 		Context("when the gateway CRDs don't clash", func() {
 			BeforeEach(func() {
-				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, Opts{
+				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}, &HybridTranslator{HttpTranslator: &HttpTranslator{}}}, Opts{
 					ReadGatewaysFromAllNamespaces: true,
 				})
 				snap = &v1.ApiSnapshot{
@@ -1439,7 +1439,7 @@ var _ = Describe("Translator", func() {
 
 		Context("generating unique route names", func() {
 			BeforeEach(func() {
-				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, Opts{})
+				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}}, Opts{})
 			})
 
 			It("should generate unique names for multiple gateways", func() {

@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	invalidReportsListenersErr    = errors.Errorf("internal err: reports did not match number of listeners")
-	invalidReportsVirtualHostsErr = errors.Errorf("internal err: reports did not match number of virtual hosts")
-	missingReportForSourceErr     = errors.Errorf("internal err: missing resource report for source resource")
+	invalidReportsListenersErr         = errors.Errorf("internal err: reports did not match number of listeners")
+	invalidReportsVirtualHostsErr      = errors.Errorf("internal err: reports did not match number of virtual hosts")
+	invalidReportsHybridRcNameNotFound = errors.Errorf("internal err: reports did not match expected hybrid rcName")
+	missingReportForSourceErr          = errors.Errorf("internal err: missing resource report for source resource")
 )
 
 // Update a set of ResourceReports with the results of a proxy validation
@@ -61,7 +62,11 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 			for rcName, matchedListenerReport := range listenerReportType.HybridListenerReport.GetMatchedListenerReports() {
 				if httpListenerReport := matchedListenerReport.GetHttpListenerReport(); httpListenerReport != nil {
 					vhReports := httpListenerReport.GetVirtualHostReports()
-					virtualHosts := mappedHttpListeners[rcName].GetVirtualHosts()
+					httpListener, ok := mappedHttpListeners[rcName]
+					if !ok {
+						return invalidReportsHybridRcNameNotFound
+					}
+					virtualHosts := httpListener.GetVirtualHosts()
 
 					if len(vhReports) != len(virtualHosts) {
 						return invalidReportsVirtualHostsErr
@@ -77,7 +82,6 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 				}
 			}
 		}
-
 	}
 
 	return nil

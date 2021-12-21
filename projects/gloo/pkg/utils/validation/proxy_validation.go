@@ -238,14 +238,11 @@ func GetProxyWarning(proxyRpt *validation.ProxyReport) []string {
 	var warnings []string
 
 	for _, listener := range proxyRpt.GetListenerReports() {
-		switch listenerType := listener.GetListenerTypeReport().(type) {
-		case *validation.ListenerReport_HttpListenerReport:
-			httpListener := listenerType.HttpListenerReport
-			for _, vhReport := range httpListener.GetVirtualHostReports() {
-				for _, routeReport := range vhReport.GetRouteReports() {
-					if warns := GetRouteWarning(routeReport); len(warns) > 0 {
-						warnings = append(warnings, warns...)
-					}
+		vhostReports := utils.GetVhostReportsFromListenerReports(listener)
+		for _, vhReport := range vhostReports {
+			for _, routeReport := range vhReport.GetRouteReports() {
+				if warns := GetRouteWarning(routeReport); len(warns) > 0 {
+					warnings = append(warnings, warns...)
 				}
 			}
 		}
