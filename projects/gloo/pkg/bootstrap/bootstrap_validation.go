@@ -73,7 +73,7 @@ func buildPerFilterBootstrapYaml(filterName string, msg proto.Message) (string, 
 			Name:    "placeholder_host",
 			Domains: []string{"*"},
 			TypedPerFilterConfig: map[string]*any.Any{
-				filterName: &any.Any{
+				filterName: {
 					TypeUrl: typedFilter.GetTypeUrl(),
 					Value:   typedFilter.GetValue(),
 				},

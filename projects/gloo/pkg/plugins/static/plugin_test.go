@@ -82,9 +82,9 @@ var _ = Describe("Plugin", func() {
 			p.ProcessUpstream(params, upstream, out)
 			Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_STATIC))
 			expected := []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-				&envoy_config_endpoint_v3.LocalityLbEndpoints{
+				{
 					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
-						&envoy_config_endpoint_v3.LbEndpoint{
+						{
 							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
 								Endpoint: &envoy_config_endpoint_v3.Endpoint{
 									Hostname: "1.2.3.4",
@@ -105,7 +105,7 @@ var _ = Describe("Plugin", func() {
 								},
 							},
 						},
-						&envoy_config_endpoint_v3.LbEndpoint{
+						{
 							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
 								Endpoint: &envoy_config_endpoint_v3.Endpoint{
 									Hostname: "2603:3005:b0b:1d00::b7aa",

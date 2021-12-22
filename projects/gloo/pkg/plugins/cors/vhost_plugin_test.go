@@ -54,13 +54,13 @@ var _ = Describe("VirtualHost Plugin", func() {
 		out1 := &envoy_config_route_v3.CorsPolicy{
 
 			AllowOriginStringMatch: []*envoy_type_matcher_v3.StringMatcher{
-				&envoy_type_matcher_v3.StringMatcher{
+				{
 					MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[0]},
 				},
-				&envoy_type_matcher_v3.StringMatcher{
+				{
 					MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[1]},
 				},
-				&envoy_type_matcher_v3.StringMatcher{
+				{
 					MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 						SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
 							EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{}},
@@ -68,7 +68,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 						},
 					},
 				},
-				&envoy_type_matcher_v3.StringMatcher{
+				{
 					MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 						SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
 							EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{}},
@@ -112,10 +112,10 @@ var _ = Describe("VirtualHost Plugin", func() {
 			envoy1min := &envoy_config_route_v3.VirtualHost{
 				Cors: &envoy_config_route_v3.CorsPolicy{
 					AllowOriginStringMatch: []*envoy_type_matcher_v3.StringMatcher{
-						&envoy_type_matcher_v3.StringMatcher{
+						{
 							MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[0]},
 						},
-						&envoy_type_matcher_v3.StringMatcher{
+						{
 							MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[1]},
 						},
 					},

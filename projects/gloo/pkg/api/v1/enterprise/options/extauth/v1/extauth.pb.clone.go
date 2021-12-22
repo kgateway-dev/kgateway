@@ -136,12 +136,6 @@ func (m *Settings) Clone() proto.Message {
 		target.ExtauthzServerRef = proto.Clone(m.GetExtauthzServerRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 	}
 
-	if h, ok := interface{}(m.GetHttpService()).(clone.Cloner); ok {
-		target.HttpService = h.Clone().(*HttpService)
-	} else {
-		target.HttpService = proto.Clone(m.GetHttpService()).(*HttpService)
-	}
-
 	target.UserIdHeader = m.GetUserIdHeader()
 
 	if h, ok := interface{}(m.GetRequestTimeout()).(clone.Cloner); ok {
@@ -165,6 +159,47 @@ func (m *Settings) Clone() proto.Message {
 	target.TransportApiVersion = m.GetTransportApiVersion()
 
 	target.StatPrefix = m.GetStatPrefix()
+
+	switch m.ServiceType.(type) {
+
+	case *Settings_HttpService:
+
+		if h, ok := interface{}(m.GetHttpService()).(clone.Cloner); ok {
+			target.ServiceType = &Settings_HttpService{
+				HttpService: h.Clone().(*HttpService),
+			}
+		} else {
+			target.ServiceType = &Settings_HttpService{
+				HttpService: proto.Clone(m.GetHttpService()).(*HttpService),
+			}
+		}
+
+	case *Settings_GrpcService:
+
+		if h, ok := interface{}(m.GetGrpcService()).(clone.Cloner); ok {
+			target.ServiceType = &Settings_GrpcService{
+				GrpcService: h.Clone().(*GrpcService),
+			}
+		} else {
+			target.ServiceType = &Settings_GrpcService{
+				GrpcService: proto.Clone(m.GetGrpcService()).(*GrpcService),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *GrpcService) Clone() proto.Message {
+	var target *GrpcService
+	if m == nil {
+		return target
+	}
+	target = &GrpcService{}
+
+	target.Authority = m.GetAuthority()
 
 	return target
 }
