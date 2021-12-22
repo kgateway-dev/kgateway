@@ -507,7 +507,7 @@ func (ei *EnvoyInstance) runWithAll(eic EnvoyInstanceConfig, bootstrapBuilder En
 		return ei.runContainer(eic.Context())
 	}
 
-	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug", "--bootstrap-version", "3"}
+	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug"}
 
 	// run directly
 	cmd := exec.CommandContext(eic.Context(), ei.envoypath, args...)
@@ -597,7 +597,6 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 		image,
 		"--disable-hot-restart",
 		"--log-level", "debug",
-		"--bootstrap-version", "3",
 		"--config-yaml", ei.envoycfg,
 	)
 
