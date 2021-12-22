@@ -38,7 +38,7 @@ var _ = Describe("Plugin", func() {
 		restSpec = &pluginsv1.ServiceSpec_Rest{
 			Rest: &v1rest.ServiceSpec{
 				Transformations: map[string]*envoy_transform.TransformationTemplate{
-					"func": &envoy_transform.TransformationTemplate{},
+					"func": {},
 				},
 			},
 		}

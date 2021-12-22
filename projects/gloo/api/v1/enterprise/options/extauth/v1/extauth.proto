@@ -91,8 +91,14 @@ message Settings {
     // The upstream to ask about auth decisions
     core.solo.io.ResourceRef extauthz_server_ref = 1;
 
-    // If this is set, communication to the upstream will be via HTTP and not GRPC.
-    HttpService http_service = 2;
+    oneof service_type {
+        // If this is set, communication to the upstream will be via HTTP and not GRPC (default).
+        HttpService http_service = 2;
+
+        // Optional, if set the communication to the upstream will be via GRPC.
+        GrpcService grpc_service = 11;
+    }
+
 
     // If the auth server trusted id of the user, it will be set in this header.
     // Specifically this means that this header will be sanitized form the incoming request.
@@ -144,6 +150,11 @@ message Settings {
     // Optional additional prefix to use when emitting statistics.
     // This allows to distinguish emitted statistics between configured ext_authz filters in an HTTP filter chain.
     string stat_prefix = 10;
+}
+
+message GrpcService {
+    // Set the authority header when calling the GRPC service.
+    string authority = 1;
 }
 
 message HttpService {

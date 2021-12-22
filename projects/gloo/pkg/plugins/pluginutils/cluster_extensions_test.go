@@ -20,7 +20,7 @@ var _ = Describe("ClusterExtensions", func() {
 	BeforeEach(func() {
 		msg = &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				"test": &structpb.Value{Kind: &structpb.Value_BoolValue{
+				"test": {Kind: &structpb.Value_BoolValue{
 					BoolValue: true,
 				}},
 			},
