@@ -17,8 +17,6 @@ weight: 5
 - [RESTResolver](#restresolver)
 - [GrpcDescriptorRegistry](#grpcdescriptorregistry)
 - [GrpcResolver](#grpcresolver)
-- [QueryMatcher](#querymatcher)
-- [FieldMatcher](#fieldmatcher)
 - [Resolution](#resolution)
 - [GraphQLSchema](#graphqlschema) **Top-Level Resource**
 - [ExecutableSchema](#executableschema)
@@ -167,53 +165,16 @@ control-plane API
 
 
 ---
-### QueryMatcher
-
-
-
-```yaml
-"fieldMatcher": .graphql.gloo.solo.io.QueryMatcher.FieldMatcher
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `fieldMatcher` | [.graphql.gloo.solo.io.QueryMatcher.FieldMatcher](../graphql.proto.sk/#fieldmatcher) |  |
-
-
-
-
----
-### FieldMatcher
-
-
-
-```yaml
-"type": string
-"field": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `type` | `string` | Object type. For example, Query. |
-| `field` | `string` | Field with in the object. |
-
-
-
-
----
 ### Resolution
 
  
-Define a resolution for each (Type).(Field)
-If a field does not have resolver, the default resolver will be used.
+Define a named resolver which can be then matched to a field using the `resolve` directive.
+if a field does not have resolver, the default resolver will be used.
 the default resolver takes the field with the same name from the parent, and uses that value
 to resolve the field.
 If a field with the same name does not exist in the parent, null will be used.
 
 ```yaml
-"matcher": .graphql.gloo.solo.io.QueryMatcher
 "restResolver": .graphql.gloo.solo.io.RESTResolver
 "grpcResolver": .graphql.gloo.solo.io.GrpcResolver
 
@@ -221,7 +182,6 @@ If a field with the same name does not exist in the parent, null will be used.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `matcher` | [.graphql.gloo.solo.io.QueryMatcher](../graphql.proto.sk/#querymatcher) | Match an object type and field. |
 | `restResolver` | [.graphql.gloo.solo.io.RESTResolver](../graphql.proto.sk/#restresolver) |  Only one of `restResolver` or `grpcResolver` can be set. |
 | `grpcResolver` | [.graphql.gloo.solo.io.GrpcResolver](../graphql.proto.sk/#grpcresolver) |  Only one of `grpcResolver` or `restResolver` can be set. |
 
@@ -301,14 +261,14 @@ configure the routes to point to these schema CRs.
 Execute schema using resolvers.
 
 ```yaml
-"resolutions": []graphql.gloo.solo.io.Resolution
+"resolutions": map<string, .graphql.gloo.solo.io.Resolution>
 "enableIntrospection": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `resolutions` | [[]graphql.gloo.solo.io.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. |
+| `resolutions` | `map<string, .graphql.gloo.solo.io.Resolution>` | Mapping of resolver name to resolver definition. The names are used to reference the resolver in the graphql schema. For example, a resolver with name "authorResolver" can be defined as ```yaml authorResolver: restResolver: upstreamRef: ... request: ... response: ... ``` and referenced in the graphql schema as ```gql type Query { author: String @resolve(name: "authorResolver") } ```. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
 
 
