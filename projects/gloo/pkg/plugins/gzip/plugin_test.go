@@ -46,7 +46,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
-			plugins.StagedHttpFilter{
+			{
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
@@ -76,7 +76,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
-			plugins.StagedHttpFilter{
+			{
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
@@ -116,7 +116,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
-			plugins.StagedHttpFilter{
+			{
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
@@ -146,7 +146,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
-			plugins.StagedHttpFilter{
+			{
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{

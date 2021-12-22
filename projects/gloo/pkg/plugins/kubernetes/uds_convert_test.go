@@ -142,7 +142,7 @@ var _ = Describe("UdsConvert", func() {
 					"DiscoveryMetadata":  true,
 					"UpstreamType":       true,
 				}
-				for fieldName, _ := range excludedFields {
+				for fieldName := range excludedFields {
 					currentStruct := reflect.ValueOf(up).Elem()
 					field := currentStruct.FieldByName(fieldName)
 					field.Set(reflect.Zero(field.Type()))
