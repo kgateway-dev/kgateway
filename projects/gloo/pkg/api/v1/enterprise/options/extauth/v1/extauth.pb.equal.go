@@ -1059,6 +1059,10 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetParseCallbackPathAsRegex() != target.GetParseCallbackPathAsRegex() {
+		return false
+	}
+
 	return true
 }
 
