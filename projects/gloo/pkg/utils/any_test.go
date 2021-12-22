@@ -14,7 +14,7 @@ var _ = Describe("Any", func() {
 
 	It("should convert golang message to any", func() {
 		msg := &structpb.Struct{
-			Fields: map[string]*structpb.Value{"test": &structpb.Value{
+			Fields: map[string]*structpb.Value{"test": {
 				Kind: &structpb.Value_StringValue{StringValue: "foo"},
 			}},
 		}
@@ -28,7 +28,7 @@ var _ = Describe("Any", func() {
 
 	It("should convert gogo message to any", func() {
 		msg := &gogostructpb.Struct{
-			Fields: map[string]*gogostructpb.Value{"test": &gogostructpb.Value{
+			Fields: map[string]*gogostructpb.Value{"test": {
 				Kind: &gogostructpb.Value_StringValue{StringValue: "foo"},
 			}},
 		}
