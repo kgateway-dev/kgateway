@@ -1,0 +1,15 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: 'client-ip-reject'
+  namespace: 'gloo-system'
+spec:
+  virtualHost:
+    domains:
+      - '*'
+    routes:
+      - matchers:
+          - exact: /all-pets
+        directResponseAction:
+          status: 401
+          body: 'client ip forbidden'

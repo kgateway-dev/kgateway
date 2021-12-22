@@ -53,7 +53,7 @@ var _ = Describe("Gateway", func() {
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 		defaults.TcpPort = services.NextBindPort()
-		defaults.HybridPort = defaults.HttpPort // TODO: why is this necessary?
+		defaults.HybridPort = services.NextBindPort()
 	})
 
 	AfterEach(func() {
