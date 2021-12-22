@@ -845,9 +845,6 @@ apis:
   graphql.gloo.solo.io.GrpcResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcResolver
     package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.QueryMatcher:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#QueryMatcher
-    package: graphql.gloo.solo.io
   graphql.gloo.solo.io.RESTResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#RESTResolver
     package: graphql.gloo.solo.io
