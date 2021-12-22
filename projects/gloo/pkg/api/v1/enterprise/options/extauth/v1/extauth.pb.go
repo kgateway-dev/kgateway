@@ -434,12 +434,12 @@ type isSettings_ServiceType interface {
 }
 
 type Settings_HttpService struct {
-	// If this is set, communication to the upstream will be via HTTP and not GRPC, only HttpService or GrpcService can be set.
+	// If this is set, communication to the upstream will be via HTTP and not GRPC (default).
 	HttpService *HttpService `protobuf:"bytes,2,opt,name=http_service,json=httpService,proto3,oneof"`
 }
 
 type Settings_GrpcService struct {
-	// Optional, if set the communication to the upstream will be via GRPC, only HttpService or GrpcService can be set.
+	// Optional, if set the communication to the upstream will be via GRPC.
 	GrpcService *GrpcService `protobuf:"bytes,11,opt,name=grpc_service,json=grpcService,proto3,oneof"`
 }
 

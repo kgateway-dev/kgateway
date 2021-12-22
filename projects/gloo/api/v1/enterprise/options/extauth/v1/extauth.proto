@@ -92,10 +92,10 @@ message Settings {
     core.solo.io.ResourceRef extauthz_server_ref = 1;
 
     oneof service_type {
-        // If this is set, communication to the upstream will be via HTTP and not GRPC, only HttpService or GrpcService can be set.
+        // If this is set, communication to the upstream will be via HTTP and not GRPC (default).
         HttpService http_service = 2;
 
-        // Optional, if set the communication to the upstream will be via GRPC, only HttpService or GrpcService can be set.
+        // Optional, if set the communication to the upstream will be via GRPC.
         GrpcService grpc_service = 11;
     }
 
