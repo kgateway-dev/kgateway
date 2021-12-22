@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5718
+    resolvesIssue: false
+    description: |
+      (Enterprise-only) Remove Graphql resolver field matchers in favor of named resolvers and `@resolve(name:"...")` directive 
+      in the graphql schema SDl.
