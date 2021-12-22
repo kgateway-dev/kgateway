@@ -64,7 +64,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 						ListenerType: &gloov1.Listener_HttpListener{
 							HttpListener: &gloov1.HttpListener{
 								VirtualHosts: []*gloov1.VirtualHost{
-									&gloov1.VirtualHost{
+									{
 										Name: "gloo-system.default",
 										Options: &gloov1.VirtualHostOptions{
 											RatelimitBasic: config,
@@ -206,7 +206,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 						ListenerType: &gloov1.Listener_HttpListener{
 							HttpListener: &gloov1.HttpListener{
 								VirtualHosts: []*gloov1.VirtualHost{
-									&gloov1.VirtualHost{
+									{
 										Routes: []*gloov1.Route{route},
 									},
 								},
@@ -258,13 +258,13 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 						ListenerType: &gloov1.Listener_HttpListener{
 							HttpListener: &gloov1.HttpListener{
 								VirtualHosts: []*gloov1.VirtualHost{
-									&gloov1.VirtualHost{
+									{
 										Name: "gloo-system.default",
 										Options: &gloov1.VirtualHostOptions{
 											RateLimitConfigType: &gloov1.VirtualHostOptions_Ratelimit{
 												Ratelimit: &ratelimit.RateLimitVhostExtension{
 													RateLimits: []*v1alpha1.RateLimitActions{
-														&v1alpha1.RateLimitActions{
+														{
 															SetActions: []*v1alpha1.Action{},
 														},
 													},

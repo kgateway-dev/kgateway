@@ -245,6 +245,10 @@ func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.Ups
 		}
 		svc.Timeout = timeout
 
+		grpcService := settings.GetGrpcService()
+		if grpcService != nil && grpcService.GetAuthority() != "" {
+			svc.GetEnvoyGrpc().Authority = grpcService.GetAuthority()
+		}
 		cfg.Services = &envoyauth.ExtAuthz_GrpcService{
 			GrpcService: svc,
 		}
