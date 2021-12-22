@@ -208,45 +208,12 @@ func (m *GrpcResolver) Clone() proto.Message {
 }
 
 // Clone function
-func (m *QueryMatcher) Clone() proto.Message {
-	var target *QueryMatcher
-	if m == nil {
-		return target
-	}
-	target = &QueryMatcher{}
-
-	switch m.Match.(type) {
-
-	case *QueryMatcher_FieldMatcher_:
-
-		if h, ok := interface{}(m.GetFieldMatcher()).(clone.Cloner); ok {
-			target.Match = &QueryMatcher_FieldMatcher_{
-				FieldMatcher: h.Clone().(*QueryMatcher_FieldMatcher),
-			}
-		} else {
-			target.Match = &QueryMatcher_FieldMatcher_{
-				FieldMatcher: proto.Clone(m.GetFieldMatcher()).(*QueryMatcher_FieldMatcher),
-			}
-		}
-
-	}
-
-	return target
-}
-
-// Clone function
 func (m *Resolution) Clone() proto.Message {
 	var target *Resolution
 	if m == nil {
 		return target
 	}
 	target = &Resolution{}
-
-	if h, ok := interface{}(m.GetMatcher()).(clone.Cloner); ok {
-		target.Matcher = h.Clone().(*QueryMatcher)
-	} else {
-		target.Matcher = proto.Clone(m.GetMatcher()).(*QueryMatcher)
-	}
 
 	switch m.Resolver.(type) {
 
@@ -361,21 +328,6 @@ func (m *Executor) Clone() proto.Message {
 }
 
 // Clone function
-func (m *QueryMatcher_FieldMatcher) Clone() proto.Message {
-	var target *QueryMatcher_FieldMatcher
-	if m == nil {
-		return target
-	}
-	target = &QueryMatcher_FieldMatcher{}
-
-	target.Type = m.GetType()
-
-	target.Field = m.GetField()
-
-	return target
-}
-
-// Clone function
 func (m *Executor_Local) Clone() proto.Message {
 	var target *Executor_Local
 	if m == nil {
@@ -384,13 +336,13 @@ func (m *Executor_Local) Clone() proto.Message {
 	target = &Executor_Local{}
 
 	if m.GetResolutions() != nil {
-		target.Resolutions = make([]*Resolution, len(m.GetResolutions()))
-		for idx, v := range m.GetResolutions() {
+		target.Resolutions = make(map[string]*Resolution, len(m.GetResolutions()))
+		for k, v := range m.GetResolutions() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Resolutions[idx] = h.Clone().(*Resolution)
+				target.Resolutions[k] = h.Clone().(*Resolution)
 			} else {
-				target.Resolutions[idx] = proto.Clone(v).(*Resolution)
+				target.Resolutions[k] = proto.Clone(v).(*Resolution)
 			}
 
 		}
