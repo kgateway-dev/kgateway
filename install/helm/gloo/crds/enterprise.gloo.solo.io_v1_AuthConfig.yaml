@@ -261,6 +261,8 @@ spec:
                               type: object
                             logoutPath:
                               type: string
+                            parseCallbackPathAsRegex:
+                              type: boolean
                             scopes:
                               items:
                                 type: string
