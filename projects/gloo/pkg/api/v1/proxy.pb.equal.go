@@ -212,6 +212,21 @@ func (m *Listener) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Listener_HybridListener:
+		if _, ok := target.ListenerType.(*Listener_HybridListener); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHybridListener()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHybridListener()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHybridListener(), target.GetHybridListener()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.ListenerType != target.ListenerType {
@@ -375,6 +390,171 @@ func (m *HttpListener) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetStatPrefix(), target.GetStatPrefix()) != 0 {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HybridListener) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HybridListener)
+	if !ok {
+		that2, ok := that.(HybridListener)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetMatchedListeners()) != len(target.GetMatchedListeners()) {
+		return false
+	}
+	for idx, v := range m.GetMatchedListeners() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMatchedListeners()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetMatchedListeners()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *MatchedListener) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*MatchedListener)
+	if !ok {
+		that2, ok := that.(MatchedListener)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetMatcher()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMatcher()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMatcher(), target.GetMatcher()) {
+			return false
+		}
+	}
+
+	switch m.ListenerType.(type) {
+
+	case *MatchedListener_HttpListener:
+		if _, ok := target.ListenerType.(*MatchedListener_HttpListener); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHttpListener()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHttpListener()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHttpListener(), target.GetHttpListener()) {
+				return false
+			}
+		}
+
+	case *MatchedListener_TcpListener:
+		if _, ok := target.ListenerType.(*MatchedListener_TcpListener); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetTcpListener()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTcpListener()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetTcpListener(), target.GetTcpListener()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ListenerType != target.ListenerType {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Matcher) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Matcher)
+	if !ok {
+		that2, ok := that.(Matcher)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetSslConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSslConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSslConfig(), target.GetSslConfig()) {
+			return false
+		}
+	}
+
+	if len(m.GetSourcePrefixRanges()) != len(target.GetSourcePrefixRanges()) {
+		return false
+	}
+	for idx, v := range m.GetSourcePrefixRanges() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSourcePrefixRanges()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSourcePrefixRanges()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true

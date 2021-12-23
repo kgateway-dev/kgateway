@@ -3,6 +3,8 @@ package validation
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -22,35 +24,46 @@ func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {
 		switch listenerType := listener.GetListenerType().(type) {
 		case *v1.Listener_HttpListener:
 
-			vhostReports := make([]*validation.VirtualHostReport, len(listenerType.HttpListener.GetVirtualHosts()))
-
-			for j, vh := range listenerType.HttpListener.GetVirtualHosts() {
-				routeReports := make([]*validation.RouteReport, len(vh.GetRoutes()))
-				for k := range vh.GetRoutes() {
-					routeReports[k] = &validation.RouteReport{}
-				}
-
-				vhostReports[j] = &validation.VirtualHostReport{
-					RouteReports: routeReports,
-				}
-			}
-
 			listenerReports[i] = &validation.ListenerReport{
 				ListenerTypeReport: &validation.ListenerReport_HttpListenerReport{
 					HttpListenerReport: &validation.HttpListenerReport{
-						VirtualHostReports: vhostReports,
+						VirtualHostReports: makeVhostReports(listenerType.HttpListener.GetVirtualHosts()),
 					},
 				},
 			}
 		case *v1.Listener_TcpListener:
-			tcpHostReports := make([]*validation.TcpHostReport, len(listenerType.TcpListener.GetTcpHosts()))
-			for j := range listenerType.TcpListener.GetTcpHosts() {
-				tcpHostReports[j] = &validation.TcpHostReport{}
-			}
 			listenerReports[i] = &validation.ListenerReport{
 				ListenerTypeReport: &validation.ListenerReport_TcpListenerReport{
 					TcpListenerReport: &validation.TcpListenerReport{
-						TcpHostReports: tcpHostReports,
+						TcpHostReports: makeTcpHostReports(listenerType.TcpListener.GetTcpHosts()),
+					},
+				},
+			}
+		case *v1.Listener_HybridListener:
+			matchedListenerReports := make(map[string]*validation.MatchedListenerReport)
+			for _, matchedListener := range listenerType.HybridListener.GetMatchedListeners() {
+				matchedListenerReport := &validation.MatchedListenerReport{}
+				switch matchedListenerType := matchedListener.GetListenerType().(type) {
+				case *v1.MatchedListener_HttpListener:
+					matchedListenerReport.ListenerReportType = &validation.MatchedListenerReport_HttpListenerReport{
+						HttpListenerReport: &validation.HttpListenerReport{
+							VirtualHostReports: makeVhostReports(matchedListenerType.HttpListener.GetVirtualHosts()),
+						},
+					}
+				case *v1.MatchedListener_TcpListener:
+					matchedListenerReport.ListenerReportType = &validation.MatchedListenerReport_TcpListenerReport{
+						TcpListenerReport: &validation.TcpListenerReport{
+							TcpHostReports: makeTcpHostReports(matchedListenerType.TcpListener.GetTcpHosts()),
+						},
+					}
+				}
+				matchedListenerReports[utils.MatchedRouteConfigName(listener, matchedListener.GetMatcher())] = matchedListenerReport
+			}
+
+			listenerReports[i] = &validation.ListenerReport{
+				ListenerTypeReport: &validation.ListenerReport_HybridListenerReport{
+					HybridListenerReport: &validation.HybridListenerReport{
+						MatchedListenerReports: matchedListenerReports,
 					},
 				},
 			}
@@ -60,6 +73,31 @@ func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {
 	return &validation.ProxyReport{
 		ListenerReports: listenerReports,
 	}
+}
+
+func makeVhostReports(virtualHosts []*v1.VirtualHost) []*validation.VirtualHostReport {
+	vhostReports := make([]*validation.VirtualHostReport, len(virtualHosts))
+
+	for j, vh := range virtualHosts {
+		routeReports := make([]*validation.RouteReport, len(vh.GetRoutes()))
+		for k := range vh.GetRoutes() {
+			routeReports[k] = &validation.RouteReport{}
+		}
+
+		vhostReports[j] = &validation.VirtualHostReport{
+			RouteReports: routeReports,
+		}
+	}
+
+	return vhostReports
+}
+
+func makeTcpHostReports(tcpHosts []*v1.TcpHost) []*validation.TcpHostReport {
+	tcpHostReports := make([]*validation.TcpHostReport, len(tcpHosts))
+	for j := range tcpHosts {
+		tcpHostReports[j] = &validation.TcpHostReport{}
+	}
+	return tcpHostReports
 }
 
 func mkErr(level, errType, reason string) error {
@@ -136,28 +174,18 @@ func GetProxyError(proxyRpt *validation.ProxyReport) error {
 		}
 		switch listenerType := listener.GetListenerTypeReport().(type) {
 		case *validation.ListenerReport_HttpListenerReport:
-			httpListener := listenerType.HttpListenerReport
-			if err := GetHttpListenerErr(httpListener); err != nil {
-				errs = append(errs, err...)
-			}
-			for _, vhReport := range httpListener.GetVirtualHostReports() {
-				if err := GetVirtualHostErr(vhReport); err != nil {
-					errs = append(errs, err...)
-				}
-				for _, routeReport := range vhReport.GetRouteReports() {
-					if err := GetRouteErr(routeReport); err != nil {
-						errs = append(errs, err...)
-					}
-				}
-			}
+			errs = append(errs, getHttpListenerReportErrs(listenerType.HttpListenerReport)...)
+
 		case *validation.ListenerReport_TcpListenerReport:
-			tcpListener := listenerType.TcpListenerReport
-			if err := GetTcpListenerErr(tcpListener); err != nil {
-				errs = append(errs, err...)
-			}
-			for _, hostReport := range tcpListener.GetTcpHostReports() {
-				if err := GetTcpHostErr(hostReport); err != nil {
-					errs = append(errs, err...)
+			errs = append(errs, getTcpListenerReportErrs(listenerType.TcpListenerReport)...)
+
+		case *validation.ListenerReport_HybridListenerReport:
+			for _, mr := range listenerType.HybridListenerReport.GetMatchedListenerReports() {
+				switch lrt := mr.GetListenerReportType().(type) {
+				case *validation.MatchedListenerReport_HttpListenerReport:
+					errs = append(errs, getHttpListenerReportErrs(lrt.HttpListenerReport)...)
+				case *validation.MatchedListenerReport_TcpListenerReport:
+					errs = append(errs, getTcpListenerReportErrs(lrt.TcpListenerReport)...)
 				}
 			}
 		}
@@ -171,18 +199,50 @@ func GetProxyError(proxyRpt *validation.ProxyReport) error {
 	return combinedErr
 }
 
+func getTcpListenerReportErrs(tcpListenerReport *validation.TcpListenerReport) []error {
+	var errs []error
+
+	if err := GetTcpListenerErr(tcpListenerReport); err != nil {
+		errs = append(errs, err...)
+	}
+	for _, hostReport := range tcpListenerReport.GetTcpHostReports() {
+		if err := GetTcpHostErr(hostReport); err != nil {
+			errs = append(errs, err...)
+		}
+	}
+
+	return errs
+}
+
+func getHttpListenerReportErrs(httpListenerReport *validation.HttpListenerReport) []error {
+	var errs []error
+
+	if err := GetHttpListenerErr(httpListenerReport); err != nil {
+		errs = append(errs, err...)
+	}
+	for _, vhReport := range httpListenerReport.GetVirtualHostReports() {
+		if err := GetVirtualHostErr(vhReport); err != nil {
+			errs = append(errs, err...)
+		}
+		for _, routeReport := range vhReport.GetRouteReports() {
+			if err := GetRouteErr(routeReport); err != nil {
+				errs = append(errs, err...)
+			}
+		}
+	}
+
+	return errs
+}
+
 func GetProxyWarning(proxyRpt *validation.ProxyReport) []string {
 	var warnings []string
 
-	for _, listener := range proxyRpt.GetListenerReports() {
-		switch listenerType := listener.GetListenerTypeReport().(type) {
-		case *validation.ListenerReport_HttpListenerReport:
-			httpListener := listenerType.HttpListenerReport
-			for _, vhReport := range httpListener.GetVirtualHostReports() {
-				for _, routeReport := range vhReport.GetRouteReports() {
-					if warns := GetRouteWarning(routeReport); len(warns) > 0 {
-						warnings = append(warnings, warns...)
-					}
+	for _, listenerReport := range proxyRpt.GetListenerReports() {
+		vhostReports := utils.GetVhostReportsFromListenerReport(listenerReport)
+		for _, vhReport := range vhostReports {
+			for _, routeReport := range vhReport.GetRouteReports() {
+				if warns := GetRouteWarning(routeReport); len(warns) > 0 {
+					warnings = append(warnings, warns...)
 				}
 			}
 		}

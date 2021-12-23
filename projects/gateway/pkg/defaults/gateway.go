@@ -69,6 +69,33 @@ func DefaultTcpSslGateway(writeNamespace string) *v1.Gateway {
 	return defaultgw
 }
 
+// The default Hybrid gateway is currently only used for testing purposes
+// but could be included later if we decide it should be.
+func DefaultHybridGateway(writeNamespace string) *v1.Gateway {
+	return &v1.Gateway{
+		Metadata: &core.Metadata{
+			Name:        GatewayProxyName + "-hybrid",
+			Namespace:   writeNamespace,
+			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
+		},
+		GatewayType: &v1.Gateway_HybridGateway{
+			HybridGateway: &v1.HybridGateway{
+				MatchedGateways: []*v1.MatchedGateway{
+					{
+						GatewayType: &v1.MatchedGateway_HttpGateway{
+							HttpGateway: &v1.HttpGateway{},
+						},
+					},
+				},
+			},
+		},
+		ProxyNames:    []string{GatewayProxyName},
+		BindAddress:   GatewayBindAddress,
+		BindPort:      defaults.HybridPort,
+		UseProxyProto: &wrappers.BoolValue{Value: false},
+	}
+}
+
 func DefaultVirtualService(namespace, name string) *v1.VirtualService {
 	return &v1.VirtualService{
 		Metadata: &core.Metadata{

@@ -16,6 +16,9 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
+
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
 
 /*
 A Gateway describes a single Listener (bind address:port)
@@ -28,6 +31,7 @@ message Gateway {
 
     // if set to false, only use virtual services without ssl configured.
     // if set to true, only use virtual services with ssl configured.
+    // this field is ignored if GatewayType is HybridGateway.
     bool ssl = 1;
 
     // the bind address the gateway should serve traffic on
@@ -55,9 +59,11 @@ message Gateway {
     // The type of gateway being created
     // HttpGateway creates a listener with an http_connection_manager
     // TcpGateway creates a listener with a tcp proxy filter
+    // HybridGateway creates a listener with any number of filter chains that each may have either an http_connection_manager or a tcp proxy filter
     oneof GatewayType {
         HttpGateway http_gateway = 9;
         TcpGateway tcp_gateway = 10;
+        HybridGateway hybrid_gateway = 11;
     }
 
     /*
@@ -127,6 +133,35 @@ message TcpGateway {
     gloo.solo.io.TcpListenerOptions options = 8;
 
 }
+
+message HybridGateway {
+    repeated MatchedGateway matched_gateways = 1;
+}
+
+message MatchedGateway {
+    // Matchers are used to define unique matching criteria for each MatchedGateway
+    // Each MatchedGateway within a HybridGateway must have a unique Matcher
+    // If multiple matchers in a HybridGateway are identical, the HybridGateway will not be accepted
+    // Empty Matchers are effectively catch-alls, and there can be no more than one empty Matcher per HybridGateway
+    Matcher matcher = 1;
+
+    oneof GatewayType {
+        HttpGateway http_gateway = 2;
+        TcpGateway tcp_gateway = 3;
+    }
+}
+
+message Matcher {
+    // Gloo use SNI domains as matching criteria for Gateway selection
+    // The other ssl_config properties will be applied to the outputFilterChain's transport socket
+    // SslConfig from VirtualServices will be ignored in a MatchedGateway
+    gloo.solo.io.SslConfig ssl_config = 1;
+
+    // CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range.
+    // See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange
+    repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 2;
+}
+
 // Expressions to define which virtual services to select
 // Example:
 // expressions:

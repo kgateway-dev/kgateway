@@ -323,6 +323,18 @@ func (m *ListenerReport) Clone() proto.Message {
 			}
 		}
 
+	case *ListenerReport_HybridListenerReport:
+
+		if h, ok := interface{}(m.GetHybridListenerReport()).(clone.Cloner); ok {
+			target.ListenerTypeReport = &ListenerReport_HybridListenerReport{
+				HybridListenerReport: h.Clone().(*HybridListenerReport),
+			}
+		} else {
+			target.ListenerTypeReport = &ListenerReport_HybridListenerReport{
+				HybridListenerReport: proto.Clone(m.GetHybridListenerReport()).(*HybridListenerReport),
+			}
+		}
+
 	}
 
 	return target
@@ -495,6 +507,69 @@ func (m *TcpHostReport) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *HybridListenerReport) Clone() proto.Message {
+	var target *HybridListenerReport
+	if m == nil {
+		return target
+	}
+	target = &HybridListenerReport{}
+
+	if m.GetMatchedListenerReports() != nil {
+		target.MatchedListenerReports = make(map[string]*MatchedListenerReport, len(m.GetMatchedListenerReports()))
+		for k, v := range m.GetMatchedListenerReports() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.MatchedListenerReports[k] = h.Clone().(*MatchedListenerReport)
+			} else {
+				target.MatchedListenerReports[k] = proto.Clone(v).(*MatchedListenerReport)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *MatchedListenerReport) Clone() proto.Message {
+	var target *MatchedListenerReport
+	if m == nil {
+		return target
+	}
+	target = &MatchedListenerReport{}
+
+	switch m.ListenerReportType.(type) {
+
+	case *MatchedListenerReport_HttpListenerReport:
+
+		if h, ok := interface{}(m.GetHttpListenerReport()).(clone.Cloner); ok {
+			target.ListenerReportType = &MatchedListenerReport_HttpListenerReport{
+				HttpListenerReport: h.Clone().(*HttpListenerReport),
+			}
+		} else {
+			target.ListenerReportType = &MatchedListenerReport_HttpListenerReport{
+				HttpListenerReport: proto.Clone(m.GetHttpListenerReport()).(*HttpListenerReport),
+			}
+		}
+
+	case *MatchedListenerReport_TcpListenerReport:
+
+		if h, ok := interface{}(m.GetTcpListenerReport()).(clone.Cloner); ok {
+			target.ListenerReportType = &MatchedListenerReport_TcpListenerReport{
+				TcpListenerReport: h.Clone().(*TcpListenerReport),
+			}
+		} else {
+			target.ListenerReportType = &MatchedListenerReport_TcpListenerReport{
+				TcpListenerReport: proto.Clone(m.GetTcpListenerReport()).(*TcpListenerReport),
+			}
+		}
+
 	}
 
 	return target
