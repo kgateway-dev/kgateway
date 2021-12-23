@@ -231,7 +231,7 @@ var _ = Describe("Validation Server", func() {
 			proxyReport := resp.ValidationReports[0].GetProxyReport()
 			warnings := validation.GetProxyWarning(proxyReport)
 			errors := validation.GetProxyError(proxyReport)
-			Expect(warnings).To(HaveLen(1))
+			Expect(warnings).To(HaveLen(2))
 			Expect(errors).To(HaveOccurred())
 		})
 		It("secret deletion validation succeeds", func() {
