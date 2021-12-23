@@ -37,11 +37,22 @@ func ProxyTable(list v1.ProxyList, w io.Writer) {
 		)
 		for _, listener := range proxy.GetListeners() {
 			listeners = append(listeners, fmt.Sprintf("%v:%v", listener.GetBindAddress(), listener.GetBindPort()))
-			http, ok := listener.GetListenerType().(*v1.Listener_HttpListener)
-			if !ok {
-				continue
+			switch listenerType := listener.GetListenerType().(type) {
+			case *v1.Listener_HttpListener:
+				vhCount += len(listenerType.HttpListener.GetVirtualHosts())
+			case *v1.Listener_HybridListener:
+				vhostMap := map[*v1.VirtualHost]struct{}{}
+				for _, matchedListener := range listenerType.HybridListener.GetMatchedListeners() {
+					httpListener := matchedListener.GetHttpListener()
+					if httpListener == nil {
+						continue
+					}
+					for _, vh := range httpListener.GetVirtualHosts() {
+						vhostMap[vh] = struct{}{}
+					}
+				}
+				vhCount += len(vhostMap)
 			}
-			vhCount += len(http.HttpListener.GetVirtualHosts())
 		}
 		name := proxy.GetMetadata().GetName()
 

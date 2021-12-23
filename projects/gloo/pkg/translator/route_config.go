@@ -41,6 +41,7 @@ type RouteConfigurationTranslator interface {
 
 var _ RouteConfigurationTranslator = new(emptyRouteConfigurationTranslator)
 var _ RouteConfigurationTranslator = new(httpRouteConfigurationTranslator)
+var _ RouteConfigurationTranslator = new(hybridRouteConfigurationTranslator)
 
 type emptyRouteConfigurationTranslator struct {
 }
@@ -65,12 +66,14 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plug
 
 	virtualHosts := h.computeVirtualHosts(params)
 
-	// validate ssl config if the listener specifies any
-	if err := validateListenerSslConfig(params, h.parentListener); err != nil {
-		validation.AppendListenerError(h.parentReport,
-			validationapi.ListenerReport_Error_SSLConfigError,
-			err.Error(),
-		)
+	// validate ssl config if the parent listener specifies any and is not a hybrid listener
+	if h.parentListener.GetHybridListener() == nil {
+		if err := validateListenerSslConfig(params, h.parentListener); err != nil {
+			validation.AppendListenerError(h.parentReport,
+				validationapi.ListenerReport_Error_SSLConfigError,
+				err.Error(),
+			)
+		}
 	}
 
 	return []*envoy_config_route_v3.RouteConfiguration{{
@@ -467,6 +470,52 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 	clusterSpecifier.WeightedClusters.TotalWeight = &wrappers.UInt32Value{Value: totalWeight}
 
 	return nil
+}
+
+type hybridRouteConfigurationTranslator struct {
+	plugins []plugins.Plugin
+	proxy   *v1.Proxy
+
+	parentListener *v1.Listener
+	listener       *v1.HybridListener
+
+	parentReport *validationapi.ListenerReport
+	report       *validationapi.HybridListenerReport
+
+	requireTlsOnVirtualHosts bool
+}
+
+func (h *hybridRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
+	var outRouteConfigs []*envoy_config_route_v3.RouteConfiguration
+	for _, matchedListener := range h.listener.GetMatchedListeners() {
+		httpListener := matchedListener.GetHttpListener()
+		if httpListener == nil {
+			// only httpListeners produce RouteConfiguration
+			continue
+		}
+		matcher := matchedListener.GetMatcher()
+		rcName := utils.MatchedRouteConfigName(h.parentListener, matcher)
+
+		params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+rcName)
+
+		matchedListenerRouteConfigurationTranslator := &httpRouteConfigurationTranslator{
+			plugins: h.plugins,
+			proxy:   h.proxy,
+
+			parentListener: h.parentListener,
+			listener:       httpListener,
+
+			parentReport: h.parentReport,
+			report:       h.report.GetMatchedListenerReports()[utils.MatchedRouteConfigName(h.parentListener, matcher)].GetHttpListenerReport(),
+
+			routeConfigName:          rcName,
+			requireTlsOnVirtualHosts: matcher.GetSslConfig() != nil,
+		}
+
+		outRouteConfigs = append(outRouteConfigs, matchedListenerRouteConfigurationTranslator.ComputeRouteConfiguration(params)...)
+	}
+
+	return outRouteConfigs
 }
 
 // TODO(marco): when we update the routing API we should move this to a RouteActionPlugin

@@ -540,6 +540,28 @@ func (m *ListenerReport) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *ListenerReport_HybridListenerReport:
+
+		if h, ok := interface{}(m.GetHybridListenerReport()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("HybridListenerReport")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetHybridListenerReport(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("HybridListenerReport")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil
@@ -828,6 +850,125 @@ func (m *TcpHostReport) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *HybridListenerReport) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation.HybridListenerReport")); err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetMatchedListenerReports() {
+			innerHash.Reset()
+
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+				if _, err = innerHash.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if _, err = h.Hash(innerHash); err != nil {
+					return 0, err
+				}
+			} else {
+				if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+					return 0, err
+				} else {
+					if _, err = innerHash.Write([]byte("")); err != nil {
+						return 0, err
+					}
+					if err := binary.Write(innerHash, binary.LittleEndian, fieldValue); err != nil {
+						return 0, err
+					}
+				}
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *MatchedListenerReport) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation.MatchedListenerReport")); err != nil {
+		return 0, err
+	}
+
+	switch m.ListenerReportType.(type) {
+
+	case *MatchedListenerReport_HttpListenerReport:
+
+		if h, ok := interface{}(m.GetHttpListenerReport()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("HttpListenerReport")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetHttpListenerReport(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("HttpListenerReport")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *MatchedListenerReport_TcpListenerReport:
+
+		if h, ok := interface{}(m.GetTcpListenerReport()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("TcpListenerReport")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetTcpListenerReport(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("TcpListenerReport")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
