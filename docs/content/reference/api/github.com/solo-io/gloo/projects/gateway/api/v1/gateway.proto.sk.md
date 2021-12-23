@@ -14,6 +14,9 @@ weight: 5
 - [Gateway](#gateway) **Top-Level Resource**
 - [HttpGateway](#httpgateway)
 - [TcpGateway](#tcpgateway)
+- [HybridGateway](#hybridgateway)
+- [MatchedGateway](#matchedgateway)
+- [Matcher](#matcher)
 - [VirtualServiceSelectorExpressions](#virtualserviceselectorexpressions)
 - [Expression](#expression)
 - [Operator](#operator)
@@ -44,6 +47,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 "useProxyProto": .google.protobuf.BoolValue
 "httpGateway": .gateway.solo.io.HttpGateway
 "tcpGateway": .gateway.solo.io.TcpGateway
+"hybridGateway": .gateway.solo.io.HybridGateway
 "proxyNames": []string
 "routeOptions": .gloo.solo.io.RouteConfigurationOptions
 
@@ -51,15 +55,16 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `ssl` | `bool` | if set to false, only use virtual services without ssl configured. if set to true, only use virtual services with ssl configured. |
+| `ssl` | `bool` | if set to false, only use virtual services without ssl configured. if set to true, only use virtual services with ssl configured. this field is ignored if GatewayType is HybridGateway. |
 | `bindAddress` | `string` | the bind address the gateway should serve traffic on. |
 | `bindPort` | `int` | bind ports must not conflict across gateways for a single proxy. |
 | `options` | [.gloo.solo.io.ListenerOptions](../../../../gloo/api/v1/options.proto.sk/#listeneroptions) | top level optional configuration for all routes on the gateway. |
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gateway during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. Deprecated: prefer setting the listener option. If configured, the listener option (filter config) overrides any setting here. |
-| `httpGateway` | [.gateway.solo.io.HttpGateway](../gateway.proto.sk/#httpgateway) |  Only one of `httpGateway` or `tcpGateway` can be set. |
-| `tcpGateway` | [.gateway.solo.io.TcpGateway](../gateway.proto.sk/#tcpgateway) |  Only one of `tcpGateway` or `httpGateway` can be set. |
+| `httpGateway` | [.gateway.solo.io.HttpGateway](../gateway.proto.sk/#httpgateway) |  Only one of `httpGateway`, `tcpGateway`, or `hybridGateway` can be set. |
+| `tcpGateway` | [.gateway.solo.io.TcpGateway](../gateway.proto.sk/#tcpgateway) |  Only one of `tcpGateway`, `httpGateway`, or `hybridGateway` can be set. |
+| `hybridGateway` | [.gateway.solo.io.HybridGateway](../gateway.proto.sk/#hybridgateway) |  Only one of `hybridGateway`, `httpGateway`, or `tcpGateway` can be set. |
 | `proxyNames` | `[]string` | Names of the [`Proxy`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/) resources to generate from this gateway. If other gateways exist which point to the same proxy, Gloo will join them together. Proxies have a one-to-many relationship with Envoy bootstrap configuration. In order to connect to Gloo, the Envoy bootstrap configuration sets a `role` in the [node metadata](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/base.proto#envoy-api-msg-core-node) Envoy instances announce their `role` to Gloo, which maps to the `{{ .Namespace }}~{{ .Name }}` of the Proxy resource. The template for this value can be seen in the [Gloo Helm chart](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L22) Note: this field also accepts fields written in camel-case. They will be converted to kebab-case in the Proxy name. This allows use of the [Gateway Name Helm value](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/values-gateway-template.yaml#L47) for this field Defaults to `["gateway-proxy"]`. |
 | `routeOptions` | [.gloo.solo.io.RouteConfigurationOptions](../../../../gloo/api/v1/options.proto.sk/#routeconfigurationoptions) | Route configuration options that live under Envoy's [RouteConfigurationOptions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#config-route-v3-routeconfiguration). |
 
@@ -106,6 +111,63 @@ and the routing configuration to upstreams that are reachable via a specific por
 | ----- | ---- | ----------- | 
 | `tcpHosts` | [[]gloo.solo.io.TcpHost](../../../../gloo/api/v1/proxy.proto.sk/#tcphost) | TCP hosts that the gateway can route to. |
 | `options` | [.gloo.solo.io.TcpListenerOptions](../../../../gloo/api/v1/options.proto.sk/#tcplisteneroptions) | TCP Gateway configuration. |
+
+
+
+
+---
+### HybridGateway
+
+
+
+```yaml
+"matchedGateways": []gateway.solo.io.MatchedGateway
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matchedGateways` | [[]gateway.solo.io.MatchedGateway](../gateway.proto.sk/#matchedgateway) |  |
+
+
+
+
+---
+### MatchedGateway
+
+
+
+```yaml
+"matcher": .gateway.solo.io.Matcher
+"httpGateway": .gateway.solo.io.HttpGateway
+"tcpGateway": .gateway.solo.io.TcpGateway
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matcher` | [.gateway.solo.io.Matcher](../gateway.proto.sk/#matcher) | Matchers are used to define unique matching criteria for each MatchedGateway Each MatchedGateway within a HybridGateway must have a unique Matcher If multiple matchers in a HybridGateway are identical, the HybridGateway will not be accepted Empty Matchers are effectively catch-alls, and there can be no more than one empty Matcher per HybridGateway. |
+| `httpGateway` | [.gateway.solo.io.HttpGateway](../gateway.proto.sk/#httpgateway) |  Only one of `httpGateway` or `tcpGateway` can be set. |
+| `tcpGateway` | [.gateway.solo.io.TcpGateway](../gateway.proto.sk/#tcpgateway) |  Only one of `tcpGateway` or `httpGateway` can be set. |
+
+
+
+
+---
+### Matcher
+
+
+
+```yaml
+"sslConfig": .gloo.solo.io.SslConfig
+"sourcePrefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket SslConfig from VirtualServices will be ignored in a MatchedGateway. |
+| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) | CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange. |
 
 
 

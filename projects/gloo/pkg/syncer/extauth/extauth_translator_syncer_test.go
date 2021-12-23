@@ -85,6 +85,23 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 			})
 		})
 
+		When("defined on VirtualHost in HybridListener", func() {
+
+			BeforeEach(func() {
+				proxy := getProxyWithHybridListenerVirtualHostExtAuthExtension(extAuthExtension)
+				apiSnapshot = &gloov1.ApiSnapshot{
+					Proxies:     gloov1.ProxyList{proxy},
+					AuthConfigs: extauth.AuthConfigList{authConfig},
+				}
+			})
+
+			It("should error", func() {
+				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ErrEnterpriseOnly))
+			})
+		})
+
 		When("defined on Route", func() {
 
 			BeforeEach(func() {
@@ -232,6 +249,17 @@ func getProxyWithVirtualHostExtAuthExtension(extension *extauth.ExtAuthExtension
 	return getBasicProxy(virtualHost)
 }
 
+func getProxyWithHybridListenerVirtualHostExtAuthExtension(extension *extauth.ExtAuthExtension) *gloov1.Proxy {
+	virtualHost := &gloov1.VirtualHost{
+		Name: "gloo-system.default",
+		Options: &gloov1.VirtualHostOptions{
+			Extauth: extension,
+		},
+	}
+
+	return getBasicHybridListenerProxy(virtualHost)
+}
+
 func getProxyWithRouteExtAuthExtension(extension *extauth.ExtAuthExtension) *gloov1.Proxy {
 	virtualHost := &gloov1.VirtualHost{
 		Name: "gloo-system.default",
@@ -281,6 +309,31 @@ func getBasicProxy(virtualHost *gloov1.VirtualHost) *gloov1.Proxy {
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
 					VirtualHosts: []*gloov1.VirtualHost{virtualHost},
+				},
+			},
+		}},
+	}
+}
+
+func getBasicHybridListenerProxy(virtualHost *gloov1.VirtualHost) *gloov1.Proxy {
+	return &gloov1.Proxy{
+		Metadata: &skcore.Metadata{
+			Name:      "proxy",
+			Namespace: "gloo-system",
+		},
+		Listeners: []*gloov1.Listener{{
+			Name: "listener-::-8443",
+			ListenerType: &gloov1.Listener_HybridListener{
+				HybridListener: &gloov1.HybridListener{
+					MatchedListeners: []*gloov1.MatchedListener{
+						{
+							ListenerType: &gloov1.MatchedListener_HttpListener{
+								HttpListener: &gloov1.HttpListener{
+									VirtualHosts: []*gloov1.VirtualHost{virtualHost},
+								},
+							},
+						},
+					},
 				},
 			},
 		}},

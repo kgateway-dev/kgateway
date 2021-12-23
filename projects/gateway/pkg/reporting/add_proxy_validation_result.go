@@ -4,6 +4,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -11,9 +12,10 @@ import (
 )
 
 var (
-	invalidReportsListenersErr    = errors.Errorf("internal err: reports did not match number of listeners")
-	invalidReportsVirtualHostsErr = errors.Errorf("internal err: reports did not match number of virtual hosts")
-	missingReportForSourceErr     = errors.Errorf("internal err: missing resource report for source resource")
+	invalidReportsListenersErr         = errors.Errorf("internal err: reports did not match number of listeners")
+	invalidReportsVirtualHostsErr      = errors.Errorf("internal err: reports did not match number of virtual hosts")
+	invalidReportsHybridRcNameNotFound = errors.Errorf("internal err: reports did not match expected hybrid rcName")
+	missingReportForSourceErr          = errors.Errorf("internal err: missing resource report for source resource")
 )
 
 // Update a set of ResourceReports with the results of a proxy validation
@@ -35,8 +37,9 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 			return err
 		}
 
-		if httpListenerReport := listenerReport.GetHttpListenerReport(); httpListenerReport != nil {
-			vhReports := httpListenerReport.GetVirtualHostReports()
+		switch listenerReportType := listenerReport.GetListenerTypeReport().(type) {
+		case *validation.ListenerReport_HttpListenerReport:
+			vhReports := listenerReportType.HttpListenerReport.GetVirtualHostReports()
 			virtualHosts := listener.GetHttpListener().GetVirtualHosts()
 
 			if len(vhReports) != len(virtualHosts) {
@@ -48,6 +51,34 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 
 				if err := addVirtualHostResult(resourceReports, virtualHost, vhReport); err != nil {
 					return err
+				}
+			}
+		case *validation.ListenerReport_HybridListenerReport:
+			mappedHttpListeners := map[string]*gloov1.HttpListener{}
+			for _, matchedListener := range listener.GetHybridListener().GetMatchedListeners() {
+				mappedHttpListeners[utils.MatchedRouteConfigName(listener, matchedListener.GetMatcher())] = matchedListener.GetHttpListener()
+			}
+
+			for rcName, matchedListenerReport := range listenerReportType.HybridListenerReport.GetMatchedListenerReports() {
+				if httpListenerReport := matchedListenerReport.GetHttpListenerReport(); httpListenerReport != nil {
+					vhReports := httpListenerReport.GetVirtualHostReports()
+					httpListener, ok := mappedHttpListeners[rcName]
+					if !ok {
+						return invalidReportsHybridRcNameNotFound
+					}
+					virtualHosts := httpListener.GetVirtualHosts()
+
+					if len(vhReports) != len(virtualHosts) {
+						return invalidReportsVirtualHostsErr
+					}
+
+					for j, vhReport := range vhReports {
+						virtualHost := virtualHosts[j]
+
+						if err := addVirtualHostResult(resourceReports, virtualHost, vhReport); err != nil {
+							return err
+						}
+					}
 				}
 			}
 		}
@@ -98,6 +129,21 @@ func getListenerLevelErrors(listenerReport *validation.ListenerReport) []error {
 
 		for _, hostReport := range tcpListener.GetTcpHostReports() {
 			listenerErrs = append(listenerErrs, validationutils.GetTcpHostErr(hostReport)...)
+		}
+	case *validation.ListenerReport_HybridListenerReport:
+		for _, matchedListenerReport := range listenerType.HybridListenerReport.GetMatchedListenerReports() {
+			switch matchedListenerType := matchedListenerReport.GetListenerReportType().(type) {
+			case *validation.MatchedListenerReport_HttpListenerReport:
+				httpListener := matchedListenerType.HttpListenerReport
+				listenerErrs = append(listenerErrs, validationutils.GetHttpListenerErr(httpListener)...)
+			case *validation.MatchedListenerReport_TcpListenerReport:
+				tcpListener := matchedListenerType.TcpListenerReport
+				listenerErrs = append(listenerErrs, validationutils.GetTcpListenerErr(tcpListener)...)
+
+				for _, hostReport := range tcpListener.GetTcpHostReports() {
+					listenerErrs = append(listenerErrs, validationutils.GetTcpHostErr(hostReport)...)
+				}
+			}
 		}
 	}
 

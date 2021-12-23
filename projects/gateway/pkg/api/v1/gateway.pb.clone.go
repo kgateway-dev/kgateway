@@ -15,6 +15,8 @@ import (
 
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -110,6 +112,18 @@ func (m *Gateway) Clone() proto.Message {
 			}
 		}
 
+	case *Gateway_HybridGateway:
+
+		if h, ok := interface{}(m.GetHybridGateway()).(clone.Cloner); ok {
+			target.GatewayType = &Gateway_HybridGateway{
+				HybridGateway: h.Clone().(*HybridGateway),
+			}
+		} else {
+			target.GatewayType = &Gateway_HybridGateway{
+				HybridGateway: proto.Clone(m.GetHybridGateway()).(*HybridGateway),
+			}
+		}
+
 	}
 
 	return target
@@ -194,6 +208,105 @@ func (m *TcpGateway) Clone() proto.Message {
 		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.TcpListenerOptions)
 	} else {
 		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.TcpListenerOptions)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *HybridGateway) Clone() proto.Message {
+	var target *HybridGateway
+	if m == nil {
+		return target
+	}
+	target = &HybridGateway{}
+
+	if m.GetMatchedGateways() != nil {
+		target.MatchedGateways = make([]*MatchedGateway, len(m.GetMatchedGateways()))
+		for idx, v := range m.GetMatchedGateways() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.MatchedGateways[idx] = h.Clone().(*MatchedGateway)
+			} else {
+				target.MatchedGateways[idx] = proto.Clone(v).(*MatchedGateway)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *MatchedGateway) Clone() proto.Message {
+	var target *MatchedGateway
+	if m == nil {
+		return target
+	}
+	target = &MatchedGateway{}
+
+	if h, ok := interface{}(m.GetMatcher()).(clone.Cloner); ok {
+		target.Matcher = h.Clone().(*Matcher)
+	} else {
+		target.Matcher = proto.Clone(m.GetMatcher()).(*Matcher)
+	}
+
+	switch m.GatewayType.(type) {
+
+	case *MatchedGateway_HttpGateway:
+
+		if h, ok := interface{}(m.GetHttpGateway()).(clone.Cloner); ok {
+			target.GatewayType = &MatchedGateway_HttpGateway{
+				HttpGateway: h.Clone().(*HttpGateway),
+			}
+		} else {
+			target.GatewayType = &MatchedGateway_HttpGateway{
+				HttpGateway: proto.Clone(m.GetHttpGateway()).(*HttpGateway),
+			}
+		}
+
+	case *MatchedGateway_TcpGateway:
+
+		if h, ok := interface{}(m.GetTcpGateway()).(clone.Cloner); ok {
+			target.GatewayType = &MatchedGateway_TcpGateway{
+				TcpGateway: h.Clone().(*TcpGateway),
+			}
+		} else {
+			target.GatewayType = &MatchedGateway_TcpGateway{
+				TcpGateway: proto.Clone(m.GetTcpGateway()).(*TcpGateway),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Matcher) Clone() proto.Message {
+	var target *Matcher
+	if m == nil {
+		return target
+	}
+	target = &Matcher{}
+
+	if h, ok := interface{}(m.GetSslConfig()).(clone.Cloner); ok {
+		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SslConfig)
+	} else {
+		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SslConfig)
+	}
+
+	if m.GetSourcePrefixRanges() != nil {
+		target.SourcePrefixRanges = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange, len(m.GetSourcePrefixRanges()))
+		for idx, v := range m.GetSourcePrefixRanges() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.SourcePrefixRanges[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
+			} else {
+				target.SourcePrefixRanges[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
+			}
+
+		}
 	}
 
 	return target
