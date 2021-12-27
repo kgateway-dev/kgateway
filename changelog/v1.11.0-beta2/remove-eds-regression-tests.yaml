@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5149
+    resolvesIssue: false
+    description: >
+      Remove flaky Endpoint Discovery Service regression tests. This functionality is tested by the
+      Gateway Test Suite, in a different way that does not flake.
