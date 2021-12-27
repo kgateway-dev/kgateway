@@ -65,7 +65,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 	)
 
 	genProxy := func() {
-		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}}, translator.Opts{})
+		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}, &translator.HybridTranslator{&translator.HttpTranslator{}}}, translator.Opts{})
 		proxy, reports = tx.Translate(context.TODO(), "proxy-name", ns, snap, snap.Gateways)
 
 		proxyToWrite = GeneratedProxies{proxy: reports}
@@ -119,7 +119,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 
 				px := getProxy()
 
-				Expect(px.Listeners).To(HaveLen(2))
+				Expect(px.Listeners).To(HaveLen(3))
 				Expect(px.Listeners).NotTo(ContainName(proxy.Listeners[0].Name))
 			})
 		})
@@ -136,8 +136,13 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 
 				goodVs := snap.VirtualServices[0]
 
+				// http
 				vhosts := px.Listeners[1].GetHttpListener().GetVirtualHosts()
+				Expect(vhosts).To(HaveLen(1))
+				Expect(vhosts).To(ContainName(translator.VirtualHostName(goodVs)))
 
+				// hybrid
+				vhosts = px.Listeners[2].GetHybridListener().GetMatchedListeners()[0].GetHttpListener().GetVirtualHosts()
 				Expect(vhosts).To(HaveLen(1))
 				Expect(vhosts).To(ContainName(translator.VirtualHostName(goodVs)))
 			})
@@ -156,6 +161,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				snap.Gateways[0].Metadata.Generation = 100
 				snap.Gateways[1].Metadata.Generation = 100
 				snap.Gateways[2].Metadata.Generation = 100
+				snap.Gateways[3].Metadata.Generation = 100
 				genProxy()
 
 				// simulate gloo accepting the proxy resource
@@ -188,6 +194,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				snap.Gateways[0].Metadata.Generation = 100
 				snap.Gateways[1].Metadata.Generation = 100
 				snap.Gateways[2].Metadata.Generation = 100
+				snap.Gateways[3].Metadata.Generation = 100
 				genProxy()
 				addErr(snap.Gateways[0])
 
@@ -195,11 +202,12 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 
 				px := getProxy()
 
-				Expect(px.Listeners).To(HaveLen(3))
+				Expect(px.Listeners).To(HaveLen(4))
 				Expect(px.Listeners[0]).To(HaveGeneration(100))
 				Expect(px.Listeners[1].Name).To(Equal(translator.ListenerName(snap.Gateways[0]))) // maps to gateway[0]
 				Expect(px.Listeners[1]).To(HaveGeneration(0))                                     // maps to gateway[0]
 				Expect(px.Listeners[2]).To(HaveGeneration(100))
+				Expect(px.Listeners[3]).To(HaveGeneration(100))
 
 			})
 		})

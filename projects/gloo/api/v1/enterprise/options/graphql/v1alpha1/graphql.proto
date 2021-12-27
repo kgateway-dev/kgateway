@@ -171,31 +171,16 @@ message GrpcResolver {
   string span_name = 4;
 }
 
-message QueryMatcher {
-  message FieldMatcher {
-    // Object type. For example, Query.
-    string type = 1;
-    // Field with in the object.
-    string field = 2;
-  }
-
-  oneof match {
-    FieldMatcher field_matcher = 1;
-  }
-}
-
-// Define a resolution for each (Type).(Field)
-// If a field does not have resolver, the default resolver will be used.
+// Define a named resolver which can be then matched to a field using the `resolve` directive.
+// if a field does not have resolver, the default resolver will be used.
 // the default resolver takes the field with the same name from the parent, and uses that value
 // to resolve the field.
 // If a field with the same name does not exist in the parent, null will be used.
 message Resolution {
-  // Match an object type and field
-  QueryMatcher matcher = 1;
   // The resolver to use.
   oneof resolver {
-    RESTResolver rest_resolver = 3;
-    GrpcResolver grpc_resolver = 4;
+    RESTResolver rest_resolver = 1;
+    GrpcResolver grpc_resolver = 2;
   }
 }
 
@@ -235,8 +220,26 @@ message ExecutableSchema {
 message Executor {
   // Execute schema using resolvers.
   message Local {
-    // The resolver map to use to resolve the schema.
-    repeated Resolution resolutions = 1;
+    /* Mapping of resolver name to resolver definition.
+     The names are used to reference the resolver in the graphql schema.
+     For example, a resolver with name "authorResolver" can be defined as
+     ```yaml
+     authorResolver:
+       restResolver:
+         upstreamRef: ...
+         request:
+           ...
+         response:
+           ...
+      ```
+      and referenced in the graphql schema as
+      ```gql
+      type Query {
+        author: String @resolve(name: "authorResolver")
+      }
+      ```
+    */
+    map<string, Resolution> resolutions = 1;
     // Do we enable introspection for the schema? general recommendation is to
     // disable this for production and hence it defaults to false.
     bool enable_introspection = 2;

@@ -1,0 +1,18 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/5560
+  resolvesIssue: false
+  description: >
+    Adds lambda option to persist original request info that otherwise is lost.
+    Defaults to false to avoid leaking potentially sensitive info.
+    Similar to envoy's x-forwarded-for header and may be desirable to be false when 
+    envoy is in a mesh deployment.
+    Implemented here to allow for usage of original request path in access logs.
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/5253
+  resolvesIssue: false
+  description: >
+    Add new sts refresh timer in addition to filewatch. The extra overhead is
+    countered by the fact that file events sometimes seem to be lost. The
+    new behavior is only applied if the refresh time is set and should mitigate
+    instances of stale credentials.

@@ -81,17 +81,14 @@ func forEachListener(proxy *gloov1.Proxy, reports reporter.ResourceReports, fn f
 	return nil
 }
 
-func forEachVhost(lis *gloov1.Listener, reports reporter.ResourceReports, fn func(*gloov1.VirtualHost, bool)) error {
-	if httpListenerType, ok := lis.GetListenerType().(*gloov1.Listener_HttpListener); ok {
-
-		for _, vhost := range httpListenerType.HttpListener.GetVirtualHosts() {
-			accepted, err := reporting.AllSourcesAccepted(reports, vhost)
-			if err != nil {
-				return err
-			}
-
-			fn(vhost, accepted)
+func forEachVhost(httpListener *gloov1.HttpListener, reports reporter.ResourceReports, fn func(*gloov1.VirtualHost, bool)) error {
+	for _, vhost := range httpListener.GetVirtualHosts() {
+		accepted, err := reporting.AllSourcesAccepted(reports, vhost)
+		if err != nil {
+			return err
 		}
+
+		fn(vhost, accepted)
 	}
 	return nil
 }
@@ -162,24 +159,28 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 
 		for _, lis := range proxy.GetListeners() {
 
-			if httpListenerType, ok := lis.GetListenerType().(*gloov1.Listener_HttpListener); ok {
-				var validVhosts []*gloov1.VirtualHost
-
-				if err := forEachVhost(lis, reports, func(vhost *gloov1.VirtualHost, accepted bool) {
-					if accepted {
-						validVhosts = append(validVhosts, vhost)
-					} else {
-						logger.Warnw("stripping invalid virtualhost from proxy", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.String("listener", lis.GetName()), zap.String("virtual host", vhost.GetName()))
-					}
-				}); err != nil {
+			switch listenerType := lis.GetListenerType().(type) {
+			case *gloov1.Listener_HttpListener:
+				validVhosts, err := validHostsFromHttpListener(listenerType.HttpListener, reports, proxy, lis, logger)
+				if err != nil {
 					return nil, err
 				}
 
-				sort.SliceStable(validVhosts, func(i, j int) bool {
-					return validVhosts[i].GetName() < validVhosts[j].GetName()
-				})
+				listenerType.HttpListener.VirtualHosts = validVhosts
+			case *gloov1.Listener_HybridListener:
+				for _, matchedListener := range listenerType.HybridListener.GetMatchedListeners() {
+					httpListener := matchedListener.GetHttpListener()
+					if httpListener == nil {
+						continue
+					}
 
-				httpListenerType.HttpListener.VirtualHosts = validVhosts
+					validVhosts, err := validHostsFromHttpListener(httpListener, reports, proxy, lis, logger)
+					if err != nil {
+						return nil, err
+					}
+
+					httpListener.VirtualHosts = validVhosts
+				}
 			}
 		}
 
@@ -194,6 +195,26 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 	}
 
 	return strippedProxies, nil
+}
+
+func validHostsFromHttpListener(httpListener *gloov1.HttpListener, reports reporter.ResourceReports, proxy *gloov1.Proxy, lis *gloov1.Listener, logger *zap.SugaredLogger) ([]*gloov1.VirtualHost, error) {
+	var validVhosts []*gloov1.VirtualHost
+
+	if err := forEachVhost(httpListener, reports, func(vhost *gloov1.VirtualHost, accepted bool) {
+		if accepted {
+			validVhosts = append(validVhosts, vhost)
+		} else {
+			logger.Warnw("stripping invalid virtualhost from proxy", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.String("listener", lis.GetName()), zap.String("virtual host", vhost.GetName()))
+		}
+	}); err != nil {
+		return nil, err
+	}
+
+	sort.SliceStable(validVhosts, func(i, j int) bool {
+		return validVhosts[i].GetName() < validVhosts[j].GetName()
+	})
+
+	return validVhosts, nil
 }
 
 // this function is called by the base reconciler to update an existing proxy
@@ -220,11 +241,6 @@ func transitionFunc(proxiesToWrite GeneratedProxies, statusClient resources.Stat
 		// preserve previous vhosts if new vservice was errored
 		for _, desiredListener := range desired.GetListeners() {
 
-			desiredHttpListener := desiredListener.GetHttpListener()
-			if desiredHttpListener == nil {
-				continue
-			}
-
 			// find the original listener by its name
 			// if it does not exist in the original, skip
 			var originalListener *gloov1.Listener
@@ -238,21 +254,34 @@ func transitionFunc(proxiesToWrite GeneratedProxies, statusClient resources.Stat
 				continue
 			}
 
-			// find any rejected vhosts on the original listener and copy them over
-			if err := forEachVhost(originalListener, proxiesToWrite[desired], func(vhost *gloov1.VirtualHost, accepted bool) {
-				// old vhost was rejected, preserve it on the desired proxy
-				if !accepted {
-					desiredHttpListener.VirtualHosts = append(desiredHttpListener.GetVirtualHosts(), vhost)
+			switch subListener := desiredListener.GetListenerType().(type) {
+			case *gloov1.Listener_HttpListener:
+				desiredHttpListener := subListener.HttpListener
+				// assume originalListener has same type as desiredListener
+				err := copyRejectedVirtualHosts(originalListener.GetHttpListener(), desiredHttpListener, proxiesToWrite[desired])
+				if err != nil {
+					return false, err
 				}
-			}); err != nil {
-				// should never happen
-				return false, err
+			case *gloov1.Listener_HybridListener:
+				// assume originalListener has same type as desiredListener
+				originalMatchedListeners := originalListener.GetHybridListener().GetMatchedListeners()
+				for _, matchedListener := range subListener.HybridListener.GetMatchedListeners() {
+					desiredHttpListener := matchedListener.GetHttpListener()
+					if desiredHttpListener == nil {
+						continue
+					}
+					var originalHttpListener *gloov1.HttpListener
+					for _, oml := range originalMatchedListeners {
+						if oml.GetMatcher().Equal(matchedListener.GetMatcher()) {
+							originalHttpListener = oml.GetHttpListener()
+						}
+					}
+					err := copyRejectedVirtualHosts(originalHttpListener, desiredHttpListener, proxiesToWrite[desired])
+					if err != nil {
+						return false, err
+					}
+				}
 			}
-
-			sort.SliceStable(desiredHttpListener.GetVirtualHosts(), func(i, j int) bool {
-				return desiredHttpListener.GetVirtualHosts()[i].GetName() < desiredHttpListener.GetVirtualHosts()[j].GetName()
-			})
-
 		}
 
 		// if any listeners from the old proxy were rejected in the new reports, preserve those
@@ -273,4 +302,22 @@ func transitionFunc(proxiesToWrite GeneratedProxies, statusClient resources.Stat
 		transition := utils.TransitionFunction(statusClient)
 		return transition(original, desired)
 	}
+}
+
+func copyRejectedVirtualHosts(originalHttpListener *gloov1.HttpListener, desiredHttpListener *gloov1.HttpListener, reports reporter.ResourceReports) error {
+	// find any rejected vhosts on the original listener and copy them over
+	if err := forEachVhost(originalHttpListener, reports, func(vhost *gloov1.VirtualHost, accepted bool) {
+		// old vhost was rejected, preserve it on the desired proxy
+		if !accepted {
+			desiredHttpListener.VirtualHosts = append(desiredHttpListener.GetVirtualHosts(), vhost)
+		}
+	}); err != nil {
+		// should never happen
+		return err
+	}
+
+	sort.SliceStable(desiredHttpListener.GetVirtualHosts(), func(i, j int) bool {
+		return desiredHttpListener.GetVirtualHosts()[i].GetName() < desiredHttpListener.GetVirtualHosts()[j].GetName()
+	})
+	return nil
 }

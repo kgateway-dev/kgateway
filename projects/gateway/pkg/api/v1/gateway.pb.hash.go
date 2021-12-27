@@ -186,6 +186,28 @@ func (m *Gateway) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *Gateway_HybridGateway:
+
+		if h, ok := interface{}(m.GetHybridGateway()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("HybridGateway")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetHybridGateway(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("HybridGateway")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil
@@ -357,6 +379,190 @@ func (m *TcpGateway) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *HybridGateway) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.HybridGateway")); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetMatchedGateways() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *MatchedGateway) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.MatchedGateway")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetMatcher()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Matcher")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetMatcher(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Matcher")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	switch m.GatewayType.(type) {
+
+	case *MatchedGateway_HttpGateway:
+
+		if h, ok := interface{}(m.GetHttpGateway()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("HttpGateway")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetHttpGateway(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("HttpGateway")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *MatchedGateway_TcpGateway:
+
+		if h, ok := interface{}(m.GetTcpGateway()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("TcpGateway")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetTcpGateway(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("TcpGateway")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Matcher) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.Matcher")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetSslConfig()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("SslConfig")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetSslConfig(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("SslConfig")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	for _, v := range m.GetSourcePrefixRanges() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil

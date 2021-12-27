@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5324
+    description: >
+      Add new HybridGateway Gateway type which wraps HTTP and TCP Gateways, allowing the user to expose multiple HTTP
+      and/or TCP Gateway on a single port
+      Per-request dynamic Gateway selection is determined by Matchers which enable finer control over Envoy
+      FilterChainMatches

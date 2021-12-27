@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -201,6 +203,68 @@ var _ = Describe("SnapshotBenchmark", func() {
 					},
 				},
 			}
+			hybridListener := &v1.Listener{
+				Name:        "hybrid-listener",
+				BindAddress: "127.0.0.1",
+				BindPort:    8081,
+				ListenerType: &v1.Listener_HybridListener{
+					HybridListener: &v1.HybridListener{
+						MatchedListeners: []*v1.MatchedListener{
+							{
+								Matcher: &v1.Matcher{
+									SourcePrefixRanges: []*v3.CidrRange{
+										{
+											AddressPrefix: "0.0.0.0",
+											PrefixLen: &wrappers.UInt32Value{
+												Value: 1,
+											},
+										},
+									},
+								},
+								ListenerType: &v1.MatchedListener_HttpListener{
+									HttpListener: &v1.HttpListener{
+										VirtualHosts: []*v1.VirtualHost{{
+											Name:    "virt1",
+											Domains: []string{"*"},
+											Routes:  routes,
+										}},
+									},
+								},
+							},
+							{
+								Matcher: &v1.Matcher{
+									SourcePrefixRanges: []*v3.CidrRange{
+										{
+											AddressPrefix: "255.0.0.0",
+											PrefixLen: &wrappers.UInt32Value{
+												Value: 1,
+											},
+										},
+									},
+								},
+								ListenerType: &v1.MatchedListener_TcpListener{
+									TcpListener: &v1.TcpListener{
+										TcpHosts: []*v1.TcpHost{
+											{
+												Destination: &v1.TcpHost_TcpAction{
+													Destination: &v1.TcpHost_TcpAction_Single{
+														Single: &v1.Destination{
+															DestinationType: &v1.Destination_Upstream{
+																Upstream: upName.Ref(),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
 			proxy = &v1.Proxy{
 				Metadata: &core.Metadata{
 					Name:      "test",
@@ -209,6 +273,7 @@ var _ = Describe("SnapshotBenchmark", func() {
 				Listeners: []*v1.Listener{
 					httpListener,
 					tcpListener,
+					hybridListener,
 				},
 			}
 		})
