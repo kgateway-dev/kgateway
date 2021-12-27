@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Remove flaky Endpoint Discovery Service regression tests. This functionality is tested by the
+      Gateway Test Suite, in a different way that does not flake.
