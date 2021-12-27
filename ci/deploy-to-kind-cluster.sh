@@ -4,7 +4,7 @@
 # The name of the kind cluster to deploy to
 CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 # The version of the Node Docker image to use for booting the cluster
-CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.17.17@sha256:66f1d0d91a88b8a001811e2f1054af60eef3b669a9a74f9b6db871f2f1eeed00}"
+CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.22.4}"
 # The version used to tag images
 VERSION="${VERSION:-0.0.0-kind}"
 # Automatically (lazily) determine OS type
@@ -15,6 +15,9 @@ else
 fi
 # Offer a default value for type of installation
 KUBE2E_TESTS="${KUBE2E_TESTS:-eds}"  # If 'KUBE2E_TESTS' not set or null, use 'eds'.
+# The version of istio to install for glooctl tests
+# https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
+ISTIO_VERSION="${ISTIO_VERSION:-1.11.4}"
 
 # 1. Create a kind cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)
 # This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
@@ -88,7 +91,9 @@ if [ "$KUBE2E_TESTS" = "eds" ]; then
 fi
 
 if [ "$KUBE2E_TESTS" = "glooctl" ]; then
-  echo "Installing Istio 1.7.4"
-  curl -sSL https://github.com/istio/istio/releases/download/1.7.4/istio-1.7.4-linux-amd64.tar.gz | tar -xzf - istio-1.7.4/bin/istioctl
-  ./istio-1.7.4/bin/istioctl install --set profile=minimal
+  echo "Downloading Istio $ISTIO_VERSION"
+  curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$ISTIO_VERSION TARGET_ARCH=x86_64 sh -
+
+  echo "Installing Istio"
+  yes | "./istio-$ISTIO_VERSION/bin/istioctl" install --set profile=minimal
 fi

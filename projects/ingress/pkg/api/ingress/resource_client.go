@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -21,7 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const typeUrl = "k8s.io/extensions.v1beta1/Ingress"
+const typeUrl = "k8s.io/networking.v1/Ingress"
 
 type ResourceClient struct {
 	kube         kubernetes.Interface
@@ -38,7 +38,7 @@ func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resourc
 	}
 }
 
-func FromKube(ingress *v1beta1.Ingress) (*v1.Ingress, error) {
+func FromKube(ingress *networkingv1.Ingress) (*v1.Ingress, error) {
 	rawSpec, err := json.Marshal(ingress.Spec)
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling kube ingress object")
@@ -67,7 +67,7 @@ func FromKube(ingress *v1beta1.Ingress) (*v1.Ingress, error) {
 	return resource, nil
 }
 
-func ToKube(resource resources.Resource) (*v1beta1.Ingress, error) {
+func ToKube(resource resources.Resource) (*networkingv1.Ingress, error) {
 	ingResource, ok := resource.(*v1.Ingress)
 	if !ok {
 		return nil, errors.Errorf("internal error: invalid resource %v passed to ingress-only client", resources.Kind(resource))
@@ -75,7 +75,7 @@ func ToKube(resource resources.Resource) (*v1beta1.Ingress, error) {
 	if ingResource.GetKubeIngressSpec() == nil {
 		return nil, errors.Errorf("internal error: %v ingress spec cannot be nil", ingResource.GetMetadata().Ref())
 	}
-	var ingress v1beta1.Ingress
+	var ingress networkingv1.Ingress
 	if err := json.Unmarshal(ingResource.GetKubeIngressSpec().GetValue(), &ingress.Spec); err != nil {
 		return nil, errors.Wrapf(err, "unmarshalling kube ingress spec data")
 	}
@@ -114,7 +114,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	opts = opts.WithDefaults()
 	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 
-	ingressObj, err := rc.kube.ExtensionsV1beta1().Ingresses(namespace).Get(opts.Ctx, name, metav1.GetOptions{})
+	ingressObj, err := rc.kube.NetworkingV1().Ingresses(namespace).Get(opts.Ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -168,11 +168,11 @@ func (rc *ResourceClient) write(resource resources.Resource, opts clients.WriteO
 		if meta.GetResourceVersion() != original.GetMetadata().GetResourceVersion() {
 			return nil, errors.NewResourceVersionErr(meta.GetNamespace(), meta.GetName(), meta.GetResourceVersion(), original.GetMetadata().GetResourceVersion())
 		}
-		if _, err := rc.kube.ExtensionsV1beta1().Ingresses(ingressObj.Namespace).Update(opts.Ctx, ingressObj, metav1.UpdateOptions{}); err != nil {
+		if _, err := rc.kube.NetworkingV1().Ingresses(ingressObj.Namespace).Update(opts.Ctx, ingressObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube ingressObj %v", ingressObj.Name)
 		}
 	} else {
-		if _, err := rc.kube.ExtensionsV1beta1().Ingresses(ingressObj.Namespace).Create(opts.Ctx, ingressObj, metav1.CreateOptions{}); err != nil {
+		if _, err := rc.kube.NetworkingV1().Ingresses(ingressObj.Namespace).Create(opts.Ctx, ingressObj, metav1.CreateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "creating kube ingressObj %v", ingressObj.Name)
 		}
 	}
@@ -207,11 +207,11 @@ func (rc *ResourceClient) writeStatus(resource resources.Resource, opts clients.
 		if meta.GetResourceVersion() != original.GetMetadata().GetResourceVersion() {
 			return nil, errors.NewResourceVersionErr(meta.GetNamespace(), meta.GetName(), meta.GetResourceVersion(), original.GetMetadata().GetResourceVersion())
 		}
-		if _, err := rc.kube.ExtensionsV1beta1().Ingresses(ingressObj.Namespace).UpdateStatus(opts.Ctx, ingressObj, metav1.UpdateOptions{}); err != nil {
+		if _, err := rc.kube.NetworkingV1().Ingresses(ingressObj.Namespace).UpdateStatus(opts.Ctx, ingressObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube ingressObj status %v", ingressObj.Name)
 		}
 	} else {
-		if _, err := rc.kube.ExtensionsV1beta1().Ingresses(ingressObj.Namespace).Create(opts.Ctx, ingressObj, metav1.CreateOptions{}); err != nil {
+		if _, err := rc.kube.NetworkingV1().Ingresses(ingressObj.Namespace).Create(opts.Ctx, ingressObj, metav1.CreateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "creating kube ingressObj status %v", ingressObj.Name)
 		}
 	}
@@ -229,7 +229,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 		return nil
 	}
 
-	if err := rc.kube.ExtensionsV1beta1().Ingresses(namespace).Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
+	if err := rc.kube.NetworkingV1().Ingresses(namespace).Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "deleting ingressObj %v", name)
 	}
 	return nil
@@ -238,7 +238,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
-	ingressObjList, err := rc.kube.ExtensionsV1beta1().Ingresses(namespace).List(opts.Ctx, metav1.ListOptions{
+	ingressObjList, err := rc.kube.NetworkingV1().Ingresses(namespace).List(opts.Ctx, metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(opts.Selector).String(),
 	})
 	if err != nil {
@@ -265,7 +265,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
-	watch, err := rc.kube.ExtensionsV1beta1().Ingresses(namespace).Watch(opts.Ctx, metav1.ListOptions{
+	watch, err := rc.kube.NetworkingV1().Ingresses(namespace).Watch(opts.Ctx, metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(opts.Selector).String(),
 	})
 	if err != nil {
@@ -312,6 +312,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 }
 
 func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) bool {
-	_, err := rc.kube.ExtensionsV1beta1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
+	_, err := rc.kube.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }

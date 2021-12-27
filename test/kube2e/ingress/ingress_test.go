@@ -4,14 +4,15 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/k8s-utils/kubeutils"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -35,29 +36,33 @@ var _ = Describe("Kube2e: Ingress", func() {
 
 		kube, err := kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		kubeIngressClient := kube.ExtensionsV1beta1().Ingresses(testHelper.InstallNamespace)
+		kubeIngressClient := kube.NetworkingV1().Ingresses(testHelper.InstallNamespace)
 
-		backend := &v1beta1.IngressBackend{
-			ServiceName: helper.TestrunnerName,
-			ServicePort: intstr.IntOrString{
-				IntVal: helper.TestRunnerPort,
+		backend := &networkingv1.IngressBackend{
+			Service: &networkingv1.IngressServiceBackend{
+				Name: helper.TestrunnerName,
+				Port: networkingv1.ServiceBackendPort{
+					Number: helper.TestRunnerPort,
+				},
 			},
 		}
-		kubeIng, err := kubeIngressClient.Create(ctx, &v1beta1.Ingress{
+		pathType := networkingv1.PathTypeImplementationSpecific
+		kubeIng, err := kubeIngressClient.Create(ctx, &networkingv1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        "simple-ingress-route",
 				Namespace:   testHelper.InstallNamespace,
 				Annotations: map[string]string{"kubernetes.io/ingress.class": "gloo"},
 			},
-			Spec: v1beta1.IngressSpec{
-				Backend: backend,
-				Rules: []v1beta1.IngressRule{
+			Spec: networkingv1.IngressSpec{
+				DefaultBackend: backend,
+				Rules: []networkingv1.IngressRule{
 					{
-						IngressRuleValue: v1beta1.IngressRuleValue{
-							HTTP: &v1beta1.HTTPIngressRuleValue{
-								Paths: []v1beta1.HTTPIngressPath{
+						IngressRuleValue: networkingv1.IngressRuleValue{
+							HTTP: &networkingv1.HTTPIngressRuleValue{
+								Paths: []networkingv1.HTTPIngressPath{
 									{
-										Backend: *backend,
+										PathType: &pathType,
+										Backend:  *backend,
 									},
 								},
 							},
@@ -79,6 +84,6 @@ var _ = Describe("Kube2e: Ingress", func() {
 			Service:           ingressProxy,
 			Port:              ingressPort,
 			ConnectionTimeout: 1,
-		}, helper.SimpleHttpResponse, 1, time.Minute*2, 1*time.Second)
+		}, kube2e.SimpleTestRunnerHttpResponse, 1, time.Minute*2, 1*time.Second)
 	})
 })
