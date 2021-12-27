@@ -77,7 +77,7 @@ func startNotificationStream(ctx context.Context, client validation.GlooValidati
 		return nil, err
 	}
 
-	contextutils.LoggerFrom(ctx).Debug("validation ACK received")
+	logger.Debug("validation ACK received")
 
 	return stream, nil
 }

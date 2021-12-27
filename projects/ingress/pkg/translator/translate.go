@@ -7,7 +7,6 @@ import (
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
 	"github.com/solo-io/go-utils/contextutils"
 	kubev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
@@ -18,7 +17,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 )
 
 const defaultIngressClass = "gloo"
@@ -31,7 +30,7 @@ func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSn
 		ingressClass = defaultIngressClass
 	}
 
-	var ingresses []*v1beta1.Ingress
+	var ingresses []*networkingv1.Ingress
 	for _, ig := range snap.Ingresses {
 		kubeIngress, err := ingress.ToKube(ig)
 		if err != nil {
@@ -102,8 +101,8 @@ func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSn
 	}
 }
 
-func upstreamForBackend(upstreams gloov1.UpstreamList, services []*kubev1.Service, ingressNamespace string, backend v1beta1.IngressBackend) (*gloov1.Upstream, error) {
-	servicePort, err := getServicePort(services, backend.ServiceName, ingressNamespace, backend.ServicePort)
+func upstreamForBackend(upstreams gloov1.UpstreamList, services []*kubev1.Service, ingressNamespace string, backend networkingv1.IngressBackend) (*gloov1.Upstream, error) {
+	serviceName, servicePort, err := getServiceNameAndPort(services, ingressNamespace, backend.Service)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +114,7 @@ func upstreamForBackend(upstreams gloov1.UpstreamList, services []*kubev1.Servic
 		switch spec := us.GetUpstreamType().(type) {
 		case *gloov1.Upstream_Kube:
 			if spec.Kube.GetServiceNamespace() == ingressNamespace &&
-				spec.Kube.GetServiceName() == backend.ServiceName &&
+				spec.Kube.GetServiceName() == serviceName &&
 				spec.Kube.GetServicePort() == uint32(servicePort) {
 				if matchingUpstream != nil {
 					originalSelectorLength := len(matchingUpstream.GetUpstreamType().(*gloov1.Upstream_Kube).Kube.GetSelector())
@@ -129,27 +128,37 @@ func upstreamForBackend(upstreams gloov1.UpstreamList, services []*kubev1.Servic
 		}
 	}
 	if matchingUpstream == nil {
-		return nil, errors.Errorf("discovery failure: upstream not found for kube service %v with port %v", backend.ServiceName, backend.ServicePort)
+		return nil, errors.Errorf("discovery failure: upstream not found for kube service %v with port %v", serviceName, servicePort)
 	}
 	return matchingUpstream, nil
 }
 
-func getServicePort(services []*kubev1.Service, name, namespace string, servicePort intstr.IntOrString) (int32, error) {
-	if servicePort.Type == intstr.Int {
-		return servicePort.IntVal, nil
+// getServiceNameAndPort returns the service name and port number for an IngressServiceBackend or an error if the
+// defined IngressServiceBackend does not match any available services.
+// An IngressServiceBackend can have have its port defined either by number or name, so we must handle both cases
+func getServiceNameAndPort(services []*kubev1.Service, namespace string, ingressService *networkingv1.IngressServiceBackend) (string, int32, error) {
+	if ingressService == nil {
+		return "", 0, errors.New("no service specified for ingress backend")
 	}
-	portName := servicePort.StrVal
-	for _, svc := range services {
-		if svc.Name == name && svc.Namespace == namespace {
-			for _, port := range svc.Spec.Ports {
-				if port.Name == portName {
-					return port.Port, nil
+	serviceName := ingressService.Name
+	// If the IngressServiceBackend defines a named port, we first find the service by name/namespace
+	// and then determine the port number which maps to the port name
+	if ingressService.Port.Name != "" {
+		portName := ingressService.Port.Name
+		for _, svc := range services {
+			if svc.Name == serviceName && svc.Namespace == namespace {
+				for _, port := range svc.Spec.Ports {
+					if port.Name == portName {
+						return serviceName, port.Port, nil
+					}
 				}
+				return "", 0, errors.Errorf("port %v not found for service %v.%v", portName, serviceName, namespace)
 			}
-			return 0, errors.Errorf("port %v not found for service %v.%v", portName, name, namespace)
 		}
+		return "", 0, errors.Errorf("service %v.%v not found", serviceName, namespace)
 	}
-	return 0, errors.Errorf("service %v.%v not found", name, namespace)
+
+	return serviceName, ingressService.Port.Number, nil
 }
 
 type secureVirtualHost struct {
@@ -157,22 +166,22 @@ type secureVirtualHost struct {
 	secret core.ResourceRef
 }
 
-func virtualHosts(ctx context.Context, ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, services []*kubev1.Service, requireIngressClass bool, ingressClass string) ([]*gloov1.VirtualHost, []secureVirtualHost) {
+func virtualHosts(ctx context.Context, ingresses []*networkingv1.Ingress, upstreams gloov1.UpstreamList, services []*kubev1.Service, requireIngressClass bool, ingressClass string) ([]*gloov1.VirtualHost, []secureVirtualHost) {
 	routesByHostHttp := make(map[string][]*gloov1.Route)
 	routesByHostHttps := make(map[string][]*gloov1.Route)
 	secretsByHost := make(map[string]*core.ResourceRef)
-	var defaultBackend *v1beta1.IngressBackend
+	var defaultBackend *networkingv1.IngressBackend
 	for _, ing := range ingresses {
 		if requireIngressClass && !isOurIngress(ing, ingressClass) {
 			continue
 		}
 		spec := ing.Spec
-		if spec.Backend != nil {
+		if spec.DefaultBackend != nil {
 			if defaultBackend != nil {
 				contextutils.LoggerFrom(ctx).Warnf("default backend was redeclared in ingress %v, ignoring", ing.Name)
 				continue
 			}
-			defaultBackend = spec.Backend
+			defaultBackend = spec.DefaultBackend
 		}
 		for _, tls := range spec.TLS {
 
@@ -277,6 +286,6 @@ func virtualHosts(ctx context.Context, ingresses []*v1beta1.Ingress, upstreams g
 	return virtualHostsHttp, virtualHostsHttps
 }
 
-func isOurIngress(ingress *v1beta1.Ingress, ingressClassToUse string) bool {
+func isOurIngress(ingress *networkingv1.Ingress, ingressClassToUse string) bool {
 	return ingress.Annotations[IngressClassKey] == ingressClassToUse
 }

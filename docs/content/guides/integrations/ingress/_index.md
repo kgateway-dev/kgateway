@@ -53,7 +53,7 @@ great way to get a cluster up quickly.
 
     ```yaml
     cat <<EOF | kubectl apply --filename -
-    apiVersion: extensions/v1beta1
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
      name: petstore-ingress
@@ -68,9 +68,12 @@ great way to get a cluster up quickly.
         http:
           paths:
           - path: /.*
+            pathType: ImplementationSpecific
             backend:
-              serviceName: petstore
-              servicePort: 8080
+              service:
+                name: petstore
+                port:
+                  number: 8080
     EOF
     ```
 
@@ -144,7 +147,7 @@ example using `gloo.system.com` domain.
 
     {{< highlight yaml "hl_lines=9-12 14" >}}
 cat <<EOF | kubectl apply --filename -
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: petstore-ingress
@@ -160,9 +163,12 @@ spec:
     http:
       paths:
       - path: /.*
+        pathType: ImplementationSpecific
         backend:
-          serviceName: petstore
-          servicePort: 8080
+          service:
+            name: petstore
+            port:
+              number: 8080
 EOF
     {{< /highlight >}}
 

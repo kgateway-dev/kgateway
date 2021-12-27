@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/k8s-utils/kubeutils"
@@ -87,7 +89,7 @@ var _ = Describe("Installing gloo edge in mtls mode", func() {
 			Service:           defaults.GatewayProxyName,
 			Port:              gatewayPort,
 			ConnectionTimeout: 10, // this is important, as the first curl call sometimes hangs indefinitely
-		}, helper.SimpleHttpResponse, 1, time.Minute*20)
+		}, kube2e.SimpleTestRunnerHttpResponse, 1, time.Minute*20)
 	})
 
 })
