@@ -2045,19 +2045,6 @@ spec:
 `,
 							expectedErr: gwtranslator.MissingPrefixErr.Error(),
 						},
-						{
-							resourceYaml: `
-apiVersion: gloo.solo.io/v1
-kind: Upstream
-metadata:
-  name: invalid-upstream
-  namespace: gloo-system
-spec:
-  static:
-    hosts:
-`,
-							expectedErr: "The Upstream \"invalid-upstream\" is invalid: spec.static.hosts.addr: Invalid value: \"null\": spec.static.hosts.addr in body must be of type string: \"null\"",
-						},
 					}
 
 					for _, tc := range testCases {
@@ -2069,9 +2056,13 @@ spec:
 
 			Context("gloo", func() {
 
-				BeforeEach(func() {
+				var (
 					// Validation of Gloo resources requires that a Proxy resource exist
 					// Therefore, before the tests start, we must create valid resources that produce a Proxy
+					placeholderVs *gatewayv1.VirtualService
+				)
+
+				BeforeEach(func() {
 					dest := &gloov1.Destination{
 						DestinationType: &gloov1.Destination_Upstream{
 							Upstream: &core.ResourceRef{
@@ -2081,7 +2072,9 @@ spec:
 						},
 					}
 
-					_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
+					placeholderVs = getVirtualService(dest, nil)
+
+					_, err := virtualServiceClient.Write(placeholderVs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
 					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
@@ -2101,6 +2094,9 @@ spec:
 						Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 						settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
 					}, testHelper.InstallNamespace)
+
+					err := virtualServiceClient.Delete(placeholderVs.GetMetadata().GetNamespace(), placeholderVs.GetMetadata().GetName(), clients.DeleteOpts{})
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("rejects bad resources", func() {
