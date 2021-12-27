@@ -133,11 +133,16 @@ func upstreamForBackend(upstreams gloov1.UpstreamList, services []*kubev1.Servic
 	return matchingUpstream, nil
 }
 
+// getServiceNameAndPort returns the service name and port number for an IngressServiceBackend or an error if the
+// defined IngressServiceBackend does not match any available services.
+// An IngressServiceBackend can have have its port defined either by number or name, so we must handle both cases
 func getServiceNameAndPort(services []*kubev1.Service, namespace string, ingressService *networkingv1.IngressServiceBackend) (string, int32, error) {
 	if ingressService == nil {
 		return "", 0, errors.New("no service specified for ingress backend")
 	}
 	serviceName := ingressService.Name
+	// If the IngressServiceBackend defines a named port, we first find the service by name/namespace
+	// and then determine the port number which maps to the port name
 	if ingressService.Port.Name != "" {
 		portName := ingressService.Port.Name
 		for _, svc := range services {

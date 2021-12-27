@@ -12,7 +12,7 @@ For these tests to run, we require the following conditions:
 
 #### (Option A) - Use the CI Install Script (preferred)
 
-`ci/deploy-to-kind-cluster.sh` (`https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh`) gets run in CI to setup the test environment for the above requirements.
+[ci/deploy-to-kind-cluster.sh](`https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh`) gets run in CI to setup the test environment for the above requirements.
 It accepts a number of environment variables, to control the creation of a kind cluster and deployment of Gloo resources to that kind cluster.
 
 | Name                  | Default    | Description |
