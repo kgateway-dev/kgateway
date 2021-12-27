@@ -45,6 +45,10 @@ var namespace = defaults.GlooSystem
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
 
+// now that we run CI on a kube 1.22 cluster, we must ensure that we install versions of gloo with v1 CRDs
+// Per https://github.com/solo-io/gloo/issues/4543: CRDs were migrated from v1beta1 -> v1 in Gloo 1.9.0
+const earliestVersionWithV1CRDs = "1.9.0"
+
 func StartTestHelper() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
@@ -61,8 +65,6 @@ func StartTestHelper() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	// Register additional fail handlers
-	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
 	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
 	defer cleanupFunc()
 
@@ -73,7 +75,7 @@ func StartTestHelper() {
 	runAndCleanCommand("helm", "install", testHelper.HelmChartName, "gloo/gloo",
 		"--namespace", testHelper.InstallNamespace,
 		"--values", valueOverrideFile,
-		"--version", "v1.3.0")
+		"--version", fmt.Sprintf("v%s", earliestVersionWithV1CRDs))
 
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")

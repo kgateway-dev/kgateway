@@ -141,35 +141,35 @@ func getSnapOut(metricsPort string) string {
 }
 
 func UpdateDisableTransformationValidationSetting(ctx context.Context, shouldDisable bool, installNamespace string) {
-	UpdateSettings(func(settings *v1.Settings) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 		settings.GetGateway().GetValidation().DisableTransformationValidation = &wrappers.BoolValue{Value: shouldDisable}
-	}, ctx, installNamespace)
+	}, installNamespace)
 }
 
 // enable/disable strict validation
 func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNamespace string) {
-	UpdateSettings(func(settings *v1.Settings) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 		settings.GetGateway().GetValidation().AlwaysAccept = &wrappers.BoolValue{Value: alwaysAccept}
-	}, ctx, installNamespace)
+	}, installNamespace)
 }
 
 func UpdateRestEdsSetting(ctx context.Context, enableRestEds bool, installNamespace string) {
-	UpdateSettings(func(settings *v1.Settings) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGloo()).NotTo(BeNil())
 		settings.GetGloo().EnableRestEds = &wrappers.BoolValue{Value: enableRestEds}
-	}, ctx, installNamespace)
+	}, installNamespace)
 }
 
 func UpdateReplaceInvalidRoutes(ctx context.Context, replaceInvalidRoutes bool, installNamespace string) {
-	UpdateSettings(func(settings *v1.Settings) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGloo().GetInvalidConfigPolicy()).NotTo(BeNil())
 		settings.GetGloo().GetInvalidConfigPolicy().ReplaceInvalidRoutes = replaceInvalidRoutes
-	}, ctx, installNamespace)
+	}, installNamespace)
 }
 
-func UpdateSettings(updateSettings func(settings *v1.Settings), ctx context.Context, installNamespace string) {
+func UpdateSettings(ctx context.Context, updateSettings func(settings *v1.Settings), installNamespace string) {
 	// when validation config changes, the validation server restarts -- give time for it to come up again.
 	// without the wait, the validation webhook may temporarily fallback to it's failurePolicy, which is not
 	// what we want to test.
@@ -192,3 +192,42 @@ func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Setting
 
 	waitForSettingsToPropagate()
 }
+
+// https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604
+// We should move tests away from using the testrunner, and instead depend on EphemeralContainers.
+// The default response changed in later kube versions, which caused this value to change.
+// Ideally the test utilities used by Gloo are maintained in the Gloo repo, so I opted to move
+// this constant here.
+// This response is given by the testrunner when the SimpleServer is started
+const SimpleTestRunnerHttpResponse = `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><html>
+<title>Directory listing for /</title>
+<body>
+<h2>Directory listing for /</h2>
+<hr>
+<ul>
+<li><a href="bin/">bin/</a>
+<li><a href="boot/">boot/</a>
+<li><a href="dev/">dev/</a>
+<li><a href="etc/">etc/</a>
+<li><a href="home/">home/</a>
+<li><a href="lib/">lib/</a>
+<li><a href="lib64/">lib64/</a>
+<li><a href="media/">media/</a>
+<li><a href="mnt/">mnt/</a>
+<li><a href="opt/">opt/</a>
+<li><a href="proc/">proc/</a>
+<li><a href="product_name">product_name</a>
+<li><a href="product_uuid">product_uuid</a>
+<li><a href="root/">root/</a>
+<li><a href="root.crt">root.crt</a>
+<li><a href="run/">run/</a>
+<li><a href="sbin/">sbin/</a>
+<li><a href="srv/">srv/</a>
+<li><a href="sys/">sys/</a>
+<li><a href="tmp/">tmp/</a>
+<li><a href="usr/">usr/</a>
+<li><a href="var/">var/</a>
+</ul>
+<hr>
+</body>
+</html>`

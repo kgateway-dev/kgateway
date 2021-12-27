@@ -6,7 +6,7 @@ import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
-	"k8s.io/api/admissionregistration/v1beta1"
+	v1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -19,21 +19,21 @@ type WebhookTlsConfig struct {
 func UpdateValidatingWebhookConfigurationCaBundle(ctx context.Context, kube kubernetes.Interface, vwcName string, cfg WebhookTlsConfig) error {
 	contextutils.LoggerFrom(ctx).Infow("attempting to patch caBundle for ValidatingWebhookConfiguration", zap.String("svc", cfg.ServiceName), zap.String("vwc", vwcName))
 
-	vwc, err := kube.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(ctx, vwcName, metav1.GetOptions{})
+	vwc, err := kube.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, vwcName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to retrieve vwc")
 	}
 
 	setCaBundle(ctx, vwc, cfg)
 
-	if _, err := kube.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Update(ctx, vwc, metav1.UpdateOptions{}); err != nil {
+	if _, err := kube.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, vwc, metav1.UpdateOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to update vwc")
 	}
 
 	return nil
 }
 
-func setCaBundle(ctx context.Context, vwc *v1beta1.ValidatingWebhookConfiguration, cfg WebhookTlsConfig) {
+func setCaBundle(ctx context.Context, vwc *v1.ValidatingWebhookConfiguration, cfg WebhookTlsConfig) {
 
 	encodedCaBundle := cfg.CaBundle
 
