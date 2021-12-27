@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
 	. "github.com/onsi/ginkgo"
@@ -82,6 +84,6 @@ var _ = Describe("Kube2e: Ingress", func() {
 			Service:           ingressProxy,
 			Port:              ingressPort,
 			ConnectionTimeout: 1,
-		}, helper.SimpleHttpResponse, 1, time.Minute*2, 1*time.Second)
+		}, kube2e.SimpleTestRunnerHttpResponse, 1, time.Minute*2, 1*time.Second)
 	})
 })

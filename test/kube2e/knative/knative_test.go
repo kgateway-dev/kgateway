@@ -14,6 +14,7 @@ import (
 var _ = Describe("Kube2e: Knative-Ingress", func() {
 
 	BeforeEach(func() {
+
 		deployKnativeTestService(knativeTestServiceFile())
 	})
 
