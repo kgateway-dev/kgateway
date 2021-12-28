@@ -130,7 +130,7 @@ func (v *validator) ready() bool {
 
 func (v *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	snapCopy := snap.Clone()
-	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
+	gatewaysByProxy, _ := utils.GatewaysByProxyName(snap.Gateways)
 	var errs error
 	for proxyName, gatewayList := range gatewaysByProxy {
 		_, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, snap, gatewayList)
@@ -220,7 +220,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	proxyNames, resource, ref := apply(&snapshotClone)
 
-	gatewaysByProxy := utils.GatewaysByProxyName(snapshotClone.Gateways)
+	gatewaysByProxy, _ := utils.GatewaysByProxyName(snapshotClone.Gateways)
 
 	var (
 		errs         error
@@ -744,7 +744,7 @@ func (v *validator) sendGlooValidationServiceRequest(
 
 func proxiesForVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) []string {
 
-	gatewaysByProxy := utils.GatewaysByProxyName(gwList)
+	gatewaysByProxy, _ := utils.GatewaysByProxyName(gwList)
 
 	var proxiesToConsider []string
 

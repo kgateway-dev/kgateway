@@ -14,7 +14,7 @@ else
   OS='linux'
 fi
 # Offer a default value for type of installation
-KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, use 'gateway'.
+KUBE2E_TESTS="${KUBE2E_TESTS:-eds}"  # If 'KUBE2E_TESTS' not set or null, use 'gateway'.
 # The version of istio to install for glooctl tests
 # https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
 ISTIO_VERSION="${ISTIO_VERSION:-1.11.4}"
@@ -79,4 +79,21 @@ if [ "$KUBE2E_TESTS" = "glooctl" ]; then
 
   echo "Installing Istio"
   yes | "./istio-$ISTIO_VERSION/bin/istioctl" install --set profile=minimal
+fi
+
+if [ "$KUBE2E_TESTS" = "eds" ]; then
+  echo "Installing Gloo Edge"
+  _output/glooctl-$OS-amd64 install gateway --file "_test/gloo-$VERSION".tgz
+
+  kubectl -n gloo-system rollout status deployment gloo --timeout=2m || true
+  kubectl -n gloo-system rollout status deployment discovery --timeout=2m || true
+  kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=2m || true
+  kubectl -n gloo-system rollout status deployment gateway --timeout=2m || true
+
+  echo "Installing Hello World example"
+  kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
+  _output/glooctl-$OS-amd64 add route \
+    --path-exact /all-pets \
+    --dest-name default-petstore-8080 \
+    --prefix-rewrite /api/pets
 fi

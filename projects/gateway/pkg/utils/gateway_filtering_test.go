@@ -22,7 +22,7 @@ var _ = Describe("gateway util unit tests", func() {
 
 			gw1, gw2, gw3 := gws[0], gws[1], gws[2]
 
-			byProxy := GatewaysByProxyName(gws)
+			byProxy, _ := GatewaysByProxyName(gws)
 			Expect(byProxy).To(Equal(map[string]v1.GatewayList{
 				defaults.GatewayProxyName: {gw1, gw3},
 				"proxy1":                  {gw2, gw3},
