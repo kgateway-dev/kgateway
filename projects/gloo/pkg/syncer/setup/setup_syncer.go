@@ -3,8 +3,11 @@ package setup
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/licensing/pkg/model"
+	"github.com/solo-io/licensing/pkg/validate"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -550,8 +553,14 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		authConfigClient.BaseClient(),
 		rlReporterClient,
 	)
+	addons := model.AddOns{}
+	// Only set addons if license key is valid (right product & not expired)
+	license, warn, err := validate.ValidateLicenseKey(watchOpts.Ctx, os.Getenv("GLOO_LICENSE_KEY"), model.Product_Gloo, model.AddOns{})
+	if warn == nil && err == nil {
+		addons = license.AddOns
+	}
 
-	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPluginRegistry)
+	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPluginRegistry, &addons)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {

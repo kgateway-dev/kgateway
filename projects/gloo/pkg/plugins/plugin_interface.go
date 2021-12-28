@@ -3,6 +3,7 @@ package plugins
 import (
 	"bytes"
 	"context"
+	"github.com/solo-io/licensing/pkg/model"
 	"sort"
 	"strings"
 
@@ -30,6 +31,9 @@ type Upgradable interface {
 	PluginName() string
 	IsUpgrade() bool
 }
+type Licensed interface {
+	LicenseAddons() model.AddOns
+}
 
 type Params struct {
 	Ctx      context.Context
@@ -46,6 +50,7 @@ type VirtualHostParams struct {
 type RouteParams struct {
 	VirtualHostParams
 	VirtualHost *v1.VirtualHost
+	Addons      *model.AddOns
 }
 
 type RouteActionParams struct {

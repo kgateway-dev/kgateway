@@ -3,6 +3,7 @@ package translator
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/licensing/pkg/model"
 	"strings"
 	"unicode"
 
@@ -59,6 +60,7 @@ type httpRouteConfigurationTranslator struct {
 	report                   *validationapi.HttpListenerReport
 	routeConfigName          string
 	requireTlsOnVirtualHosts bool
+	addons                   *model.AddOns
 }
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
@@ -116,6 +118,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 		routeParams := plugins.RouteParams{
 			VirtualHostParams: params,
 			VirtualHost:       virtualHost,
+			Addons:            h.addons,
 		}
 		routeReport := vhostReport.GetRouteReports()[i]
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.GetName(), i)
@@ -483,6 +486,7 @@ type hybridRouteConfigurationTranslator struct {
 	report       *validationapi.HybridListenerReport
 
 	requireTlsOnVirtualHosts bool
+	addons                   *model.AddOns
 }
 
 func (h *hybridRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {

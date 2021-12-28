@@ -2,6 +2,7 @@ package translator
 
 import (
 	"context"
+	"github.com/solo-io/licensing/pkg/model"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
@@ -23,17 +24,20 @@ type ListenerSubsystemTranslatorFactory struct {
 	pluginRegistry      plugins.PluginRegistry
 	proxy               *v1.Proxy
 	sslConfigTranslator utils.SslConfigTranslator
+	addons              *model.AddOns
 }
 
 func NewListenerSubsystemTranslatorFactory(
 	pluginRegistry plugins.PluginRegistry,
 	proxy *v1.Proxy,
 	sslConfigTranslator utils.SslConfigTranslator,
+	addons *model.AddOns,
 ) *ListenerSubsystemTranslatorFactory {
 	return &ListenerSubsystemTranslatorFactory{
 		pluginRegistry:      pluginRegistry,
 		proxy:               proxy,
 		sslConfigTranslator: sslConfigTranslator,
+		addons:              addons,
 	}
 }
 
@@ -114,6 +118,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 		report:                   httpListenerReport,
 		routeConfigName:          routeConfigurationName,
 		requireTlsOnVirtualHosts: len(listener.GetSslConfigurations()) > 0,
+		addons:                   l.addons,
 	}
 
 	return listenerTranslator, routeConfigurationTranslator
@@ -184,6 +189,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 		listener:       listener.GetHybridListener(),
 		parentReport:   listenerReport,
 		report:         hybridListenerReport,
+		addons:         l.addons,
 	}
 
 	return listenerTranslator, routeConfigurationTranslator

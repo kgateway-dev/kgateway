@@ -2,6 +2,7 @@ package translator
 
 import (
 	"fmt"
+	"github.com/solo-io/licensing/pkg/model"
 	"hash/fnv"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -37,14 +38,16 @@ func NewTranslator(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
 	getPluginRegistry func() plugins.PluginRegistry,
+	addons *model.AddOns,
 ) Translator {
-	return NewTranslatorWithHasher(sslConfigTranslator, settings, getPluginRegistry, EnvoyCacheResourcesListToFnvHash)
+	return NewTranslatorWithHasher(sslConfigTranslator, settings, getPluginRegistry, addons, EnvoyCacheResourcesListToFnvHash)
 }
 
 func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
 	getPluginRegistry func() plugins.PluginRegistry,
+	addons *model.AddOns,
 	hasher func(resources []envoycache.Resource) uint64,
 ) Translator {
 	return &translatorFactory{
@@ -52,6 +55,7 @@ func NewTranslatorWithHasher(
 		settings:            settings,
 		sslConfigTranslator: sslConfigTranslator,
 		hasher:              hasher,
+		addons:              addons,
 	}
 }
 
@@ -59,6 +63,7 @@ type translatorFactory struct {
 	getPluginRegistry   func() plugins.PluginRegistry
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
+	addons              *model.AddOns
 	hasher              func(resources []envoycache.Resource) uint64
 }
 
@@ -71,6 +76,7 @@ func (t *translatorFactory) Translate(
 		settings:            t.settings,
 		sslConfigTranslator: t.sslConfigTranslator,
 		hasher:              t.hasher,
+		addons:              t.addons,
 	}
 	return instance.Translate(params, proxy)
 }
@@ -80,6 +86,7 @@ type translatorInstance struct {
 	pluginRegistry      plugins.PluginRegistry
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
+	addons              *model.AddOns
 	hasher              func(resources []envoycache.Resource) uint64
 }
 
@@ -211,7 +218,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 
 	logger := contextutils.LoggerFrom(params.Ctx)
 
-	listenerSubsystemTranslatorFactory := NewListenerSubsystemTranslatorFactory(t.pluginRegistry, proxy, t.sslConfigTranslator)
+	listenerSubsystemTranslatorFactory := NewListenerSubsystemTranslatorFactory(t.pluginRegistry, proxy, t.sslConfigTranslator, t.addons)
 
 	for i, listener := range proxy.GetListeners() {
 		logger.Infof("computing envoy resources for listener: %v", listener.GetName())
