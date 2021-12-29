@@ -31,9 +31,6 @@ type Upgradable interface {
 	PluginName() string
 	IsUpgrade() bool
 }
-type Licensed interface {
-	LicenseAddons() model.AddOns
-}
 
 type Params struct {
 	Ctx      context.Context
