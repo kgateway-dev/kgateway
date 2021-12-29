@@ -70,7 +70,7 @@ type UpstreamFunctionDiscovery struct {
 }
 
 // IsFunctional returns true if the upstream is functional
-func (f *UpstreamFunctionDiscovery) IsFunctional() bool {
+func (f *UpstreamFunctionDiscovery) IsFunctional(_ fds.FunctionalParams) bool {
 	return getGrpcspec(f.upstream) != nil
 }
 

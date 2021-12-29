@@ -3,6 +3,7 @@ package fds
 import (
 	"context"
 	"errors"
+	"github.com/solo-io/licensing/pkg/model"
 	"net/url"
 	"sync"
 	"sync/atomic"
@@ -34,7 +35,8 @@ type updaterUpdater struct {
 	upstream          *v1.Upstream
 	functionalPlugins []UpstreamFunctionDiscovery
 
-	parent *Updater
+	parent  *Updater
+	license *model.License
 }
 
 type Updater struct {
@@ -50,6 +52,7 @@ type Updater struct {
 	maxInParallelSemaphore chan struct{}
 
 	secrets atomic.Value
+	license *model.License
 }
 
 func getConcurrencyChan(maxOnCurrency uint) chan struct{} {
@@ -66,7 +69,13 @@ func getConcurrencyChan(maxOnCurrency uint) chan struct{} {
 
 }
 
-func NewUpdater(ctx context.Context, resolver Resolver, graphqlClient v1alpha1.GraphQLSchemaClient, upstreamclient UpstreamWriterClient, maxconncurrency uint, functionalPlugins []FunctionDiscoveryFactory) *Updater {
+func NewUpdater(ctx context.Context,
+	resolver Resolver,
+	graphqlClient v1alpha1.GraphQLSchemaClient,
+	upstreamclient UpstreamWriterClient,
+	maxconncurrency uint,
+	functionalPlugins []FunctionDiscoveryFactory,
+	license *model.License) *Updater {
 	ctx = contextutils.WithLogger(ctx, "function-discovery-updater")
 	return &Updater{
 		logger:                 contextutils.LoggerFrom(ctx),
@@ -77,6 +86,7 @@ func NewUpdater(ctx context.Context, resolver Resolver, graphqlClient v1alpha1.G
 		maxInParallelSemaphore: getConcurrencyChan(maxconncurrency),
 		upstreamWriter:         upstreamclient,
 		graphqlClient:          graphqlClient,
+		license:                license,
 	}
 }
 
@@ -128,6 +138,7 @@ func (u *Updater) UpstreamAdded(upstream *v1.Upstream) {
 		upstream:          upstream,
 		functionalPlugins: u.createDiscoveries(upstream),
 		parent:            u,
+		license:           u.license,
 	}
 	u.activeUpstreams[key] = updater
 	go func() {
@@ -270,7 +281,7 @@ func (u *updaterUpdater) Run() error {
 	// this is a (temporary?) work around
 	var discoveriesForUpstream []UpstreamFunctionDiscovery
 	for _, fp := range u.functionalPlugins {
-		if fp.IsFunctional() {
+		if fp.IsFunctional(FunctionalParams{License: u.license}) {
 			discoveriesForUpstream = append(discoveriesForUpstream, fp)
 		}
 	}

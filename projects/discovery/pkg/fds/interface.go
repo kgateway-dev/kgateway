@@ -2,6 +2,7 @@ package fds
 
 import (
 	"context"
+	"github.com/solo-io/licensing/pkg/model"
 	"net/url"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -34,6 +35,10 @@ type Dependencies struct {
 	Secrets v1.SecretList
 }
 
+type FunctionalParams struct {
+	License *model.License
+}
+
 type UpstreamFunctionDiscovery interface {
 	// if this returns true we can skip DetectUpstreamType and go straight to DetectFunctions
 	// if this returns false we should call detect upstream type.
@@ -41,7 +46,7 @@ type UpstreamFunctionDiscovery interface {
 	// if it returns false and nil error, it means it was detected to not be of this type -
 	// ideally this means that this detector will no longer be used with this upstream. in practice this can be logged/ignored.
 	// if it returns false and some error, try again later with back-off/timeout.
-	IsFunctional() bool
+	IsFunctional(params FunctionalParams) bool
 
 	// Returns
 	// err != nil temporary error. try again

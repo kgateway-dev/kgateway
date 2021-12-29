@@ -82,7 +82,7 @@ func getSwagSpec(u *v1.Upstream) *rest_plugins.ServiceSpec_SwaggerInfo {
 	return rest.GetSwaggerInfo()
 }
 
-func (f *SwaggerFunctionDiscovery) IsFunctional() bool {
+func (f *SwaggerFunctionDiscovery) IsFunctional(_ fds.FunctionalParams) bool {
 	return getSwagSpec(f.upstream) != nil
 }
 

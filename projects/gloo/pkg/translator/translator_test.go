@@ -3,6 +3,8 @@ package translator_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/licensing/pkg/model"
+	"time"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
@@ -85,12 +87,13 @@ var _ = Describe("Translator", func() {
 		hcmCfg             *envoyhttp.HttpConnectionManager
 		routeConfiguration *envoy_config_route_v3.RouteConfiguration
 		virtualHostName    string
+		license            *model.License
 	)
 
 	beforeEach := func() {
 
 		ctrl = gomock.NewController(T)
-
+		license = nil
 		cluster = nil
 		settings = &v1.Settings{}
 		memoryClientFactory := &factory.MemoryResourceClientFactory{
@@ -175,7 +178,7 @@ var _ = Describe("Translator", func() {
 		getPluginRegistry := func() plugins.PluginRegistry {
 			return registry.NewPluginRegistry(getPlugins())
 		}
-		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, getPluginRegistry)
+		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, getPluginRegistry, license)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",
@@ -2097,6 +2100,48 @@ var _ = Describe("Translator", func() {
 
 			translate()
 			Expect(hasVHost).To(BeTrue())
+		})
+
+		Context("licensed route plugin", func() {
+			Context("correct license", func() {
+				BeforeEach(func() {
+					license = &model.License{
+						IssuedAt:    time.Now(),
+						ExpiresAt:   time.Now().Add(time.Minute * 5),
+						LicenseType: model.LicenseType_Enterprise,
+						Product:     model.Product_Gloo,
+						AddOns: model.AddOns{
+							GraphQL: true,
+						},
+					}
+				})
+				It("should pass down license to route plugin", func() {
+					routePlugin.ProcessRouteFunc = func(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+						ExpectWithOffset(1, params.License).ToNot(BeNil())
+						ExpectWithOffset(1, params.License.Product).To(Equal(model.Product_Gloo))
+						ExpectWithOffset(1, params.License.AddOns.GraphQL).To(BeTrue())
+						return nil
+					}
+				})
+			})
+
+			Context("bad license", func() {
+				BeforeEach(func() {
+					license = &model.License{
+						IssuedAt:    time.Now(),
+						ExpiresAt:   time.Now().Add(time.Minute * 5),
+						LicenseType: model.LicenseType_Enterprise,
+						Product:     model.Product_GlooMesh,
+					}
+				})
+				It("should pass down license to route plugin", func() {
+					routePlugin.ProcessRouteFunc = func(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+						ExpectWithOffset(1, params.License).To(BeNil())
+						return nil
+					}
+				})
+			})
+
 		})
 
 	})

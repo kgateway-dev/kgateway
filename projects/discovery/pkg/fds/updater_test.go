@@ -66,7 +66,7 @@ func (t *testDiscovery) NewFunctionDiscovery(u *v1.Upstream, _ AdditionalClients
 	return t
 }
 
-func (t *testDiscovery) IsFunctional() bool {
+func (t *testDiscovery) IsFunctional(_ FunctionalParams) bool {
 	fc := t.getFunctionsCalled()
 	fc.isUpstreamFunctional = true
 	t.setFunctionsCalled(fc)
@@ -121,7 +121,7 @@ var _ = Describe("Updater", func() {
 		}
 		testDisc = &testDiscovery{}
 		testDisc.functionsCalled.Store(functionsCalled{})
-		updater = NewUpdater(ctx, resolver, nil, upstreamWriterClient, 0, []FunctionDiscoveryFactory{testDisc})
+		updater = NewUpdater(ctx, resolver, nil, upstreamWriterClient, 0, []FunctionDiscoveryFactory{testDisc}, nil)
 		up = &v1.Upstream{
 			Metadata: &core_solo_io.Metadata{
 				Namespace: "ns",

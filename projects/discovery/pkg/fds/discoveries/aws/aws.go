@@ -51,7 +51,7 @@ type AWSLambdaFunctionDiscovery struct {
 	upstream   *v1.Upstream
 }
 
-func (f *AWSLambdaFunctionDiscovery) IsFunctional() bool {
+func (f *AWSLambdaFunctionDiscovery) IsFunctional(_ fds.FunctionalParams) bool {
 	_, ok := f.upstream.GetUpstreamType().(*v1.Upstream_Aws)
 	return ok
 }

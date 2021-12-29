@@ -50,7 +50,7 @@ type VirtualHostParams struct {
 type RouteParams struct {
 	VirtualHostParams
 	VirtualHost *v1.VirtualHost
-	Addons      *model.AddOns
+	License     *model.License
 }
 
 type RouteActionParams struct {

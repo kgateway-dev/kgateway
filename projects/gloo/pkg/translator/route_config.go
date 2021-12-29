@@ -60,7 +60,7 @@ type httpRouteConfigurationTranslator struct {
 	report                   *validationapi.HttpListenerReport
 	routeConfigName          string
 	requireTlsOnVirtualHosts bool
-	addons                   *model.AddOns
+	license                  *model.License
 }
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
@@ -118,7 +118,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 		routeParams := plugins.RouteParams{
 			VirtualHostParams: params,
 			VirtualHost:       virtualHost,
-			Addons:            h.addons,
+			License:           h.license,
 		}
 		routeReport := vhostReport.GetRouteReports()[i]
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.GetName(), i)
@@ -486,7 +486,7 @@ type hybridRouteConfigurationTranslator struct {
 	report       *validationapi.HybridListenerReport
 
 	requireTlsOnVirtualHosts bool
-	addons                   *model.AddOns
+	license                  *model.License
 }
 
 func (h *hybridRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {

@@ -553,14 +553,13 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		authConfigClient.BaseClient(),
 		rlReporterClient,
 	)
-	addons := model.AddOns{}
 	// Only set addons if license key is valid (right product & not expired)
 	license, warn, err := validate.ValidateLicenseKey(watchOpts.Ctx, os.Getenv("GLOO_LICENSE_KEY"), model.Product_Gloo, model.AddOns{})
-	if warn == nil && err == nil {
-		addons = license.AddOns
+	if warn != nil || err != nil {
+		license = nil
 	}
 
-	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPluginRegistry, &addons)
+	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPluginRegistry, license)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {

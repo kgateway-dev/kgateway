@@ -1,7 +1,10 @@
 package syncer
 
 import (
+	"github.com/solo-io/licensing/pkg/model"
+	"github.com/solo-io/licensing/pkg/validate"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"os"
 
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	discoveryRegistry "github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/registry"
@@ -96,9 +99,14 @@ func RunFDSWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	// TODO: unhardcode
 	functionalPlugins := GetFunctionDiscoveriesWithExtensions(opts, extensions)
+	licenseKey := os.Getenv("GLOO_LICENSE_KEY")
+	license, warn, err := validate.ValidateLicenseKey(watchOpts.Ctx, licenseKey, model.Product_Gloo, model.AddOns{})
+	if warn != nil || err != nil {
+		license = nil
+	}
 
 	// TODO(yuval-k): max Concurrency here
-	updater := fds.NewUpdater(watchOpts.Ctx, resolvers, graphqlClient, upstreamClient, 0, functionalPlugins)
+	updater := fds.NewUpdater(watchOpts.Ctx, resolvers, graphqlClient, upstreamClient, 0, functionalPlugins, license)
 	disc := fds.NewFunctionDiscovery(updater)
 
 	sync := NewDiscoverySyncer(disc, fdsMode)

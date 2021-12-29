@@ -24,20 +24,20 @@ type ListenerSubsystemTranslatorFactory struct {
 	pluginRegistry      plugins.PluginRegistry
 	proxy               *v1.Proxy
 	sslConfigTranslator utils.SslConfigTranslator
-	addons              *model.AddOns
+	license             *model.License
 }
 
 func NewListenerSubsystemTranslatorFactory(
 	pluginRegistry plugins.PluginRegistry,
 	proxy *v1.Proxy,
 	sslConfigTranslator utils.SslConfigTranslator,
-	addons *model.AddOns,
+	license *model.License,
 ) *ListenerSubsystemTranslatorFactory {
 	return &ListenerSubsystemTranslatorFactory{
 		pluginRegistry:      pluginRegistry,
 		proxy:               proxy,
 		sslConfigTranslator: sslConfigTranslator,
-		addons:              addons,
+		license:             license,
 	}
 }
 
@@ -118,7 +118,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 		report:                   httpListenerReport,
 		routeConfigName:          routeConfigurationName,
 		requireTlsOnVirtualHosts: len(listener.GetSslConfigurations()) > 0,
-		addons:                   l.addons,
+		license:                  l.license,
 	}
 
 	return listenerTranslator, routeConfigurationTranslator
@@ -189,7 +189,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 		listener:       listener.GetHybridListener(),
 		parentReport:   listenerReport,
 		report:         hybridListenerReport,
-		addons:         l.addons,
+		license:        l.license,
 	}
 
 	return listenerTranslator, routeConfigurationTranslator
