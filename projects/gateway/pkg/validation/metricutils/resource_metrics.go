@@ -19,7 +19,7 @@ import (
 
 type MetricLabels = gloov1.Settings_ObservabilityOptions_MetricLabels
 
-var metricNames = map[schema.GroupVersionKind]string{
+var MetricNames = map[schema.GroupVersionKind]string{
 	gwv1.VirtualServiceGVK: "validation.gateway.solo.io/virtual_service_config_status",
 	gwv1.GatewayGVK:        "validation.gateway.solo.io/gateway_config_status",
 	gwv1.RouteTableGVK:     "validation.gateway.solo.io/route_table_config_status",
@@ -29,10 +29,10 @@ var metricNames = map[schema.GroupVersionKind]string{
 
 var metricDescriptions = map[schema.GroupVersionKind]string{
 	gwv1.VirtualServiceGVK: "TODO", // TODO(mitchaman)
-	gwv1.GatewayGVK:        "",     // TODO(mitchaman)
-	gwv1.RouteTableGVK:     "",     // TODO(mitchaman)
-	gloov1.UpstreamGVK:     "",     // TODO(mitchaman)
-	gloov1.SecretGVK:       "",     // TODO(mitchaman)
+	gwv1.GatewayGVK:        "TODO", // TODO(mitchaman)
+	gwv1.RouteTableGVK:     "TODO", // TODO(mitchaman)
+	gloov1.UpstreamGVK:     "TODO", // TODO(mitchaman)
+	gloov1.SecretGVK:       "TODO", // TODO(mitchaman)
 }
 
 // ConfigStatusMetrics is a collection of metrics, each of which records if the configuration for
@@ -73,7 +73,7 @@ func parseGroupVersionKind(arg string) (schema.GroupVersionKind, error) {
 	if gvk == nil {
 		return schema.GroupVersionKind{}, errors.Errorf("unable to parse GVK from string '%s'", arg)
 	}
-	if _, ok := metricNames[*gvk]; !ok {
+	if _, ok := MetricNames[*gvk]; !ok {
 		return schema.GroupVersionKind{}, errors.Errorf("config status metric reporting is not supported for resource type '%s'", arg)
 	}
 	return *gvk, nil
@@ -83,7 +83,14 @@ func resourceToGvk(resource resources.Resource) (schema.GroupVersionKind, error)
 	switch resource.(type) {
 	case *gwv1.VirtualService:
 		return gwv1.VirtualServiceGVK, nil
-	// TODO(mitchaman): Add other resource types
+	case *gwv1.Gateway:
+		return gwv1.GatewayGVK, nil
+	case *gwv1.RouteTable:
+		return gwv1.RouteTableGVK, nil
+	case *gloov1.Upstream:
+		return gloov1.UpstreamGVK, nil
+	case *gloov1.Secret:
+		return gloov1.SecretGVK, nil
 	default:
 		return schema.GroupVersionKind{}, errors.Errorf("config status metric reporting is not supported for resource type: %T", resource)
 	}
@@ -100,7 +107,7 @@ func (m *ConfigStatusMetrics) SetResourceValid(ctx context.Context, resource res
 		log.Debugf("Setting '%s' config metric valid", resource.GetMetadata().Ref())
 		mutators, err := getMutators(m.metrics[gvk], resource)
 		if err != nil {
-			log.Errorf("Error setting labels on %s: %s", metricNames[gvk], err.Error())
+			log.Errorf("Error setting labels on %s: %s", MetricNames[gvk], err.Error())
 		}
 		utils2.MeasureZero(ctx, m.metrics[gvk].gauge, mutators...)
 	}
@@ -117,7 +124,7 @@ func (m *ConfigStatusMetrics) SetResourceInvalid(ctx context.Context, resource r
 		log.Debugf("Setting '%s' config metric invalid", resource.GetMetadata().Ref())
 		mutators, err := getMutators(m.metrics[gvk], resource)
 		if err != nil {
-			log.Errorf("Error setting labels on %s: %s", metricNames[gvk], err.Error())
+			log.Errorf("Error setting labels on %s: %s", MetricNames[gvk], err.Error())
 		}
 		utils2.MeasureOne(ctx, m.metrics[gvk].gauge, mutators...)
 	}
@@ -184,12 +191,12 @@ func newResourceMetric(gvk schema.GroupVersionKind, labelToPath map[string]strin
 			var err error
 			tagKeys[i], err = tag.NewKey(k)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Error creating resourceMetric for %s", metricNames[gvk])
+				return nil, errors.Wrapf(err, "Error creating resourceMetric for %s", MetricNames[gvk])
 			}
 			i++
 		}
 		return &resourceMetric{
-			gauge:       utils2.MakeGauge(metricNames[gvk], metricDescriptions[gvk], tagKeys...),
+			gauge:       utils2.MakeGauge(MetricNames[gvk], metricDescriptions[gvk], tagKeys...),
 			labelToPath: labelToPath,
 		}, nil
 	}
