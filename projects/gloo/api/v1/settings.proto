@@ -387,25 +387,21 @@ message Settings {
         // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
         GrafanaIntegration grafanaIntegration = 1;
 
-        // Provides the ability to specify which label(s) to apply to the
-        // `*_config_status` metric for each resource type.
-        message ConfigStatusMetricsOptions {
-            // Defines which labels to apply for a metric.
-            message MetricLabels {
-                // Each (key, value) pair in the map defines a label to be applied.
-                //   key:   Specifies the name of the label (e.g. "namespace")
-                //   value: Specifies the jsonpath string corresponding to the field on the resource (e.g. "{.metadata.namespace}")
-                map<string, string> label_to_path = 1;
-            }
 
-            // Labels for the virtual_service_config_status metric. If unspecified
-            // or the map is empty, then the virtual_service_config_status metric
-            // will not be recorded.
-            MetricLabels virtual_service_labels = 1;
+        message MetricLabels {
+            // Each (key, value) pair in the map defines a label to be applied.
+            //   key:   Specifies the name of the label (e.g. "namespace")
+            //   value: Specifies the jsonpath string corresponding to the field on the resource
+            //          (e.g. "{.metadata.namespace}")
+            map<string, string> label_to_path = 1;
         }
 
-        // Options to configure Gloo's suite of metrics around resource status.
-        ConfigStatusMetricsOptions config_status_metrics = 2;
+        // Provides the ability to record metrics tracking the configuration status of various resource types.
+        // Each (key, value) pair in the map defines a metric for a particular resource type.
+        //   key:   Specifies the name (GroupVersionKind) of the resource whose status is to be tracked
+        //          (e.g. "VirtualService.v1.gateway.solo.io")
+        //   value: Specifies the labels to set on the metric
+        map<string, MetricLabels> config_status_metric_labels = 2;
     }
 
     // Provides settings related to the observability deployment (enterprise only)

@@ -161,7 +161,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		DevMode:                       true,
 		ReadGatewaysFromAllNamespaces: settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
 		Validation:                    validation,
-		ConfigStatusMetricOpts:        settings.GetObservabilityOptions().GetConfigStatusMetrics(),
+		ConfigStatusMetricOpts:        settings.GetObservabilityOptions().GetConfigStatusMetricLabels(),
 	}
 
 	return RunGateway(opts)

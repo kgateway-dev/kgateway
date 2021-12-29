@@ -104,10 +104,10 @@ type ValidatorConfig struct {
 	writeNamespace               string
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
-	configStatusMetricsOptions   *metricutils.ConfigStatusMetricsOpts
+	configStatusMetricsOptions   map[string]*metricutils.MetricLabels
 }
 
-func NewValidatorConfig(translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool, configStatusMetricsOptions *metricutils.ConfigStatusMetricsOpts) ValidatorConfig {
+func NewValidatorConfig(translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool, configStatusMetricsOptions map[string]*metricutils.MetricLabels) ValidatorConfig {
 	return ValidatorConfig{
 		translator:                   translator,
 		validationClient:             validationClient,

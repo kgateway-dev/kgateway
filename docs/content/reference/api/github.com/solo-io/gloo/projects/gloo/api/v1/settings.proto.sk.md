@@ -29,7 +29,6 @@ weight: 5
 - [RateLimits](#ratelimits)
 - [ObservabilityOptions](#observabilityoptions)
 - [GrafanaIntegration](#grafanaintegration)
-- [ConfigStatusMetricsOptions](#configstatusmetricsoptions)
 - [MetricLabels](#metriclabels)
 - [UpstreamOptions](#upstreamoptions)
 - [GlooOptions](#gloooptions)
@@ -460,14 +459,14 @@ Provides overrides for the default configuration parameters used to interact wit
 
 ```yaml
 "grafanaIntegration": .gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration
-"configStatusMetrics": .gloo.solo.io.Settings.ObservabilityOptions.ConfigStatusMetricsOptions
+"configStatusMetricLabels": map<string, .gloo.solo.io.Settings.ObservabilityOptions.MetricLabels>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `grafanaIntegration` | [.gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration](../settings.proto.sk/#grafanaintegration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |
-| `configStatusMetrics` | [.gloo.solo.io.Settings.ObservabilityOptions.ConfigStatusMetricsOptions](../settings.proto.sk/#configstatusmetricsoptions) | Options to configure Gloo's suite of metrics around resource status. |
+| `configStatusMetricLabels` | `map<string, .gloo.solo.io.Settings.ObservabilityOptions.MetricLabels>` | Provides the ability to record metrics tracking the configuration status of various resource types. Each (key, value) pair in the map defines a metric for a particular resource type. key: Specifies the name (GroupVersionKind) of the resource whose status is to be tracked (e.g. "VirtualService.v1.gateway.solo.io") value: Specifies the labels to set on the metric. |
 
 
 
@@ -491,29 +490,9 @@ Provides settings related to the observability pod's interactions with grafana
 
 
 ---
-### ConfigStatusMetricsOptions
-
- 
-Provides the ability to specify which label(s) to apply to the
-`*_config_status` metric for each resource type.
-
-```yaml
-"virtualServiceLabels": .gloo.solo.io.Settings.ObservabilityOptions.ConfigStatusMetricsOptions.MetricLabels
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `virtualServiceLabels` | [.gloo.solo.io.Settings.ObservabilityOptions.ConfigStatusMetricsOptions.MetricLabels](../settings.proto.sk/#metriclabels) | Labels for the virtual_service_config_status metric. If unspecified or the map is empty, then the virtual_service_config_status metric will not be recorded. |
-
-
-
-
----
 ### MetricLabels
 
- 
-Defines which labels to apply for a metric.
+
 
 ```yaml
 "labelToPath": map<string, string>

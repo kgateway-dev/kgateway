@@ -660,12 +660,6 @@ var _ = Describe("Validator", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(rows).NotTo(BeEmpty())
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(0))
-
-				// TODO(mitchaman): Write better tests that actually utilize labels
-				rows, err = view.RetrieveData("validation.gateway.solo.io/virtual_service_config_status")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(rows).NotTo(BeEmpty())
-				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
 			})
 			It("returns 0 when there are validation warnings and allowWarnings is false", func() {
 				v.allowWarnings = false
@@ -1229,14 +1223,8 @@ var _ = Describe("Validator", func() {
 	})
 })
 
-func getMetricOpts() *metricutils.ConfigStatusMetricsOpts {
-	return &metricutils.ConfigStatusMetricsOpts{
-		VirtualServiceLabels: &gloov1.Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels{
-			LabelToPath: map[string]string{
-				"name": "metadata.name",
-			},
-		},
-	}
+func getMetricOpts() map[string]*metricutils.MetricLabels {
+	return map[string]*metricutils.MetricLabels{}
 }
 
 type mockValidationClient struct {

@@ -1166,14 +1166,21 @@ func (m *Settings_ObservabilityOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetConfigStatusMetrics()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetConfigStatusMetrics()) {
-			return false
+	if len(m.GetConfigStatusMetricLabels()) != len(target.GetConfigStatusMetricLabels()) {
+		return false
+	}
+	for k, v := range m.GetConfigStatusMetricLabels() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetConfigStatusMetricLabels()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetConfigStatusMetricLabels()[k]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetConfigStatusMetrics(), target.GetConfigStatusMetrics()) {
-			return false
-		}
+
 	}
 
 	return true
@@ -1326,48 +1333,14 @@ func (m *Settings_ObservabilityOptions_GrafanaIntegration) Equal(that interface{
 }
 
 // Equal function
-func (m *Settings_ObservabilityOptions_ConfigStatusMetricsOptions) Equal(that interface{}) bool {
+func (m *Settings_ObservabilityOptions_MetricLabels) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions)
+	target, ok := that.(*Settings_ObservabilityOptions_MetricLabels)
 	if !ok {
-		that2, ok := that.(Settings_ObservabilityOptions_ConfigStatusMetricsOptions)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetVirtualServiceLabels()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetVirtualServiceLabels()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetVirtualServiceLabels(), target.GetVirtualServiceLabels()) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels)
-	if !ok {
-		that2, ok := that.(Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels)
+		that2, ok := that.(Settings_ObservabilityOptions_MetricLabels)
 		if ok {
 			target = &that2
 		} else {

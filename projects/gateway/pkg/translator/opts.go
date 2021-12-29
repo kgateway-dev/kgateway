@@ -22,7 +22,7 @@ type Opts struct {
 	DevMode                       bool
 	ReadGatewaysFromAllNamespaces bool
 	Validation                    *ValidationOpts
-	ConfigStatusMetricOpts        *metricutils.ConfigStatusMetricsOpts
+	ConfigStatusMetricOpts        map[string]*metricutils.MetricLabels
 }
 
 type ValidationOpts struct {

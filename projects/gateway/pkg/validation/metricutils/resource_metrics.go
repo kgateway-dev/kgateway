@@ -13,35 +13,36 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/jsonpath"
 )
 
-type ConfigStatusMetricsOpts = gloov1.Settings_ObservabilityOptions_ConfigStatusMetricsOptions
+type MetricLabels = gloov1.Settings_ObservabilityOptions_MetricLabels
 
-type resourceKind int
-
-const (
-	virtualService resourceKind = iota
-	gateway
-)
-
-var metricNames = map[resourceKind]string{
-	virtualService: "validation.gateway.solo.io/virtual_service_config_status",
-	// gateway:        "validation.gateway.solo.io/gateway_config_status",
+var metricNames = map[schema.GroupVersionKind]string{
+	gwv1.VirtualServiceGVK: "validation.gateway.solo.io/virtual_service_config_status",
+	gwv1.GatewayGVK:        "validation.gateway.solo.io/gateway_config_status",
+	gwv1.RouteTableGVK:     "validation.gateway.solo.io/route_table_config_status",
+	gloov1.UpstreamGVK:     "validation.gateway.solo.io/upstream_config_status",
+	gloov1.SecretGVK:       "validation.gateway.solo.io/secret_config_status",
 }
 
-var metricDescriptions = map[resourceKind]string{
-	virtualService: "TODO",
+var metricDescriptions = map[schema.GroupVersionKind]string{
+	gwv1.VirtualServiceGVK: "TODO", // TODO(mitchaman)
+	gwv1.GatewayGVK:        "",     // TODO(mitchaman)
+	gwv1.RouteTableGVK:     "",     // TODO(mitchaman)
+	gloov1.UpstreamGVK:     "",     // TODO(mitchaman)
+	gloov1.SecretGVK:       "",     // TODO(mitchaman)
 }
 
-// ConfigStatusMetrics is a collection of metrics for recording config status for various
-// resource types
+// ConfigStatusMetrics is a collection of metrics, each of which records if the configuration for
+// a particular resource type is valid
 type ConfigStatusMetrics struct {
-	vs *resourceMetric
+	metrics map[schema.GroupVersionKind]*resourceMetric
 }
 
-// resourceMetric is functionally equivalent to a gauge. Additionally, it stores information
-// regarding which labels, and how to obtain the values for those labels, should get applied.
+// resourceMetric is a wrapper around a gauge. In addition to a gauge itself, it stores information
+// regarding which labels should get applied to it, and how to obtain the values for those labels.
 type resourceMetric struct {
 	gauge       *stats.Int64Measure
 	labelToPath map[string]string
@@ -49,48 +50,81 @@ type resourceMetric struct {
 
 // NewConfigStatusMetrics creates and returns a ConfigStatusMetrics from the specified options.
 // If the options are invalid, an error is returned.
-func NewConfigStatusMetrics(opts *ConfigStatusMetricsOpts) (*ConfigStatusMetrics, error) {
-	vs, err := newResourceMetric(virtualService, opts.GetVirtualServiceLabels().GetLabelToPath())
-	if err != nil {
-		return nil, err
+func NewConfigStatusMetrics(opts map[string]*MetricLabels) (*ConfigStatusMetrics, error) {
+	configMetrics := &ConfigStatusMetrics{
+		metrics: make(map[schema.GroupVersionKind]*resourceMetric),
 	}
-	return &ConfigStatusMetrics{
-		vs: vs,
-	}, nil
+	for gvkString, labels := range opts {
+		gvk, err := parseGroupVersionKind(gvkString)
+		if err != nil {
+			return nil, err
+		}
+		metric, err := newResourceMetric(gvk, labels.GetLabelToPath())
+		if err != nil {
+			return nil, err
+		}
+		configMetrics.insertMetric(gvk, metric)
+	}
+	return configMetrics, nil
+}
+
+func parseGroupVersionKind(arg string) (schema.GroupVersionKind, error) {
+	gvk, _ := schema.ParseKindArg(arg)
+	if gvk == nil {
+		return schema.GroupVersionKind{}, errors.Errorf("unable to parse GVK from string '%s'", arg)
+	}
+	if _, ok := metricNames[*gvk]; !ok {
+		return schema.GroupVersionKind{}, errors.Errorf("config status metric reporting is not supported for resource type '%s'", arg)
+	}
+	return *gvk, nil
+}
+
+func resourceToGvk(resource resources.Resource) (schema.GroupVersionKind, error) {
+	switch resource.(type) {
+	case *gwv1.VirtualService:
+		return gwv1.VirtualServiceGVK, nil
+	// TODO(mitchaman): Add other resource types
+	default:
+		return schema.GroupVersionKind{}, errors.Errorf("config status metric reporting is not supported for resource type: %T", resource)
+	}
 }
 
 func (m *ConfigStatusMetrics) SetResourceValid(ctx context.Context, resource resources.Resource) {
 	log := contextutils.LoggerFrom(ctx)
-	switch typed := resource.(type) {
-	case *gwv1.VirtualService:
-		if m.vs != nil {
-			log.Debugf("Setting virtual service '%s' valid", typed.GetMetadata().Ref())
-			mutators, err := getMutators(m.vs, typed)
-			if err != nil {
-				log.Errorf("Error setting labels on %s: %s", metricNames[virtualService], err.Error())
-			}
-			utils2.MeasureZero(ctx, m.vs.gauge, mutators...)
+	gvk, err := resourceToGvk(resource)
+	if err != nil {
+		log.Errorf("Unable to set config status valid for resource '%s': %s", resource.GetMetadata().Ref(), err.Error())
+		return
+	}
+	if m.metrics[gvk] != nil {
+		log.Debugf("Setting '%s' config metric valid", resource.GetMetadata().Ref())
+		mutators, err := getMutators(m.metrics[gvk], resource)
+		if err != nil {
+			log.Errorf("Error setting labels on %s: %s", metricNames[gvk], err.Error())
 		}
-	default:
-		log.Debugf("No resource metric handler configured for resource type: %T", resource)
+		utils2.MeasureZero(ctx, m.metrics[gvk].gauge, mutators...)
 	}
 }
 
 func (m *ConfigStatusMetrics) SetResourceInvalid(ctx context.Context, resource resources.Resource) {
 	log := contextutils.LoggerFrom(ctx)
-	switch typed := resource.(type) {
-	case *gwv1.VirtualService:
-		if m.vs != nil {
-			log.Debugf("Setting virtual service '%s' invalid", typed.GetMetadata().Ref())
-			mutators, err := getMutators(m.vs, typed)
-			if err != nil {
-				log.Errorf("Error setting labels on %s: %s", metricNames[virtualService], err.Error())
-			}
-			utils2.MeasureOne(ctx, m.vs.gauge, mutators...)
-		}
-	default:
-		log.Debugf("No resource metric handler configured for resource type: %T", resource)
+	gvk, err := resourceToGvk(resource)
+	if err != nil {
+		log.Errorf("Unable to set config status valid for resource '%s': %s", resource.GetMetadata().Ref(), err.Error())
+		return
 	}
+	if m.metrics[gvk] != nil {
+		log.Debugf("Setting '%s' config metric invalid", resource.GetMetadata().Ref())
+		mutators, err := getMutators(m.metrics[gvk], resource)
+		if err != nil {
+			log.Errorf("Error setting labels on %s: %s", metricNames[gvk], err.Error())
+		}
+		utils2.MeasureOne(ctx, m.metrics[gvk].gauge, mutators...)
+	}
+}
+
+func (m *ConfigStatusMetrics) insertMetric(gvk schema.GroupVersionKind, metric *resourceMetric) {
+	m.metrics[gvk] = metric
 }
 
 func getMutators(metric *resourceMetric, resource resources.Resource) ([]tag.Mutator, error) {
@@ -141,7 +175,7 @@ func extractValueFromResource(resource resources.Resource, jsonPath string) (str
 
 // Returns a resourceMetric, or nil if labelToPath is nil or empty. An error is returned if the
 // labelToPath configuration is invalid (for example, specifies an invalid label key).
-func newResourceMetric(kind resourceKind, labelToPath map[string]string) (*resourceMetric, error) {
+func newResourceMetric(gvk schema.GroupVersionKind, labelToPath map[string]string) (*resourceMetric, error) {
 	numLabels := len(labelToPath)
 	if numLabels > 0 {
 		tagKeys := make([]tag.Key, numLabels)
@@ -150,12 +184,12 @@ func newResourceMetric(kind resourceKind, labelToPath map[string]string) (*resou
 			var err error
 			tagKeys[i], err = tag.NewKey(k)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Error creating resourceMetric for %s", metricNames[virtualService])
+				return nil, errors.Wrapf(err, "Error creating resourceMetric for %s", metricNames[gvk])
 			}
 			i++
 		}
 		return &resourceMetric{
-			gauge:       utils2.MakeGauge(metricNames[kind], metricDescriptions[kind], tagKeys...),
+			gauge:       utils2.MakeGauge(metricNames[gvk], metricDescriptions[gvk], tagKeys...),
 			labelToPath: labelToPath,
 		}, nil
 	}

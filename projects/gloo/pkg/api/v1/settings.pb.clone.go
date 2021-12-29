@@ -677,10 +677,17 @@ func (m *Settings_ObservabilityOptions) Clone() proto.Message {
 		target.GrafanaIntegration = proto.Clone(m.GetGrafanaIntegration()).(*Settings_ObservabilityOptions_GrafanaIntegration)
 	}
 
-	if h, ok := interface{}(m.GetConfigStatusMetrics()).(clone.Cloner); ok {
-		target.ConfigStatusMetrics = h.Clone().(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions)
-	} else {
-		target.ConfigStatusMetrics = proto.Clone(m.GetConfigStatusMetrics()).(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions)
+	if m.GetConfigStatusMetricLabels() != nil {
+		target.ConfigStatusMetricLabels = make(map[string]*Settings_ObservabilityOptions_MetricLabels, len(m.GetConfigStatusMetricLabels()))
+		for k, v := range m.GetConfigStatusMetricLabels() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ConfigStatusMetricLabels[k] = h.Clone().(*Settings_ObservabilityOptions_MetricLabels)
+			} else {
+				target.ConfigStatusMetricLabels[k] = proto.Clone(v).(*Settings_ObservabilityOptions_MetricLabels)
+			}
+
+		}
 	}
 
 	return target
@@ -765,29 +772,12 @@ func (m *Settings_ObservabilityOptions_GrafanaIntegration) Clone() proto.Message
 }
 
 // Clone function
-func (m *Settings_ObservabilityOptions_ConfigStatusMetricsOptions) Clone() proto.Message {
-	var target *Settings_ObservabilityOptions_ConfigStatusMetricsOptions
+func (m *Settings_ObservabilityOptions_MetricLabels) Clone() proto.Message {
+	var target *Settings_ObservabilityOptions_MetricLabels
 	if m == nil {
 		return target
 	}
-	target = &Settings_ObservabilityOptions_ConfigStatusMetricsOptions{}
-
-	if h, ok := interface{}(m.GetVirtualServiceLabels()).(clone.Cloner); ok {
-		target.VirtualServiceLabels = h.Clone().(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels)
-	} else {
-		target.VirtualServiceLabels = proto.Clone(m.GetVirtualServiceLabels()).(*Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels)
-	}
-
-	return target
-}
-
-// Clone function
-func (m *Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels) Clone() proto.Message {
-	var target *Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels
-	if m == nil {
-		return target
-	}
-	target = &Settings_ObservabilityOptions_ConfigStatusMetricsOptions_MetricLabels{}
+	target = &Settings_ObservabilityOptions_MetricLabels{}
 
 	if m.GetLabelToPath() != nil {
 		target.LabelToPath = make(map[string]string, len(m.GetLabelToPath()))

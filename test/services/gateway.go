@@ -247,7 +247,7 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 		},
 		Validation:             validation,
 		DevMode:                false,
-		ConfigStatusMetricOpts: runOptions.Settings.GetObservabilityOptions().GetConfigStatusMetrics(),
+		ConfigStatusMetricOpts: runOptions.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels(),
 	}
 }
 
