@@ -466,7 +466,7 @@ Provides overrides for the default configuration parameters used to interact wit
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `grafanaIntegration` | [.gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration](../settings.proto.sk/#grafanaintegration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |
-| `configStatusMetricLabels` | `map<string, .gloo.solo.io.Settings.ObservabilityOptions.MetricLabels>` | Provides the ability to record metrics tracking the configuration status of various resource types. Each (key, value) pair in the map defines a metric for a particular resource type. key: Specifies the name (GroupVersionKind) of the resource whose status is to be tracked (e.g. "VirtualService.v1.gateway.solo.io") value: Specifies the labels to set on the metric. |
+| `configStatusMetricLabels` | `map<string, .gloo.solo.io.Settings.ObservabilityOptions.MetricLabels>` | Provides the ability to record metrics tracking the configuration status of various resource types. Each (key, value) pair in the map defines a metric for a particular resource type. Configuration status metrics are not recorded by default; metrics will only be recorded for the resources specified in this map. Keys specify the resource type (GroupVersionKind) whose status is to be tracked (e.g. "VirtualService.v1.gateway.solo.io"). Values specify the labels to set on the metric. |
 
 
 
@@ -501,7 +501,7 @@ Provides settings related to the observability pod's interactions with grafana
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `labelToPath` | `map<string, string>` | Each (key, value) pair in the map defines a label to be applied. key: Specifies the name of the label (e.g. "namespace") value: Specifies the jsonpath string corresponding to the field on the resource (e.g. "{.metadata.namespace}"). |
+| `labelToPath` | `map<string, string>` | Each (key, value) pair in the map defines a label to be applied. Keys specify the name of the label (e.g. "namespace"). Values specify the jsonpath (https://kubernetes.io/docs/reference/kubectl/jsonpath/) string corresponding to the field of a resource to use as the label value (e.g. "{.metadata.namespace}"). |
 
 
 

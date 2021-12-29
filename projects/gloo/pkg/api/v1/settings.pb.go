@@ -1717,10 +1717,10 @@ type Settings_ObservabilityOptions struct {
 	// Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
 	GrafanaIntegration *Settings_ObservabilityOptions_GrafanaIntegration `protobuf:"bytes,1,opt,name=grafanaIntegration,proto3" json:"grafanaIntegration,omitempty"`
 	// Provides the ability to record metrics tracking the configuration status of various resource types.
-	// Each (key, value) pair in the map defines a metric for a particular resource type.
-	//   key:   Specifies the name (GroupVersionKind) of the resource whose status is to be tracked
-	//          (e.g. "VirtualService.v1.gateway.solo.io")
-	//   value: Specifies the labels to set on the metric
+	// Each (key, value) pair in the map defines a metric for a particular resource type. Configuration status
+	// metrics are not recorded by default; metrics will only be recorded for the resources specified in this map.
+	// Keys specify the resource type (GroupVersionKind) whose status is to be tracked
+	// (e.g. "VirtualService.v1.gateway.solo.io"). Values specify the labels to set on the metric.
 	ConfigStatusMetricLabels map[string]*Settings_ObservabilityOptions_MetricLabels `protobuf:"bytes,2,rep,name=config_status_metric_labels,json=configStatusMetricLabels,proto3" json:"config_status_metric_labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -2002,10 +2002,9 @@ type Settings_ObservabilityOptions_MetricLabels struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Each (key, value) pair in the map defines a label to be applied.
-	//   key:   Specifies the name of the label (e.g. "namespace")
-	//   value: Specifies the jsonpath string corresponding to the field on the resource
-	//          (e.g. "{.metadata.namespace}")
+	// Each (key, value) pair in the map defines a label to be applied. Keys specify the name of the label
+	// (e.g. "namespace"). Values specify the jsonpath (https://kubernetes.io/docs/reference/kubectl/jsonpath/)
+	// string corresponding to the field of a resource to use as the label value (e.g. "{.metadata.namespace}").
 	LabelToPath map[string]string `protobuf:"bytes,1,rep,name=label_to_path,json=labelToPath,proto3" json:"label_to_path,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
