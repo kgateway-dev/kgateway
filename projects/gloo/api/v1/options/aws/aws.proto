@@ -72,6 +72,8 @@ message DestinationSpec {
 
     // Unwrap the response as if the proxy was an ALB.
     // Intended to ease migration when previously using alb to invoke Lambdas.
+    // For further information see below link for the expected format when true.
+    // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
     bool unwrap_as_alb = 7;
 
 }
