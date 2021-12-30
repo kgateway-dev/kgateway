@@ -1,6 +1,3 @@
-{{- if .Values.gateway.updateValues -}}
-{{- include "gloo.updatevalues" . -}}
-{{- end -}}
 {{ define "gloo.deploymentSpec" }}
 {{- $image := .Values.gloo.deployment.image }}
 {{- $statsConfig := coalesce .Values.gloo.deployment.stats .Values.global.glooStats -}}

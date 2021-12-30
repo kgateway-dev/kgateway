@@ -1,6 +1,3 @@
-{{- if .Values.gateway.updateValues -}}
-{{- include "gloo.updatevalues" . -}}
-{{- end -}}
 {{- define "discovery.deploymentSpec"}}
 {{- if .Values.discovery.enabled }}
 {{- $statsConfig := coalesce .Values.discovery.deployment.stats .Values.global.glooStats -}}
