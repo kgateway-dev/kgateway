@@ -1,0 +1,8 @@
+changelog:
+- type: NON_USER_FACING
+  description: Allows for GLOO_LICENSE_KEY env var to be automatically populated from generated license secret in the gloo and discovery pods.
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/5751
+  resolvesIssue: false
+  description: |
+    `license_secret_name` should now be under `gloo.license_secret_name` in the helm `values.yaml` file if it is used.
