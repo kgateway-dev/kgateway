@@ -10,26 +10,27 @@ There are certain cases where it's more relevant to directly plug the `ext_authz
 
 ## Calling an external authorization service
 
-Say you are running an corporate access management service, that is in charge of returning new claims, like the `role` of the user who is authenticated.
-With Gloo Edge Enterprise, there are two - non-exclusive - ways of calling such an _external_ service:
-- Option A: use the **Passthrough Auth** [plugin](http://localhost:1313/guides/security/auth/extauth/passthrough_auth/), which comes with all the ExtAuth options (see `AuthConfig > passthrough`)
-- Option B: define an additional ExtAuth server, using `namedExtAuth` and call it on the routes of your choice
+Say you are running a corporate access management service that is in charge of returning new claims, like the `role` of the user who is authenticated.
+With Gloo Edge Enterprise, you can call the external service in two, non-exclusive ways, as shown in the following figure.
+- Option A: use the **Passthrough Auth** [plug-in]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/" >}}), which comes with all the ExtAuth options (see `AuthConfig > passthrough`)
+- Option B: define an additional ExtAuth server with the `namedExtAuth` setting, and call the additional ExtAuth server on the routes of your choice
 
 ![Calling an external authorization service](./two-options-external-authz-service.png)
 
-While there is an extra network hop in the first case, you will be able to leverage the `AuthConfig` CR, and also to easily pass information between the authN/Z steps. See the [dedicated guide]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/" %}}) for more information.
+In the first option, the connection has an extra network hop, but you can use the `AuthConfig` CR and more easily pass information between the authentication and authorization steps. For more information, see the [gRPC Passthrough Auth guide]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/" %}}).
 
 ### Option A - Using the passthrough system
 
 With Option A, you can compose your authentication and authorization workflow with the `AuthConfig` Custom Resource.
-For instance, you can have a block that leverages the builtin OpenID Connect plugin and another block where you define how to call your external authorization service. 
+For instance, you can have a block that leverages the built-in OpenID Connect plug-in and another block where you define how to call your external authorization service. 
 
-Below is an common use case where Gloo achieves the following steps:
-- use OIDC to authenticate the end-user
-- use the passthrough system to populate the request with an additional JWT, having authorization-centered claims (roles, etc.)
-- use the JWT policy to verify the signature of the newly created JWT
+The following diagram depicts a common use case wherein Gloo:
+- uses OIDC to authenticate the end user
+- uses the passthrough system to populate the request with an additional JWT, having authorization-centered claims (roles, etc.)
+- uses the JWT policy to verify the signature of the newly created JWT
 
-![Compose your AuthN + AuthZ security workflow](./authconfig-oidc-and-passthrough.png)
+<figure><img src="{{% versioned_link_path fromRoot="/guides/security/auth/multi_authz/authconfig-oidc-and-passthrough.png" %}}">
+<figcaption style="text-align:center;font-style:italic">Figure: Configure your authentication and authorization security workflow</figcaption></figure>
 
 Also, note you can pass values between the `AuthConfig` blocks using the `State` map. More info in this [section]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/#sharing-state-with-other-auth-steps" %}}).
 
@@ -37,10 +38,9 @@ You can use either the [gRPC Passthrough Auth]({{% versioned_link_path fromRoot=
 
 ### Option B - Using namedExtAuth
 
-With this new option (available from version 1.9), you can define additional ExtAuthZ servers in the Gloo Edge settings.
-For that, you must register your authorization servers in the "default" `Settings` custom resource. See the [API reference](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#settings).
+In Gloo Edge Enterprise version 1.9 or later, you can define additional ExtAuthZ servers in the Gloo Edge settings.
+For that, you must register your authorization servers in the "default" `Settings` custom resource, as shown in the following example. For more information, see the [API reference](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#settings).
 
-Below is an example:
 
 {{< highlight bash "hl_lines=9-15" >}}
 kubectl -n gloo-system patch st/default --type merge -p "
@@ -95,21 +95,23 @@ spec:
 
 ## The gRPC specification
 
-Be it with the **Passthrough Auth** option or with the **namedExtAuth** option, you must conform to the Envoy specification for the external Authorization service: https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/auth/v3/external_auth.proto
+For both the **Passthrough Auth** option and the **namedExtAuth** option, you must conform to the Envoy specification for the external Authorization service. For more information, see the following resources.
 
-You will find more details in the [dedicated article]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/" %}}). Also, there are examples in this GitHub repository: https://github.com/solo-io/gloo/tree/master/docs/examples/grpc-passthrough-auth/pkg/auth/v3
+* [Envoy external auth proto](https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/auth/v3/external_auth.proto)
+* [gRPC Passthrough Auth guide]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/" %}})
+* [GitHub repo with Go examples](https://github.com/solo-io/gloo/tree/master/docs/examples/grpc-passthrough-auth/pkg/auth/v3)
 
 ## Managing headers
 
-If you want to add new headers to the request from your external authorization service, this is possible.
+You can add new headers to the request from your external authorization service.
 
 ### gRPC mode
 
-In the case of gRPC, you will rely on the [protobuf specification](https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/auth/v3/external_auth.proto#L76) and you need [to populate]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/#sharing-state-with-other-auth-steps" %}}) the `OkHttpResponse` with the new headers. They will be visible to the rest of the filter chain and they will be passed to the upstream service. See [this section]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/#sharing-state-with-other-auth-steps" %}}) of the documentation.
+For gRPC, use the [protobuf specification](https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/auth/v3/external_auth.proto#L76) and [populate the `OkHttpResponse`]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/#sharing-state-with-other-auth-steps" %}}) with the new headers. The new headers are visible to the rest of the filter chain and are passed to the upstream service. For more information, see [Sharing state with other auth steps]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/#sharing-state-with-other-auth-steps" %}}).
 
 ### HTTP mode
 
-With both the **HTTP passthrough** option and the **namedExtAuth** with HTTP option, if you want to send new headers to the rest of the filter chain or to the upstream service, then just add them to the authorization response and they will be merged into the original request before being forwarded upstream.
+With both the **HTTP passthrough** option and the **namedExtAuth** with HTTP option, if you want to send new headers to the rest of the filter chain or to the upstream service, then just add the headers to the authorization response. Then, the headers are merged into the original request before being forwarded upstream.
 
 You also decide which headers are allowed to go upstream and which are not. Under the `httpService` option, you can [define]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#response" %}}) some rules about headers you want to forward to the external authorization service, and also rules to sanitize headers before forwarding the request upstream.
 
