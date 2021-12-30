@@ -49,6 +49,8 @@ func (m *AWSLambdaPerRoute) Clone() proto.Message {
 		target.EmptyBodyOverride = proto.Clone(m.GetEmptyBodyOverride()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	}
 
+	target.UnwrapAsAlb = m.GetUnwrapAsAlb()
+
 	return target
 }
 

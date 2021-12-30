@@ -194,8 +194,9 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 						Async: awsDestinationSpec.Aws.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
 						// we need to query escape per AWS spec:
 						// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-						Qualifier: url.QueryEscape(lambdaFunc.GetQualifier()),
-						Name:      lambdaFunc.GetLambdaFunctionName(),
+						Qualifier:   url.QueryEscape(lambdaFunc.GetQualifier()),
+						Name:        lambdaFunc.GetLambdaFunctionName(),
+						UnwrapAsAlb: awsDestinationSpec.Aws.GetUnwrapAsAlb(),
 					}
 
 					return lambdaRouteFunc, nil
