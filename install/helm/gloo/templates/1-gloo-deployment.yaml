@@ -167,6 +167,13 @@ spec:
           mountPath: /etc/gloo
           readOnly: true
         env:
+{{- if .Values.license_secret_name }}
+          - name: GLOO_LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.license_secret_name }}
+                key: license-key
+{{- end }}
 {{- if .Values.gloo.deployment.customEnv }}
 {{ toYaml .Values.gloo.deployment.customEnv | indent 10 }}
 {{- end }}
