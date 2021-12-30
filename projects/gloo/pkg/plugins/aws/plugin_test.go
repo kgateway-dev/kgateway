@@ -326,7 +326,6 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should process route with addon options", func() {
-
 			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
 			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().InvocationStyle = 1
 			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
