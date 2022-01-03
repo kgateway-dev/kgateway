@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -41,7 +43,7 @@ var _ = Describe("Translator", func() {
 
 	Context("translator", func() {
 		BeforeEach(func() {
-			translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, Opts{})
+			translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}, &HybridTranslator{&HttpTranslator{}}}, Opts{})
 			snap = &v1.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
@@ -155,7 +157,7 @@ var _ = Describe("Translator", func() {
 			Expect(httpListener.Options.Waf).To(Equal(waf))
 		})
 
-		It("should translate two gateways with same name (different types) to one proxy with the same name", func() {
+		It("should translate three gateways with same name (different types) to one proxy with the same name", func() {
 			snap.Gateways = append(
 				snap.Gateways,
 				&v1.Gateway{
@@ -164,6 +166,21 @@ var _ = Describe("Translator", func() {
 						TcpGateway: &v1.TcpGateway{},
 					},
 				},
+				&v1.Gateway{
+					Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
+					GatewayType: &v1.Gateway_HybridGateway{
+						HybridGateway: &v1.HybridGateway{
+							MatchedGateways: []*v1.MatchedGateway{
+								{
+									GatewayType: &v1.MatchedGateway_HttpGateway{
+										HttpGateway: &v1.HttpGateway{},
+									},
+								},
+							},
+						},
+					},
+					BindPort: 3,
+				},
 			)
 
 			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
@@ -171,7 +188,7 @@ var _ = Describe("Translator", func() {
 			Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
 			Expect(proxy.Metadata.Namespace).To(Equal(ns))
-			Expect(proxy.Listeners).To(HaveLen(2))
+			Expect(proxy.Listeners).To(HaveLen(3))
 		})
 
 		It("should translate two gateways with same name (and types) to one proxy with the same name", func() {
@@ -236,7 +253,7 @@ var _ = Describe("Translator", func() {
 
 		Context("when the gateway CRDs don't clash", func() {
 			BeforeEach(func() {
-				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, Opts{
+				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}, &HybridTranslator{HttpTranslator: &HttpTranslator{}}}, Opts{
 					ReadGatewaysFromAllNamespaces: true,
 				})
 				snap = &v1.ApiSnapshot{
@@ -775,7 +792,7 @@ var _ = Describe("Translator", func() {
 					}
 				})
 
-				It("should warn when a virtual services does not specify a virtual host", func() {
+				It("should warn when a virtual service does not specify a virtual host", func() {
 					snap.VirtualServices[0].VirtualHost = nil
 
 					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
@@ -787,7 +804,7 @@ var _ = Describe("Translator", func() {
 					Expect(errs.Error()).To(ContainSubstring(NoVirtualHostErr(snap.VirtualServices[0]).Error()))
 				})
 
-				It("should error when a virtual services has invalid regex", func() {
+				It("should error when a virtual service has invalid regex", func() {
 					snap.VirtualServices[0].VirtualHost.Routes[0].Matchers[0] = &matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "["}}
 
 					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
@@ -803,7 +820,7 @@ var _ = Describe("Translator", func() {
 			Context("validate matcher short-circuiting warnings", func() {
 
 				BeforeEach(func() {
-					translator = NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: true}, &TcpTranslator{}}, Opts{})
+					translator = NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: true}, &TcpTranslator{}, &HybridTranslator{HttpTranslator: &HttpTranslator{WarnOnRouteShortCircuiting: true}}}, Opts{})
 				})
 
 				DescribeTable("warns on route short-circuiting", func(earlyMatcher, lateMatcher *matchers.Matcher, expectedErr error) {
@@ -1422,7 +1439,7 @@ var _ = Describe("Translator", func() {
 
 		Context("generating unique route names", func() {
 			BeforeEach(func() {
-				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, Opts{})
+				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}}, Opts{})
 			})
 
 			It("should generate unique names for multiple gateways", func() {
@@ -1798,6 +1815,203 @@ var _ = Describe("Translator", func() {
 
 	})
 
+	Context("hybrid", func() {
+		var (
+			factory *HybridTranslator
+
+			idleTimeout        *duration.Duration
+			tcpListenerOptions *gloov1.TcpListenerOptions
+			tcpHost            *gloov1.TcpHost
+		)
+
+		BeforeEach(func() {
+			factory = &HybridTranslator{HttpTranslator: &HttpTranslator{}}
+			translator = NewTranslator([]ListenerFactory{factory}, Opts{})
+
+			idleTimeout = prototime.DurationToProto(5 * time.Second)
+			tcpListenerOptions = &gloov1.TcpListenerOptions{
+				TcpProxySettings: &tcp.TcpProxySettings{
+					MaxConnectAttempts: &wrappers.UInt32Value{Value: 10},
+					IdleTimeout:        idleTimeout,
+					TunnelingConfig:    &tcp.TcpProxySettings_TunnelingConfig{Hostname: "proxyhostname"},
+				},
+			}
+			tcpHost = &gloov1.TcpHost{
+				Name: "host-one",
+				Destination: &gloov1.TcpHost_TcpAction{
+					Destination: &gloov1.TcpHost_TcpAction_UpstreamGroup{
+						UpstreamGroup: &core.ResourceRef{
+							Namespace: ns,
+							Name:      "ug-name",
+						},
+					},
+				},
+			}
+
+			snap = &v1.ApiSnapshot{
+				Gateways: v1.GatewayList{
+					{
+						Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+						GatewayType: &v1.Gateway_HybridGateway{
+							HybridGateway: &v1.HybridGateway{
+								MatchedGateways: []*v1.MatchedGateway{
+									{
+										Matcher: &v1.Matcher{
+											SourcePrefixRanges: []*v3.CidrRange{
+												{
+													AddressPrefix: "match1",
+												},
+											},
+										},
+										GatewayType: &v1.MatchedGateway_HttpGateway{
+											HttpGateway: &v1.HttpGateway{},
+										},
+									},
+									{
+										Matcher: &v1.Matcher{
+											SourcePrefixRanges: []*v3.CidrRange{
+												{
+													AddressPrefix: "match2",
+												},
+											},
+										},
+										GatewayType: &v1.MatchedGateway_TcpGateway{
+											TcpGateway: &v1.TcpGateway{
+												Options:  tcpListenerOptions,
+												TcpHosts: []*gloov1.TcpHost{tcpHost},
+											},
+										},
+									},
+								},
+							},
+						},
+						BindPort: 2,
+					},
+				},
+
+				VirtualServices: v1.VirtualServiceList{
+					{
+						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
+						VirtualHost: &v1.VirtualHost{
+							Domains: []string{"d1.com"},
+							Routes: []*v1.Route{
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/1",
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d1",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
+						VirtualHost: &v1.VirtualHost{
+							Domains: []string{"d2.com"},
+							Routes: []*v1.Route{
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/2",
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d2",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Metadata: &core.Metadata{Namespace: ns + "-other-namespace", Name: "name3", Labels: labelSet},
+						VirtualHost: &v1.VirtualHost{
+							Domains: []string{"d3.com"},
+							Routes: []*v1.Route{
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/3",
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d3",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+		})
+
+		It("can properly translate a hybrid proxy", func() {
+			proxy, _ := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+			Expect(proxy.Listeners).To(HaveLen(1))
+			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HybridListener).HybridListener
+			Expect(listener.MatchedListeners).To(HaveLen(2))
+
+			// http matched listener
+			Expect(listener.MatchedListeners[0].Matcher.SourcePrefixRanges).To(HaveLen(1))
+			Expect(listener.MatchedListeners[0].Matcher.SourcePrefixRanges[0].AddressPrefix).To(Equal("match1"))
+			Expect(listener.MatchedListeners[0].GetHttpListener()).NotTo(BeNil())
+			Expect(listener.MatchedListeners[0].GetHttpListener().VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
+
+			// tcp matched listener
+			Expect(listener.MatchedListeners[1].Matcher.SourcePrefixRanges).To(HaveLen(1))
+			Expect(listener.MatchedListeners[1].Matcher.SourcePrefixRanges[0].AddressPrefix).To(Equal("match2"))
+			Expect(listener.MatchedListeners[1].GetTcpListener()).NotTo(BeNil())
+			Expect(listener.MatchedListeners[1].GetTcpListener().Options).To(Equal(tcpListenerOptions))
+			Expect(listener.MatchedListeners[1].GetTcpListener().TcpHosts).To(HaveLen(1))
+			Expect(listener.MatchedListeners[1].GetTcpListener().TcpHosts[0]).To(Equal(tcpHost))
+		})
+
+		It("skips hybrid gateways that have no sub-gateways", func() {
+			snap.Gateways = v1.GatewayList{
+				{
+					Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+					GatewayType: &v1.Gateway_HybridGateway{
+						HybridGateway: &v1.HybridGateway{},
+					},
+					BindPort: 1,
+				},
+				{
+					Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+					GatewayType: &v1.Gateway_HybridGateway{
+						HybridGateway: &v1.HybridGateway{
+							MatchedGateways: []*v1.MatchedGateway{
+								{
+									Matcher: &v1.Matcher{
+										SourcePrefixRanges: []*v3.CidrRange{
+											{
+												AddressPrefix: "match1",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					BindPort: 2,
+				},
+			}
+
+			proxy, _ := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+			Expect(proxy.GetListeners()).To(BeNil())
+		})
+
+	})
 })
 
 var expectedRouteMetadatas = [][]*SourceMetadata{

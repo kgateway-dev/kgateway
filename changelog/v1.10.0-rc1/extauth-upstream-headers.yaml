@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/2983
+    description: Add allowed_upstream_headers_to_append options for extauthz
+

@@ -137,6 +137,11 @@ spec:
                     type: object
                   failureModeAllow:
                     type: boolean
+                  grpcService:
+                    properties:
+                      authority:
+                        type: string
+                    type: object
                   httpService:
                     properties:
                       pathPrefix:
@@ -163,6 +168,10 @@ spec:
                               type: string
                             type: array
                           allowedUpstreamHeaders:
+                            items:
+                              type: string
+                            type: array
+                          allowedUpstreamHeadersToAppend:
                             items:
                               type: string
                             type: array
@@ -362,6 +371,11 @@ spec:
                       type: object
                     failureModeAllow:
                       type: boolean
+                    grpcService:
+                      properties:
+                        authority:
+                          type: string
+                      type: object
                     httpService:
                       properties:
                         pathPrefix:
@@ -388,6 +402,10 @@ spec:
                                 type: string
                               type: array
                             allowedUpstreamHeaders:
+                              items:
+                                type: string
+                              type: array
+                            allowedUpstreamHeadersToAppend:
                               items:
                                 type: string
                               type: array

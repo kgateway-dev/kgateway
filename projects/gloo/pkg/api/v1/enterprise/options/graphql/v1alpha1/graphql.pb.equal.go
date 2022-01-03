@@ -26,346 +26,6 @@ var (
 )
 
 // Equal function
-func (m *PathSegment) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*PathSegment)
-	if !ok {
-		that2, ok := that.(PathSegment)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	switch m.Segment.(type) {
-
-	case *PathSegment_Key:
-		if _, ok := target.Segment.(*PathSegment_Key); !ok {
-			return false
-		}
-
-		if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
-			return false
-		}
-
-	case *PathSegment_Index:
-		if _, ok := target.Segment.(*PathSegment_Index); !ok {
-			return false
-		}
-
-		if m.GetIndex() != target.GetIndex() {
-			return false
-		}
-
-	case *PathSegment_All:
-		if _, ok := target.Segment.(*PathSegment_All); !ok {
-			return false
-		}
-
-		if m.GetAll() != target.GetAll() {
-			return false
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.Segment != target.Segment {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ValueProvider) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ValueProvider)
-	if !ok {
-		that2, ok := that.(ValueProvider)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetProviderTemplate(), target.GetProviderTemplate()) != 0 {
-		return false
-	}
-
-	switch m.Provider.(type) {
-
-	case *ValueProvider_GraphqlArg:
-		if _, ok := target.Provider.(*ValueProvider_GraphqlArg); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetGraphqlArg()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetGraphqlArg()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetGraphqlArg(), target.GetGraphqlArg()) {
-				return false
-			}
-		}
-
-	case *ValueProvider_TypedProvider:
-		if _, ok := target.Provider.(*ValueProvider_TypedProvider); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetTypedProvider()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetTypedProvider()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetTypedProvider(), target.GetTypedProvider()) {
-				return false
-			}
-		}
-
-	case *ValueProvider_GraphqlParent:
-		if _, ok := target.Provider.(*ValueProvider_GraphqlParent); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetGraphqlParent()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetGraphqlParent()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetGraphqlParent(), target.GetGraphqlParent()) {
-				return false
-			}
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.Provider != target.Provider {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *JsonValueList) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*JsonValueList)
-	if !ok {
-		that2, ok := that.(JsonValueList)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetValues()) != len(target.GetValues()) {
-		return false
-	}
-	for idx, v := range m.GetValues() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetValues()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetValues()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	return true
-}
-
-// Equal function
-func (m *JsonValue) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*JsonValue)
-	if !ok {
-		that2, ok := that.(JsonValue)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	switch m.JsonVal.(type) {
-
-	case *JsonValue_Node:
-		if _, ok := target.JsonVal.(*JsonValue_Node); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetNode()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetNode()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetNode(), target.GetNode()) {
-				return false
-			}
-		}
-
-	case *JsonValue_ValueProvider:
-		if _, ok := target.JsonVal.(*JsonValue_ValueProvider); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetValueProvider()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetValueProvider()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetValueProvider(), target.GetValueProvider()) {
-				return false
-			}
-		}
-
-	case *JsonValue_List:
-		if _, ok := target.JsonVal.(*JsonValue_List); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetList()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetList()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetList(), target.GetList()) {
-				return false
-			}
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.JsonVal != target.JsonVal {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *JsonKeyValue) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*JsonKeyValue)
-	if !ok {
-		that2, ok := that.(JsonKeyValue)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetValue()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetValue()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetValue(), target.GetValue()) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *JsonNode) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*JsonNode)
-	if !ok {
-		that2, ok := that.(JsonNode)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetKeyValues()) != len(target.GetKeyValues()) {
-		return false
-	}
-	for idx, v := range m.GetKeyValues() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetKeyValues()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetKeyValues()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	return true
-}
-
-// Equal function
 func (m *RequestTemplate) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -391,14 +51,8 @@ func (m *RequestTemplate) Equal(that interface{}) bool {
 	}
 	for k, v := range m.GetHeaders() {
 
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetHeaders()[k]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetHeaders()[k]) {
-				return false
-			}
+		if strings.Compare(v, target.GetHeaders()[k]) != 0 {
+			return false
 		}
 
 	}
@@ -408,26 +62,112 @@ func (m *RequestTemplate) Equal(that interface{}) bool {
 	}
 	for k, v := range m.GetQueryParams() {
 
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetQueryParams()[k]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetQueryParams()[k]) {
-				return false
-			}
+		if strings.Compare(v, target.GetQueryParams()[k]) != 0 {
+			return false
 		}
 
 	}
 
-	if h, ok := interface{}(m.GetOutgoingBody()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetOutgoingBody()) {
+	if h, ok := interface{}(m.GetBody()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetBody()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetOutgoingBody(), target.GetOutgoingBody()) {
+		if !proto.Equal(m.GetBody(), target.GetBody()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ResponseTemplate) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ResponseTemplate)
+	if !ok {
+		that2, ok := that.(ResponseTemplate)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetResultRoot(), target.GetResultRoot()) != 0 {
+		return false
+	}
+
+	if len(m.GetSetters()) != len(target.GetSetters()) {
+		return false
+	}
+	for k, v := range m.GetSetters() {
+
+		if strings.Compare(v, target.GetSetters()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GrpcRequestTemplate) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GrpcRequestTemplate)
+	if !ok {
+		that2, ok := that.(GrpcRequestTemplate)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetOutgoingMessageJson()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOutgoingMessageJson()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOutgoingMessageJson(), target.GetOutgoingMessageJson()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetServiceName(), target.GetServiceName()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetMethodName(), target.GetMethodName()) != 0 {
+		return false
+	}
+
+	if len(m.GetRequestMetadata()) != len(target.GetRequestMetadata()) {
+		return false
+	}
+	for k, v := range m.GetRequestMetadata() {
+
+		if strings.Compare(v, target.GetRequestMetadata()[k]) != 0 {
+			return false
+		}
+
 	}
 
 	return true
@@ -442,6 +182,115 @@ func (m *RESTResolver) Equal(that interface{}) bool {
 	target, ok := that.(*RESTResolver)
 	if !ok {
 		that2, ok := that.(RESTResolver)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetUpstreamRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUpstreamRef()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUpstreamRef(), target.GetUpstreamRef()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetRequest()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRequest()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRequest(), target.GetRequest()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetResponse()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetResponse()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetResponse(), target.GetResponse()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetSpanName(), target.GetSpanName()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GrpcDescriptorRegistry) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GrpcDescriptorRegistry)
+	if !ok {
+		that2, ok := that.(GrpcDescriptorRegistry)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.DescriptorSet.(type) {
+
+	case *GrpcDescriptorRegistry_ProtoDescriptor:
+		if _, ok := target.DescriptorSet.(*GrpcDescriptorRegistry_ProtoDescriptor); !ok {
+			return false
+		}
+
+		if strings.Compare(m.GetProtoDescriptor(), target.GetProtoDescriptor()) != 0 {
+			return false
+		}
+
+	case *GrpcDescriptorRegistry_ProtoDescriptorBin:
+		if _, ok := target.DescriptorSet.(*GrpcDescriptorRegistry_ProtoDescriptorBin); !ok {
+			return false
+		}
+
+		if bytes.Compare(m.GetProtoDescriptorBin(), target.GetProtoDescriptorBin()) != 0 {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.DescriptorSet != target.DescriptorSet {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GrpcResolver) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GrpcResolver)
+	if !ok {
+		that2, ok := that.(GrpcResolver)
 		if ok {
 			target = &that2
 		} else {
@@ -482,54 +331,6 @@ func (m *RESTResolver) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *QueryMatcher) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*QueryMatcher)
-	if !ok {
-		that2, ok := that.(QueryMatcher)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	switch m.Match.(type) {
-
-	case *QueryMatcher_FieldMatcher_:
-		if _, ok := target.Match.(*QueryMatcher_FieldMatcher_); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetFieldMatcher()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetFieldMatcher()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetFieldMatcher(), target.GetFieldMatcher()) {
-				return false
-			}
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.Match != target.Match {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
 func (m *Resolution) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -550,16 +351,6 @@ func (m *Resolution) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetMatcher()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMatcher()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetMatcher(), target.GetMatcher()) {
-			return false
-		}
-	}
-
 	switch m.Resolver.(type) {
 
 	case *Resolution_RestResolver:
@@ -573,6 +364,21 @@ func (m *Resolution) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetRestResolver(), target.GetRestResolver()) {
+				return false
+			}
+		}
+
+	case *Resolution_GrpcResolver:
+		if _, ok := target.Resolver.(*Resolution_GrpcResolver); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGrpcResolver()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGrpcResolver()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGrpcResolver(), target.GetGrpcResolver()) {
 				return false
 			}
 		}
@@ -628,205 +434,154 @@ func (m *GraphQLSchema) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetSchema(), target.GetSchema()) != 0 {
+	if h, ok := interface{}(m.GetExecutableSchema()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetExecutableSchema()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetExecutableSchema(), target.GetExecutableSchema()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExecutableSchema) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExecutableSchema)
+	if !ok {
+		that2, ok := that.(ExecutableSchema)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
 		return false
 	}
 
-	if m.GetEnableIntrospection() != target.GetEnableIntrospection() {
+	if strings.Compare(m.GetSchemaDefinition(), target.GetSchemaDefinition()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetExecutor()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetExecutor()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetExecutor(), target.GetExecutor()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetGrpcDescriptorRegistry()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGrpcDescriptorRegistry()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGrpcDescriptorRegistry(), target.GetGrpcDescriptorRegistry()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Executor) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Executor)
+	if !ok {
+		that2, ok := that.(Executor)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Executor.(type) {
+
+	case *Executor_Local_:
+		if _, ok := target.Executor.(*Executor_Local_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetLocal()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetLocal()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetLocal(), target.GetLocal()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Executor != target.Executor {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Executor_Local) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Executor_Local)
+	if !ok {
+		that2, ok := that.(Executor_Local)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
 		return false
 	}
 
 	if len(m.GetResolutions()) != len(target.GetResolutions()) {
 		return false
 	}
-	for idx, v := range m.GetResolutions() {
+	for k, v := range m.GetResolutions() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetResolutions()[idx]) {
+			if !h.Equal(target.GetResolutions()[k]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetResolutions()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ValueProvider_GraphQLArgExtraction) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ValueProvider_GraphQLArgExtraction)
-	if !ok {
-		that2, ok := that.(ValueProvider_GraphQLArgExtraction)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetArgName(), target.GetArgName()) != 0 {
-		return false
-	}
-
-	if len(m.GetPath()) != len(target.GetPath()) {
-		return false
-	}
-	for idx, v := range m.GetPath() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetPath()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetPath()[idx]) {
+			if !proto.Equal(v, target.GetResolutions()[k]) {
 				return false
 			}
 		}
 
 	}
 
-	if m.GetRequired() != target.GetRequired() {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ValueProvider_GraphQLParentExtraction) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ValueProvider_GraphQLParentExtraction)
-	if !ok {
-		that2, ok := that.(ValueProvider_GraphQLParentExtraction)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetPath()) != len(target.GetPath()) {
-		return false
-	}
-	for idx, v := range m.GetPath() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetPath()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetPath()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ValueProvider_TypedValueProvider) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ValueProvider_TypedValueProvider)
-	if !ok {
-		that2, ok := that.(ValueProvider_TypedValueProvider)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if m.GetType() != target.GetType() {
-		return false
-	}
-
-	switch m.ValProvider.(type) {
-
-	case *ValueProvider_TypedValueProvider_Header:
-		if _, ok := target.ValProvider.(*ValueProvider_TypedValueProvider_Header); !ok {
-			return false
-		}
-
-		if strings.Compare(m.GetHeader(), target.GetHeader()) != 0 {
-			return false
-		}
-
-	case *ValueProvider_TypedValueProvider_Value:
-		if _, ok := target.ValProvider.(*ValueProvider_TypedValueProvider_Value); !ok {
-			return false
-		}
-
-		if strings.Compare(m.GetValue(), target.GetValue()) != 0 {
-			return false
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.ValProvider != target.ValProvider {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *QueryMatcher_FieldMatcher) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*QueryMatcher_FieldMatcher)
-	if !ok {
-		that2, ok := that.(QueryMatcher_FieldMatcher)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetType(), target.GetType()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetField(), target.GetField()) != 0 {
+	if m.GetEnableIntrospection() != target.GetEnableIntrospection() {
 		return false
 	}
 

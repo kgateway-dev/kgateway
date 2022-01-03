@@ -90,6 +90,8 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.15'
   entrypoint: make
   env:
+  - 'ACK_GINKGO_RC=true'
+  - 'ACK_GINKGO_DEPRECATIONS=1.16.5'
   - 'ENVOY_BINARY=/workspace/envoy'
   - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
   - 'RUN_KUBE_TESTS=1'

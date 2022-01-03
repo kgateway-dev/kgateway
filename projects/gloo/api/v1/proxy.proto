@@ -21,6 +21,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
 
 /*
 A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
@@ -80,6 +81,9 @@ message Listener {
 
         // contains configuration options for Gloo's TCP-level features
         TcpListener tcp_listener = 5;
+
+        // contains any number of configuration options for Gloo's HTTP and/or TCP-level features
+        HybridListener hybrid_listener = 11;
     }
 
     // SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port.
@@ -168,9 +172,32 @@ message HttpListener {
     string stat_prefix = 3;
 }
 
+message HybridListener {
+    repeated MatchedListener matched_listeners = 1;
+}
+
+message MatchedListener {
+    // Matchers are used to define unique matching criteria for each MatchedListener
+    // Each MatchedListener within a HybridListener must have a unique Matcher
+    // If multiple matchers in a HybridListener are identical, the HybridListener will not be accepted
+    // Empty Matchers are effectively catch-alls, and there can be no more than one empty Matcher per HybridListener
+    Matcher matcher = 1;
+
+    oneof ListenerType {
+        HttpListener http_listener = 2;
+        TcpListener tcp_listener = 3;
+    }
+}
+
+message Matcher {
+    gloo.solo.io.SslConfig ssl_config = 1;
+
+    repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 2;
+}
+
 /*
  * Virtual Hosts group an ordered list of routes under one or more domains.
- * Each Virtual Host has a logical name, which must be unique for the listener.
+ * Each Virtual Host has a logical name, which must be unique for the http listener.
  * An HTTP request is first matched to a virtual host based on its host header, then to a route within the virtual host.
  * If a request is not matched to any virtual host or a route therein, the target proxy will reply with a 404.
  */

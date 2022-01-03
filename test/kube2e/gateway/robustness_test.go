@@ -50,6 +50,13 @@ import (
 
 var _ = Describe("Robustness tests", func() {
 
+	// These tests are used to validate our Endpoint Disovery Service (EDS) functionality
+	// Historically, we had an EDS Test Suite (https://github.com/solo-io/gloo/tree/197272444efae0e6649c798997d6efa94bb7a8d9/test/kube2e/eds)
+	// however, those tests often flaked, and the purpose of those tests was to validate what these
+	// tests already do: that endpoints are updated and sent to Envoy successfully.
+	// Therefore, we opted to collapste that Test Suite into this file. If in the future there are a larger set
+	// of tests, we can evaluate re-opening that Test Suite.
+
 	const (
 		gatewayProxy = defaults.GatewayProxyName
 		gatewayPort  = int(80)
@@ -312,7 +319,7 @@ var _ = Describe("Robustness tests", func() {
 			gatewayProxyPodName := testutils.FindPodNameByLabel(cfg, ctx, testHelper.InstallNamespace, "gloo=gateway-proxy")
 			envoyClustersPath := "http://localhost:19000/clusters" // TODO - this should live in envoy test service
 			Eventually(func() bool {
-				clusters := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, "", testHelper.InstallNamespace, gatewayProxyPodName, envoyClustersPath)
+				clusters := testutils.CurlWithEphemeralPodStable(ctx, ioutil.Discard, "", testHelper.InstallNamespace, gatewayProxyPodName, envoyClustersPath)
 
 				fmt.Println(fmt.Sprintf("initial endpoint ips %+v", initialEndpointIPs))
 

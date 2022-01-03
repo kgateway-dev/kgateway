@@ -96,4 +96,14 @@ message AWSLambdaConfig {
     google.protobuf.Duration timeout = 3;
   }
 
+  // Send downstream path and method as `x-envoy-original-path` and
+  // `x-envoy-original-method` headers on the request to AWS lambda. 
+  // Defaults to false.
+  bool propagate_original_routing = 3;
+
+  // Sets cadence for refreshing credentials for Service Account.
+  // Does nothing if Service account is not set.
+  // Does not affect the default filewatch for service account only augments it.
+  // Defaults to not refreshing on time period. Suggested is 15 minutes.
+  google.protobuf.Duration credential_refresh_delay = 4;
 }

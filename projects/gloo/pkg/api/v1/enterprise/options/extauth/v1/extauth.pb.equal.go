@@ -199,16 +199,6 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetHttpService()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetHttpService()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetHttpService(), target.GetHttpService()) {
-			return false
-		}
-	}
-
 	if strings.Compare(m.GetUserIdHeader(), target.GetUserIdHeader()) != 0 {
 		return false
 	}
@@ -250,6 +240,73 @@ func (m *Settings) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetStatPrefix(), target.GetStatPrefix()) != 0 {
+		return false
+	}
+
+	switch m.ServiceType.(type) {
+
+	case *Settings_HttpService:
+		if _, ok := target.ServiceType.(*Settings_HttpService); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHttpService()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHttpService()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHttpService(), target.GetHttpService()) {
+				return false
+			}
+		}
+
+	case *Settings_GrpcService:
+		if _, ok := target.ServiceType.(*Settings_GrpcService); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGrpcService()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGrpcService()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGrpcService(), target.GetGrpcService()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ServiceType != target.ServiceType {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GrpcService) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GrpcService)
+	if !ok {
+		that2, ok := that.(GrpcService)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetAuthority(), target.GetAuthority()) != 0 {
 		return false
 	}
 
@@ -1056,6 +1113,10 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetSessionIdHeaderName(), target.GetSessionIdHeaderName()) != 0 {
+		return false
+	}
+
+	if m.GetParseCallbackPathAsRegex() != target.GetParseCallbackPathAsRegex() {
 		return false
 	}
 
@@ -1969,6 +2030,17 @@ func (m *HttpService_Response) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetAllowedUpstreamHeadersToAppend()) != len(target.GetAllowedUpstreamHeadersToAppend()) {
+		return false
+	}
+	for idx, v := range m.GetAllowedUpstreamHeadersToAppend() {
+
+		if strings.Compare(v, target.GetAllowedUpstreamHeadersToAppend()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	return true
 }
 
@@ -2164,6 +2236,16 @@ func (m *UserSession_CookieOptions) Equal(that interface{}) bool {
 
 	if m.GetNotSecure() != target.GetNotSecure() {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetHttpOnly()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttpOnly()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttpOnly(), target.GetHttpOnly()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetPath()).(equality.Equalizer); ok {
@@ -2780,6 +2862,10 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 	}
 
 	if strings.Compare(m.GetSessionIdHeaderName(), target.GetSessionIdHeaderName()) != 0 {
+		return false
+	}
+
+	if m.GetParseCallbackPathAsRegex() != target.GetParseCallbackPathAsRegex() {
 		return false
 	}
 

@@ -17,6 +17,9 @@ weight: 5
 - [TcpHost](#tcphost)
 - [TcpAction](#tcpaction)
 - [HttpListener](#httplistener)
+- [HybridListener](#hybridlistener)
+- [MatchedListener](#matchedlistener)
+- [Matcher](#matcher)
 - [VirtualHost](#virtualhost)
 - [Route](#route)
 - [RouteAction](#routeaction)
@@ -87,6 +90,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 "bindPort": int
 "httpListener": .gloo.solo.io.HttpListener
 "tcpListener": .gloo.solo.io.TcpListener
+"hybridListener": .gloo.solo.io.HybridListener
 "sslConfigurations": []gloo.solo.io.SslConfig
 "useProxyProto": .google.protobuf.BoolValue
 "options": .gloo.solo.io.ListenerOptions
@@ -100,8 +104,9 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `name` | `string` | the name of the listener. names must be unique for each listener within a proxy. |
 | `bindAddress` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported. |
 | `bindPort` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy. |
-| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk/#httplistener) | contains configuration options for Gloo's HTTP-level features including request-based routing. Only one of `httpListener` or `tcpListener` can be set. |
-| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | contains configuration options for Gloo's TCP-level features. Only one of `tcpListener` or `httpListener` can be set. |
+| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk/#httplistener) | contains configuration options for Gloo's HTTP-level features including request-based routing. Only one of `httpListener`, `tcpListener`, or `hybridListener` can be set. |
+| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | contains configuration options for Gloo's TCP-level features. Only one of `tcpListener`, `httpListener`, or `hybridListener` can be set. |
+| `hybridListener` | [.gloo.solo.io.HybridListener](../proxy.proto.sk/#hybridlistener) | contains any number of configuration options for Gloo's HTTP and/or TCP-level features. Only one of `hybridListener`, `httpListener`, or `tcpListener` can be set. |
 | `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port. Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config. |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. Deprecated: prefer setting the listener option. If configured, the listener option (filter config) overrides any setting here. |
 | `options` | [.gloo.solo.io.ListenerOptions](../options.proto.sk/#listeneroptions) | top level options. |
@@ -203,11 +208,68 @@ Some traffic policies can be configured to work both on the listener and virtual
 
 
 ---
+### HybridListener
+
+
+
+```yaml
+"matchedListeners": []gloo.solo.io.MatchedListener
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matchedListeners` | [[]gloo.solo.io.MatchedListener](../proxy.proto.sk/#matchedlistener) |  |
+
+
+
+
+---
+### MatchedListener
+
+
+
+```yaml
+"matcher": .gloo.solo.io.Matcher
+"httpListener": .gloo.solo.io.HttpListener
+"tcpListener": .gloo.solo.io.TcpListener
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk/#matcher) | Matchers are used to define unique matching criteria for each MatchedListener Each MatchedListener within a HybridListener must have a unique Matcher If multiple matchers in a HybridListener are identical, the HybridListener will not be accepted Empty Matchers are effectively catch-alls, and there can be no more than one empty Matcher per HybridListener. |
+| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk/#httplistener) |  Only one of `httpListener` or `tcpListener` can be set. |
+| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) |  Only one of `tcpListener` or `httpListener` can be set. |
+
+
+
+
+---
+### Matcher
+
+
+
+```yaml
+"sslConfig": .gloo.solo.io.SslConfig
+"sourcePrefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `sslConfig` | [.gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) |  |
+| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
+
+
+
+
+---
 ### VirtualHost
 
  
 Virtual Hosts group an ordered list of routes under one or more domains.
-Each Virtual Host has a logical name, which must be unique for the listener.
+Each Virtual Host has a logical name, which must be unique for the http listener.
 An HTTP request is first matched to a virtual host based on its host header, then to a route within the virtual host.
 If a request is not matched to any virtual host or a route therein, the target proxy will reply with a 404.
 

@@ -12,6 +12,7 @@ import (
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/golang/protobuf/ptypes/empty"
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -25,520 +26,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Type that the value will be coerced into.
-// For example if the extracted value is "9", and type is INT,
-// this value will be cast to an int type.
-type ValueProvider_TypedValueProvider_Type int32
-
-const (
-	ValueProvider_TypedValueProvider_STRING  ValueProvider_TypedValueProvider_Type = 0
-	ValueProvider_TypedValueProvider_INT     ValueProvider_TypedValueProvider_Type = 1
-	ValueProvider_TypedValueProvider_FLOAT   ValueProvider_TypedValueProvider_Type = 2
-	ValueProvider_TypedValueProvider_BOOLEAN ValueProvider_TypedValueProvider_Type = 3
-)
-
-// Enum value maps for ValueProvider_TypedValueProvider_Type.
-var (
-	ValueProvider_TypedValueProvider_Type_name = map[int32]string{
-		0: "STRING",
-		1: "INT",
-		2: "FLOAT",
-		3: "BOOLEAN",
-	}
-	ValueProvider_TypedValueProvider_Type_value = map[string]int32{
-		"STRING":  0,
-		"INT":     1,
-		"FLOAT":   2,
-		"BOOLEAN": 3,
-	}
-)
-
-func (x ValueProvider_TypedValueProvider_Type) Enum() *ValueProvider_TypedValueProvider_Type {
-	p := new(ValueProvider_TypedValueProvider_Type)
-	*p = x
-	return p
-}
-
-func (x ValueProvider_TypedValueProvider_Type) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ValueProvider_TypedValueProvider_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_enumTypes[0].Descriptor()
-}
-
-func (ValueProvider_TypedValueProvider_Type) Type() protoreflect.EnumType {
-	return &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_enumTypes[0]
-}
-
-func (x ValueProvider_TypedValueProvider_Type) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ValueProvider_TypedValueProvider_Type.Descriptor instead.
-func (ValueProvider_TypedValueProvider_Type) EnumDescriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{1, 2, 0}
-}
-
-// used to reference into json structures by key(s).
-type PathSegment struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// Types that are assignable to Segment:
-	//	*PathSegment_Key
-	//	*PathSegment_Index
-	//	*PathSegment_All
-	Segment isPathSegment_Segment `protobuf_oneof:"segment"`
-}
-
-func (x *PathSegment) Reset() {
-	*x = PathSegment{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PathSegment) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PathSegment) ProtoMessage() {}
-
-func (x *PathSegment) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PathSegment.ProtoReflect.Descriptor instead.
-func (*PathSegment) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{0}
-}
-
-func (m *PathSegment) GetSegment() isPathSegment_Segment {
-	if m != nil {
-		return m.Segment
-	}
-	return nil
-}
-
-func (x *PathSegment) GetKey() string {
-	if x, ok := x.GetSegment().(*PathSegment_Key); ok {
-		return x.Key
-	}
-	return ""
-}
-
-func (x *PathSegment) GetIndex() uint32 {
-	if x, ok := x.GetSegment().(*PathSegment_Index); ok {
-		return x.Index
-	}
-	return 0
-}
-
-func (x *PathSegment) GetAll() bool {
-	if x, ok := x.GetSegment().(*PathSegment_All); ok {
-		return x.All
-	}
-	return false
-}
-
-type isPathSegment_Segment interface {
-	isPathSegment_Segment()
-}
-
-type PathSegment_Key struct {
-	// Key is used to extract named values from a map
-	Key string `protobuf:"bytes,1,opt,name=key,proto3,oneof"`
-}
-
-type PathSegment_Index struct {
-	// Index is used to extract an element at a certain index from a list
-	Index uint32 `protobuf:"varint,2,opt,name=index,proto3,oneof"`
-}
-
-type PathSegment_All struct {
-	// all selects all from the current element at in the path. This is useful for extracting list arguments / object arguments.
-	All bool `protobuf:"varint,3,opt,name=all,proto3,oneof"`
-}
-
-func (*PathSegment_Key) isPathSegment_Segment() {}
-
-func (*PathSegment_Index) isPathSegment_Segment() {}
-
-func (*PathSegment_All) isPathSegment_Segment() {}
-
-// In the future we may add support for regex and subgroups
-type ValueProvider struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// Types that are assignable to Provider:
-	//	*ValueProvider_GraphqlArg
-	//	*ValueProvider_TypedProvider
-	//	*ValueProvider_GraphqlParent
-	Provider isValueProvider_Provider `protobuf_oneof:"provider"`
-	// If non-empty, the template to interpolate the extracted value into.
-	// For example, if the string is /api/pets/{}/name and the extracted value 123 is the pet
-	// ID will then the extracted value is /api/pets/123/name
-	// Use {} as the interpolation character (even repeated) regardless of the type of the
-	// provided value.
-	ProviderTemplate string `protobuf:"bytes,4,opt,name=provider_template,json=providerTemplate,proto3" json:"provider_template,omitempty"`
-}
-
-func (x *ValueProvider) Reset() {
-	*x = ValueProvider{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ValueProvider) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ValueProvider) ProtoMessage() {}
-
-func (x *ValueProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ValueProvider.ProtoReflect.Descriptor instead.
-func (*ValueProvider) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{1}
-}
-
-func (m *ValueProvider) GetProvider() isValueProvider_Provider {
-	if m != nil {
-		return m.Provider
-	}
-	return nil
-}
-
-func (x *ValueProvider) GetGraphqlArg() *ValueProvider_GraphQLArgExtraction {
-	if x, ok := x.GetProvider().(*ValueProvider_GraphqlArg); ok {
-		return x.GraphqlArg
-	}
-	return nil
-}
-
-func (x *ValueProvider) GetTypedProvider() *ValueProvider_TypedValueProvider {
-	if x, ok := x.GetProvider().(*ValueProvider_TypedProvider); ok {
-		return x.TypedProvider
-	}
-	return nil
-}
-
-func (x *ValueProvider) GetGraphqlParent() *ValueProvider_GraphQLParentExtraction {
-	if x, ok := x.GetProvider().(*ValueProvider_GraphqlParent); ok {
-		return x.GraphqlParent
-	}
-	return nil
-}
-
-func (x *ValueProvider) GetProviderTemplate() string {
-	if x != nil {
-		return x.ProviderTemplate
-	}
-	return ""
-}
-
-type isValueProvider_Provider interface {
-	isValueProvider_Provider()
-}
-
-type ValueProvider_GraphqlArg struct {
-	// type inferred from schema, no need to provide it.
-	GraphqlArg *ValueProvider_GraphQLArgExtraction `protobuf:"bytes,1,opt,name=graphql_arg,json=graphqlArg,proto3,oneof"`
-}
-
-type ValueProvider_TypedProvider struct {
-	TypedProvider *ValueProvider_TypedValueProvider `protobuf:"bytes,2,opt,name=typed_provider,json=typedProvider,proto3,oneof"`
-}
-
-type ValueProvider_GraphqlParent struct {
-	// Fetch value from the graphql_parent of the current field.
-	GraphqlParent *ValueProvider_GraphQLParentExtraction `protobuf:"bytes,3,opt,name=graphql_parent,json=graphqlParent,proto3,oneof"`
-}
-
-func (*ValueProvider_GraphqlArg) isValueProvider_Provider() {}
-
-func (*ValueProvider_TypedProvider) isValueProvider_Provider() {}
-
-func (*ValueProvider_GraphqlParent) isValueProvider_Provider() {}
-
-type JsonValueList struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Values []*JsonValue `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
-}
-
-func (x *JsonValueList) Reset() {
-	*x = JsonValueList{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *JsonValueList) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*JsonValueList) ProtoMessage() {}
-
-func (x *JsonValueList) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use JsonValueList.ProtoReflect.Descriptor instead.
-func (*JsonValueList) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *JsonValueList) GetValues() []*JsonValue {
-	if x != nil {
-		return x.Values
-	}
-	return nil
-}
-
-type JsonValue struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// Types that are assignable to JsonVal:
-	//	*JsonValue_Node
-	//	*JsonValue_ValueProvider
-	//	*JsonValue_List
-	JsonVal isJsonValue_JsonVal `protobuf_oneof:"json_val"`
-}
-
-func (x *JsonValue) Reset() {
-	*x = JsonValue{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *JsonValue) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*JsonValue) ProtoMessage() {}
-
-func (x *JsonValue) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use JsonValue.ProtoReflect.Descriptor instead.
-func (*JsonValue) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{3}
-}
-
-func (m *JsonValue) GetJsonVal() isJsonValue_JsonVal {
-	if m != nil {
-		return m.JsonVal
-	}
-	return nil
-}
-
-func (x *JsonValue) GetNode() *JsonNode {
-	if x, ok := x.GetJsonVal().(*JsonValue_Node); ok {
-		return x.Node
-	}
-	return nil
-}
-
-func (x *JsonValue) GetValueProvider() *ValueProvider {
-	if x, ok := x.GetJsonVal().(*JsonValue_ValueProvider); ok {
-		return x.ValueProvider
-	}
-	return nil
-}
-
-func (x *JsonValue) GetList() *JsonValueList {
-	if x, ok := x.GetJsonVal().(*JsonValue_List); ok {
-		return x.List
-	}
-	return nil
-}
-
-type isJsonValue_JsonVal interface {
-	isJsonValue_JsonVal()
-}
-
-type JsonValue_Node struct {
-	Node *JsonNode `protobuf:"bytes,1,opt,name=node,proto3,oneof"`
-}
-
-type JsonValue_ValueProvider struct {
-	ValueProvider *ValueProvider `protobuf:"bytes,2,opt,name=value_provider,json=valueProvider,proto3,oneof"`
-}
-
-type JsonValue_List struct {
-	List *JsonValueList `protobuf:"bytes,3,opt,name=list,proto3,oneof"`
-}
-
-func (*JsonValue_Node) isJsonValue_JsonVal() {}
-
-func (*JsonValue_ValueProvider) isJsonValue_JsonVal() {}
-
-func (*JsonValue_List) isJsonValue_JsonVal() {}
-
-type JsonKeyValue struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Key   string     `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Value *JsonValue `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-}
-
-func (x *JsonKeyValue) Reset() {
-	*x = JsonKeyValue{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *JsonKeyValue) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*JsonKeyValue) ProtoMessage() {}
-
-func (x *JsonKeyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use JsonKeyValue.ProtoReflect.Descriptor instead.
-func (*JsonKeyValue) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *JsonKeyValue) GetKey() string {
-	if x != nil {
-		return x.Key
-	}
-	return ""
-}
-
-func (x *JsonKeyValue) GetValue() *JsonValue {
-	if x != nil {
-		return x.Value
-	}
-	return nil
-}
-
-// Represents a typed JSON structure
-type JsonNode struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// if keys repeat, the latest one replaces any earlier values associated
-	// with that key.
-	//
-	// repeated list, rather than a map, to have ordering to allow for merge
-	// semantics within the data plane, for example:
-	// - gRPC input uses special empty string for input key to set entire body
-	// - gRPC wants to replace a certain field in parsed body from GraphQL arg
-	KeyValues []*JsonKeyValue `protobuf:"bytes,1,rep,name=key_values,json=keyValues,proto3" json:"key_values,omitempty"`
-}
-
-func (x *JsonNode) Reset() {
-	*x = JsonNode{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[5]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *JsonNode) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*JsonNode) ProtoMessage() {}
-
-func (x *JsonNode) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[5]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use JsonNode.ProtoReflect.Descriptor instead.
-func (*JsonNode) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *JsonNode) GetKeyValues() []*JsonKeyValue {
-	if x != nil {
-		return x.KeyValues
-	}
-	return nil
-}
-
 // Defines a configuration for generating outgoing requests for a resolver.
 type RequestTemplate struct {
 	state         protoimpl.MessageState
@@ -546,29 +33,35 @@ type RequestTemplate struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Use this attribute to set request headers to your REST service. It consists of a
-	// map of strings to value providers. The string key determines the name of the
+	// map of strings to templated value strings. The string key determines the name of the
 	// resulting header, the value provided will be the value.
 	//
-	// at least need ":method" and ":path"
-	Headers map[string]*ValueProvider `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// The least needed here is the ":method" and ":path" headers.
+	// for example, if a header is an authorization token, taken from the graphql args,
+	// we can use the following configuration:
+	// headers:
+	//   Authorization: "Bearer {$args.token}"
+	Headers map[string]string `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Use this attribute to set query parameters to your REST service. It consists of a
-	// map of strings to value providers. The string key determines the name of the
+	// map of strings to templated value strings. The string key determines the name of the
 	// query param, the provided value will be the value. This value is appended to any
 	// value set to the :path header in `headers`.
 	//
-	// Interpolation is done in envoy rather than the control plane to prevent escaped
-	// character issues. Additionally, we may be providing values not known until
-	// the request is being executed (e.g., graphql parent info).
-	QueryParams map[string]*ValueProvider `protobuf:"bytes,2,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// for example, if a query parameter is an id, taken from the graphql parent object,
+	// we can use the following configuration:
+	// queryParams:
+	//   id: "{$parent.id}"
+	QueryParams map[string]string `protobuf:"bytes,2,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Used to construct the outgoing body to the upstream from the
 	// graphql value providers.
-	OutgoingBody *JsonValue `protobuf:"bytes,3,opt,name=outgoing_body,json=outgoingBody,proto3" json:"outgoing_body,omitempty"`
+	// All string values can be templated strings.
+	Body *_struct.Value `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
 }
 
 func (x *RequestTemplate) Reset() {
 	*x = RequestTemplate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[6]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -581,7 +74,7 @@ func (x *RequestTemplate) String() string {
 func (*RequestTemplate) ProtoMessage() {}
 
 func (x *RequestTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[6]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -594,26 +87,191 @@ func (x *RequestTemplate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestTemplate.ProtoReflect.Descriptor instead.
 func (*RequestTemplate) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{6}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *RequestTemplate) GetHeaders() map[string]*ValueProvider {
+func (x *RequestTemplate) GetHeaders() map[string]string {
 	if x != nil {
 		return x.Headers
 	}
 	return nil
 }
 
-func (x *RequestTemplate) GetQueryParams() map[string]*ValueProvider {
+func (x *RequestTemplate) GetQueryParams() map[string]string {
 	if x != nil {
 		return x.QueryParams
 	}
 	return nil
 }
 
-func (x *RequestTemplate) GetOutgoingBody() *JsonValue {
+func (x *RequestTemplate) GetBody() *_struct.Value {
 	if x != nil {
-		return x.OutgoingBody
+		return x.Body
+	}
+	return nil
+}
+
+type ResponseTemplate struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	//
+	//Sets the "root" of the upstream response to be turned into a graphql type by the graphql server.
+	//For example, if the graphql type is:
+	//
+	//type Simple {
+	//name String
+	//}
+	//
+	//and the upstream response is `{"data": {"simple": {"name": "simple name"}}}`,
+	//the graphql server will not be able to marshal the upstream response into the Simple graphql type
+	//because it doesn't know where the relevant data is. If we set result_root to "data.simple", we can give the
+	//graphql server a hint of where to look in the upstream response for the relevant data that graphql type wants.
+	ResultRoot string `protobuf:"bytes,1,opt,name=result_root,json=resultRoot,proto3" json:"result_root,omitempty"`
+	//
+	//Field-specific mapping for a graphql field to a JSON path in the upstream response.
+	//For example, if the graphql type is
+	//
+	//type Simple {
+	//name String
+	//number String
+	//}
+	//
+	//and the upstream response is `{"name": "simple name", "details": {"num": "1234567890"}}`,
+	//the graphql server will not be able to marshal the upstream response into the Simple graphql type because of the
+	//nested `number` field. We can use a simple setter here:
+	//
+	//setters:
+	//number: "details.num"
+	//
+	//and the graphql server will be able to extract data for a field given the path to the relevant data
+	//in the upstream JSON response. We don't need to have a setter for the `name` field because the JSON
+	//response has that field in a position the graphql server can understand automatically.
+	Setters map[string]string `protobuf:"bytes,2,rep,name=setters,proto3" json:"setters,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *ResponseTemplate) Reset() {
+	*x = ResponseTemplate{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ResponseTemplate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResponseTemplate) ProtoMessage() {}
+
+func (x *ResponseTemplate) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResponseTemplate.ProtoReflect.Descriptor instead.
+func (*ResponseTemplate) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ResponseTemplate) GetResultRoot() string {
+	if x != nil {
+		return x.ResultRoot
+	}
+	return ""
+}
+
+func (x *ResponseTemplate) GetSetters() map[string]string {
+	if x != nil {
+		return x.Setters
+	}
+	return nil
+}
+
+// Defines a configuration for generating outgoing requests for a resolver.
+type GrpcRequestTemplate struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// json representation of outgoing gRPC message to be sent to gRPC service
+	OutgoingMessageJson *_struct.Value `protobuf:"bytes,1,opt,name=outgoing_message_json,json=outgoingMessageJson,proto3" json:"outgoing_message_json,omitempty"`
+	// request has shape matching service with name registered in registry
+	// is the full_name(), e.g. main.Bookstore
+	ServiceName string `protobuf:"bytes,2,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	// make request to method with this name on the grpc service defined above
+	// is just the name(), e.g. GetBook
+	MethodName string `protobuf:"bytes,3,opt,name=method_name,json=methodName,proto3" json:"method_name,omitempty"`
+	// in the future, we may want to make this a map<string, ValueProvider>
+	// once we know better what the use cases are
+	RequestMetadata map[string]string `protobuf:"bytes,4,rep,name=request_metadata,json=requestMetadata,proto3" json:"request_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *GrpcRequestTemplate) Reset() {
+	*x = GrpcRequestTemplate{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GrpcRequestTemplate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrpcRequestTemplate) ProtoMessage() {}
+
+func (x *GrpcRequestTemplate) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrpcRequestTemplate.ProtoReflect.Descriptor instead.
+func (*GrpcRequestTemplate) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GrpcRequestTemplate) GetOutgoingMessageJson() *_struct.Value {
+	if x != nil {
+		return x.OutgoingMessageJson
+	}
+	return nil
+}
+
+func (x *GrpcRequestTemplate) GetServiceName() string {
+	if x != nil {
+		return x.ServiceName
+	}
+	return ""
+}
+
+func (x *GrpcRequestTemplate) GetMethodName() string {
+	if x != nil {
+		return x.MethodName
+	}
+	return ""
+}
+
+func (x *GrpcRequestTemplate) GetRequestMetadata() map[string]string {
+	if x != nil {
+		return x.RequestMetadata
 	}
 	return nil
 }
@@ -626,14 +284,17 @@ type RESTResolver struct {
 
 	UpstreamRef *core.ResourceRef `protobuf:"bytes,1,opt,name=upstream_ref,json=upstreamRef,proto3" json:"upstream_ref,omitempty"`
 	// configuration used to compose the outgoing request to a REST API
-	RequestTransform *RequestTemplate `protobuf:"bytes,2,opt,name=request_transform,json=requestTransform,proto3" json:"request_transform,omitempty"`
-	SpanName         string           `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
+	Request *RequestTemplate `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`
+	// configuration used to modify the response from the REST API
+	// before being handled by the graphql server.
+	Response *ResponseTemplate `protobuf:"bytes,3,opt,name=response,proto3" json:"response,omitempty"`
+	SpanName string            `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
 }
 
 func (x *RESTResolver) Reset() {
 	*x = RESTResolver{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[7]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -646,7 +307,7 @@ func (x *RESTResolver) String() string {
 func (*RESTResolver) ProtoMessage() {}
 
 func (x *RESTResolver) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[7]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -659,7 +320,7 @@ func (x *RESTResolver) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RESTResolver.ProtoReflect.Descriptor instead.
 func (*RESTResolver) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{7}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RESTResolver) GetUpstreamRef() *core.ResourceRef {
@@ -669,9 +330,16 @@ func (x *RESTResolver) GetUpstreamRef() *core.ResourceRef {
 	return nil
 }
 
-func (x *RESTResolver) GetRequestTransform() *RequestTemplate {
+func (x *RESTResolver) GetRequest() *RequestTemplate {
 	if x != nil {
-		return x.RequestTransform
+		return x.Request
+	}
+	return nil
+}
+
+func (x *RESTResolver) GetResponse() *ResponseTemplate {
+	if x != nil {
+		return x.Response
 	}
 	return nil
 }
@@ -683,33 +351,36 @@ func (x *RESTResolver) GetSpanName() string {
 	return ""
 }
 
-type QueryMatcher struct {
+// Defines a configuration for serializing and deserializing requests for a gRPC resolver.
+// Is a Schema Extension
+type GrpcDescriptorRegistry struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Types that are assignable to Match:
-	//	*QueryMatcher_FieldMatcher_
-	Match isQueryMatcher_Match `protobuf_oneof:"match"`
+	// Types that are assignable to DescriptorSet:
+	//	*GrpcDescriptorRegistry_ProtoDescriptor
+	//	*GrpcDescriptorRegistry_ProtoDescriptorBin
+	DescriptorSet isGrpcDescriptorRegistry_DescriptorSet `protobuf_oneof:"descriptor_set"`
 }
 
-func (x *QueryMatcher) Reset() {
-	*x = QueryMatcher{}
+func (x *GrpcDescriptorRegistry) Reset() {
+	*x = GrpcDescriptorRegistry{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[8]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *QueryMatcher) String() string {
+func (x *GrpcDescriptorRegistry) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryMatcher) ProtoMessage() {}
+func (*GrpcDescriptorRegistry) ProtoMessage() {}
 
-func (x *QueryMatcher) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[8]
+func (x *GrpcDescriptorRegistry) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -720,59 +391,142 @@ func (x *QueryMatcher) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use QueryMatcher.ProtoReflect.Descriptor instead.
-func (*QueryMatcher) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{8}
+// Deprecated: Use GrpcDescriptorRegistry.ProtoReflect.Descriptor instead.
+func (*GrpcDescriptorRegistry) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{4}
 }
 
-func (m *QueryMatcher) GetMatch() isQueryMatcher_Match {
+func (m *GrpcDescriptorRegistry) GetDescriptorSet() isGrpcDescriptorRegistry_DescriptorSet {
 	if m != nil {
-		return m.Match
+		return m.DescriptorSet
 	}
 	return nil
 }
 
-func (x *QueryMatcher) GetFieldMatcher() *QueryMatcher_FieldMatcher {
-	if x, ok := x.GetMatch().(*QueryMatcher_FieldMatcher_); ok {
-		return x.FieldMatcher
+func (x *GrpcDescriptorRegistry) GetProtoDescriptor() string {
+	if x, ok := x.GetDescriptorSet().(*GrpcDescriptorRegistry_ProtoDescriptor); ok {
+		return x.ProtoDescriptor
+	}
+	return ""
+}
+
+func (x *GrpcDescriptorRegistry) GetProtoDescriptorBin() []byte {
+	if x, ok := x.GetDescriptorSet().(*GrpcDescriptorRegistry_ProtoDescriptorBin); ok {
+		return x.ProtoDescriptorBin
 	}
 	return nil
 }
 
-type isQueryMatcher_Match interface {
-	isQueryMatcher_Match()
+type isGrpcDescriptorRegistry_DescriptorSet interface {
+	isGrpcDescriptorRegistry_DescriptorSet()
 }
 
-type QueryMatcher_FieldMatcher_ struct {
-	FieldMatcher *QueryMatcher_FieldMatcher `protobuf:"bytes,1,opt,name=field_matcher,json=fieldMatcher,proto3,oneof"`
+type GrpcDescriptorRegistry_ProtoDescriptor struct {
+	// Supplies the filename of
+	// :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
+	// services.
+	ProtoDescriptor string `protobuf:"bytes,1,opt,name=proto_descriptor,json=protoDescriptor,proto3,oneof"`
 }
 
-func (*QueryMatcher_FieldMatcher_) isQueryMatcher_Match() {}
+type GrpcDescriptorRegistry_ProtoDescriptorBin struct {
+	// Supplies the binary content of
+	// :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
+	// services.
+	// Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
+	ProtoDescriptorBin []byte `protobuf:"bytes,2,opt,name=proto_descriptor_bin,json=protoDescriptorBin,proto3,oneof"`
+}
 
-// This is the resolver map for the schema.
-// For each Type.Field, we can define a resolver.
+func (*GrpcDescriptorRegistry_ProtoDescriptor) isGrpcDescriptorRegistry_DescriptorSet() {}
+
+func (*GrpcDescriptorRegistry_ProtoDescriptorBin) isGrpcDescriptorRegistry_DescriptorSet() {}
+
+// control-plane API
+type GrpcResolver struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UpstreamRef *core.ResourceRef `protobuf:"bytes,1,opt,name=upstream_ref,json=upstreamRef,proto3" json:"upstream_ref,omitempty"`
+	// configuration used to compose the outgoing request to a REST API
+	RequestTransform *GrpcRequestTemplate `protobuf:"bytes,2,opt,name=request_transform,json=requestTransform,proto3" json:"request_transform,omitempty"`
+	SpanName         string               `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
+}
+
+func (x *GrpcResolver) Reset() {
+	*x = GrpcResolver{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GrpcResolver) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrpcResolver) ProtoMessage() {}
+
+func (x *GrpcResolver) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrpcResolver.ProtoReflect.Descriptor instead.
+func (*GrpcResolver) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GrpcResolver) GetUpstreamRef() *core.ResourceRef {
+	if x != nil {
+		return x.UpstreamRef
+	}
+	return nil
+}
+
+func (x *GrpcResolver) GetRequestTransform() *GrpcRequestTemplate {
+	if x != nil {
+		return x.RequestTransform
+	}
+	return nil
+}
+
+func (x *GrpcResolver) GetSpanName() string {
+	if x != nil {
+		return x.SpanName
+	}
+	return ""
+}
+
+// Define a named resolver which can be then matched to a field using the `resolve` directive.
 // if a field does not have resolver, the default resolver will be used.
 // the default resolver takes the field with the same name from the parent, and uses that value
 // to resolve the field.
-// if a field with the same name does not exist in the parent, null will be used.
+// If a field with the same name does not exist in the parent, null will be used.
 type Resolution struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Match an object type and field
-	Matcher *QueryMatcher `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
 	// The resolver to use.
 	//
 	// Types that are assignable to Resolver:
 	//	*Resolution_RestResolver
+	//	*Resolution_GrpcResolver
 	Resolver isResolution_Resolver `protobuf_oneof:"resolver"`
 }
 
 func (x *Resolution) Reset() {
 	*x = Resolution{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[9]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -785,7 +539,7 @@ func (x *Resolution) String() string {
 func (*Resolution) ProtoMessage() {}
 
 func (x *Resolution) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[9]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -798,14 +552,7 @@ func (x *Resolution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resolution.ProtoReflect.Descriptor instead.
 func (*Resolution) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *Resolution) GetMatcher() *QueryMatcher {
-	if x != nil {
-		return x.Matcher
-	}
-	return nil
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{6}
 }
 
 func (m *Resolution) GetResolver() isResolution_Resolver {
@@ -822,15 +569,28 @@ func (x *Resolution) GetRestResolver() *RESTResolver {
 	return nil
 }
 
+func (x *Resolution) GetGrpcResolver() *GrpcResolver {
+	if x, ok := x.GetResolver().(*Resolution_GrpcResolver); ok {
+		return x.GrpcResolver
+	}
+	return nil
+}
+
 type isResolution_Resolver interface {
 	isResolution_Resolver()
 }
 
 type Resolution_RestResolver struct {
-	RestResolver *RESTResolver `protobuf:"bytes,3,opt,name=rest_resolver,json=restResolver,proto3,oneof"`
+	RestResolver *RESTResolver `protobuf:"bytes,1,opt,name=rest_resolver,json=restResolver,proto3,oneof"`
+}
+
+type Resolution_GrpcResolver struct {
+	GrpcResolver *GrpcResolver `protobuf:"bytes,2,opt,name=grpc_resolver,json=grpcResolver,proto3,oneof"`
 }
 
 func (*Resolution_RestResolver) isResolution_Resolver() {}
+
+func (*Resolution_GrpcResolver) isResolution_Resolver() {}
 
 // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
 // User-facing CR config for resolving client requests to graphql schemas.
@@ -848,22 +608,14 @@ type GraphQLSchema struct {
 	// NamespacedStatuses is read-only by clients, and set by gloo during validation
 	NamespacedStatuses *core.NamespacedStatuses `protobuf:"bytes,1,opt,name=namespaced_statuses,json=namespacedStatuses,proto3" json:"namespaced_statuses,omitempty"`
 	// Metadata contains the object metadata for this resource
-	Metadata *core.Metadata `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	// Schema to use in string format.
-	Schema string `protobuf:"bytes,3,opt,name=schema,proto3" json:"schema,omitempty"`
-	// Do we enable introspection for the schema? general recommendation is to disable this for production
-	// and hence it defaults to false.
-	EnableIntrospection bool `protobuf:"varint,4,opt,name=enable_introspection,json=enableIntrospection,proto3" json:"enable_introspection,omitempty"`
-	// The resolver map to use to resolve the schema.
-	// Omitted fields will use the default resolver, which looks for a field with that name in the parent's object,
-	// and errors if the field cannot be found.
-	Resolutions []*Resolution `protobuf:"bytes,5,rep,name=resolutions,proto3" json:"resolutions,omitempty"`
+	Metadata         *core.Metadata    `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	ExecutableSchema *ExecutableSchema `protobuf:"bytes,6,opt,name=executable_schema,json=executableSchema,proto3" json:"executable_schema,omitempty"`
 }
 
 func (x *GraphQLSchema) Reset() {
 	*x = GraphQLSchema{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[10]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -876,7 +628,7 @@ func (x *GraphQLSchema) String() string {
 func (*GraphQLSchema) ProtoMessage() {}
 
 func (x *GraphQLSchema) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[10]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -889,7 +641,7 @@ func (x *GraphQLSchema) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphQLSchema.ProtoReflect.Descriptor instead.
 func (*GraphQLSchema) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{10}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GraphQLSchema) GetNamespacedStatuses() *core.NamespacedStatuses {
@@ -906,298 +658,219 @@ func (x *GraphQLSchema) GetMetadata() *core.Metadata {
 	return nil
 }
 
-func (x *GraphQLSchema) GetSchema() string {
+func (x *GraphQLSchema) GetExecutableSchema() *ExecutableSchema {
 	if x != nil {
-		return x.Schema
+		return x.ExecutableSchema
+	}
+	return nil
+}
+
+type ExecutableSchema struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Schema to use in string format.
+	SchemaDefinition string `protobuf:"bytes,1,opt,name=schema_definition,json=schemaDefinition,proto3" json:"schema_definition,omitempty"`
+	// how to execute the schema
+	Executor *Executor `protobuf:"bytes,2,opt,name=executor,proto3" json:"executor,omitempty"`
+	// Schema extensions
+	GrpcDescriptorRegistry *GrpcDescriptorRegistry `protobuf:"bytes,3,opt,name=grpc_descriptor_registry,json=grpcDescriptorRegistry,proto3" json:"grpc_descriptor_registry,omitempty"`
+}
+
+func (x *ExecutableSchema) Reset() {
+	*x = ExecutableSchema{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ExecutableSchema) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecutableSchema) ProtoMessage() {}
+
+func (x *ExecutableSchema) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecutableSchema.ProtoReflect.Descriptor instead.
+func (*ExecutableSchema) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ExecutableSchema) GetSchemaDefinition() string {
+	if x != nil {
+		return x.SchemaDefinition
 	}
 	return ""
 }
 
-func (x *GraphQLSchema) GetEnableIntrospection() bool {
+func (x *ExecutableSchema) GetExecutor() *Executor {
 	if x != nil {
-		return x.EnableIntrospection
+		return x.Executor
 	}
-	return false
+	return nil
 }
 
-func (x *GraphQLSchema) GetResolutions() []*Resolution {
+func (x *ExecutableSchema) GetGrpcDescriptorRegistry() *GrpcDescriptorRegistry {
+	if x != nil {
+		return x.GrpcDescriptorRegistry
+	}
+	return nil
+}
+
+type Executor struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Executor:
+	//	*Executor_Local_
+	Executor isExecutor_Executor `protobuf_oneof:"executor"`
+}
+
+func (x *Executor) Reset() {
+	*x = Executor{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Executor) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Executor) ProtoMessage() {}
+
+func (x *Executor) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Executor.ProtoReflect.Descriptor instead.
+func (*Executor) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{9}
+}
+
+func (m *Executor) GetExecutor() isExecutor_Executor {
+	if m != nil {
+		return m.Executor
+	}
+	return nil
+}
+
+func (x *Executor) GetLocal() *Executor_Local {
+	if x, ok := x.GetExecutor().(*Executor_Local_); ok {
+		return x.Local
+	}
+	return nil
+}
+
+type isExecutor_Executor interface {
+	isExecutor_Executor()
+}
+
+type Executor_Local_ struct {
+	Local *Executor_Local `protobuf:"bytes,1,opt,name=local,proto3,oneof"`
+}
+
+func (*Executor_Local_) isExecutor_Executor() {}
+
+// Execute schema using resolvers.
+type Executor_Local struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Mapping of resolver name to resolver definition.
+	//The names are used to reference the resolver in the graphql schema.
+	//For example, a resolver with name "authorResolver" can be defined as
+	//```yaml
+	//authorResolver:
+	//restResolver:
+	//upstreamRef: ...
+	//request:
+	//...
+	//response:
+	//...
+	//```
+	//and referenced in the graphql schema as
+	//```gql
+	//type Query {
+	//author: String @resolve(name: "authorResolver")
+	//}
+	//```
+	Resolutions map[string]*Resolution `protobuf:"bytes,1,rep,name=resolutions,proto3" json:"resolutions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Do we enable introspection for the schema? general recommendation is to
+	// disable this for production and hence it defaults to false.
+	EnableIntrospection bool `protobuf:"varint,2,opt,name=enable_introspection,json=enableIntrospection,proto3" json:"enable_introspection,omitempty"`
+}
+
+func (x *Executor_Local) Reset() {
+	*x = Executor_Local{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[14]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Executor_Local) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Executor_Local) ProtoMessage() {}
+
+func (x *Executor_Local) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[14]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Executor_Local.ProtoReflect.Descriptor instead.
+func (*Executor_Local) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{9, 0}
+}
+
+func (x *Executor_Local) GetResolutions() map[string]*Resolution {
 	if x != nil {
 		return x.Resolutions
 	}
 	return nil
 }
 
-type ValueProvider_GraphQLArgExtraction struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// The argument name to fetch. The argument value fetched
-	// will have a type from the schema that we validate in envoy.
-	// If the name is invalid, returns the zero-value primitive or null.
-	ArgName string `protobuf:"bytes,1,opt,name=arg_name,json=argName,proto3" json:"arg_name,omitempty"`
-	// Optional: fetches the value in the argument selected at this key.
-	// If the key is invalid, returns the zero-value primitive or null.
-	Path []*PathSegment `protobuf:"bytes,2,rep,name=path,proto3" json:"path,omitempty"`
-	// If this is set to true, then a schema error will be returned to user when the graphql arg is not found.
-	// Defaults to false, so schema error will not be returned to user when the graphql arg is not found.
-	Required bool `protobuf:"varint,3,opt,name=required,proto3" json:"required,omitempty"`
-}
-
-func (x *ValueProvider_GraphQLArgExtraction) Reset() {
-	*x = ValueProvider_GraphQLArgExtraction{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[11]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ValueProvider_GraphQLArgExtraction) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ValueProvider_GraphQLArgExtraction) ProtoMessage() {}
-
-func (x *ValueProvider_GraphQLArgExtraction) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[11]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ValueProvider_GraphQLArgExtraction.ProtoReflect.Descriptor instead.
-func (*ValueProvider_GraphQLArgExtraction) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{1, 0}
-}
-
-func (x *ValueProvider_GraphQLArgExtraction) GetArgName() string {
+func (x *Executor_Local) GetEnableIntrospection() bool {
 	if x != nil {
-		return x.ArgName
-	}
-	return ""
-}
-
-func (x *ValueProvider_GraphQLArgExtraction) GetPath() []*PathSegment {
-	if x != nil {
-		return x.Path
-	}
-	return nil
-}
-
-func (x *ValueProvider_GraphQLArgExtraction) GetRequired() bool {
-	if x != nil {
-		return x.Required
+		return x.EnableIntrospection
 	}
 	return false
-}
-
-// Does not do type coercion, but instead if the type does not match the
-// expected primitive type we throw an error.
-// In the future we may add support for type coercion.
-type ValueProvider_GraphQLParentExtraction struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// Fetches the value in the graphql parent at this key. The value will
-	// always be accepted since the parent object is not strongly-typed.
-	// If the key is invalid, returns null.
-	Path []*PathSegment `protobuf:"bytes,1,rep,name=path,proto3" json:"path,omitempty"`
-}
-
-func (x *ValueProvider_GraphQLParentExtraction) Reset() {
-	*x = ValueProvider_GraphQLParentExtraction{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[12]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ValueProvider_GraphQLParentExtraction) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ValueProvider_GraphQLParentExtraction) ProtoMessage() {}
-
-func (x *ValueProvider_GraphQLParentExtraction) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[12]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ValueProvider_GraphQLParentExtraction.ProtoReflect.Descriptor instead.
-func (*ValueProvider_GraphQLParentExtraction) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{1, 1}
-}
-
-func (x *ValueProvider_GraphQLParentExtraction) GetPath() []*PathSegment {
-	if x != nil {
-		return x.Path
-	}
-	return nil
-}
-
-type ValueProvider_TypedValueProvider struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// Type that the value will be coerced into.
-	// For example if the extracted value is "9", and type is INT,
-	// this value will be cast to an int type.
-	Type ValueProvider_TypedValueProvider_Type `protobuf:"varint,1,opt,name=type,proto3,enum=graphql.gloo.solo.io.ValueProvider_TypedValueProvider_Type" json:"type,omitempty"`
-	// Types that are assignable to ValProvider:
-	//	*ValueProvider_TypedValueProvider_Header
-	//	*ValueProvider_TypedValueProvider_Value
-	ValProvider isValueProvider_TypedValueProvider_ValProvider `protobuf_oneof:"val_provider"`
-}
-
-func (x *ValueProvider_TypedValueProvider) Reset() {
-	*x = ValueProvider_TypedValueProvider{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[13]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ValueProvider_TypedValueProvider) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ValueProvider_TypedValueProvider) ProtoMessage() {}
-
-func (x *ValueProvider_TypedValueProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[13]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ValueProvider_TypedValueProvider.ProtoReflect.Descriptor instead.
-func (*ValueProvider_TypedValueProvider) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{1, 2}
-}
-
-func (x *ValueProvider_TypedValueProvider) GetType() ValueProvider_TypedValueProvider_Type {
-	if x != nil {
-		return x.Type
-	}
-	return ValueProvider_TypedValueProvider_STRING
-}
-
-func (m *ValueProvider_TypedValueProvider) GetValProvider() isValueProvider_TypedValueProvider_ValProvider {
-	if m != nil {
-		return m.ValProvider
-	}
-	return nil
-}
-
-func (x *ValueProvider_TypedValueProvider) GetHeader() string {
-	if x, ok := x.GetValProvider().(*ValueProvider_TypedValueProvider_Header); ok {
-		return x.Header
-	}
-	return ""
-}
-
-func (x *ValueProvider_TypedValueProvider) GetValue() string {
-	if x, ok := x.GetValProvider().(*ValueProvider_TypedValueProvider_Value); ok {
-		return x.Value
-	}
-	return ""
-}
-
-type isValueProvider_TypedValueProvider_ValProvider interface {
-	isValueProvider_TypedValueProvider_ValProvider()
-}
-
-type ValueProvider_TypedValueProvider_Header struct {
-	// Fetches the request/response header's value. If not found, uses empty string
-	Header string `protobuf:"bytes,2,opt,name=header,proto3,oneof"`
-}
-
-type ValueProvider_TypedValueProvider_Value struct {
-	// inline value, use as provided rather than extracting from another source
-	Value string `protobuf:"bytes,3,opt,name=value,proto3,oneof"`
-}
-
-func (*ValueProvider_TypedValueProvider_Header) isValueProvider_TypedValueProvider_ValProvider() {}
-
-func (*ValueProvider_TypedValueProvider_Value) isValueProvider_TypedValueProvider_ValProvider() {}
-
-type QueryMatcher_FieldMatcher struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// Object type. For example, Query.
-	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	// Field with in the object.
-	Field string `protobuf:"bytes,2,opt,name=field,proto3" json:"field,omitempty"`
-}
-
-func (x *QueryMatcher_FieldMatcher) Reset() {
-	*x = QueryMatcher_FieldMatcher{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[16]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *QueryMatcher_FieldMatcher) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*QueryMatcher_FieldMatcher) ProtoMessage() {}
-
-func (x *QueryMatcher_FieldMatcher) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[16]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use QueryMatcher_FieldMatcher.ProtoReflect.Descriptor instead.
-func (*QueryMatcher_FieldMatcher) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{8, 0}
-}
-
-func (x *QueryMatcher_FieldMatcher) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *QueryMatcher_FieldMatcher) GetField() string {
-	if x != nil {
-		return x.Field
-	}
-	return ""
 }
 
 var File_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto protoreflect.FileDescriptor
@@ -1227,186 +900,176 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 	0x17, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61,
 	0x74, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1b, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
 	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x66, 0x0a, 0x0b, 0x50, 0x61, 0x74, 0x68, 0x53, 0x65, 0x67,
-	0x6d, 0x65, 0x6e, 0x74, 0x12, 0x1b, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x72, 0x02, 0x10, 0x01, 0x48, 0x00, 0x52, 0x03, 0x6b, 0x65,
-	0x79, 0x12, 0x16, 0x0a, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d,
-	0x48, 0x00, 0x52, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x12, 0x0a, 0x03, 0x61, 0x6c, 0x6c,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x48, 0x00, 0x52, 0x03, 0x61, 0x6c, 0x6c, 0x42, 0x0e, 0x0a,
-	0x07, 0x73, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x03, 0xf8, 0x42, 0x01, 0x22, 0xa4, 0x06,
-	0x0a, 0x0d, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12,
-	0x5b, 0x0a, 0x0b, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x5f, 0x61, 0x72, 0x67, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x38, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67,
-	0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x56, 0x61, 0x6c, 0x75,
-	0x65, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x47, 0x72, 0x61, 0x70, 0x68, 0x51,
-	0x4c, 0x41, 0x72, 0x67, 0x45, 0x78, 0x74, 0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x48, 0x00,
-	0x52, 0x0a, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x41, 0x72, 0x67, 0x12, 0x5f, 0x0a, 0x0e,
-	0x74, 0x79, 0x70, 0x65, 0x64, 0x5f, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x36, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67,
-	0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x56, 0x61, 0x6c, 0x75,
-	0x65, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x56,
-	0x61, 0x6c, 0x75, 0x65, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x48, 0x00, 0x52, 0x0d,
-	0x74, 0x79, 0x70, 0x65, 0x64, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x64, 0x0a,
-	0x0e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x5f, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x18,
-	0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3b, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e,
-	0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x56, 0x61, 0x6c,
-	0x75, 0x65, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x47, 0x72, 0x61, 0x70, 0x68,
-	0x51, 0x4c, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x45, 0x78, 0x74, 0x72, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x48, 0x00, 0x52, 0x0d, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x50, 0x61, 0x72,
-	0x65, 0x6e, 0x74, 0x12, 0x2b, 0x0a, 0x11, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x5f,
-	0x74, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x10,
-	0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65,
-	0x1a, 0x84, 0x01, 0x0a, 0x14, 0x47, 0x72, 0x61, 0x70, 0x68, 0x51, 0x4c, 0x41, 0x72, 0x67, 0x45,
-	0x78, 0x74, 0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x19, 0x0a, 0x08, 0x61, 0x72, 0x67,
-	0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61, 0x72, 0x67,
-	0x4e, 0x61, 0x6d, 0x65, 0x12, 0x35, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x02, 0x20, 0x03,
-	0x28, 0x0b, 0x32, 0x21, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f,
-	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x50, 0x61, 0x74, 0x68, 0x53, 0x65,
-	0x67, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x12, 0x1a, 0x0a, 0x08, 0x72,
-	0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x72,
-	0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x1a, 0x50, 0x0a, 0x17, 0x47, 0x72, 0x61, 0x70, 0x68,
-	0x51, 0x4c, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x45, 0x78, 0x74, 0x72, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x12, 0x35, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b,
-	0x32, 0x21, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e,
-	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x50, 0x61, 0x74, 0x68, 0x53, 0x65, 0x67, 0x6d,
-	0x65, 0x6e, 0x74, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x1a, 0xdc, 0x01, 0x0a, 0x12, 0x54, 0x79,
-	0x70, 0x65, 0x64, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72,
-	0x12, 0x4f, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x3b,
-	0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
-	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x50, 0x72, 0x6f, 0x76, 0x69,
-	0x64, 0x65, 0x72, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x50, 0x72,
-	0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x74, 0x79, 0x70,
-	0x65, 0x12, 0x18, 0x0a, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x48, 0x00, 0x52, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x16, 0x0a, 0x05, 0x76,
-	0x61, 0x6c, 0x75, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x05, 0x76, 0x61,
-	0x6c, 0x75, 0x65, 0x22, 0x33, 0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0a, 0x0a, 0x06, 0x53,
-	0x54, 0x52, 0x49, 0x4e, 0x47, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x03, 0x49, 0x4e, 0x54, 0x10, 0x01,
-	0x12, 0x09, 0x0a, 0x05, 0x46, 0x4c, 0x4f, 0x41, 0x54, 0x10, 0x02, 0x12, 0x0b, 0x0a, 0x07, 0x42,
-	0x4f, 0x4f, 0x4c, 0x45, 0x41, 0x4e, 0x10, 0x03, 0x42, 0x0e, 0x0a, 0x0c, 0x76, 0x61, 0x6c, 0x5f,
-	0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x42, 0x0a, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76,
-	0x69, 0x64, 0x65, 0x72, 0x22, 0x48, 0x0a, 0x0d, 0x4a, 0x73, 0x6f, 0x6e, 0x56, 0x61, 0x6c, 0x75,
-	0x65, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x37, 0x0a, 0x06, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x73, 0x18,
-	0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e,
-	0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4a, 0x73, 0x6f,
-	0x6e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x06, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x73, 0x22, 0xd6,
-	0x01, 0x0a, 0x09, 0x4a, 0x73, 0x6f, 0x6e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x34, 0x0a, 0x04,
-	0x6e, 0x6f, 0x64, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x67, 0x72, 0x61,
-	0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69,
-	0x6f, 0x2e, 0x4a, 0x73, 0x6f, 0x6e, 0x4e, 0x6f, 0x64, 0x65, 0x48, 0x00, 0x52, 0x04, 0x6e, 0x6f,
-	0x64, 0x65, 0x12, 0x4c, 0x0a, 0x0e, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x5f, 0x70, 0x72, 0x6f, 0x76,
-	0x69, 0x64, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x67, 0x72, 0x61,
-	0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69,
-	0x6f, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x48,
-	0x00, 0x52, 0x0d, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72,
-	0x12, 0x39, 0x0a, 0x04, 0x6c, 0x69, 0x73, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x23,
-	0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
-	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4a, 0x73, 0x6f, 0x6e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x4c,
-	0x69, 0x73, 0x74, 0x48, 0x00, 0x52, 0x04, 0x6c, 0x69, 0x73, 0x74, 0x42, 0x0a, 0x0a, 0x08, 0x6a,
-	0x73, 0x6f, 0x6e, 0x5f, 0x76, 0x61, 0x6c, 0x22, 0x57, 0x0a, 0x0c, 0x4a, 0x73, 0x6f, 0x6e, 0x4b,
-	0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x35, 0x0a, 0x05, 0x76, 0x61, 0x6c,
-	0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x22, 0xe2, 0x02, 0x0a, 0x0f, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x54,
+	0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x12, 0x4c, 0x0a, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65,
+	0x72, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x32, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68,
 	0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e,
-	0x4a, 0x73, 0x6f, 0x6e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65,
-	0x22, 0x4d, 0x0a, 0x08, 0x4a, 0x73, 0x6f, 0x6e, 0x4e, 0x6f, 0x64, 0x65, 0x12, 0x41, 0x0a, 0x0a,
-	0x6b, 0x65, 0x79, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b,
-	0x32, 0x22, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e,
-	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4a, 0x73, 0x6f, 0x6e, 0x4b, 0x65, 0x79, 0x56,
-	0x61, 0x6c, 0x75, 0x65, 0x52, 0x09, 0x6b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x73, 0x22,
-	0xc6, 0x03, 0x0a, 0x0f, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x54, 0x65, 0x6d, 0x70, 0x6c,
-	0x61, 0x74, 0x65, 0x12, 0x4c, 0x0a, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x18, 0x01,
-	0x20, 0x03, 0x28, 0x0b, 0x32, 0x32, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67,
-	0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x2e, 0x48, 0x65, 0x61, 0x64,
-	0x65, 0x72, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72,
-	0x73, 0x12, 0x59, 0x0a, 0x0c, 0x71, 0x75, 0x65, 0x72, 0x79, 0x5f, 0x70, 0x61, 0x72, 0x61, 0x6d,
-	0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x36, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71,
-	0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x2e, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52,
-	0x0b, 0x71, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x44, 0x0a, 0x0d,
-	0x6f, 0x75, 0x74, 0x67, 0x6f, 0x69, 0x6e, 0x67, 0x5f, 0x62, 0x6f, 0x64, 0x79, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c,
-	0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4a, 0x73, 0x6f, 0x6e, 0x56,
-	0x61, 0x6c, 0x75, 0x65, 0x52, 0x0c, 0x6f, 0x75, 0x74, 0x67, 0x6f, 0x69, 0x6e, 0x67, 0x42, 0x6f,
-	0x64, 0x79, 0x1a, 0x5f, 0x0a, 0x0c, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x45, 0x6e, 0x74,
-	0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x03, 0x6b, 0x65, 0x79, 0x12, 0x39, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c,
-	0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65,
-	0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a,
-	0x02, 0x38, 0x01, 0x1a, 0x63, 0x0a, 0x10, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61,
-	0x6d, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x39, 0x0a, 0x05, 0x76, 0x61, 0x6c,
-	0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68,
-	0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e,
-	0x56, 0x61, 0x6c, 0x75, 0x65, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x52, 0x05, 0x76,
-	0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0xbd, 0x01, 0x0a, 0x0c, 0x52, 0x45, 0x53,
-	0x54, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x12, 0x3c, 0x0a, 0x0c, 0x75, 0x70, 0x73,
-	0x74, 0x72, 0x65, 0x61, 0x6d, 0x5f, 0x72, 0x65, 0x66, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x19, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52,
-	0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x52, 0x65, 0x66, 0x52, 0x0b, 0x75, 0x70, 0x73, 0x74,
-	0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x66, 0x12, 0x52, 0x0a, 0x11, 0x72, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x5f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x6f, 0x72, 0x6d, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x25, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f,
-	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x2e,
+	0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x68, 0x65,
+	0x61, 0x64, 0x65, 0x72, 0x73, 0x12, 0x59, 0x0a, 0x0c, 0x71, 0x75, 0x65, 0x72, 0x79, 0x5f, 0x70,
+	0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x36, 0x2e, 0x67, 0x72,
+	0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e,
+	0x69, 0x6f, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61,
+	0x74, 0x65, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x45, 0x6e,
+	0x74, 0x72, 0x79, 0x52, 0x0b, 0x71, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
+	0x12, 0x2a, 0x0a, 0x04, 0x62, 0x6f, 0x64, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16,
+	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
+	0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x04, 0x62, 0x6f, 0x64, 0x79, 0x1a, 0x3a, 0x0a, 0x0c,
+	0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03,
+	0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14,
+	0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76,
+	0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x1a, 0x3e, 0x0a, 0x10, 0x51, 0x75, 0x65, 0x72,
+	0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03,
+	0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14,
+	0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76,
+	0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0xbe, 0x01, 0x0a, 0x10, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x12, 0x1f, 0x0a,
+	0x0b, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x5f, 0x72, 0x6f, 0x6f, 0x74, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x0a, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x12, 0x4d,
+	0x0a, 0x07, 0x73, 0x65, 0x74, 0x74, 0x65, 0x72, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32,
+	0x33, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73,
+	0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x54,
+	0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x2e, 0x53, 0x65, 0x74, 0x74, 0x65, 0x72, 0x73, 0x45,
+	0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x73, 0x65, 0x74, 0x74, 0x65, 0x72, 0x73, 0x1a, 0x3a, 0x0a,
+	0x0c, 0x53, 0x65, 0x74, 0x74, 0x65, 0x72, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a,
+	0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12,
+	0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
+	0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0xd4, 0x02, 0x0a, 0x13, 0x47, 0x72,
+	0x70, 0x63, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74,
+	0x65, 0x12, 0x4a, 0x0a, 0x15, 0x6f, 0x75, 0x74, 0x67, 0x6f, 0x69, 0x6e, 0x67, 0x5f, 0x6d, 0x65,
+	0x73, 0x73, 0x61, 0x67, 0x65, 0x5f, 0x6a, 0x73, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62,
+	0x75, 0x66, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x13, 0x6f, 0x75, 0x74, 0x67, 0x6f, 0x69,
+	0x6e, 0x67, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x4a, 0x73, 0x6f, 0x6e, 0x12, 0x21, 0x0a,
+	0x0c, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x0b, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x4e, 0x61, 0x6d, 0x65,
+	0x12, 0x1f, 0x0a, 0x0b, 0x6d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18,
+	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x6d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x4e, 0x61, 0x6d,
+	0x65, 0x12, 0x69, 0x0a, 0x10, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x5f, 0x6d, 0x65, 0x74,
+	0x61, 0x64, 0x61, 0x74, 0x61, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x3e, 0x2e, 0x67, 0x72,
+	0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e,
+	0x69, 0x6f, 0x2e, 0x47, 0x72, 0x70, 0x63, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x54, 0x65,
+	0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x4d, 0x65,
+	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0f, 0x72, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x1a, 0x42, 0x0a, 0x14,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x45,
+	0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01,
+	0x22, 0xee, 0x01, 0x0a, 0x0c, 0x52, 0x45, 0x53, 0x54, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65,
+	0x72, 0x12, 0x3c, 0x0a, 0x0c, 0x75, 0x70, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x5f, 0x72, 0x65,
+	0x66, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73,
+	0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x52,
+	0x65, 0x66, 0x52, 0x0b, 0x75, 0x70, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x66, 0x12,
+	0x3f, 0x0a, 0x07, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x25, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e,
+	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x54,
+	0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x52, 0x07, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x12, 0x42, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x26, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f,
+	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x52, 0x08, 0x72, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1b, 0x0a, 0x09, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x6e, 0x61, 0x6d,
+	0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x73, 0x70, 0x61, 0x6e, 0x4e, 0x61, 0x6d,
+	0x65, 0x22, 0x90, 0x01, 0x0a, 0x16, 0x47, 0x72, 0x70, 0x63, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69,
+	0x70, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x12, 0x2b, 0x0a, 0x10,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x5f, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x0f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x44,
+	0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x12, 0x32, 0x0a, 0x14, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x5f, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x5f, 0x62, 0x69,
+	0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x48, 0x00, 0x52, 0x12, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x44, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x42, 0x69, 0x6e, 0x42, 0x15, 0x0a,
+	0x0e, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x5f, 0x73, 0x65, 0x74, 0x12,
+	0x03, 0xf8, 0x42, 0x01, 0x22, 0xc1, 0x01, 0x0a, 0x0c, 0x47, 0x72, 0x70, 0x63, 0x52, 0x65, 0x73,
+	0x6f, 0x6c, 0x76, 0x65, 0x72, 0x12, 0x3c, 0x0a, 0x0c, 0x75, 0x70, 0x73, 0x74, 0x72, 0x65, 0x61,
+	0x6d, 0x5f, 0x72, 0x65, 0x66, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x63, 0x6f,
+	0x72, 0x65, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x75,
+	0x72, 0x63, 0x65, 0x52, 0x65, 0x66, 0x52, 0x0b, 0x75, 0x70, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d,
+	0x52, 0x65, 0x66, 0x12, 0x56, 0x0a, 0x11, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x5f, 0x74,
+	0x72, 0x61, 0x6e, 0x73, 0x66, 0x6f, 0x72, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x29,
+	0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
+	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x47, 0x72, 0x70, 0x63, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
 	0x74, 0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x52, 0x10, 0x72, 0x65, 0x71, 0x75, 0x65,
 	0x73, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x6f, 0x72, 0x6d, 0x12, 0x1b, 0x0a, 0x09, 0x73,
 	0x70, 0x61, 0x6e, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08,
-	0x73, 0x70, 0x61, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x22, 0xa9, 0x01, 0x0a, 0x0c, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x72, 0x12, 0x56, 0x0a, 0x0d, 0x66, 0x69, 0x65,
-	0x6c, 0x64, 0x5f, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x2f, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e,
-	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4d, 0x61, 0x74,
-	0x63, 0x68, 0x65, 0x72, 0x2e, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x65,
-	0x72, 0x48, 0x00, 0x52, 0x0c, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x65,
-	0x72, 0x1a, 0x38, 0x0a, 0x0c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x65,
-	0x72, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x42, 0x07, 0x0a, 0x05, 0x6d,
-	0x61, 0x74, 0x63, 0x68, 0x22, 0xa1, 0x01, 0x0a, 0x0a, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x75, 0x74,
-	0x69, 0x6f, 0x6e, 0x12, 0x3c, 0x0a, 0x07, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x72, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67,
-	0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x72, 0x52, 0x07, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65,
-	0x72, 0x12, 0x49, 0x0a, 0x0d, 0x72, 0x65, 0x73, 0x74, 0x5f, 0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76,
-	0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68,
-	0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e,
-	0x52, 0x45, 0x53, 0x54, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x48, 0x00, 0x52, 0x0c,
-	0x72, 0x65, 0x73, 0x74, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x42, 0x0a, 0x0a, 0x08,
-	0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x22, 0xcc, 0x02, 0x0a, 0x0d, 0x47, 0x72, 0x61,
-	0x70, 0x68, 0x51, 0x4c, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12, 0x57, 0x0a, 0x13, 0x6e, 0x61,
-	0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x64, 0x5f, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x65,
-	0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73,
-	0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65,
-	0x64, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x65, 0x73, 0x42, 0x04, 0xb8, 0xf5, 0x04, 0x01, 0x52,
-	0x12, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x64, 0x53, 0x74, 0x61, 0x74, 0x75,
-	0x73, 0x65, 0x73, 0x12, 0x32, 0x0a, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73, 0x6f, 0x6c,
-	0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x08, 0x6d,
-	0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x63, 0x68, 0x65, 0x6d,
-	0x61, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12,
-	0x31, 0x0a, 0x14, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x69, 0x6e, 0x74, 0x72, 0x6f, 0x73,
-	0x70, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x52, 0x13, 0x65,
-	0x6e, 0x61, 0x62, 0x6c, 0x65, 0x49, 0x6e, 0x74, 0x72, 0x6f, 0x73, 0x70, 0x65, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x12, 0x42, 0x0a, 0x0b, 0x72, 0x65, 0x73, 0x6f, 0x6c, 0x75, 0x74, 0x69, 0x6f, 0x6e,
-	0x73, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71,
-	0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52,
-	0x65, 0x73, 0x6f, 0x6c, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0b, 0x72, 0x65, 0x73, 0x6f, 0x6c,
-	0x75, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x3a, 0x1f, 0x82, 0xf1, 0x04, 0x06, 0x0a, 0x04, 0x67, 0x71,
-	0x6c, 0x73, 0x82, 0xf1, 0x04, 0x11, 0x12, 0x0f, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x5f,
-	0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x73, 0x42, 0xab, 0x01, 0x0a, 0x31, 0x69, 0x6f, 0x2e, 0x65,
-	0x6e, 0x76, 0x6f, 0x79, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e,
-	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x2e, 0x68, 0x74,
-	0x74, 0x70, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x76, 0x32, 0x42, 0x12, 0x47,
-	0x72, 0x61, 0x70, 0x68, 0x51, 0x4c, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x50, 0x72, 0x6f, 0x74,
-	0x6f, 0x50, 0x01, 0x5a, 0x54, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
-	0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f,
-	0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61,
-	0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65,
-	0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c,
-	0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xc0, 0xf5, 0x04, 0x01, 0xb8, 0xf5, 0x04,
-	0x01, 0xd0, 0xf5, 0x04, 0x01, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x70, 0x61, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x22, 0xae, 0x01, 0x0a, 0x0a, 0x52, 0x65, 0x73,
+	0x6f, 0x6c, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x49, 0x0a, 0x0d, 0x72, 0x65, 0x73, 0x74, 0x5f,
+	0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22,
+	0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
+	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x45, 0x53, 0x54, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76,
+	0x65, 0x72, 0x48, 0x00, 0x52, 0x0c, 0x72, 0x65, 0x73, 0x74, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76,
+	0x65, 0x72, 0x12, 0x49, 0x0a, 0x0d, 0x67, 0x72, 0x70, 0x63, 0x5f, 0x72, 0x65, 0x73, 0x6f, 0x6c,
+	0x76, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x67, 0x72, 0x61, 0x70,
+	0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f,
+	0x2e, 0x47, 0x72, 0x70, 0x63, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x48, 0x00, 0x52,
+	0x0c, 0x67, 0x72, 0x70, 0x63, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x42, 0x0a, 0x0a,
+	0x08, 0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x22, 0x92, 0x02, 0x0a, 0x0d, 0x47, 0x72,
+	0x61, 0x70, 0x68, 0x51, 0x4c, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12, 0x57, 0x0a, 0x13, 0x6e,
+	0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x64, 0x5f, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73,
+	0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
+	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63,
+	0x65, 0x64, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x65, 0x73, 0x42, 0x04, 0xb8, 0xf5, 0x04, 0x01,
+	0x52, 0x12, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x64, 0x53, 0x74, 0x61, 0x74,
+	0x75, 0x73, 0x65, 0x73, 0x12, 0x32, 0x0a, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73, 0x6f,
+	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x08,
+	0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x53, 0x0a, 0x11, 0x65, 0x78, 0x65, 0x63,
+	0x75, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x18, 0x06, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c,
+	0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x45, 0x78, 0x65, 0x63, 0x75,
+	0x74, 0x61, 0x62, 0x6c, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x52, 0x10, 0x65, 0x78, 0x65,
+	0x63, 0x75, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x3a, 0x1f, 0x82,
+	0xf1, 0x04, 0x06, 0x0a, 0x04, 0x67, 0x71, 0x6c, 0x73, 0x82, 0xf1, 0x04, 0x11, 0x12, 0x0f, 0x67,
+	0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x5f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x73, 0x22, 0xe3,
+	0x01, 0x0a, 0x10, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x53, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x12, 0x2b, 0x0a, 0x11, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x64, 0x65,
+	0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x10,
+	0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x44, 0x65, 0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e,
+	0x12, 0x3a, 0x0a, 0x08, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f,
+	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74,
+	0x6f, 0x72, 0x52, 0x08, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72, 0x12, 0x66, 0x0a, 0x18,
+	0x67, 0x72, 0x70, 0x63, 0x5f, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x5f,
+	0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2c,
+	0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
+	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x47, 0x72, 0x70, 0x63, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69,
+	0x70, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x52, 0x16, 0x67, 0x72,
+	0x70, 0x63, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x67, 0x69,
+	0x73, 0x74, 0x72, 0x79, 0x22, 0xcc, 0x02, 0x0a, 0x08, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f,
+	0x72, 0x12, 0x3c, 0x0a, 0x05, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x24, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e,
+	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72,
+	0x2e, 0x4c, 0x6f, 0x63, 0x61, 0x6c, 0x48, 0x00, 0x52, 0x05, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x1a,
+	0xf5, 0x01, 0x0a, 0x05, 0x4c, 0x6f, 0x63, 0x61, 0x6c, 0x12, 0x57, 0x0a, 0x0b, 0x72, 0x65, 0x73,
+	0x6f, 0x6c, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x35,
+	0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
+	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72, 0x2e, 0x4c,
+	0x6f, 0x63, 0x61, 0x6c, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0b, 0x72, 0x65, 0x73, 0x6f, 0x6c, 0x75, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x12, 0x31, 0x0a, 0x14, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x69, 0x6e, 0x74,
+	0x72, 0x6f, 0x73, 0x70, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08,
+	0x52, 0x13, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x49, 0x6e, 0x74, 0x72, 0x6f, 0x73, 0x70, 0x65,
+	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x60, 0x0a, 0x10, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x75, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x36, 0x0a, 0x05, 0x76,
+	0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x67, 0x72, 0x61,
+	0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69,
+	0x6f, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x05, 0x76, 0x61,
+	0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x42, 0x0a, 0x0a, 0x08, 0x65, 0x78, 0x65, 0x63, 0x75,
+	0x74, 0x6f, 0x72, 0x42, 0xab, 0x01, 0x0a, 0x31, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79,
+	0x70, 0x72, 0x6f, 0x78, 0x79, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x63, 0x6f, 0x6e, 0x66,
+	0x69, 0x67, 0x2e, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x2e, 0x68, 0x74, 0x74, 0x70, 0x2e, 0x67,
+	0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x76, 0x32, 0x42, 0x12, 0x47, 0x72, 0x61, 0x70, 0x68,
+	0x51, 0x4c, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a,
+	0x54, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f,
+	0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
+	0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76,
+	0x31, 0x2f, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65, 0x2f, 0x6f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2f, 0x76, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x31, 0xc0, 0xf5, 0x04, 0x01, 0xb8, 0xf5, 0x04, 0x01, 0xd0, 0xf5, 0x04,
+	0x01, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1421,62 +1084,56 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescData
 }
 
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_goTypes = []interface{}{
-	(ValueProvider_TypedValueProvider_Type)(0),    // 0: graphql.gloo.solo.io.ValueProvider.TypedValueProvider.Type
-	(*PathSegment)(nil),                           // 1: graphql.gloo.solo.io.PathSegment
-	(*ValueProvider)(nil),                         // 2: graphql.gloo.solo.io.ValueProvider
-	(*JsonValueList)(nil),                         // 3: graphql.gloo.solo.io.JsonValueList
-	(*JsonValue)(nil),                             // 4: graphql.gloo.solo.io.JsonValue
-	(*JsonKeyValue)(nil),                          // 5: graphql.gloo.solo.io.JsonKeyValue
-	(*JsonNode)(nil),                              // 6: graphql.gloo.solo.io.JsonNode
-	(*RequestTemplate)(nil),                       // 7: graphql.gloo.solo.io.RequestTemplate
-	(*RESTResolver)(nil),                          // 8: graphql.gloo.solo.io.RESTResolver
-	(*QueryMatcher)(nil),                          // 9: graphql.gloo.solo.io.QueryMatcher
-	(*Resolution)(nil),                            // 10: graphql.gloo.solo.io.Resolution
-	(*GraphQLSchema)(nil),                         // 11: graphql.gloo.solo.io.GraphQLSchema
-	(*ValueProvider_GraphQLArgExtraction)(nil),    // 12: graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction
-	(*ValueProvider_GraphQLParentExtraction)(nil), // 13: graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction
-	(*ValueProvider_TypedValueProvider)(nil),      // 14: graphql.gloo.solo.io.ValueProvider.TypedValueProvider
-	nil,                                           // 15: graphql.gloo.solo.io.RequestTemplate.HeadersEntry
-	nil,                                           // 16: graphql.gloo.solo.io.RequestTemplate.QueryParamsEntry
-	(*QueryMatcher_FieldMatcher)(nil),             // 17: graphql.gloo.solo.io.QueryMatcher.FieldMatcher
-	(*core.ResourceRef)(nil),                      // 18: core.solo.io.ResourceRef
-	(*core.NamespacedStatuses)(nil),               // 19: core.solo.io.NamespacedStatuses
-	(*core.Metadata)(nil),                         // 20: core.solo.io.Metadata
+	(*RequestTemplate)(nil),         // 0: graphql.gloo.solo.io.RequestTemplate
+	(*ResponseTemplate)(nil),        // 1: graphql.gloo.solo.io.ResponseTemplate
+	(*GrpcRequestTemplate)(nil),     // 2: graphql.gloo.solo.io.GrpcRequestTemplate
+	(*RESTResolver)(nil),            // 3: graphql.gloo.solo.io.RESTResolver
+	(*GrpcDescriptorRegistry)(nil),  // 4: graphql.gloo.solo.io.GrpcDescriptorRegistry
+	(*GrpcResolver)(nil),            // 5: graphql.gloo.solo.io.GrpcResolver
+	(*Resolution)(nil),              // 6: graphql.gloo.solo.io.Resolution
+	(*GraphQLSchema)(nil),           // 7: graphql.gloo.solo.io.GraphQLSchema
+	(*ExecutableSchema)(nil),        // 8: graphql.gloo.solo.io.ExecutableSchema
+	(*Executor)(nil),                // 9: graphql.gloo.solo.io.Executor
+	nil,                             // 10: graphql.gloo.solo.io.RequestTemplate.HeadersEntry
+	nil,                             // 11: graphql.gloo.solo.io.RequestTemplate.QueryParamsEntry
+	nil,                             // 12: graphql.gloo.solo.io.ResponseTemplate.SettersEntry
+	nil,                             // 13: graphql.gloo.solo.io.GrpcRequestTemplate.RequestMetadataEntry
+	(*Executor_Local)(nil),          // 14: graphql.gloo.solo.io.Executor.Local
+	nil,                             // 15: graphql.gloo.solo.io.Executor.Local.ResolutionsEntry
+	(*_struct.Value)(nil),           // 16: google.protobuf.Value
+	(*core.ResourceRef)(nil),        // 17: core.solo.io.ResourceRef
+	(*core.NamespacedStatuses)(nil), // 18: core.solo.io.NamespacedStatuses
+	(*core.Metadata)(nil),           // 19: core.solo.io.Metadata
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_depIdxs = []int32{
-	12, // 0: graphql.gloo.solo.io.ValueProvider.graphql_arg:type_name -> graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction
-	14, // 1: graphql.gloo.solo.io.ValueProvider.typed_provider:type_name -> graphql.gloo.solo.io.ValueProvider.TypedValueProvider
-	13, // 2: graphql.gloo.solo.io.ValueProvider.graphql_parent:type_name -> graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction
-	4,  // 3: graphql.gloo.solo.io.JsonValueList.values:type_name -> graphql.gloo.solo.io.JsonValue
-	6,  // 4: graphql.gloo.solo.io.JsonValue.node:type_name -> graphql.gloo.solo.io.JsonNode
-	2,  // 5: graphql.gloo.solo.io.JsonValue.value_provider:type_name -> graphql.gloo.solo.io.ValueProvider
-	3,  // 6: graphql.gloo.solo.io.JsonValue.list:type_name -> graphql.gloo.solo.io.JsonValueList
-	4,  // 7: graphql.gloo.solo.io.JsonKeyValue.value:type_name -> graphql.gloo.solo.io.JsonValue
-	5,  // 8: graphql.gloo.solo.io.JsonNode.key_values:type_name -> graphql.gloo.solo.io.JsonKeyValue
-	15, // 9: graphql.gloo.solo.io.RequestTemplate.headers:type_name -> graphql.gloo.solo.io.RequestTemplate.HeadersEntry
-	16, // 10: graphql.gloo.solo.io.RequestTemplate.query_params:type_name -> graphql.gloo.solo.io.RequestTemplate.QueryParamsEntry
-	4,  // 11: graphql.gloo.solo.io.RequestTemplate.outgoing_body:type_name -> graphql.gloo.solo.io.JsonValue
-	18, // 12: graphql.gloo.solo.io.RESTResolver.upstream_ref:type_name -> core.solo.io.ResourceRef
-	7,  // 13: graphql.gloo.solo.io.RESTResolver.request_transform:type_name -> graphql.gloo.solo.io.RequestTemplate
-	17, // 14: graphql.gloo.solo.io.QueryMatcher.field_matcher:type_name -> graphql.gloo.solo.io.QueryMatcher.FieldMatcher
-	9,  // 15: graphql.gloo.solo.io.Resolution.matcher:type_name -> graphql.gloo.solo.io.QueryMatcher
-	8,  // 16: graphql.gloo.solo.io.Resolution.rest_resolver:type_name -> graphql.gloo.solo.io.RESTResolver
-	19, // 17: graphql.gloo.solo.io.GraphQLSchema.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
-	20, // 18: graphql.gloo.solo.io.GraphQLSchema.metadata:type_name -> core.solo.io.Metadata
-	10, // 19: graphql.gloo.solo.io.GraphQLSchema.resolutions:type_name -> graphql.gloo.solo.io.Resolution
-	1,  // 20: graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction.path:type_name -> graphql.gloo.solo.io.PathSegment
-	1,  // 21: graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction.path:type_name -> graphql.gloo.solo.io.PathSegment
-	0,  // 22: graphql.gloo.solo.io.ValueProvider.TypedValueProvider.type:type_name -> graphql.gloo.solo.io.ValueProvider.TypedValueProvider.Type
-	2,  // 23: graphql.gloo.solo.io.RequestTemplate.HeadersEntry.value:type_name -> graphql.gloo.solo.io.ValueProvider
-	2,  // 24: graphql.gloo.solo.io.RequestTemplate.QueryParamsEntry.value:type_name -> graphql.gloo.solo.io.ValueProvider
-	25, // [25:25] is the sub-list for method output_type
-	25, // [25:25] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	10, // 0: graphql.gloo.solo.io.RequestTemplate.headers:type_name -> graphql.gloo.solo.io.RequestTemplate.HeadersEntry
+	11, // 1: graphql.gloo.solo.io.RequestTemplate.query_params:type_name -> graphql.gloo.solo.io.RequestTemplate.QueryParamsEntry
+	16, // 2: graphql.gloo.solo.io.RequestTemplate.body:type_name -> google.protobuf.Value
+	12, // 3: graphql.gloo.solo.io.ResponseTemplate.setters:type_name -> graphql.gloo.solo.io.ResponseTemplate.SettersEntry
+	16, // 4: graphql.gloo.solo.io.GrpcRequestTemplate.outgoing_message_json:type_name -> google.protobuf.Value
+	13, // 5: graphql.gloo.solo.io.GrpcRequestTemplate.request_metadata:type_name -> graphql.gloo.solo.io.GrpcRequestTemplate.RequestMetadataEntry
+	17, // 6: graphql.gloo.solo.io.RESTResolver.upstream_ref:type_name -> core.solo.io.ResourceRef
+	0,  // 7: graphql.gloo.solo.io.RESTResolver.request:type_name -> graphql.gloo.solo.io.RequestTemplate
+	1,  // 8: graphql.gloo.solo.io.RESTResolver.response:type_name -> graphql.gloo.solo.io.ResponseTemplate
+	17, // 9: graphql.gloo.solo.io.GrpcResolver.upstream_ref:type_name -> core.solo.io.ResourceRef
+	2,  // 10: graphql.gloo.solo.io.GrpcResolver.request_transform:type_name -> graphql.gloo.solo.io.GrpcRequestTemplate
+	3,  // 11: graphql.gloo.solo.io.Resolution.rest_resolver:type_name -> graphql.gloo.solo.io.RESTResolver
+	5,  // 12: graphql.gloo.solo.io.Resolution.grpc_resolver:type_name -> graphql.gloo.solo.io.GrpcResolver
+	18, // 13: graphql.gloo.solo.io.GraphQLSchema.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
+	19, // 14: graphql.gloo.solo.io.GraphQLSchema.metadata:type_name -> core.solo.io.Metadata
+	8,  // 15: graphql.gloo.solo.io.GraphQLSchema.executable_schema:type_name -> graphql.gloo.solo.io.ExecutableSchema
+	9,  // 16: graphql.gloo.solo.io.ExecutableSchema.executor:type_name -> graphql.gloo.solo.io.Executor
+	4,  // 17: graphql.gloo.solo.io.ExecutableSchema.grpc_descriptor_registry:type_name -> graphql.gloo.solo.io.GrpcDescriptorRegistry
+	14, // 18: graphql.gloo.solo.io.Executor.local:type_name -> graphql.gloo.solo.io.Executor.Local
+	15, // 19: graphql.gloo.solo.io.Executor.Local.resolutions:type_name -> graphql.gloo.solo.io.Executor.Local.ResolutionsEntry
+	6,  // 20: graphql.gloo.solo.io.Executor.Local.ResolutionsEntry.value:type_name -> graphql.gloo.solo.io.Resolution
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() {
@@ -1488,78 +1145,6 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PathSegment); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ValueProvider); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*JsonValueList); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*JsonValue); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*JsonKeyValue); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*JsonNode); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RequestTemplate); i {
 			case 0:
 				return &v.state
@@ -1571,7 +1156,31 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ResponseTemplate); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GrpcRequestTemplate); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RESTResolver); i {
 			case 0:
 				return &v.state
@@ -1583,8 +1192,8 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryMatcher); i {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GrpcDescriptorRegistry); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1595,7 +1204,19 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GrpcResolver); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Resolution); i {
 			case 0:
 				return &v.state
@@ -1607,7 +1228,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GraphQLSchema); i {
 			case 0:
 				return &v.state
@@ -1619,8 +1240,8 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ValueProvider_GraphQLArgExtraction); i {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExecutableSchema); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1631,8 +1252,8 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ValueProvider_GraphQLParentExtraction); i {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Executor); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1643,20 +1264,8 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ValueProvider_TypedValueProvider); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryMatcher_FieldMatcher); i {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Executor_Local); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1668,44 +1277,29 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 			}
 		}
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[0].OneofWrappers = []interface{}{
-		(*PathSegment_Key)(nil),
-		(*PathSegment_Index)(nil),
-		(*PathSegment_All)(nil),
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[4].OneofWrappers = []interface{}{
+		(*GrpcDescriptorRegistry_ProtoDescriptor)(nil),
+		(*GrpcDescriptorRegistry_ProtoDescriptorBin)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[1].OneofWrappers = []interface{}{
-		(*ValueProvider_GraphqlArg)(nil),
-		(*ValueProvider_TypedProvider)(nil),
-		(*ValueProvider_GraphqlParent)(nil),
-	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[3].OneofWrappers = []interface{}{
-		(*JsonValue_Node)(nil),
-		(*JsonValue_ValueProvider)(nil),
-		(*JsonValue_List)(nil),
-	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[8].OneofWrappers = []interface{}{
-		(*QueryMatcher_FieldMatcher_)(nil),
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[6].OneofWrappers = []interface{}{
+		(*Resolution_RestResolver)(nil),
+		(*Resolution_GrpcResolver)(nil),
 	}
 	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[9].OneofWrappers = []interface{}{
-		(*Resolution_RestResolver)(nil),
-	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[13].OneofWrappers = []interface{}{
-		(*ValueProvider_TypedValueProvider_Header)(nil),
-		(*ValueProvider_TypedValueProvider_Value)(nil),
+		(*Executor_Local_)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDesc,
-			NumEnums:      1,
-			NumMessages:   17,
+			NumEnums:      0,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_goTypes,
 		DependencyIndexes: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_depIdxs,
-		EnumInfos:         file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_enumTypes,
 		MessageInfos:      file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes,
 	}.Build()
 	File_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto = out.File

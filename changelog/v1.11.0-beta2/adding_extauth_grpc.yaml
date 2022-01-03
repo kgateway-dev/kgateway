@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5682
+    resolvesIssue: false
+    description: >
+      Adding Grpc extauth configuration, to be able to set the Authority header.

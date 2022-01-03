@@ -28,6 +28,11 @@ var _ = Describe("Knative", func() {
 	)
 
 	BeforeEach(func() {
+		// Knative support has been deprecated in Gloo Edge 1.10 (https://github.com/solo-io/gloo/issues/5707)
+		// and will be removed in Gloo Edge 1.11.
+		// These tests are not run during CI.
+		Skip("This test is for a deprecated feature.")
+
 		ctx, cancel = context.WithCancel(context.Background())
 	})
 

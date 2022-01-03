@@ -21,6 +21,7 @@ import (
 	_ "github.com/cratonica/2goarray"
 	_ "github.com/envoyproxy/protoc-gen-validate"
 	_ "github.com/golang/mock/mockgen"
+	_ "github.com/onsi/ginkgo/ginkgo"
 	_ "github.com/saiskee/gettercheck"
 	_ "github.com/solo-io/protoc-gen-ext"
 	_ "github.com/solo-io/protoc-gen-openapi"

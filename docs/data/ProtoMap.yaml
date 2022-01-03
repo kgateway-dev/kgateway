@@ -140,6 +140,9 @@ apis:
   enterprise.gloo.solo.io.ExtAuthExtension:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ExtAuthExtension
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.GrpcService:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#GrpcService
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.HeaderConfiguration:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HeaderConfiguration
     package: enterprise.gloo.solo.io
@@ -251,11 +254,26 @@ apis:
   envoy.config.filter.http.graphql.v2.AbstractTypeResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#AbstractTypeResolver
     package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.ExecutableSchema:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#ExecutableSchema
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.Executor:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#Executor
+    package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.graphql.v2.GraphQLConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#GraphQLConfig
     package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.graphql.v2.GraphQLRouteConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#GraphQLRouteConfig
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.GrpcDescriptorRegistry:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#GrpcDescriptorRegistry
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.GrpcRequestTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#GrpcRequestTemplate
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.GrpcResolver:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#GrpcResolver
     package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.graphql.v2.JsonKeyValue:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#JsonKeyValue
@@ -268,6 +286,9 @@ apis:
     package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.graphql.v2.JsonValueList:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#JsonValueList
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.Path:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#Path
     package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.graphql.v2.PathSegment:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#PathSegment
@@ -404,6 +425,15 @@ apis:
   gateway.solo.io.HttpGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#HttpGateway
     package: gateway.solo.io
+  gateway.solo.io.HybridGateway:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#HybridGateway
+    package: gateway.solo.io
+  gateway.solo.io.MatchedGateway:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#MatchedGateway
+    package: gateway.solo.io
+  gateway.solo.io.Matcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#Matcher
+    package: gateway.solo.io
   gateway.solo.io.Route:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#Route
     package: gateway.solo.io
@@ -509,6 +539,12 @@ apis:
   gloo.solo.io.HttpListenerReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#HttpListenerReport
     package: gloo.solo.io
+  gloo.solo.io.HybridListener:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#HybridListener
+    package: gloo.solo.io
+  gloo.solo.io.HybridListenerReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#HybridListenerReport
+    package: gloo.solo.io
   gloo.solo.io.Kubernetes:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#Kubernetes
     package: gloo.solo.io
@@ -535,6 +571,15 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.LocalityLbEndpoints:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#LocalityLbEndpoints
+    package: gloo.solo.io
+  gloo.solo.io.MatchedListener:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MatchedListener
+    package: gloo.solo.io
+  gloo.solo.io.MatchedListenerReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#MatchedListenerReport
+    package: gloo.solo.io
+  gloo.solo.io.Matcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Matcher
     package: gloo.solo.io
   gloo.solo.io.ModifiedResources:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ModifiedResources
@@ -809,26 +854,23 @@ apis:
   google.rpc.Status:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/rpc/status.proto.sk/#Status
     package: google.rpc
+  graphql.gloo.solo.io.ExecutableSchema:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#ExecutableSchema
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.Executor:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#Executor
+    package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GraphQLSchema:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GraphQLSchema
     package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.JsonKeyValue:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonKeyValue
+  graphql.gloo.solo.io.GrpcDescriptorRegistry:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcDescriptorRegistry
     package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.JsonNode:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonNode
+  graphql.gloo.solo.io.GrpcRequestTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcRequestTemplate
     package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.JsonValue:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonValue
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.JsonValueList:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonValueList
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.PathSegment:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#PathSegment
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.QueryMatcher:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#QueryMatcher
+  graphql.gloo.solo.io.GrpcResolver:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcResolver
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.RESTResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#RESTResolver
@@ -839,8 +881,8 @@ apis:
   graphql.gloo.solo.io.Resolution:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#Resolution
     package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.ValueProvider:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#ValueProvider
+  graphql.gloo.solo.io.ResponseTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#ResponseTemplate
     package: graphql.gloo.solo.io
   grpc.options.gloo.solo.io.DestinationSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto.sk/#DestinationSpec

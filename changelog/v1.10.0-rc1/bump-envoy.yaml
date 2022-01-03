@@ -1,0 +1,7 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: 1.19.0-patch4
+    description: >
+      Upgrade envoy-gloo to the latest 1.19 patch4

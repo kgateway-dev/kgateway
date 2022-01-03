@@ -136,12 +136,6 @@ func (m *Settings) Clone() proto.Message {
 		target.ExtauthzServerRef = proto.Clone(m.GetExtauthzServerRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 	}
 
-	if h, ok := interface{}(m.GetHttpService()).(clone.Cloner); ok {
-		target.HttpService = h.Clone().(*HttpService)
-	} else {
-		target.HttpService = proto.Clone(m.GetHttpService()).(*HttpService)
-	}
-
 	target.UserIdHeader = m.GetUserIdHeader()
 
 	if h, ok := interface{}(m.GetRequestTimeout()).(clone.Cloner); ok {
@@ -165,6 +159,47 @@ func (m *Settings) Clone() proto.Message {
 	target.TransportApiVersion = m.GetTransportApiVersion()
 
 	target.StatPrefix = m.GetStatPrefix()
+
+	switch m.ServiceType.(type) {
+
+	case *Settings_HttpService:
+
+		if h, ok := interface{}(m.GetHttpService()).(clone.Cloner); ok {
+			target.ServiceType = &Settings_HttpService{
+				HttpService: h.Clone().(*HttpService),
+			}
+		} else {
+			target.ServiceType = &Settings_HttpService{
+				HttpService: proto.Clone(m.GetHttpService()).(*HttpService),
+			}
+		}
+
+	case *Settings_GrpcService:
+
+		if h, ok := interface{}(m.GetGrpcService()).(clone.Cloner); ok {
+			target.ServiceType = &Settings_GrpcService{
+				GrpcService: h.Clone().(*GrpcService),
+			}
+		} else {
+			target.ServiceType = &Settings_GrpcService{
+				GrpcService: proto.Clone(m.GetGrpcService()).(*GrpcService),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *GrpcService) Clone() proto.Message {
+	var target *GrpcService
+	if m == nil {
+		return target
+	}
+	target = &GrpcService{}
+
+	target.Authority = m.GetAuthority()
 
 	return target
 }
@@ -636,6 +671,8 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 	}
 
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
+
+	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
 
 	return target
 }
@@ -1200,6 +1237,15 @@ func (m *HttpService_Response) Clone() proto.Message {
 		}
 	}
 
+	if m.GetAllowedUpstreamHeadersToAppend() != nil {
+		target.AllowedUpstreamHeadersToAppend = make([]string, len(m.GetAllowedUpstreamHeadersToAppend()))
+		for idx, v := range m.GetAllowedUpstreamHeadersToAppend() {
+
+			target.AllowedUpstreamHeadersToAppend[idx] = v
+
+		}
+	}
+
 	return target
 }
 
@@ -1301,6 +1347,12 @@ func (m *UserSession_CookieOptions) Clone() proto.Message {
 	}
 
 	target.NotSecure = m.GetNotSecure()
+
+	if h, ok := interface{}(m.GetHttpOnly()).(clone.Cloner); ok {
+		target.HttpOnly = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.HttpOnly = proto.Clone(m.GetHttpOnly()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	if h, ok := interface{}(m.GetPath()).(clone.Cloner); ok {
 		target.Path = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
@@ -1652,6 +1704,8 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 	}
 
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
+
+	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
 
 	return target
 }

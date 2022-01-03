@@ -5042,6 +5042,12 @@ rules:
   - daemonsets
   - deployments
   - replicasets
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
   - ingresses
   verbs:
   - list

@@ -16,6 +16,7 @@ weight: 5
 - [ExtAuthExtension](#extauthextension)
 - [Settings](#settings)
 - [ApiVersion](#apiversion)
+- [GrpcService](#grpcservice)
 - [HttpService](#httpservice)
 - [Request](#request)
 - [Response](#response)
@@ -171,6 +172,7 @@ Global external auth settings
 ```yaml
 "extauthzServerRef": .core.solo.io.ResourceRef
 "httpService": .enterprise.gloo.solo.io.HttpService
+"grpcService": .enterprise.gloo.solo.io.GrpcService
 "userIdHeader": string
 "requestTimeout": .google.protobuf.Duration
 "failureModeAllow": bool
@@ -185,7 +187,8 @@ Global external auth settings
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `extauthzServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The upstream to ask about auth decisions. |
-| `httpService` | [.enterprise.gloo.solo.io.HttpService](../extauth.proto.sk/#httpservice) | If this is set, communication to the upstream will be via HTTP and not GRPC. |
+| `httpService` | [.enterprise.gloo.solo.io.HttpService](../extauth.proto.sk/#httpservice) | If this is set, communication to the upstream will be via HTTP and not GRPC (default). Only one of `httpService` or `grpcService` can be set. |
+| `grpcService` | [.enterprise.gloo.solo.io.GrpcService](../extauth.proto.sk/#grpcservice) | Optional, if set the communication to the upstream will be via GRPC. Only one of `grpcService` or `httpService` can be set. |
 | `userIdHeader` | `string` | If the auth server trusted id of the user, it will be set in this header. Specifically this means that this header will be sanitized form the incoming request. |
 | `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the ext auth service to respond. Defaults to 200ms. |
 | `failureModeAllow` | `bool` | In case of a failure or timeout querying the auth server, normally a request is denied. if this is set to true, the request will be allowed. |
@@ -207,6 +210,23 @@ Describes the transport protocol version to use when connecting to the ext auth 
 | Name | Description |
 | ----- | ----------- | 
 | `V3` | Use v3 API. |
+
+
+
+
+---
+### GrpcService
+
+
+
+```yaml
+"authority": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `authority` | `string` | Set the authority header when calling the GRPC service. |
 
 
 
@@ -261,6 +281,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 ```yaml
 "allowedUpstreamHeaders": []string
 "allowedClientHeaders": []string
+"allowedUpstreamHeadersToAppend": []string
 
 ```
 
@@ -268,6 +289,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 | ----- | ---- | ----------- | 
 | `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream. Note that coexistent headers will be overridden. |
 | `allowedClientHeaders` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. Note that when this list is *not* set, all the authorization response headers, except *Authority (Host)* will be in the response to the client. When a header is included in this list, *Path*, *Status*, *Content-Length*, *WWW-Authenticate* and *Location* are automatically added. |
+| `allowedUpstreamHeadersToAppend` | `[]string` | When this is set, authorization response headers that have a correspondent match will be added to the client's response. Note that coexistent headers will be appended. |
 
 
 
@@ -534,6 +556,7 @@ Deprecated: Prefer OAuth2
 ```yaml
 "maxAge": .google.protobuf.UInt32Value
 "notSecure": bool
+"httpOnly": .google.protobuf.BoolValue
 "path": .google.protobuf.StringValue
 "domain": string
 
@@ -543,6 +566,7 @@ Deprecated: Prefer OAuth2
 | ----- | ---- | ----------- | 
 | `maxAge` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Max age for the cookie. Leave unset for a default of 30 days (2592000 seconds). To disable cookie expiry, set explicitly to 0. |
 | `notSecure` | `bool` | Use a non-secure cookie. Note - this should only be used for testing and in trusted environments. |
+| `httpOnly` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set the cookie to be HttpOnly. defaults to true. Set explicity to false to disable. |
 | `path` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a path. |
 | `domain` | `string` | Cookie domain. |
 
@@ -655,6 +679,7 @@ not yet in the local cache.
 "discoveryPollInterval": .google.protobuf.Duration
 "jwksCacheRefreshPolicy": .enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy
 "sessionIdHeaderName": string
+"parseCallbackPathAsRegex": bool
 
 ```
 
@@ -676,6 +701,7 @@ not yet in the local cache.
 | `discoveryPollInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes. |
 | `jwksCacheRefreshPolicy` | [.enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy](../extauth.proto.sk/#jwksondemandcacherefreshpolicy) | If a user executes a request with a key that is not found in the JWKS, it could be that the keys have rotated on the remote source, and not yet in the local cache. This policy lets you define the behavior for how to refresh the local cache during a request where an invalid key is provided. |
 | `sessionIdHeaderName` | `string` | If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
+| `parseCallbackPathAsRegex` | `bool` | If set, CallbackPath will be evaluated as a regular expression. |
 
 
 
@@ -1205,6 +1231,7 @@ Deprecated, prefer OAuth2Config
 "discoveryPollInterval": .google.protobuf.Duration
 "jwksCacheRefreshPolicy": .enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy
 "sessionIdHeaderName": string
+"parseCallbackPathAsRegex": bool
 
 ```
 
@@ -1226,6 +1253,7 @@ Deprecated, prefer OAuth2Config
 | `discoveryPollInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes. |
 | `jwksCacheRefreshPolicy` | [.enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy](../extauth.proto.sk/#jwksondemandcacherefreshpolicy) | If a user executes a request with a key that is not found in the JWKS, it could be that the keys have rotated on the remote source, and not yet in the local cache. This policy lets you define the behavior for how to refresh the local cache during a request where an invalid key is provided. |
 | `sessionIdHeaderName` | `string` | If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
+| `parseCallbackPathAsRegex` | `bool` | If set, CallbackPath will be evaluated as a regular expression. |
 
 
 

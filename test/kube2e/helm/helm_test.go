@@ -47,8 +47,8 @@ var _ = Describe("Kube2e: helm", func() {
 
 	It("uses helm to upgrade to this gloo version without errors", func() {
 
-		By("should start with gloo version 1.3.0")
-		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal("1.3.0"))
+		By("should start with gloo version 1.9.0")
+		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(earliestVersionWithV1CRDs))
 
 		By("apply new `RateLimitConfig` CRD")
 		runAndCleanCommand("kubectl", "apply", "-f", rlcCrdTemplateName)
