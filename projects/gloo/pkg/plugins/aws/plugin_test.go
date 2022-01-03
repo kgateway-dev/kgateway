@@ -324,6 +324,19 @@ var _ = Describe("Plugin", func() {
 			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
 			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
 		})
+
+		It("should process route with addon options", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().InvocationStyle = 1
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
+			Expect(err).Should(BeNil())
+			cfg := msg.(*AWSLambdaPerRoute)
+			Expect(cfg.UnwrapAsAlb).Should(Equal(true))
+			Expect(cfg.Async).Should(Equal(true))
+		})
 	})
 
 	Context("filters", func() {

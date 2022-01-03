@@ -225,6 +225,7 @@ type Delegate struct {
 type AwsDestinationSpec struct {
 	LogicalName            string
 	ResponseTransformation bool
+	UnwrapAsAlb            bool
 }
 
 type RestDestinationSpec struct {
