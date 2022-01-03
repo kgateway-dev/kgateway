@@ -250,7 +250,7 @@ gloo:
 gloo-fed:
   enabled: false
   glooFedApiserver:
-    enable: false #match the value of gloo-fed. If gloo-fed is disabled but glooFedApiserver is not, the gloo-fed UI component is still deployed.
+    enable: false #optionally disable the admin console, too
     floatingUserId: true
 prometheus:
   enabled: false
