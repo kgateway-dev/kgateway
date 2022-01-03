@@ -54,6 +54,8 @@ spec:
                                   type: boolean
                                 responseTransformation:
                                   type: boolean
+                                unwrapAsAlb:
+                                  type: boolean
                               type: object
                             azure:
                               properties:

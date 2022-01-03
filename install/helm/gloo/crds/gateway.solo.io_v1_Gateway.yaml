@@ -1460,6 +1460,8 @@ spec:
                                                               type: boolean
                                                             responseTransformation:
                                                               type: boolean
+                                                            unwrapAsAlb:
+                                                              type: boolean
                                                           type: object
                                                         azure:
                                                           properties:
@@ -2578,6 +2580,8 @@ spec:
                                                     type: boolean
                                                   responseTransformation:
                                                     type: boolean
+                                                  unwrapAsAlb:
+                                                    type: boolean
                                                 type: object
                                               azure:
                                                 properties:
@@ -2987,6 +2991,8 @@ spec:
                                                   requestTransformation:
                                                     type: boolean
                                                   responseTransformation:
+                                                    type: boolean
+                                                  unwrapAsAlb:
                                                     type: boolean
                                                 type: object
                                               azure:
@@ -4105,6 +4111,8 @@ spec:
                                         requestTransformation:
                                           type: boolean
                                         responseTransformation:
+                                          type: boolean
+                                        unwrapAsAlb:
                                           type: boolean
                                       type: object
                                     azure:
