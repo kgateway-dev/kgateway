@@ -246,6 +246,8 @@ type DestinationSpec struct {
 	ResponseTransformation bool `protobuf:"varint,5,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
 	// Unwrap the response as if the proxy was an ALB.
 	// Intended to ease migration when previously using alb to invoke Lambdas.
+	// For further information see below link for the expected format when true.
+	// https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
 	UnwrapAsAlb bool `protobuf:"varint,7,opt,name=unwrap_as_alb,json=unwrapAsAlb,proto3" json:"unwrap_as_alb,omitempty"`
 }
 

@@ -47,6 +47,8 @@ type AWSLambdaPerRoute struct {
 	// Expects json lambda responses to construct response.
 	// Intended to ease migration when previously using alb to invoke Lambdas.
 	// When set on a route the filter will not stream data on the encoding step.
+	// For further information see below link for the expected format when true.
+	// https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
 	// Defaults to false.
 	UnwrapAsAlb bool `protobuf:"varint,5,opt,name=unwrap_as_alb,json=unwrapAsAlb,proto3" json:"unwrap_as_alb,omitempty"`
 }
