@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Updates supported versions to 1.9.x.
+    issueLink: https://github.com/solo-io/gloo/pull/5446/
