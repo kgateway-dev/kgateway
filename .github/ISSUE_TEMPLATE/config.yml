@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Talk with us on Slack
+    url: https://slack.solo.io
+    about: For a fast response, consider asking your question on the Solo slack.
+  - name: Solo.io Documentation
+    url: https://docs.solo.io/gloo-edge/latest/guides
+    about: Check out the Gloo Edge docs for helpful information.
