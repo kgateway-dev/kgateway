@@ -14,7 +14,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    gloo.solo.io/upstream_config: '{"initial_stream_window_size": 2048}'
+    gloo.solo.io/upstream_config: '{"initialStreamWindowSize": 2048}'
   name: petstore
   namespace: default
   labels:
@@ -69,9 +69,9 @@ apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
   annotations:
-    gloo.solo.io/upstream_config: '{"initial_stream_window_size": 2048}'
+    gloo.solo.io/upstream_config: '{"initialStreamWindowSize": 2048}'
     kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{"gloo.solo.io/upstream_config":" {\"initial_stream_window_size\": 2048}"},"labels":{"service":"petstore"},"name":"petstore","namespace":"default"},"spec":{"ports":[{"port":8080,"protocol":"TCP"}],"selector":{"app":"petstore"}}}
+      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{"gloo.solo.io/upstream_config":" {\"initialStreamWindowSize\": 2048}"},"labels":{"service":"petstore"},"name":"petstore","namespace":"default"},"spec":{"ports":[{"port":8080,"protocol":"TCP"}],"selector":{"app":"petstore"}}}
   creationTimestamp: "2021-10-14T13:22:12Z"
   generation: 2
   labels:

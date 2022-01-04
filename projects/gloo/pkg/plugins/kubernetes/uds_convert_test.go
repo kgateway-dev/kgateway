@@ -119,7 +119,7 @@ var _ = Describe("UdsConvert", func() {
 
 			Describe("Should create upstream with SSL Config when annotations exist", testSetSslConfig)
 
-			DescribeTable("should create upstream with appropriate config when annotations are present", func(annotations map[string]string, expectedCfg *v1.Upstream) {
+			expectAnnotationsToProduceUpstreamConfig := func(annotations map[string]string, expectedCfg *v1.Upstream) {
 				svc := &kubev1.Service{
 					Spec: kubev1.ServiceSpec{},
 					ObjectMeta: metav1.ObjectMeta{
@@ -152,7 +152,9 @@ var _ = Describe("UdsConvert", func() {
 				expectedCfgJson, err := json.Marshal(expectedCfg)
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(upstreamConfigJson).To(Equal(expectedCfgJson))
-			},
+			}
+
+			DescribeTable("should create upstream with appropriate config when snake_case annotations are present", expectAnnotationsToProduceUpstreamConfig,
 				Entry("Using SetHttp2Converter", map[string]string{
 					serviceconverter.GlooAnnotationPrefix: `{
 						"use_http2": true
@@ -233,6 +235,107 @@ var _ = Describe("UdsConvert", func() {
 							"max_pending_requests": 2048,
 							"max_requests": 2048,
 							"max_retries": 2048
+						}
+					}`,
+				}, &v1.Upstream{
+					CircuitBreakers: &v1.CircuitBreakerConfig{
+						MaxConnections: &wrappers.UInt32Value{
+							Value: 2048,
+						},
+						MaxPendingRequests: &wrappers.UInt32Value{
+							Value: 2048,
+						},
+						MaxRequests: &wrappers.UInt32Value{
+							Value: 2048,
+						},
+						MaxRetries: &wrappers.UInt32Value{
+							Value: 2048,
+						},
+					},
+				}),
+			)
+
+			DescribeTable("should create upstream with appropriate config when camelCase annotations are present", expectAnnotationsToProduceUpstreamConfig,
+				Entry("Using SetHttp2Converter", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"useHttp2": true
+					}`,
+				}, &v1.Upstream{
+					UseHttp2: &wrappers.BoolValue{
+						Value: true,
+					},
+				}),
+				Entry("using ssl secret", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"sslConfig": {
+							"secretRef": {
+								"name": "mysecret",
+								"namespace": "test"
+							}
+						}
+					}`,
+				}, &v1.Upstream{
+					SslConfig: &v1.UpstreamSslConfig{
+						SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
+						},
+					},
+				}),
+				Entry("using ssl files", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"sslConfig": {
+							"sslFiles": {
+								"tlsCert": "cert",
+								"tlsKey": "key",
+								"rootCa": "ca"
+							}
+						}
+					}`,
+				}, &v1.Upstream{
+					SslConfig: &v1.UpstreamSslConfig{
+						SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert",
+								TlsKey:  "key",
+								RootCa:  "ca",
+							},
+						},
+					},
+				}),
+				Entry("Using InitialStreamWindowSize", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"initialStreamWindowSize": 4096
+					}`,
+				}, &v1.Upstream{
+					InitialStreamWindowSize: &wrappers.UInt32Value{
+						Value: 4096,
+					},
+				}),
+				Entry("Using HttpProxyHostname", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"httpProxyHostname": "test"
+					}`,
+				}, &v1.Upstream{
+					HttpProxyHostname: &wrappers.StringValue{
+						Value: "test",
+					},
+				}),
+				Entry("Using IgnoreHealthOnHostRemoval", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"ignoreHealthOnHostRemoval": true
+					}`,
+				}, &v1.Upstream{
+					IgnoreHealthOnHostRemoval: &wrappers.BoolValue{
+						Value: true,
+					},
+				}),
+				Entry("Using CircuitBreakers", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"circuitBreakers": {
+							"maxConnections": 2048,
+							"maxPendingRequests": 2048,
+							"maxRequests": 2048,
+							"maxRetries": 2048
 						}
 					}`,
 				}, &v1.Upstream{
