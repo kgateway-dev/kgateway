@@ -128,6 +128,28 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 			},
 		},
 	}
+	hybridListener := &v1.Listener{
+		Name:        "hybrid-listener",
+		BindAddress: "127.0.0.1",
+		BindPort:    8081,
+		ListenerType: &v1.Listener_HybridListener{
+			HybridListener: &v1.HybridListener{
+				MatchedListeners: []*v1.MatchedListener{
+					{
+						ListenerType: &v1.MatchedListener_HttpListener{
+							HttpListener: &v1.HttpListener{
+								VirtualHosts: []*v1.VirtualHost{{
+									Name:    "virt1",
+									Domains: []string{"*"},
+									Routes:  routes,
+								}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
 	proxy := &v1.Proxy{
 		Metadata: &core.Metadata{
@@ -137,6 +159,7 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 		Listeners: []*v1.Listener{
 			httpListener,
 			tcpListener,
+			hybridListener,
 		},
 	}
 
@@ -174,6 +197,7 @@ func SimpleGatewaySnapshot(us *core.ResourceRef, namespace string) *gwv1.ApiSnap
 		Gateways: []*gwv1.Gateway{
 			defaults.DefaultGateway(namespace),
 			defaults.DefaultSslGateway(namespace),
+			defaults.DefaultHybridGateway(namespace),
 			{
 				Metadata: &core.Metadata{
 					Name:      "tcp-gateway",

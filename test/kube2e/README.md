@@ -12,18 +12,19 @@ For these tests to run, we require the following conditions:
 
 #### (Option A) - Use the CI Install Script (preferred)
 
-`ci/deploy-to-kind-cluster.sh` (`https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh`) gets run in CI to setup the test environment for the above requirements.
+[ci/deploy-to-kind-cluster.sh](`https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh`) gets run in CI to setup the test environment for the above requirements.
 It accepts a number of environment variables, to control the creation of a kind cluster and deployment of Gloo resources to that kind cluster.
 
 | Name                  | Default    | Description |
 | ---                   |   ---      |    ---      |
 | CLUSTER_NAME          | kind       | The name of the cluster that will be generated |
-| CLUSTER_NODE_VERSION  | v1.17.17@sha256:66f1d0d91a88b8a001811e2f1054af60eef3b669a9a74f9b6db871f2f1eeed00   | The version of the Node Docker image to use for booting the cluster |
+| CLUSTER_NODE_VERSION  | v1.22.4    | The version of the [Node Docker image](https://hub.docker.com/r/kindest/node/) to use for booting the cluster |
 | VERSION               | 0.0.0-kind | The version used to tag Gloo images that are deployed to the cluster |
+| KUBE2E_TESTS          | gateway    | Name of the test suite to be run. Options: `'gateway', 'ingress', 'helm', 'gloomtls', 'glooctl'` |
 
 Example:
 ```bash
-CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.17.17@sha256:66f1d0d91a88b8a001811e2f1054af60eef3b669a9a74f9b6db871f2f1eeed00 VERSION=v1.0.0-solo-test ci/deploy-to-kind-cluster.sh
+CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.22.4 VERSION=v1.0.0-solo-test ci/deploy-to-kind-cluster.sh
 ```
 
 #### (Option B) - Manually Run Make Targets
@@ -76,7 +77,7 @@ The below table contains the environment variables that can be used to configure
 
 | Name              | Default   | Description |
 | ---               |   ---     |    ---      |
-| KUBE2E_TESTS      | ""        | Name of the test suite to be run. Options: `'gateway', 'ingress', 'knative', 'helm', 'gloomtls', 'glooctl', 'eds'` |
+| KUBE2E_TESTS      | gateway   | Name of the test suite to be run. Options: `'gateway', 'ingress', 'helm', 'gloomtls', 'glooctl'` |
 | DEBUG             | 0         | Set to 1 for debug log output |
 | WAIT_ON_FAIL      | 0         | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output.
 | TEAR_DOWN         | false     | Set to true to uninstall Gloo after the test suite completes |

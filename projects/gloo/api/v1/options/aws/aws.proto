@@ -54,6 +54,7 @@ message LambdaFunctionSpec {
 }
 
 // Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda functions
+// [#next-free-field: 8]
 message DestinationSpec {
     // The Logical Name of the LambdaFunctionSpec to be invoked.
     string logical_name = 1;
@@ -68,4 +69,11 @@ message DestinationSpec {
     
     // de-jsonify response bodies returned from aws lambda
     bool response_transformation = 5;
+
+    // Unwrap the response as if the proxy was an ALB.
+    // Intended to ease migration when previously using alb to invoke Lambdas.
+    // For further information see below link for the expected format when true.
+    // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
+    bool unwrap_as_alb = 7;
+
 }

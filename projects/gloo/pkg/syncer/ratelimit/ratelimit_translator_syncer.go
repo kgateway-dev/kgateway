@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -52,13 +54,7 @@ func (s *TranslatorSyncerExtension) Sync(
 
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {
-			httpListener, ok := listener.GetListenerType().(*gloov1.Listener_HttpListener)
-			if !ok {
-				// not an http listener - skip it as currently ext auth is only supported for http
-				continue
-			}
-
-			virtualHosts := httpListener.HttpListener.GetVirtualHosts()
+			virtualHosts := utils.GetVhostsFromListener(listener)
 
 			for _, virtualHost := range virtualHosts {
 

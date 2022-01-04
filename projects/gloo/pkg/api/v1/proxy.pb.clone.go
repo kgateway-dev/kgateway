@@ -19,6 +19,8 @@ import (
 
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -150,6 +152,18 @@ func (m *Listener) Clone() proto.Message {
 			}
 		}
 
+	case *Listener_HybridListener:
+
+		if h, ok := interface{}(m.GetHybridListener()).(clone.Cloner); ok {
+			target.ListenerType = &Listener_HybridListener{
+				HybridListener: h.Clone().(*HybridListener),
+			}
+		} else {
+			target.ListenerType = &Listener_HybridListener{
+				HybridListener: proto.Clone(m.GetHybridListener()).(*HybridListener),
+			}
+		}
+
 	}
 
 	return target
@@ -240,6 +254,105 @@ func (m *HttpListener) Clone() proto.Message {
 	}
 
 	target.StatPrefix = m.GetStatPrefix()
+
+	return target
+}
+
+// Clone function
+func (m *HybridListener) Clone() proto.Message {
+	var target *HybridListener
+	if m == nil {
+		return target
+	}
+	target = &HybridListener{}
+
+	if m.GetMatchedListeners() != nil {
+		target.MatchedListeners = make([]*MatchedListener, len(m.GetMatchedListeners()))
+		for idx, v := range m.GetMatchedListeners() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.MatchedListeners[idx] = h.Clone().(*MatchedListener)
+			} else {
+				target.MatchedListeners[idx] = proto.Clone(v).(*MatchedListener)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *MatchedListener) Clone() proto.Message {
+	var target *MatchedListener
+	if m == nil {
+		return target
+	}
+	target = &MatchedListener{}
+
+	if h, ok := interface{}(m.GetMatcher()).(clone.Cloner); ok {
+		target.Matcher = h.Clone().(*Matcher)
+	} else {
+		target.Matcher = proto.Clone(m.GetMatcher()).(*Matcher)
+	}
+
+	switch m.ListenerType.(type) {
+
+	case *MatchedListener_HttpListener:
+
+		if h, ok := interface{}(m.GetHttpListener()).(clone.Cloner); ok {
+			target.ListenerType = &MatchedListener_HttpListener{
+				HttpListener: h.Clone().(*HttpListener),
+			}
+		} else {
+			target.ListenerType = &MatchedListener_HttpListener{
+				HttpListener: proto.Clone(m.GetHttpListener()).(*HttpListener),
+			}
+		}
+
+	case *MatchedListener_TcpListener:
+
+		if h, ok := interface{}(m.GetTcpListener()).(clone.Cloner); ok {
+			target.ListenerType = &MatchedListener_TcpListener{
+				TcpListener: h.Clone().(*TcpListener),
+			}
+		} else {
+			target.ListenerType = &MatchedListener_TcpListener{
+				TcpListener: proto.Clone(m.GetTcpListener()).(*TcpListener),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Matcher) Clone() proto.Message {
+	var target *Matcher
+	if m == nil {
+		return target
+	}
+	target = &Matcher{}
+
+	if h, ok := interface{}(m.GetSslConfig()).(clone.Cloner); ok {
+		target.SslConfig = h.Clone().(*SslConfig)
+	} else {
+		target.SslConfig = proto.Clone(m.GetSslConfig()).(*SslConfig)
+	}
+
+	if m.GetSourcePrefixRanges() != nil {
+		target.SourcePrefixRanges = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange, len(m.GetSourcePrefixRanges()))
+		for idx, v := range m.GetSourcePrefixRanges() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.SourcePrefixRanges[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
+			} else {
+				target.SourcePrefixRanges[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
+			}
+
+		}
+	}
 
 	return target
 }

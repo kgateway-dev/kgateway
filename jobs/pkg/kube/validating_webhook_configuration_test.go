@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/api/admissionregistration/v1beta1"
+	v1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -27,14 +27,14 @@ var _ = Describe("ValidatingWebhookConfiguration", func() {
 
 		vwcName := "myvwc"
 
-		expectedVwc, err := kube.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Create(ctx, &v1beta1.ValidatingWebhookConfiguration{
+		expectedVwc, err := kube.AdmissionregistrationV1().ValidatingWebhookConfigurations().Create(ctx, &v1.ValidatingWebhookConfiguration{
 			ObjectMeta: metav1.ObjectMeta{Name: vwcName},
-			Webhooks: []v1beta1.ValidatingWebhook{
+			Webhooks: []v1.ValidatingWebhook{
 				{Name: "ignored"},
 				{
 					Name: "foo",
-					ClientConfig: v1beta1.WebhookClientConfig{
-						Service: &v1beta1.ServiceReference{
+					ClientConfig: v1.WebhookClientConfig{
+						Service: &v1.ServiceReference{
 							Name:      vwcCfg.ServiceName,
 							Namespace: vwcCfg.ServiceNamespace,
 						},
@@ -49,7 +49,7 @@ var _ = Describe("ValidatingWebhookConfiguration", func() {
 		err = UpdateValidatingWebhookConfigurationCaBundle(context.TODO(), kube, vwcName, vwcCfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		patchedVwc, err := kube.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(ctx, vwcName, metav1.GetOptions{})
+		patchedVwc, err := kube.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, vwcName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(patchedVwc).To(Equal(expectedVwc))

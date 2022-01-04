@@ -1,0 +1,13 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: 1.20.0-patch2
+    description: >
+      Upgrade envoy-gloo to the latest 1.20 patch2
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5635
+    resolvesIssue: true
+    description: >
+     Alow for the new per route option on lambda invocation to act as if it was an ALB.
+     This is intended to be used to ease migration from using ALB for lambda invocation to gloo.

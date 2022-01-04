@@ -450,11 +450,19 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef *cor
 
 	var parentGateways []*core.ResourceRef
 	snap.Gateways.Each(func(element *v1.Gateway) {
-		http, ok := element.GetGatewayType().(*v1.Gateway_HttpGateway)
-		if !ok {
-			return
+		var virtualServices []*core.ResourceRef
+		switch gatewayType := element.GetGatewayType().(type) {
+		case *v1.Gateway_HttpGateway:
+			virtualServices = gatewayType.HttpGateway.GetVirtualServices()
+		case *v1.Gateway_HybridGateway:
+			for _, matchedGateway := range gatewayType.HybridGateway.GetMatchedGateways() {
+				if httpGateway := matchedGateway.GetHttpGateway(); httpGateway != nil {
+					virtualServices = append(virtualServices, httpGateway.GetVirtualServices()...)
+				}
+			}
 		}
-		for _, ref := range http.HttpGateway.GetVirtualServices() {
+
+		for _, ref := range virtualServices {
 			if ref.Equal(vsRef) {
 				// this gateway points at this virtual service
 				parentGateways = append(parentGateways, element.GetMetadata().Ref())
@@ -885,12 +893,32 @@ func getDelegateRef(delegate *v1.DelegateAction) *core.ResourceRef {
 
 func gatewayListContainsVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) bool {
 	for _, gw := range gwList {
-		contains, err := translator.GatewayContainsVirtualService(gw, vs)
-		if err != nil {
+		if gw.GetTcpGateway() != nil {
 			return false
 		}
-		if contains {
-			return true
+		if httpGateway := gw.GetHttpGateway(); httpGateway != nil {
+			contains, err := translator.HttpGatewayContainsVirtualService(httpGateway, vs, gw.GetSsl())
+			if err != nil {
+				return false
+			}
+			if contains {
+				return true
+			}
+
+		}
+		if hybridGateway := gw.GetHybridGateway(); hybridGateway != nil {
+			for _, mg := range hybridGateway.GetMatchedGateways() {
+				if httpGateway := mg.GetHttpGateway(); httpGateway != nil {
+					contains, err := translator.HttpGatewayContainsVirtualService(httpGateway, vs, mg.GetMatcher().GetSslConfig() != nil)
+					if err != nil {
+						return false
+					}
+					if contains {
+						return true
+					}
+
+				}
+			}
 		}
 	}
 

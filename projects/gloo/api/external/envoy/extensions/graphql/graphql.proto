@@ -44,9 +44,6 @@ message ValueProvider {
     // Optional: fetches the value in the argument selected at this key.
     // If the key is invalid, returns the zero-value primitive or null.
     repeated PathSegment path = 2;
-    // If this is set to true, then a schema error will be returned to user when the graphql arg is not found.
-    // Defaults to false, so schema error will not be returned to user when the graphql arg is not found.
-    bool required = 3;
   }
 
   // Does not do type coercion, but instead if the type does not match the

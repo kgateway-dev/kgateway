@@ -425,6 +425,15 @@ apis:
   gateway.solo.io.HttpGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#HttpGateway
     package: gateway.solo.io
+  gateway.solo.io.HybridGateway:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#HybridGateway
+    package: gateway.solo.io
+  gateway.solo.io.MatchedGateway:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#MatchedGateway
+    package: gateway.solo.io
+  gateway.solo.io.Matcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#Matcher
+    package: gateway.solo.io
   gateway.solo.io.Route:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#Route
     package: gateway.solo.io
@@ -530,6 +539,12 @@ apis:
   gloo.solo.io.HttpListenerReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#HttpListenerReport
     package: gloo.solo.io
+  gloo.solo.io.HybridListener:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#HybridListener
+    package: gloo.solo.io
+  gloo.solo.io.HybridListenerReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#HybridListenerReport
+    package: gloo.solo.io
   gloo.solo.io.Kubernetes:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#Kubernetes
     package: gloo.solo.io
@@ -556,6 +571,15 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.LocalityLbEndpoints:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#LocalityLbEndpoints
+    package: gloo.solo.io
+  gloo.solo.io.MatchedListener:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MatchedListener
+    package: gloo.solo.io
+  gloo.solo.io.MatchedListenerReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#MatchedListenerReport
+    package: gloo.solo.io
+  gloo.solo.io.Matcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Matcher
     package: gloo.solo.io
   gloo.solo.io.ModifiedResources:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ModifiedResources

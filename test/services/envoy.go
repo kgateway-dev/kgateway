@@ -581,6 +581,7 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 	args := []string{"run", "--rm", "--name", containerName,
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpPort, defaults.HttpPort),
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpsPort, defaults.HttpsPort),
+		"-p", fmt.Sprintf("%d:%d", defaults.HybridPort, defaults.HybridPort),
 		"-p", fmt.Sprintf("%d:%d", ei.AdminPort, ei.AdminPort),
 	}
 

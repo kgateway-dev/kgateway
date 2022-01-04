@@ -69,9 +69,6 @@ func StartTestHelper() {
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	// Register additional fail handlers
-	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
-
 	var valueOverrideFile string
 	var cleanupFunc func()
 

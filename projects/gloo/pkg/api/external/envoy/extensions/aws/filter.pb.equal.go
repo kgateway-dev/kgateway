@@ -68,6 +68,10 @@ func (m *AWSLambdaPerRoute) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetUnwrapAsAlb() != target.GetUnwrapAsAlb() {
+		return false
+	}
+
 	return true
 }
 

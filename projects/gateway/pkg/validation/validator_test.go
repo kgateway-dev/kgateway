@@ -540,11 +540,16 @@ var _ = Describe("Validator", func() {
 				us := samples.SimpleUpstream()
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				snap.Gateways.Each(func(element *gatewayv1.Gateway) {
-					http, ok := element.GatewayType.(*gatewayv1.Gateway_HttpGateway)
-					if !ok {
-						return
+					switch gatewayType := element.GetGatewayType().(type) {
+					case *gatewayv1.Gateway_HttpGateway:
+						gatewayType.HttpGateway.VirtualServiceSelector = map[string]string{"nobody": "hastheselabels"}
+					case *gatewayv1.Gateway_HybridGateway:
+						for _, matchedGateway := range gatewayType.HybridGateway.GetMatchedGateways() {
+							if httpGateway := matchedGateway.GetHttpGateway(); httpGateway != nil {
+								httpGateway.VirtualServiceSelector = map[string]string{"nobody": "hastheselabels"}
+							}
+						}
 					}
-					http.HttpGateway.VirtualServiceSelector = map[string]string{"nobody": "hastheselabels"}
 				})
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
@@ -769,6 +774,16 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				ref := snap.VirtualServices[0].Metadata.Ref()
 				snap.Gateways.Each(func(element *gatewayv1.Gateway) {
+					switch gatewayType := element.GetGatewayType().(type) {
+					case *gatewayv1.Gateway_HttpGateway:
+						gatewayType.HttpGateway.VirtualServices = []*core.ResourceRef{ref}
+					case *gatewayv1.Gateway_HybridGateway:
+						for _, matchedGateway := range gatewayType.HybridGateway.GetMatchedGateways() {
+							if httpGateway := matchedGateway.GetHttpGateway(); httpGateway != nil {
+								httpGateway.VirtualServices = []*core.ResourceRef{ref}
+							}
+						}
+					}
 					http, ok := element.GatewayType.(*gatewayv1.Gateway_HttpGateway)
 					if !ok {
 						return
@@ -783,6 +798,7 @@ var _ = Describe("Validator", func() {
 					VirtualServiceDeleteErr([]*core.ResourceRef{
 						{Name: defaults.GatewayProxyName, Namespace: ns},
 						{Name: defaults.GatewayProxyName + "-ssl", Namespace: ns},
+						{Name: defaults.GatewayProxyName + "-hybrid", Namespace: ns},
 					}).Error()))
 			})
 		})
