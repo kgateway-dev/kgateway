@@ -1,4 +1,4 @@
-package metricutils_test
+package utils_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/validation/metricutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -79,14 +79,14 @@ func makeSecret(nameSuffix string) resources.Resource {
 var _ = Describe("ConfigStatusMetrics Test", func() {
 	DescribeTable("SetResource[Invalid|Valid] works as expected",
 		func(gvk string, metricName string, makeResource func(nameSuffix string) resources.Resource) {
-			opts := map[string]*metricutils.MetricLabels{
+			opts := map[string]*utils.MetricLabels{
 				gvk: {
 					LabelToPath: map[string]string{
 						"name": "{.metadata.name}",
 					},
 				},
 			}
-			c, err := metricutils.NewConfigStatusMetrics(opts)
+			c, err := utils.NewConfigStatusMetrics(opts)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c).NotTo(BeNil())
 
@@ -122,10 +122,10 @@ var _ = Describe("ConfigStatusMetrics Test", func() {
 			val2 = getGauge(metricName, "name", res2.GetMetadata().GetName())
 			Expect(val2).To(Equal(0))
 		},
-		Entry("Virtual Service", "VirtualService.v1.gateway.solo.io", metricutils.MetricNames[gwv1.VirtualServiceGVK], makeVirtualService),
-		Entry("Gateway", "Gateway.v1.gateway.solo.io", metricutils.MetricNames[gwv1.GatewayGVK], makeGateway),
-		Entry("RouteTable", "RouteTable.v1.gateway.solo.io", metricutils.MetricNames[gwv1.RouteTableGVK], makeRouteTable),
-		Entry("Upstream", "Upstream.v1.gloo.solo.io", metricutils.MetricNames[gloov1.UpstreamGVK], makeUpstream),
-		Entry("Secret", "Secret.v1.gloo.solo.io", metricutils.MetricNames[gloov1.SecretGVK], makeSecret),
+		Entry("Virtual Service", "VirtualService.v1.gateway.solo.io", utils.MetricNames[gwv1.VirtualServiceGVK], makeVirtualService),
+		Entry("Gateway", "Gateway.v1.gateway.solo.io", utils.MetricNames[gwv1.GatewayGVK], makeGateway),
+		Entry("RouteTable", "RouteTable.v1.gateway.solo.io", utils.MetricNames[gwv1.RouteTableGVK], makeRouteTable),
+		Entry("Upstream", "Upstream.v1.gloo.solo.io", utils.MetricNames[gloov1.UpstreamGVK], makeUpstream),
+		Entry("Secret", "Secret.v1.gloo.solo.io", utils.MetricNames[gloov1.SecretGVK], makeSecret),
 	)
 })

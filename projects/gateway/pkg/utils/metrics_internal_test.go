@@ -1,4 +1,4 @@
-package metricutils
+package utils
 
 import (
 	. "github.com/onsi/ginkgo"

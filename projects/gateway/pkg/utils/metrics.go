@@ -1,4 +1,4 @@
-package metricutils
+package utils
 
 import (
 	"context"
@@ -184,21 +184,21 @@ func extractValueFromResource(resource resources.Resource, jsonPath string) (str
 // labelToPath configuration is invalid (for example, specifies an invalid label key).
 func newResourceMetric(gvk schema.GroupVersionKind, labelToPath map[string]string) (*resourceMetric, error) {
 	numLabels := len(labelToPath)
-	if numLabels > 0 {
-		tagKeys := make([]tag.Key, numLabels)
-		i := 0
-		for k := range labelToPath {
-			var err error
-			tagKeys[i], err = tag.NewKey(k)
-			if err != nil {
-				return nil, errors.Wrapf(err, "Error creating resourceMetric for %s", MetricNames[gvk])
-			}
-			i++
-		}
-		return &resourceMetric{
-			gauge:       utils2.MakeGauge(MetricNames[gvk], metricDescriptions[gvk], tagKeys...),
-			labelToPath: labelToPath,
-		}, nil
+	if numLabels == 0 {
+		return nil, nil
 	}
-	return nil, nil
+	tagKeys := make([]tag.Key, numLabels)
+	i := 0
+	for k := range labelToPath {
+		var err error
+		tagKeys[i], err = tag.NewKey(k)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Error creating resourceMetric for %s", MetricNames[gvk])
+		}
+		i++
+	}
+	return &resourceMetric{
+		gauge:       utils2.MakeGauge(MetricNames[gvk], metricDescriptions[gvk], tagKeys...),
+		labelToPath: labelToPath,
+	}, nil
 }

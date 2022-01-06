@@ -14,7 +14,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	"github.com/solo-io/gloo/projects/gateway/pkg/validation/metricutils"
+	utils2 "github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
@@ -1223,8 +1223,8 @@ var _ = Describe("Validator", func() {
 	})
 })
 
-func getMetricOpts() map[string]*metricutils.MetricLabels {
-	return map[string]*metricutils.MetricLabels{}
+func getMetricOpts() map[string]*utils2.MetricLabels {
+	return map[string]*utils2.MetricLabels{}
 }
 
 type mockValidationClient struct {

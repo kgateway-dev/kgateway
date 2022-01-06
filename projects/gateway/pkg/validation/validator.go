@@ -13,7 +13,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/validation/metricutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -95,7 +94,7 @@ type validator struct {
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
 	writeNamespace               string
-	configStatusMetrics          *metricutils.ConfigStatusMetrics
+	configStatusMetrics          *utils.ConfigStatusMetrics
 }
 
 type ValidatorConfig struct {
@@ -104,10 +103,10 @@ type ValidatorConfig struct {
 	writeNamespace               string
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
-	configStatusMetricsOptions   map[string]*metricutils.MetricLabels
+	configStatusMetricsOptions   map[string]*utils.MetricLabels
 }
 
-func NewValidatorConfig(translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool, configStatusMetricsOptions map[string]*metricutils.MetricLabels) ValidatorConfig {
+func NewValidatorConfig(translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool, configStatusMetricsOptions map[string]*utils.MetricLabels) ValidatorConfig {
 	return ValidatorConfig{
 		translator:                   translator,
 		validationClient:             validationClient,
@@ -119,7 +118,7 @@ func NewValidatorConfig(translator translator.Translator, validationClient valid
 }
 
 func NewValidator(cfg ValidatorConfig) (*validator, error) {
-	configStatusMetrics, err := metricutils.NewConfigStatusMetrics(cfg.configStatusMetricsOptions)
+	configStatusMetrics, err := utils.NewConfigStatusMetrics(cfg.configStatusMetricsOptions)
 	if err != nil {
 		return nil, err
 	}
