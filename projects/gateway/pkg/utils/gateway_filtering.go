@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -12,6 +14,7 @@ func GatewaysByProxyName(gateways v1.GatewayList) (map[string]v1.GatewayList, v1
 
 	for _, gw := range gateways {
 		proxyNames := gw.GetProxyNames()
+		fmt.Printf("TestLoopGrep: %s has %d associated proxies.  [%s]\n", gw.Metadata.Name, len(proxyNames), proxyNames[0])
 		if len(proxyNames) == 0 {
 			// append to orphanedGateways is there are no associated proxies
 			orphanedGateways = append(orphanedGateways, gw)
