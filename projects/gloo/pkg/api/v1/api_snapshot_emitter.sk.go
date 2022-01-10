@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	gateway_solo_io "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	graphql_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
@@ -93,13 +94,14 @@ type ApiEmitter interface {
 	AuthConfig() enterprise_gloo_solo_io.AuthConfigClient
 	RateLimitConfig() github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient
 	GraphQLSchema() graphql_gloo_solo_io.GraphQLSchemaClient
+	VirtualService() gateway_solo_io.VirtualServiceClient
 }
 
-func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient, graphQLSchemaClient graphql_gloo_solo_io.GraphQLSchemaClient) ApiEmitter {
-	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, authConfigClient, rateLimitConfigClient, graphQLSchemaClient, make(chan struct{}))
+func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient, graphQLSchemaClient graphql_gloo_solo_io.GraphQLSchemaClient, virtualServiceClient gateway_solo_io.VirtualServiceClient) ApiEmitter {
+	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, authConfigClient, rateLimitConfigClient, graphQLSchemaClient, virtualServiceClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient, graphQLSchemaClient graphql_gloo_solo_io.GraphQLSchemaClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient, graphQLSchemaClient graphql_gloo_solo_io.GraphQLSchemaClient, virtualServiceClient gateway_solo_io.VirtualServiceClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
 		artifact:        artifactClient,
 		endpoint:        endpointClient,
@@ -110,6 +112,7 @@ func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient Endpoin
 		authConfig:      authConfigClient,
 		rateLimitConfig: rateLimitConfigClient,
 		graphQLSchema:   graphQLSchemaClient,
+		virtualService:  virtualServiceClient,
 		forceEmit:       emit,
 	}
 }
@@ -125,6 +128,7 @@ type apiEmitter struct {
 	authConfig      enterprise_gloo_solo_io.AuthConfigClient
 	rateLimitConfig github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient
 	graphQLSchema   graphql_gloo_solo_io.GraphQLSchemaClient
+	virtualService  gateway_solo_io.VirtualServiceClient
 }
 
 func (c *apiEmitter) Register() error {
@@ -153,6 +157,9 @@ func (c *apiEmitter) Register() error {
 		return err
 	}
 	if err := c.graphQLSchema.Register(); err != nil {
+		return err
+	}
+	if err := c.virtualService.Register(); err != nil {
 		return err
 	}
 	return nil
@@ -192,6 +199,10 @@ func (c *apiEmitter) RateLimitConfig() github_com_solo_io_gloo_projects_gloo_pkg
 
 func (c *apiEmitter) GraphQLSchema() graphql_gloo_solo_io.GraphQLSchemaClient {
 	return c.graphQLSchema
+}
+
+func (c *apiEmitter) VirtualService() gateway_solo_io.VirtualServiceClient {
+	return c.virtualService
 }
 
 func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error) {
@@ -282,6 +293,14 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	graphQLSchemaChan := make(chan graphQLSchemaListWithNamespace)
 
 	var initialGraphQLSchemaList graphql_gloo_solo_io.GraphQLSchemaList
+	/* Create channel for VirtualService */
+	type virtualServiceListWithNamespace struct {
+		list      gateway_solo_io.VirtualServiceList
+		namespace string
+	}
+	virtualServiceChan := make(chan virtualServiceListWithNamespace)
+
+	var initialVirtualServiceList gateway_solo_io.VirtualServiceList
 
 	currentSnapshot := ApiSnapshot{}
 
@@ -448,6 +467,24 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, graphQLSchemaErrs, namespace+"-graphqlSchemas")
 		}(namespace)
+		/* Setup namespaced watch for VirtualService */
+		{
+			virtualServices, err := c.virtualService.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial VirtualService list")
+			}
+			initialVirtualServiceList = append(initialVirtualServiceList, virtualServices...)
+		}
+		virtualServiceNamespacesChan, virtualServiceErrs, err := c.virtualService.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting VirtualService watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, virtualServiceErrs, namespace+"-virtualServices")
+		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -536,6 +573,15 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 						return
 					case graphQLSchemaChan <- graphQLSchemaListWithNamespace{list: graphQLSchemaList, namespace: namespace}:
 					}
+				case virtualServiceList, ok := <-virtualServiceNamespacesChan:
+					if !ok {
+						return
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case virtualServiceChan <- virtualServiceListWithNamespace{list: virtualServiceList, namespace: namespace}:
+					}
 				}
 			}
 		}(namespace)
@@ -558,6 +604,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	currentSnapshot.Ratelimitconfigs = initialRateLimitConfigList.Sort()
 	/* Initialize snapshot for GraphqlSchemas */
 	currentSnapshot.GraphqlSchemas = initialGraphQLSchemaList.Sort()
+	/* Initialize snapshot for VirtualServices */
+	currentSnapshot.VirtualServices = initialVirtualServiceList.Sort()
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
@@ -598,6 +646,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		authConfigsByNamespace := make(map[string]enterprise_gloo_solo_io.AuthConfigList)
 		ratelimitconfigsByNamespace := make(map[string]github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList)
 		graphqlSchemasByNamespace := make(map[string]graphql_gloo_solo_io.GraphQLSchemaList)
+		virtualServicesByNamespace := make(map[string]gateway_solo_io.VirtualServiceList)
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
@@ -814,6 +863,28 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					graphQLSchemaList = append(graphQLSchemaList, graphqlSchemas...)
 				}
 				currentSnapshot.GraphqlSchemas = graphQLSchemaList.Sort()
+			case virtualServiceNamespacedList, ok := <-virtualServiceChan:
+				if !ok {
+					return
+				}
+				record()
+
+				namespace := virtualServiceNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"virtual_service",
+					mApiResourcesIn,
+				)
+
+				// merge lists by namespace
+				virtualServicesByNamespace[namespace] = virtualServiceNamespacedList.list
+				var virtualServiceList gateway_solo_io.VirtualServiceList
+				for _, virtualServices := range virtualServicesByNamespace {
+					virtualServiceList = append(virtualServiceList, virtualServices...)
+				}
+				currentSnapshot.VirtualServices = virtualServiceList.Sort()
 			}
 		}
 	}()

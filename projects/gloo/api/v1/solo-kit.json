@@ -51,6 +51,10 @@
       {
         "name": "GraphQLSchema",
         "package": "graphql.gloo.solo.io"
+      },
+      {
+        "name": "VirtualService",
+        "package": "gateway.solo.io"
       }
     ],
     "eds.gloo.solo.io": [

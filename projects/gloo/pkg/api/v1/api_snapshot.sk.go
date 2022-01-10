@@ -8,6 +8,7 @@ import (
 	"hash/fnv"
 	"log"
 
+	gateway_solo_io "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	graphql_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
@@ -27,6 +28,7 @@ type ApiSnapshot struct {
 	AuthConfigs      enterprise_gloo_solo_io.AuthConfigList
 	Ratelimitconfigs github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
 	GraphqlSchemas   graphql_gloo_solo_io.GraphQLSchemaList
+	VirtualServices  gateway_solo_io.VirtualServiceList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {
@@ -40,6 +42,7 @@ func (s ApiSnapshot) Clone() ApiSnapshot {
 		AuthConfigs:      s.AuthConfigs.Clone(),
 		Ratelimitconfigs: s.Ratelimitconfigs.Clone(),
 		GraphqlSchemas:   s.GraphqlSchemas.Clone(),
+		VirtualServices:  s.VirtualServices.Clone(),
 	}
 }
 
@@ -72,6 +75,9 @@ func (s ApiSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	if _, err := s.hashGraphqlSchemas(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashVirtualServices(hasher); err != nil {
 		return 0, err
 	}
 	return hasher.Sum64(), nil
@@ -119,6 +125,10 @@ func (s ApiSnapshot) hashRatelimitconfigs(hasher hash.Hash64) (uint64, error) {
 
 func (s ApiSnapshot) hashGraphqlSchemas(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.GraphqlSchemas.AsInterfaces()...)
+}
+
+func (s ApiSnapshot) hashVirtualServices(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.VirtualServices.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) HashFields() []zap.Field {
@@ -169,6 +179,11 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("graphqlSchemas", GraphqlSchemasHash))
+	VirtualServicesHash, err := s.hashVirtualServices(hasher)
+	if err != nil {
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("virtualServices", VirtualServicesHash))
 	snapshotHash, err := s.Hash(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
@@ -187,6 +202,7 @@ type ApiSnapshotStringer struct {
 	AuthConfigs      []string
 	Ratelimitconfigs []string
 	GraphqlSchemas   []string
+	VirtualServices  []string
 }
 
 func (ss ApiSnapshotStringer) String() string {
@@ -237,6 +253,11 @@ func (ss ApiSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
+	s += fmt.Sprintf("  VirtualServices %v\n", len(ss.VirtualServices))
+	for _, name := range ss.VirtualServices {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
 	return s
 }
 
@@ -256,5 +277,6 @@ func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 		AuthConfigs:      s.AuthConfigs.NamespacesDotNames(),
 		Ratelimitconfigs: s.Ratelimitconfigs.NamespacesDotNames(),
 		GraphqlSchemas:   s.GraphqlSchemas.NamespacesDotNames(),
+		VirtualServices:  s.VirtualServices.NamespacesDotNames(),
 	}
 }
