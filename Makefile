@@ -284,7 +284,7 @@ gateway: $(GATEWAY_OUTPUT_DIR)/gateway-linux-$(GOARCH)
 
 $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway: $(GATEWAY_DIR)/cmd/Dockerfile
 	cp $< $@
-
+#calling TODO as a faster iteration method
 .PHONY: gateway-docker
 gateway-docker: $(GATEWAY_OUTPUT_DIR)/gateway-linux-$(GOARCH) $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway
 	docker build $(GATEWAY_OUTPUT_DIR) -f $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway \

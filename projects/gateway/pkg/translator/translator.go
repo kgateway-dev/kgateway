@@ -63,16 +63,20 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	reports.Accept(snap.VirtualServices.AsInputResources()...)
 	reports.Accept(snap.RouteTables.AsInputResources()...)
 	if len(filteredGateways) == 0 {
+		fmt.Printf("Translate | aborted because len(filteredGateways) == 0\n")
 		snapHash := hashutils.MustHash(snap)
 		logger.Infof("%v had no gateways", snapHash)
 		return nil, reports
 	}
 	validateGateways(filteredGateways, snap.VirtualServices, reports)
 	listeners := make([]*gloov1.Listener, 0, len(filteredGateways))
+
+	fmt.Printf("Translate | looping over %d t.listenerTypes\n", len(t.listenerTypes))
 	for _, listenerFactory := range t.listenerTypes {
 		listeners = append(listeners, listenerFactory.GenerateListeners(ctx, proxyName, snap, filteredGateways, reports)...)
 	}
 	if len(listeners) == 0 {
+		fmt.Printf("Translate | aborted because len(listeners) == 0\n")
 		return nil, reports
 	}
 	return &gloov1.Proxy{
@@ -145,6 +149,7 @@ func gatewaysRefsToString(gateways v1.GatewayList) []string {
 // Get the gateways that should be processed in this sync execution
 func (t *translator) filterGateways(gateways v1.GatewayList, namespace string) v1.GatewayList {
 	var filteredGateways v1.GatewayList
+	fmt.Printf("filterGateways | PASSED IN %d gateways\n", len(gateways))
 	for _, gateway := range gateways {
 		// Normally, Gloo should only pay attention to Gateways it creates, i.e. in its write
 		// namespace, to support handling multiple gloo installations. However, we may want to
@@ -153,5 +158,7 @@ func (t *translator) filterGateways(gateways v1.GatewayList, namespace string) v
 			filteredGateways = append(filteredGateways, gateway)
 		}
 	}
+
+	fmt.Printf("filterGateways | RETURNED %d gateways\n", len(filteredGateways))
 	return filteredGateways
 }

@@ -91,9 +91,9 @@ if [ "$KUBE2E_TESTS" = "eds" ]; then
   kubectl -n gloo-system rollout status deployment gateway --timeout=2m || true
 
   echo "Installing Hello World example"
-  kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
-  _output/glooctl-$OS-amd64 add route \
-    --path-exact /all-pets \
-    --dest-name default-petstore-8080 \
-    --prefix-rewrite /api/pets
+  # kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
+  # _output/glooctl-$OS-amd64 add route \
+  #   --path-exact /all-pets \
+  #   --dest-name default-petstore-8080 \
+  #   --prefix-rewrite /api/pets
 fi

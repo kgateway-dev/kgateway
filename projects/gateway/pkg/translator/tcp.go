@@ -2,6 +2,7 @@ package translator
 
 import (
 	"context"
+	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -32,5 +33,6 @@ func (t *TcpTranslator) GenerateListeners(ctx context.Context, proxyName string,
 		}
 		result = append(result, listener)
 	}
+	fmt.Printf("GenerateListeners (tcp.go) | got a %d results\n", len(result))
 	return result
 }

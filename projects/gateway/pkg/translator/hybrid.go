@@ -2,6 +2,7 @@ package translator
 
 import (
 	"context"
+	"fmt"
 
 	errors "github.com/rotisserie/eris"
 
@@ -96,5 +97,6 @@ func (t *HybridTranslator) GenerateListeners(ctx context.Context, proxyName stri
 
 		result = append(result, listener)
 	}
+	fmt.Printf("GenerateListeners (hybrid.go) | got a %d results\n", len(result))
 	return result
 }

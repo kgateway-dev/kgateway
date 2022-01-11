@@ -15,7 +15,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"k8s.io/apimachinery/pkg/labels"
@@ -81,11 +80,11 @@ type HttpTranslator struct {
 }
 
 func (t *HttpTranslator) GenerateListeners(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
-	if len(snap.VirtualServices) == 0 {
-		snapHash := hashutils.MustHash(snap)
-		contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snapHash)
-		return nil
-	}
+	// if len(snap.VirtualServices) == 0 {
+	// 	snapHash := hashutils.MustHash(snap)
+	// 	contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snapHash)
+	// 	return nil
+	// }
 	var result []*gloov1.Listener
 	for _, gateway := range filteredGateways {
 		if gateway.GetHttpGateway() == nil {
@@ -98,6 +97,7 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, proxyName string
 		listener := t.desiredListenerForHttp(gateway, proxyName, virtualServices, snap, reports)
 		result = append(result, listener)
 	}
+	fmt.Printf("GenerateListeners (http.go) | got a %d results\n", len(result))
 	return result
 }
 
