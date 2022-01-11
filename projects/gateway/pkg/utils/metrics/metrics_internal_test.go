@@ -1,4 +1,4 @@
-package utils
+package metrics
 
 import (
 	. "github.com/onsi/ginkgo"

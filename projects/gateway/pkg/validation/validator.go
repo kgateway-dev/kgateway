@@ -94,7 +94,6 @@ type validator struct {
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
 	writeNamespace               string
-	configStatusMetrics          *utils.ConfigStatusMetrics
 }
 
 type ValidatorConfig struct {
@@ -103,33 +102,26 @@ type ValidatorConfig struct {
 	writeNamespace               string
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
-	configStatusMetricsOptions   map[string]*utils.MetricLabels
 }
 
-func NewValidatorConfig(translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool, configStatusMetricsOptions map[string]*utils.MetricLabels) ValidatorConfig {
+func NewValidatorConfig(translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool) ValidatorConfig {
 	return ValidatorConfig{
 		translator:                   translator,
 		validationClient:             validationClient,
 		writeNamespace:               writeNamespace,
 		ignoreProxyValidationFailure: ignoreProxyValidationFailure,
 		allowWarnings:                allowWarnings,
-		configStatusMetricsOptions:   configStatusMetricsOptions,
 	}
 }
 
-func NewValidator(cfg ValidatorConfig) (*validator, error) {
-	configStatusMetrics, err := utils.NewConfigStatusMetrics(cfg.configStatusMetricsOptions)
-	if err != nil {
-		return nil, err
-	}
+func NewValidator(cfg ValidatorConfig) *validator {
 	return &validator{
 		translator:                   cfg.translator,
 		validationClient:             cfg.validationClient,
 		writeNamespace:               cfg.writeNamespace,
 		ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure,
 		allowWarnings:                cfg.allowWarnings,
-		configStatusMetrics:          configStatusMetrics,
-	}, nil
+	}
 }
 
 func (v *validator) ready() bool {
@@ -300,7 +292,6 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", resource, ref, errs)
 		if !dryRun {
 			utils2.MeasureZero(ctx, mValidConfig)
-			v.configStatusMetrics.SetResourceInvalid(ctx, resource)
 		}
 		return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, errors.Wrapf(errs, "validating %T %v", resource, ref)
 	}
@@ -308,7 +299,6 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", resource, ref)
 	if !dryRun {
 		utils2.MeasureOne(ctx, mValidConfig)
-		v.configStatusMetrics.SetResourceValid(ctx, resource)
 	}
 
 	if !dryRun {

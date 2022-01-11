@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -196,7 +197,7 @@ func RunIngress(opts Opts) error {
 		kubeServiceClient := v1.NewKubeServiceClientWithBase(baseKubeServiceClient)
 
 		translatorEmitter := v1.NewTranslatorEmitter(upstreamClient, kubeServiceClient, ingressClient)
-		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, metrics.GetDefaultConfigStatusOptions())
 		translatorSync := translator.NewSyncer(
 			opts.WriteNamespace,
 			proxyClient,
@@ -246,7 +247,7 @@ func RunIngress(opts Opts) error {
 			baseClient := clusteringressclient.NewResourceClient(knative, knativeCache)
 			ingressClient := clusteringressv1alpha1.NewClusterIngressClientWithBase(baseClient)
 			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(ingressClient)
-			statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+			statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, metrics.GetDefaultConfigStatusOptions())
 			clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
 				opts.ClusterIngressProxyAddress,
 				opts.WriteNamespace,
@@ -270,7 +271,7 @@ func RunIngress(opts Opts) error {
 			baseClient := knativeclient.NewResourceClient(knative, knativeCache)
 			ingressClient := knativev1alpha1.NewIngressClientWithBase(baseClient)
 			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(ingressClient)
-			statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+			statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, metrics.GetDefaultConfigStatusOptions())
 			knativeTranslatorSync := knativetranslator.NewSyncer(
 				opts.KnativeExternalProxyAddress,
 				opts.KnativeInternalProxyAddress,

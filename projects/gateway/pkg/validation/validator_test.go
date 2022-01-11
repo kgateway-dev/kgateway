@@ -14,7 +14,6 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	utils2 "github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
@@ -39,10 +38,7 @@ var _ = Describe("Validator", func() {
 		t = translator.NewDefaultTranslator(translator.Opts{})
 		vc = &mockValidationClient{}
 		ns = "my-namespace"
-		metricOpts := getMetricOpts()
-		var err error
-		v, err = NewValidator(NewValidatorConfig(t, vc, ns, false, false, metricOpts))
-		Expect(err).NotTo(HaveOccurred())
+		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))
 	})
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil, false)
@@ -303,9 +299,7 @@ var _ = Describe("Validator", func() {
 
 			Context("allowWarnings=false", func() {
 				BeforeEach(func() {
-					var err error
-					v, err = NewValidator(NewValidatorConfig(t, vc, ns, true, false, getMetricOpts()))
-					Expect(err).NotTo(HaveOccurred())
+					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
 				})
 				It("rejects a vs with missing route table ref", func() {
 					vc.validate = warnProxy
@@ -346,12 +340,10 @@ var _ = Describe("Validator", func() {
 			Context("ignoreProxyValidation=true", func() {
 				It("accepts the rt", func() {
 					vc.validate = communicationErr
-					var err error
-					v, err = NewValidator(NewValidatorConfig(t, vc, ns, true, false, getMetricOpts()))
-					Expect(err).NotTo(HaveOccurred())
+					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
 					us := samples.SimpleUpstream()
 					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
-					err = v.Sync(context.TODO(), snap)
+					err := v.Sync(context.TODO(), snap)
 					Expect(err).NotTo(HaveOccurred())
 					reports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 					Expect(err).NotTo(HaveOccurred())
@@ -360,9 +352,7 @@ var _ = Describe("Validator", func() {
 			})
 			Context("allowWarnings=true", func() {
 				BeforeEach(func() {
-					var err error
-					v, err = NewValidator(NewValidatorConfig(t, vc, ns, true, true, getMetricOpts()))
-					Expect(err).NotTo(HaveOccurred())
+					v = NewValidator(NewValidatorConfig(t, vc, ns, true, true))
 				})
 				It("accepts a vs with missing route table ref", func() {
 					vc.validate = communicationErr
@@ -1222,10 +1212,6 @@ var _ = Describe("Validator", func() {
 
 	})
 })
-
-func getMetricOpts() map[string]*utils2.MetricLabels {
-	return map[string]*utils2.MetricLabels{}
-}
 
 type mockValidationClient struct {
 	validate func(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error)

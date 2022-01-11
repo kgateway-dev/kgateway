@@ -1,4 +1,4 @@
-package utils
+package metrics
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	errors "github.com/rotisserie/eris"
-	utils2 "github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -17,9 +17,9 @@ import (
 	"k8s.io/client-go/util/jsonpath"
 )
 
-type MetricLabels = gloov1.Settings_ObservabilityOptions_MetricLabels
+type Labels = gloov1.Settings_ObservabilityOptions_MetricLabels
 
-var MetricNames = map[schema.GroupVersionKind]string{
+var Names = map[schema.GroupVersionKind]string{
 	gwv1.VirtualServiceGVK: "validation.gateway.solo.io/virtual_service_config_status",
 	gwv1.GatewayGVK:        "validation.gateway.solo.io/gateway_config_status",
 	gwv1.RouteTableGVK:     "validation.gateway.solo.io/route_table_config_status",
@@ -27,12 +27,12 @@ var MetricNames = map[schema.GroupVersionKind]string{
 	gloov1.SecretGVK:       "validation.gateway.solo.io/secret_config_status",
 }
 
-var metricDescriptions = map[schema.GroupVersionKind]string{
-	gwv1.VirtualServiceGVK: "TODO", // TODO(mitchaman)
-	gwv1.GatewayGVK:        "TODO", // TODO(mitchaman)
-	gwv1.RouteTableGVK:     "TODO", // TODO(mitchaman)
-	gloov1.UpstreamGVK:     "TODO", // TODO(mitchaman)
-	gloov1.SecretGVK:       "TODO", // TODO(mitchaman)
+var descriptions = map[schema.GroupVersionKind]string{
+	gwv1.VirtualServiceGVK: "A gauge indicating the health status of virtual service resources in the system.",
+	gwv1.GatewayGVK:        "A gauge indicating the health status of gateway resources in the system.",
+	gwv1.RouteTableGVK:     "A gauge indicating the health status of route table resources in the system.",
+	gloov1.UpstreamGVK:     "A gauge indicating the health status of upstream resources in the system.",
+	gloov1.SecretGVK:       "A gauge indicating the health status of secret resources in the system.",
 }
 
 // ConfigStatusMetrics is a collection of metrics, each of which records if the configuration for
@@ -48,20 +48,24 @@ type resourceMetric struct {
 	labelToPath map[string]string
 }
 
+func GetDefaultConfigStatusOptions() map[string]*Labels {
+	return make(map[string]*Labels)
+}
+
 // NewConfigStatusMetrics creates and returns a ConfigStatusMetrics from the specified options.
 // If the options are invalid, an error is returned.
-func NewConfigStatusMetrics(opts map[string]*MetricLabels) (*ConfigStatusMetrics, error) {
-	configMetrics := &ConfigStatusMetrics{
+func NewConfigStatusMetrics(opts map[string]*Labels) (ConfigStatusMetrics, error) {
+	configMetrics := ConfigStatusMetrics{
 		metrics: make(map[schema.GroupVersionKind]*resourceMetric),
 	}
 	for gvkString, labels := range opts {
 		gvk, err := parseGroupVersionKind(gvkString)
 		if err != nil {
-			return nil, err
+			return ConfigStatusMetrics{}, err
 		}
 		metric, err := newResourceMetric(gvk, labels.GetLabelToPath())
 		if err != nil {
-			return nil, err
+			return ConfigStatusMetrics{}, err
 		}
 		configMetrics.insertMetric(gvk, metric)
 	}
@@ -73,13 +77,13 @@ func parseGroupVersionKind(arg string) (schema.GroupVersionKind, error) {
 	if gvk == nil {
 		return schema.GroupVersionKind{}, errors.Errorf("unable to parse GVK from string '%s'", arg)
 	}
-	if _, ok := MetricNames[*gvk]; !ok {
+	if _, ok := Names[*gvk]; !ok {
 		return schema.GroupVersionKind{}, errors.Errorf("config status metric reporting is not supported for resource type '%s'", arg)
 	}
 	return *gvk, nil
 }
 
-func resourceToGvk(resource resources.Resource) (schema.GroupVersionKind, error) {
+func resourceToGVK(resource resources.Resource) (schema.GroupVersionKind, error) {
 	switch resource.(type) {
 	case *gwv1.VirtualService:
 		return gwv1.VirtualServiceGVK, nil
@@ -98,7 +102,7 @@ func resourceToGvk(resource resources.Resource) (schema.GroupVersionKind, error)
 
 func (m *ConfigStatusMetrics) SetResourceValid(ctx context.Context, resource resources.Resource) {
 	log := contextutils.LoggerFrom(ctx)
-	gvk, err := resourceToGvk(resource)
+	gvk, err := resourceToGVK(resource)
 	if err != nil {
 		log.Errorf("Unable to set config status valid for resource '%s': %s", resource.GetMetadata().Ref(), err.Error())
 		return
@@ -107,15 +111,15 @@ func (m *ConfigStatusMetrics) SetResourceValid(ctx context.Context, resource res
 		log.Debugf("Setting '%s' config metric valid", resource.GetMetadata().Ref())
 		mutators, err := getMutators(m.metrics[gvk], resource)
 		if err != nil {
-			log.Errorf("Error setting labels on %s: %s", MetricNames[gvk], err.Error())
+			log.Errorf("Error setting labels on %s: %s", Names[gvk], err.Error())
 		}
-		utils2.MeasureZero(ctx, m.metrics[gvk].gauge, mutators...)
+		utils.MeasureZero(ctx, m.metrics[gvk].gauge, mutators...)
 	}
 }
 
 func (m *ConfigStatusMetrics) SetResourceInvalid(ctx context.Context, resource resources.Resource) {
 	log := contextutils.LoggerFrom(ctx)
-	gvk, err := resourceToGvk(resource)
+	gvk, err := resourceToGVK(resource)
 	if err != nil {
 		log.Errorf("Unable to set config status valid for resource '%s': %s", resource.GetMetadata().Ref(), err.Error())
 		return
@@ -124,9 +128,9 @@ func (m *ConfigStatusMetrics) SetResourceInvalid(ctx context.Context, resource r
 		log.Debugf("Setting '%s' config metric invalid", resource.GetMetadata().Ref())
 		mutators, err := getMutators(m.metrics[gvk], resource)
 		if err != nil {
-			log.Errorf("Error setting labels on %s: %s", MetricNames[gvk], err.Error())
+			log.Errorf("Error setting labels on %s: %s", Names[gvk], err.Error())
 		}
-		utils2.MeasureOne(ctx, m.metrics[gvk].gauge, mutators...)
+		utils.MeasureOne(ctx, m.metrics[gvk].gauge, mutators...)
 	}
 }
 
@@ -193,12 +197,12 @@ func newResourceMetric(gvk schema.GroupVersionKind, labelToPath map[string]strin
 		var err error
 		tagKeys[i], err = tag.NewKey(k)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Error creating resourceMetric for %s", MetricNames[gvk])
+			return nil, errors.Wrapf(err, "Error creating resourceMetric for %s", Names[gvk])
 		}
 		i++
 	}
 	return &resourceMetric{
-		gauge:       utils2.MakeGauge(MetricNames[gvk], metricDescriptions[gvk], tagKeys...),
+		gauge:       utils.MakeGauge(Names[gvk], descriptions[gvk], tagKeys...),
 		labelToPath: labelToPath,
 	}, nil
 }

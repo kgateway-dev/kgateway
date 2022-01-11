@@ -221,7 +221,7 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
-	statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+	statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, opts.ConfigStatusMetricOpts)
 
 	rpt := reporter.NewReporter("gateway",
 		statusClient,
@@ -266,17 +266,13 @@ func RunGateway(opts translator.Opts) error {
 
 	emitter := v1.NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, virtualHostOptionClient, routeOptionClient, notifications)
 
-	validationSyncer, err := gatewayvalidation.NewValidator(gatewayvalidation.NewValidatorConfig(
+	validationSyncer := gatewayvalidation.NewValidator(gatewayvalidation.NewValidatorConfig(
 		txlator,
 		validationClient,
 		opts.WriteNamespace,
 		ignoreProxyValidationFailure,
 		allowWarnings,
-		opts.ConfigStatusMetricOpts,
 	))
-	if err != nil {
-		return errors.Wrapf(err, "failed to create validator")
-	}
 
 	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient, statusClient)
 
