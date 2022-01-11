@@ -5,9 +5,6 @@ import (
 
 	errors "github.com/rotisserie/eris"
 
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/hashutils"
-
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -25,8 +22,7 @@ type HybridTranslator struct {
 
 func (t *HybridTranslator) GenerateListeners(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
 	var (
-		result      []*gloov1.Listener
-		loggedError bool
+		result []*gloov1.Listener
 	)
 
 	for _, gateway := range filteredGateways {
@@ -45,16 +41,6 @@ func (t *HybridTranslator) GenerateListeners(ctx context.Context, proxyName stri
 
 			switch gt := matchedGateway.GetGatewayType().(type) {
 			case *v1.MatchedGateway_HttpGateway:
-				// logic mirrors HttpTranslator.GenerateListeners
-				if len(snap.VirtualServices) == 0 {
-					if !loggedError {
-						snapHash := hashutils.MustHash(snap)
-						contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snapHash)
-						loggedError = true // only log no virtual service error once
-					}
-					continue
-				}
-
 				virtualServices := getVirtualServicesForHttpGateway(matchedGateway.GetHttpGateway(), gateway, snap.VirtualServices, reports, matchedGateway.GetMatcher().GetSslConfig() != nil)
 				applyGlobalVirtualServiceSettings(ctx, virtualServices)
 				validateVirtualServiceDomains(gateway, virtualServices, reports)
