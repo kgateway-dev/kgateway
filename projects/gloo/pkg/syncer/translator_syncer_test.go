@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -68,7 +69,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		settings = &v1.Settings{}
 
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns, metrics.GetDefaultConfigStatusOptions())
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
@@ -209,7 +210,7 @@ var _ = Describe("Empty cache", func() {
 
 		settings = &v1.Settings{}
 
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns, metrics.GetDefaultConfigStatusOptions())
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
@@ -369,7 +370,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 
 		settings = &v1.Settings{}
 
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns, metrics.GetDefaultConfigStatusOptions())
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 

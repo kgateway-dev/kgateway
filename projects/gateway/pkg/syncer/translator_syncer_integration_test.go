@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -67,7 +68,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
 
 		proxyClient, err = gloov1.NewProxyClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -213,7 +214,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		// write the proxy status again to the same status as the one currently in the snapshot
 		AcceptProxy()
 
-		//status should be accepted.
+		// status should be accepted.
 		// this tests the bug that we saw where the status stayed pending.
 		// the vs sub resource status did not update,
 		// as the last status is the same as the one from Sync

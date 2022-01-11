@@ -3,6 +3,7 @@ package reconciler_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"google.golang.org/grpc"
 
 	"github.com/golang/mock/gomock"
@@ -85,7 +86,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				}, nil
 			}).AnyTimes()
 
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns, metrics.GetDefaultConfigStatusOptions())
 		reconciler = NewProxyReconciler(validationClient, proxyClient, statusClient)
 
 		snap = samples.SimpleGatewaySnapshot(us, ns)

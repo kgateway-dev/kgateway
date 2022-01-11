@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -37,7 +38,7 @@ var _ = Describe("TranslatorSyncer", func() {
 	BeforeEach(func() {
 		mockReporter = &fakeReporter{}
 
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
 
 		curSyncer := newStatusSyncer(defaults.GlooSystem, fakeWatcher, mockReporter, statusClient)
 		syncer = &curSyncer

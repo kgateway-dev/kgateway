@@ -5,6 +5,7 @@ import (
 	"time"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	alpha1 "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 
@@ -31,7 +32,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxyAddress := "proxy-address"
 		namespace := "write-namespace"
 
-		statusClient := gloostatusutils.GetStatusClientFromEnvOrDefault(namespace)
+		statusClient := gloostatusutils.GetStatusClientFromEnvOrDefault(namespace, metrics.GetDefaultConfigStatusOptions())
 		proxyClient, _ := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
 		clusterIngress := &v1alpha1.ClusterIngress{ClusterIngress: knative.ClusterIngress{
 			ObjectMeta: v12.ObjectMeta{Generation: 1},
