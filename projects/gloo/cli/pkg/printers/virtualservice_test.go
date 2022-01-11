@@ -36,7 +36,9 @@ var _ = Describe("getAggregateVirtualServiceStatus", func() {
 		Expect(os.Setenv(statusutils.PodNamespaceEnvName, defaults.GlooSystem)).NotTo(HaveOccurred())
 		ctx, cancel = context.WithCancel(context.Background())
 
-		statusClient = gloostatusutils.GetStatusClientForNamespace(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
+		var err error
+		statusClient, err = gloostatusutils.GetStatusClientForNamespace(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {

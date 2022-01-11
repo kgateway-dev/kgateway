@@ -71,7 +71,9 @@ var _ = Describe("TranslatorSyncer", func() {
 		knativeClient = &mockCiClient{ci: toKube(ingress)}
 		proxy = &v1.Proxy{Metadata: &core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
-		statusClient = gloostatusutils.GetStatusClientForNamespace("ns", metrics.GetDefaultConfigStatusOptions())
+		var err error
+		statusClient, err = gloostatusutils.GetStatusClientForNamespace("ns", metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {

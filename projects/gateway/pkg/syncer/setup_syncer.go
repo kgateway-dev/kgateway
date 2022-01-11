@@ -221,7 +221,10 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
-	statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, opts.ConfigStatusMetricOpts)
+	statusClient, err := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, opts.ConfigStatusMetricOpts)
+	if err != nil {
+		return err
+	}
 
 	rpt := reporter.NewReporter("gateway",
 		statusClient,

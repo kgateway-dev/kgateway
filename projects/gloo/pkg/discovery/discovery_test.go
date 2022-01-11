@@ -33,7 +33,9 @@ var _ = Describe("Discovery", func() {
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
-		statusClient = statusutils.GetStatusClientForNamespace("default", metrics.GetDefaultConfigStatusOptions())
+		var err error
+		statusClient, err = statusutils.GetStatusClientForNamespace("default", metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {

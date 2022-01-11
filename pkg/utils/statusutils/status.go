@@ -3,6 +3,7 @@ package statusutils
 import (
 	"context"
 
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
 	ratelimitpkg "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
@@ -20,21 +21,20 @@ func GetStatusReporterNamespaceOrDefault(defaultNamespace string) string {
 	return defaultNamespace
 }
 
-func GetStatusClientFromEnvOrDefault(defaultNamespace string, metricOpts map[string]*metrics.Labels) resources.StatusClient {
+func GetStatusClientFromEnvOrDefault(defaultNamespace string, metricOpts map[string]*metrics.Labels) (resources.StatusClient, error) {
 	statusReporterNamespace := GetStatusReporterNamespaceOrDefault(defaultNamespace)
 	return GetStatusClientForNamespace(statusReporterNamespace, metricOpts)
 }
 
-func GetStatusClientForNamespace(namespace string, metricOpts map[string]*metrics.Labels) resources.StatusClient {
+func GetStatusClientForNamespace(namespace string, metricOpts map[string]*metrics.Labels) (resources.StatusClient, error) {
 	statusMetrics, err := metrics.NewConfigStatusMetrics(metricOpts)
 	if err != nil {
-		// TODO(mitchaman): DO_NOT_SUBMIT
-		panic("error creating NewConfigStatusMetrics")
+		return nil, errors.Wrapf(err, "failed to create ConfigStatusMetrics")
 	}
 	return &HybridStatusClient{
 		namespacedStatusClient: statusutils.NewNamespacedStatusesClient(namespace),
 		statusMetrics:          statusMetrics,
-	}
+	}, nil
 }
 
 var _ resources.StatusClient = &HybridStatusClient{}

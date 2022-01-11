@@ -19,8 +19,11 @@ var _ = Describe("Status", func() {
 	)
 
 	BeforeEach(func() {
-		statusClientRed = statusutils.GetStatusClientForNamespace("red", metrics.GetDefaultConfigStatusOptions())
-		statusClientGreen = statusutils.GetStatusClientForNamespace("green", metrics.GetDefaultConfigStatusOptions())
+		var err error
+		statusClientRed, err = statusutils.GetStatusClientForNamespace("red", metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
+		statusClientGreen, err = statusutils.GetStatusClientForNamespace("green", metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("single status api (deprecated)", func() {

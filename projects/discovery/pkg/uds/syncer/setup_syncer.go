@@ -84,7 +84,10 @@ func RunUDS(opts bootstrap.Opts) error {
 
 	errs := make(chan error)
 
-	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, opts.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels())
+	statusClient, err := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, opts.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels())
+	if err != nil {
+		return err
+	}
 
 	uds := discovery.NewUpstreamDiscovery(watchNamespaces, opts.WriteNamespace, upstreamClient, statusClient, discoveryPlugins)
 	// TODO(ilackarms) expose discovery options

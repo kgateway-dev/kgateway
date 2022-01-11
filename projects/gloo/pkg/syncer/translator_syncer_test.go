@@ -69,7 +69,8 @@ var _ = Describe("Translate Proxy", func() {
 
 		settings = &v1.Settings{}
 
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns, metrics.GetDefaultConfigStatusOptions())
+		statusClient, err = statusutils.GetStatusClientFromEnvOrDefault(ns, metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
@@ -210,7 +211,8 @@ var _ = Describe("Empty cache", func() {
 
 		settings = &v1.Settings{}
 
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns, metrics.GetDefaultConfigStatusOptions())
+		statusClient, err = statusutils.GetStatusClientFromEnvOrDefault(ns, metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
@@ -370,7 +372,8 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 
 		settings = &v1.Settings{}
 
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns, metrics.GetDefaultConfigStatusOptions())
+		statusClient, err = statusutils.GetStatusClientFromEnvOrDefault(ns, metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 

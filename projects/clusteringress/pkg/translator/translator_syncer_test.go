@@ -32,7 +32,8 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxyAddress := "proxy-address"
 		namespace := "write-namespace"
 
-		statusClient := gloostatusutils.GetStatusClientFromEnvOrDefault(namespace, metrics.GetDefaultConfigStatusOptions())
+		statusClient, err := gloostatusutils.GetStatusClientFromEnvOrDefault(namespace, metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 		proxyClient, _ := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
 		clusterIngress := &v1alpha1.ClusterIngress{ClusterIngress: knative.ClusterIngress{
 			ObjectMeta: v12.ObjectMeta{Generation: 1},
@@ -56,7 +57,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		err := syncer.propagateProxyStatus(context.TODO(), proxy, v1alpha1.ClusterIngressList{clusterIngress})
+		err = syncer.propagateProxyStatus(context.TODO(), proxy, v1alpha1.ClusterIngressList{clusterIngress})
 		Expect(err).NotTo(HaveOccurred())
 
 		var ci *v1alpha12.Ingress

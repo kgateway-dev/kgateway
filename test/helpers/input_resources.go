@@ -41,7 +41,8 @@ func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter
 		"State": gomega.Equal(desiredStatusState),
 	})
 
-	statusClient := statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
+	statusClient, err := statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	timeoutInterval, pollingInterval := getTimeoutAndPollingIntervalsOrDefault(intervals...)
 	gomega.EventuallyWithOffset(offset+1, func() (core.Status, error) {

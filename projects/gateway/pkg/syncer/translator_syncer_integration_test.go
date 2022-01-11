@@ -68,7 +68,8 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
+		statusClient, err = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 
 		proxyClient, err = gloov1.NewProxyClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())

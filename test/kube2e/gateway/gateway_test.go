@@ -188,7 +188,8 @@ var _ = Describe("Kube2e: gateway", func() {
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 
-		statusClient = gloostatusutils.GetStatusClientForNamespace(testHelper.InstallNamespace, metrics.GetDefaultConfigStatusOptions())
+		statusClient, err = gloostatusutils.GetStatusClientForNamespace(testHelper.InstallNamespace, metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {

@@ -112,7 +112,8 @@ var _ = Describe("Robustness tests", func() {
 		err = proxyClient.Register()
 		Expect(err).NotTo(HaveOccurred())
 
-		statusClient = gloostatusutils.GetStatusClientForNamespace(namespace, metrics.GetDefaultConfigStatusOptions())
+		statusClient, err = gloostatusutils.GetStatusClientForNamespace(namespace, metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 
 		appDeployment, appService, err = createEchoDeploymentAndService(kubeClient, testHelper.InstallNamespace, appName)
 		Expect(err).NotTo(HaveOccurred())
