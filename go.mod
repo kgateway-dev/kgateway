@@ -125,7 +125,6 @@ replace (
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
-	github.com/solo-io/protoc-gen-openapi => github.com/solo-io/protoc-gen-openapi v0.0.2-0.20220111144849-165f8a588e97
 
 	// version upgrade to 1.40.2 fails a specific unit test
 	// see https://github.com/solo-io/gloo/issues/5719
