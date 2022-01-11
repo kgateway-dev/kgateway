@@ -1454,8 +1454,9 @@ github.com/solo-io/k8s-utils v0.0.12/go.mod h1:Cg2ymG0xhLdyS3NJ0D98yxiSWjAKYPNop
 github.com/solo-io/protoc-gen-ext v0.0.13/go.mod h1:/U/jMDtVI7R6N323sfaUXK9Mmo54D7SY3pP7JtI/kMo=
 github.com/solo-io/protoc-gen-ext v0.0.16 h1:PHPzkmK6FVtMlDe95WSOcSXKSdnfUxuwJMfet/PaLhU=
 github.com/solo-io/protoc-gen-ext v0.0.16/go.mod h1:j5wvKW5B7oes0hf46IxPDEkDK0pNNQ1Nbfrr1P+xBQo=
-github.com/solo-io/protoc-gen-openapi v0.0.1 h1:/VMAtc010Qcpo2Zm/RsRke3Fu27z3eraF9Tmgoe4QHA=
 github.com/solo-io/protoc-gen-openapi v0.0.1/go.mod h1:IzxGB6GN8LfmR7K4d0jZeD4734wjNXE6QJVB41MYAVw=
+github.com/solo-io/protoc-gen-openapi v0.0.2 h1:1vArV2eg9oJXBVv58CDBrjF3UYOGjjVHEjGQN9W3hoc=
+github.com/solo-io/protoc-gen-openapi v0.0.2/go.mod h1:IzxGB6GN8LfmR7K4d0jZeD4734wjNXE6QJVB41MYAVw=
 github.com/solo-io/skv2 v0.17.17/go.mod h1:nYjANLlL1SLPV/7Gr2mKgfxO3Jta/yNAxKnAHKhSamM=
 github.com/solo-io/skv2 v0.21.6 h1:LyJMbttLkzEIkyxg7ZQs81adNpwYCflniWOJRZ1MRns=
 github.com/solo-io/skv2 v0.21.6/go.mod h1:8jNcMWuAkBxdGhlRFMSgsK94q/jZGPEas8VHTr/al/Y=
