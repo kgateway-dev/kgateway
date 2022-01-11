@@ -9,21 +9,24 @@ The JWT feature was introduced with **Gloo Edge Enterprise**, release 0.13.16. I
 {{% /notice %}}
 
 ## Table of Contents
-- [Setup](#verifying-kubernetes-service-account-jwts)
+- [Table of Contents](#table-of-contents)
+- [Setup](#setup)
 - [Verifying Kubernetes service account JWTs](#verifying-kubernetes-service-account-jwts)
-    - [Deploy sample application](#deploy-sample-application)
-    - [Create a Virtual Service](#create-a-virtual-service)
-    - [Setting up JWT authorization](#setting-up-jwt-authorization)
-        - [Anatomy of Kubernetes service account](#anatomy-of-kubernetes-service-account)
-        - [Retrieve the Kubernetes API server public key](#retrieve-the-kubernetes-api-server-public-key)
-        - [Secure the Virtual Service](#secure-the-virtual-service)
-    - [Testing our configuration](#testing-our-configuration)
-- [Appendix - Use a remote JSON Web Key Set (JWKS) server](#appendix-use-a-remote-json-web-key-set-jwks-server)
-    - [Create the private key](#deploy-sample-application)
-    - [Create the JSON Web Key Set (JWKS)](#create-a-virtual-service)
-    - [Create JWKS server](#setting-up-jwt-authorization)
-    - [Create the JSON Web Token (JWT)](#setting-up-jwt-authorization)
-    - [Testing the configuration](#testing-the-configuration)
+  - [Deploy sample application](#deploy-sample-application)
+  - [Create a Virtual Service](#create-a-virtual-service)
+  - [Setting up JWT authorization](#setting-up-jwt-authorization)
+    - [Anatomy of Kubernetes service account](#anatomy-of-kubernetes-service-account)
+    - [Retrieve the Kubernetes API server public key](#retrieve-the-kubernetes-api-server-public-key)
+    - [Secure the Virtual Service](#secure-the-virtual-service)
+  - [Testing our configuration](#testing-our-configuration)
+  - [Cleanup](#cleanup)
+- [Appendix - Use a remote JSON Web Key Set (JWKS) server {#appendix}](#appendix---use-a-remote-json-web-key-set-jwks-server-appendix)
+  - [Create the private key](#create-the-private-key)
+  - [Create the JSON Web Key Set (JWKS) {#jwks}](#create-the-json-web-key-set-jwks-jwks)
+  - [Create JWKS server](#create-jwks-server)
+  - [Create the JSON Web Token (JWT) {#create-jwt}](#create-the-json-web-token-jwt-create-jwt)
+  - [Testing the configuration](#testing-the-configuration)
+  - [Cleanup](#cleanup-1)
     
     
 ## Setup
@@ -388,7 +391,7 @@ kubectl delete virtualservice -n gloo-system petstore
 kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
-## Appendix - Use a remote JSON Web Key Set (JWKS) server
+## Appendix - Use a remote JSON Web Key Set (JWKS) server {#appendix}
 In the previous part of the guide we saw how to configure Gloo Edge with a public key to verify JWTs. The way we provided Gloo Edge with the key was to include the key itself into the Virtual Service definition. While the simplicity of this approach make it a good candidate for test setups and quick prototyping, it can quickly become unwieldy. A more flexible and scalable approach is to use a **JSON Web Key Set (JWKS) Server**. A JWKS server allows us to manage the verification keys independently and centrally, making routine tasks such as key rotation much easier.
 
 In this appendix we will demonstrate how to use an external JSON Web Key Set (JWKS) server with Gloo Edge. We will:
@@ -409,7 +412,7 @@ openssl genrsa 2048 > private-key.pem
 Storing a key on your laptop as done here is not considered secure! Do not use this workflow for production workloads. Use appropriate secret management tools to store sensitive information.
 {{% /notice %}}
 
-### Create the JSON Web Key Set (JWKS)
+### Create the JSON Web Key Set (JWKS) {#jwks}
 We can use the `openssl` command to extract a PEM encoded public key from the private key. We can then use the `pem-jwk` utility to convert our public key to a JSON Web Key format.
 
 ```shell
@@ -581,7 +584,7 @@ spec:
                 url: http://jwks-server/jwks.json
 {{< /highlight >}}
 
-### Create the JSON Web Token (JWT)
+### Create the JSON Web Token (JWT) {#create-jwt}
 We have everything we need to sign and verify a custom JWT with our custom claims. We will use the [jwt.io](https://jwt.io) debugger to do so easily.
 
 - Go to https://jwt.io.
