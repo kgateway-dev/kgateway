@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/solo-kit/test/setup"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -187,7 +188,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 
-		statusClient = gloostatusutils.GetStatusClientForNamespace(testHelper.InstallNamespace)
+		statusClient = gloostatusutils.GetStatusClientForNamespace(testHelper.InstallNamespace, metrics.GetDefaultConfigStatusOptions())
 	})
 
 	AfterEach(func() {

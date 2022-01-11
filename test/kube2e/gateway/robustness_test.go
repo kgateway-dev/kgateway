@@ -1,6 +1,7 @@
 package gateway_test
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
@@ -34,8 +36,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	"k8s.io/apimachinery/pkg/labels"
-
-	"context"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -112,7 +112,7 @@ var _ = Describe("Robustness tests", func() {
 		err = proxyClient.Register()
 		Expect(err).NotTo(HaveOccurred())
 
-		statusClient = gloostatusutils.GetStatusClientForNamespace(namespace)
+		statusClient = gloostatusutils.GetStatusClientForNamespace(namespace, metrics.GetDefaultConfigStatusOptions())
 
 		appDeployment, appService, err = createEchoDeploymentAndService(kubeClient, testHelper.InstallNamespace, appName)
 		Expect(err).NotTo(HaveOccurred())

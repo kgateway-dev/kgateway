@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
 	ratelimitpkg "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -18,8 +19,8 @@ var _ = Describe("Status", func() {
 	)
 
 	BeforeEach(func() {
-		statusClientRed = statusutils.GetStatusClientForNamespace("red")
-		statusClientGreen = statusutils.GetStatusClientForNamespace("green")
+		statusClientRed = statusutils.GetStatusClientForNamespace("red", metrics.GetDefaultConfigStatusOptions())
+		statusClientGreen = statusutils.GetStatusClientForNamespace("green", metrics.GetDefaultConfigStatusOptions())
 	})
 
 	Context("single status api (deprecated)", func() {

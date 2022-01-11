@@ -5,6 +5,7 @@ import (
 	"time"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	knativev1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -70,7 +71,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		knativeClient = &mockCiClient{ci: toKube(ingress)}
 		proxy = &v1.Proxy{Metadata: &core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
-		statusClient = gloostatusutils.GetStatusClientForNamespace("ns")
+		statusClient = gloostatusutils.GetStatusClientForNamespace("ns", metrics.GetDefaultConfigStatusOptions())
 	})
 
 	AfterEach(func() {
