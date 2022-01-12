@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5777
+    description: Fix prepare-directories.sh for docker-compose use
