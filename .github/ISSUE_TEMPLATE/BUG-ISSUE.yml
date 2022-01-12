@@ -8,11 +8,11 @@ body:
       label: Gloo Edge Version
       description: What version of Gloo Edge are you using?
       options:
-        - 1.10.x (beta)
-        - 1.9.x (latest stable)
+        - 1.11.x (beta)
+        - 1.10.x (latest stable)
+        - 1.9.x 
         - 1.8.x
         - 1.7.x
-        - 1.6.x
     validations:
       required: true
   - type: dropdown
