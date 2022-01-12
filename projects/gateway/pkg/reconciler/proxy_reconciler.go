@@ -30,9 +30,10 @@ type proxyReconciler struct {
 	baseReconciler gloov1.ProxyReconciler
 }
 
-func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient) *proxyReconciler {
+func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) *proxyReconciler {
 	return &proxyReconciler{
 		statusClient:   statusClient,
+		statusMetrics:  statusMetrics,
 		proxyValidator: proxyValidator,
 		baseReconciler: gloov1.NewProxyReconciler(proxyClient, statusClient),
 	}

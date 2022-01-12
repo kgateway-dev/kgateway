@@ -35,7 +35,7 @@ type translatorSyncer struct {
 	statusMetrics   metrics.ConfigStatusMetrics
 }
 
-func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, statusClient resources.StatusClient, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		proxyAddress:    proxyAddress,
 		writeNamespace:  writeNamespace,
@@ -44,6 +44,7 @@ func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClie
 		ingressClient:   ingressClient,
 		proxyReconciler: gloov1.NewProxyReconciler(proxyClient, statusClient),
 		statusClient:    statusClient,
+		statusMetrics:   statusMetrics,
 	}
 }
 

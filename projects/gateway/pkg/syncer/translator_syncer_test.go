@@ -38,10 +38,10 @@ var _ = Describe("TranslatorSyncer", func() {
 	BeforeEach(func() {
 		mockReporter = &fakeReporter{}
 
-		var err error
-		statusClient, err = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
+		statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
 		Expect(err).NotTo(HaveOccurred())
-		curSyncer := newStatusSyncer(defaults.GlooSystem, fakeWatcher, mockReporter, statusClient)
+		curSyncer := newStatusSyncer(defaults.GlooSystem, fakeWatcher, mockReporter, statusClient, statusMetrics)
 		syncer = &curSyncer
 	})
 

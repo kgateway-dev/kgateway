@@ -32,7 +32,8 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxyAddress := "proxy-address"
 		namespace := "write-namespace"
 
-		statusClient, err := gloostatusutils.GetStatusClientFromEnvOrDefault(namespace, metrics.GetDefaultConfigStatusOptions())
+		statusClient := gloostatusutils.GetStatusClientFromEnvOrDefault(namespace)
+		statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
 		Expect(err).NotTo(HaveOccurred())
 		proxyClient, _ := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
 		clusterIngress := &v1alpha1.ClusterIngress{ClusterIngress: knative.ClusterIngress{
@@ -42,7 +43,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		knativeClient := &mockIngressesGetter{
 			ciClient: &mockCiClient{ci: toKube(clusterIngress)}}
 
-		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, statusClient, make(chan error)).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, statusClient, statusMetrics, make(chan error)).(*translatorSyncer)
 		proxy := &v1.Proxy{Metadata: &core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
 

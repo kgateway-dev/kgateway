@@ -62,15 +62,17 @@ func NewTranslatorSyncer(
 	devMode bool,
 	extensions []TranslatorSyncerExtension,
 	settings *v1.Settings,
+	statusMetrics metrics.ConfigStatusMetrics,
 ) v1.ApiSyncer {
 	s := &translatorSyncer{
-		translator: translator,
-		xdsCache:   xdsCache,
-		xdsHasher:  xdsHasher,
-		reporter:   reporter,
-		extensions: extensions,
-		sanitizer:  sanitizer,
-		settings:   settings,
+		translator:    translator,
+		xdsCache:      xdsCache,
+		xdsHasher:     xdsHasher,
+		reporter:      reporter,
+		extensions:    extensions,
+		sanitizer:     sanitizer,
+		settings:      settings,
+		statusMetrics: statusMetrics,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?

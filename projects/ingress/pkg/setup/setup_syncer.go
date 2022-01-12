@@ -253,12 +253,17 @@ func RunIngress(opts Opts) error {
 			ingressClient := clusteringressv1alpha1.NewClusterIngressClientWithBase(baseClient)
 			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(ingressClient)
 			statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+			statusMetrics, err := metrics.NewConfigStatusMetrics(opts.ConfigStatusMetricOpts)
+			if err != nil {
+				return err
+			}
 			clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
 				opts.ClusterIngressProxyAddress,
 				opts.WriteNamespace,
 				proxyClient,
 				knative.NetworkingV1alpha1(),
 				statusClient,
+				statusMetrics,
 				writeErrs,
 			)
 			clusterIngTranslatorEventLoop := clusteringressv1.NewTranslatorEventLoop(clusterIngTranslatorEmitter, clusterIngTranslatorSync)

@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 )
@@ -22,4 +23,5 @@ type Opts struct {
 	RequireIngressClass         bool
 	CustomIngressClass          string
 	IngressProxyLabel           string
+	ConfigStatusMetricOpts      map[string]*metrics.Labels
 }

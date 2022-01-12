@@ -68,15 +68,16 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		statusClient, err = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
+		statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
 		Expect(err).NotTo(HaveOccurred())
 
 		proxyClient, err = gloov1.NewProxyClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
-		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient, statusClient)
+		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient, statusClient, statusMetrics)
 		rpt := reporter.NewReporter("gateway", statusClient, gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
 		xlator := translator.NewDefaultTranslator(translator.Opts{})
-		ts = NewTranslatorSyncer(ctx, "gloo-system", proxyClient, proxyReconciler, rpt, xlator, statusClient)
+		ts = NewTranslatorSyncer(ctx, "gloo-system", proxyClient, proxyReconciler, rpt, xlator, statusClient, statusMetrics)
 
 		vs = &v1.VirtualService{
 			Metadata: &core.Metadata{

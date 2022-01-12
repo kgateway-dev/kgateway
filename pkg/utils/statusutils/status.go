@@ -49,6 +49,7 @@ func (h *HybridStatusClient) SetStatus(resource resources.InputResource, status 
 		resource.SetStatus(status)
 		return
 	}
+
 	h.namespacedStatusClient.SetStatus(resource, status)
 }
 

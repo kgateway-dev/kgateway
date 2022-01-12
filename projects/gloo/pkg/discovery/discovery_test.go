@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -33,9 +32,7 @@ var _ = Describe("Discovery", func() {
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
-		var err error
-		statusClient, err = statusutils.GetStatusClientForNamespace("default", metrics.GetDefaultConfigStatusOptions())
-		Expect(err).NotTo(HaveOccurred())
+		statusClient = statusutils.GetStatusClientForNamespace("default")
 	})
 
 	AfterEach(func() {

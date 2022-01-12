@@ -18,11 +18,8 @@ var _ = Describe("Status", func() {
 	)
 
 	BeforeEach(func() {
-		var err error
 		statusClientRed = statusutils.GetStatusClientForNamespace("red")
-		Expect(err).NotTo(HaveOccurred())
 		statusClientGreen = statusutils.GetStatusClientForNamespace("green")
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("single status api (deprecated)", func() {
