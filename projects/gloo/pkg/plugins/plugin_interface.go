@@ -287,4 +287,11 @@ type PluginRegistry interface {
 	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
 	GetHttpFilterPlugins() []HttpFilterPlugin
 	GetHttpConnectionManagerPlugins() []HttpConnectionManagerPlugin
+	GetVirtualHostPlugins() []VirtualHostPlugin
+	GetResourceGeneratorPlugins() []ResourceGeneratorPlugin
+	GetUpstreamPlugins() []UpstreamPlugin
+	GetEndpointPlugins() []EndpointPlugin
+	GetRoutePlugins() []RoutePlugin
+	GetRouteActionPlugins() []RouteActionPlugin
+	GetWeightedDestinationPlugins() []WeightedDestinationPlugin
 }
