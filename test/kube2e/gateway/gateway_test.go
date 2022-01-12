@@ -1111,6 +1111,8 @@ var _ = Describe("Kube2e: gateway", func() {
 				return err
 			}, "5s", "0.1s").ShouldNot(HaveOccurred())
 
+			time.Sleep(5 * time.Second)
+
 			var proxy *gloov1.Proxy
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 				proxy, err = proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
@@ -1258,6 +1260,8 @@ var _ = Describe("Kube2e: gateway", func() {
 				_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 				return err
 			}, "5s", "0.1s").ShouldNot(HaveOccurred())
+
+			time.Sleep(5 * time.Second)
 
 			var proxy *gloov1.Proxy
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {

@@ -417,7 +417,7 @@ var _ = Describe("Gateway", func() {
 						if err != nil {
 							return false
 						}
-						return len(proxyList) == 0
+						return len(proxyList) == 1
 					}, "10s", "0.1s").Should(BeTrue())
 
 					// Create a regular request
@@ -948,7 +948,7 @@ var _ = Describe("Gateway", func() {
 						if err != nil {
 							return false
 						}
-						return len(proxyList) == 0
+						return len(proxyList) == 1
 					}, "10s", "0.1s").Should(BeTrue())
 
 					// Create a regular request
