@@ -494,7 +494,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 
 	errs := make(chan error)
 
-	statusClient, err := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, opts.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels())
+	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
 	if err != nil {
 		return err
 	}

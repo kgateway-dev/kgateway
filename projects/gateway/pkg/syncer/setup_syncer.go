@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
@@ -221,7 +222,8 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
-	statusClient, err := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, opts.ConfigStatusMetricOpts)
+	statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+	statusMetrics, err := metrics.NewConfigStatusMetrics(opts.ConfigStatusMetricOpts)
 	if err != nil {
 		return err
 	}
@@ -286,7 +288,8 @@ func RunGateway(opts translator.Opts) error {
 		proxyReconciler,
 		rpt,
 		txlator,
-		statusClient)
+		statusClient,
+		statusMetrics)
 
 	gatewaySyncers := v1.ApiSyncers{
 		translatorSyncer,

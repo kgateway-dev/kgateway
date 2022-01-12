@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
-
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
@@ -27,9 +25,7 @@ var _ = Describe("Compress", func() {
 	BeforeEach(func() {
 		ns := gloostatusutils.GetStatusReporterNamespaceOrDefault("default")
 		statusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(ns, protoutils.UnmarshalMapToProto)
-		var err error
-		statusClient, err = gloostatusutils.GetStatusClientForNamespace(ns, metrics.GetDefaultConfigStatusOptions())
-		Expect(err).NotTo(HaveOccurred())
+		statusClient = gloostatusutils.GetStatusClientForNamespace(ns)
 	})
 
 	Context("spec", func() {

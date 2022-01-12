@@ -11,6 +11,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -98,6 +99,14 @@ func resourceToGVK(resource resources.Resource) (schema.GroupVersionKind, error)
 	default:
 		return schema.GroupVersionKind{}, errors.Errorf("config status metric reporting is not supported for resource type: %T", resource)
 	}
+}
+
+func (m *ConfigStatusMetrics) SetResourceStatus(ctx context.Context, resource resources.Resource, status *core.Status) {
+	if status.GetState() == core.Status_Warning || status.GetState() == core.Status_Rejected {
+		m.SetResourceInvalid(ctx, resource)
+		return
+	}
+	m.SetResourceValid(ctx, resource)
 }
 
 func (m *ConfigStatusMetrics) SetResourceValid(ctx context.Context, resource resources.Resource) {

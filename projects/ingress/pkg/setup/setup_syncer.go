@@ -197,7 +197,8 @@ func RunIngress(opts Opts) error {
 		kubeServiceClient := v1.NewKubeServiceClientWithBase(baseKubeServiceClient)
 
 		translatorEmitter := v1.NewTranslatorEmitter(upstreamClient, kubeServiceClient, ingressClient)
-		statusClient, err := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, metrics.GetDefaultConfigStatusOptions())
+		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+		statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
 		if err != nil {
 			return err
 		}
@@ -208,7 +209,8 @@ func RunIngress(opts Opts) error {
 			writeErrs,
 			opts.RequireIngressClass,
 			opts.CustomIngressClass,
-			statusClient)
+			statusClient,
+			statusMetrics)
 		translatorEventLoop := v1.NewTranslatorEventLoop(translatorEmitter, translatorSync)
 		translatorEventLoopErrs, err := translatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 		if err != nil {
@@ -250,10 +252,7 @@ func RunIngress(opts Opts) error {
 			baseClient := clusteringressclient.NewResourceClient(knative, knativeCache)
 			ingressClient := clusteringressv1alpha1.NewClusterIngressClientWithBase(baseClient)
 			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(ingressClient)
-			statusClient, err := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, metrics.GetDefaultConfigStatusOptions())
-			if err != nil {
-				return err
-			}
+			statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
 			clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
 				opts.ClusterIngressProxyAddress,
 				opts.WriteNamespace,
@@ -277,7 +276,8 @@ func RunIngress(opts Opts) error {
 			baseClient := knativeclient.NewResourceClient(knative, knativeCache)
 			ingressClient := knativev1alpha1.NewIngressClientWithBase(baseClient)
 			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(ingressClient)
-			statusClient, err := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace, metrics.GetDefaultConfigStatusOptions())
+			statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+			statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
 			if err != nil {
 				return err
 			}
@@ -290,6 +290,7 @@ func RunIngress(opts Opts) error {
 				writeErrs,
 				opts.RequireIngressClass,
 				statusClient,
+				statusMetrics,
 			)
 			knativeTranslatorEventLoop := knativev1.NewTranslatorEventLoop(knativeTranslatorEmitter, knativeTranslatorSync)
 			knativeTranslatorEventLoopErrs, err := knativeTranslatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)

@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/onsi/gomega"
@@ -41,8 +39,7 @@ func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter
 		"State": gomega.Equal(desiredStatusState),
 	})
 
-	statusClient, err := statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	statusClient := statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
 
 	timeoutInterval, pollingInterval := getTimeoutAndPollingIntervalsOrDefault(intervals...)
 	gomega.EventuallyWithOffset(offset+1, func() (core.Status, error) {

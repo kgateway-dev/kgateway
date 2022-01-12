@@ -1,10 +1,6 @@
 package statusutils
 
 import (
-	"context"
-
-	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
 	ratelimitpkg "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -21,20 +17,15 @@ func GetStatusReporterNamespaceOrDefault(defaultNamespace string) string {
 	return defaultNamespace
 }
 
-func GetStatusClientFromEnvOrDefault(defaultNamespace string, metricOpts map[string]*metrics.Labels) (resources.StatusClient, error) {
+func GetStatusClientFromEnvOrDefault(defaultNamespace string) resources.StatusClient {
 	statusReporterNamespace := GetStatusReporterNamespaceOrDefault(defaultNamespace)
-	return GetStatusClientForNamespace(statusReporterNamespace, metricOpts)
+	return GetStatusClientForNamespace(statusReporterNamespace)
 }
 
-func GetStatusClientForNamespace(namespace string, metricOpts map[string]*metrics.Labels) (resources.StatusClient, error) {
-	statusMetrics, err := metrics.NewConfigStatusMetrics(metricOpts)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ConfigStatusMetrics")
-	}
+func GetStatusClientForNamespace(namespace string) resources.StatusClient {
 	return &HybridStatusClient{
 		namespacedStatusClient: statusutils.NewNamespacedStatusesClient(namespace),
-		statusMetrics:          statusMetrics,
-	}, nil
+	}
 }
 
 var _ resources.StatusClient = &HybridStatusClient{}
@@ -43,7 +34,6 @@ var _ resources.StatusClient = &HybridStatusClient{}
 // and others (RateLimitConfig) do not
 type HybridStatusClient struct {
 	namespacedStatusClient *statusutils.NamespacedStatusesClient
-	statusMetrics          metrics.ConfigStatusMetrics
 }
 
 func (h *HybridStatusClient) GetStatus(resource resources.InputResource) *core.Status {
@@ -57,10 +47,9 @@ func (h *HybridStatusClient) GetStatus(resource resources.InputResource) *core.S
 func (h *HybridStatusClient) SetStatus(resource resources.InputResource, status *core.Status) {
 	if h.shouldUseDeprecatedStatus(resource) {
 		resource.SetStatus(status)
-	} else {
-		h.namespacedStatusClient.SetStatus(resource, status)
+		return
 	}
-	h.setMetricForResource(resource, status)
+	h.namespacedStatusClient.SetStatus(resource, status)
 }
 
 func (h *HybridStatusClient) shouldUseDeprecatedStatus(resource resources.InputResource) bool {
@@ -73,15 +62,4 @@ func (h *HybridStatusClient) shouldUseDeprecatedStatus(resource resources.InputR
 	default:
 		return false
 	}
-}
-
-func (h *HybridStatusClient) setMetricForResource(resource resources.InputResource, status *core.Status) {
-	// TODO(mitchaman): Pass a context through
-	//   DO_NOT_SUBMIT
-	ctx := context.TODO()
-	if status.GetState() == core.Status_Warning || status.GetState() == core.Status_Rejected {
-		h.statusMetrics.SetResourceInvalid(ctx, resource)
-		return
-	}
-	h.statusMetrics.SetResourceValid(ctx, resource)
 }

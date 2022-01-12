@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
 	ratelimitpkg "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -20,9 +19,9 @@ var _ = Describe("Status", func() {
 
 	BeforeEach(func() {
 		var err error
-		statusClientRed, err = statusutils.GetStatusClientForNamespace("red", metrics.GetDefaultConfigStatusOptions())
+		statusClientRed = statusutils.GetStatusClientForNamespace("red")
 		Expect(err).NotTo(HaveOccurred())
-		statusClientGreen, err = statusutils.GetStatusClientForNamespace("green", metrics.GetDefaultConfigStatusOptions())
+		statusClientGreen = statusutils.GetStatusClientForNamespace("green")
 		Expect(err).NotTo(HaveOccurred())
 	})
 

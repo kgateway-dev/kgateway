@@ -6,6 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -24,6 +25,7 @@ type ProxyReconciler interface {
 
 type proxyReconciler struct {
 	statusClient   resources.StatusClient
+	statusMetrics  metrics.ConfigStatusMetrics
 	proxyValidator validation.GlooValidationServiceClient
 	baseReconciler gloov1.ProxyReconciler
 }
@@ -57,7 +59,7 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 		return allProxies[i].GetMetadata().Less(allProxies[j].GetMetadata())
 	})
 
-	proxyTransitionFunction := transitionFunc(proxiesToWrite, s.statusClient)
+	proxyTransitionFunction := transitionFunc(ctx, proxiesToWrite, s.statusClient, s.statusMetrics)
 
 	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
@@ -223,7 +225,7 @@ func validHostsFromHttpListener(httpListener *gloov1.HttpListener, reports repor
 // stripping invalid virtual hosts / listeners from the desired proxy,
 // else we will wind up with both an invalid and valid version of the same listener/vhost on our proxy
 // which is invalid and will be rejected by Envoy
-func transitionFunc(proxiesToWrite GeneratedProxies, statusClient resources.StatusClient) gloov1.TransitionProxyFunc {
+func transitionFunc(ctx context.Context, proxiesToWrite GeneratedProxies, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) gloov1.TransitionProxyFunc {
 	return func(original, desired *gloov1.Proxy) (b bool, e error) {
 
 		// We intentionally process desired.Listeners first, and then original.Listeners second
@@ -299,7 +301,7 @@ func transitionFunc(proxiesToWrite GeneratedProxies, statusClient resources.Stat
 			return desired.GetListeners()[i].GetName() < desired.GetListeners()[j].GetName()
 		})
 
-		transition := utils.TransitionFunction(statusClient)
+		transition := utils.TransitionFunction(ctx, statusClient, statusMetrics)
 		return transition(original, desired)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
 
@@ -28,10 +29,11 @@ type translatorSyncer struct {
 	// defaults to 'gloo'
 	customIngressClass string
 
-	statusClient resources.StatusClient
+	statusClient  resources.StatusClient
+	statusMetrics metrics.ConfigStatusMetrics
 }
 
-func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string, statusClient resources.StatusClient) v1.TranslatorSyncer {
+func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		writeNamespace:      writeNamespace,
 		writeErrs:           writeErrs,
@@ -41,6 +43,7 @@ func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressCli
 		requireIngressClass: requireIngressClass,
 		customIngressClass:  customIngressClass,
 		statusClient:        statusClient,
+		statusMetrics:       statusMetrics,
 	}
 }
 
@@ -73,7 +76,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
-	proxyTransitionFunction := utils.TransitionFunction(s.statusClient)
+	proxyTransitionFunction := utils.TransitionFunction(ctx, s.statusClient, s.statusMetrics)
 
 	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,

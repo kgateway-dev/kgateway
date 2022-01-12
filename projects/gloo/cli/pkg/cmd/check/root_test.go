@@ -5,8 +5,6 @@ import (
 	"os"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
-
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	. "github.com/onsi/ginkgo"
@@ -38,9 +36,7 @@ var _ = Describe("Root", func() {
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
 
-		var err error
-		statusClient, err = gloostatusutils.GetStatusClientForNamespace(defaults.GlooSystem, metrics.GetDefaultConfigStatusOptions())
-		Expect(err).NotTo(HaveOccurred())
+		statusClient = gloostatusutils.GetStatusClientForNamespace(defaults.GlooSystem)
 	})
 
 	AfterEach(func() {

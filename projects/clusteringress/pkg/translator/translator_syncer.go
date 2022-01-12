@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	v1machinery "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
@@ -31,6 +32,7 @@ type translatorSyncer struct {
 	proxyReconciler gloov1.ProxyReconciler
 	ingressClient   knativeclient.IngressesGetter
 	statusClient    resources.StatusClient
+	statusMetrics   metrics.ConfigStatusMetrics
 }
 
 func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, statusClient resources.StatusClient, writeErrs chan error) v1.TranslatorSyncer {
@@ -80,7 +82,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
-	proxyTransitionFunction := utils.TransitionFunction(s.statusClient)
+	proxyTransitionFunction := utils.TransitionFunction(ctx, s.statusClient, s.statusMetrics)
 
 	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,

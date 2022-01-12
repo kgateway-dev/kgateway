@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"go.uber.org/zap/zapcore"
 
@@ -40,14 +41,14 @@ type translatorSyncer struct {
 	managedProxyLabels map[string]string
 }
 
-func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient) v1.ApiSyncer {
+func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) v1.ApiSyncer {
 	t := &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
 		proxyWatcher:    proxyWatcher,
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
-		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient),
+		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient, statusMetrics),
 		managedProxyLabels: map[string]string{
 			"created_by": "gateway",
 		},
@@ -131,10 +132,11 @@ type statusSyncer struct {
 	proxyWatcher   gloov1.ProxyWatcher
 	writeNamespace string
 	statusClient   resources.StatusClient
+	statusMetrics  metrics.ConfigStatusMetrics
 	syncNeeded     chan struct{}
 }
 
-func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.StatusReporter, statusClient resources.StatusClient) statusSyncer {
+func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.StatusReporter, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) statusSyncer {
 	return statusSyncer{
 		proxyToLastStatus:       map[string]reportsAndStatus{},
 		currentGeneratedProxies: nil,
@@ -142,6 +144,7 @@ func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, re
 		proxyWatcher:            proxyWatcher,
 		writeNamespace:          writeNamespace,
 		statusClient:            statusClient,
+		statusMetrics:           statusMetrics,
 		syncNeeded:              make(chan struct{}, 1),
 	}
 }
@@ -332,15 +335,17 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	var errs error
 	for inputResource, subresourceStatuses := range allReports {
 		// write reports may update the status, so clone the object
-		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 		clonedInputResource := resources.Clone(inputResource).(resources.InputResource)
-		reports := reporter.ResourceReports{clonedInputResource: subresourceStatuses}
 		// set the last known status on the input resource.
 		// this may be different than the status on the snapshot, as the snapshot doesn't get updated
 		// on status changes.
 		if status, ok := localInputResourceLastStatus[inputResource]; ok {
 			s.statusClient.SetStatus(clonedInputResource, status)
+			s.statusMetrics.SetResourceStatus(ctx, clonedInputResource, status)
 		}
+
+		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
+		reports := reporter.ResourceReports{clonedInputResource: subresourceStatuses}
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
 		} else {
