@@ -396,11 +396,11 @@ In the previous part of the guide we saw how to configure Gloo Edge with a publi
 
 In this appendix we will demonstrate how to use an external JSON Web Key Set (JWKS) server with Gloo Edge. We will:
 
-1. create a private key that will be used to sign and verify custom JWTs that we will create;
-1. convert the key from PEM to JSON Web Key format;
-1. deploy a JWKS server to serve the key;
-1. configure Gloo Edge to verify JWTs using the key stored in the server;
-1. create and sign a custom JWT and use it to authenticate with Gloo Edge.
+1. Create a private key that will be used to sign and verify custom JWTs that we will create;
+1. Convert the key from PEM to JSON Web Key format;
+1. Deploy a JWKS server to serve the key;
+1. Configure Gloo Edge to verify JWTs using the key stored in the server;
+1. Create and sign a custom JWT and use it to authenticate with Gloo Edge.
 
 ### Create the private key
 Let's start by creating a private key that we will use to sign our JWTs:
