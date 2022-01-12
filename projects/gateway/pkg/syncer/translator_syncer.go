@@ -335,24 +335,23 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	var errs error
 	for inputResource, subresourceStatuses := range allReports {
 		// write reports may update the status, so clone the object
+		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 		clonedInputResource := resources.Clone(inputResource).(resources.InputResource)
+		reports := reporter.ResourceReports{clonedInputResource: subresourceStatuses}
 		// set the last known status on the input resource.
 		// this may be different than the status on the snapshot, as the snapshot doesn't get updated
 		// on status changes.
 		if status, ok := localInputResourceLastStatus[inputResource]; ok {
 			s.statusClient.SetStatus(clonedInputResource, status)
-			s.statusMetrics.SetResourceStatus(ctx, clonedInputResource, status)
 		}
-
-		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
-		reports := reporter.ResourceReports{clonedInputResource: subresourceStatuses}
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
-		} else {
-			// cache the status written by the reporter
-			status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
-			localInputResourceLastStatus[inputResource] = status
+			continue
 		}
+		// The inputResource's status was successfully written, update the cache and metric with that status
+		status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
+		localInputResourceLastStatus[inputResource] = status
+		s.statusMetrics.SetResourceStatus(ctx, inputResource, status)
 	}
 	return errs
 }
