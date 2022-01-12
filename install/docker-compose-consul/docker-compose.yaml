@@ -6,7 +6,7 @@ services:
   # note: this consul instance is being run in dev mode
   # and should not be used in production
   consul:
-    image: "consul:${CONSUL_VERSION:-1.9.0}"
+    image: "consul:${CONSUL_VERSION:-1.10.0}"
     working_dir: /
     command:
       - "agent"
@@ -38,13 +38,13 @@ services:
   # example application, the swagger petstore
   petstore:
     image: ${PETSTORE_REPO:-quay.io/solo-io}/petstore:v1
-    ports: 
+    ports:
     - "8090:8080"
     restart: always
 
   # Gloo components
   gloo:
-    image: ${GLOO_REPO:-quay.io/solo-io}/gloo:${GLOO_VERSION:-1.9.0}
+    image: ${GLOO_REPO:-quay.io/solo-io}/gloo:${GLOO_VERSION:-1.10.0}
     working_dir: /
     command:
     - "--dir=/data/"
@@ -55,7 +55,7 @@ services:
     restart: always
 
   discovery:
-    image: ${GLOO_REPO:-quay.io/solo-io}/discovery:${GLOO_VERSION:-1.9.0}
+    image: ${GLOO_REPO:-quay.io/solo-io}/discovery:${GLOO_VERSION:-1.10.0}
     working_dir: /
     command:
     - "--dir=/data/"
@@ -64,7 +64,7 @@ services:
     restart: always
 
   gateway:
-    image: ${GLOO_REPO:-quay.io/solo-io}/gateway:${GLOO_VERSION:-1.9.0}
+    image: ${GLOO_REPO:-quay.io/solo-io}/gateway:${GLOO_VERSION:-1.10.0}
     working_dir: /
     command:
     - "--dir=/data/"
@@ -73,7 +73,7 @@ services:
     restart: always
 
   gateway-proxy:
-    image: ${GLOO_REPO:-quay.io/solo-io}/gloo-envoy-wrapper:${GLOO_VERSION:-1.9.0}
+    image: ${GLOO_REPO:-quay.io/solo-io}/gloo-envoy-wrapper:${GLOO_VERSION:-1.10.0}
     entrypoint: ["envoy"]
     command: ["-c", "/config/envoy.yaml", "--disable-hot-restart"]
     volumes:
