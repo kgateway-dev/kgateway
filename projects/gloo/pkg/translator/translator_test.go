@@ -2291,7 +2291,25 @@ var _ = Describe("Translator", func() {
 			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(6)) // TODO: is this the right number? is there more we can/should do to ensure correctness?
 		})
 
-		It("skips listeners with invalid downstream ssl config", func() {})
+		It("skips listeners with invalid downstream ssl config", func() {
+			invalidSslSecretRef := &v1.SslConfig_SecretRef{
+				SecretRef: &core.ResourceRef{
+					Name:      "invalid",
+					Namespace: "invalid",
+				},
+			}
+
+			proxyClone := proto.Clone(proxy).(*v1.Proxy)
+			proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher().SslConfig = &v1.SslConfig{
+				SslSecrets: invalidSslSecretRef,
+			}
+
+			_, errs, _, err := translator.Translate(params, proxyClone)
+
+			Expect(err).To(BeNil())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring("Listener Error: SSLConfigError. Reason: SSL secret not found: list did not find secret"))
+		})
 
 	})
 
