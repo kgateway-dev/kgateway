@@ -588,8 +588,8 @@ spec:
 We have everything we need to sign and verify a custom JWT with our custom claims. We will use the [jwt.io](https://jwt.io) debugger to do so easily.
 
 - Go to https://jwt.io.
-- Under the "Debugger" section, change the algorithm combo-box to "RS256".
-- Under the "VERIFY SIGNATURE" section, paste the contents of the file `private-key.pem` to the 
+- In the "Debugger" section, change the algorithm combo-box to "RS256".
+- In the "VERIFY SIGNATURE" section, paste the contents of the file `private-key.pem` to the 
   bottom box (labeled "Private Key").
 - Paste the following to the payload data (replacing what is already there):
 
