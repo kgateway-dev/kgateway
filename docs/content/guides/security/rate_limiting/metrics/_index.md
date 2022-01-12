@@ -4,8 +4,7 @@ weight: 50
 description: Use prometheus metrics to determine when requests are near or over rate-limits.
 ---
 
-In this tutorial we will see how to use the rate-limit service's default prometheus metrics to alert when rules are
-near breach, and alert once broken.
+In this guide, you use the rate limiting service's default Prometheus metrics to alert when rules are near breach or broken.
 
 {{% notice note %}}
 For **Gloo Edge Enterprise**, you will need to enable rate-limit metrics using the following helm values:
@@ -19,9 +18,9 @@ Prior versions of Gloo Edge Enterprise published rate-limit metrics to port 1607
 prometheus installation included with Gloo Edge Enterprise.
 {{% /notice %}}
 
-### Reference
+## Rate limit metrics
 
-The available rate-limit metrics are:
+The available rate limit metrics are shown in the following table.
 
 |Metric|Description|Aggregation|Tag|
 |------|-----------|-----------|---|
@@ -37,11 +36,14 @@ the rule being referenced.
 In this way, you can monitor and alert based on rate-limit rules/breaches, and quickly determine which rule was
 triggered (and by how much).
 
-### Example
+## Example metric configuration
 
-The rest of this page is dedicated to a demonstration of some of Prometheus' and Grafana's basic features, in tandem
-with the exposed rate-limit metrics. If you are already familiar with Prometheus and Grafana, you won't get much out
+Follow along with this guide to learn about basic Prometheus and Grafana features that you can use with the rate limiting metrics. If you are already familiar with Prometheus and Grafana, you won't get much out
 of this tutorial.
+
+{{% notice note %}}
+The examples in this guide demonstrate how metric alerting can work, but are not intended for production. For example, the `over_limit` alert shows how an alert is triggered when a threshold is exceeded. Because the `over_limit` metric is a sum, it does not reset to zero after reaching the threshold. Therefore, the alert continues, which is not a production use case.
+{{% /notice %}}
 
 ### Setup
 Let's start by setting up the virtual service and settings resources to match the rule priority
