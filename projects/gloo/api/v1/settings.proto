@@ -395,7 +395,7 @@ message Settings {
             map<string, string> label_to_path = 1;
         }
 
-        // Provides the ability to record metrics tracking the configuration status of various resource types.
+        // Enable metrics that track the configuration status of various resource types.
         // Each (key, value) pair in the map defines a metric for a particular resource type. Configuration status
         // metrics are not recorded by default; metrics will only be recorded for the resources specified in this map.
         // Keys specify the resource type (GroupVersionKind) whose status is to be tracked
