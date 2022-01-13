@@ -33,19 +33,17 @@ func (t *translatorInstance) computeClusters(
 ) ([]*envoy_config_cluster_v3.Cluster, map[*envoy_config_cluster_v3.Cluster]*v1.Upstream) {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusters")
-	params.Ctx = ctx
 	defer span.End()
+	params.Ctx = contextutils.WithLogger(ctx, "compute_clusters")
 
-	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_clusters")
+	// snapshot contains both real and service-derived upstreams
 	upstreamGroups := params.Snapshot.UpstreamGroups
 	upstreams := params.Snapshot.Upstreams
 	clusters := make([]*envoy_config_cluster_v3.Cluster, 0, len(upstreams))
 	validateUpstreamLambdaFunctions(proxy, upstreams, upstreamGroups, reports)
 
 	clusterToUpstreamMap := make(map[*envoy_config_cluster_v3.Cluster]*v1.Upstream)
-	// snapshot contains both real and service-derived upstreams
 	for _, upstream := range upstreams {
-
 		cluster := t.computeCluster(params, upstream, upstreamRefKeyToEndpoints, reports)
 		clusterToUpstreamMap[cluster] = upstream
 		clusters = append(clusters, cluster)
@@ -63,13 +61,8 @@ func (t *translatorInstance) computeCluster(
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.GetMetadata().GetName())
 	out := t.initializeCluster(upstream, upstreamRefKeyToEndpoints, reports, &params.Snapshot.Secrets)
 
-	for _, plug := range t.pluginRegistry.GetPlugins() {
-		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)
-		if !ok {
-			continue
-		}
-
-		if err := upstreamPlugin.ProcessUpstream(params, upstream, out); err != nil {
+	for _, plugin := range t.pluginRegistry.GetUpstreamPlugins() {
+		if err := plugin.ProcessUpstream(params, upstream, out); err != nil {
 			reports.AddError(upstream, err)
 		}
 	}

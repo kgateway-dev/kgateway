@@ -278,13 +278,17 @@ type ResourceGeneratorPlugin interface {
 // Historically, all plugins were passed around as an argument, and each translator
 // would iterate over all plugins, and only apply the relevant ones.
 // This interface enables translators to only know of the relevant plugins
-// NOTE:
-// 	This is not complete. As translators are modified, we can gradually expose
-//	more methods on a PluginRegistry
 type PluginRegistry interface {
 	GetPlugins() []Plugin
 	GetListenerPlugins() []ListenerPlugin
 	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
 	GetHttpFilterPlugins() []HttpFilterPlugin
 	GetHttpConnectionManagerPlugins() []HttpConnectionManagerPlugin
+	GetVirtualHostPlugins() []VirtualHostPlugin
+	GetResourceGeneratorPlugins() []ResourceGeneratorPlugin
+	GetUpstreamPlugins() []UpstreamPlugin
+	GetEndpointPlugins() []EndpointPlugin
+	GetRoutePlugins() []RoutePlugin
+	GetRouteActionPlugins() []RouteActionPlugin
+	GetWeightedDestinationPlugins() []WeightedDestinationPlugin
 }
