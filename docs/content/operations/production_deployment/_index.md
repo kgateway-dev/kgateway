@@ -183,6 +183,58 @@ Make sure you have the `%RESPONSE_FLAGS%` item in the log pattern.
 
 You can scale up the `gateway-proxies` Envoy instances by using a Deployment or a DeamonSet. The amount of requests that the `gateway-proxies` can process increases with the amount of CPU that the `gateway-proxies` have access to.
 
+#### Pod Disruption Budget
+
+You can configure a Pod Disruption Budget (PDB) for the `gateway-proxy` deployment when installing Gloo Edge via Helm by setting the `gatewayProxies.NAME.PodDisruptionBudget` fields in your values override file.
+
+For example, if the following snippet is used as an override when installing Gloo Edge via Helm...
+
+```yaml
+gatewayProxies:
+  gatewayProxy:
+    podDisruptionBudget:
+      minAvailable: 2
+```
+
+Then the the Pod Disruption Budget policy shown below will be created as a result:
+
+```yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: gateway-proxy-pdb
+  namespace: gloo-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      gateway-proxy-id: gateway-proxy
+```
+
+[You can read more about pod disruption budgets in the kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#pod-disruption-budgets)
+
+#### Affinity/Anti-Affinity
+
+You can configure affinity and anti-affinity rules on the `gateway-proxy` deployment by setting the `gatewayProxies.NAME.affinity` and `gatewayProxies.NAME.antiAffinity` fields, respectively, in your values override file.
+
+For example, the following snippet can be used to set affinity rules on the `gateway-proxy` deployment if used to override the Gloo Edge Helm installation:
+
+```yaml
+gatewayProxies:
+  gatewayProxy:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/e2e-az-name
+              operator: In
+              values:
+              - e2e-az1
+              - e2e-az2
+```
+
+[You can read more about affinity and anti-affinity in the kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).
 ### Ext-Auth
 
 You can also scale up the ExtAuth service. Typically, one to two instances are sufficient.
@@ -196,6 +248,35 @@ global:
       signingKey:
         key: abcdef
 ```
+
+#### Pod Disruption Budgets and Affinity/Anti-Affinity rules
+
+Similar to the `gateway-proxy` deployment, a Pod Disruption Budget policy for the ExtAuth service can be established by setting `global.extensions.extAuth.deployment.podDisruptionBudget` in your Helm configuration file.
+
+By default, the ExtAuth service has the following `podAffinity` rule configured:
+
+```yaml
+global:
+  extensions:
+    extAuth:
+      affinity:
+        podAffinity: 
+          preferredDuringSchedulingIgnoredDuringExecution: 
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  gloo: gateway-proxy
+              topologyKey: kubernetes.io/hostname
+```
+
+ The default ExtAuth service affinity settings can be overwritten during installation by setting `global.extensions.extAuth.affinity` in your Helm configuration file. Additionally, anti-affinity rules for the ExtAuth service can be configured by setting `global.extensions.extAuth.antiAffinity`.
+
+# Rate Limit
+
+Similar to the `gateway-proxy` deployment, a Pod Disruption Budget policy for the `rate-limit` deployment can be established by setting `global.extensions.rateLimit.deployment.podDisruptionBudget` in your Helm configuration file.
+
+ Affinity settings for the `rate-limit` deployment can be overwritten during installation by setting `global.extensions.rateLimit.affinity` in your Helm configuration file. Additionally, anti-affinity rules for the `rate-limit` deployment can be configured by setting `global.extensions.rateLimit.antiAffinity`.
 
 ## Horizontally scaling the control plane
 
