@@ -120,6 +120,6 @@ var _ = Describe("ConfigStatusMetrics Test", func() {
 		Entry("RouteTable", "RouteTable.v1.gateway.solo.io", metrics.Names[gwv1.RouteTableGVK], makeRouteTable),
 		Entry("Upstream", "Upstream.v1.gloo.solo.io", metrics.Names[gloov1.UpstreamGVK], makeUpstream),
 		Entry("Secret", "Secret.v1.gloo.solo.io", metrics.Names[gloov1.SecretGVK], makeSecret),
-		Entry("Proxy", "Proxy.v1.gloo.solo.io", metrics.Names[gloov1.SecretGVK], makeProxy),
+		Entry("Proxy", "Proxy.v1.gloo.solo.io", metrics.Names[gloov1.ProxyGVK], makeProxy),
 	)
 })
