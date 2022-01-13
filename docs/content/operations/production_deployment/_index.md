@@ -185,9 +185,9 @@ You can scale up the `gateway-proxies` Envoy instances by using a Deployment or 
 
 #### Pod Disruption Budget
 
-You can configure a Pod Disruption Budget (PDB) for the `gateway-proxy` deployment when installing Gloo Edge via Helm by setting the `gatewayProxies.NAME.PodDisruptionBudget` fields in your values override file.
+To configure a Pod Disruption Budget (PDB) for the `gateway-proxy` deployment when you install Gloo Edge via Helm, set values for the `gatewayProxies.NAME.PodDisruptionBudget` fields in your values override file.
 
-For example, if the following snippet is used as an override when installing Gloo Edge via Helm...
+For example, consider the following snippet of a values override files, which defines `minAvailable` as `2`.
 
 ```yaml
 gatewayProxies:
@@ -196,7 +196,7 @@ gatewayProxies:
       minAvailable: 2
 ```
 
-Then the the Pod Disruption Budget policy shown below will be created as a result:
+As a result, the following pod disruption budget policy is created:
 
 ```yaml
 apiVersion: policy/v1beta1
@@ -211,13 +211,13 @@ spec:
       gateway-proxy-id: gateway-proxy
 ```
 
-[You can read more about pod disruption budgets in the kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#pod-disruption-budgets)
+[You can read more about pod disruption budgets in the Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#pod-disruption-budgets)
 
 #### Affinity/Anti-Affinity
 
-You can configure affinity and anti-affinity rules on the `gateway-proxy` deployment by setting the `gatewayProxies.NAME.affinity` and `gatewayProxies.NAME.antiAffinity` fields, respectively, in your values override file.
+To configure affinity and anti-affinity rules for the `gateway-proxy` deployment when you install Gloo Edge via Helm, set values for the `gatewayProxies.NAME.affinity` and `gatewayProxies.NAME.antiAffinity` fields, respectively, in your values override file.
 
-For example, the following snippet can be used to set affinity rules on the `gateway-proxy` deployment if used to override the Gloo Edge Helm installation:
+For example, the following snippet of a values override file sets affinity rules on the `gateway-proxy` deployment:
 
 ```yaml
 gatewayProxies:
@@ -234,7 +234,7 @@ gatewayProxies:
               - e2e-az2
 ```
 
-[You can read more about affinity and anti-affinity in the kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).
+[You can read more about affinity and anti-affinity in the Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).
 ### Ext-Auth
 
 You can also scale up the ExtAuth service. Typically, one to two instances are sufficient.
@@ -251,9 +251,9 @@ global:
 
 #### Pod Disruption Budgets and Affinity/Anti-Affinity rules
 
-Similar to the `gateway-proxy` deployment, a Pod Disruption Budget policy for the ExtAuth service can be established by setting `global.extensions.extAuth.deployment.podDisruptionBudget` in your Helm configuration file.
+To configure a pod disruption budget for the ExtAuth service when you install Gloo Edge via Helm, set the `global.extensions.extAuth.deployment.podDisruptionBudget` field in your values override file.
 
-By default, the ExtAuth service has the following `podAffinity` rule configured:
+By default, the following `podAffinity` rule is configured for the ExtAuth service:
 
 ```yaml
 global:
@@ -272,11 +272,11 @@ global:
 
  The default ExtAuth service affinity settings can be overwritten during installation by setting `global.extensions.extAuth.affinity` in your Helm configuration file. Additionally, anti-affinity rules for the ExtAuth service can be configured by setting `global.extensions.extAuth.antiAffinity`.
 
-# Rate Limit
+### Rate Limit
 
-Similar to the `gateway-proxy` deployment, a Pod Disruption Budget policy for the `rate-limit` deployment can be established by setting `global.extensions.rateLimit.deployment.podDisruptionBudget` in your Helm configuration file.
+To configure a pod disruption budget for the `rate-limit` deployment when you install Gloo Edge via Helm, set the `global.extensions.rateLimit.deployment.podDisruptionBudget` field in your values override file.
 
- Affinity settings for the `rate-limit` deployment can be overwritten during installation by setting `global.extensions.rateLimit.affinity` in your Helm configuration file. Additionally, anti-affinity rules for the `rate-limit` deployment can be configured by setting `global.extensions.rateLimit.antiAffinity`.
+Affinity settings for the `rate-limit` deployment can be overwritten during installation by setting `global.extensions.rateLimit.affinity` in your Helm configuration file. Additionally, anti-affinity rules for the `rate-limit` deployment can be configured by setting `global.extensions.rateLimit.antiAffinity`.
 
 ## Horizontally scaling the control plane
 
