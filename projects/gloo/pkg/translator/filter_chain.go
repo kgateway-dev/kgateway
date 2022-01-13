@@ -3,6 +3,8 @@ package translator
 import (
 	"fmt"
 
+	"github.com/rotisserie/eris"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -222,7 +224,11 @@ func (m *matcherFilterChainTranslator) ComputeFilterChains(params plugins.Params
 				continue
 			}
 
-			outFilterChains = append(outFilterChains, m.computeFilterChainFromMatchedListener(params.Snapshot, networkFilters, matchedListener.GetMatcher()))
+			httpListenerFilterChain := m.computeFilterChainFromMatchedListener(params.Snapshot, networkFilters, matchedListener.GetMatcher())
+			if httpListenerFilterChain != nil {
+				outFilterChains = append(outFilterChains, httpListenerFilterChain)
+			}
+
 		case *v1.MatchedListener_TcpListener:
 			sublistenerFilterChainTranslator := tcpFilterChainTranslator{
 				plugins: m.tcpPlugins,
@@ -235,9 +241,12 @@ func (m *matcherFilterChainTranslator) ComputeFilterChains(params plugins.Params
 
 			tcpFilterChains := sublistenerFilterChainTranslator.ComputeFilterChains(params)
 			for _, fc := range tcpFilterChains {
-				m.applyMatcherToFilterChain(params.Snapshot, matchedListener.GetMatcher(), fc)
+				if err := m.applyMatcherToFilterChain(params.Snapshot, matchedListener.GetMatcher(), fc); err != nil {
+					continue
+				}
+
+				outFilterChains = append(outFilterChains, fc)
 			}
-			outFilterChains = append(outFilterChains, tcpFilterChains...)
 		}
 	}
 
@@ -246,17 +255,23 @@ func (m *matcherFilterChainTranslator) ComputeFilterChains(params plugins.Params
 
 func (m *matcherFilterChainTranslator) computeFilterChainFromMatchedListener(snap *v1.ApiSnapshot, listenerFilters []*envoy_config_listener_v3.Filter, matcher *v1.Matcher) *envoy_config_listener_v3.FilterChain {
 	fc := &envoy_config_listener_v3.FilterChain{
-		Filters: listenerFilters,
+		Filters:          listenerFilters,
+		FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{},
 	}
-	m.applyMatcherToFilterChain(snap, matcher, fc)
+
+	if err := m.applyMatcherToFilterChain(snap, matcher, fc); err != nil {
+		return nil
+	}
+
 	return fc
 }
 
-func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1.ApiSnapshot, matcher *v1.Matcher, fc *envoy_config_listener_v3.FilterChain) {
+// apply a Matcher to an existing FilterChain. If unsuccessful, return an error
+func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1.ApiSnapshot, matcher *v1.Matcher, fc *envoy_config_listener_v3.FilterChain) error {
 	fcm := fc.GetFilterChainMatch()
 	if fcm == nil {
-		fcm = &envoy_config_listener_v3.FilterChainMatch{}
-		fc.FilterChainMatch = fcm
+		// Require that the invoking function initialize the FilterChainMatch
+		return eris.New("FilterChainMatch not defined on FilterChain")
 	}
 
 	if sslConfig := matcher.GetSslConfig(); sslConfig != nil {
@@ -265,6 +280,7 @@ func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1.ApiSna
 		if err != nil {
 			validation.AppendListenerError(m.parentReport,
 				validationapi.ListenerReport_Error_SSLConfigError, err.Error())
+			return err
 		}
 
 		fcm.ServerNames = sslConfig.GetSniDomains()
@@ -287,4 +303,5 @@ func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1.ApiSna
 
 	fcm.SourcePrefixRanges = sourcePrefixRanges
 
+	return nil
 }

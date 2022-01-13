@@ -1,0 +1,10 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5785
+    resolvesIssue: false
+    description: |
+      When a Gateway with a HybridListener defined contained invalid Ssl configuration,
+      a panic would occur while generating the FilterChain, preventing other updates
+      from being processed by the control plane.
+
+

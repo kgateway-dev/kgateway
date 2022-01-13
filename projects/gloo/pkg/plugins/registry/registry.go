@@ -115,6 +115,13 @@ type pluginRegistry struct {
 	tcpFilterChainPlugins        []plugins.TcpFilterChainPlugin
 	httpFilterPlugins            []plugins.HttpFilterPlugin
 	httpConnectionManagerPlugins []plugins.HttpConnectionManagerPlugin
+	virtualHostPlugins           []plugins.VirtualHostPlugin
+	resourceGeneratorPlugins     []plugins.ResourceGeneratorPlugin
+	upstreamPlugins              []plugins.UpstreamPlugin
+	endpointPlugins              []plugins.EndpointPlugin
+	routePlugins                 []plugins.RoutePlugin
+	routeActionPlugins           []plugins.RouteActionPlugin
+	weightedDestinationPlugins   []plugins.WeightedDestinationPlugin
 }
 
 func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
@@ -122,6 +129,13 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 	var tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
 	var httpFilterPlugins []plugins.HttpFilterPlugin
 	var httpConnectionManagerPlugins []plugins.HttpConnectionManagerPlugin
+	var virtualHostPlugins []plugins.VirtualHostPlugin
+	var resourceGeneratorPlugins []plugins.ResourceGeneratorPlugin
+	var upstreamPlugins []plugins.UpstreamPlugin
+	var endpointPlugins []plugins.EndpointPlugin
+	var routePlugins []plugins.RoutePlugin
+	var routeActionPlugins []plugins.RouteActionPlugin
+	var weightedDestinationPlugins []plugins.WeightedDestinationPlugin
 
 	// Process registered plugins once
 	for _, plugin := range registeredPlugins {
@@ -144,6 +158,41 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		if ok {
 			httpConnectionManagerPlugins = append(httpConnectionManagerPlugins, httpConnectionManagerPlugin)
 		}
+
+		virtualHostPlugin, ok := plugin.(plugins.VirtualHostPlugin)
+		if ok {
+			virtualHostPlugins = append(virtualHostPlugins, virtualHostPlugin)
+		}
+
+		resourceGeneratorPlugin, ok := plugin.(plugins.ResourceGeneratorPlugin)
+		if ok {
+			resourceGeneratorPlugins = append(resourceGeneratorPlugins, resourceGeneratorPlugin)
+		}
+
+		upstreamPlugin, ok := plugin.(plugins.UpstreamPlugin)
+		if ok {
+			upstreamPlugins = append(upstreamPlugins, upstreamPlugin)
+		}
+
+		endpointPlugin, ok := plugin.(plugins.EndpointPlugin)
+		if ok {
+			endpointPlugins = append(endpointPlugins, endpointPlugin)
+		}
+
+		routePlugin, ok := plugin.(plugins.RoutePlugin)
+		if ok {
+			routePlugins = append(routePlugins, routePlugin)
+		}
+
+		routeActionPlugin, ok := plugin.(plugins.RouteActionPlugin)
+		if ok {
+			routeActionPlugins = append(routeActionPlugins, routeActionPlugin)
+		}
+
+		weightedDestinationPlugin, ok := plugin.(plugins.WeightedDestinationPlugin)
+		if ok {
+			weightedDestinationPlugins = append(weightedDestinationPlugins, weightedDestinationPlugin)
+		}
 	}
 
 	return &pluginRegistry{
@@ -152,6 +201,13 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		tcpFilterChainPlugins:        tcpFilterChainPlugins,
 		httpFilterPlugins:            httpFilterPlugins,
 		httpConnectionManagerPlugins: httpConnectionManagerPlugins,
+		virtualHostPlugins:           virtualHostPlugins,
+		resourceGeneratorPlugins:     resourceGeneratorPlugins,
+		upstreamPlugins:              upstreamPlugins,
+		endpointPlugins:              endpointPlugins,
+		routePlugins:                 routePlugins,
+		routeActionPlugins:           routeActionPlugins,
+		weightedDestinationPlugins:   weightedDestinationPlugins,
 	}
 }
 
@@ -173,4 +229,32 @@ func (p *pluginRegistry) GetHttpFilterPlugins() []plugins.HttpFilterPlugin {
 
 func (p *pluginRegistry) GetHttpConnectionManagerPlugins() []plugins.HttpConnectionManagerPlugin {
 	return p.httpConnectionManagerPlugins
+}
+
+func (p *pluginRegistry) GetVirtualHostPlugins() []plugins.VirtualHostPlugin {
+	return p.virtualHostPlugins
+}
+
+func (p *pluginRegistry) GetResourceGeneratorPlugins() []plugins.ResourceGeneratorPlugin {
+	return p.resourceGeneratorPlugins
+}
+
+func (p *pluginRegistry) GetUpstreamPlugins() []plugins.UpstreamPlugin {
+	return p.upstreamPlugins
+}
+
+func (p *pluginRegistry) GetEndpointPlugins() []plugins.EndpointPlugin {
+	return p.endpointPlugins
+}
+
+func (p *pluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
+	return p.routePlugins
+}
+
+func (p *pluginRegistry) GetRouteActionPlugins() []plugins.RouteActionPlugin {
+	return p.routeActionPlugins
+}
+
+func (p *pluginRegistry) GetWeightedDestinationPlugins() []plugins.WeightedDestinationPlugin {
+	return p.weightedDestinationPlugins
 }
