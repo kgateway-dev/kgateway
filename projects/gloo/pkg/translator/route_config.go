@@ -41,7 +41,7 @@ type RouteConfigurationTranslator interface {
 
 var _ RouteConfigurationTranslator = new(emptyRouteConfigurationTranslator)
 var _ RouteConfigurationTranslator = new(httpRouteConfigurationTranslator)
-var _ RouteConfigurationTranslator = new(hybridRouteConfigurationTranslator)
+var _ RouteConfigurationTranslator = new(multiRouteConfigurationTranslator)
 
 type emptyRouteConfigurationTranslator struct {
 }
@@ -51,7 +51,7 @@ func (e *emptyRouteConfigurationTranslator) ComputeRouteConfiguration(params plu
 }
 
 type httpRouteConfigurationTranslator struct {
-	plugins                  []plugins.Plugin
+	pluginRegistry           plugins.PluginRegistry
 	proxy                    *v1.Proxy
 	parentListener           *v1.Listener
 	listener                 *v1.HttpListener
@@ -64,21 +64,9 @@ type httpRouteConfigurationTranslator struct {
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+h.routeConfigName)
 
-	virtualHosts := h.computeVirtualHosts(params)
-
-	// validate ssl config if the parent listener specifies any and is not a hybrid listener
-	if h.parentListener.GetHybridListener() == nil {
-		if err := validateListenerSslConfig(params, h.parentListener); err != nil {
-			validation.AppendListenerError(h.parentReport,
-				validationapi.ListenerReport_Error_SSLConfigError,
-				err.Error(),
-			)
-		}
-	}
-
 	return []*envoy_config_route_v3.RouteConfiguration{{
 		Name:                           h.routeConfigName,
-		VirtualHosts:                   virtualHosts,
+		VirtualHosts:                   h.computeVirtualHosts(params),
 		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
 	}}
 }
@@ -140,12 +128,8 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	}
 
 	// run the plugins
-	for _, plug := range h.plugins {
-		virtualHostPlugin, ok := plug.(plugins.VirtualHostPlugin)
-		if !ok {
-			continue
-		}
-		if err := virtualHostPlugin.ProcessVirtualHost(params, virtualHost, out); err != nil {
+	for _, plugin := range h.pluginRegistry.GetVirtualHostPlugins() {
+		if err := plugin.ProcessVirtualHost(params, virtualHost, out); err != nil {
 			validation.AppendVirtualHostError(
 				vhostReport,
 				validationapi.VirtualHostReport_Error_ProcessingError,
@@ -278,7 +262,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 
 		// DirectResponseAction supports header manipulation, so we want to process the corresponding plugin.
 		// See here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-directresponseaction
-		for _, plug := range h.plugins {
+		for _, plug := range h.pluginRegistry.GetRoutePlugins() {
 			routePlugin, ok := plug.(*headers.Plugin)
 			if !ok {
 				continue
@@ -336,12 +320,8 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	in *v1.Route,
 	out *envoy_config_route_v3.Route) {
 	// run the plugins for RoutePlugin
-	for _, plug := range h.plugins {
-		routePlugin, ok := plug.(plugins.RoutePlugin)
-		if !ok {
-			continue
-		}
-		if err := routePlugin.ProcessRoute(params, in, out); err != nil {
+	for _, plugin := range h.pluginRegistry.GetRoutePlugins() {
+		if err := plugin.ProcessRoute(params, in, out); err != nil {
 			// plugins can return errors on missing upstream/upstream group
 			// we only want to report errors that are plugin-specific
 			// missing upstream(group) should produce a warning above
@@ -350,23 +330,23 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			}
 			validation.AppendRouteError(routeReport,
 				validationapi.RouteReport_Error_ProcessingError,
-				fmt.Sprintf("%T: %v", routePlugin, err.Error()),
+				fmt.Sprintf("%T: %v", plugin, err.Error()),
 				out.GetName(),
 			)
 		}
 	}
 
+	if in.GetRouteAction() == nil || out.GetRoute() == nil {
+		return
+	}
+
 	// run the plugins for RouteActionPlugin
-	for _, plug := range h.plugins {
-		routeActionPlugin, ok := plug.(plugins.RouteActionPlugin)
-		if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
-			continue
-		}
+	for _, plugin := range h.pluginRegistry.GetRouteActionPlugins() {
 		raParams := plugins.RouteActionParams{
 			RouteParams: params,
 			Route:       in,
 		}
-		if err := routeActionPlugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
+		if err := plugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
 			// same as above
 			if isWarningErr(err) {
 				continue
@@ -446,12 +426,8 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 		}
 
 		// run the plugins for Weighted Destinations
-		for _, plug := range h.plugins {
-			weightedDestinationPlugin, ok := plug.(plugins.WeightedDestinationPlugin)
-			if !ok {
-				continue
-			}
-			if err := weightedDestinationPlugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
+		for _, plugin := range h.pluginRegistry.GetWeightedDestinationPlugins() {
+			if err := plugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
 					err.Error(),
@@ -472,47 +448,15 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 	return nil
 }
 
-type hybridRouteConfigurationTranslator struct {
-	plugins []plugins.Plugin
-	proxy   *v1.Proxy
-
-	parentListener *v1.Listener
-	listener       *v1.HybridListener
-
-	parentReport *validationapi.ListenerReport
-	report       *validationapi.HybridListenerReport
-
-	requireTlsOnVirtualHosts bool
+type multiRouteConfigurationTranslator struct {
+	translators []RouteConfigurationTranslator
 }
 
-func (h *hybridRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
+func (m *multiRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
 	var outRouteConfigs []*envoy_config_route_v3.RouteConfiguration
-	for _, matchedListener := range h.listener.GetMatchedListeners() {
-		httpListener := matchedListener.GetHttpListener()
-		if httpListener == nil {
-			// only httpListeners produce RouteConfiguration
-			continue
-		}
-		matcher := matchedListener.GetMatcher()
-		rcName := utils.MatchedRouteConfigName(h.parentListener, matcher)
 
-		params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+rcName)
-
-		matchedListenerRouteConfigurationTranslator := &httpRouteConfigurationTranslator{
-			plugins: h.plugins,
-			proxy:   h.proxy,
-
-			parentListener: h.parentListener,
-			listener:       httpListener,
-
-			parentReport: h.parentReport,
-			report:       h.report.GetMatchedListenerReports()[utils.MatchedRouteConfigName(h.parentListener, matcher)].GetHttpListenerReport(),
-
-			routeConfigName:          rcName,
-			requireTlsOnVirtualHosts: matcher.GetSslConfig() != nil,
-		}
-
-		outRouteConfigs = append(outRouteConfigs, matchedListenerRouteConfigurationTranslator.ComputeRouteConfiguration(params)...)
+	for _, translator := range m.translators {
+		outRouteConfigs = append(outRouteConfigs, translator.ComputeRouteConfiguration(params)...)
 	}
 
 	return outRouteConfigs
@@ -798,16 +742,6 @@ func validateClusterHeader(header string) error {
 	for i := 0; i < len(header); i++ {
 		if header[i] > unicode.MaxASCII || header[i] == ':' {
 			return fmt.Errorf("%s is an invalid HTTP header name", header)
-		}
-	}
-	return nil
-}
-
-func validateListenerSslConfig(params plugins.Params, listener *v1.Listener) error {
-	sslCfgTranslator := utils.NewSslConfigTranslator()
-	for _, ssl := range listener.GetSslConfigurations() {
-		if _, err := sslCfgTranslator.ResolveDownstreamSslConfig(params.Snapshot.Secrets, ssl); err != nil {
-			return err
 		}
 	}
 	return nil

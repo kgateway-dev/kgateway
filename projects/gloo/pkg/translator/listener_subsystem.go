@@ -21,42 +21,39 @@ import (
 // The ListenerSubsystemTranslatorFactory returns a ListenerTranslator and RouteConfigurationTranslator for a given Gloo Listener
 type ListenerSubsystemTranslatorFactory struct {
 	pluginRegistry      plugins.PluginRegistry
-	proxy               *v1.Proxy
 	sslConfigTranslator utils.SslConfigTranslator
 }
 
 func NewListenerSubsystemTranslatorFactory(
 	pluginRegistry plugins.PluginRegistry,
-	proxy *v1.Proxy,
 	sslConfigTranslator utils.SslConfigTranslator,
 ) *ListenerSubsystemTranslatorFactory {
 	return &ListenerSubsystemTranslatorFactory{
 		pluginRegistry:      pluginRegistry,
-		proxy:               proxy,
 		sslConfigTranslator: sslConfigTranslator,
 	}
 }
 
-func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context, listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
+func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
 	ListenerTranslator,
 	RouteConfigurationTranslator,
 ) {
 	switch listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
-		return l.GetHttpListenerTranslators(ctx, listener, listenerReport)
+		return l.GetHttpListenerTranslators(ctx, proxy, listener, listenerReport)
 
 	case *v1.Listener_TcpListener:
 		return l.GetTcpListenerTranslators(ctx, listener, listenerReport)
 
 	case *v1.Listener_HybridListener:
-		return l.GetHybridListenerTranslators(ctx, listener, listenerReport)
+		return l.GetHybridListenerTranslators(ctx, proxy, listener, listenerReport)
 	default:
 		// This case should never occur
 		return &emptyListenerTranslator{}, &emptyRouteConfigurationTranslator{}
 	}
 }
 
-func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx context.Context, listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
+func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx context.Context, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
 	ListenerTranslator,
 	RouteConfigurationTranslator,
 ) {
@@ -106,8 +103,8 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 	// of configuration for the HttpConnectionManager, we only produce
 	// a single RouteConfiguration
 	routeConfigurationTranslator := &httpRouteConfigurationTranslator{
-		plugins:                  l.pluginRegistry.GetPlugins(),
-		proxy:                    l.proxy,
+		pluginRegistry:           l.pluginRegistry,
+		proxy:                    proxy,
 		parentListener:           listener,
 		listener:                 listener.GetHttpListener(),
 		parentReport:             listenerReport,
@@ -152,7 +149,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetTcpListenerTranslators(ctx conte
 	return listenerTranslator, routeConfigurationTranslator
 }
 
-func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx context.Context, listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
+func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx context.Context, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
 	ListenerTranslator,
 	RouteConfigurationTranslator,
 ) {
@@ -177,13 +174,33 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 		},
 	}
 
-	routeConfigurationTranslator := &hybridRouteConfigurationTranslator{
-		plugins:        l.pluginRegistry.GetPlugins(),
-		proxy:          l.proxy,
-		parentListener: listener,
-		listener:       listener.GetHybridListener(),
-		parentReport:   listenerReport,
-		report:         hybridListenerReport,
+	// For each HttpListener defined on the HybridListener,
+	// generate the appropriate RouteConfigurationTranslator
+	var httpTranslators []RouteConfigurationTranslator
+
+	for _, matchedListener := range listener.GetHybridListener().GetMatchedListeners() {
+		httpListener := matchedListener.GetHttpListener()
+		if httpListener == nil {
+			// only httpListeners produce RouteConfiguration
+			continue
+		}
+		matcher := matchedListener.GetMatcher()
+
+		httpTranslator := &httpRouteConfigurationTranslator{
+			pluginRegistry:           l.pluginRegistry,
+			proxy:                    proxy,
+			parentListener:           listener,
+			listener:                 httpListener,
+			parentReport:             listenerReport,
+			report:                   listenerReport.GetHybridListenerReport().GetMatchedListenerReports()[utils.MatchedRouteConfigName(listener, matcher)].GetHttpListenerReport(),
+			routeConfigName:          utils.MatchedRouteConfigName(listener, matcher),
+			requireTlsOnVirtualHosts: matcher.GetSslConfig() != nil,
+		}
+		httpTranslators = append(httpTranslators, httpTranslator)
+	}
+
+	routeConfigurationTranslator := &multiRouteConfigurationTranslator{
+		translators: httpTranslators,
 	}
 
 	return listenerTranslator, routeConfigurationTranslator

@@ -66,33 +66,42 @@ func (t *translatorFactory) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+	pluginRegistry := t.getPluginRegistry()
+	listenerTranslatorFactory := NewListenerSubsystemTranslatorFactory(pluginRegistry, t.sslConfigTranslator)
+
 	instance := &translatorInstance{
-		pluginRegistry:      t.getPluginRegistry(),
-		settings:            t.settings,
-		sslConfigTranslator: t.sslConfigTranslator,
-		hasher:              t.hasher,
+		pluginRegistry:            pluginRegistry,
+		settings:                  t.settings,
+		hasher:                    t.hasher,
+		listenerTranslatorFactory: listenerTranslatorFactory,
 	}
+
 	return instance.Translate(params, proxy)
 }
 
 // a translator instance performs one
 type translatorInstance struct {
-	pluginRegistry      plugins.PluginRegistry
-	settings            *v1.Settings
-	sslConfigTranslator utils.SslConfigTranslator
-	hasher              func(resources []envoycache.Resource) uint64
+	pluginRegistry            plugins.PluginRegistry
+	settings                  *v1.Settings
+	sslConfigTranslator       utils.SslConfigTranslator
+	hasher                    func(resources []envoycache.Resource) uint64
+	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
 }
 
 func (t *translatorInstance) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
-
+	// setup tracing, logging
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
-	params.Ctx = ctx
 	defer span.End()
+	params.Ctx = contextutils.WithLogger(ctx, "translator")
 
-	params.Ctx = contextutils.WithLogger(params.Ctx, "translator")
+	// re-initialize plugins on each loop, this is done for 2 reasons:
+	//  1. Each translation run relies on its own context. If a plugin spawns a go-routine
+	//		we need to be able to cancel that go-routine on the next translation
+	//	2. Plugins are built with the assumption that they will be short lived, only for the
+	//		duration of a single translation loop
 	for _, p := range t.pluginRegistry.GetPlugins() {
 		if err := p.Init(plugins.InitParams{
 			Ctx:      params.Ctx,
@@ -101,9 +110,48 @@ func (t *translatorInstance) Translate(
 			return nil, nil, nil, errors.Wrapf(err, "plugin init failed")
 		}
 	}
-	logger := contextutils.LoggerFrom(params.Ctx)
 
+	// prepare reports used to aggregate Warnings/Errors encountered during translation
 	reports := make(reporter.ResourceReports)
+	proxyReport := validation.MakeReport(proxy)
+
+	// execute translation of listener and cluster subsystems
+	clusters, endpoints := t.translateClusterSubsystemComponents(params, proxy, reports)
+	routeConfigs, listeners := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
+
+	// run Resource Generator Plugins
+	for _, plugin := range t.pluginRegistry.GetResourceGeneratorPlugins() {
+		generatedClusters, generatedEndpoints, generatedRouteConfigs, generatedListeners, err := plugin.GeneratedResources(params, clusters, endpoints, routeConfigs, listeners)
+		if err != nil {
+			reports.AddError(proxy, err)
+		}
+		clusters = append(clusters, generatedClusters...)
+		endpoints = append(endpoints, generatedEndpoints...)
+		routeConfigs = append(routeConfigs, generatedRouteConfigs...)
+		listeners = append(listeners, generatedListeners...)
+	}
+
+	xdsSnapshot := t.generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
+
+	if err := validation.GetProxyError(proxyReport); err != nil {
+		reports.AddError(proxy, err)
+	}
+
+	// TODO: add a settings flag to allow accepting proxy on warnings
+	if warnings := validation.GetProxyWarning(proxyReport); len(warnings) > 0 {
+		for _, warning := range warnings {
+			reports.AddWarning(proxy, warning)
+		}
+	}
+
+	return xdsSnapshot, reports, proxyReport, nil
+}
+
+func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.Params, proxy *v1.Proxy, reports reporter.ResourceReports) (
+	[]*envoy_config_cluster_v3.Cluster,
+	[]*envoy_config_endpoint_v3.ClusterLoadAssignment,
+) {
+	logger := contextutils.LoggerFrom(params.Ctx)
 
 	logger.Debugf("verifying upstream groups: %v", proxy.GetMetadata().GetName())
 	t.verifyUpstreamGroups(params, reports)
@@ -150,12 +198,9 @@ ClusterLoop:
 				Name:      upstream.GetMetadata().GetName(),
 				Namespace: upstream.GetMetadata().GetNamespace(),
 			}) == c.GetName() {
-				for _, plugin := range t.pluginRegistry.GetPlugins() {
-					ep, ok := plugin.(plugins.EndpointPlugin)
-					if ok {
-						if err := ep.ProcessEndpoints(params, upstream, emptyendpointlist); err != nil {
-							reports.AddError(upstream, err)
-						}
+				for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
+					if err := plugin.ProcessEndpoints(params, upstream, emptyendpointlist); err != nil {
+						reports.AddError(upstream, err)
 					}
 				}
 			}
@@ -164,40 +209,7 @@ ClusterLoop:
 		endpoints = append(endpoints, emptyendpointlist)
 	}
 
-	proxyRpt := validation.MakeReport(proxy)
-
-	routeConfigs, listeners := t.translateListenerSubsystemComponents(params, proxy, proxyRpt)
-
-	// run Resource Generator Plugins
-	for _, plug := range t.pluginRegistry.GetPlugins() {
-		resourceGeneratorPlugin, ok := plug.(plugins.ResourceGeneratorPlugin)
-		if !ok {
-			continue
-		}
-		generatedClusters, generatedEndpoints, generatedRouteConfigs, generatedListeners, err := resourceGeneratorPlugin.GeneratedResources(params, clusters, endpoints, routeConfigs, listeners)
-		if err != nil {
-			reports.AddError(proxy, err)
-		}
-		clusters = append(clusters, generatedClusters...)
-		endpoints = append(endpoints, generatedEndpoints...)
-		routeConfigs = append(routeConfigs, generatedRouteConfigs...)
-		listeners = append(listeners, generatedListeners...)
-	}
-
-	xdsSnapshot := t.generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
-
-	if err := validation.GetProxyError(proxyRpt); err != nil {
-		reports.AddError(proxy, err)
-	}
-
-	// TODO: add a settings flag to allow accepting proxy on warnings
-	if warnings := validation.GetProxyWarning(proxyRpt); len(warnings) > 0 {
-		for _, warning := range warnings {
-			reports.AddWarning(proxy, warning)
-		}
-	}
-
-	return xdsSnapshot, reports, proxyRpt, nil
+	return clusters, endpoints
 }
 
 func (t *translatorInstance) translateListenerSubsystemComponents(params plugins.Params, proxy *v1.Proxy, proxyReport *validationapi.ProxyReport) (
@@ -211,8 +223,6 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 
 	logger := contextutils.LoggerFrom(params.Ctx)
 
-	listenerSubsystemTranslatorFactory := NewListenerSubsystemTranslatorFactory(t.pluginRegistry, proxy, t.sslConfigTranslator)
-
 	for i, listener := range proxy.GetListeners() {
 		logger.Infof("computing envoy resources for listener: %v", listener.GetName())
 
@@ -222,7 +232,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		validateListenerPorts(proxy, listenerReport)
 
 		// Select a ListenerTranslator and RouteConfigurationTranslator, based on the type of listener (ie TCP, HTTP, or Hybrid)
-		listenerTranslator, routeConfigurationTranslator := listenerSubsystemTranslatorFactory.GetTranslators(params.Ctx, listener, listenerReport)
+		listenerTranslator, routeConfigurationTranslator := t.listenerTranslatorFactory.GetTranslators(params.Ctx, proxy, listener, listenerReport)
 
 		// 1. Compute RouteConfiguration
 		// This way we call ProcessVirtualHost / ProcessRoute first
