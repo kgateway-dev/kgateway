@@ -313,62 +313,72 @@ func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 	}
 }
 
-func (s *statusSyncer) syncStatus(ctx context.Context) error {
+func (s *statusSyncer) extractCurrentReports() (reporter.ResourceReports, map[resources.InputResource]map[string]*core.Status, map[resources.InputResource]*core.Status) {
+	/**
+	Complicated data (de/re)structuring method.  Massages several asynchronously set `statusSyncer` variables into formats consumable by `syncStatus`
+	*/
 	var nilProxy *gloov1.Proxy
 	allReports := reporter.ResourceReports{}
 	inputResourceBySubresourceStatuses := map[resources.InputResource]map[string]*core.Status{}
 	var localInputResourceLastStatus map[resources.InputResource]*core.Status
 
-	func() {
-		s.mapLock.RLock()
-		defer s.mapLock.RUnlock()
-		// grab a local copy of the map. it only updated here,
-		// and the variable is cleared under the lock; so is safe.
-		localInputResourceLastStatus = s.inputResourceLastStatus
+	s.mapLock.RLock()
+	defer s.mapLock.RUnlock()
+	// grab a local copy of the map. it only updated here, and the variable is cleared under the lock; so is safe.
+	localInputResourceLastStatus = s.inputResourceLastStatus
 
-		// combine currentGeneratedOrphans and currentGeneratedProxies data structures
-		// 		currentGeneratedProxies []*core.ResourceRef
-		// 		currentGeneratedOrphans []string
-		// we maintain these seperate references EACH as a way to index into
-		// 		proxyToLastStatus       map[string]reportsAndStatus
-		// we could _probably_ combine the 3 data structures into one, but there is historical precedent
-		// for maintaining multiple, such that we can have an alphabetically-ordered processing of `proxyToLastStatus`
-		refKeys := make([]string, 0)
-		refKeys = append(refKeys, s.currentGeneratedOrphans...)
-		for _, ref := range s.currentGeneratedProxies {
-			refKeys = append(refKeys, gloo_translator.UpstreamToClusterName(ref))
+	// combine currentGeneratedOrphans and currentGeneratedProxies data structures
+	// 		currentGeneratedProxies []*core.ResourceRef
+	// 		currentGeneratedOrphans []string
+	// we maintain these seperate references EACH as a way to index into
+	// 		proxyToLastStatus       map[string]reportsAndStatus
+	// we could _probably_ combine the 3 data structures into one, but there is historical precedent
+	// for maintaining multiple, such that we can have an alphabetically-ordered processing of `proxyToLastStatus`
+	refKeys := make([]string, 0)
+	refKeys = append(refKeys, s.currentGeneratedOrphans...)
+	for _, ref := range s.currentGeneratedProxies {
+		refKeys = append(refKeys, gloo_translator.UpstreamToClusterName(ref))
+	}
+
+	// iterate over proxyToLastStatus by alphabetical ordering of keys
+	for _, refKey := range refKeys {
+		reportsAndStatus, ok := s.proxyToLastStatus[refKey]
+		if !ok {
+			continue
 		}
 
-		// iterate s.currentGeneratedProxies to guarantee order
-		for _, refKey := range refKeys {
-			reportsAndStatus, ok := s.proxyToLastStatus[refKey]
-			if !ok {
-				continue
+		// merge reports that share an inputResource
+		for inputResource, newReport := range reportsAndStatus.Reports {
+			if existingReport, ok := allReports[inputResource]; ok {
+				// combine `existingStatus` and `newReport`
+				if newReport.Errors != nil {
+					existingReport.Errors = multierror.Append(existingReport.Errors, newReport.Errors)
+				}
+				if newReport.Warnings != nil {
+					existingReport.Warnings = append(existingReport.Warnings, newReport.Warnings...)
+				}
+				allReports[inputResource] = existingReport
+			} else {
+				// add `newStatus` to allReports
+				allReports[inputResource] = newReport
 			}
-			// merge all the reports for the gateway resources from all the proxies.
-			for inputResource, subresourceStatuses := range reportsAndStatus.Reports {
-				if reportsAndStatus.Status != nil {
-					// add the proxy status as well if we have it
-					status := *reportsAndStatus.Status
-					if _, ok := inputResourceBySubresourceStatuses[inputResource]; !ok {
-						inputResourceBySubresourceStatuses[inputResource] = map[string]*core.Status{}
-					}
-					inputResourceBySubresourceStatuses[inputResource][fmt.Sprintf("%T.%s", nilProxy, refKey)] = &status
+
+			if reportsAndStatus.Status != nil {
+				// add the proxy status as well if we have it
+				status := *reportsAndStatus.Status
+				if _, ok := inputResourceBySubresourceStatuses[inputResource]; !ok {
+					inputResourceBySubresourceStatuses[inputResource] = map[string]*core.Status{}
 				}
-				if report, ok := allReports[inputResource]; ok {
-					if subresourceStatuses.Errors != nil {
-						report.Errors = multierror.Append(report.Errors, subresourceStatuses.Errors)
-					}
-					if subresourceStatuses.Warnings != nil {
-						report.Warnings = append(report.Warnings, subresourceStatuses.Warnings...)
-					}
-					allReports[inputResource] = report
-				} else {
-					allReports[inputResource] = subresourceStatuses
-				}
+				inputResourceBySubresourceStatuses[inputResource][fmt.Sprintf("%T.%s", nilProxy, refKey)] = &status
 			}
 		}
-	}()
+	}
+
+	return allReports, inputResourceBySubresourceStatuses, localInputResourceLastStatus
+}
+
+func (s *statusSyncer) syncStatus(ctx context.Context) error {
+	allReports, inputResourceBySubresourceStatuses, localInputResourceLastStatus := s.extractCurrentReports()
 
 	var errs error
 	for inputResource, subresourceStatuses := range allReports {
