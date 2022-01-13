@@ -400,7 +400,7 @@ message Settings {
         // metrics are not recorded by default; metrics will only be recorded for the resources specified in this map.
         // Keys specify the resource type (GroupVersionKind) whose status is to be tracked
         // (e.g. "VirtualService.v1.gateway.solo.io"). Values specify the labels to set on the metric.
-        map<string, MetricLabels> config_status_metric_labels = 2;
+        map<string, MetricLabels> configStatusMetricLabels = 2;
     }
 
     // Provides settings related to the observability deployment (enterprise only)
