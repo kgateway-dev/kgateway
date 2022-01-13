@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -76,16 +77,17 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
-	desiredProxies := s.generatedDesiredProxies(ctx, snap)
+	desiredProxies, orphanedReports := s.generatedDesiredProxies(ctx, snap)
 
-	return s.reconcile(ctx, desiredProxies)
+	return s.reconcile(ctx, desiredProxies, orphanedReports)
 }
 
-func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1.ApiSnapshot) reconciler.GeneratedProxies {
+func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1.ApiSnapshot) (reconciler.GeneratedProxies, []reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 
 	desiredProxies := make(reconciler.GeneratedProxies)
+	orphanedReports := make([]reporter.ResourceReports, 0)
 
 	for proxyName, gatewayList := range gatewaysByProxy {
 		proxy, reports := s.translator.Translate(ctx, proxyName, s.writeNamespace, snap, gatewayList)
@@ -98,22 +100,24 @@ func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1
 			logger.Infof("desired proxy %v", proxy.GetMetadata().Ref())
 			proxy.GetMetadata().Labels = s.managedProxyLabels
 			desiredProxies[proxy] = reports
+		} else {
+			orphanedReports = append(orphanedReports, reports)
 		}
 	}
-	return desiredProxies
+	return desiredProxies, orphanedReports
 }
 
 func (s *translatorSyncer) shouldCompresss(ctx context.Context) bool {
 	return settingsutil.MaybeFromContext(ctx).GetGateway().GetCompressedProxySpec()
 }
 
-func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies) error {
+func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies, orphanedReports []reporter.ResourceReports) error {
 	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, s.managedProxyLabels); err != nil {
 		return err
 	}
 
 	// repeat for all resources
-	s.statusSyncer.setCurrentProxies(desiredProxies)
+	s.statusSyncer.setCurrentProxies(desiredProxies, orphanedReports)
 	s.statusSyncer.forceSync()
 	return nil
 }
@@ -126,6 +130,7 @@ type statusSyncer struct {
 	proxyToLastStatus       map[string]reportsAndStatus
 	inputResourceLastStatus map[resources.InputResource]*core.Status
 	currentGeneratedProxies []*core.ResourceRef
+	currentGeneratedOrphans []string
 	mapLock                 sync.RWMutex
 	reporter                reporter.StatusReporter
 
@@ -140,6 +145,7 @@ func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, re
 	return statusSyncer{
 		proxyToLastStatus:       map[string]reportsAndStatus{},
 		currentGeneratedProxies: nil,
+		currentGeneratedOrphans: nil,
 		reporter:                reporter,
 		proxyWatcher:            proxyWatcher,
 		writeNamespace:          writeNamespace,
@@ -149,12 +155,15 @@ func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, re
 	}
 }
 
-func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProxies) {
+func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProxies, orphanedReports []reporter.ResourceReports) {
 	s.mapLock.Lock()
 	defer s.mapLock.Unlock()
 	// clear out the status map
 	s.inputResourceLastStatus = make(map[resources.InputResource]*core.Status)
 	s.currentGeneratedProxies = nil
+	s.currentGeneratedOrphans = nil
+
+	// consume/process `desiredProxies``
 	for proxy, reports := range desiredProxies {
 		// start propagating for new set of resources
 		ref := proxy.GetMetadata().Ref()
@@ -168,6 +177,23 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 		s.proxyToLastStatus[refKey] = current
 		s.currentGeneratedProxies = append(s.currentGeneratedProxies, ref)
 	}
+
+	// consume/process `orphanedReports`
+	for i, reports := range orphanedReports {
+		// create a unique dummy key reference to propogate forward orphaned gateway statuses
+		refKey := "orphan_" + strconv.Itoa(i)
+
+		if _, ok := s.proxyToLastStatus[refKey]; !ok {
+			s.proxyToLastStatus[refKey] = reportsAndStatus{}
+		}
+		current := s.proxyToLastStatus[refKey]
+		// These reports are for gateway resources: VirtualServices, RouteTables and Gateways
+		current.Reports = reports
+		s.proxyToLastStatus[refKey] = current
+		s.currentGeneratedOrphans = append(s.currentGeneratedOrphans, refKey)
+	}
+
+	// sort currentGeneratedProxies to ensure a consistent status reporting order
 	sort.SliceStable(s.currentGeneratedProxies, func(i, j int) bool {
 		refi := s.currentGeneratedProxies[i]
 		refj := s.currentGeneratedProxies[j]
@@ -300,9 +326,21 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		// and the variable is cleared under the lock; so is safe.
 		localInputResourceLastStatus = s.inputResourceLastStatus
 
-		// iterate s.currentGeneratedProxies to guarantee order
+		// combine currentGeneratedOrphans and currentGeneratedProxies data structures
+		// 		currentGeneratedProxies []*core.ResourceRef
+		// 		currentGeneratedOrphans []string
+		// we maintain these seperate references EACH as a way to index into
+		// 		proxyToLastStatus       map[string]reportsAndStatus
+		// we could _probably_ combine the 3 data structures into one, but there is historical precedent
+		// for maintaining multiple, such that we can have an alphabetically-ordered processing of `proxyToLastStatus`
+		refKeys := make([]string, 0)
+		refKeys = append(refKeys, s.currentGeneratedOrphans...)
 		for _, ref := range s.currentGeneratedProxies {
-			refKey := gloo_translator.UpstreamToClusterName(ref)
+			refKeys = append(refKeys, gloo_translator.UpstreamToClusterName(ref))
+		}
+
+		// iterate s.currentGeneratedProxies to guarantee order
+		for _, refKey := range refKeys {
 			reportsAndStatus, ok := s.proxyToLastStatus[refKey]
 			if !ok {
 				continue
@@ -315,7 +353,7 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 					if _, ok := inputResourceBySubresourceStatuses[inputResource]; !ok {
 						inputResourceBySubresourceStatuses[inputResource] = map[string]*core.Status{}
 					}
-					inputResourceBySubresourceStatuses[inputResource][fmt.Sprintf("%T.%s", nilProxy, ref.Key())] = &status
+					inputResourceBySubresourceStatuses[inputResource][fmt.Sprintf("%T.%s", nilProxy, refKey)] = &status
 				}
 				if report, ok := allReports[inputResource]; ok {
 					if subresourceStatuses.Errors != nil {
@@ -335,15 +373,16 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	var errs error
 	for inputResource, subresourceStatuses := range allReports {
 		// write reports may update the status, so clone the object
-		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 		clonedInputResource := resources.Clone(inputResource).(resources.InputResource)
-		reports := reporter.ResourceReports{clonedInputResource: subresourceStatuses}
 		// set the last known status on the input resource.
 		// this may be different than the status on the snapshot, as the snapshot doesn't get updated
 		// on status changes.
 		if status, ok := localInputResourceLastStatus[inputResource]; ok {
 			s.statusClient.SetStatus(clonedInputResource, status)
 		}
+
+		reports := reporter.ResourceReports{clonedInputResource: subresourceStatuses}
+		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
 		} else {
