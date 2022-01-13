@@ -5,7 +5,6 @@ import (
 	"time"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	alpha1 "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 
@@ -33,8 +32,6 @@ var _ = Describe("TranslatorSyncer", func() {
 		namespace := "write-namespace"
 
 		statusClient := gloostatusutils.GetStatusClientFromEnvOrDefault(namespace)
-		statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
-		Expect(err).NotTo(HaveOccurred())
 		proxyClient, _ := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
 		clusterIngress := &v1alpha1.ClusterIngress{ClusterIngress: knative.ClusterIngress{
 			ObjectMeta: v12.ObjectMeta{Generation: 1},
@@ -43,7 +40,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		knativeClient := &mockIngressesGetter{
 			ciClient: &mockCiClient{ci: toKube(clusterIngress)}}
 
-		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, statusClient, statusMetrics, make(chan error)).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, statusClient, make(chan error)).(*translatorSyncer)
 		proxy := &v1.Proxy{Metadata: &core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
 
@@ -58,7 +55,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		err = syncer.propagateProxyStatus(context.TODO(), proxy, v1alpha1.ClusterIngressList{clusterIngress})
+		err := syncer.propagateProxyStatus(context.TODO(), proxy, v1alpha1.ClusterIngressList{clusterIngress})
 		Expect(err).NotTo(HaveOccurred())
 
 		var ci *v1alpha12.Ingress
