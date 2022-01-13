@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5746
+    resolvesIssue: true
+    description: Fixes broken links to anchors on the JWT setup page.
