@@ -177,7 +177,7 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-helm-files update-licenses init
+generated-code: install-go-tools $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-helm-files update-licenses init
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
