@@ -140,8 +140,8 @@ forwarding is directed towards the gloo pod, the `default-petstore-8080` upstrea
 validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0
 ```
 
-If the port forwarding is then switched to the gateway pod, the metric defined for virtual services can be found
-on the same metrics endpoint (after a refresh):
+If the port forwarding is switched to the gateway pod, you can see the metrics defined for virtual services by
+revisiting the metrics endpoint: <http://localhost:9091/metrics>.
 ```
 validation_gateway_solo_io_virtual_service_config_status{name="default",namespace="gloo-system"} 0
 ```
