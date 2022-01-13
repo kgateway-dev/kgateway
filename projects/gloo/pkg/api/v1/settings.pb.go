@@ -1716,10 +1716,10 @@ type Settings_ObservabilityOptions struct {
 
 	// Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
 	GrafanaIntegration *Settings_ObservabilityOptions_GrafanaIntegration `protobuf:"bytes,1,opt,name=grafanaIntegration,proto3" json:"grafanaIntegration,omitempty"`
-	// Provides the ability to record metrics tracking the configuration status of various resource types.
+	// Enable metrics that track the configuration status of various resource types.
 	// Each (key, value) pair in the map defines a metric for a particular resource type. Configuration status
-	// metrics are not recorded by default; metrics will only be recorded for the resources specified in this map.
-	// Keys specify the resource type (GroupVersionKind) whose status is to be tracked
+	// metrics are not recorded by default; metrics are recorded only for the resources specified in this map.
+	// Keys specify the resource type (GroupVersionKind) to track for status changes
 	// (e.g. "VirtualService.v1.gateway.solo.io"). Values specify the labels to set on the metric.
 	ConfigStatusMetricLabels map[string]*Settings_ObservabilityOptions_MetricLabels `protobuf:"bytes,2,rep,name=configStatusMetricLabels,proto3" json:"configStatusMetricLabels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }

@@ -466,7 +466,7 @@ Provides overrides for the default configuration parameters used to interact wit
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `grafanaIntegration` | [.gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration](../settings.proto.sk/#grafanaintegration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |
-| `configStatusMetricLabels` | `map<string, .gloo.solo.io.Settings.ObservabilityOptions.MetricLabels>` | Provides the ability to record metrics tracking the configuration status of various resource types. Each (key, value) pair in the map defines a metric for a particular resource type. Configuration status metrics are not recorded by default; metrics will only be recorded for the resources specified in this map. Keys specify the resource type (GroupVersionKind) whose status is to be tracked (e.g. "VirtualService.v1.gateway.solo.io"). Values specify the labels to set on the metric. |
+| `configStatusMetricLabels` | `map<string, .gloo.solo.io.Settings.ObservabilityOptions.MetricLabels>` | Enable metrics that track the configuration status of various resource types. Each (key, value) pair in the map defines a metric for a particular resource type. Configuration status metrics are not recorded by default; metrics are recorded only for the resources specified in this map. Keys specify the resource type (GroupVersionKind) to track for status changes (e.g. "VirtualService.v1.gateway.solo.io"). Values specify the labels to set on the metric. |
 
 
 
