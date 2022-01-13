@@ -9,21 +9,24 @@ The JWT feature was introduced with **Gloo Edge Enterprise**, release 0.13.16. I
 {{% /notice %}}
 
 ## Table of Contents
-- [Setup](#verifying-kubernetes-service-account-jwts)
+- [Table of Contents](#table-of-contents)
+- [Setup](#setup)
 - [Verifying Kubernetes service account JWTs](#verifying-kubernetes-service-account-jwts)
-    - [Deploy sample application](#deploy-sample-application)
-    - [Create a Virtual Service](#create-a-virtual-service)
-    - [Setting up JWT authorization](#setting-up-jwt-authorization)
-        - [Anatomy of Kubernetes service account](#anatomy-of-kubernetes-service-account)
-        - [Retrieve the Kubernetes API server public key](#retrieve-the-kubernetes-api-server-public-key)
-        - [Secure the Virtual Service](#secure-the-virtual-service)
-    - [Testing our configuration](#testing-our-configuration)
-- [Appendix - Use a remote JSON Web Key Set (JWKS) server](#appendix-use-a-remote-json-web-key-set-jwks-server)
-    - [Create the private key](#deploy-sample-application)
-    - [Create the JSON Web Key Set (JWKS)](#create-a-virtual-service)
-    - [Create JWKS server](#setting-up-jwt-authorization)
-    - [Create the JSON Web Token (JWT)](#setting-up-jwt-authorization)
-    - [Testing the configuration](#testing-the-configuration)
+  - [Deploy sample application](#deploy-sample-application)
+  - [Create a Virtual Service](#create-a-virtual-service)
+  - [Setting up JWT authorization](#setting-up-jwt-authorization)
+    - [Anatomy of Kubernetes service account](#anatomy-of-kubernetes-service-account)
+    - [Retrieve the Kubernetes API server public key](#retrieve-the-kubernetes-api-server-public-key)
+    - [Secure the Virtual Service](#secure-the-virtual-service)
+  - [Testing our configuration](#testing-our-configuration)
+  - [Cleanup](#cleanup)
+- [Appendix - Use a remote JSON Web Key Set (JWKS) server](#appendix---use-a-remote-json-web-key-set-jwks-server)
+  - [Create the private key](#create-the-private-key)
+  - [Create the JSON Web Key Set (JWKS)](#create-the-json-web-key-set-jwks)
+  - [Create JWKS server](#create-jwks-server)
+  - [Create the JSON Web Token (JWT)](#create-the-json-web-token-jwt)
+  - [Testing the configuration](#testing-the-configuration)
+  - [Cleanup](#cleanup-1)
     
     
 ## Setup
@@ -393,11 +396,11 @@ In the previous part of the guide we saw how to configure Gloo Edge with a publi
 
 In this appendix we will demonstrate how to use an external JSON Web Key Set (JWKS) server with Gloo Edge. We will:
 
-1. create a private key that will be used to sign and verify custom JWTs that we will create;
-1. convert the key from PEM to JSON Web Key format;
-1. deploy a JWKS server to serve the key;
-1. configure Gloo Edge to verify JWTs using the key stored in the server;
-1. create and sign a custom JWT and use it to authenticate with Gloo Edge.
+1. Create a private key that will be used to sign and verify custom JWTs that we will create;
+1. Convert the key from PEM to JSON Web Key format;
+1. Deploy a JWKS server to serve the key;
+1. Configure Gloo Edge to verify JWTs using the key stored in the server;
+1. Create and sign a custom JWT and use it to authenticate with Gloo Edge.
 
 ### Create the private key
 Let's start by creating a private key that we will use to sign our JWTs:
@@ -585,8 +588,8 @@ spec:
 We have everything we need to sign and verify a custom JWT with our custom claims. We will use the [jwt.io](https://jwt.io) debugger to do so easily.
 
 - Go to https://jwt.io.
-- Under the "Debugger" section, change the algorithm combo-box to "RS256".
-- Under the "VERIFY SIGNATURE" section, paste the contents of the file `private-key.pem` to the 
+- In the "Debugger" section, change the algorithm combo-box to "RS256".
+- In the "VERIFY SIGNATURE" section, paste the contents of the file `private-key.pem` to the 
   bottom box (labeled "Private Key").
 - Paste the following to the payload data (replacing what is already there):
 
