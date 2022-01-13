@@ -201,6 +201,7 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		tcpFilterChainPlugins:        tcpFilterChainPlugins,
 		httpFilterPlugins:            httpFilterPlugins,
 		httpConnectionManagerPlugins: httpConnectionManagerPlugins,
+		virtualHostPlugins:           virtualHostPlugins,
 		resourceGeneratorPlugins:     resourceGeneratorPlugins,
 		upstreamPlugins:              upstreamPlugins,
 		endpointPlugins:              endpointPlugins,
