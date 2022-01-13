@@ -112,7 +112,10 @@ func (m *ConfigStatusMetrics) SetResourceStatus(ctx context.Context, resource re
 		m.SetResourceInvalid(ctx, resource)
 		return
 	}
-	m.SetResourceValid(ctx, resource)
+	// Don't bother setting the metric while pending, we'll set it momentarily when it transitions
+	if status.GetState() == core.Status_Accepted {
+		m.SetResourceValid(ctx, resource)
+	}
 }
 
 func (m *ConfigStatusMetrics) SetResourceValid(ctx context.Context, resource resources.Resource) {
