@@ -135,7 +135,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		desiredResources = append(desiredResources, internalProxy)
 	}
 
-	proxyTransitionFunction := utils.TransitionFunction(ctx, s.statusClient, s.statusMetrics)
+	proxyTransitionFunction := utils.TransitionFunction(s.statusClient)
 
 	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
