@@ -21,19 +21,21 @@ import (
 type Labels = gloov1.Settings_ObservabilityOptions_MetricLabels
 
 var Names = map[schema.GroupVersionKind]string{
-	gwv1.VirtualServiceGVK: "validation.gateway.solo.io/virtual_service_config_status",
 	gwv1.GatewayGVK:        "validation.gateway.solo.io/gateway_config_status",
 	gwv1.RouteTableGVK:     "validation.gateway.solo.io/route_table_config_status",
-	gloov1.UpstreamGVK:     "validation.gateway.solo.io/upstream_config_status",
+	gwv1.VirtualServiceGVK: "validation.gateway.solo.io/virtual_service_config_status",
+	gloov1.ProxyGVK:        "validation.gateway.solo.io/proxy_config_status",
 	gloov1.SecretGVK:       "validation.gateway.solo.io/secret_config_status",
+	gloov1.UpstreamGVK:     "validation.gateway.solo.io/upstream_config_status",
 }
 
 var descriptions = map[schema.GroupVersionKind]string{
-	gwv1.VirtualServiceGVK: "A gauge indicating the health status of virtual service resources in the system.",
-	gwv1.GatewayGVK:        "A gauge indicating the health status of gateway resources in the system.",
-	gwv1.RouteTableGVK:     "A gauge indicating the health status of route table resources in the system.",
-	gloov1.UpstreamGVK:     "A gauge indicating the health status of upstream resources in the system.",
-	gloov1.SecretGVK:       "A gauge indicating the health status of secret resources in the system.",
+	gwv1.GatewayGVK:        "The health status of gateway resources in the system. A value of 0 indicates that there are no issues.",
+	gwv1.RouteTableGVK:     "The health status of route table resources in the system. A value of 0 indicates that there are no issues.",
+	gwv1.VirtualServiceGVK: "The health status of virtual service resources in the system. A value of 0 indicates that there are no issues.",
+	gloov1.ProxyGVK:        "The health status of proxy resources in the system. A value of 0 indicates that there are no issues.",
+	gloov1.SecretGVK:       "The health status of secret resources in the system. A value of 0 indicates that there are no issues.",
+	gloov1.UpstreamGVK:     "The health status of upstream resources in the system. A value of 0 indicates that there are no issues.",
 }
 
 // ConfigStatusMetrics is a collection of metrics, each of which records if the configuration for
@@ -86,16 +88,20 @@ func parseGroupVersionKind(arg string) (schema.GroupVersionKind, error) {
 
 func resourceToGVK(resource resources.Resource) (schema.GroupVersionKind, error) {
 	switch resource.(type) {
-	case *gwv1.VirtualService:
-		return gwv1.VirtualServiceGVK, nil
+	// Gateway resources
 	case *gwv1.Gateway:
 		return gwv1.GatewayGVK, nil
 	case *gwv1.RouteTable:
 		return gwv1.RouteTableGVK, nil
-	case *gloov1.Upstream:
-		return gloov1.UpstreamGVK, nil
+	case *gwv1.VirtualService:
+		return gwv1.VirtualServiceGVK, nil
+	// Gloo resources
+	case *gloov1.Proxy:
+		return gloov1.ProxyGVK, nil
 	case *gloov1.Secret:
 		return gloov1.SecretGVK, nil
+	case *gloov1.Upstream:
+		return gloov1.UpstreamGVK, nil
 	default:
 		return schema.GroupVersionKind{}, errors.Errorf("config status metric reporting is not supported for resource type: %T", resource)
 	}
@@ -130,7 +136,7 @@ func (m *ConfigStatusMetrics) SetResourceInvalid(ctx context.Context, resource r
 	log := contextutils.LoggerFrom(ctx)
 	gvk, err := resourceToGVK(resource)
 	if err != nil {
-		log.Errorf("Unable to set config status valid for resource '%s': %s", resource.GetMetadata().Ref(), err.Error())
+		log.Warnf("Unable to set config status valid for resource '%s': %s", resource.GetMetadata().Ref(), err.Error())
 		return
 	}
 	if m.metrics[gvk] != nil {

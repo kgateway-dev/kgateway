@@ -9,27 +9,14 @@ import (
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"go.opencensus.io/stats/view"
 )
 
 var (
 	namespace = "test-ns"
 )
-
-func getGauge(viewName string, labelKey string, labelValue string) int {
-	rows, err := view.RetrieveData(viewName)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	for _, row := range rows {
-		for _, tag := range row.Tags {
-			if tag.Key.Name() == labelKey && tag.Value == labelValue {
-				return int(row.Data.(*view.LastValueData).Value)
-			}
-		}
-	}
-	return 0
-}
 
 func makeVirtualService(nameSuffix string) resources.Resource {
 	return &gwv1.VirtualService{
@@ -76,6 +63,15 @@ func makeSecret(nameSuffix string) resources.Resource {
 	}
 }
 
+func makeProxy(nameSuffix string) resources.Resource {
+	return &gloov1.Proxy{
+		Metadata: &core.Metadata{
+			Namespace: namespace,
+			Name:      "secret-" + nameSuffix,
+		},
+	}
+}
+
 var _ = Describe("ConfigStatusMetrics Test", func() {
 	DescribeTable("SetResource[Invalid|Valid] works as expected",
 		func(gvk string, metricName string, makeResource func(nameSuffix string) resources.Resource) {
@@ -93,39 +89,37 @@ var _ = Describe("ConfigStatusMetrics Test", func() {
 			// Create two resources
 			res1 := makeResource("1")
 			res2 := makeResource("2")
+			res1Name := res1.GetMetadata().GetName()
+			res2Name := res2.GetMetadata().GetName()
 
-			// Metrics should be 0 initially
-			val1 := getGauge(metricName, "name", res1.GetMetadata().GetName())
-			Expect(val1).To(Equal(0))
-			val2 := getGauge(metricName, "name", res2.GetMetadata().GetName())
-			Expect(val2).To(Equal(0))
+			// Metrics should not have any data initially
+			_, err = helpers.ReadMetricByLabel(metricName, "name", res1Name)
+			Expect(err).To(HaveOccurred())
+			_, err = helpers.ReadMetricByLabel(metricName, "name", res2Name)
+			Expect(err).To(HaveOccurred())
 
 			// Setting res1 invalid should not affect res2
 			c.SetResourceInvalid(context.TODO(), res1)
-			val1 = getGauge(metricName, "name", res1.GetMetadata().GetName())
-			Expect(val1).To(Equal(1))
-			val2 = getGauge(metricName, "name", res2.GetMetadata().GetName())
-			Expect(val2).To(Equal(0))
+			Expect(helpers.ReadMetricByLabel(metricName, "name", res1Name)).To(Equal(1))
+			_, err = helpers.ReadMetricByLabel(metricName, "name", res2Name)
+			Expect(err).To(HaveOccurred())
 
 			// Setting res2 invalid should not affect res1
 			c.SetResourceInvalid(context.TODO(), res2)
-			val1 = getGauge(metricName, "name", res1.GetMetadata().GetName())
-			Expect(val1).To(Equal(1))
-			val2 = getGauge(metricName, "name", res2.GetMetadata().GetName())
-			Expect(val2).To(Equal(1))
+			Expect(helpers.ReadMetricByLabel(metricName, "name", res1Name)).To(Equal(1))
+			Expect(helpers.ReadMetricByLabel(metricName, "name", res2Name)).To(Equal(1))
 
-			// Set both back to valid
+			// Setting both back to valid should return 0, not error
 			c.SetResourceValid(context.TODO(), res1)
 			c.SetResourceValid(context.TODO(), res2)
-			val1 = getGauge(metricName, "name", res1.GetMetadata().GetName())
-			Expect(val1).To(Equal(0))
-			val2 = getGauge(metricName, "name", res2.GetMetadata().GetName())
-			Expect(val2).To(Equal(0))
+			Expect(helpers.ReadMetricByLabel(metricName, "name", res1Name)).To(Equal(0))
+			Expect(helpers.ReadMetricByLabel(metricName, "name", res2Name)).To(Equal(0))
 		},
 		Entry("Virtual Service", "VirtualService.v1.gateway.solo.io", metrics.Names[gwv1.VirtualServiceGVK], makeVirtualService),
 		Entry("Gateway", "Gateway.v1.gateway.solo.io", metrics.Names[gwv1.GatewayGVK], makeGateway),
 		Entry("RouteTable", "RouteTable.v1.gateway.solo.io", metrics.Names[gwv1.RouteTableGVK], makeRouteTable),
 		Entry("Upstream", "Upstream.v1.gloo.solo.io", metrics.Names[gloov1.UpstreamGVK], makeUpstream),
 		Entry("Secret", "Secret.v1.gloo.solo.io", metrics.Names[gloov1.SecretGVK], makeSecret),
+		Entry("Proxy", "Proxy.v1.gloo.solo.io", metrics.Names[gloov1.SecretGVK], makeProxy),
 	)
 })
