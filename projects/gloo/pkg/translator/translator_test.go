@@ -2251,7 +2251,9 @@ var _ = Describe("Translator", func() {
 			Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
 		})
 	})
+
 	Context("Hybrid", func() {
+
 		It("can properly create a hybrid listener", func() {
 			translate()
 			listeners := snapshot.GetResources(resource.ListenerTypeV3).Items
@@ -2288,6 +2290,27 @@ var _ = Describe("Translator", func() {
 			Expect(hcmTypedCfg.GetRds().RouteConfigName).To(Equal(glooutils.MatchedRouteConfigName(proxy.GetListeners()[2], proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())))
 			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(6)) // TODO: is this the right number? is there more we can/should do to ensure correctness?
 		})
+
+		It("skips listeners with invalid downstream ssl config", func() {
+			invalidSslSecretRef := &v1.SslConfig_SecretRef{
+				SecretRef: &core.ResourceRef{
+					Name:      "invalid",
+					Namespace: "invalid",
+				},
+			}
+
+			proxyClone := proto.Clone(proxy).(*v1.Proxy)
+			proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher().SslConfig = &v1.SslConfig{
+				SslSecrets: invalidSslSecretRef,
+			}
+
+			_, errs, _, err := translator.Translate(params, proxyClone)
+
+			Expect(err).To(BeNil())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring("Listener Error: SSLConfigError. Reason: SSL secret not found: list did not find secret"))
+		})
+
 	})
 
 	Context("Ssl - cluster", func() {
