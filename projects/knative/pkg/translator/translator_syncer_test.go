@@ -5,7 +5,6 @@ import (
 	"time"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	knativev1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -39,7 +38,6 @@ var _ = Describe("TranslatorSyncer", func() {
 		ctx                  context.Context
 		cancel               context.CancelFunc
 		statusClient         resources.StatusClient
-		statusMetrics        metrics.ConfigStatusMetrics
 	)
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -73,9 +71,6 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxy = &v1.Proxy{Metadata: &core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
 		statusClient = gloostatusutils.GetStatusClientForNamespace("ns")
-		var err error
-		statusMetrics, err = metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -83,7 +78,7 @@ var _ = Describe("TranslatorSyncer", func() {
 	})
 
 	It("only processes annotated proxies when requireIngressClass is set to true successful proxy status to the ingresses it was created from", func() {
-		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), true, statusClient, statusMetrics).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), true, statusClient).(*translatorSyncer)
 
 		// expect ingress without class to be ignored
 		err := syncer.Sync(context.TODO(), &knativev1.TranslatorSnapshot{
@@ -118,7 +113,7 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	It("propagates successful proxy status to the ingresses it was created from", func() {
 		// requireIngressClass = true
-		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), false, statusClient, statusMetrics).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), false, statusClient).(*translatorSyncer)
 
 		go func() {
 			defer GinkgoRecover()
@@ -143,7 +138,7 @@ var _ = Describe("TranslatorSyncer", func() {
 	})
 
 	It("puts all ingresses on the internal proxy", func() {
-		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), false, statusClient, statusMetrics).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), false, statusClient).(*translatorSyncer)
 
 		// the ingresses loaded to each proxy
 		proxiesWithIngresses := make(map[string]v1alpha1.IngressList)
