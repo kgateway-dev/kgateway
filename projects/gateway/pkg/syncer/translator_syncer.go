@@ -163,7 +163,6 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 	s.currentGeneratedProxies = nil
 	s.currentGeneratedOrphans = nil
 
-	// consume/process `desiredProxies``
 	for proxy, reports := range desiredProxies {
 		// start propagating for new set of resources
 		ref := proxy.GetMetadata().Ref()
@@ -178,7 +177,6 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 		s.currentGeneratedProxies = append(s.currentGeneratedProxies, ref)
 	}
 
-	// consume/process `orphanedReports`
 	for i, reports := range orphanedReports {
 		// create a unique dummy key reference to propogate forward orphaned gateway statuses
 		refKey := "orphan_" + strconv.Itoa(i)
@@ -313,10 +311,8 @@ func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 	}
 }
 
+// extractCurrentReports massages several asynchronously set `statusSyncer` variables into formats consumable by `syncStatus`
 func (s *statusSyncer) extractCurrentReports() (reporter.ResourceReports, map[resources.InputResource]map[string]*core.Status, map[resources.InputResource]*core.Status) {
-	/**
-	Complicated data (de/re)structuring method.  Massages several asynchronously set `statusSyncer` variables into formats consumable by `syncStatus`
-	*/
 	var nilProxy *gloov1.Proxy
 	allReports := reporter.ResourceReports{}
 	inputResourceBySubresourceStatuses := map[resources.InputResource]map[string]*core.Status{}
@@ -334,8 +330,7 @@ func (s *statusSyncer) extractCurrentReports() (reporter.ResourceReports, map[re
 	// 		proxyToLastStatus       map[string]reportsAndStatus
 	// we could _probably_ combine the 3 data structures into one, but there is historical precedent
 	// for maintaining multiple, such that we can have an alphabetically-ordered processing of `proxyToLastStatus`
-	refKeys := make([]string, 0)
-	refKeys = append(refKeys, s.currentGeneratedOrphans...)
+	refKeys := append([]string{}, s.currentGeneratedOrphans...)
 	for _, ref := range s.currentGeneratedProxies {
 		refKeys = append(refKeys, gloo_translator.UpstreamToClusterName(ref))
 	}
