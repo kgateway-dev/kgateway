@@ -392,7 +392,10 @@ message Settings {
             // Each (key, value) pair in the map defines a label to be applied. Keys specify the name of the label
             // (e.g. "namespace"). Values specify the jsonpath (https://kubernetes.io/docs/reference/kubectl/jsonpath/)
             // string corresponding to the field of a resource to use as the label value (e.g. "{.metadata.namespace}").
-            map<string, string> label_to_path = 1;
+            // For example, if labelToPath = {name: '{.metadata.name}', namespace: '{.metadata.namespace}'} for
+            // Upstream.v1.gateway.solo.io, the following metric would be produced:
+            // validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0
+            map<string, string> labelToPath = 1;
         }
 
         // Enable metrics that track the configuration status of various resource types.

@@ -501,7 +501,7 @@ Provides settings related to the observability pod's interactions with grafana
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `labelToPath` | `map<string, string>` | Each (key, value) pair in the map defines a label to be applied. Keys specify the name of the label (e.g. "namespace"). Values specify the jsonpath (https://kubernetes.io/docs/reference/kubectl/jsonpath/) string corresponding to the field of a resource to use as the label value (e.g. "{.metadata.namespace}"). |
+| `labelToPath` | `map<string, string>` | Each (key, value) pair in the map defines a label to be applied. Keys specify the name of the label (e.g. "namespace"). Values specify the jsonpath (https://kubernetes.io/docs/reference/kubectl/jsonpath/) string corresponding to the field of a resource to use as the label value (e.g. "{.metadata.namespace}"). For example, if labelToPath = {name: '{.metadata.name}', namespace: '{.metadata.namespace}'} for Upstream.v1.gateway.solo.io, the following metric would be produced: validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0. |
 
 
 
