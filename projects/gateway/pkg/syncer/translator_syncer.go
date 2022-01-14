@@ -346,11 +346,12 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		}
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
-			continue
+		} else {
+			// The inputResource's status was successfully written, update the cache and metric with that status
+			status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
+			localInputResourceLastStatus[inputResource] = status
 		}
-		// The inputResource's status was successfully written, update the cache and metric with that status
 		status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
-		localInputResourceLastStatus[inputResource] = status
 		s.statusMetrics.SetResourceStatus(ctx, inputResource, status)
 	}
 	return errs
