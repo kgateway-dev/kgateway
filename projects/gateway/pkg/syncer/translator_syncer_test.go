@@ -81,7 +81,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 		m := map[string]*core.Status{
-			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
+			"*v1.Proxy.test_gloo-system": {State: core.Status_Accepted},
 		}
 		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
 	})
@@ -128,8 +128,8 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(expectedErr[rt]))
 		m := map[string]*core.Status{
-			"*v1.Proxy.gloo-system.test1": {State: core.Status_Accepted},
-			"*v1.Proxy.gloo-system.test2": {State: core.Status_Accepted},
+			"*v1.Proxy.test2_gloo-system": {State: core.Status_Accepted},
+			"*v1.Proxy.test1_gloo-system": {State: core.Status_Accepted},
 		}
 		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
 	})
@@ -170,7 +170,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 		m := map[string]*core.Status{
-			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
+			"*v1.Proxy.test_gloo-system": {State: core.Status_Accepted},
 		}
 		Eventually(func() map[string]*core.Status { return mockReporter.Statuses()[reportedKey] }, "5s", "0.5s").Should(BeEquivalentTo(m))
 	})
@@ -206,14 +206,14 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 		m := map[string]*core.Status{
-			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
+			"*v1.Proxy.test_gloo-system": {State: core.Status_Accepted},
 		}
 		Eventually(func() map[string]*core.Status { return mockReporter.Statuses()[reportedKey] }, "5s", "0.5s").Should(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors", func() {
 		acceptedProxy := &gloov1.Proxy{
-			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Metadata: &core.Metadata{Name: "test1", Namespace: "gloo-system"},
 		}
 		statusClient.SetStatus(acceptedProxy, &core.Status{State: core.Status_Accepted})
 
@@ -242,8 +242,8 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 
 		m := map[string]*core.Status{
-			"*v1.Proxy.gloo-system.test":  {State: core.Status_Accepted},
-			"*v1.Proxy.gloo-system.test2": {State: core.Status_Rejected},
+			"*v1.Proxy.test1_gloo-system": {State: core.Status_Accepted},
+			"*v1.Proxy.test2_gloo-system": {State: core.Status_Rejected},
 		}
 		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
 	})
@@ -279,14 +279,14 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 
 		m := map[string]*core.Status{
-			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
+			"*v1.Proxy.test_gloo-system": {State: core.Status_Accepted},
 		}
 		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors", func() {
 		rejectedProxy1 := &gloov1.Proxy{
-			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Metadata: &core.Metadata{Name: "test1", Namespace: "gloo-system"},
 		}
 		statusClient.SetStatus(rejectedProxy1, &core.Status{State: core.Status_Rejected})
 
@@ -323,8 +323,8 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(mergedErrs[vs]))
 
 		m := map[string]*core.Status{
-			"*v1.Proxy.gloo-system.test":  {State: core.Status_Rejected},
-			"*v1.Proxy.gloo-system.test2": {State: core.Status_Rejected},
+			"*v1.Proxy.test2_gloo-system": {State: core.Status_Rejected},
+			"*v1.Proxy.test1_gloo-system": {State: core.Status_Rejected},
 		}
 		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
 	})
