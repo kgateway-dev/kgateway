@@ -6,7 +6,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -25,15 +24,13 @@ type ProxyReconciler interface {
 
 type proxyReconciler struct {
 	statusClient   resources.StatusClient
-	statusMetrics  metrics.ConfigStatusMetrics
 	proxyValidator validation.GlooValidationServiceClient
 	baseReconciler gloov1.ProxyReconciler
 }
 
-func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) *proxyReconciler {
+func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient) *proxyReconciler {
 	return &proxyReconciler{
 		statusClient:   statusClient,
-		statusMetrics:  statusMetrics,
 		proxyValidator: proxyValidator,
 		baseReconciler: gloov1.NewProxyReconciler(proxyClient, statusClient),
 	}

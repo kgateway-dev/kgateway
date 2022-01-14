@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -198,10 +197,6 @@ func RunIngress(opts Opts) error {
 
 		translatorEmitter := v1.NewTranslatorEmitter(upstreamClient, kubeServiceClient, ingressClient)
 		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
-		statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
-		if err != nil {
-			return err
-		}
 		translatorSync := translator.NewSyncer(
 			opts.WriteNamespace,
 			proxyClient,
@@ -209,8 +204,7 @@ func RunIngress(opts Opts) error {
 			writeErrs,
 			opts.RequireIngressClass,
 			opts.CustomIngressClass,
-			statusClient,
-			statusMetrics)
+			statusClient)
 		translatorEventLoop := v1.NewTranslatorEventLoop(translatorEmitter, translatorSync)
 		translatorEventLoopErrs, err := translatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 		if err != nil {
@@ -253,9 +247,6 @@ func RunIngress(opts Opts) error {
 			ingressClient := clusteringressv1alpha1.NewClusterIngressClientWithBase(baseClient)
 			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(ingressClient)
 			statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
-			if err != nil {
-				return err
-			}
 			clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
 				opts.ClusterIngressProxyAddress,
 				opts.WriteNamespace,
@@ -280,10 +271,6 @@ func RunIngress(opts Opts) error {
 			ingressClient := knativev1alpha1.NewIngressClientWithBase(baseClient)
 			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(ingressClient)
 			statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
-			statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
-			if err != nil {
-				return err
-			}
 			knativeTranslatorSync := knativetranslator.NewSyncer(
 				opts.KnativeExternalProxyAddress,
 				opts.KnativeInternalProxyAddress,
@@ -293,7 +280,6 @@ func RunIngress(opts Opts) error {
 				writeErrs,
 				opts.RequireIngressClass,
 				statusClient,
-				statusMetrics,
 			)
 			knativeTranslatorEventLoop := knativev1.NewTranslatorEventLoop(knativeTranslatorEmitter, knativeTranslatorSync)
 			knativeTranslatorEventLoopErrs, err := knativeTranslatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
