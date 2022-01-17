@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
@@ -257,7 +258,7 @@ func getPluginContext(globalSettings bool, authOnVirtualHost, authOnRoute, authO
 	// ----------------------------------------------------------------------------
 	params := plugins.Params{
 		Ctx: ctx,
-		Snapshot: &gloov1.ApiSnapshot{
+		Snapshot: &v1snap.ApiSnapshot{
 			Proxies:   gloov1.ProxyList{proxy},
 			Upstreams: gloov1.UpstreamList{extAuthServerUpstream},
 		},

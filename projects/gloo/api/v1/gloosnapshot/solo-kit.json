@@ -9,7 +9,7 @@
     "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
   ],
   "resource_groups": {
-    "api.ethansnap.gloo.solo.io": [
+    "api.gloosnapshot.gloo.solo.io": [
       {
         "name": "Artifact",
         "package": "gloo.solo.io"

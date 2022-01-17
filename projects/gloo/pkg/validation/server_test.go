@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -363,27 +365,27 @@ var _ = Describe("Validation Server", func() {
 			Eventually(getNotifications, time.Hour).Should(HaveLen(1))
 
 			// do some syncs
-			err = v.Sync(ctx, &v1.ApiSnapshot{})
+			err = v.Sync(ctx, &v1snap.ApiSnapshot{})
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(getNotifications, time.Second).Should(HaveLen(2))
 
 			// add an auth config
-			err = v.Sync(ctx, &v1.ApiSnapshot{
+			err = v.Sync(ctx, &v1snap.ApiSnapshot{
 				AuthConfigs: enterprise_gloo_solo_io.AuthConfigList{{}}},
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(getNotifications, time.Second).Should(HaveLen(3))
 
 			// add a rate limit config
-			err = v.Sync(ctx, &v1.ApiSnapshot{
+			err = v.Sync(ctx, &v1snap.ApiSnapshot{
 				Ratelimitconfigs: ratelimit.RateLimitConfigList{{}}},
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(getNotifications, time.Second).Should(HaveLen(4))
 
 			// create jitter by changing upstreams
-			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams: v1.UpstreamList{{}}})
+			err = v.Sync(ctx, &v1snap.ApiSnapshot{Upstreams: v1.UpstreamList{{}}})
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(getNotifications, time.Second).Should(HaveLen(5))
@@ -393,7 +395,7 @@ var _ = Describe("Validation Server", func() {
 			srv.Stop()
 
 			// create jitter by changing upstreams
-			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams: v1.UpstreamList{{}, {}}})
+			err = v.Sync(ctx, &v1snap.ApiSnapshot{Upstreams: v1.UpstreamList{{}, {}}})
 			Expect(err).NotTo(HaveOccurred())
 
 			Consistently(getNotifications, time.Second).Should(HaveLen(5))

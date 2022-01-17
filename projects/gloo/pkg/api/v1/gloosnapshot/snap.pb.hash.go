@@ -26,7 +26,7 @@ var (
 )
 
 // Hash function
-func (m *Subset) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *Placeholder) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -34,7 +34,7 @@ func (m *Subset) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloosnapshot.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot.Subset")); err != nil {
+	if _, err = hasher.Write([]byte("gloosnapshot.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot.Placeholder")); err != nil {
 		return 0, err
 	}
 

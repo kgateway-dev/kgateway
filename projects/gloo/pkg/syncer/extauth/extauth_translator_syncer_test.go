@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -21,7 +22,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 		ctx             context.Context
 		cancel          context.CancelFunc
 		translator      syncer.TranslatorSyncerExtension
-		apiSnapshot     *gloov1.ApiSnapshot
+		apiSnapshot     *gloov1snap.ApiSnapshot
 		snapCache       *syncer.MockXdsCache
 		settings        *gloov1.Settings
 		resourceReports reporter.ResourceReports
@@ -34,7 +35,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 		translator, err = NewTranslatorSyncerExtension(ctx, syncer.TranslatorSyncerExtensionParams{})
 		Expect(err).NotTo(HaveOccurred())
 
-		apiSnapshot = &gloov1.ApiSnapshot{}
+		apiSnapshot = &gloov1snap.ApiSnapshot{}
 		settings = &gloov1.Settings{}
 		resourceReports = make(reporter.ResourceReports)
 	})
@@ -72,7 +73,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 			BeforeEach(func() {
 				proxy := getProxyWithVirtualHostExtAuthExtension(extAuthExtension)
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies:     gloov1.ProxyList{proxy},
 					AuthConfigs: extauth.AuthConfigList{authConfig},
 				}
@@ -89,7 +90,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 			BeforeEach(func() {
 				proxy := getProxyWithHybridListenerVirtualHostExtAuthExtension(extAuthExtension)
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies:     gloov1.ProxyList{proxy},
 					AuthConfigs: extauth.AuthConfigList{authConfig},
 				}
@@ -106,7 +107,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 			BeforeEach(func() {
 				proxy := getProxyWithRouteExtAuthExtension(extAuthExtension)
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies:     gloov1.ProxyList{proxy},
 					AuthConfigs: extauth.AuthConfigList{authConfig},
 				}
@@ -123,7 +124,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 			BeforeEach(func() {
 				proxy := getProxyWithWeightedDestinationAuthExtension(extAuthExtension)
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies:     gloov1.ProxyList{proxy},
 					AuthConfigs: extauth.AuthConfigList{authConfig},
 				}
@@ -158,7 +159,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 			BeforeEach(func() {
 				proxy := getProxyWithVirtualHostExtAuthExtension(extAuthExtension)
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies: gloov1.ProxyList{proxy},
 				}
 			})
@@ -174,7 +175,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 			BeforeEach(func() {
 				proxy := getProxyWithRouteExtAuthExtension(extAuthExtension)
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies: gloov1.ProxyList{proxy},
 				}
 			})
@@ -190,7 +191,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 			BeforeEach(func() {
 				proxy := getProxyWithWeightedDestinationAuthExtension(extAuthExtension)
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies: gloov1.ProxyList{proxy},
 				}
 			})
@@ -208,7 +209,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 		BeforeEach(func() {
 			proxy := getProxyWithVirtualHostExtAuthExtension(nil)
-			apiSnapshot = &gloov1.ApiSnapshot{
+			apiSnapshot = &gloov1snap.ApiSnapshot{
 				Proxies: gloov1.ProxyList{proxy},
 			}
 		})

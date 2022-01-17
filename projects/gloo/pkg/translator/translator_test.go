@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	"github.com/onsi/ginkgo/extensions/table"
@@ -126,7 +128,7 @@ var _ = Describe("Translator", func() {
 
 		params = plugins.Params{
 			Ctx: context.Background(),
-			Snapshot: &v1.ApiSnapshot{
+			Snapshot: &v1snap.ApiSnapshot{
 				Endpoints: v1.EndpointList{
 					{
 						Upstreams: []*core.ResourceRef{upName.Ref()},
@@ -2338,7 +2340,7 @@ var _ = Describe("Translator", func() {
 			}
 			params = plugins.Params{
 				Ctx: context.Background(),
-				Snapshot: &v1.ApiSnapshot{
+				Snapshot: &v1snap.ApiSnapshot{
 					Secrets:   v1.SecretList{secret},
 					Upstreams: v1.UpstreamList{upstream},
 				},

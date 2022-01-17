@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -93,7 +94,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 
 		It("should add typed per filter config to upstream", func() {
 
-			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+			err := MarkPerFilterConfig(context.TODO(), &v1snap.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 				return msg, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -102,7 +103,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 
 		It("should add typed per filter config only to relevant upstream", func() {
 
-			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+			err := MarkPerFilterConfig(context.TODO(), &v1snap.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 				return nil, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -167,7 +168,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 
 		It("should add typed per filter config only to relevant upstream in mutiple dest", func() {
 
-			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+			err := MarkPerFilterConfig(context.TODO(), &v1snap.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 				if spec.GetUpstream().Name == "yes" {
 					return msg, nil
 				}
@@ -182,7 +183,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 		})
 		Context("upstream group", func() {
 			var (
-				snap *v1.ApiSnapshot
+				snap *v1snap.ApiSnapshot
 			)
 			BeforeEach(func() {
 				upGrp := &v1.UpstreamGroup{
@@ -220,7 +221,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 						},
 					},
 				}
-				snap = &v1.ApiSnapshot{
+				snap = &v1snap.ApiSnapshot{
 					UpstreamGroups: v1.UpstreamGroupList{
 						upGrp,
 					},

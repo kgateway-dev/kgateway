@@ -701,8 +701,8 @@ apis:
   glooe.solo.io.RateLimitConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/ratelimit.proto.sk/#RateLimitConfig
     package: glooe.solo.io
-  gloosnapshot.gloo.solo.io.Subset:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/gloosnapshot/snap.proto.sk/#Subset
+  gloosnapshot.gloo.solo.io.Placeholder:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/gloosnapshot/snap.proto.sk/#Placeholder
     package: gloosnapshot.gloo.solo.io
   google.api.CustomHttpPattern:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/api/http.proto.sk/#CustomHttpPattern

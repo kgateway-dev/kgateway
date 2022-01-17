@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
@@ -122,7 +123,7 @@ func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracin
 }
 
 func processEnvoyTracingProvider(
-	snapshot *v1.ApiSnapshot,
+	snapshot *v1snap.ApiSnapshot,
 	tracingSettings *tracing.ListenerTracingSettings,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	if tracingSettings.GetProviderConfig() == nil {
@@ -142,7 +143,7 @@ func processEnvoyTracingProvider(
 }
 
 func processEnvoyZipkinTracing(
-	snapshot *v1.ApiSnapshot,
+	snapshot *v1snap.ApiSnapshot,
 	zipkinTracingSettings *tracing.ListenerTracingSettings_ZipkinConfig,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	var collectorClusterName string
@@ -179,7 +180,7 @@ func processEnvoyZipkinTracing(
 }
 
 func processEnvoyDatadogTracing(
-	snapshot *v1.ApiSnapshot,
+	snapshot *v1snap.ApiSnapshot,
 	datadogTracingSettings *tracing.ListenerTracingSettings_DatadogConfig,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	var collectorClusterName string
@@ -215,7 +216,7 @@ func processEnvoyDatadogTracing(
 	}, nil
 }
 
-func getEnvoyTracingCollectorClusterName(snapshot *v1.ApiSnapshot, collectorUpstreamRef *core.ResourceRef) (string, error) {
+func getEnvoyTracingCollectorClusterName(snapshot *v1snap.ApiSnapshot, collectorUpstreamRef *core.ResourceRef) (string, error) {
 	if snapshot == nil {
 		return "", errors.Errorf("Invalid Snapshot (nil provided)")
 	}

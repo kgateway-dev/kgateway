@@ -14,6 +14,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
@@ -80,7 +81,7 @@ func (s *sslDuplicatedFilterChainTranslator) ComputeFilterChains(params plugins.
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
 func (s *sslDuplicatedFilterChainTranslator) computeFilterChainsFromSslConfig(
-	snap *v1.ApiSnapshot,
+	snap *v1snap.ApiSnapshot,
 	listenerFilters []*envoy_config_listener_v3.Filter,
 ) []*envoy_config_listener_v3.FilterChain {
 	// if no ssl config is provided, return a single insecure filter chain
@@ -253,7 +254,7 @@ func (m *matcherFilterChainTranslator) ComputeFilterChains(params plugins.Params
 	return outFilterChains
 }
 
-func (m *matcherFilterChainTranslator) computeFilterChainFromMatchedListener(snap *v1.ApiSnapshot, listenerFilters []*envoy_config_listener_v3.Filter, matcher *v1.Matcher) *envoy_config_listener_v3.FilterChain {
+func (m *matcherFilterChainTranslator) computeFilterChainFromMatchedListener(snap *v1snap.ApiSnapshot, listenerFilters []*envoy_config_listener_v3.Filter, matcher *v1.Matcher) *envoy_config_listener_v3.FilterChain {
 	fc := &envoy_config_listener_v3.FilterChain{
 		Filters:          listenerFilters,
 		FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{},
@@ -267,7 +268,7 @@ func (m *matcherFilterChainTranslator) computeFilterChainFromMatchedListener(sna
 }
 
 // apply a Matcher to an existing FilterChain. If unsuccessful, return an error
-func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1.ApiSnapshot, matcher *v1.Matcher, fc *envoy_config_listener_v3.FilterChain) error {
+func (m *matcherFilterChainTranslator) applyMatcherToFilterChain(snap *v1snap.ApiSnapshot, matcher *v1.Matcher, fc *envoy_config_listener_v3.FilterChain) error {
 	fcm := fc.GetFilterChainMatch()
 	if fcm == nil {
 		// Require that the invoking function initialize the FilterChainMatch

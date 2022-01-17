@@ -26,14 +26,14 @@ var (
 )
 
 // Equal function
-func (m *Subset) Equal(that interface{}) bool {
+func (m *Placeholder) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*Subset)
+	target, ok := that.(*Placeholder)
 	if !ok {
-		that2, ok := that.(Subset)
+		that2, ok := that.(Placeholder)
 		if ok {
 			target = &that2
 		} else {

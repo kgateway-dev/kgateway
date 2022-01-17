@@ -26,12 +26,12 @@ var (
 )
 
 // Clone function
-func (m *Subset) Clone() proto.Message {
-	var target *Subset
+func (m *Placeholder) Clone() proto.Message {
+	var target *Placeholder
 	if m == nil {
 		return target
 	}
-	target = &Subset{}
+	target = &Placeholder{}
 
 	if m.GetValues() != nil {
 		target.Values = make(map[string]string, len(m.GetValues()))
