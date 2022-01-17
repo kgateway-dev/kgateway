@@ -1,6 +1,6 @@
 ### Install the Gloo Edge command line tool (CLI) {#install-glooctl}
 
-You can install the Gloo Edge command line, `glooctl`, command to help install, configure, and debug Gloo Edge. Depending on your operating system, you have several installation options.
+You can install the Gloo Edge command line, `glooctl`, to help install, configure, and debug Gloo Edge. Depending on your operating system, you have several installation options.
 
 * **macOS**: You can use the [Homebrew](https://brew.sh) package manager.
 
