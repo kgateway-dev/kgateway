@@ -15,7 +15,7 @@ You can install the Gloo Edge command line, `glooctl`, to help install, configur
   export PATH=$HOME/.gloo/bin:$PATH
   ```
 
-* **Windows**: You can use the following installation script, which requires Openssl to execute properly.
+* **Windows**: You can use the following installation script, which requires OpenSSL to execute properly.
   
   ```pwsh
   (New-Object System.Net.WebClient).DownloadString("https://run.solo.io/gloo/windows/install") | iex
