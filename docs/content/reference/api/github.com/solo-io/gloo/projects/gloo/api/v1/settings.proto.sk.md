@@ -29,6 +29,7 @@ weight: 5
 - [RateLimits](#ratelimits)
 - [ObservabilityOptions](#observabilityoptions)
 - [GrafanaIntegration](#grafanaintegration)
+- [MetricLabels](#metriclabels)
 - [UpstreamOptions](#upstreamoptions)
 - [GlooOptions](#gloooptions)
 - [AWSOptions](#awsoptions)
@@ -458,12 +459,14 @@ Provides overrides for the default configuration parameters used to interact wit
 
 ```yaml
 "grafanaIntegration": .gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration
+"configStatusMetricLabels": map<string, .gloo.solo.io.Settings.ObservabilityOptions.MetricLabels>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `grafanaIntegration` | [.gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration](../settings.proto.sk/#grafanaintegration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |
+| `configStatusMetricLabels` | `map<string, .gloo.solo.io.Settings.ObservabilityOptions.MetricLabels>` | Enable metrics that track the configuration status of various resource types. Each (key, value) pair in the map defines a metric for a particular resource type. Configuration status metrics are not recorded by default; metrics are recorded only for the resources specified in this map. Keys specify the resource type (GroupVersionKind) to track for status changes (e.g. "VirtualService.v1.gateway.solo.io"). Values specify the labels to set on the metric. |
 
 
 
@@ -482,6 +485,23 @@ Provides settings related to the observability pod's interactions with grafana
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `defaultDashboardFolderId` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Grafana allows dashboards to be added to specific folders by specifying that folder's ID If unset, automatic upstream dashboards are generated in the general folder (folderId: 0). If set, the observability deployment will try to create/move all upstreams without their own folderId to the folder specified here, after verifying that a folder with such an ID exists. Be aware that grafana requires a folders ID, which should not be confused with the similarly-named and more easily accessible folder UID value. If individual upstream dashboards need to be placed specific granafa folders, they can be given their own folder IDs by annotating the upstreams. The annotation key must be 'observability.solo.io/dashboard_folder_id' and the value must be the folder ID. Folder IDs can be retrieved from grafana with a pair of terminal commands: 1. Port forward the grafana deployment to surface its API: kubectl -n gloo-system port-forward deployment/glooe-grafana 3000 2. Request all folder data (after admin:admin is replaced with the correct credentials): curl http://admin:admin@localhost:3000/api/folders. |
+
+
+
+
+---
+### MetricLabels
+
+
+
+```yaml
+"labelToPath": map<string, string>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `labelToPath` | `map<string, string>` | Each (key, value) pair in the map defines a label to be applied. Keys specify the name of the label (e.g. "namespace"). Values specify the jsonpath (https://kubernetes.io/docs/reference/kubectl/jsonpath/) string corresponding to the field of a resource to use as the label value (e.g. "{.metadata.namespace}"). For example, if labelToPath = {name: '{.metadata.name}', namespace: '{.metadata.namespace}'} for Upstream.v1.gateway.solo.io, the following metric would be produced: validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0. |
 
 
 

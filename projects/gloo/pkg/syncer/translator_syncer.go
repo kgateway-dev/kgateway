@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/go-utils/contextutils"
@@ -21,13 +22,14 @@ type translatorSyncer struct {
 	sanitizer  sanitizer.XdsSanitizer
 	xdsCache   envoycache.SnapshotCache
 	xdsHasher  *xds.ProxyKeyHasher
-	reporter   reporter.Reporter
+	reporter   reporter.StatusReporter
 	// used for debugging purposes only
 	latestSnap *v1.ApiSnapshot
 	extensions []TranslatorSyncerExtension
 	// used to track which envoy node IDs exist without belonging to a proxy
 	extensionKeys map[string]struct{}
 	settings      *v1.Settings
+	statusMetrics metrics.ConfigStatusMetrics
 }
 
 type TranslatorSyncerExtensionParams struct {
@@ -56,19 +58,21 @@ func NewTranslatorSyncer(
 	xdsCache envoycache.SnapshotCache,
 	xdsHasher *xds.ProxyKeyHasher,
 	sanitizer sanitizer.XdsSanitizer,
-	reporter reporter.Reporter,
+	reporter reporter.StatusReporter,
 	devMode bool,
 	extensions []TranslatorSyncerExtension,
 	settings *v1.Settings,
+	statusMetrics metrics.ConfigStatusMetrics,
 ) v1.ApiSyncer {
 	s := &translatorSyncer{
-		translator: translator,
-		xdsCache:   xdsCache,
-		xdsHasher:  xdsHasher,
-		reporter:   reporter,
-		extensions: extensions,
-		sanitizer:  sanitizer,
-		settings:   settings,
+		translator:    translator,
+		xdsCache:      xdsCache,
+		xdsHasher:     xdsHasher,
+		reporter:      reporter,
+		extensions:    extensions,
+		sanitizer:     sanitizer,
+		settings:      settings,
+		statusMetrics: statusMetrics,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
@@ -101,6 +105,11 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
 		logger.Debugf("Failed writing report for proxies: %v", err)
 		multiErr = multierror.Append(multiErr, eris.Wrapf(err, "writing reports"))
+	}
+	// Update resource status metrics
+	for resource, report := range reports {
+		status := s.reporter.StatusFromReport(report, nil)
+		s.statusMetrics.SetResourceStatus(ctx, resource, status)
 	}
 
 	return multiErr.ErrorOrNil()

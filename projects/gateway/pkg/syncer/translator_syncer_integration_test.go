@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -68,13 +69,15 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		}
 
 		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
+		statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 
 		proxyClient, err = gloov1.NewProxyClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
 		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient, statusClient)
 		rpt := reporter.NewReporter("gateway", statusClient, gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
 		xlator := translator.NewDefaultTranslator(translator.Opts{})
-		ts = NewTranslatorSyncer(ctx, "gloo-system", proxyClient, proxyReconciler, rpt, xlator, statusClient)
+		ts = NewTranslatorSyncer(ctx, "gloo-system", proxyClient, proxyReconciler, rpt, xlator, statusClient, statusMetrics)
 
 		vs = &v1.VirtualService{
 			Metadata: &core.Metadata{
@@ -213,7 +216,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		// write the proxy status again to the same status as the one currently in the snapshot
 		AcceptProxy()
 
-		//status should be accepted.
+		// status should be accepted.
 		// this tests the bug that we saw where the status stayed pending.
 		// the vs sub resource status did not update,
 		// as the last status is the same as the one from Sync

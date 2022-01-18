@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
@@ -161,6 +162,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		DevMode:                       true,
 		ReadGatewaysFromAllNamespaces: settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
 		Validation:                    validation,
+		ConfigStatusMetricOpts:        settings.GetObservabilityOptions().GetConfigStatusMetricLabels(),
 	}
 
 	return RunGateway(opts)
@@ -221,6 +223,10 @@ func RunGateway(opts translator.Opts) error {
 	}
 
 	statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+	statusMetrics, err := metrics.NewConfigStatusMetrics(opts.ConfigStatusMetricOpts)
+	if err != nil {
+		return err
+	}
 
 	rpt := reporter.NewReporter("gateway",
 		statusClient,
@@ -282,7 +288,8 @@ func RunGateway(opts translator.Opts) error {
 		proxyReconciler,
 		rpt,
 		txlator,
-		statusClient)
+		statusClient,
+		statusMetrics)
 
 	gatewaySyncers := v1.ApiSyncers{
 		translatorSyncer,
