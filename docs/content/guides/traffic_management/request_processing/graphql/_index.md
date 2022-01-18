@@ -4,7 +4,7 @@ weight: 120
 description: Enables graphql resolution
 ---
 
-Set up API gateway and GraphQL server functionality for your apps without running in the same process as Gloo Edge.
+Set up API gateway and GraphQL server functionality for your apps in the same process as Gloo Edge.
 
 {{% notice note %}}
 This feature is available only in Gloo Edge Enterprise version 1.10.0-beta1 and later.
@@ -24,18 +24,18 @@ API gateways solve the problem of exposing multiple microservices with differing
 
 Gloo Edge solves the problems that other API gateways face when exposing GraphQL services by allowing you to configure GraphQL at the route level. API gateways are often used to rate limit, authorize and authenticate, and inject other centralized edge networking logic at the route level. However, because most GraphQL servers are exposed as a single endpoint within an internal network behind API gateways, you cannot add route-level customizations. With Gloo Edge, route-level customization logic is embedded into the API gateway.
 
-## Installing GraphQL
+## Step 1: Install GraphQL
 
 GraphQL resolution is an experimental feature included in Gloo Edge Enterprise version 1.10.0-beta1 and later.
 
 To try out GraphQL, install Gloo Edge in a development environment. Note that you currenty cannot update an existing installation to use GraphQL. Be sure to specify version 1.10.0-beta1 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
 ```
-glooctl install gateway enterprise --license-key=<LICENESE_LEY> --version 1.11.0-beta3
+glooctl install gateway enterprise --version 1.11.0-beta3 --license-key=<LICENSE_LEY>
 ```
 
 Next, you can try out GraphQL filtering with sample apps such as [Pet Store](#pet-store) and [Bookinfo](#bookinfo).
 
-## Step 1: GraphQL service discovery with Pet Store {#pet-store}
+## Step 2: GraphQL service discovery with Pet Store {#pet-store}
 
 Explore GraphQL service discovery with the Pet Store sample application.
 
@@ -92,11 +92,11 @@ EOF
 
 6. Send a request to the endpoint to verify that the request is successfully resolved by Envoy.
    ```sh
-   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query":"{pets{name}}"}'
+   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {getPetById(petId: 2) {name}}"}'
    ```
    Example successful response:
    ```json
-   {"data":{"pets":[{"name":"Dog"},{"name":"Cat"}]}}
+   {"data":{"getPetById":{"name":"Cat 2"}}}
    ```
 
 This JSON output is filtered only for the desired data, as compared to the unfiltered response that the Pet Store app returned to the GraphQL server:
@@ -105,7 +105,7 @@ This JSON output is filtered only for the desired data, as compared to the unfil
 ```
 Data filtering is one advantage of using GraphQL instead of querying the upstream directly. Because the GraphQL query is issued for only the name of the pets, GraphQL is able to filter out any data in the response that is irrelevant to the query, and return only the data that is specifically requested.
 
-## Step 2: GraphQL resolvers with Bookinfo {#bookinfo}
+## Step 3: GraphQL resolvers with Bookinfo {#bookinfo}
 
 Next, explore GraphQL resolution with the Bookinfo sample application.
 
@@ -134,12 +134,10 @@ In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backe
    kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
    ```
 
-2. Verify that Gloo Edge automatically discovered the Bookinfo services and created corresponding upstreams, which you will use in the resolvers.
+2. Verify that Gloo Edge automatically discovered the Bookinfo services and created corresponding `default-productpage-9080` upstream, which you will use in the REST resolver.
 ```sh
 kubectl get upstream -n gloo-system
 ```
-
-default-productpage-9080
 
 3. Check out the contents of the following Gloo Edge GraphQL schema CRD. Specifically, take a look at the `restResolver` and `schema_definition` sections.
    ```sh
@@ -213,21 +211,13 @@ spec:
 EOF
 {{< /highlight >}}
 
-1. Port forward the gateway endpoint.
-```sh
-kubectl port-forward -n gloo-system deploy/gateway-proxy 8080
-```
-
-8. Point your favorite GraphQL client to `http://localhost:8080/graphql`. For example, you might go to `https://studio.apollographql.com/sandbox/explorer` to specify this URL for the GraphQL server.
-
-
 6. Send a request to the endpoint to verify that the request is successfully resolved by Envoy.
    ```sh
-   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query":"{pets{name}}"}'
+   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}'
    ```
    Example successful response:
    ```json
-   {"data":{"pets":[{"name":"Dog"},{"name":"Cat"}]}}
+   {"data":{"productsForHome":[{"id":"0","title":"The Comedy of Errors","author":"William Shakespeare","pages":200,"year":1595}]}}
    ```
 
 ## Try it yourself
