@@ -866,6 +866,31 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
+	virtualServiceFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.VirtualServiceCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	routeTableFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.RouteTableCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	virtualHostOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.VirtualHostOptionCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	routeOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.RouteOptionCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.GatewayCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	return bootstrap.Opts{
 		Upstreams:         upstreamFactory,
 		KubeServiceClient: kubeServiceClient,
@@ -876,6 +901,11 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		AuthConfigs:       authConfigFactory,
 		RateLimitConfigs:  rateLimitConfigFactory,
 		GraphQLSchemas:    graphqlSchemaFactory,
+		VirtualServices:   virtualServiceFactory,
+		RouteTables:       routeTableFactory,
+		VirtualHostOptions: virtualHostOptionFactory,
+		RouteOptions:      routeOptionFactory,
+		Gateways:          gatewayFactory,
 		KubeCoreCache:     kubeCoreCache,
 	}, nil
 }
