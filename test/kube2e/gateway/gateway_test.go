@@ -194,6 +194,27 @@ var _ = Describe("Kube2e: gateway", func() {
 		cancel()
 	})
 
+	Context("tests with orphaned gateways", func() {
+		It("correctly sets a status to a single gateway", func() {
+			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
+			// wait for default gateway to be created
+			Eventually(func() (*gatewayv1.Gateway, error) {
+				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+			}, "15s", "0.5s").Should(Not(BeNil()))
+
+			// demand that a created gateway _has_ a status.
+			gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+			Expect(gw.NamespacedStatuses.GetStatuses()).NotTo(BeNil())
+
+			// assert that there are no virtual services or proxies
+			proxyList, _ := proxyClient.List(testHelper.InstallNamespace, clients.ListOpts{Ctx: ctx})
+			vsList, _ := virtualServiceClient.List(testHelper.InstallNamespace, clients.ListOpts{Ctx: ctx})
+
+			Expect(len(proxyList)).To(BeNumerically("==", 0))
+			Expect(len(vsList)).To(BeNumerically("==", 0))
+		})
+	})
+
 	Context("tests with virtual service", func() {
 
 		AfterEach(func() {
