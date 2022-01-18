@@ -1,6 +1,7 @@
 package gateway_test
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -34,8 +35,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	"k8s.io/apimachinery/pkg/labels"
-
-	"context"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

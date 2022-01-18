@@ -3,13 +3,13 @@ package syncer_test
 import (
 	"context"
 
-	"github.com/solo-io/gloo/pkg/utils/statusutils"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -42,6 +42,7 @@ var _ = Describe("Translate Proxy", func() {
 		ns             = "any-ns"
 		ref            = "syncer-test"
 		statusClient   resources.StatusClient
+		statusMetrics  metrics.ConfigStatusMetrics
 	)
 
 	BeforeEach(func() {
@@ -69,11 +70,13 @@ var _ = Describe("Translate Proxy", func() {
 		settings = &v1.Settings{}
 
 		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
+		statusMetrics, err = metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
-		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
+		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics)
 		snap = &v1.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
@@ -102,7 +105,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		snap.Proxies[0] = p1
 
-		syncer = NewTranslatorSyncer(&mockTranslator{false, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
+		syncer = NewTranslatorSyncer(&mockTranslator{false, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics)
 
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
@@ -183,6 +186,7 @@ var _ = Describe("Empty cache", func() {
 		ns             = "any-ns"
 		ref            = "syncer-test"
 		statusClient   resources.StatusClient
+		statusMetrics  metrics.ConfigStatusMetrics
 	)
 
 	BeforeEach(func() {
@@ -231,7 +235,9 @@ var _ = Describe("Empty cache", func() {
 				}),
 			}),
 		)
-		syncer = NewTranslatorSyncer(&mockTranslator{true, false, snapshot}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
+		statusMetrics, err = metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
+		syncer = NewTranslatorSyncer(&mockTranslator{true, false, snapshot}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics)
 
 		_, err = proxyClient.Write(proxy, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -301,6 +307,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		ns             = "any-ns"
 		ref            = "syncer-test"
 		statusClient   resources.StatusClient
+		statusMetrics  metrics.ConfigStatusMetrics
 	)
 
 	proxiesShouldHaveErrors := func(proxies v1.ProxyList, numProxies int) {
@@ -370,11 +377,13 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		settings = &v1.Settings{}
 
 		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
+		statusMetrics, err = metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
+		Expect(err).NotTo(HaveOccurred())
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
-		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
+		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics)
 		snap = &v1.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy1,
