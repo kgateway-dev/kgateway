@@ -183,7 +183,7 @@ var _ = Describe("Plugin", func() {
 	Context("ProcessHcmNetworkFilter", func() {
 
 		var (
-			plugin       *Plugin
+			plugin       plugins.HttpConnectionManagerPlugin
 			pluginParams plugins.Params
 
 			parentListener *v1.Listener

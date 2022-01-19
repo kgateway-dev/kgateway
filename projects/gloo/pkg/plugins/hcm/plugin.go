@@ -12,21 +12,30 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+var (
+	_ plugins.Plugin                      = new(plugin)
+	_ plugins.HttpConnectionManagerPlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "hcm"
+)
+
+type plugin struct{}
+
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpConnectionManagerPlugin = new(Plugin)
-
-type Plugin struct {
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func (p *Plugin) Init(_ plugins.InitParams) error {
+func (p *plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
+func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
 
 	out.UseRemoteAddress = in.GetUseRemoteAddress()

@@ -101,7 +101,8 @@ var _ = Describe("Plugin", func() {
 			It("errors on enterprise only config", func() {
 				in.Options.ProxyProtocol.AllowRequestsWithoutProxyProtocol = true
 				err := p.ProcessListener(params, in, out)
-				Expect(err).To(MatchError(ErrEnterpriseOnly))
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Could not load configuration for the following Enterprise features"))
 			})
 		})
 

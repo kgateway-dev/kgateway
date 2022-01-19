@@ -36,37 +36,37 @@ type Translator interface {
 func NewTranslator(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
-	getPluginRegistry func() plugins.PluginRegistry,
+	pluginRegistryFactory plugins.PluginRegistryFactory,
 ) Translator {
-	return NewTranslatorWithHasher(sslConfigTranslator, settings, getPluginRegistry, EnvoyCacheResourcesListToFnvHash)
+	return NewTranslatorWithHasher(sslConfigTranslator, settings, pluginRegistryFactory, EnvoyCacheResourcesListToFnvHash)
 }
 
 func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
-	getPluginRegistry func() plugins.PluginRegistry,
+	pluginRegistryFactory plugins.PluginRegistryFactory,
 	hasher func(resources []envoycache.Resource) uint64,
 ) Translator {
 	return &translatorFactory{
-		getPluginRegistry:   getPluginRegistry,
-		settings:            settings,
-		sslConfigTranslator: sslConfigTranslator,
-		hasher:              hasher,
+		pluginRegistryFactory: pluginRegistryFactory,
+		settings:              settings,
+		sslConfigTranslator:   sslConfigTranslator,
+		hasher:                hasher,
 	}
 }
 
 type translatorFactory struct {
-	getPluginRegistry   func() plugins.PluginRegistry
-	settings            *v1.Settings
-	sslConfigTranslator utils.SslConfigTranslator
-	hasher              func(resources []envoycache.Resource) uint64
+	pluginRegistryFactory plugins.PluginRegistryFactory
+	settings              *v1.Settings
+	sslConfigTranslator   utils.SslConfigTranslator
+	hasher                func(resources []envoycache.Resource) uint64
 }
 
 func (t *translatorFactory) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
-	pluginRegistry := t.getPluginRegistry()
+	pluginRegistry := t.pluginRegistryFactory(params.Ctx)
 	listenerTranslatorFactory := NewListenerSubsystemTranslatorFactory(pluginRegistry, t.sslConfigTranslator)
 
 	instance := &translatorInstance{
@@ -239,7 +239,8 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		envoyRouteConfiguration := routeConfigurationTranslator.ComputeRouteConfiguration(params)
 
 		// 2. Compute Listener
-		// This way we evaluate HttpFilters second
+		// This way we evaluate HttpFilters second, which allows us to avoid appending an HttpFilter
+		// that is not used by any Route / VirtualHost
 		envoyListener := listenerTranslator.ComputeListener(params)
 
 		if envoyListener != nil {

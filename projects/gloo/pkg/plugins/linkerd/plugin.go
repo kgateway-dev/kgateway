@@ -3,7 +3,6 @@ package linkerd
 import (
 	"fmt"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -17,30 +16,36 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
-const (
-	HeaderKey = "l5d-dst-override"
+var (
+	_ plugins.Plugin      = new(plugin)
+	_ plugins.RoutePlugin = new(plugin)
 )
 
-type Plugin struct {
+const (
+	ExtensionName = "linkerd"
+	HeaderKey     = "l5d-dst-override"
+)
+
+type plugin struct {
 	enabled bool
 }
 
-var _ plugins.Plugin = &Plugin{}
-var _ plugins.RoutePlugin = &Plugin{}
-var _ plugins.UpstreamPlugin = &Plugin{}
-
-func NewPlugin() *Plugin {
-	return &Plugin{}
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) Init(params plugins.InitParams) error {
 	if settings := params.Settings; settings != nil {
 		p.enabled = params.Settings.GetLinkerd()
 	}
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if !p.enabled {
 		return nil
 	}
@@ -170,8 +175,4 @@ func createHeaderForUpstream(us *kubernetes.UpstreamSpec) *envoy_config_core_v3.
 		},
 	}
 	return header
-}
-
-func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
-	return nil
 }

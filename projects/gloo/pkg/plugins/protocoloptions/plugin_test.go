@@ -15,7 +15,7 @@ import (
 var _ = Describe("Plugin", func() {
 
 	var (
-		p      *protocoloptions.Plugin
+		p      plugins.UpstreamPlugin
 		params plugins.Params
 		out    *envoy_config_cluster_v3.Cluster
 	)

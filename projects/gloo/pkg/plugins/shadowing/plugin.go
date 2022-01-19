@@ -12,6 +12,15 @@ import (
 )
 
 var (
+	_ plugins.Plugin      = new(plugin)
+	_ plugins.RoutePlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "shadowing"
+)
+
+var (
 	InvalidRouteActionError  = eris.New("cannot use shadowing plugin on non-Route_Route route actions")
 	UnspecifiedUpstreamError = eris.New("invalid plugin spec: must specify an upstream ref")
 	InvalidNumeratorError    = func(num float32) error {
@@ -19,21 +28,21 @@ var (
 	}
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.RoutePlugin = new(Plugin)
-
-type Plugin struct {
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if in.GetOptions() == nil || in.GetOptions().GetShadowing() == nil {
 		return nil
 	}
