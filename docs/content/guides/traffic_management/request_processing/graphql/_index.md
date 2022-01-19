@@ -4,7 +4,7 @@ weight: 120
 description: Enables GraphQL resolution
 ---
 
-Set up API gateway and GraphQL server functionality for your apps in the same process as Gloo Edge.
+Set up API gateway and GraphQL server functionality for your apps in the same process by using Gloo Edge.
 
 {{% notice note %}}
 This feature is available only in Gloo Edge Enterprise version 1.10.0-beta1 and later.
@@ -20,9 +20,9 @@ This feature is experimental. Do not use this feature in a production environmen
 GraphQL is a server-side query language and runtime you can use to expose your APIs as an alternative to REST APIs. GraphQL allows you to request only the data you want and handle any subsequent requests on the server side, saving numerous expensive origin-to-client requests by instead handling requests in your internal network.
 
 ### Using GraphQL in an API gateway
-API gateways solve the problem of exposing multiple microservices with differing implementations from a single location and scheme, and by talking to a single owner. GraphQL integrates well with API gateways by exposing your API without versioning and allowing clients to interact with backend APIs on their own terms. Additionally, you can mix and match your GraphQL graph with your existing REST routes to test GraphQL integration features and migrate to GraphQL at a pace that makes sense for your organization.
+API gateways expose microservices with different implementations from a single location and schema. The API gateway acts like a single owner for all requests and responses. As such, it can shape traffic according to consistent policies that you set. When you integrate with GraphQL, you get the benefits of an API gateway and more. GraphQL exposes your API without versioning and lets clients interact with the API on their own terms. Additionally, you can mix and match your GraphQL graph with your existing REST routes. This setup lets you test and migrate to GraphQL at a pace that makes sense for your organization.
 
-Gloo Edge solves the problems that other API gateways face when exposing GraphQL services by allowing you to configure GraphQL at the route level. API gateways are often used to rate limit, authorize and authenticate, and inject other centralized edge networking logic at the route level. However, because most GraphQL servers are exposed as a single endpoint within an internal network behind API gateways, you cannot add route-level customizations. With Gloo Edge, route-level customization logic is embedded into the API gateway.
+Gloo Edge extends API gateway and GraphQL capabilities with route-level control.  Usually, API gateways apply edge networking logic at the route level. For example, the gateway might rate limit, authorize, and authenticate requests. Most GraphQL servers are a separate endpoint behind the API gateway. Therefore, you cannot add route-level customizations. In contrast, Gloo Edge embeds route-level customization logic into the API gateway.
 
 ## Step 1: Install GraphQL
 
@@ -143,7 +143,7 @@ kubectl get upstream -n gloo-system
    ```sh
    curl https://raw.githubusercontent.com/kcbabo/graphql-bookinfo/main/kubernetes/bookinfo-gql.yaml
    ```
-   * `restResolver`: A resolver is defined by a name (ex: Query|productsForHome) and whether it is a REST or a gRPC resolver. This example is a REST resolver, so the path and the method that are needed to request the data are specified. The path can reference a parent attribute, such as `/details/{$parent.id}.`
+   * `restResolver`: A resolver is defined by a name (ex: `Query|productsForHome`) and whether it is a REST or a gRPC resolver. This example is a REST resolver, so the path and the method that are needed to request the data are specified. The path can reference a parent attribute, such as `/details/{$parent.id}.`
      ```yaml
      resolutions:
        Query|productsForHome:
