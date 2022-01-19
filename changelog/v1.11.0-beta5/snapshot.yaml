@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/2939
+    description: |
+       Augment gloo snapshots with gateway types in preparation for migrating gateway functionality to the gloo pod.
