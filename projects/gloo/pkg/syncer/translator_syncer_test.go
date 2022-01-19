@@ -77,13 +77,8 @@ var _ = Describe("Translate Proxy", func() {
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
-<<<<<<< HEAD
 		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics)
-		snap = &v1.ApiSnapshot{
-=======
-		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
 		snap = &v1snap.ApiSnapshot{
->>>>>>> 7c91928a2 ( Remove the old snapshot and only reference the snapshot with gateway types)
 			Proxies: v1.ProxyList{
 				proxy,
 			},
