@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
@@ -892,20 +892,20 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	}
 
 	return bootstrap.Opts{
-		Upstreams:         upstreamFactory,
-		KubeServiceClient: kubeServiceClient,
-		Proxies:           proxyFactory,
-		UpstreamGroups:    upstreamGroupFactory,
-		Secrets:           secretFactory,
-		Artifacts:         artifactFactory,
-		AuthConfigs:       authConfigFactory,
-		RateLimitConfigs:  rateLimitConfigFactory,
-		GraphQLSchemas:    graphqlSchemaFactory,
-		VirtualServices:   virtualServiceFactory,
-		RouteTables:       routeTableFactory,
+		Upstreams:          upstreamFactory,
+		KubeServiceClient:  kubeServiceClient,
+		Proxies:            proxyFactory,
+		UpstreamGroups:     upstreamGroupFactory,
+		Secrets:            secretFactory,
+		Artifacts:          artifactFactory,
+		AuthConfigs:        authConfigFactory,
+		RateLimitConfigs:   rateLimitConfigFactory,
+		GraphQLSchemas:     graphqlSchemaFactory,
+		VirtualServices:    virtualServiceFactory,
+		RouteTables:        routeTableFactory,
 		VirtualHostOptions: virtualHostOptionFactory,
-		RouteOptions:      routeOptionFactory,
-		Gateways:          gatewayFactory,
-		KubeCoreCache:     kubeCoreCache,
+		RouteOptions:       routeOptionFactory,
+		Gateways:           gatewayFactory,
+		KubeCoreCache:      kubeCoreCache,
 	}, nil
 }
