@@ -7,11 +7,11 @@ description: Enables GraphQL resolution
 Set up API gateway and GraphQL server functionality for your apps in the same process by using Gloo Edge.
 
 {{% notice note %}}
-This feature is available only in Gloo Edge Enterprise version 1.10.0-beta1 and later.
+This feature is available only in Gloo Edge Enterprise version 1.11.0-beta3 and later.
 {{% /notice %}}
 
 {{% notice warning %}}
-This feature is experimental. Do not use this feature in a production environment.
+This is an alpha feature. Do not use this feature in a production environment.
 {{% /notice %}}
 
 ## About
@@ -26,14 +26,14 @@ Gloo Edge extends API gateway and GraphQL capabilities with route-level control.
 
 ## Step 1: Install GraphQL
 
-GraphQL resolution is an experimental feature included in Gloo Edge Enterprise version 1.10.0-beta1 and later.
+GraphQL resolution is an alpha feature included in Gloo Edge Enterprise version 1.11.0-beta3 and later.
 
-To try out GraphQL, install Gloo Edge in a development environment. Note that you currenty cannot update an existing installation to use GraphQL. Be sure to specify version 1.10.0-beta1 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
+1. [Contact your account representative](https://www.solo.io/company/talk-to-an-expert/) to request a Gloo Edge Enterprise license that specifically enables the GraphQL capability.
+
+2. To try out GraphQL, install Gloo Edge in a development environment. Note that you currenty cannot update an existing installation to use GraphQL. Be sure to specify version 1.11.0-beta3 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
 ```
 glooctl install gateway enterprise --version 1.11.0-beta3 --license-key=<LICENSE_LEY>
 ```
-
-Next, you can try out GraphQL filtering with sample apps such as [Pet Store](#pet-store) and [Bookinfo](#bookinfo).
 
 ## Step 2: GraphQL service discovery with Pet Store {#pet-store}
 
@@ -43,7 +43,7 @@ Explore GraphQL service discovery with the Pet Store sample application.
    ```sh
    kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
    ```
-   Note that any `/GET` requests to `/api/pets` of this service return the following JSON output:
+   Optional: You can [create a route and send a `/GET` request to `/api/pets` of this service](/guides/security/auth/custom_auth/#setup), which returns the following unfiltered JSON output:
    ```json
    [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
    ```
@@ -64,7 +64,7 @@ Explore GraphQL service discovery with the Pet Store sample application.
    default-petstore-8080   2m58s
    ```
 
-4. Optional: Check out the generated GraphQL schema.
+4. Optional: Check out the generated GraphQL schema. 
    ```sh
    kubectl get graphqlschemas default-petstore-8080 -o yaml -n gloo-system
    ```
@@ -111,27 +111,9 @@ Next, explore GraphQL resolution with the Bookinfo sample application.
 
 In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backend. Today Gloo Edge supports REST and gRPC resolvers. In the following steps, you create resolvers that point to Bookinfo services and use the resolvers in a GraphQL schema.
 
-1. Start by installing the Istio sample app, Bookinfo.
-   1. Download and install Istio. For more information, see the [Istio getting started documentation](https://istio.io/docs/setup/getting-started/).
+1. Deploy the Bookinfo sample application to the default namespace, which you will expose behind a GraphQL server embedded in Envoy.
    ```sh
-   curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.11.4 sh -
-   cd istio-1.11.4
-   istioctl install --set profile=demo
-   ```
-
-   1. Verify that all Istio pods have a status of **Running** or **Completed**.
-   ```sh
-   kubectl get pods -n istio-system
-   ```
-
-   1. Enable Istio injection for the default namespace.
-   ```sh
-   kubectl label namespace default istio-injection=enabled
-   ```
-
-   1. Deploy the Bookinfo sample application to the default namespace, which you will expose behind a GraphQL server embedded in Envoy.
-   ```sh
-   kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
+   kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/bookinfo/platform/kube/bookinfo.yaml
    ```
 
 2. Verify that Gloo Edge automatically discovered the Bookinfo services and created corresponding `default-productpage-9080` upstream, which you will use in the REST resolver.
@@ -156,7 +138,7 @@ kubectl get upstream -n gloo-system
              name: default-productpage-9080
              namespace: gloo-system
      ```
-   * `schema_definition`: A schema definition defines queries and types that reference the resolvers.
+   * `schema_definition`: A schema definition determines what kind of data can be returned to a client that makes a GraphQL query to your endpoint. The schema specifies the data that a particular `type`, or service, returns in response to a GraphQL query. In this example, fields are defined for the three Bookinfo services, Product, Review, and Rating. Additionally, the schema definition indicates which services reference the resolvers. In this example, the Product service references the `Query|productForHome` resolver. 
      ```yaml
      schema_definition: |
        type Query {
@@ -215,7 +197,7 @@ EOF
    ```sh
    curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}'
    ```
-   Example successful response:
+   In the JSON response, note that only the information you queried is returned:
    ```json
    {"data":{"productsForHome":[{"id":"0","title":"The Comedy of Errors","author":"William Shakespeare","pages":200,"year":1595}]}}
    ```
