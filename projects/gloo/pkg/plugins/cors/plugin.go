@@ -17,7 +17,6 @@ import (
 
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )

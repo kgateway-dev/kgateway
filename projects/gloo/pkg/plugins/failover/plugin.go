@@ -5,7 +5,6 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 

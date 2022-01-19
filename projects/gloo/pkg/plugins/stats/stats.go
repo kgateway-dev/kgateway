@@ -10,7 +10,6 @@ import (
 	"github.com/rotisserie/eris"
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"

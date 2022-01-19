@@ -13,7 +13,6 @@ import (
 	gloo_type_matcher "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	glootype "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/csrf"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"

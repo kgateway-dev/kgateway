@@ -17,7 +17,6 @@ import (
 	errors "github.com/rotisserie/eris"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	grpcapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"

@@ -2,7 +2,6 @@ package kubernetes_test
 
 import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	gloov1kube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 

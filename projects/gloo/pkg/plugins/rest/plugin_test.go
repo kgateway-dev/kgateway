@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	pluginsv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	v1rest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"

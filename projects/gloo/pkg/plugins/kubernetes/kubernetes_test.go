@@ -6,7 +6,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
