@@ -6,6 +6,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -72,7 +73,7 @@ func SimpleSecret() *v1.Secret {
 	}
 }
 
-func SimpleGlooSnapshot() *v1.ApiSnapshot {
+func SimpleGlooSnapshot() *v1snap.ApiSnapshot {
 	secret := SimpleSecret()
 	us := UpstreamWithSecret(secret)
 	routes := []*v1.Route{{
@@ -163,7 +164,7 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 		},
 	}
 
-	return &v1.ApiSnapshot{
+	return &v1snap.ApiSnapshot{
 		Proxies:   []*v1.Proxy{proxy},
 		Upstreams: []*v1.Upstream{us},
 		Secrets:   []*v1.Secret{secret},

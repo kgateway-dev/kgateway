@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -26,7 +27,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 		proxy       *gloov1.Proxy
 		params      syncer.TranslatorSyncerExtensionParams
 		translator  syncer.TranslatorSyncerExtension
-		apiSnapshot *gloov1.ApiSnapshot
+		apiSnapshot *gloov1snap.ApiSnapshot
 		proxyClient clients.ResourceClient
 		snapCache   *syncer.MockXdsCache
 		settings    *gloov1.Settings
@@ -78,7 +79,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 
 				proxyClient.Write(proxy, clients.WriteOpts{})
 
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies: []*gloov1.Proxy{proxy},
 				}
 				settings = &gloov1.Settings{}
@@ -147,7 +148,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 
 				proxyClient.Write(proxy, clients.WriteOpts{})
 
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies: []*gloov1.Proxy{proxy},
 				}
 				settings = &gloov1.Settings{}
@@ -217,7 +218,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 
 				proxyClient.Write(proxy, clients.WriteOpts{})
 
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies: []*gloov1.Proxy{proxy},
 				}
 			})
@@ -280,7 +281,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 
 				proxyClient.Write(proxy, clients.WriteOpts{})
 
-				apiSnapshot = &gloov1.ApiSnapshot{
+				apiSnapshot = &gloov1snap.ApiSnapshot{
 					Proxies: []*gloov1.Proxy{proxy},
 				}
 			})

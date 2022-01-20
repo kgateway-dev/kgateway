@@ -5,6 +5,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -103,7 +104,7 @@ type envoyHeaderManipulation struct {
 	ResponseHeadersToRemove []string
 }
 
-func getSecretsFromSnapshot(snapshot *v1.ApiSnapshot) *v1.SecretList {
+func getSecretsFromSnapshot(snapshot *v1snap.ApiSnapshot) *v1.SecretList {
 	var secrets *v1.SecretList
 	if snapshot == nil {
 		secrets = &v1.SecretList{}

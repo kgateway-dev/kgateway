@@ -43,15 +43,19 @@ metadata:
         app: gloo
         gloo: rbac
 rules:
-- apiGroups: ["gloo.solo.io", "enterprise.gloo.solo.io"]
-  resources: ["upstreams","upstreamgroups", "proxies", "authconfigs"]
+- apiGroups: ["gloo.solo.io", "enterprise.gloo.solo.io", "gateway.solo.io"]
+  resources: ["upstreams", "upstreamgroups", "proxies", "authconfigs", "virtualservices", "routetables", "virtualhostoptions", "routeoptions"]
   # update is needed for status updates
   verbs: ["get", "list", "watch", "update"]
+- apiGroups: ["gateway.solo.io"]
+  resources: ["gateways"]
+  # update is needed for status updates
+  verbs: ["get", "list", "watch", "update", "delete"]
 - apiGroups: ["ratelimit.solo.io"]
   resources: ["ratelimitconfigs","ratelimitconfigs/status"]
   verbs: ["get", "list", "watch", "update"]
 - apiGroups: ["graphql.gloo.solo.io"]
-  resources: ["graphqlschemas","graphqlschemas/status"]
+  resources: ["graphqlschemas", "graphqlschemas/status"]
   verbs: ["get", "list", "watch", "update"]
 - apiGroups: [""] # get/update on configmaps for recording envoy metrics
   resources: ["configmaps"]

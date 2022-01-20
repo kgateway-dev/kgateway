@@ -11,6 +11,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -24,7 +25,7 @@ type translatorSyncer struct {
 	xdsHasher  *xds.ProxyKeyHasher
 	reporter   reporter.StatusReporter
 	// used for debugging purposes only
-	latestSnap *v1.ApiSnapshot
+	latestSnap *v1snap.ApiSnapshot
 	extensions []TranslatorSyncerExtension
 	// used to track which envoy node IDs exist without belonging to a proxy
 	extensionKeys map[string]struct{}
@@ -46,7 +47,7 @@ type UpgradeableTranslatorSyncerExtension interface {
 type TranslatorSyncerExtension interface {
 	Sync(
 		ctx context.Context,
-		snap *v1.ApiSnapshot,
+		snap *v1snap.ApiSnapshot,
 		settings *v1.Settings,
 		xdsCache envoycache.SnapshotCache,
 		reports reporter.ResourceReports,
@@ -63,7 +64,7 @@ func NewTranslatorSyncer(
 	extensions []TranslatorSyncerExtension,
 	settings *v1.Settings,
 	statusMetrics metrics.ConfigStatusMetrics,
-) v1.ApiSyncer {
+) v1snap.ApiSyncer {
 	s := &translatorSyncer{
 		translator:    translator,
 		xdsCache:      xdsCache,
@@ -83,7 +84,7 @@ func NewTranslatorSyncer(
 	return s
 }
 
-func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
+func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) error {
 	logger := contextutils.LoggerFrom(ctx)
 	var multiErr *multierror.Error
 	reports := make(reporter.ResourceReports)

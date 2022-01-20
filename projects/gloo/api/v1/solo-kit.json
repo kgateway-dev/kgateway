@@ -15,44 +15,6 @@
         "package": "gloo.solo.io"
       }
     ],
-    "api.gloo.solo.io": [
-      {
-        "name": "Artifact",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "Endpoint",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "Proxy",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "UpstreamGroup",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "Secret",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "Upstream",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "AuthConfig",
-        "package": "enterprise.gloo.solo.io"
-      },
-      {
-        "name": "RateLimitConfig",
-        "package": "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-      },
-      {
-        "name": "GraphQLSchema",
-        "package": "graphql.gloo.solo.io"
-      }
-    ],
     "eds.gloo.solo.io": [
       {
         "name": "Upstream",
