@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"sort"
 
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -156,7 +158,7 @@ func makeFallbackListenerAndCluster(
 
 func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 	ctx context.Context,
-	glooSnapshot *v1.ApiSnapshot,
+	glooSnapshot *v1snap.ApiSnapshot,
 	xdsSnapshot envoycache.Snapshot,
 	reports reporter.ResourceReports,
 ) (envoycache.Snapshot, error) {
@@ -225,7 +227,7 @@ func getRoutes(snap envoycache.Snapshot) ([]*envoy_config_route_v3.RouteConfigur
 	return routeConfigs, nil
 }
 
-func getClusters(snap *v1.ApiSnapshot) map[string]struct{} {
+func getClusters(snap *v1snap.ApiSnapshot) map[string]struct{} {
 	// mark all valid destination clusters
 	validClusters := make(map[string]struct{})
 	for _, up := range snap.Upstreams.AsInputResources() {

@@ -16,6 +16,7 @@ import (
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/headers"
@@ -668,7 +669,7 @@ func ValidateVirtualHostDomains(virtualHosts []*v1.VirtualHost, httpListenerRepo
 	}
 }
 
-func ValidateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) error {
+func ValidateRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.RouteAction) error {
 	upstreams := snap.Upstreams
 	// make sure the destination itself has the right structure
 	switch dest := action.GetDestination().(type) {
@@ -685,7 +686,7 @@ func ValidateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) err
 	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations' or 'upstreamGroup' for action")
 }
 
-func ValidateTcpRouteDestinations(snap *v1.ApiSnapshot, action *v1.TcpHost_TcpAction) error {
+func ValidateTcpRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.TcpHost_TcpAction) error {
 	upstreams := snap.Upstreams
 	// make sure the destination itself has the right structure
 	switch dest := action.GetDestination().(type) {
@@ -701,7 +702,7 @@ func ValidateTcpRouteDestinations(snap *v1.ApiSnapshot, action *v1.TcpHost_TcpAc
 	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup' or 'forwardSniClusterName' for action")
 }
 
-func validateUpstreamGroup(snap *v1.ApiSnapshot, ref *core.ResourceRef) error {
+func validateUpstreamGroup(snap *v1snap.ApiSnapshot, ref *core.ResourceRef) error {
 
 	upstreamGroup, err := snap.UpstreamGroups.Find(ref.GetNamespace(), ref.GetName())
 	if err != nil {

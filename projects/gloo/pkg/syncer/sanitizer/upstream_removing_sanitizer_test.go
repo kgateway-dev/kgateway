@@ -3,6 +3,8 @@ package sanitizer_test
 import (
 	"context"
 
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyclusterapi "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo"
@@ -86,7 +88,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 			},
 		}
 
-		glooSnapshot := &v1.ApiSnapshot{
+		glooSnapshot := &v1snap.ApiSnapshot{
 			Upstreams: v1.UpstreamList{us, badUs},
 		}
 

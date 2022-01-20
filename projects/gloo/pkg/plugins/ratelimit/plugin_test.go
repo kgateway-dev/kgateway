@@ -14,6 +14,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
@@ -46,7 +47,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		initParams = plugins.InitParams{
 			Settings: &gloov1.Settings{},
 		}
-		params.Snapshot = &gloov1.ApiSnapshot{}
+		params.Snapshot = &gloov1snap.ApiSnapshot{}
 	})
 
 	JustBeforeEach(func() {

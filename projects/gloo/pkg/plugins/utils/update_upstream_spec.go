@@ -1,6 +1,8 @@
 package utils
 
-import v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+import (
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+)
 
 // for use by UDS plugins
 // copies parts of the UpstreamSpec that are not
