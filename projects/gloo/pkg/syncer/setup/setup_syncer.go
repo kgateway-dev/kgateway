@@ -11,6 +11,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -473,6 +475,46 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		return err
 	}
 
+	virtualServiceClient, err := gateway.NewVirtualServiceClient(watchOpts.Ctx, opts.VirtualServices)
+	if err != nil {
+		return err
+	}
+	if err := virtualServiceClient.Register(); err != nil {
+		return err
+	}
+
+	rtClient, err := gateway.NewRouteTableClient(watchOpts.Ctx, opts.RouteTables)
+	if err != nil {
+		return err
+	}
+	if err := rtClient.Register(); err != nil {
+		return err
+	}
+
+	gatewayClient, err := gateway.NewGatewayClient(watchOpts.Ctx, opts.Gateways)
+	if err != nil {
+		return err
+	}
+	if err := gatewayClient.Register(); err != nil {
+		return err
+	}
+
+	virtualHostOptionClient, err := gateway.NewVirtualHostOptionClient(watchOpts.Ctx, opts.VirtualHostOptions)
+	if err != nil {
+		return err
+	}
+	if err := virtualHostOptionClient.Register(); err != nil {
+		return err
+	}
+
+	routeOptionClient, err := gateway.NewRouteOptionClient(watchOpts.Ctx, opts.RouteOptions)
+	if err != nil {
+		return err
+	}
+	if err := routeOptionClient.Register(); err != nil {
+		return err
+	}
+
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
@@ -530,7 +572,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
 
-	apiCache := v1.NewApiEmitterWithEmit(
+	apiCache := v1snap.NewApiEmitterWithEmit(
 		artifactClient,
 		endpointClient,
 		proxyClient,
@@ -539,6 +581,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		hybridUsClient,
 		authConfigClient,
 		rlClient,
+		virtualServiceClient,
+		rtClient,
+		gatewayClient,
+		virtualHostOptionClient,
+		routeOptionClient,
 		graphqlSchemaClient,
 		apiEmitterChan,
 	)
@@ -599,12 +646,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	}
 	translationSync := syncer.NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings, statusMetrics)
 
-	syncers := v1.ApiSyncers{
+	syncers := v1snap.ApiSyncers{
 		translationSync,
 		validator,
 	}
 
-	apiEventLoop := v1.NewApiEventLoop(apiCache, syncers)
+	apiEventLoop := v1snap.NewApiEventLoop(apiCache, syncers)
 	apiEventLoopErrs, err := apiEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err
@@ -819,16 +866,46 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
+	virtualServiceFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.VirtualServiceCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	routeTableFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.RouteTableCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	virtualHostOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.VirtualHostOptionCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	routeOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.RouteOptionCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.GatewayCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	return bootstrap.Opts{
-		Upstreams:         upstreamFactory,
-		KubeServiceClient: kubeServiceClient,
-		Proxies:           proxyFactory,
-		UpstreamGroups:    upstreamGroupFactory,
-		Secrets:           secretFactory,
-		Artifacts:         artifactFactory,
-		AuthConfigs:       authConfigFactory,
-		RateLimitConfigs:  rateLimitConfigFactory,
-		GraphQLSchemas:    graphqlSchemaFactory,
-		KubeCoreCache:     kubeCoreCache,
+		Upstreams:          upstreamFactory,
+		KubeServiceClient:  kubeServiceClient,
+		Proxies:            proxyFactory,
+		UpstreamGroups:     upstreamGroupFactory,
+		Secrets:            secretFactory,
+		Artifacts:          artifactFactory,
+		AuthConfigs:        authConfigFactory,
+		RateLimitConfigs:   rateLimitConfigFactory,
+		GraphQLSchemas:     graphqlSchemaFactory,
+		VirtualServices:    virtualServiceFactory,
+		RouteTables:        routeTableFactory,
+		VirtualHostOptions: virtualHostOptionFactory,
+		RouteOptions:       routeOptionFactory,
+		Gateways:           gatewayFactory,
+		KubeCoreCache:      kubeCoreCache,
 	}, nil
 }

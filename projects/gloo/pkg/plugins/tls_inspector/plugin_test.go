@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
@@ -174,7 +175,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("will prepend the TlsInspector when NO ServerName match present", func() {
-			snap := &v1.ApiSnapshot{}
+			snap := &v1snap.ApiSnapshot{}
 			out := &envoy_config_listener_v3.Listener{}
 			tcpListener := &v1.TcpListener{
 				TcpHosts: []*v1.TcpHost{
@@ -404,7 +405,7 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("will prepend the TlsInspector when NO ServerName match present", func() {
-				snap := &v1.ApiSnapshot{}
+				snap := &v1snap.ApiSnapshot{}
 				out := &envoy_config_listener_v3.Listener{}
 				tl := &v1.TcpListener{
 					TcpHosts: []*v1.TcpHost{

@@ -4,11 +4,14 @@ import (
 	"context"
 	"reflect"
 
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/solo-io/go-utils/contextutils"
 )
 
@@ -17,7 +20,7 @@ type HeadersToAddFunc func(spec *v1.Destination) ([]*envoy_config_core_v3.Header
 // Allows you add extra headers for specific destination.
 // The provided callback will be called for all the destinations on the route.
 // Any headers returned will be added to requests going to that destination
-func MarkHeaders(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route, out *envoy_config_route_v3.Route, headers HeadersToAddFunc) error {
+func MarkHeaders(ctx context.Context, snap *v1snap.ApiSnapshot, in *v1.Route, out *envoy_config_route_v3.Route, headers HeadersToAddFunc) error {
 	inAction, outAction, err := getRouteActions(in, out)
 	if err != nil {
 		return err

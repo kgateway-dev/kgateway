@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -23,13 +24,13 @@ import (
 )
 
 type Validator interface {
-	v1.ApiSyncer
+	v1snap.ApiSyncer
 	validation.GlooValidationServiceServer
 }
 
 type validator struct {
 	lock           sync.RWMutex
-	latestSnapshot *v1.ApiSnapshot
+	latestSnapshot *v1snap.ApiSnapshot
 	translator     translator.Translator
 	notifyResync   map[*validation.NotifyOnResyncRequest]chan struct{}
 	ctx            context.Context
@@ -47,14 +48,14 @@ func NewValidator(ctx context.Context, translator translator.Translator, xdsSani
 
 // only call within a lock
 // should we notify on this snap update
-func (s *validator) shouldNotify(snap *v1.ApiSnapshot) bool {
+func (s *validator) shouldNotify(snap *v1snap.ApiSnapshot) bool {
 	if s.latestSnapshot == nil {
 		return true
 	}
 	// rather than compare the hash of the whole snapshot,
 	// we compare the hash of resources that can affect
 	// the validation result (which excludes Endpoints)
-	hashFunc := func(snap *v1.ApiSnapshot) uint64 {
+	hashFunc := func(snap *v1snap.ApiSnapshot) uint64 {
 		toHash := append([]interface{}{}, snap.Upstreams.AsInterfaces()...)
 		toHash = append(toHash, snap.UpstreamGroups.AsInterfaces()...)
 		toHash = append(toHash, snap.Secrets.AsInterfaces()...)
@@ -106,7 +107,7 @@ func (s *validator) pushNotifications() {
 
 // the gloo snapshot has changed.
 // update the local snapshot, notify subscribers
-func (s *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
+func (s *validator) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) error {
 	snapCopy := snap.Clone()
 	s.lock.Lock()
 	if s.shouldNotify(snap) {
@@ -208,7 +209,7 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 }
 
 // updates the given snapshot with the resources from the request
-func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidationServiceRequest) {
+func applyRequestToSnapshot(snap *v1snap.ApiSnapshot, req *validation.GlooValidationServiceRequest) {
 	if req.GetModifiedResources() != nil {
 		existingUpstreams := snap.Upstreams.AsResources()
 		modifiedUpstreams := utils.UpstreamsToResourceList(req.GetModifiedResources().GetUpstreams())

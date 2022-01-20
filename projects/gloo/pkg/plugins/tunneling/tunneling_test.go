@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tunneling"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -39,7 +40,7 @@ var _ = Describe("Plugin", func() {
 	BeforeEach(func() {
 
 		params = plugins.Params{
-			Snapshot: &v1.ApiSnapshot{
+			Snapshot: &v1snap.ApiSnapshot{
 				Upstreams: []*v1.Upstream{us},
 			},
 		}

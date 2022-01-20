@@ -205,9 +205,14 @@ var _ = Describe("RBAC Test", func() {
 						},
 						Rules: []rbacv1.PolicyRule{
 							{
-								APIGroups: []string{"gloo.solo.io", "enterprise.gloo.solo.io"},
-								Resources: []string{"upstreams", "upstreamgroups", "proxies", "authconfigs"},
+								APIGroups: []string{"gloo.solo.io", "enterprise.gloo.solo.io", "gateway.solo.io"},
+								Resources: []string{"upstreams", "upstreamgroups", "proxies", "authconfigs", "virtualservices", "routetables", "virtualhostoptions", "routeoptions"},
 								Verbs:     []string{"get", "list", "watch", "update"},
+							},
+							{
+								APIGroups: []string{"gateway.solo.io"},
+								Resources: []string{"gateways"},
+								Verbs:     []string{"get", "list", "watch", "update", "delete"},
 							},
 							{
 								APIGroups: []string{"ratelimit.solo.io"},

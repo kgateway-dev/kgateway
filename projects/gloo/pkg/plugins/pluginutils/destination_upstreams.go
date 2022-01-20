@@ -4,12 +4,14 @@ import (
 	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func DestinationUpstreams(snap *v1.ApiSnapshot, in *v1.RouteAction) ([]core.ResourceRef, error) {
+func DestinationUpstreams(snap *v1snap.ApiSnapshot, in *v1.RouteAction) ([]core.ResourceRef, error) {
 	switch dest := in.GetDestination().(type) {
 	case *v1.RouteAction_Single:
 		upstream, err := usconversions.DestinationToUpstreamRef(dest.Single)

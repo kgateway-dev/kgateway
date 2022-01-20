@@ -6,6 +6,7 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
@@ -62,7 +63,7 @@ var _ = Describe("Headers", func() {
 
 		It("should add header config to upstream", func() {
 
-			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoy_config_core_v3.HeaderValueOption, error) {
+			err := MarkHeaders(context.TODO(), &v1snap.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 				return headers, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -76,7 +77,7 @@ var _ = Describe("Headers", func() {
 				},
 			}
 			out.RequestHeadersToAdd = append(out.RequestHeadersToAdd, existingheader)
-			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoy_config_core_v3.HeaderValueOption, error) {
+			err := MarkHeaders(context.TODO(), &v1snap.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 				return headers, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -142,7 +143,7 @@ var _ = Describe("Headers", func() {
 		})
 		It("should add per filter config only to relevant upstream in mutiple dest", func() {
 
-			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoy_config_core_v3.HeaderValueOption, error) {
+			err := MarkHeaders(context.TODO(), &v1snap.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 				if spec.GetUpstream().Name == "yes" {
 					return headers, nil
 				}
@@ -155,7 +156,7 @@ var _ = Describe("Headers", func() {
 
 		Context("upstream group", func() {
 			var (
-				snap *v1.ApiSnapshot
+				snap *v1snap.ApiSnapshot
 			)
 			BeforeEach(func() {
 				upGrp := &v1.UpstreamGroup{
@@ -193,7 +194,7 @@ var _ = Describe("Headers", func() {
 						},
 					},
 				}
-				snap = &v1.ApiSnapshot{
+				snap = &v1snap.ApiSnapshot{
 					UpstreamGroups: v1.UpstreamGroupList{
 						upGrp,
 					},

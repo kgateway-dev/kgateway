@@ -8,6 +8,7 @@ import (
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	azureplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
@@ -73,7 +74,7 @@ var _ = Describe("Plugin", func() {
 					Namespace: namespace,
 					Name:      "azure-secret1",
 				}
-				params.Snapshot = &v1.ApiSnapshot{
+				params.Snapshot = &v1snap.ApiSnapshot{
 					Secrets: v1.SecretList{{
 						Metadata: &core.Metadata{
 							Name:      "azure-secret1",

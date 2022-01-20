@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -171,7 +172,7 @@ var _ = Describe("Plugin", func() {
 		Describe("when zipkin provider config", func() {
 			It("references invalid upstream", func() {
 				pluginParams = plugins.Params{
-					Snapshot: &v1.ApiSnapshot{
+					Snapshot: &v1snap.ApiSnapshot{
 						Upstreams: v1.UpstreamList{
 							// No valid upstreams
 						},
@@ -199,7 +200,7 @@ var _ = Describe("Plugin", func() {
 			It("references valid upstream", func() {
 				us := v1.NewUpstream("default", "valid")
 				pluginParams = plugins.Params{
-					Snapshot: &v1.ApiSnapshot{
+					Snapshot: &v1snap.ApiSnapshot{
 						Upstreams: v1.UpstreamList{us},
 					},
 				}
@@ -290,7 +291,7 @@ var _ = Describe("Plugin", func() {
 		Describe("when datadog provider config", func() {
 			It("references invalid upstream", func() {
 				pluginParams = plugins.Params{
-					Snapshot: &v1.ApiSnapshot{
+					Snapshot: &v1snap.ApiSnapshot{
 						Upstreams: v1.UpstreamList{
 							// No valid upstreams
 						},
@@ -318,7 +319,7 @@ var _ = Describe("Plugin", func() {
 			It("references valid upstream", func() {
 				us := v1.NewUpstream("default", "valid")
 				pluginParams = plugins.Params{
-					Snapshot: &v1.ApiSnapshot{
+					Snapshot: &v1snap.ApiSnapshot{
 						Upstreams: v1.UpstreamList{us},
 					},
 				}

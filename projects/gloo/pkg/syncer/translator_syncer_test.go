@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -31,8 +32,8 @@ var _ = Describe("Translate Proxy", func() {
 	var (
 		xdsCache       *MockXdsCache
 		sanitizer      *MockXdsSanitizer
-		syncer         v1.ApiSyncer
-		snap           *v1.ApiSnapshot
+		syncer         v1snap.ApiSyncer
+		snap           *v1snap.ApiSnapshot
 		settings       *v1.Settings
 		upstreamClient clients.ResourceClient
 		proxyClient    v1.ProxyClient
@@ -77,7 +78,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics)
-		snap = &v1.ApiSnapshot{
+		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
 			},
@@ -174,7 +175,7 @@ var _ = Describe("Empty cache", func() {
 	var (
 		xdsCache       *MockXdsCache
 		sanitizer      *MockXdsSanitizer
-		syncer         v1.ApiSyncer
+		syncer         v1snap.ApiSyncer
 		settings       *v1.Settings
 		upstreamClient clients.ResourceClient
 		proxyClient    v1.ProxyClient
@@ -254,7 +255,7 @@ var _ = Describe("Empty cache", func() {
 	It("only updates endpoints and clusters when sanitization fails and there is no previous snapshot", func() {
 		sanitizer.Err = errors.Errorf("we ran out of coffee")
 
-		apiSnap := v1.ApiSnapshot{
+		apiSnap := v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
 			},
@@ -297,8 +298,8 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 	var (
 		xdsCache       *MockXdsCache
 		sanitizer      *MockXdsSanitizer
-		syncer         v1.ApiSyncer
-		snap           *v1.ApiSnapshot
+		syncer         v1snap.ApiSyncer
+		snap           *v1snap.ApiSnapshot
 		settings       *v1.Settings
 		proxyClient    v1.ProxyClient
 		upstreamClient v1.UpstreamClient
@@ -384,7 +385,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics)
-		snap = &v1.ApiSnapshot{
+		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy1,
 				proxy2,
