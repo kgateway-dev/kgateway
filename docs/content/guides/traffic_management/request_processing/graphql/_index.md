@@ -204,7 +204,12 @@ EOF
 
 ## Try it yourself
 
-TODO: need guidance on how to develop the `GraphQLSchema` CR for their own use cases and apps
+You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration.
+
+To get started, check out the in-depth example in the [`graphql-bookinfo` repository](https://github.com/kcbabo/graphql-bookinfo). You can model your own use case based on the contents of this example:
+* The `kubernetes` directory contains the Bookinfo sample app deployment, the example GraphQL schema, and the virtual service to route requests to the `/graphql` endpoint.
+* The `openapi` directory contains the OpenAPI specifications for the individual BookInfo microservices, along with the original consolidated BookInfo REST API.
+
 
 ## Next steps
 
