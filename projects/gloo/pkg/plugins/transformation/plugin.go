@@ -22,11 +22,11 @@ import (
 )
 
 var (
-	_ plugins.Plugin                    = new(plugin)
-	_ plugins.VirtualHostPlugin         = new(plugin)
-	_ plugins.WeightedDestinationPlugin = new(plugin)
-	_ plugins.RoutePlugin               = new(plugin)
-	_ plugins.HttpFilterPlugin          = new(plugin)
+	_ plugins.Plugin                    = new(Plugin)
+	_ plugins.VirtualHostPlugin         = new(Plugin)
+	_ plugins.WeightedDestinationPlugin = new(Plugin)
+	_ plugins.RoutePlugin               = new(Plugin)
+	_ plugins.HttpFilterPlugin          = new(Plugin)
 )
 
 const (
@@ -46,28 +46,31 @@ var (
 
 type TranslateTransformationFn func(*transformation.Transformation) (*envoytransformation.Transformation, error)
 
-type plugin struct {
+// This Plugin is exported only because it is utilized by the enterprise implementation
+// We would prefer if the plugin were not exported and instead the required translation
+// methods were exported
+type Plugin struct {
 	RequireEarlyTransformation bool
-	translateTransformation    TranslateTransformationFn
+	TranslateTransformation    TranslateTransformationFn
 	settings                   *v1.Settings
 }
 
-func NewPlugin() *plugin {
-	return &plugin{}
+func NewPlugin() *Plugin {
+	return &Plugin{}
 }
 
-func (p *plugin) Name() string {
+func (p *Plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) error {
+func (p *Plugin) Init(params plugins.InitParams) error {
 	p.RequireEarlyTransformation = false
 	p.settings = params.Settings
-	p.translateTransformation = TranslateTransformation
+	p.TranslateTransformation = TranslateTransformation
 	return nil
 }
 
-func (p *plugin) ProcessVirtualHost(
+func (p *Plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,
@@ -91,7 +94,7 @@ func (p *plugin) ProcessVirtualHost(
 	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
-func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	envoyTransformation, err := p.convertTransformation(
 		params.Ctx,
 		in.GetOptions().GetTransformations(),
@@ -111,7 +114,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyTransformation)
 }
 
-func (p *plugin) ProcessWeightedDestination(
+func (p *Plugin) ProcessWeightedDestination(
 	params plugins.RouteParams,
 	in *v1.WeightedDestination,
 	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
@@ -136,7 +139,7 @@ func (p *plugin) ProcessWeightedDestination(
 	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
-func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	earlyStageConfig := &envoytransformation.FilterTransformations{
 		Stage: EarlyStageNumber,
 	}
@@ -154,7 +157,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	return filters, nil
 }
 
-func (p *plugin) convertTransformation(
+func (p *Plugin) convertTransformation(
 	ctx context.Context,
 	t *transformation.Transformations,
 	stagedTransformations *transformation.TransformationStages,
@@ -166,11 +169,11 @@ func (p *plugin) convertTransformation(
 	if t != nil && stagedTransformations.GetRegular() == nil {
 		// keep deprecated config until we are sure we don't need it.
 		// on newer envoys it will be ignored.
-		requestTransform, err := p.translateTransformation(t.GetRequestTransformation())
+		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation())
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.translateTransformation(t.GetResponseTransformation())
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation())
 		if err != nil {
 			return nil, err
 		}
@@ -209,8 +212,8 @@ func (p *plugin) convertTransformation(
 	return ret, nil
 }
 
-func (p *plugin) translateOSSTransformations(glooTransform *transformation.Transformation) (*envoytransformation.Transformation, error) {
-	transform, err := p.translateTransformation(glooTransform)
+func (p *Plugin) translateOSSTransformations(glooTransform *transformation.Transformation) (*envoytransformation.Transformation, error) {
+	transform, err := p.TranslateTransformation(glooTransform)
 	if err != nil {
 		return nil, eris.Wrap(err, "this transformation type is not supported in open source Gloo Edge")
 	}
@@ -242,7 +245,7 @@ func TranslateTransformation(glooTransform *transformation.Transformation) (*env
 	return out, nil
 }
 
-func (p *plugin) validateTransformation(ctx context.Context, transformations *envoytransformation.RouteTransformations) error {
+func (p *Plugin) validateTransformation(ctx context.Context, transformations *envoytransformation.RouteTransformations) error {
 	err := bootstrap.ValidateBootstrap(ctx, p.settings, FilterName, transformations)
 	if err != nil {
 		return err
@@ -250,10 +253,10 @@ func (p *plugin) validateTransformation(ctx context.Context, transformations *en
 	return nil
 }
 
-func (p *plugin) getTransformations(ctx context.Context, stage uint32, transformations *transformation.RequestResponseTransformations) ([]*envoytransformation.RouteTransformations_RouteTransformation, error) {
+func (p *Plugin) getTransformations(ctx context.Context, stage uint32, transformations *transformation.RequestResponseTransformations) ([]*envoytransformation.RouteTransformations_RouteTransformation, error) {
 	var outTransformations []*envoytransformation.RouteTransformations_RouteTransformation
 	for _, transformation := range transformations.GetResponseTransforms() {
-		responseTransform, err := p.translateTransformation(transformation.GetResponseTransformation())
+		responseTransform, err := p.TranslateTransformation(transformation.GetResponseTransformation())
 		if err != nil {
 			return nil, err
 		}
@@ -269,11 +272,11 @@ func (p *plugin) getTransformations(ctx context.Context, stage uint32, transform
 	}
 
 	for _, transformation := range transformations.GetRequestTransforms() {
-		requestTransform, err := p.translateTransformation(transformation.GetRequestTransformation())
+		requestTransform, err := p.TranslateTransformation(transformation.GetRequestTransformation())
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.translateTransformation(transformation.GetResponseTransformation())
+		responseTransform, err := p.TranslateTransformation(transformation.GetResponseTransformation())
 		if err != nil {
 			return nil, err
 		}
