@@ -43,7 +43,7 @@ Explore GraphQL service discovery with the Pet Store sample application.
    ```sh
    kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
    ```
-   Optional: You can [create a route and send a `/GET` request to `/api/pets` of this service](/guides/security/auth/custom_auth/#setup), which returns the following unfiltered JSON output:
+   Optional: You can [create a route and send a `/GET` request to `/api/pets` of this service]({{% versioned_link_path fromRoot="/guides/security/auth/custom_auth/#setup" %}}), which returns the following unfiltered JSON output:
    ```json
    [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
    ```
@@ -52,6 +52,7 @@ Explore GraphQL service discovery with the Pet Store sample application.
    ```sh
    kubectl patch settings -n gloo-system default --type=merge --patch '{"spec":{"discovery":{"fdsMode":"BLACKLIST"}}}'
    ```
+   Note that this setting enables discovery for all upstreams. To enable discovery for only specified upstreams, see the [Function Discovery Service (FDS) guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#function-discovery-service-fds" %}}).
 
 3. Verify that OpenAPI specification discovery is enabled, and that Gloo Edge created a corresponding GraphQL custom resource.
    ```sh
