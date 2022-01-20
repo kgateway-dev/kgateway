@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4020
+    resolvesIssue: true
+    description: >
+      Ensure that enterprise features, when used by an open source user, produce error messages
+
+
