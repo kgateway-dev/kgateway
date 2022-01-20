@@ -24,38 +24,3 @@ var (
 	_ = equality.Equalizer(nil)
 	_ = proto.Message(nil)
 )
-
-// Equal function
-func (m *Placeholder) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*Placeholder)
-	if !ok {
-		that2, ok := that.(Placeholder)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetValues()) != len(target.GetValues()) {
-		return false
-	}
-	for k, v := range m.GetValues() {
-
-		if strings.Compare(v, target.GetValues()[k]) != 0 {
-			return false
-		}
-
-	}
-
-	return true
-}

@@ -24,23 +24,3 @@ var (
 	_ = clone.Cloner(nil)
 	_ = proto.Message(nil)
 )
-
-// Clone function
-func (m *Placeholder) Clone() proto.Message {
-	var target *Placeholder
-	if m == nil {
-		return target
-	}
-	target = &Placeholder{}
-
-	if m.GetValues() != nil {
-		target.Values = make(map[string]string, len(m.GetValues()))
-		for k, v := range m.GetValues() {
-
-			target.Values[k] = v
-
-		}
-	}
-
-	return target
-}
