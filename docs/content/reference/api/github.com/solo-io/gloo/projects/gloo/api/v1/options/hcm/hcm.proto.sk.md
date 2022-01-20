@@ -51,6 +51,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "acceptHttp10": bool
 "defaultHostForHttp10": string
 "properCaseHeaderKeyFormat": bool
+"preserveCaseHeaderKeyFormat": bool
 "tracing": .tracing.options.gloo.solo.io.ListenerTracingSettings
 "forwardClientCertDetails": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails
 "setCurrentClientCertDetails": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails
@@ -84,7 +85,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `serverName` | `string` |  |
 | `acceptHttp10` | `bool` | For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions. |
 | `defaultHostForHttp10` | `string` |  |
-| `properCaseHeaderKeyFormat` | `bool` |  |
+| `properCaseHeaderKeyFormat` | `bool` | Formats the header by proper casing words: the first character and any character following a special character will be capitalized if it's an alpha character. For example, "content-type" becomes "Content-Type", and "foo$b#$are" becomes "Foo$B#$Are". Note that while this results in most headers following conventional casing, certain headers are not covered. For example, the "TE" header will be formatted as "Te". Only one of `properCaseHeaderKeyFormat` or `preserveCaseHeaderKeyFormat` can be set. |
+| `preserveCaseHeaderKeyFormat` | `bool` | Generates configuration for a stateful formatter extension that allows using received headers to affect the output of encoding headers. Specifically: preserving case during proxying. Only one of `preserveCaseHeaderKeyFormat` or `properCaseHeaderKeyFormat` can be set. |
 | `tracing` | [.tracing.options.gloo.solo.io.ListenerTracingSettings](../../tracing/tracing.proto.sk/#listenertracingsettings) |  |
 | `forwardClientCertDetails` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails](../hcm.proto.sk/#forwardclientcertdetails) |  |
 | `setCurrentClientCertDetails` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails](../hcm.proto.sk/#setcurrentclientcertdetails) |  |

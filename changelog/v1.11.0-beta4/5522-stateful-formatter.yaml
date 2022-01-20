@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5522
+    resolvesIssue: true
+    description: >
+      Added the ability to fully preserve the casing of headers (as opposed to normalizing to kebab-style-lowercase)
