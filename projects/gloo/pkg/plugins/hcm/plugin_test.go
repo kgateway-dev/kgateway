@@ -6,7 +6,6 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -71,9 +70,11 @@ var _ = Describe("Plugin", func() {
 			DelayedCloseTimeout: prototime.DurationToProto(time.Hour),
 			ServerName:          "ServerName",
 
-			AcceptHttp_10:             true,
-			ProperCaseHeaderKeyFormat: true,
-			DefaultHostForHttp_10:     "DefaultHostForHttp_10",
+			AcceptHttp_10: true,
+			HeaderFormat: &hcm.HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat{
+				ProperCaseHeaderKeyFormat: true,
+			},
+			DefaultHostForHttp_10: "DefaultHostForHttp_10",
 
 			// We intentionally do not test tracing as this plugin is not responsible for setting
 			// tracing configuration
@@ -122,13 +123,8 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.DelayedCloseTimeout).To(MatchProto(settings.DelayedCloseTimeout))
 		Expect(cfg.ServerName).To(Equal(settings.ServerName))
 		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(settings.AcceptHttp_10))
-		if settings.ProperCaseHeaderKeyFormat {
-			Expect(cfg.HttpProtocolOptions.HeaderKeyFormat).To(Equal(&envoycore.Http1ProtocolOptions_HeaderKeyFormat{
-				HeaderFormat: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{
-					ProperCaseWords: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords{},
-				},
-			}))
-		}
+		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetProperCaseWords()).ToNot(BeNil()) // expect proper case words is set
+		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetStatefulFormatter()).To(BeNil())  // ...which makes stateful formatter nil
 		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(settings.DefaultHostForHttp_10))
 		Expect(cfg.PreserveExternalRequestId).To(Equal(settings.PreserveExternalRequestId))
 
@@ -159,6 +155,21 @@ var _ = Describe("Plugin", func() {
 		Expect(ccd.Chain).To(BeTrue())
 		Expect(ccd.Dns).To(BeTrue())
 		Expect(ccd.Uri).To(BeTrue())
+	})
+
+	It("should copy stateful_formatter setting to hcm filter", func() {
+		settings = &hcm.HttpConnectionManagerSettings{
+			HeaderFormat: &hcm.HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat{
+				PreserveCaseHeaderKeyFormat: true,
+			},
+		}
+
+		cfg := &envoyhttp.HttpConnectionManager{}
+		err := processHcmNetworkFilter(cfg)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetStatefulFormatter()).ToNot(BeNil()) // expect preserve_case_words to be set
+		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetProperCaseWords()).To(BeNil())      // ...which makes proper_case_words nil
 	})
 
 	It("copy server_header_transformation setting to hcm filter", func() {
