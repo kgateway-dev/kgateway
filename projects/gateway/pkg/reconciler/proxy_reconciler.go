@@ -2,6 +2,7 @@ package reconciler
 
 import (
 	"context"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
@@ -17,6 +18,8 @@ import (
 )
 
 type GeneratedProxies map[*gloov1.Proxy]reporter.ResourceReports
+
+type InvalidProxies map[*core.ResourceRef]reporter.ResourceReports
 
 type ProxyReconciler interface {
 	ReconcileProxies(ctx context.Context, proxiesToWrite GeneratedProxies, writeNamespace string, labels map[string]string) error
