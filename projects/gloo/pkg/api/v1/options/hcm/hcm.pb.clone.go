@@ -103,8 +103,6 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 
 	target.DefaultHostForHttp_10 = m.GetDefaultHostForHttp_10()
 
-	target.ProperCaseHeaderKeyFormat = m.GetProperCaseHeaderKeyFormat()
-
 	if h, ok := interface{}(m.GetTracing()).(clone.Cloner); ok {
 		target.Tracing = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tracing.ListenerTracingSettings)
 	} else {
@@ -164,6 +162,22 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 		target.NormalizePath = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
 		target.NormalizePath = proto.Clone(m.GetNormalizePath()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	switch m.HeaderFormat.(type) {
+
+	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
+
+		target.HeaderFormat = &HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat{
+			ProperCaseHeaderKeyFormat: m.GetProperCaseHeaderKeyFormat(),
+		}
+
+	case *HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat:
+
+		target.HeaderFormat = &HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat{
+			PreserveCaseHeaderKeyFormat: m.GetPreserveCaseHeaderKeyFormat(),
+		}
+
 	}
 
 	return target
