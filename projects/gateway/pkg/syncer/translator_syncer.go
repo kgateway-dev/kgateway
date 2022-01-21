@@ -102,7 +102,7 @@ func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1
 			// We were unable to create a proxy
 			// Ensure that reports for that proxy are propagated to the relevant gateway resources
 			invalidProxyRef := &core.ResourceRef{
-				Name: proxyName,
+				Name:      proxyName,
 				Namespace: s.writeNamespace,
 			}
 			invalidProxies[invalidProxyRef] = reports
@@ -166,7 +166,6 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 
 	// List of refs to proxies
 	// This includes both proxies that are valid and invalid
-	// TODO make this more informative
 	proxyReportsByRef := make(map[*core.ResourceRef]reporter.ResourceReports)
 	for proxy, reports := range desiredProxies {
 		ref := proxy.GetMetadata().Ref()
@@ -176,6 +175,11 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 		proxyReportsByRef[ref] = reports
 	}
 
+	// Tech Debt:  we've identified that it's not useful to have both two parallel data structures
+	//		proxyToLastStatus       map[string]reportsAndStatus
+	// 		currentGeneratedProxies []*core.ResourceRef
+	// floating around.  Historically, they were there to envorce an alphabetical processing of
+	//  `proxyToLastStatus`.  See https://github.com/solo-io/gloo/issues/5812 for more details.
 	for proxyRef, reports := range proxyReportsByRef {
 		refKey := gloo_translator.UpstreamToClusterName(proxyRef)
 		if _, ok := s.proxyToLastStatus[refKey]; !ok {

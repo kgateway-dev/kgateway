@@ -202,7 +202,8 @@ var _ = Describe("Kube2e: gateway", func() {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
-			// demand that a created gateway _has_ a status.
+			// demand that a created gateway _has_ a status.  This test is "good enough", as, prior to an orphaned gateway fix,
+			// https://github.com/solo-io/gloo/pull/5790, free-floating gateways would never be assigned a status at all (nil)
 			gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			Expect(gw.NamespacedStatuses.GetStatuses()).NotTo(BeNil())
 

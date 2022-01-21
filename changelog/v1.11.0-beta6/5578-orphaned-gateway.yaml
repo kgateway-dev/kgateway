@@ -2,4 +2,4 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/5578
     description: |
-      Gateways can now clear error statuses when no VirtualServices are present 
+      Gateways are no longer dependant on having an associated VirtualService to receive/clear their own resource statuses.
