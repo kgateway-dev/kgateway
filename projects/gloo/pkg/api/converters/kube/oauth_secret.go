@@ -67,7 +67,7 @@ func (t *OAuthSecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.Re
 	// If the secret we have in memory is a plain solo-kit secret (i.e. it was written to storage before
 	// this converter was added), we take the chance to convert it to the new format.
 	// As part of that we need to remove the `resource_kind: '*v1.Secret'` annotation.
-	if len(objectMeta.Annotations) > 0 && objectMeta.Annotations[GlooKindAnnotationKey] == rc.Kind() {
+	if len(objectMeta.Annotations) > 0 && objectMeta.Annotations[GlooKindAnnotationKey] == "*v1.Secret" {
 		delete(objectMeta.Annotations, GlooKindAnnotationKey)
 		if len(objectMeta.Annotations) == 0 {
 			objectMeta.Annotations = nil
