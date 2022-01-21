@@ -50,41 +50,10 @@ var _ = Describe("OAuth Secret Converter", func() {
 	})
 
 	Describe("converting from a Kubernetes secret to Gloo", func() {
+		var secret *corev1.Secret
 
-		It("ignores secrets that aren't oauth", func() {
-			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "bar",
-				},
-				Data: map[string][]byte{
-					"foo": {0, 1, 2},
-				},
-				Type: corev1.SecretTypeTLS,
-			}
-			glooSecret, err := converter.FromKubeSecret(ctx, resourceClient, secret)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(glooSecret).To(BeNil())
-		})
-
-		It("ignores OAuth secrets that do not contain client secret", func() {
-			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "bar",
-				},
-				Data: map[string][]byte{
-					"some-data": []byte("some-val"),
-				},
-				Type: kubeconverters.OAuthSecretType,
-			}
-			glooSecret, err := converter.FromKubeSecret(ctx, resourceClient, secret)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(glooSecret).To(BeNil())
-		})
-
-		It("correctly converts oauth secrets", func() {
-			secret := &corev1.Secret{
+		BeforeEach(func() {
+			secret = &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "bar",
@@ -94,13 +63,45 @@ var _ = Describe("OAuth Secret Converter", func() {
 				},
 				Type: kubeconverters.OAuthSecretType,
 			}
+		})
+
+		It("correctly converts oauth secrets", func() {
 			actual, err := converter.FromKubeSecret(ctx, resourceClient, secret)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(actual).To(Equal(glooSecret))
 		})
+
+		It("ignores secrets that aren't oauth", func() {
+			secret.Type = corev1.SecretTypeTLS
+
+			glooSecret, err := converter.FromKubeSecret(ctx, resourceClient, secret)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(glooSecret).To(BeNil())
+		})
+
+		It("ignores OAuth secrets that do not contain client secret", func() {
+			secret.Data = map[string][]byte{
+				"some-data": []byte("some-val"),
+			}
+			glooSecret, err := converter.FromKubeSecret(ctx, resourceClient, secret)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(glooSecret).To(BeNil())
+		})
 	})
 
 	Describe("converting from a Gloo secret to Kubernetes", func() {
+
+		var expected = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            "foo",
+				Namespace:       "bar",
+				OwnerReferences: []metav1.OwnerReference{},
+			},
+			Data: map[string][]byte{
+				kubeconverters.ClientSecretDataKey: []byte("some-client-secret"),
+			},
+			Type: kubeconverters.OAuthSecretType,
+		}
 
 		It("ignores resources that are not secrets", func() {
 			actual, err := converter.ToKubeSecret(ctx, resourceClient, &v1.Proxy{})
@@ -118,36 +119,12 @@ var _ = Describe("OAuth Secret Converter", func() {
 		})
 
 		It("correctly converts OAuth secrets", func() {
-			expected := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "foo",
-					Namespace:       "bar",
-					OwnerReferences: []metav1.OwnerReference{},
-				},
-				Data: map[string][]byte{
-					kubeconverters.ClientSecretDataKey: []byte("some-client-secret"),
-				},
-				Type: kubeconverters.OAuthSecretType,
-			}
-
 			actual, err := converter.ToKubeSecret(ctx, resourceClient, glooSecret)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(actual).To(Equal(expected))
 		})
 
 		It("correctly converts the old OAuth format to the new one", func() {
-			expected := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "foo",
-					Namespace:       "bar",
-					OwnerReferences: []metav1.OwnerReference{},
-				},
-				Data: map[string][]byte{
-					kubeconverters.ClientSecretDataKey: []byte("some-client-secret"),
-				},
-				Type: kubeconverters.OAuthSecretType,
-			}
-
 			glooSecret.Metadata.Annotations = map[string]string{
 				kubeconverters.GlooKindAnnotationKey: "*v1.Secret",
 			}
