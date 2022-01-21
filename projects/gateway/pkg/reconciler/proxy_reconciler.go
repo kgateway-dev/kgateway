@@ -2,8 +2,9 @@ package reconciler
 
 import (
 	"context"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"sort"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
