@@ -388,6 +388,8 @@ spec:
                                 pathWithEscapedSlashesAction:
                                   type: string
                                   x-kubernetes-int-or-string: true
+                                preserveCaseHeaderKeyFormat:
+                                  type: boolean
                                 preserveExternalRequestId:
                                   type: boolean
                                 properCaseHeaderKeyFormat:
@@ -5393,6 +5395,8 @@ spec:
                                           pathWithEscapedSlashesAction:
                                             type: string
                                             x-kubernetes-int-or-string: true
+                                          preserveCaseHeaderKeyFormat:
+                                            type: boolean
                                           preserveExternalRequestId:
                                             type: boolean
                                           properCaseHeaderKeyFormat:
