@@ -230,11 +230,6 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		return 0, err
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetProperCaseHeaderKeyFormat())
-	if err != nil {
-		return 0, err
-	}
-
 	if h, ok := interface{}(m.GetTracing()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("Tracing")); err != nil {
 			return 0, err
@@ -407,6 +402,24 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 				return 0, err
 			}
 		}
+	}
+
+	switch m.HeaderFormat.(type) {
+
+	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetProperCaseHeaderKeyFormat())
+		if err != nil {
+			return 0, err
+		}
+
+	case *HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetPreserveCaseHeaderKeyFormat())
+		if err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil
