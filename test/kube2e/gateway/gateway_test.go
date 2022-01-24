@@ -206,13 +206,6 @@ var _ = Describe("Kube2e: gateway", func() {
 			// https://github.com/solo-io/gloo/pull/5790, free-floating gateways would never be assigned a status at all (nil)
 			gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			Expect(gw.NamespacedStatuses.GetStatuses()).NotTo(BeNil())
-
-			// assert that there are no virtual services or proxies
-			proxyList, _ := proxyClient.List(testHelper.InstallNamespace, clients.ListOpts{Ctx: ctx})
-			vsList, _ := virtualServiceClient.List(testHelper.InstallNamespace, clients.ListOpts{Ctx: ctx})
-
-			Expect(len(proxyList)).To(BeNumerically("==", 0))
-			Expect(len(vsList)).To(BeNumerically("==", 0))
 		})
 	})
 
