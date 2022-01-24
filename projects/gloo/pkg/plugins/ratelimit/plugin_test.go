@@ -29,7 +29,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		rlSettings *ratelimitpb.Settings
 		initParams plugins.InitParams
 		params     plugins.Params
-		rlPlugin   *Plugin
+		rlPlugin   plugins.HttpFilterPlugin
 		ref        *core.ResourceRef
 	)
 
@@ -158,7 +158,7 @@ var _ = Describe("RateLimit Plugin", func() {
 			Expect(filters).To(HaveLen(1), "Should only have created one custom filter")
 
 			customStagedFilter := filters[0]
-			extAuthPlugin := extauth.NewCustomAuthPlugin()
+			extAuthPlugin := extauth.NewPlugin()
 			err = extAuthPlugin.Init(initParams)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to initialize the ext auth plugin")
 			extAuthFilters, err := extAuthPlugin.HttpFilters(params, nil)

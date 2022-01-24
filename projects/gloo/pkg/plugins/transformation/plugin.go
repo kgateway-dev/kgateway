@@ -21,48 +21,46 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
+var (
+	_ plugins.Plugin                    = new(Plugin)
+	_ plugins.VirtualHostPlugin         = new(Plugin)
+	_ plugins.WeightedDestinationPlugin = new(Plugin)
+	_ plugins.RoutePlugin               = new(Plugin)
+	_ plugins.HttpFilterPlugin          = new(Plugin)
+)
+
 const (
+	ExtensionName    = "transformation"
 	FilterName       = "io.solo.transformation"
 	EarlyStageNumber = 1
-	PluginName       = "transformation.plugin.solo"
 )
 
 var (
 	earlyPluginStage = plugins.AfterStage(plugins.FaultStage)
 	pluginStage      = plugins.AfterStage(plugins.AuthZStage)
-)
 
-var (
 	UnknownTransformationType = func(transformation interface{}) error {
 		return fmt.Errorf("unknown transformation type %T", transformation)
 	}
 )
 
-var _ plugins.Plugin = new(Plugin)
-
-var _ plugins.VirtualHostPlugin = new(Plugin)
-var _ plugins.WeightedDestinationPlugin = new(Plugin)
-var _ plugins.RoutePlugin = new(Plugin)
-var _ plugins.HttpFilterPlugin = new(Plugin)
-
 type TranslateTransformationFn func(*transformation.Transformation) (*envoytransformation.Transformation, error)
 
+// This Plugin is exported only because it is utilized by the enterprise implementation
+// We would prefer if the plugin were not exported and instead the required translation
+// methods were exported
 type Plugin struct {
 	RequireEarlyTransformation bool
 	TranslateTransformation    TranslateTransformationFn
 	settings                   *v1.Settings
 }
 
-func (p *Plugin) PluginName() string {
-	return PluginName
-}
-
-func (p *Plugin) IsUpgrade() bool {
-	return false
-}
-
 func NewPlugin() *Plugin {
 	return &Plugin{}
+}
+
+func (p *Plugin) Name() string {
+	return ExtensionName
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {

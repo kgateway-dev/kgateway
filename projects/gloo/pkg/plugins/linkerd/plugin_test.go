@@ -20,11 +20,13 @@ import (
 )
 
 var _ = Describe("linkerd plugin", func() {
+
 	var (
 		params plugins.Params
-		plugin *Plugin
+		plugin plugins.RoutePlugin
 		out    *envoy_config_route_v3.Route
 	)
+
 	BeforeEach(func() {
 		out = new(envoy_config_route_v3.Route)
 
@@ -227,15 +229,7 @@ var _ = Describe("linkerd plugin", func() {
 	})
 
 	Context("through the plugin", func() {
-		It("can propetly initialiaze", func() {
-			err := plugin.Init(plugins.InitParams{
-				Settings: &v1.Settings{
-					Linkerd: true,
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(plugin.enabled).To(BeTrue())
-		})
+
 		It("works for a single", func() {
 			upstreamRefs := []*core.ResourceRef{
 				{Name: "one", Namespace: "one"},

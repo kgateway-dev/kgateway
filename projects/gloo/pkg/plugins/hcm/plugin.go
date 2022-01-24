@@ -14,25 +14,31 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
+var (
+	_ plugins.Plugin                      = new(plugin)
+	_ plugins.HttpConnectionManagerPlugin = new(plugin)
+)
+
 const (
+	ExtensionName      = "hcm"
 	PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpConnectionManagerPlugin = new(Plugin)
-
-type Plugin struct {
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(_ plugins.InitParams) error {
+func (p *plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
+func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
 
 	out.UseRemoteAddress = in.GetUseRemoteAddress()

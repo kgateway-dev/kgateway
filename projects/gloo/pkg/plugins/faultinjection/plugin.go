@@ -14,31 +14,40 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
+var (
+	_ plugins.Plugin           = new(plugin)
+	_ plugins.HttpFilterPlugin = new(plugin)
+	_ plugins.RoutePlugin      = new(plugin)
+)
+
+const (
+	ExtensionName = "fault_injection"
+)
+
 var pluginStage = plugins.DuringStage(plugins.FaultStage)
 
-var _ plugins.Plugin = &Plugin{}
-var _ plugins.HttpFilterPlugin = &Plugin{}
-var _ plugins.RoutePlugin = &Plugin{}
+type plugin struct{}
 
-type Plugin struct {
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	// put the filter in the chain, but the actual faults will be configured on the routes
 	return []plugins.StagedHttpFilter{
 		plugins.NewStagedFilter(wellknown.Fault, pluginStage),
 	}, nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	markFilterConfigFunc := func(spec *v1.Destination) (proto.Message, error) {
 		if in.GetOptions() == nil {
 			return nil, nil

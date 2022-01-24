@@ -8,22 +8,31 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+var (
+	_ plugins.Plugin         = new(plugin)
+	_ plugins.ListenerPlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "listener"
+)
+
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.ListenerPlugin = new(Plugin)
-
-type Plugin struct {
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(_ plugins.InitParams) error {
+func (p *plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
 // Used to set config that are directly on the [Envoy listener](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/listener.proto)
-func (p *Plugin) ProcessListener(_ plugins.Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error {
+func (p *plugin) ProcessListener(_ plugins.Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error {
 	if in.GetOptions().GetPerConnectionBufferLimitBytes().GetValue() != 0 {
 		out.PerConnectionBufferLimitBytes = in.GetOptions().GetPerConnectionBufferLimitBytes()
 	}

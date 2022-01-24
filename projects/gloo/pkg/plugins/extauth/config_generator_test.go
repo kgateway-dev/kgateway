@@ -103,13 +103,13 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 					extauthSettings *extauthv1.Settings
 					initParams      plugins.InitParams
 					params          plugins.Params
-					extauthPlugin   *Plugin
+					extauthPlugin   plugins.HttpFilterPlugin
 					listener        *gloov1.HttpListener
 					ref             core.ResourceRef
 				)
 
 				BeforeEach(func() {
-					extauthPlugin = &Plugin{}
+					extauthPlugin = NewPlugin()
 					ref = core.ResourceRef{
 						Name:      "test",
 						Namespace: "test",

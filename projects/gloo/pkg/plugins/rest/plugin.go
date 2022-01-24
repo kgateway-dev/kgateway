@@ -1,9 +1,5 @@
 package rest
 
-/*
-if this destination spec has rest service spec
-this will grab the parameters from the route extension
-*/
 import (
 	"context"
 
@@ -23,15 +19,20 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-type UpstreamWithServiceSpec interface {
-	GetServiceSpec() *glooplugins.ServiceSpec
-}
+var (
+	_ plugins.Plugin         = new(plugin)
+	_ plugins.UpstreamPlugin = new(plugin)
+	_ plugins.RoutePlugin    = new(plugin)
+)
 
-// Compile-time assertion
-var _ plugins.Plugin = &plugin{}
-var _ plugins.UpstreamPlugin = &plugin{}
-var _ plugins.RoutePlugin = &plugin{}
+const (
+	ExtensionName = "rest"
+)
 
+/*
+if this destination spec has rest service spec
+this will grab the parameters from the route extension
+*/
 type plugin struct {
 	recordedUpstreams map[string]*glooplugins.ServiceSpec_Rest
 	ctx               context.Context
@@ -41,10 +42,18 @@ func NewPlugin() plugins.Plugin {
 	return &plugin{}
 }
 
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
 	p.recordedUpstreams = make(map[string]*glooplugins.ServiceSpec_Rest)
 	return nil
+}
+
+type UpstreamWithServiceSpec interface {
+	GetServiceSpec() *glooplugins.ServiceSpec
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envoy_config_cluster_v3.Cluster) error {

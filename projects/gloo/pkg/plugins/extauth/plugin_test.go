@@ -61,7 +61,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 				pluginContext := getPluginContext(globalSettings, input, Undefined, Undefined)
 
 				var out envoy_config_route_v3.VirtualHost
-				err := pluginContext.PluginInstance.ProcessVirtualHost(pluginContext.VirtualHostParams, pluginContext.VirtualHost, &out)
+				err := pluginContext.PluginInstance.(plugins.VirtualHostPlugin).ProcessVirtualHost(pluginContext.VirtualHostParams, pluginContext.VirtualHost, &out)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
 			},
@@ -75,7 +75,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 				pluginContext := getPluginContext(globalSettings, Undefined, input, Undefined)
 
 				var out envoy_config_route_v3.Route
-				err := pluginContext.PluginInstance.ProcessRoute(pluginContext.RouteParams, pluginContext.Route, &out)
+				err := pluginContext.PluginInstance.(plugins.RoutePlugin).ProcessRoute(pluginContext.RouteParams, pluginContext.Route, &out)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
 			},
@@ -89,7 +89,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 				pluginContext := getPluginContext(globalSettings, Undefined, Undefined, input)
 
 				var out envoy_config_route_v3.WeightedCluster_ClusterWeight
-				err := pluginContext.PluginInstance.ProcessWeightedDestination(pluginContext.RouteParams, pluginContext.WeightedDestination, &out)
+				err := pluginContext.PluginInstance.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(pluginContext.RouteParams, pluginContext.WeightedDestination, &out)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
 			},
@@ -109,7 +109,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 })
 
 type pluginContext struct {
-	PluginInstance      *Plugin
+	PluginInstance      plugins.Plugin
 	VirtualHost         *gloov1.VirtualHost
 	VirtualHostParams   plugins.VirtualHostParams
 	Route               *gloov1.Route
@@ -274,7 +274,7 @@ func getPluginContext(globalSettings bool, authOnVirtualHost, authOnRoute, authO
 		VirtualHost:       virtualHost,
 	}
 
-	plugin := NewCustomAuthPlugin()
+	plugin := NewPlugin()
 	initParams := plugins.InitParams{Ctx: ctx}
 	initParams.Settings = &gloov1.Settings{}
 

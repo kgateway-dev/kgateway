@@ -21,15 +21,8 @@ type InitParams struct {
 }
 
 type Plugin interface {
+	Name() string
 	Init(params InitParams) error
-}
-
-// Upgradable plugins are those which can be replaced by
-// another version with enhanced functionality. Identified
-// by PluginName().
-type Upgradable interface {
-	PluginName() string
-	IsUpgrade() bool
 }
 
 type Params struct {
@@ -293,3 +286,7 @@ type PluginRegistry interface {
 	GetRouteActionPlugins() []RouteActionPlugin
 	GetWeightedDestinationPlugins() []WeightedDestinationPlugin
 }
+
+// A PluginRegistryFactory generates a PluginRegistry
+// It is executed each translation loop, ensuring we have up to date configuration of all plugins
+type PluginRegistryFactory func(ctx context.Context) PluginRegistry

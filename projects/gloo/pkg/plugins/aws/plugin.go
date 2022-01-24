@@ -29,27 +29,20 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+var (
+	_ plugins.Plugin           = new(plugin)
+	_ plugins.UpstreamPlugin   = new(plugin)
+	_ plugins.RoutePlugin      = new(plugin)
+	_ plugins.HttpFilterPlugin = new(plugin)
+)
+
 const (
+	ExtensionName = "aws_lambda"
 	// filter info
 	FilterName = "io.solo.aws_lambda"
 )
 
-var _ plugins.Plugin = new(plugin)
-var _ plugins.UpstreamPlugin = new(plugin)
-var _ plugins.RoutePlugin = new(plugin)
-var _ plugins.HttpFilterPlugin = new(plugin)
-
 var pluginStage = plugins.DuringStage(plugins.OutAuthStage)
-
-func getLambdaHostname(s *aws.UpstreamSpec) string {
-	return fmt.Sprintf("lambda.%s.amazonaws.com", s.GetRegion())
-}
-
-func NewPlugin(earlyTransformsAdded *bool) plugins.Plugin {
-	return &plugin{
-		earlyTransformsAdded: earlyTransformsAdded,
-	}
-}
 
 type plugin struct {
 	recordedUpstreams map[string]*aws.UpstreamSpec
@@ -63,12 +56,26 @@ type plugin struct {
 	upstreamOptions      *v1.UpstreamOptions
 }
 
+func NewPlugin(earlyTransformsAdded *bool) plugins.Plugin {
+	return &plugin{
+		earlyTransformsAdded: earlyTransformsAdded,
+	}
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
 	p.recordedUpstreams = make(map[string]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
 	p.upstreamOptions = params.Settings.GetUpstreamOptions()
 	return nil
+}
+
+func getLambdaHostname(s *aws.UpstreamSpec) string {
+	return fmt.Sprintf("lambda.%s.amazonaws.com", s.GetRegion())
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
