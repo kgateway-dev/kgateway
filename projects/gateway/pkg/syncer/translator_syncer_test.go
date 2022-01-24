@@ -72,7 +72,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			acceptedProxy: errs,
 		}
 
-		syncer.setCurrentProxies(desiredProxies, make([]reporter.ResourceReports, 0))
+		syncer.setCurrentProxies(desiredProxies, make(reconciler.InvalidProxies))
 		syncer.setStatuses(gloov1.ProxyList{acceptedProxy})
 
 		err := syncer.syncStatus(context.Background())
@@ -87,6 +87,15 @@ var _ = Describe("TranslatorSyncer", func() {
 	})
 
 	It("should set status correctly when resources are in both proxies", func() {
+		reportContainsWarning := func(report reporter.Report, warning string) bool {
+			for _, w := range report.Warnings {
+				if w == warning {
+					return true
+				}
+			}
+			return false
+		}
+
 		acceptedProxy1 := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test1", Namespace: "gloo-system"},
 		}
@@ -117,7 +126,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			acceptedProxy2: errs2,
 		}
 
-		syncer.setCurrentProxies(desiredProxies, make([]reporter.ResourceReports, 0))
+		syncer.setCurrentProxies(desiredProxies, make(reconciler.InvalidProxies))
 		syncer.setStatuses(gloov1.ProxyList{acceptedProxy1, acceptedProxy2})
 
 		err := syncer.syncStatus(context.Background())
@@ -126,7 +135,9 @@ var _ = Describe("TranslatorSyncer", func() {
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
 		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(rt.GetMetadata().Ref())))
 
-		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(expectedErr[rt]))
+		Expect(reportContainsWarning(mockReporter.Reports()[reportedKey], "warning 1")).To(BeTrue())
+		Expect(reportContainsWarning(mockReporter.Reports()[reportedKey], "warning 2")).To(BeTrue())
+
 		m := map[string]*core.Status{
 			"*v1.Proxy.test2_gloo-system": {State: core.Status_Accepted},
 			"*v1.Proxy.test1_gloo-system": {State: core.Status_Accepted},
@@ -161,7 +172,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		go syncer.watchProxiesFromChannel(ctx, proxies, nil)
 		go syncer.syncStatusOnEmit(ctx)
 
-		syncer.setCurrentProxies(desiredProxies, make([]reporter.ResourceReports, 0))
+		syncer.setCurrentProxies(desiredProxies, make(reconciler.InvalidProxies))
 		proxies <- gloov1.ProxyList{pendingProxy}
 		proxies <- gloov1.ProxyList{acceptedProxy}
 
@@ -198,7 +209,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		go syncer.watchProxiesFromChannel(ctx, proxies, nil)
 		go syncer.syncStatusOnEmit(ctx)
 
-		syncer.setCurrentProxies(desiredProxies, make([]reporter.ResourceReports, 0))
+		syncer.setCurrentProxies(desiredProxies, make(reconciler.InvalidProxies))
 		proxies <- gloov1.ProxyList{acceptedProxy}
 
 		Eventually(mockReporter.Reports, "5s", "0.5s").ShouldNot(BeEmpty())
@@ -231,7 +242,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			rejectedProxy: errs,
 		}
 
-		syncer.setCurrentProxies(desiredProxies, make([]reporter.ResourceReports, 0))
+		syncer.setCurrentProxies(desiredProxies, make(reconciler.InvalidProxies))
 		syncer.setStatuses(gloov1.ProxyList{acceptedProxy, rejectedProxy})
 
 		err := syncer.syncStatus(context.Background())
@@ -268,7 +279,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			rejectedProxy: reporter.ResourceReports{},
 		}
 
-		syncer.setCurrentProxies(desiredProxies, make([]reporter.ResourceReports, 0))
+		syncer.setCurrentProxies(desiredProxies, make(reconciler.InvalidProxies))
 		syncer.setStatuses(gloov1.ProxyList{acceptedProxy, rejectedProxy})
 
 		err := syncer.syncStatus(context.Background())
@@ -307,7 +318,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			rejectedProxy2: errsProxy2,
 		}
 
-		syncer.setCurrentProxies(desiredProxies, make([]reporter.ResourceReports, 0))
+		syncer.setCurrentProxies(desiredProxies, make(reconciler.InvalidProxies))
 		syncer.setStatuses(gloov1.ProxyList{rejectedProxy1, rejectedProxy2})
 
 		err := syncer.syncStatus(context.Background())
