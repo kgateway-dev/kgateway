@@ -4,40 +4,34 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_listener_proxy_protocol "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/proxy_protocol/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/enterprise_warning"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-func NewPlugin() *plugin {
-	return &plugin{}
-}
-
-// Compile-time assertion
 var (
 	_ plugins.Plugin         = new(plugin)
 	_ plugins.ListenerPlugin = new(plugin)
 )
 
 const (
-	ErrEnterpriseOnly = "detecting the presence of proxy protocol is an enterprise-only feature"
-	ExtensionName     = "proxy_protocol"
+	ExtensionName = "proxy_protocol"
 )
 
 type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
+}
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *plugin) PluginName() string {
+func (p *plugin) Name() string {
 	return ExtensionName
-}
-
-func (p *plugin) IsUpgrade() bool {
-	return false
 }
 
 func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error {
@@ -47,7 +41,7 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	}
 
 	if UsesEnterpriseOnlyFeatures(in) {
-		return eris.New(ErrEnterpriseOnly)
+		return enterprise_warning.GetErrorForEnterpriseOnlyExtensions([]string{ExtensionName})
 	}
 
 	listenerFilter, err := GenerateProxyProtocolListenerFilter(in)

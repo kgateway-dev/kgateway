@@ -6,22 +6,30 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
-type Plugin struct {
+var (
+	_ plugins.Plugin            = new(plugin)
+	_ plugins.VirtualHostPlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "virtual_host"
+)
+
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-// Compile-time assertion
-var _ plugins.Plugin = &Plugin{}
-var _ plugins.VirtualHostPlugin = &Plugin{}
-
-func NewPlugin() *Plugin {
-	return &Plugin{}
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessVirtualHost(
+func (p *plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,

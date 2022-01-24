@@ -20,7 +20,7 @@ import (
 
 var _ = Describe("Plugin", func() {
 	var (
-		p               *Plugin
+		p               plugins.Plugin
 		expected        *any.Any
 		outputTransform *envoytransformation.RouteTransformations
 	)
@@ -46,7 +46,7 @@ var _ = Describe("Plugin", func() {
 					HeaderBodyTransform: headerBodyTransform,
 				},
 			}
-			output, err := p.TranslateTransformation(input)
+			output, err := TranslateTransformation(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
 		})
@@ -74,7 +74,7 @@ var _ = Describe("Plugin", func() {
 					TransformationTemplate: transformationTemplate,
 				},
 			}
-			output, err := p.TranslateTransformation(input)
+			output, err := TranslateTransformation(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
 		})
@@ -89,7 +89,7 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 
-			output, err := p.TranslateTransformation(input)
+			output, err := TranslateTransformation(input)
 			Expect(output).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(UnknownTransformationType(&transformation.Transformation_XsltTransformation{})))
@@ -127,7 +127,7 @@ var _ = Describe("Plugin", func() {
 
 		It("sets transformation config for weighted destinations", func() {
 			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-			err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
+			err := p.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 				Options: &v1.WeightedDestinationOptions{
 					Transformations: inputTransform,
 				},
@@ -137,7 +137,7 @@ var _ = Describe("Plugin", func() {
 		})
 		It("sets transformation config for virtual hosts", func() {
 			out := &envoy_config_route_v3.VirtualHost{}
-			err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+			err := p.(plugins.VirtualHostPlugin).ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					Transformations: inputTransform,
 				},
@@ -147,7 +147,7 @@ var _ = Describe("Plugin", func() {
 		})
 		It("sets transformation config for routes", func() {
 			out := &envoy_config_route_v3.Route{}
-			err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			err := p.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, &v1.Route{
 				Options: &v1.RouteOptions{
 					Transformations: inputTransform,
 				},
@@ -156,7 +156,7 @@ var _ = Describe("Plugin", func() {
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 		})
 		It("sets only one filter when no early filters exist", func() {
-			filters, err := p.HttpFilters(plugins.Params{}, nil)
+			filters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(filters)).To(Equal(1))
 			value := filters[0].HttpFilter.GetTypedConfig().GetValue()
@@ -358,7 +358,7 @@ var _ = Describe("Plugin", func() {
 		})
 		It("sets transformation config for vhosts", func() {
 			out := &envoy_config_route_v3.VirtualHost{}
-			err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+			err := p.(plugins.VirtualHostPlugin).ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					StagedTransformations: inputTransform,
 				},
@@ -368,7 +368,7 @@ var _ = Describe("Plugin", func() {
 		})
 		It("sets transformation config for routes", func() {
 			out := &envoy_config_route_v3.Route{}
-			err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			err := p.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, &v1.Route{
 				Options: &v1.RouteOptions{
 					StagedTransformations: inputTransform,
 				},
@@ -378,7 +378,7 @@ var _ = Describe("Plugin", func() {
 		})
 		It("sets transformation config for weighted dest", func() {
 			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-			err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
+			err := p.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 				Options: &v1.WeightedDestinationOptions{
 					StagedTransformations: inputTransform,
 				},
@@ -388,12 +388,12 @@ var _ = Describe("Plugin", func() {
 		})
 		It("should add both filter to the chain when early transformations exist", func() {
 			out := &envoy_config_route_v3.Route{}
-			err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			err := p.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, &v1.Route{
 				Options: &v1.RouteOptions{
 					StagedTransformations: inputTransform,
 				},
 			}, out)
-			filters, err := p.HttpFilters(plugins.Params{}, nil)
+			filters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(filters)).To(Equal(2))
 			value := filters[0].HttpFilter.GetTypedConfig()

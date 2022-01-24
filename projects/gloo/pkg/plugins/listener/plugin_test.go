@@ -15,9 +15,10 @@ import (
 var _ = Describe("Plugin", func() {
 
 	var (
-		plugin *Plugin
+		plugin plugins.ListenerPlugin
 		out    *envoy_config_listener_v3.Listener
 	)
+
 	BeforeEach(func() {
 		out = new(envoy_config_listener_v3.Listener)
 		plugin = NewPlugin()

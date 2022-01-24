@@ -170,14 +170,11 @@ var _ = Describe("Translator", func() {
 	BeforeEach(beforeEach)
 
 	JustBeforeEach(func() {
-		getPlugins := func() []plugins.Plugin {
-			return registeredPlugins
+		pluginRegistryFactory := func(ctx context.Context) plugins.PluginRegistry {
+			return registry.NewPluginRegistry(registeredPlugins)
 		}
 
-		getPluginRegistry := func() plugins.PluginRegistry {
-			return registry.NewPluginRegistry(getPlugins())
-		}
-		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, getPluginRegistry)
+		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, pluginRegistryFactory)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",
@@ -3072,6 +3069,10 @@ type routePluginMock struct {
 	ProcessRouteFunc func(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error
 }
 
+func (p *routePluginMock) Name() string {
+	return "route_plugin_mock"
+}
+
 func (p *routePluginMock) Init(params plugins.InitParams) error {
 	return nil
 }
@@ -3086,6 +3087,10 @@ type endpointPluginMock struct {
 
 func (e *endpointPluginMock) ProcessEndpoints(params plugins.Params, in *v1.Upstream, out *envoy_config_endpoint_v3.ClusterLoadAssignment) error {
 	return e.ProcessEndpointFunc(params, in, out)
+}
+
+func (e *endpointPluginMock) Name() string {
+	return "endpoint_plugin_mock"
 }
 
 func (e *endpointPluginMock) Init(params plugins.InitParams) error {

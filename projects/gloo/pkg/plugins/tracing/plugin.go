@@ -20,26 +20,35 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-// default all tracing percentages to 100%
-const oneHundredPercent float32 = 100.0
+var (
+	_ plugins.Plugin                      = new(plugin)
+	_ plugins.HttpConnectionManagerPlugin = new(plugin)
+	_ plugins.RoutePlugin                 = new(plugin)
+)
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+const (
+	ExtensionName = "tracing"
+
+	// default all tracing percentages to 100%
+	oneHundredPercent float32 = 100.0
+)
+
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpConnectionManagerPlugin = new(Plugin)
-var _ plugins.RoutePlugin = new(Plugin)
-
-type Plugin struct {
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
 // Manage the tracing portion of the HCM settings
-func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
+func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 
 	// only apply tracing config to the listener is using the HCM plugin
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
@@ -246,7 +255,7 @@ func envoySimplePercentWithDefault(numerator *wrappers.FloatValue, defaultValue 
 	return envoySimplePercent(numerator.GetValue())
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if in.GetOptions() == nil || in.GetOptions().GetTracing() == nil {
 		return nil
 	}

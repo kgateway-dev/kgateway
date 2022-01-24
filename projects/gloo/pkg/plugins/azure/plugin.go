@@ -24,13 +24,16 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-const (
-	masterKeyName = "_master"
+var (
+	_ plugins.Plugin         = new(plugin)
+	_ plugins.RoutePlugin    = new(plugin)
+	_ plugins.UpstreamPlugin = new(plugin)
 )
 
-var _ plugins.Plugin = new(plugin)
-var _ plugins.RoutePlugin = new(plugin)
-var _ plugins.UpstreamPlugin = new(plugin)
+const (
+	ExtensionName = "azure"
+	masterKeyName = "_master"
+)
 
 type plugin struct {
 	settings          *v1.Settings
@@ -41,6 +44,10 @@ type plugin struct {
 
 func NewPlugin() plugins.Plugin {
 	return &plugin{}
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {

@@ -11,28 +11,36 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
+var (
+	_ plugins.Plugin                    = new(plugin)
+	_ plugins.HttpFilterPlugin          = new(plugin)
+	_ plugins.RoutePlugin               = new(plugin)
+	_ plugins.VirtualHostPlugin         = new(plugin)
+	_ plugins.WeightedDestinationPlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "buffer"
+)
+
 // filter should be called after routing decision has been made
 var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpFilterPlugin = new(Plugin)
-var _ plugins.RoutePlugin = new(Plugin)
-var _ plugins.VirtualHostPlugin = new(Plugin)
-var _ plugins.WeightedDestinationPlugin = new(Plugin)
-
-type Plugin struct {
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-
+func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	bufferConfig := p.translateBufferFilter(listener.GetOptions().GetBuffer())
 
 	if bufferConfig == nil {
@@ -47,7 +55,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	return []plugins.StagedHttpFilter{bufferFilter}, nil
 }
 
-func (p *Plugin) translateBufferFilter(buf *buffer.Buffer) *envoybuffer.Buffer {
+func (p *plugin) translateBufferFilter(buf *buffer.Buffer) *envoybuffer.Buffer {
 	if buf == nil {
 		return nil
 	}
@@ -57,7 +65,7 @@ func (p *Plugin) translateBufferFilter(buf *buffer.Buffer) *envoybuffer.Buffer {
 	}
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	bufPerRoute := in.GetOptions().GetBufferPerRoute()
 	if bufPerRoute == nil {
 		return nil
@@ -78,7 +86,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return nil
 }
 
-func (p *Plugin) ProcessVirtualHost(
+func (p *plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,
@@ -103,7 +111,7 @@ func (p *Plugin) ProcessVirtualHost(
 	return nil
 }
 
-func (p *Plugin) ProcessWeightedDestination(
+func (p *plugin) ProcessWeightedDestination(
 	params plugins.RouteParams,
 	in *v1.WeightedDestination,
 	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,

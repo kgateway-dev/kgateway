@@ -1,6 +1,8 @@
 package registry
 
 import (
+	"context"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
@@ -12,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/csrf"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/enterprise_warning"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
@@ -41,20 +44,18 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tunneling"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/virtualhost"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-type registry struct {
-	plugins []plugins.Plugin
-}
+var _ plugins.PluginRegistry = new(pluginRegistry)
 
-var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugins.Plugin) *registry {
+func Plugins(opts bootstrap.Opts) []plugins.Plugin {
+	var glooPlugins []plugins.Plugin
+
 	transformationPlugin := transformation.NewPlugin()
 	hcmPlugin := hcm.NewPlugin()
-	reg := &registry{}
-	// plugins should be added here
-	reg.plugins = append(reg.plugins,
+
+	glooPlugins = append(glooPlugins,
 		loadbalancer.NewPlugin(),
 		upstreamconn.NewPlugin(),
 		azure.NewPlugin(),
@@ -80,9 +81,8 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		shadowing.NewPlugin(),
 		headers.NewPlugin(),
 		healthcheck.NewPlugin(),
-		extauth.NewCustomAuthPlugin(),
+		extauth.NewPlugin(),
 		ratelimit.NewPlugin(),
-		wasm.NewPlugin(),
 		gzip.NewPlugin(),
 		buffer.NewPlugin(),
 		csrf.NewPlugin(),
@@ -93,21 +93,26 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		metadata.NewPlugin(),
 		tunneling.NewPlugin(),
 	)
+
 	if opts.KubeClient != nil {
-		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))
+		glooPlugins = append(glooPlugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))
 	}
 	if opts.Consul.ConsulWatcher != nil {
-		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.Consul.ConsulWatcher, &consul.ConsulDnsResolver{DnsAddress: opts.Consul.DnsServer}, opts.Consul.DnsPollingInterval))
+		glooPlugins = append(glooPlugins, consul.NewPlugin(opts.Consul.ConsulWatcher, &consul.ConsulDnsResolver{DnsAddress: opts.Consul.DnsServer}, opts.Consul.DnsPollingInterval))
 	}
 
-	return reg
+	return glooPlugins
 }
 
-func Plugins(opts bootstrap.Opts) []plugins.Plugin {
-	return globalRegistry(opts).plugins
-}
+func GetPluginRegistryFactory(opts bootstrap.Opts) plugins.PluginRegistryFactory {
+	return func(ctx context.Context) plugins.PluginRegistry {
+		availablePlugins := Plugins(opts)
 
-var _ plugins.PluginRegistry = new(pluginRegistry)
+		// To improve the UX, load a plugin that warns users if they are attempting to use enterprise configuration
+		availablePlugins = append(availablePlugins, enterprise_warning.NewPlugin())
+		return NewPluginRegistry(availablePlugins)
+	}
+}
 
 type pluginRegistry struct {
 	plugins                      []plugins.Plugin

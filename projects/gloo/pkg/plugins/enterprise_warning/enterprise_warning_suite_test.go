@@ -1,4 +1,4 @@
-package rbac_test
+package enterprise_warning_test
 
 import (
 	"testing"
@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestRbac(t *testing.T) {
+func TestEnterpriseWarning(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Rbac Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "EnterpriseWarning Suite", []Reporter{junitReporter})
 }

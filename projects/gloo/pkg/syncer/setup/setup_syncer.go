@@ -325,61 +325,9 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 }
 
 type Extensions struct {
-	// Deprecated. Use PluginExtensionsFuncs instead.
-	PluginExtensions      []plugins.Plugin
-	PluginExtensionsFuncs []func() plugins.Plugin
+	PluginRegistryFactory plugins.PluginRegistryFactory
 	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
 	XdsCallbacks          xdsserver.Callbacks
-}
-
-func GetPluginsWithExtensionsAndRegistry(opts bootstrap.Opts, registryPlugins func(opts bootstrap.Opts) []plugins.Plugin, extensions Extensions) func() []plugins.Plugin {
-	pluginfuncs := extensions.PluginExtensionsFuncs
-	for _, p := range extensions.PluginExtensions {
-		p := p
-		pluginfuncs = append(pluginfuncs, func() plugins.Plugin { return p })
-	}
-	return func() []plugins.Plugin {
-		upgradedPlugins := make(map[string]bool)
-		plugs := registryPlugins(opts)
-		for _, pluginExtension := range pluginfuncs {
-			pe := pluginExtension()
-			if uPlug, ok := pe.(plugins.Upgradable); ok && uPlug.IsUpgrade() {
-				upgradedPlugins[uPlug.PluginName()] = true
-			}
-
-			plugs = append(plugs, pe)
-		}
-		plugs = reconcileUpgradedPlugins(plugs, upgradedPlugins)
-
-		return plugs
-	}
-}
-
-// removes any redundant plugins from the pluginList, if we have added an upgraded version to replace them
-func reconcileUpgradedPlugins(pluginList []plugins.Plugin, upgradedPlugins map[string]bool) []plugins.Plugin {
-	var pluginsToDrop []int
-	for i, plugin := range pluginList {
-		uPlug, upgradable := plugin.(plugins.Upgradable)
-		if upgradable {
-			_, inMap := upgradedPlugins[uPlug.PluginName()]
-			if inMap && !uPlug.IsUpgrade() {
-				// An upgraded version of this plug exists,
-				// mark this one for removal
-				pluginsToDrop = append(pluginsToDrop, i)
-			}
-		}
-	}
-
-	// Walk back through the pluginList and remove the redundant plugins
-	for i := len(pluginsToDrop) - 1; i >= 0; i-- {
-		badIndex := pluginsToDrop[i]
-		pluginList = append(pluginList[:badIndex], pluginList[badIndex+1:]...)
-	}
-	return pluginList
-}
-
-func GetPluginsWithExtensions(opts bootstrap.Opts, extensions Extensions) func() []plugins.Plugin {
-	return GetPluginsWithExtensionsAndRegistry(opts, registry.Plugins, extensions)
 }
 
 func RunGloo(opts bootstrap.Opts) error {
@@ -519,13 +467,14 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
 
-	getPlugins := GetPluginsWithExtensions(opts, extensions)
-	getPluginRegistry := func() plugins.PluginRegistry {
-		return registry.NewPluginRegistry(getPlugins())
+	pluginRegistryFactory := extensions.PluginRegistryFactory
+	if pluginRegistryFactory == nil {
+		pluginRegistryFactory = registry.GetPluginRegistryFactory(opts)
 	}
 
+	pluginRegistry := pluginRegistryFactory(watchOpts.Ctx)
 	var discoveryPlugins []discovery.DiscoveryPlugin
-	for _, plug := range getPlugins() {
+	for _, plug := range pluginRegistry.GetPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
 			discoveryPlugins = append(discoveryPlugins, disc)
@@ -599,7 +548,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		rlReporterClient,
 	)
 
-	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPluginRegistry)
+	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistryFactory)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
