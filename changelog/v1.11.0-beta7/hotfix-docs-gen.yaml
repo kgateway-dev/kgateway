@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Vulnerability detection docs are now rendered on a per-subversion basis
