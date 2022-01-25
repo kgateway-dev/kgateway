@@ -123,6 +123,15 @@ function generateSiteForVersion() {
   mkdir $repoDir/docs/content
   cp -a $tempContentDir/$version/. $repoDir/docs/content/
 
+  # Remove the file responsible for the "security scan too large" bug if necessary
+  guilty_path="./content/reference/security-updates"
+  if cat $guilty_path/enterprise/_index.md | grep -q "glooe-security-scan-0"; then
+    echo "$version contains the updated security scan template"
+  else
+    echo "$version does not contain the updated security scan template"
+    rm -rf $guilty_path
+  fi
+
   # Generate the versioned static site.
   make site-release
 

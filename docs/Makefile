@@ -27,10 +27,15 @@ site-common: clean gloo-enterprise-version
 	GO111MODULE=on go run cmd/generate_docs.go gen-releases -r glooe > enterprise.out
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md -r gloo > content/static/content/gloo-changelog.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md -r glooe > content/static/content/glooe-changelog.docgen
+
+	# generate split security scans for gloo versions which HAVE recieved new split-templating updates
 	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r gloo > content/static/content/gloo-security-scan.docgen
 	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r glooe > content/static/content/glooe-security-scan.docgen
+	./split-file-by-delimiter.sh content/static/content/gloo-security-scan.docgen \\\*\\\*\\\*
+	./split-file-by-delimiter.sh content/static/content/glooe-security-scan.docgen \\\*\\\*\\\*
 	GO111MODULE=on go run cmd/generate_docs.go get-enterprise-helm-values > content/static/content/glooe-values.docgen
 	rm -f opensource.out enterprise.out
+
 
 .PHONY: site-test
 site-test: site-common
