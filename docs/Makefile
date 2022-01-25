@@ -12,6 +12,8 @@ HUGO_VERSION := 0.69.2
 
 SOLO_HUGO_THEME_REVISION := 3817a468af3ee13f4d0fb9e645290a413cdf5e93
 
+SECURITY_SCAN_MIN_VERSION ?= v1.7.0
+
 #----------------------------------------------------------------------------------
 # Docs
 #----------------------------------------------------------------------------------
@@ -24,8 +26,12 @@ site-common: clean
 	GO111MODULE=on go run cmd/generate_docs.go gen-minor-releases-changelog-md gloo> content/static/content/gloo-minor-release-changelog.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-minor-releases-changelog-md glooe> content/static/content/glooe-minor-release-changelog.docgen
-	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md gloo > content/static/content/gloo-security-scan.docgen
-	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md glooe > content/static/content/glooe-security-scan.docgen
+
+	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r gloo > content/static/content/gloo-security-scan.docgen
+	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r glooe > content/static/content/glooe-security-scan.docgen
+	./split-file-by-delimiter.sh content/static/content/gloo-security-scan.docgen \\\*\\\*\\\*
+	./split-file-by-delimiter.sh content/static/content/glooe-security-scan.docgen \\\*\\\*\\\*
+
 
 .PHONY: site-test
 site-test: site-common
