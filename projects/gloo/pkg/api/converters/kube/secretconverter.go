@@ -23,6 +23,7 @@ var GlooSecretConverterChain = NewSecretConverterChain(
 	new(AwsSecretConverter),
 	new(HeaderSecretConverter),
 	new(APIKeySecretConverter),
+	new(OAuthSecretConverter),
 )
 
 type SecretConverterChain struct {
