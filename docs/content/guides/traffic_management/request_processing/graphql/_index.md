@@ -31,7 +31,7 @@ GraphQL resolution is an alpha feature included in Gloo Edge Enterprise version 
 1. [Contact your account representative](https://www.solo.io/company/talk-to-an-expert/) to request a Gloo Edge Enterprise license that specifically enables the GraphQL capability.
 
 2. To try out GraphQL, install Gloo Edge in a development environment. Note that you currenty cannot update an existing installation to use GraphQL. Be sure to specify version 1.10.0 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
-```
+```sh
 glooctl install gateway enterprise --version {{< readfile file="static/content/version_gee_n-1.md" markdown="true">}} --license-key=<GRAPHQL_ENABLED_LICENSE_LEY>
 ```
 
@@ -194,11 +194,84 @@ spec:
 EOF
 {{< /highlight >}}
 
-6. Send a request to the endpoint to verify that the request is successfully resolved by Envoy.
+6. Send a request to the GraphQL endpoint to verify that the request is successfully resolved by Envoy.
    ```sh
    curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}'
    ```
    In the JSON response, note that only the information you queried is returned:
+   ```json
+   {"data":{"productsForHome":[{"id":"0","title":"The Comedy of Errors","author":"William Shakespeare","pages":200,"year":1595}]}}
+   ```
+
+## Step 4: Secure the GraphQL API
+
+Protect the GraphQL API that you created in the previous sections by using an API key. Note that you can also use any other authorization mechanism provided by Gloo Edge to secure your GraphQL endpoint.
+
+1. Create an API key secret that contains an existing API key. If you want `glooctl` to create an API key for you, you can specify the `--apikey-generate` flag instead of the `--apikey` flag.
+   ```sh
+   glooctl create secret apikey my-apikey \
+   --apikey $API_KEY \
+   --apikey-labels team=gloo
+   ```
+
+2. Verify that the secret was successfully created and contains an API key.
+   ```sh
+   kubectl get secret my-apikey -n gloo-system -o yaml
+   ```
+
+3. Create an AuthConfig CR that uses the API key secret.
+```sh
+kubectl apply -f - <<EOF
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: apikey-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - apiKeyAuth:
+      headerName: api-key
+      labelSelector:
+        team: gloo
+EOF
+```
+
+4. Update the `default` virtual service that you previously created to reference the `apikey-auth` AuthConfig. 
+{{< highlight yaml "hl_lines=17-21" >}}
+cat << EOF | kubectl apply -f -
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: 'default'
+  namespace: 'gloo-system'
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - graphqlSchemaRef:
+        name: bookinfo-graphql
+        namespace: gloo-system
+      matchers:
+      - prefix: /graphql
+      options:
+        extauth:
+          configRef:
+            name: apikey-auth
+            namespace: gloo-system
+EOF
+{{< /highlight >}}
+
+5. Send a request to the GraphQL endpoint. Note that because we enforced API key authorization, the unauthorized request fails.
+   ```sh
+   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}'
+   ```
+
+6. Add the API key to your request in the `-H 'api-key: $API_KEY'` header, and curl the endpoint again.
+   ```sh
+   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -H 'api-key: $API_KEY' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}'
+   ```
+   Example successful response:
    ```json
    {"data":{"productsForHome":[{"id":"0","title":"The Comedy of Errors","author":"William Shakespeare","pages":200,"year":1595}]}}
    ```
