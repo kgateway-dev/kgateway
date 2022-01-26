@@ -124,7 +124,7 @@ kubectl get upstream -n gloo-system
 
 3. Check out the contents of the following Gloo Edge GraphQL schema CRD. Specifically, take a look at the `restResolver` and `schema_definition` sections.
    ```sh
-   curl https://raw.githubusercontent.com/kcbabo/graphql-bookinfo/main/kubernetes/bookinfo-gql.yaml
+   curl https://raw.githubusercontent.com/solo-io/graphql-bookinfo/main/kubernetes/bookinfo-gql.yaml
    ```
    * `restResolver`: A resolver is defined by a name (ex: `Query|productsForHome`) and whether it is a REST or a gRPC resolver. This example is a REST resolver, so the path and the method that are needed to request the data are specified. The path can reference a parent attribute, such as `/details/{$parent.id}.`
      ```yaml
@@ -170,7 +170,7 @@ kubectl get upstream -n gloo-system
 
 4. Create the GraphQL schema CRD in your cluster to expose the GraphQL API that fetches data from the three Bookinfo services.
    ```sh
-   kubectl apply -f https://raw.githubusercontent.com/kcbabo/graphql-bookinfo/main/kubernetes/bookinfo-gql.yaml -n gloo-system
+   kubectl apply -f https://raw.githubusercontent.com/solo-io/graphql-bookinfo/main/kubernetes/bookinfo-gql.yaml -n gloo-system
    ```
 
 5. Update the `default` virtual service that you previously created to route traffic to `/graphql` to the new `bookinfo-graphql` GraphQL schema. 
@@ -280,7 +280,7 @@ EOF
 
 You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration.
 
-To get started, check out the in-depth example in the [`graphql-bookinfo` repository](https://github.com/kcbabo/graphql-bookinfo). You can model your own use case based on the contents of this example:
+To get started, check out the in-depth example in the [`graphql-bookinfo` repository](https://github.com/solo-io/graphql-bookinfo). You can model your own use case based on the contents of this example:
 * The `kubernetes` directory contains the Bookinfo sample app deployment, the example GraphQL schema, and the virtual service to route requests to the `/graphql` endpoint.
 * The `openapi` directory contains the OpenAPI specifications for the individual BookInfo microservices, along with the original consolidated BookInfo REST API.
 
