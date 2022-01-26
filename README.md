@@ -1,4 +1,4 @@
-
+ 
 
 <h1 align="center">
     <img src="https://docs.solo.io/gloo-edge/master/img/Gloo-01.png" alt="Gloo Edge" width="200" height="155">
