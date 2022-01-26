@@ -21,9 +21,9 @@ const (
 var GlooSecretConverterChain = NewSecretConverterChain(
 	new(TLSSecretConverter),
 	new(AwsSecretConverter),
-	new(HeaderSecretConverter),
 	new(APIKeySecretConverter),
 	new(OAuthSecretConverter),
+	new(HeaderSecretConverter),
 )
 
 type SecretConverterChain struct {
