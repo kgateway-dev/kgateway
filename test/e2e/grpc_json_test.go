@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = FDescribe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
+var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 	var (
 		ctx            context.Context
 		cancel         context.CancelFunc
@@ -115,7 +115,7 @@ var _ = FDescribe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		FIt("When the route prefix is set to match one of the GrpcJsonTranscoder's services, requests to /test should through", func() {
+		It("When the route prefix is set to match one of the GrpcJsonTranscoder's services, requests to /test should through", func() {
 			body := []byte(`"foo"`) // this is valid JSON because of the quotes
 
 			testRequest := basicReq(body)
@@ -127,7 +127,7 @@ var _ = FDescribe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			}))))
 		})
 
-		FIt("Route matching assumptions are not broken when MatchIncomingRequestRoute is set", func() {
+		It("Route matching assumptions are not broken when MatchIncomingRequestRoute is set", func() {
 			// overwrite grpcJsonGateway with one where MatchIncomingRequestRoute is true
 			err := testClients.GatewayClient.Delete("gloo-system", "gateway-proxy", clients.DeleteOpts{Ctx: ctx})
 			Expect(err).ToNot(HaveOccurred())
