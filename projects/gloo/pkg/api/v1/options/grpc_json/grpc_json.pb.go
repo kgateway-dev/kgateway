@@ -46,8 +46,10 @@ type GrpcJsonTranscoder struct {
 	// google.protobuf.util.json_util#JsonPrintOptions>`_.
 	PrintOptions *GrpcJsonTranscoder_PrintOptions `protobuf:"bytes,3,opt,name=print_options,json=printOptions,proto3" json:"print_options,omitempty"`
 	// Whether to keep the incoming request route after the outgoing headers have been transformed to
-	// the match the upstream gRPC service. Note: This means that routes for gRPC services that are
-	// not transcoded cannot be used in combination with *match_incoming_request_route*.
+	// the match the upstream gRPC service.
+	// Note: When set to false, assumptions about the way that route matching is handled may be broken at the gateway/cluster level.
+	// In short, Envoy will not match in the incoming request path when this is false. See <https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#route-configs-for-transcoded-requests> for more details.
+	// Note: This means that routes for gRPC services that arr not transcoded cannot be used in combination with *match_incoming_request_route*.
 	MatchIncomingRequestRoute bool `protobuf:"varint,5,opt,name=match_incoming_request_route,json=matchIncomingRequestRoute,proto3" json:"match_incoming_request_route,omitempty"`
 	// A list of query parameters to be ignored for transcoding method mapping.
 	// By default, the transcoder filter will not transcode a request if there are any
