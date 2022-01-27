@@ -148,17 +148,15 @@ glooctl create secret oauth --client-secret secretvalue oauth
 {{< tab name="kubectl" codelang="yaml">}}
 apiVersion: v1
 kind: Secret
-type: Opaque
+type: extauth.solo.io/oauth
 metadata:
-  annotations:
-    resource_kind: '*v1.Secret'
   name: oauth
   namespace: gloo-system
 data:
   # The value is a base64 encoding of the following YAML:
   # client_secret: secretvalue
   # Gloo Edge expects OAuth client secrets in this format.
-  oauth: Y2xpZW50U2VjcmV0OiBzZWNyZXR2YWx1ZQo=
+  client-secret: Y2xpZW50U2VjcmV0OiBzZWNyZXR2YWx1ZQo=
 {{< /tab >}}
 {{< /tabs >}} 
 <br>

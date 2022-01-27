@@ -194,6 +194,21 @@ var _ = Describe("Kube2e: gateway", func() {
 		cancel()
 	})
 
+	Context("tests with orphaned gateways", func() {
+		It("correctly sets a status to a single gateway", func() {
+			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
+			// wait for default gateway to be created
+			Eventually(func() (*gatewayv1.Gateway, error) {
+				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+			}, "15s", "0.5s").Should(Not(BeNil()))
+
+			// demand that a created gateway _has_ a status.  This test is "good enough", as, prior to an orphaned gateway fix,
+			// https://github.com/solo-io/gloo/pull/5790, free-floating gateways would never be assigned a status at all (nil)
+			gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+			Expect(gw.NamespacedStatuses.GetStatuses()).NotTo(BeNil())
+		})
+	})
+
 	Context("tests with virtual service", func() {
 
 		AfterEach(func() {
