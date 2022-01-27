@@ -262,7 +262,7 @@ spec:
 EOF
 {{< /highlight >}}
 
-5. Send a request to the GraphQL endpoint. Note that because we enforced API key authorization, the unauthorized request fails.
+5. Send a request to the GraphQL endpoint. Note that because you enforced API key authorization, the unauthorized request fails.
    ```sh
    curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}'
    ```
