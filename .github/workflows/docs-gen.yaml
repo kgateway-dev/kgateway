@@ -51,6 +51,16 @@ jobs:
       run: |
         echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
         echo "::set-output name=IS_COMMUNITY_PR::true"
+    - name: Notify on failure
+      id: notify-on-failure
+      # Notify if the live deployment failed
+      # TODO - Update logic to be event_name != pull_request and failure()
+      if: ${{ github.event_name == 'pull_request' }}
+      uses: slackapi/slack-github-action@v1.18.0
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_BOT_URL }}
+      with:
+        payload-file-path: "./.github/workflows/payloads/failed-workflow.json"
     - name: Generate versioned docs site
       if: ${{ !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
       run: make -C docs build-site
@@ -78,13 +88,3 @@ jobs:
         firebaseServiceAccount: ${{ secrets.GC_FIREBASE_GHA_SA_JSON_KEY }}
         projectId: ${{ secrets.GC_FIREBASE_GHA_PROJECT_ID }}
         entryPoint: ./docs/ci
-    - name: Notify on failure
-      id: notify-on-failure
-      # Notify if the live deployment failed
-      # TODO - Update logic to be event_name != pull_request and failure()
-      if: ${{ github.event_name == 'pull_request' }}
-      uses: slackapi/slack-github-action@v1.18.0
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_BOT_URL }}
-      with:
-        payload-file-path: "./payloads/failed-workflow.json"

@@ -65,4 +65,4 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_BOT_URL }}
         with:
-          payload-file-path: "./payloads/failed-workflow.json"
+          payload-file-path: "./.github/workflows/payloads/failed-workflow.json"
