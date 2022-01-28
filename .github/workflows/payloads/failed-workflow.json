@@ -1,37 +1,13 @@
 {
+  "text": "${{ github.workflow }} <https://github.com/solo-io/gloo/actions/runs/${{ github.run_id }}|workflow failed> in the ${{ github.event.repository.name }} repository",
   "blocks": [
     {
       "type": "section",
+      "block_id": "section-workflow",
       "text": {
         "type": "mrkdwn",
-        "text": "${{ github.workflow }} workflow failed in the ${{ github.event.repository.name }} repository"
+        "text": "<https://github.com/solo-io/gloo/actions/runs/${{ github.run_id }}|Failed workflow run>"
       }
-    },
-    {
-      "type": "divider"
-    },
-    {
-      "type": "actions",
-      "elements": [
-        {
-          "type": "button",
-          "text": {
-            "type": "plain_text",
-            "text": "Build",
-            "emoji": true
-          },
-          "url": "https://github.com/solo-io/gloo/actions/runs/${{ github.run_id }}"
-        },
-        {
-          "type": "button",
-          "text": {
-            "type": "plain_text",
-            "text": "Commit",
-            "emoji": true
-          },
-          "url": "https://github.com/solo-io/gloo/commit/${{ github.sha }}"
-        }
-      ]
     }
   ]
 }
