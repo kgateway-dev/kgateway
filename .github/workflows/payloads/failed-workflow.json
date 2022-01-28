@@ -1,3 +1,3 @@
 {
-  "text": "${{github.workflow}} <https://github.com/solo-io/gloo/actions/runs/${{ github.run_id }}|workflow failed>"
+  "text": "${{github.workflow}} <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|workflow failed>"
 }
