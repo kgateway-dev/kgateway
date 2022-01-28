@@ -52,13 +52,11 @@ jobs:
         echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
         echo "::set-output name=IS_COMMUNITY_PR::true"
     - name: Generate versioned docs site
+      if: ${{ !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
       run: make -C docs build-site
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        SKIP_CHANGELOG_GENERATION: ${{ steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
-        SKIP_SECURITY_SCAN: ${{ steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
-        SKIP_ENTERPRISE_DOCS_GENERATION: ${{ steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
-        USE_PR_SHA_AS_MASTER: ${{ github.event_name == 'pull_request' && !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
+        USE_PR_SHA_AS_MASTER: ${{ github.event_name == 'pull_request' }}
         PULL_REQUEST_SHA: ${{ github.event.pull_request.head.sha }}
     - name: Deploy to Firebase (live docs)
       # Do not publish docs if this workflow was triggered by a pull request
@@ -80,3 +78,13 @@ jobs:
         firebaseServiceAccount: ${{ secrets.GC_FIREBASE_GHA_SA_JSON_KEY }}
         projectId: ${{ secrets.GC_FIREBASE_GHA_PROJECT_ID }}
         entryPoint: ./docs/ci
+    - name: Notify on failure
+      id: notify-on-failure
+      # Notify if the live deployment failed
+      # TODO - Update logic to be event_name != pull_request and failure()
+      if: ${{ github.event_name == 'pull_request' }}
+      uses: slackapi/slack-github-action@v1.18.0
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_BOT_URL }}
+      with:
+        payload-file-path: "./payloads/failed-workflow.json"
