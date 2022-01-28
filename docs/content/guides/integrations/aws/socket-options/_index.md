@@ -47,7 +47,7 @@ Here is an example set of socket options to configure keep alive:
   level: 6 # IPPROTO_TCP
   name: 5 # the TCP_KEEPINTVL parameter - The time (in seconds) between individual keepalive probes.
   intValue: 20 # seconds
-  state: STATE_LISTENING
+  state: STATE_PREBIND
 - description: "keep-alive probes count" # TCP protocol
   level: 6 # IPPROTO_TCP
   name: 6 # the TCP_KEEPCNT parameter - The maximum number of keepalive probes TCP should send before dropping the connection
