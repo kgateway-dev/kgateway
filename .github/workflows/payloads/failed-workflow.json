@@ -1,11 +1,10 @@
 {
-  "text": "Github Action Workflow Failed",
   "blocks": [
     {
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "${{ github.workflow }} workflow failed in the ${{ github.event.repository.name }} repository!"
+        "text": "${{ github.workflow }} workflow failed in the ${{ github.event.repository.name }} repository"
       }
     },
     {
