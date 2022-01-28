@@ -1,41 +1,36 @@
 {
   "text": "Github Action Workflow Failed",
-  "attachments": [
+  "blocks": [
     {
-      "color": "#d90000",
-      "blocks": [
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "${{ github.workflow }} workflow failed in the ${{ github.event.repository.name }} repository!"
+      }
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "actions",
+      "elements": [
         {
-          "type": "section",
+          "type": "button",
           "text": {
-            "type": "mrkdwn",
-            "text": "${{ github.workflow }} workflow failed in the ${{ github.event.repository.name }} repository!"
-          }
+            "type": "plain_text",
+            "text": "Build",
+            "emoji": true
+          },
+          "url": "https://github.com/solo-io/gloo/actions/runs/${{ github.run_id }}"
         },
         {
-          "type": "divider"
-        },
-        {
-          "type": "actions",
-          "elements": [
-            {
-              "type": "button",
-              "text": {
-                "type": "plain_text",
-                "text": "Build",
-                "emoji": true
-              },
-              "url": "https://github.com/solo-io/gloo/actions/runs/${{ github.run_id }}"
-            },
-            {
-              "type": "button",
-              "text": {
-                "type": "plain_text",
-                "text": "Commit",
-                "emoji": true
-              },
-              "url": "https://github.com/solo-io/gloo/commit/${{ github.sha }}"
-            }
-          ]
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": "Commit",
+            "emoji": true
+          },
+          "url": "https://github.com/solo-io/gloo/commit/${{ github.sha }}"
         }
       ]
     }
