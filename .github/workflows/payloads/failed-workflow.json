@@ -1,13 +1,3 @@
 {
-  "text": "${{ github.workflow }} <https://github.com/solo-io/gloo/actions/runs/${{ github.run_id }}|workflow failed> in the ${{ github.event.repository.name }} repository",
-  "blocks": [
-    {
-      "type": "section",
-      "block_id": "section-workflow",
-      "text": {
-        "type": "mrkdwn",
-        "text": "<https://github.com/solo-io/gloo/actions/runs/${{ github.run_id }}|Failed workflow run>"
-      }
-    }
-  ]
+  "text": "${{github.workflow}} <https://github.com/solo-io/gloo/actions/runs/${{ github.run_id }}|workflow failed>"
 }
