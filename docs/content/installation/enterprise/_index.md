@@ -214,15 +214,11 @@ Gloo Edge Open Source Helm values in Enterprise must be prefixed with `gloo`, un
 
 ## Enterprise UI
 
-Prior to Gloo Edge Enterprise v1.8.9, the Enterprise UI was only available if Gloo Federation was enabled.
-Starting in v1.8.9, the UI is included by default for all Gloo Edge Enterprise users as well.
+For version 1.8.9 and later, Gloo Edge Enterprise includes the user interface (UI) by default. Prior versions have the UI only when you enable Gloo Federation.
 
-Note that if you have Gloo Federation enabled, the UI does not show any data until you [register one or more clusters]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}). If Gloo Federation is disabled, the UI shows the installed Gloo Edge instance automatically without cluster registration.
+Note that when you enable Gloo Federation in version 1.8.9 or later, the UI does not show any data until you [register one or more clusters]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}). If you do not use Gloo Federation, the UI shows the installed Gloo Edge instance automatically without cluster registration.
 
-To disable the Gloo Federation install, you can set
-```shell script
-gloo-fed.enabled=false
-```
+To disable Gloo Federation, you can set `gloo-fed.enabled=false` during installation as shown in the following examples.
 
 {{< tabs >}}
 {{% tab name="glooctl install" %}}
