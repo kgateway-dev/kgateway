@@ -118,9 +118,9 @@ In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backe
    ```
 
 2. Verify that Gloo Edge automatically discovered the Bookinfo services and created corresponding `default-productpage-9080` upstream, which you will use in the REST resolver.
-```sh
-kubectl get upstream -n gloo-system
-```
+   ```sh
+   kubectl get upstream -n gloo-system
+   ```
 
 3. Check out the contents of the following Gloo Edge GraphQL schema CRD. Specifically, take a look at the `restResolver` and `schema_definition` sections.
    ```sh
