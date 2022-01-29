@@ -182,6 +182,14 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
+	matchableHttpGatewayClient, err := v1.NewMatchableHttpGatewayClient(ctx, opts.MatchableHttpGateways)
+	if err != nil {
+		return err
+	}
+	if err := matchableHttpGatewayClient.Register(); err != nil {
+		return err
+	}
+
 	virtualServiceClient, err := v1.NewVirtualServiceClient(ctx, opts.VirtualServices)
 	if err != nil {
 		return err
@@ -231,6 +239,7 @@ func RunGateway(opts translator.Opts) error {
 	rpt := reporter.NewReporter("gateway",
 		statusClient,
 		gatewayClient.BaseClient(),
+		matchableHttpGatewayClient.BaseClient(),
 		virtualServiceClient.BaseClient(),
 		routeTableClient.BaseClient(),
 		virtualHostOptionClient.BaseClient(),
@@ -269,7 +278,15 @@ func RunGateway(opts translator.Opts) error {
 		allowWarnings = opts.Validation.AllowWarnings
 	}
 
-	emitter := v1.NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, virtualHostOptionClient, routeOptionClient, notifications)
+	emitter := v1.NewApiEmitterWithEmit(
+		virtualServiceClient,
+		routeTableClient,
+		gatewayClient,
+		virtualHostOptionClient,
+		routeOptionClient,
+		matchableHttpGatewayClient,
+		notifications,
+	)
 
 	validationSyncer := gatewayvalidation.NewValidator(gatewayvalidation.NewValidatorConfig(
 		txlator,
