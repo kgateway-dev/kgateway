@@ -12,9 +12,19 @@ metadata:
         app: gloo
         gloo: rbac
 rules:
-- apiGroups: [""]
-  resources: ["pods", "services", "secrets", "endpoints", "configmaps", "namespaces"]
-  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - secrets
+  - endpoints
+  - configmaps
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -27,10 +37,17 @@ metadata:
         app: gloo
         gloo: rbac
 rules:
-- apiGroups: ["gloo.solo.io"]
-  resources: ["upstreams"]
-  # update is needed for status updates
-  verbs: ["get", "list", "watch", "create", "update", "delete"]
+- apiGroups:
+  - gloo.solo.io
+  resources:
+  - upstreams
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -43,23 +60,52 @@ metadata:
         app: gloo
         gloo: rbac
 rules:
-- apiGroups: ["gloo.solo.io", "enterprise.gloo.solo.io", "gateway.solo.io"]
-  resources: ["upstreams", "upstreamgroups", "proxies", "authconfigs", "virtualservices", "routetables", "virtualhostoptions", "routeoptions"]
-  # update is needed for status updates
-  verbs: ["get", "list", "watch", "update"]
-- apiGroups: ["gateway.solo.io"]
-  resources: ["gateways"]
-  # update is needed for status updates
-  verbs: ["get", "list", "watch", "update", "delete"]
-- apiGroups: ["ratelimit.solo.io"]
-  resources: ["ratelimitconfigs","ratelimitconfigs/status"]
-  verbs: ["get", "list", "watch", "update"]
-- apiGroups: ["graphql.gloo.solo.io"]
-  resources: ["graphqlschemas", "graphqlschemas/status"]
-  verbs: ["get", "list", "watch", "update"]
-- apiGroups: [""] # get/update on configmaps for recording envoy metrics
-  resources: ["configmaps"]
-  verbs: ["get", "update"]
+- apiGroups:
+  - gloo.solo.io
+  resources:
+  - upstreams
+  - upstreamgroups
+  - proxies
+  verbs:
+  - get
+  - list
+  - watch
+  - update # needed for status updates
+- apiGroups:
+  - enterprise.gloo.solo.io
+  resources:
+  - authconfigs
+  verbs:
+  - get
+  - list
+  - watch
+  - update # needed for status updates
+- apiGroups:
+  - ratelimit.solo.io
+  resources:
+  - ratelimitconfigs
+  - ratelimitconfigs/status
+  verbs:
+  - get
+  - list
+  - watch
+  - update # needed for status updates
+- apiGroups:
+  - graphql.gloo.solo.io
+  resources:
+  - graphqlschemas
+  verbs:
+  - get
+  - list
+  - watch
+  - update # needed for status updates
+- apiGroups:
+  - ""
+  resources:
+  - configmaps # used for recording envoy metrics
+  verbs:
+  - get
+  - update
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -72,10 +118,15 @@ metadata:
         app: gloo
         gloo: rbac
 rules:
-- apiGroups: ["gloo.solo.io"]
-  resources: ["settings"]
-  # update is needed for status updates
-  verbs: ["get", "list", "watch", "create"]
+- apiGroups:
+  - gloo.solo.io
+  resources:
+  - settings
+  verbs:
+  - get
+  - list
+  - watch
+  - create
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -88,9 +139,17 @@ metadata:
         app: gloo
         gloo: rbac
 rules:
-- apiGroups: ["gloo.solo.io"]
-  resources: ["proxies"]
-  verbs: ["get", "list", "watch", "create", "update", "delete"]
+- apiGroups:
+  - gloo.solo.io
+  resources:
+  - proxies
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -103,14 +162,26 @@ metadata:
         app: gloo
         gloo: rbac
 rules:
-- apiGroups: ["gateway.solo.io"]
-  resources: ["virtualservices", "routetables", "virtualhostoptions", "routeoptions"]
-  # update is needed for status updates
-  verbs: ["get", "list", "watch", "update"]
-- apiGroups: ["gateway.solo.io"]
-  resources: ["gateways"]
-  # update is needed for status updates, create for creating the default ones.
-  verbs: ["get", "list", "watch", "create", "update"]
+- apiGroups:
+  - gateway.solo.io
+  resources:
+  - gateways
+  - httpgateways
+  - virtualservices
+  - routetables
+  - virtualhostoptions
+  - routeoptions
+  verbs:
+  - get
+  - list
+  - watch
+  - update # needed for status updates
+- apiGroups:
+  - gateway.solo.io
+  resources:
+  - gateways
+  verbs:
+  - create # needed for creating the default gateways
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -123,8 +194,15 @@ metadata:
     app: gloo
     gloo: rbac
 rules:
-  - apiGroups: ["graphql.gloo.solo.io"]
-    resources: ["graphqlschemas","graphqlschemas/status"]
-    verbs: ["get", "list", "watch", "update", "create"]
+- apiGroups:
+  - graphql.gloo.solo.io
+  resources:
+  - graphqlschemas
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - create
 {{- end -}}
 {{- end -}}
