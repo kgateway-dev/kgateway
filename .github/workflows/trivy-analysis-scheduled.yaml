@@ -58,11 +58,7 @@ jobs:
           mkdir -p $SCAN_DIR
           make run-security-scan
           make publish-security-scan
-      - name: Notify on failure
-        id: notify-on-failure
+      - name: Alert on workflow failure
         if: ${{ failure() }}
-        uses: slackapi/slack-github-action@v1.18.0
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_BOT_URL }}
-        with:
-          payload-file-path: "./.github/workflows/payloads/failed-workflow.json"
+        run : |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Gloo Edge Vulnerability Scan has failed, visit https://github.com/solo-io/gloo/actions/runs/${{github.run_id}} to view logs."}' ${{ secrets.SLACK_BOT_URL }}
