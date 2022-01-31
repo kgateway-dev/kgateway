@@ -154,6 +154,10 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetAllowChunkedLength() != target.GetAllowChunkedLength() {
+		return false
+	}
+
 	if h, ok := interface{}(m.GetTracing()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetTracing()) {
 			return false
@@ -225,6 +229,20 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetMaxHeadersCount(), target.GetMaxHeadersCount()) {
+			return false
+		}
+	}
+
+	if m.GetHeadersWithUnderscoresAction() != target.GetHeadersWithUnderscoresAction() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetMaxRequestsPerConnection()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxRequestsPerConnection()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxRequestsPerConnection(), target.GetMaxRequestsPerConnection()) {
 			return false
 		}
 	}

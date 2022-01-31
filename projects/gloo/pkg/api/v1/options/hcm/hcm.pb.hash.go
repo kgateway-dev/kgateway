@@ -230,6 +230,11 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		return 0, err
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetAllowChunkedLength())
+	if err != nil {
+		return 0, err
+	}
+
 	if h, ok := interface{}(m.GetTracing()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("Tracing")); err != nil {
 			return 0, err
@@ -356,6 +361,31 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 			return 0, err
 		} else {
 			if _, err = hasher.Write([]byte("MaxHeadersCount")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetHeadersWithUnderscoresAction())
+	if err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetMaxRequestsPerConnection()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("MaxRequestsPerConnection")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetMaxRequestsPerConnection(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("MaxRequestsPerConnection")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
