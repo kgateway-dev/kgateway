@@ -15,6 +15,7 @@ weight: 5
 - [SetCurrentClientCertDetails](#setcurrentclientcertdetails)
 - [ForwardClientCertDetails](#forwardclientcertdetails)
 - [ServerHeaderTransformation](#serverheadertransformation)
+- [HeadersWithUnderscoreAction](#headerswithunderscoreaction)
 - [PathWithEscapedSlashesAction](#pathwithescapedslashesaction)
 - [CodecType](#codectype)
   
@@ -50,6 +51,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "serverName": string
 "acceptHttp10": bool
 "defaultHostForHttp10": string
+"allowChunkedLength": bool
 "properCaseHeaderKeyFormat": bool
 "preserveCaseHeaderKeyFormat": bool
 "tracing": .tracing.options.gloo.solo.io.ListenerTracingSettings
@@ -60,6 +62,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "maxConnectionDuration": .google.protobuf.Duration
 "maxStreamDuration": .google.protobuf.Duration
 "maxHeadersCount": .google.protobuf.UInt32Value
+"headersWithUnderscoresAction": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.HeadersWithUnderscoreAction
+"maxRequestsPerConnection": .google.protobuf.UInt32Value
 "serverHeaderTransformation": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation
 "pathWithEscapedSlashesAction": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction
 "codecType": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType
@@ -85,6 +89,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `serverName` | `string` |  |
 | `acceptHttp10` | `bool` | For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions. |
 | `defaultHostForHttp10` | `string` |  |
+| `allowChunkedLength` | `bool` | For an explanation of this setting, see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions. |
 | `properCaseHeaderKeyFormat` | `bool` | Formats the header by proper casing words: the first character and any character following a special character will be capitalized if it's an alpha character. For example, "content-type" becomes "Content-Type", and "foo$b#$are" becomes "Foo$B#$Are". Note that while this results in most headers following conventional casing, certain headers are not covered. For example, the "TE" header will be formatted as "Te". Only one of `properCaseHeaderKeyFormat` or `preserveCaseHeaderKeyFormat` can be set. |
 | `preserveCaseHeaderKeyFormat` | `bool` | Generates configuration for a stateful formatter extension that allows using received headers to affect the output of encoding headers. Specifically: preserving case during proxying. Only one of `preserveCaseHeaderKeyFormat` or `properCaseHeaderKeyFormat` can be set. |
 | `tracing` | [.tracing.options.gloo.solo.io.ListenerTracingSettings](../../tracing/tracing.proto.sk/#listenertracingsettings) |  |
@@ -95,6 +100,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `maxConnectionDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |
 | `maxStreamDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |
 | `maxHeadersCount` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |
+| `headersWithUnderscoresAction` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.HeadersWithUnderscoreAction](../hcm.proto.sk/#headerswithunderscoreaction) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |
+| `maxRequestsPerConnection` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |
 | `serverHeaderTransformation` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation](../hcm.proto.sk/#serverheadertransformation) | For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation. |
 | `pathWithEscapedSlashesAction` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction](../hcm.proto.sk/#pathwithescapedslashesaction) | Action to take when request URL path contains escaped slash sequences (%2F, %2f, %5C and %5c). The default value can be overridden by the :ref:`http_connection_manager.path_with_escaped_slashes_action<config_http_conn_man_runtime_path_with_escaped_slashes_action>` runtime variable. The :ref:`http_connection_manager.path_with_escaped_slashes_action_sampling<config_http_conn_man_runtime_path_with_escaped_slashes_action_enabled>` runtime variable can be used to apply the action to a portion of all requests. |
 | `codecType` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType](../hcm.proto.sk/#codectype) | Supplies the type of codec that the connection manager should use. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#extensions-filters-network-http-connection-manager-v3-httpconnectionmanager. |
@@ -155,6 +162,23 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `OVERWRITE` | (DEFAULT) Overwrite any Server header with the contents of server_name. |
 | `APPEND_IF_ABSENT` | If no Server header is present, append Server server_name If a Server header is present, pass it through. |
 | `PASS_THROUGH` | Pass through the value of the server header, and do not append a header if none is present. |
+
+
+
+
+---
+### HeadersWithUnderscoreAction
+
+ 
+Action to take when Envoy receives client request with header names containing underscore characters. Underscore character 
+is allowed in header names by the RFC-7230 and this behavior is implemented as a security measure due to systems that treat 
+‘_’ and ‘-‘ as interchangeable. Envoy by default allows client request headers with underscore characters.
+
+| Name | Description |
+| ----- | ----------- | 
+| `ALLOW` | ⁣Allow headers with underscores. This is the default behavior. |
+| `REJECT_CLIENT_REQUEST` | ⁣Reject client request. HTTP/1 requests are rejected with the 400 status. HTTP/2 requests end with the stream reset. The “httpN.requests_rejected_with_underscores_in_headers” counter is incremented for each rejected request. |
+| `DROP_HEADER` | ⁣Drop the client header with name containing underscores. The header is dropped before the filter chain is invoked and as such filters will not see dropped headers. The “httpN.dropped_headers_with_underscores” is incremented for each dropped header. |
 
 
 
