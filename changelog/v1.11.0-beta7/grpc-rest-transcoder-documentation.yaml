@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add documentation around the effects that the gRPC-JSON transcoder has on route matcher behavior.
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/gloo/issues/5742
