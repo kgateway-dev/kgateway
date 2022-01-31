@@ -60,7 +60,7 @@ var _ = Describe("Header Secret Converter", func() {
 				Data: map[string][]byte{
 					"foo": {0, 1, 2},
 				},
-				Type: corev1.SecretTypeOpaque,
+				Type: corev1.SecretTypeTLS,
 			}
 			glooSecret, err := converter.FromKubeSecret(ctx, resourceClient, secret)
 			Expect(err).NotTo(HaveOccurred())
@@ -77,6 +77,22 @@ var _ = Describe("Header Secret Converter", func() {
 					"bat": []byte("baz"),
 				},
 				Type: kubeconverters.HeaderSecretType,
+			}
+			actual, err := converter.FromKubeSecret(ctx, resourceClient, secret)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(actual).To(Equal(glooSecret))
+		})
+
+		It("correctly converts opaque header secrets", func() {
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+				},
+				Data: map[string][]byte{
+					"bat": []byte("baz"),
+				},
+				Type: corev1.SecretTypeOpaque,
 			}
 			actual, err := converter.FromKubeSecret(ctx, resourceClient, secret)
 			Expect(err).NotTo(HaveOccurred())
