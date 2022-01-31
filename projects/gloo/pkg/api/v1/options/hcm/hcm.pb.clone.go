@@ -103,6 +103,8 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 
 	target.DefaultHostForHttp_10 = m.GetDefaultHostForHttp_10()
 
+	target.AllowChunkedLength = m.GetAllowChunkedLength()
+
 	if h, ok := interface{}(m.GetTracing()).(clone.Cloner); ok {
 		target.Tracing = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tracing.ListenerTracingSettings)
 	} else {

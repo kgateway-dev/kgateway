@@ -349,6 +349,8 @@ spec:
                         properties:
                           acceptHttp10:
                             type: boolean
+                          allowChunkedLength:
+                            type: boolean
                           codecType:
                             type: string
                             x-kubernetes-int-or-string: true
@@ -1000,6 +1002,8 @@ spec:
                                 httpConnectionManagerSettings:
                                   properties:
                                     acceptHttp10:
+                                      type: boolean
+                                    allowChunkedLength:
                                       type: boolean
                                     codecType:
                                       type: string

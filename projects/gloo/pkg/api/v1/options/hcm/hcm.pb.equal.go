@@ -154,6 +154,10 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetAllowChunkedLength() != target.GetAllowChunkedLength() {
+		return false
+	}
+
 	if h, ok := interface{}(m.GetTracing()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetTracing()) {
 			return false
