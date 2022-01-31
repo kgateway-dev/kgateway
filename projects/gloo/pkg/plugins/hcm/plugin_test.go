@@ -260,23 +260,23 @@ var _ = Describe("Plugin", func() {
 			return fieldNames
 		}
 
-		// read in expected HCM fields from file
-		expectedFieldsJsonFile, err := os.Open("testing/expected_hcm_fields.json")
-		Expect(err).To(BeNil())
-		defer expectedFieldsJsonFile.Close()
-
-		expectedFieldsJsonByteValue, err := ioutil.ReadAll(expectedFieldsJsonFile)
-		Expect(err).To(BeNil())
-
-		var expectedFields []string
-		json.Unmarshal(expectedFieldsJsonByteValue, &expectedFields)
-
-		expectedFieldsMap := map[string]bool{}
-		for _, fieldName := range expectedFields {
-			expectedFieldsMap[fieldName] = true
-		}
-
 		It("contains only the fields we expect", func() {
+			// read in expected HCM fields from file
+			expectedFieldsJsonFile, err := os.Open("testing/expected_hcm_fields.json")
+			Expect(err).To(BeNil())
+			defer expectedFieldsJsonFile.Close()
+
+			expectedFieldsJsonByteValue, err := ioutil.ReadAll(expectedFieldsJsonFile)
+			Expect(err).To(BeNil())
+
+			var expectedFields []string
+			json.Unmarshal(expectedFieldsJsonByteValue, &expectedFields)
+
+			expectedFieldsMap := map[string]bool{}
+			for _, fieldName := range expectedFields {
+				expectedFieldsMap[fieldName] = true
+			}
+
 			// Get all of the fields associated with the Envoy HTTP Connection Manager
 			hcmFields := getTypeFieldsFromInstance(envoyhttp.HttpConnectionManager{})
 
