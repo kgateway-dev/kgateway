@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Expands GraphQL steps with sample apps for beta release.
+    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/1242
