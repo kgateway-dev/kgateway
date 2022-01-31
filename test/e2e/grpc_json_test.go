@@ -55,7 +55,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
-		_, err = testClients.GatewayClient.Write(getGrpcJsonGateway(), clients.WriteOpts{Ctx: ctx})
+		_, err = testClients.GatewayClient.Write(getGrpcJsonGateway(false), clients.WriteOpts{Ctx: ctx})
 		Expect(err).ToNot(HaveOccurred())
 
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
@@ -103,10 +103,53 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 		}))))
+
 	})
+
+	Describe("Route matching behavior", func() {
+		BeforeEach(func() {
+			// Write a virtual service with a single route that matches against the prefix "/glootest.TestService"
+			vs := getGrpcJsonRawVs(writeNamespace, tu.Upstream.Metadata.Ref())
+			vs.VirtualHost.Routes[0].Matchers[0].PathSpecifier.(*matchers.Matcher_Prefix).Prefix = "/glootest.TestService"
+			_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("When the route prefix is set to match one of the GrpcJsonTranscoder's services, requests to /test should through", func() {
+			body := []byte(`"foo"`) // this is valid JSON because of the quotes
+
+			testRequest := basicReq(body)
+
+			Eventually(testRequest, 5, 1).Should(Equal(`{"str":"foo"}`))
+
+			Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+				"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
+			}))))
+		})
+
+		It("Route matching assumptions are not broken when MatchIncomingRequestRoute is set", func() {
+			// overwrite grpcJsonGateway with one where MatchIncomingRequestRoute is true
+			err := testClients.GatewayClient.Delete("gloo-system", "gateway-proxy", clients.DeleteOpts{Ctx: ctx})
+			Expect(err).ToNot(HaveOccurred())
+			gw := getGrpcJsonGateway(true)
+			_, err = testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx})
+			Expect(err).ToNot(HaveOccurred())
+
+			body := []byte(`"foo"`) // this is valid JSON because of the quotes
+
+			testRequest := basicReq(body)
+
+			Eventually(testRequest, 5, 1).ShouldNot(Equal(`{"str":"foo"}`))
+
+			Eventually(tu.C).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+				"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
+			}))))
+		})
+	})
+
 })
 
-func getGrpcJsonGateway() *gatewayv1.Gateway {
+func getGrpcJsonGateway(matchIncomingRequestRoute bool) *gatewayv1.Gateway {
 
 	// Get the descriptor set bytes from the generated proto, rather than the go file (pb.go)
 	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
@@ -126,8 +169,9 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 			HttpGateway: &gatewayv1.HttpGateway{
 				Options: &gloov1.HttpListenerOptions{
 					GrpcJsonTranscoder: &grpc_json.GrpcJsonTranscoder{
-						DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bytes},
-						Services:      []string{"glootest.TestService"},
+						DescriptorSet:             &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bytes},
+						Services:                  []string{"glootest.TestService"},
+						MatchIncomingRequestRoute: matchIncomingRequestRoute,
 					},
 				},
 			},
