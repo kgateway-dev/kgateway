@@ -153,7 +153,7 @@ func (o *MatchableHttpGateway) DeepCopyInto(out *MatchableHttpGateway) {
 
 var (
 	MatchableHttpGatewayCrd = crd.NewCrd(
-		"matchablehttpgateways",
+		"httpgateways",
 		MatchableHttpGatewayGVK.Group,
 		MatchableHttpGatewayGVK.Version,
 		MatchableHttpGatewayGVK.Kind,

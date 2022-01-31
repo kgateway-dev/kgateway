@@ -12,7 +12,7 @@ import (
 )
 
 type MatchableHttpGatewayWatcher interface {
-	// watch namespace-scoped MatchableHttpGateways
+	// watch namespace-scoped HttpGateways
 	Watch(namespace string, opts clients.WatchOpts) (<-chan MatchableHttpGatewayList, <-chan error, error)
 }
 
@@ -101,24 +101,24 @@ func (client *matchableHttpGatewayClient) Watch(namespace string, opts clients.W
 	if initErr != nil {
 		return nil, nil, initErr
 	}
-	matchableHttpGatewaysChan := make(chan MatchableHttpGatewayList)
+	httpGatewaysChan := make(chan MatchableHttpGatewayList)
 	go func() {
 		for {
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case matchableHttpGatewaysChan <- convertToMatchableHttpGateway(resourceList):
+				case httpGatewaysChan <- convertToMatchableHttpGateway(resourceList):
 				case <-opts.Ctx.Done():
-					close(matchableHttpGatewaysChan)
+					close(httpGatewaysChan)
 					return
 				}
 			case <-opts.Ctx.Done():
-				close(matchableHttpGatewaysChan)
+				close(httpGatewaysChan)
 				return
 			}
 		}
 	}()
-	return matchableHttpGatewaysChan, errs, nil
+	return httpGatewaysChan, errs, nil
 }
 
 func convertToMatchableHttpGateway(resources resources.ResourceList) MatchableHttpGatewayList {

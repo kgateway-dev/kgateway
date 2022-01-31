@@ -90,6 +90,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
+	matchableHttpGatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.MatchableHttpGatewayCrd)
+	if err != nil {
+		return err
+	}
+
 	refreshRate := prototime.DurationFromProto(settings.GetRefreshRate())
 
 	writeNamespace := settings.GetDiscoveryNamespace()
@@ -150,6 +155,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		StatusReporterNamespace: statusReporterNamespace,
 		WatchNamespaces:         watchNamespaces,
 		Gateways:                gatewayFactory,
+		MatchableHttpGateways:   matchableHttpGatewayFactory,
 		VirtualServices:         virtualServiceFactory,
 		RouteTables:             routeTableFactory,
 		Proxies:                 proxyFactory,

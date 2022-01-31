@@ -81,7 +81,7 @@ type GatewayList struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +resourceName=matchablehttpgateways
+// +resourceName=httpgateways
 // +genclient
 type MatchableHttpGateway struct {
 	v1.TypeMeta `json:",inline"`

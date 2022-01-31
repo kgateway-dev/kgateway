@@ -14,22 +14,22 @@ import (
 )
 
 type ApiSnapshot struct {
-	VirtualServices       VirtualServiceList
-	RouteTables           RouteTableList
-	Gateways              GatewayList
-	VirtualHostOptions    VirtualHostOptionList
-	RouteOptions          RouteOptionList
-	MatchableHttpGateways MatchableHttpGatewayList
+	VirtualServices    VirtualServiceList
+	RouteTables        RouteTableList
+	Gateways           GatewayList
+	VirtualHostOptions VirtualHostOptionList
+	RouteOptions       RouteOptionList
+	HttpGateways       MatchableHttpGatewayList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {
 	return ApiSnapshot{
-		VirtualServices:       s.VirtualServices.Clone(),
-		RouteTables:           s.RouteTables.Clone(),
-		Gateways:              s.Gateways.Clone(),
-		VirtualHostOptions:    s.VirtualHostOptions.Clone(),
-		RouteOptions:          s.RouteOptions.Clone(),
-		MatchableHttpGateways: s.MatchableHttpGateways.Clone(),
+		VirtualServices:    s.VirtualServices.Clone(),
+		RouteTables:        s.RouteTables.Clone(),
+		Gateways:           s.Gateways.Clone(),
+		VirtualHostOptions: s.VirtualHostOptions.Clone(),
+		RouteOptions:       s.RouteOptions.Clone(),
+		HttpGateways:       s.HttpGateways.Clone(),
 	}
 }
 
@@ -52,7 +52,7 @@ func (s ApiSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 	if _, err := s.hashRouteOptions(hasher); err != nil {
 		return 0, err
 	}
-	if _, err := s.hashMatchableHttpGateways(hasher); err != nil {
+	if _, err := s.hashHttpGateways(hasher); err != nil {
 		return 0, err
 	}
 	return hasher.Sum64(), nil
@@ -78,8 +78,8 @@ func (s ApiSnapshot) hashRouteOptions(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.RouteOptions.AsInterfaces()...)
 }
 
-func (s ApiSnapshot) hashMatchableHttpGateways(hasher hash.Hash64) (uint64, error) {
-	return hashutils.HashAllSafe(hasher, s.MatchableHttpGateways.AsInterfaces()...)
+func (s ApiSnapshot) hashHttpGateways(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.HttpGateways.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) HashFields() []zap.Field {
@@ -110,11 +110,11 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("routeOptions", RouteOptionsHash))
-	MatchableHttpGatewaysHash, err := s.hashMatchableHttpGateways(hasher)
+	HttpGatewaysHash, err := s.hashHttpGateways(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
-	fields = append(fields, zap.Uint64("matchableHttpGateways", MatchableHttpGatewaysHash))
+	fields = append(fields, zap.Uint64("httpGateways", HttpGatewaysHash))
 	snapshotHash, err := s.Hash(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
@@ -123,13 +123,13 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 }
 
 type ApiSnapshotStringer struct {
-	Version               uint64
-	VirtualServices       []string
-	RouteTables           []string
-	Gateways              []string
-	VirtualHostOptions    []string
-	RouteOptions          []string
-	MatchableHttpGateways []string
+	Version            uint64
+	VirtualServices    []string
+	RouteTables        []string
+	Gateways           []string
+	VirtualHostOptions []string
+	RouteOptions       []string
+	HttpGateways       []string
 }
 
 func (ss ApiSnapshotStringer) String() string {
@@ -160,8 +160,8 @@ func (ss ApiSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
-	s += fmt.Sprintf("  MatchableHttpGateways %v\n", len(ss.MatchableHttpGateways))
-	for _, name := range ss.MatchableHttpGateways {
+	s += fmt.Sprintf("  HttpGateways %v\n", len(ss.HttpGateways))
+	for _, name := range ss.HttpGateways {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
@@ -174,12 +174,12 @@ func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return ApiSnapshotStringer{
-		Version:               snapshotHash,
-		VirtualServices:       s.VirtualServices.NamespacesDotNames(),
-		RouteTables:           s.RouteTables.NamespacesDotNames(),
-		Gateways:              s.Gateways.NamespacesDotNames(),
-		VirtualHostOptions:    s.VirtualHostOptions.NamespacesDotNames(),
-		RouteOptions:          s.RouteOptions.NamespacesDotNames(),
-		MatchableHttpGateways: s.MatchableHttpGateways.NamespacesDotNames(),
+		Version:            snapshotHash,
+		VirtualServices:    s.VirtualServices.NamespacesDotNames(),
+		RouteTables:        s.RouteTables.NamespacesDotNames(),
+		Gateways:           s.Gateways.NamespacesDotNames(),
+		VirtualHostOptions: s.VirtualHostOptions.NamespacesDotNames(),
+		RouteOptions:       s.RouteOptions.NamespacesDotNames(),
+		HttpGateways:       s.HttpGateways.NamespacesDotNames(),
 	}
 }

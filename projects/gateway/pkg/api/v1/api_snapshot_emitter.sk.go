@@ -320,11 +320,11 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		}(namespace)
 		/* Setup namespaced watch for MatchableHttpGateway */
 		{
-			matchableHttpGateways, err := c.matchableHttpGateway.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			httpGateways, err := c.matchableHttpGateway.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial MatchableHttpGateway list")
 			}
-			initialMatchableHttpGatewayList = append(initialMatchableHttpGatewayList, matchableHttpGateways...)
+			initialMatchableHttpGatewayList = append(initialMatchableHttpGatewayList, httpGateways...)
 		}
 		matchableHttpGatewayNamespacesChan, matchableHttpGatewayErrs, err := c.matchableHttpGateway.Watch(namespace, opts)
 		if err != nil {
@@ -334,7 +334,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		done.Add(1)
 		go func(namespace string) {
 			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, matchableHttpGatewayErrs, namespace+"-matchableHttpGateways")
+			errutils.AggregateErrs(ctx, errs, matchableHttpGatewayErrs, namespace+"-httpGateways")
 		}(namespace)
 
 		/* Watch for changes and update snapshot */
@@ -411,8 +411,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	currentSnapshot.VirtualHostOptions = initialVirtualHostOptionList.Sort()
 	/* Initialize snapshot for RouteOptions */
 	currentSnapshot.RouteOptions = initialRouteOptionList.Sort()
-	/* Initialize snapshot for MatchableHttpGateways */
-	currentSnapshot.MatchableHttpGateways = initialMatchableHttpGatewayList.Sort()
+	/* Initialize snapshot for HttpGateways */
+	currentSnapshot.HttpGateways = initialMatchableHttpGatewayList.Sort()
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
@@ -449,7 +449,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		gatewaysByNamespace := make(map[string]GatewayList)
 		virtualHostOptionsByNamespace := make(map[string]VirtualHostOptionList)
 		routeOptionsByNamespace := make(map[string]RouteOptionList)
-		matchableHttpGatewaysByNamespace := make(map[string]MatchableHttpGatewayList)
+		httpGatewaysByNamespace := make(map[string]MatchableHttpGatewayList)
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
@@ -594,12 +594,12 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				)
 
 				// merge lists by namespace
-				matchableHttpGatewaysByNamespace[namespace] = matchableHttpGatewayNamespacedList.list
+				httpGatewaysByNamespace[namespace] = matchableHttpGatewayNamespacedList.list
 				var matchableHttpGatewayList MatchableHttpGatewayList
-				for _, matchableHttpGateways := range matchableHttpGatewaysByNamespace {
-					matchableHttpGatewayList = append(matchableHttpGatewayList, matchableHttpGateways...)
+				for _, httpGateways := range httpGatewaysByNamespace {
+					matchableHttpGatewayList = append(matchableHttpGatewayList, httpGateways...)
 				}
-				currentSnapshot.MatchableHttpGateways = matchableHttpGatewayList.Sort()
+				currentSnapshot.HttpGateways = matchableHttpGatewayList.Sort()
 			}
 		}
 	}()

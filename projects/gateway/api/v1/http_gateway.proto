@@ -26,7 +26,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 message MatchableHttpGateway {
 
   option (core.solo.io.resource).short_name = "hgw";
-  option (core.solo.io.resource).plural_name = "matchable_http_gateways";
+  option (core.solo.io.resource).plural_name = "http_gateways";
 
   // NamespacedStatuses indicates the validation status of this resource.
   // NamespacedStatuses is read-only by clients, and set by gateway during validation
