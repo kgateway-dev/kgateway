@@ -2,6 +2,11 @@ package hcm_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"reflect"
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -239,4 +244,58 @@ var _ = Describe("Plugin", func() {
 
 	})
 
+	Context("supported Envoy HCM settings", func() {
+		// obtain all field names of a given instance's type
+		getTypeFieldsFromInstance := func(instance interface{}) []string {
+			instanceValue := reflect.ValueOf(instance)
+			instanceType := instanceValue.Type()
+
+			fieldNames := []string{}
+			for i := 0; i < instanceValue.NumField(); i++ {
+				fieldNames = append(fieldNames, instanceType.Field(i).Name)
+			}
+
+			return fieldNames
+		}
+
+		// read in expected HCM fields from file
+		expectedFieldsJsonFile, err := os.Open("testing/expected_hcm_fields.json")
+		Expect(err).To(BeNil())
+		defer expectedFieldsJsonFile.Close()
+
+		expectedFieldsJsonByteValue, err := ioutil.ReadAll(expectedFieldsJsonFile)
+		Expect(err).To(BeNil())
+
+		var expectedFields []string
+		json.Unmarshal(expectedFieldsJsonByteValue, &expectedFields)
+
+		expectedFieldsMap := map[string]bool{}
+		for _, fieldName := range expectedFields {
+			expectedFieldsMap[fieldName] = true
+		}
+
+		It("contains only the fields we expect", func() {
+			// Get all of the fields associated with the Envoy HTTP Connection Manager
+			hcmFields := getTypeFieldsFromInstance(envoyhttp.HttpConnectionManager{})
+
+			// Record the names of any fields that were not present the last time we updated this test
+			newFields := []string{}
+			for _, fieldName := range hcmFields {
+				_, found := expectedFieldsMap[fieldName]
+				if !found {
+					newFields = append(newFields, fieldName)
+				}
+			}
+
+			if len(newFields) > 0 {
+				failureMessage := fmt.Sprintf(`
+New Fields have been added to the envoy HTTP Connection Manager.
+You may want to consider adding support for these fields to Gloo Edge's API.
+You can force this test to pass by adding the new fields listed below to projects/gloo/pkg/plugins/hcm/testing/expected_hcm_fields.json
+%+v`,
+					newFields)
+				Fail(failureMessage)
+			}
+		})
+	})
 })
