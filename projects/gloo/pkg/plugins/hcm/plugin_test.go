@@ -6,6 +6,7 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -101,6 +102,8 @@ var _ = Describe("Plugin", func() {
 			MaxConnectionDuration:        prototime.DurationToProto(time.Hour),
 			MaxStreamDuration:            prototime.DurationToProto(time.Hour),
 			MaxHeadersCount:              &wrappers.UInt32Value{Value: 5},
+			HeadersWithUnderscoresAction: hcm.HttpConnectionManagerSettings_REJECT_CLIENT_REQUEST,
+			MaxRequestsPerConnection:     &wrappers.UInt32Value{Value: 5},
 			CodecType:                    1,
 			ServerHeaderTransformation:   hcm.HttpConnectionManagerSettings_OVERWRITE,
 			PathWithEscapedSlashesAction: hcm.HttpConnectionManagerSettings_REJECT_REQUEST,
@@ -132,6 +135,8 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(MatchProto(settings.IdleTimeout))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxConnectionDuration()).To(MatchProto(settings.MaxConnectionDuration))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxStreamDuration()).To(MatchProto(settings.MaxStreamDuration))
+		Expect(cfg.CommonHttpProtocolOptions.GetHeadersWithUnderscoresAction()).To(Equal(envoycore.HttpProtocolOptions_REJECT_REQUEST))
+		Expect(cfg.CommonHttpProtocolOptions.GetMaxRequestsPerConnection()).To(MatchProto(settings.MaxRequestsPerConnection))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxHeadersCount()).To(MatchProto(settings.MaxHeadersCount))
 		Expect(cfg.GetCodecType()).To(Equal(envoyhttp.HttpConnectionManager_HTTP1))
 

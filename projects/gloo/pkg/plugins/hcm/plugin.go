@@ -116,6 +116,20 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		out.GetCommonHttpProtocolOptions().MaxHeadersCount = in.GetMaxHeadersCount()
 	}
 
+	if in.GetMaxRequestsPerConnection() != nil {
+		if out.GetCommonHttpProtocolOptions() == nil {
+			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().MaxRequestsPerConnection = in.GetMaxRequestsPerConnection()
+	}
+
+	if in.GetHeadersWithUnderscoresAction() != hcm.HttpConnectionManagerSettings_ALLOW {
+		if out.GetCommonHttpProtocolOptions() == nil {
+			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().HeadersWithUnderscoresAction = envoycore.HttpProtocolOptions_HeadersWithUnderscoresAction(in.GetHeadersWithUnderscoresAction())
+	}
+
 	// allowed upgrades
 	protocolUpgrades := in.GetUpgrades()
 

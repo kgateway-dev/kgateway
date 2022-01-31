@@ -150,6 +150,14 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 		target.MaxHeadersCount = proto.Clone(m.GetMaxHeadersCount()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
+	target.HeadersWithUnderscoresAction = m.GetHeadersWithUnderscoresAction()
+
+	if h, ok := interface{}(m.GetMaxRequestsPerConnection()).(clone.Cloner); ok {
+		target.MaxRequestsPerConnection = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.MaxRequestsPerConnection = proto.Clone(m.GetMaxRequestsPerConnection()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
+
 	target.ServerHeaderTransformation = m.GetServerHeaderTransformation()
 
 	target.PathWithEscapedSlashesAction = m.GetPathWithEscapedSlashesAction()

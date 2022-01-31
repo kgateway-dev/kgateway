@@ -229,6 +229,20 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetHeadersWithUnderscoresAction() != target.GetHeadersWithUnderscoresAction() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetMaxRequestsPerConnection()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxRequestsPerConnection()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxRequestsPerConnection(), target.GetMaxRequestsPerConnection()) {
+			return false
+		}
+	}
+
 	if m.GetServerHeaderTransformation() != target.GetServerHeaderTransformation() {
 		return false
 	}
