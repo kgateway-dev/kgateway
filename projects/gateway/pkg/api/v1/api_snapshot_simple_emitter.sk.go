@@ -98,6 +98,8 @@ func (c *apiSimpleEmitter) Snapshots(ctx context.Context) (<-chan *ApiSnapshot, 
 						currentSnapshot.VirtualHostOptions = append(currentSnapshot.VirtualHostOptions, typed)
 					case *RouteOption:
 						currentSnapshot.RouteOptions = append(currentSnapshot.RouteOptions, typed)
+					case *MatchableHttpGateway:
+						currentSnapshot.HttpGateways = append(currentSnapshot.HttpGateways, typed)
 					default:
 						select {
 						case errs <- fmt.Errorf("ApiSnapshotEmitter "+

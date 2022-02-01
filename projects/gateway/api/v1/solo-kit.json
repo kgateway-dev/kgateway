@@ -28,6 +28,11 @@
         "name": "RouteOption",
         "package": "gateway.solo.io",
         "version": "v1"
+      },
+      {
+        "name": "MatchableHttpGateway",
+        "package": "gateway.solo.io",
+        "version": "v1"
       }
     ]
   },

@@ -60,6 +60,9 @@ message HttpConnectionManagerSettings {
     bool accept_http_10 = 15;
     string default_host_for_http_10 = 16;
 
+    // For an explanation of this setting, see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions
+    bool allow_chunked_length = 34;
+
     oneof header_format {
         // Formats the header by proper casing words: the first character and any character following
         // a special character will be capitalized if it's an alpha character. For example,
@@ -92,6 +95,27 @@ message HttpConnectionManagerSettings {
     google.protobuf.Duration max_stream_duration = 24;
      // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
     google.protobuf.UInt32Value max_headers_count = 27;
+    
+    
+    // Action to take when Envoy receives client request with header names containing underscore characters. Underscore character 
+    // is allowed in header names by the RFC-7230 and this behavior is implemented as a security measure due to systems that treat 
+    // ‘_’ and ‘-‘ as interchangeable. Envoy by default allows client request headers with underscore characters.
+    enum HeadersWithUnderscoreAction {
+        // ⁣Allow headers with underscores. This is the default behavior.
+        ALLOW = 0;
+
+        // ⁣Reject client request. HTTP/1 requests are rejected with the 400 status. HTTP/2 requests end with the stream reset.
+        // The “httpN.requests_rejected_with_underscores_in_headers” counter is incremented for each rejected request.
+        REJECT_CLIENT_REQUEST = 1;
+
+        // ⁣Drop the client header with name containing underscores. The header is dropped before the filter chain is invoked
+        // and as such filters will not see dropped headers. The “httpN.dropped_headers_with_underscores” is incremented for each dropped header.
+        DROP_HEADER = 2;
+    }
+    // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
+    HeadersWithUnderscoreAction headers_with_underscores_action = 32;
+     // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
+    google.protobuf.UInt32Value max_requests_per_connection = 33;
 
     // For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation
     ServerHeaderTransformation server_header_transformation = 25;

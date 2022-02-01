@@ -85,30 +85,33 @@ type ApiEmitter interface {
 	Gateway() GatewayClient
 	VirtualHostOption() VirtualHostOptionClient
 	RouteOption() RouteOptionClient
+	MatchableHttpGateway() MatchableHttpGatewayClient
 }
 
-func NewApiEmitter(virtualServiceClient VirtualServiceClient, routeTableClient RouteTableClient, gatewayClient GatewayClient, virtualHostOptionClient VirtualHostOptionClient, routeOptionClient RouteOptionClient) ApiEmitter {
-	return NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, virtualHostOptionClient, routeOptionClient, make(chan struct{}))
+func NewApiEmitter(virtualServiceClient VirtualServiceClient, routeTableClient RouteTableClient, gatewayClient GatewayClient, virtualHostOptionClient VirtualHostOptionClient, routeOptionClient RouteOptionClient, matchableHttpGatewayClient MatchableHttpGatewayClient) ApiEmitter {
+	return NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, virtualHostOptionClient, routeOptionClient, matchableHttpGatewayClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(virtualServiceClient VirtualServiceClient, routeTableClient RouteTableClient, gatewayClient GatewayClient, virtualHostOptionClient VirtualHostOptionClient, routeOptionClient RouteOptionClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(virtualServiceClient VirtualServiceClient, routeTableClient RouteTableClient, gatewayClient GatewayClient, virtualHostOptionClient VirtualHostOptionClient, routeOptionClient RouteOptionClient, matchableHttpGatewayClient MatchableHttpGatewayClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
-		virtualService:    virtualServiceClient,
-		routeTable:        routeTableClient,
-		gateway:           gatewayClient,
-		virtualHostOption: virtualHostOptionClient,
-		routeOption:       routeOptionClient,
-		forceEmit:         emit,
+		virtualService:       virtualServiceClient,
+		routeTable:           routeTableClient,
+		gateway:              gatewayClient,
+		virtualHostOption:    virtualHostOptionClient,
+		routeOption:          routeOptionClient,
+		matchableHttpGateway: matchableHttpGatewayClient,
+		forceEmit:            emit,
 	}
 }
 
 type apiEmitter struct {
-	forceEmit         <-chan struct{}
-	virtualService    VirtualServiceClient
-	routeTable        RouteTableClient
-	gateway           GatewayClient
-	virtualHostOption VirtualHostOptionClient
-	routeOption       RouteOptionClient
+	forceEmit            <-chan struct{}
+	virtualService       VirtualServiceClient
+	routeTable           RouteTableClient
+	gateway              GatewayClient
+	virtualHostOption    VirtualHostOptionClient
+	routeOption          RouteOptionClient
+	matchableHttpGateway MatchableHttpGatewayClient
 }
 
 func (c *apiEmitter) Register() error {
@@ -125,6 +128,9 @@ func (c *apiEmitter) Register() error {
 		return err
 	}
 	if err := c.routeOption.Register(); err != nil {
+		return err
+	}
+	if err := c.matchableHttpGateway.Register(); err != nil {
 		return err
 	}
 	return nil
@@ -148,6 +154,10 @@ func (c *apiEmitter) VirtualHostOption() VirtualHostOptionClient {
 
 func (c *apiEmitter) RouteOption() RouteOptionClient {
 	return c.routeOption
+}
+
+func (c *apiEmitter) MatchableHttpGateway() MatchableHttpGatewayClient {
+	return c.matchableHttpGateway
 }
 
 func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error) {
@@ -206,6 +216,14 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	routeOptionChan := make(chan routeOptionListWithNamespace)
 
 	var initialRouteOptionList RouteOptionList
+	/* Create channel for MatchableHttpGateway */
+	type matchableHttpGatewayListWithNamespace struct {
+		list      MatchableHttpGatewayList
+		namespace string
+	}
+	matchableHttpGatewayChan := make(chan matchableHttpGatewayListWithNamespace)
+
+	var initialMatchableHttpGatewayList MatchableHttpGatewayList
 
 	currentSnapshot := ApiSnapshot{}
 
@@ -300,6 +318,24 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, routeOptionErrs, namespace+"-routeOptions")
 		}(namespace)
+		/* Setup namespaced watch for MatchableHttpGateway */
+		{
+			httpGateways, err := c.matchableHttpGateway.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial MatchableHttpGateway list")
+			}
+			initialMatchableHttpGatewayList = append(initialMatchableHttpGatewayList, httpGateways...)
+		}
+		matchableHttpGatewayNamespacesChan, matchableHttpGatewayErrs, err := c.matchableHttpGateway.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting MatchableHttpGateway watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, matchableHttpGatewayErrs, namespace+"-httpGateways")
+		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -352,6 +388,15 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 						return
 					case routeOptionChan <- routeOptionListWithNamespace{list: routeOptionList, namespace: namespace}:
 					}
+				case matchableHttpGatewayList, ok := <-matchableHttpGatewayNamespacesChan:
+					if !ok {
+						return
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case matchableHttpGatewayChan <- matchableHttpGatewayListWithNamespace{list: matchableHttpGatewayList, namespace: namespace}:
+					}
 				}
 			}
 		}(namespace)
@@ -366,6 +411,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	currentSnapshot.VirtualHostOptions = initialVirtualHostOptionList.Sort()
 	/* Initialize snapshot for RouteOptions */
 	currentSnapshot.RouteOptions = initialRouteOptionList.Sort()
+	/* Initialize snapshot for HttpGateways */
+	currentSnapshot.HttpGateways = initialMatchableHttpGatewayList.Sort()
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
@@ -402,6 +449,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		gatewaysByNamespace := make(map[string]GatewayList)
 		virtualHostOptionsByNamespace := make(map[string]VirtualHostOptionList)
 		routeOptionsByNamespace := make(map[string]RouteOptionList)
+		httpGatewaysByNamespace := make(map[string]MatchableHttpGatewayList)
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
@@ -530,6 +578,28 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					routeOptionList = append(routeOptionList, routeOptions...)
 				}
 				currentSnapshot.RouteOptions = routeOptionList.Sort()
+			case matchableHttpGatewayNamespacedList, ok := <-matchableHttpGatewayChan:
+				if !ok {
+					return
+				}
+				record()
+
+				namespace := matchableHttpGatewayNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"matchable_http_gateway",
+					mApiResourcesIn,
+				)
+
+				// merge lists by namespace
+				httpGatewaysByNamespace[namespace] = matchableHttpGatewayNamespacedList.list
+				var matchableHttpGatewayList MatchableHttpGatewayList
+				for _, httpGateways := range httpGatewaysByNamespace {
+					matchableHttpGatewayList = append(matchableHttpGatewayList, httpGateways...)
+				}
+				currentSnapshot.HttpGateways = matchableHttpGatewayList.Sort()
 			}
 		}
 	}()

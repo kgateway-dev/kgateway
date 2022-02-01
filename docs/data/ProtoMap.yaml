@@ -419,14 +419,20 @@ apis:
   gateway.solo.io.DelegateOptionsRefs:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#DelegateOptionsRefs
     package: gateway.solo.io
+  gateway.solo.io.DelegatedHttpGateway:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#DelegatedHttpGateway
+    package: gateway.solo.io
   gateway.solo.io.Gateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#Gateway
     package: gateway.solo.io
   gateway.solo.io.HttpGateway:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#HttpGateway
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#HttpGateway
     package: gateway.solo.io
   gateway.solo.io.HybridGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#HybridGateway
+    package: gateway.solo.io
+  gateway.solo.io.MatchableHttpGateway:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#MatchableHttpGateway
     package: gateway.solo.io
   gateway.solo.io.MatchedGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#MatchedGateway
@@ -459,7 +465,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#VirtualService
     package: gateway.solo.io
   gateway.solo.io.VirtualServiceSelectorExpressions:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#VirtualServiceSelectorExpressions
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#VirtualServiceSelectorExpressions
     package: gateway.solo.io
   gloo.solo.io.Artifact:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/artifact.proto.sk/#Artifact
@@ -1121,6 +1127,9 @@ apis:
   retries.options.gloo.solo.io.RetryPolicy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/retries/retries.proto.sk/#RetryPolicy
     package: retries.options.gloo.solo.io
+  selectors.core.gloo.solo.io.Selector:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/core/selectors/selectors.proto.sk/#Selector
+    package: selectors.core.gloo.solo.io
   shadowing.options.gloo.solo.io.RouteShadowing:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/shadowing/shadowing.proto.sk/#RouteShadowing
     package: shadowing.options.gloo.solo.io

@@ -119,6 +119,9 @@ subjects:
 - kind: ServiceAccount
   name: gateway
   namespace: {{ .Release.Namespace }}
+- kind: ServiceAccount
+  name: gloo # used to support gloo/gateway running in same pod
+  namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
   name: gateway-resource-reader{{ include "gloo.rbacNameSuffix" . }}

@@ -12,6 +12,7 @@ type Opts struct {
 	StatusReporterNamespace       string
 	WatchNamespaces               []string
 	Gateways                      factory.ResourceClientFactory
+	MatchableHttpGateways         factory.ResourceClientFactory
 	VirtualServices               factory.ResourceClientFactory
 	RouteTables                   factory.ResourceClientFactory
 	Proxies                       factory.ResourceClientFactory

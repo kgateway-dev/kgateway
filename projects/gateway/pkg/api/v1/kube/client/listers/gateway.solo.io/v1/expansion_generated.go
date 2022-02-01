@@ -26,6 +26,14 @@ type GatewayListerExpansion interface{}
 // GatewayNamespaceLister.
 type GatewayNamespaceListerExpansion interface{}
 
+// MatchableHttpGatewayListerExpansion allows custom methods to be added to
+// MatchableHttpGatewayLister.
+type MatchableHttpGatewayListerExpansion interface{}
+
+// MatchableHttpGatewayNamespaceListerExpansion allows custom methods to be added to
+// MatchableHttpGatewayNamespaceLister.
+type MatchableHttpGatewayNamespaceListerExpansion interface{}
+
 // RouteOptionListerExpansion allows custom methods to be added to
 // RouteOptionLister.
 type RouteOptionListerExpansion interface{}
