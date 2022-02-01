@@ -82,7 +82,7 @@ jobs:
         entryPoint: ./docs/ci
     - name: Notify On Failure
       id: notify-on-failure
-      if: ${{ github.event_name != 'pull_request' }}
+      if: ${{ github.event_name != 'pull_request' && failure() }}
       run : |
         curl -X POST\
              -H 'Content-type: application/json'\
