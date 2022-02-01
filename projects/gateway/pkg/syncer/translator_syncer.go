@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -191,6 +192,19 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 		s.proxyToLastStatus[refKey] = current
 		s.currentGeneratedProxies = append(s.currentGeneratedProxies, proxyRef)
 	}
+
+	// To ensure that reports are generated in the same order, we sort the proxies.
+	// Without this sorting, the same resources could produce a report with
+	// the warnings/errors in a different order. This would cause statuses to be
+	// updated unnecessarily.
+	sort.SliceStable(s.currentGeneratedProxies, func(i, j int) bool {
+		refi := s.currentGeneratedProxies[i]
+		refj := s.currentGeneratedProxies[j]
+		if refi.GetNamespace() != refj.GetNamespace() {
+			return refi.GetNamespace() < refj.GetNamespace()
+		}
+		return refi.GetName() < refj.GetName()
+	})
 }
 
 // run this in the background
