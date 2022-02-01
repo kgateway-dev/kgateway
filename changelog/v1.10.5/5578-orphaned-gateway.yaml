@@ -3,3 +3,7 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/5578
     description: |
       Gateways are no longer dependant on having an associated VirtualService to receive/clear their own resource statuses.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5323
+    description: |
+      Accept opaque header secrets in addition to `gloo.solo.io/header`.
