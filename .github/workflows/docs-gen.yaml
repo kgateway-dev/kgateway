@@ -1,7 +1,7 @@
 name: Docs
 
 env:
-    SLACK_DEBUG_TESTING: true   # when set to "true", send notifications to #slack-integration-testing.  Otherwise, post to #edge-team-bots
+    SLACK_DEBUG_TESTING: false   # when set to "true", send notifications to #slack-integration-testing.  Otherwise, post to #edge-team-bots
 on:
   push:
     branches:
@@ -82,7 +82,7 @@ jobs:
         entryPoint: ./docs/ci
     - name: Notify On Failure
       id: notify-on-failure
-      # if: github.ref == 'refs/heads/master' && failure()
+      if: github.ref == 'refs/heads/master' && failure()
       run : |
         curl -X POST\
              -H 'Content-type: application/json'\
