@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 )
 
-var _ = FDescribe("Install", func() {
+var _ = Describe("Install", func() {
 
 	const licenseKey = "--license-key=fake-license-key"
 	const overrideVersion = "1.7.0-beta11"
