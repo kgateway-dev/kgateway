@@ -80,17 +80,17 @@ jobs:
         entryPoint: ./docs/ci
     - name: Notify On Failure
       id: notify-on-failure
-      # if: github.ref == 'refs/heads/master' && failure()
-      # Use preconfigured webhook to post to #edge-team-bots
-      run : |
-        curl -X POST\
-             -H 'Content-type: application/json'\
-             --data '{"text":"Gloo Edge has <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|failed a docs build> on `master` branch.  FYI <@U02GW11FVJP>"}'\
-             ${{ secrets.SLACK_INTEGRATION_TESTING_WEBHOOK }}
-
-      # For testing out bot edits, we instead have a webhook that posts to the #edge-team-bots channel
+      if: github.ref == 'refs/heads/master' && failure()
+      # Use preconfigured webhook to post to #slack-integration-testing
       # run : |
       #   curl -X POST\
       #        -H 'Content-type: application/json'\
       #        --data '{"text":"Gloo Edge has <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|failed a docs build> on `master` branch.  FYI <@U02GW11FVJP>"}'\
-      #        ${{ secrets.EDGE_TEAM_BOTS_WEBHOOK }}
+      #        ${{ secrets.SLACK_INTEGRATION_TESTING_WEBHOOK }}
+
+      # For testing out bot edits, we instead have a webhook that posts to the #edge-team-bots channel
+      run : |
+        curl -X POST\
+             -H 'Content-type: application/json'\
+             --data '{"text":"Gloo Edge has <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|failed a docs build> on `master` branch.  FYI <@U02GW11FVJP>"}'\
+             ${{ secrets.EDGE_TEAM_BOTS_WEBHOOK }}
