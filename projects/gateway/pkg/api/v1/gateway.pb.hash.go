@@ -208,28 +208,6 @@ func (m *Gateway) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *Gateway_MultiHttpGateway:
-
-		if h, ok := interface{}(m.GetMultiHttpGateway()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("MultiHttpGateway")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetMultiHttpGateway(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("MultiHttpGateway")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
 	}
 
 	return hasher.Sum64(), nil
@@ -332,11 +310,35 @@ func (m *HybridGateway) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	for _, v := range m.GetDelegatedHttpGateways() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	return hasher.Sum64(), nil
 }
 
 // Hash function
-func (m *MultiHttpGateway) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *DelegatedHttpGateway) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -344,13 +346,13 @@ func (m *MultiHttpGateway) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.MultiHttpGateway")); err != nil {
+	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.DelegatedHttpGateway")); err != nil {
 		return 0, err
 	}
 
 	switch m.SelectionType.(type) {
 
-	case *MultiHttpGateway_Ref:
+	case *DelegatedHttpGateway_Ref:
 
 		if h, ok := interface{}(m.GetRef()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Ref")); err != nil {
@@ -372,7 +374,7 @@ func (m *MultiHttpGateway) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *MultiHttpGateway_Selector:
+	case *DelegatedHttpGateway_Selector:
 
 		if h, ok := interface{}(m.GetSelector()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Selector")); err != nil {

@@ -103,8 +103,13 @@ func (VirtualServiceSelectorExpressions_Expression_Operator) EnumDescriptor() ([
 }
 
 //
-//A MatchableHttpGateway describes a single FilterChain (bind address:port)
-//and the routing configuration to upstreams that are reachable via a specific port on the Gateway Proxy itself.
+//A MatchableHttpGateway describes a single FilterChain configured with:
+//- The HttpConnectionManager NetworkFilter
+//- A FilterChainMatch and TransportSocket that support TLS configuration and Source IP matching
+//
+//A Gateway CR may select one or more MatchableHttpGateways on a single listener.
+//This enables separate teams to own Listener configuration (Gateway CR)
+//and FilterChain configuration (MatchableHttpGateway CR)
 type MatchableHttpGateway struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -114,9 +119,15 @@ type MatchableHttpGateway struct {
 	// NamespacedStatuses is read-only by clients, and set by gateway during validation
 	NamespacedStatuses *core.NamespacedStatuses `protobuf:"bytes,1,opt,name=namespaced_statuses,json=namespacedStatuses,proto3" json:"namespaced_statuses,omitempty"`
 	// Metadata contains the object metadata for this resource
-	Metadata    *core.Metadata                `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	Matcher     *MatchableHttpGateway_Matcher `protobuf:"bytes,3,opt,name=matcher,proto3" json:"matcher,omitempty"`
-	HttpGateway *HttpGateway                  `protobuf:"bytes,4,opt,name=http_gateway,json=httpGateway,proto3" json:"http_gateway,omitempty"`
+	Metadata *core.Metadata `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	// Matcher creates a FilterChainMatch and TransportSocket for a FilterChain
+	// For each MatchableHttpGateway on a Gateway CR, the matcher must be unique.
+	// If there are any identical matchers, the Gateway will be rejected.
+	// An empty matcher will produce an empty FilterChainMatch (https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#envoy-v3-api-msg-config-listener-v3-filterchainmatch)
+	// effectively matching all incoming connections
+	Matcher *MatchableHttpGateway_Matcher `protobuf:"bytes,3,opt,name=matcher,proto3" json:"matcher,omitempty"`
+	// HttpGateway creates a FilterChain with an HttpConnectionManager
+	HttpGateway *HttpGateway `protobuf:"bytes,4,opt,name=http_gateway,json=httpGateway,proto3" json:"http_gateway,omitempty"`
 }
 
 func (x *MatchableHttpGateway) Reset() {
@@ -338,7 +349,10 @@ type MatchableHttpGateway_Matcher struct {
 	// CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range.
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange
 	SourcePrefixRanges []*v3.CidrRange `protobuf:"bytes,1,rep,name=source_prefix_ranges,json=sourcePrefixRanges,proto3" json:"source_prefix_ranges,omitempty"`
-	SslConfig          *v1.SslConfig   `protobuf:"bytes,2,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
+	// Ssl configuration applied to the FilterChain:
+	//  - FilterChainMatch: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#config-listener-v3-filterchainmatch)
+	//  - TransportSocket: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-transportsocket
+	SslConfig *v1.SslConfig `protobuf:"bytes,2,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
 }
 
 func (x *MatchableHttpGateway_Matcher) Reset() {

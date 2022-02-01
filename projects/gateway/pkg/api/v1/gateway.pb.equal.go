@@ -166,21 +166,6 @@ func (m *Gateway) Equal(that interface{}) bool {
 			}
 		}
 
-	case *Gateway_MultiHttpGateway:
-		if _, ok := target.GatewayType.(*Gateway_MultiHttpGateway); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetMultiHttpGateway()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetMultiHttpGateway()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetMultiHttpGateway(), target.GetMultiHttpGateway()) {
-				return false
-			}
-		}
-
 	default:
 		// m is nil but target is not nil
 		if m.GatewayType != target.GatewayType {
@@ -280,18 +265,35 @@ func (m *HybridGateway) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetDelegatedHttpGateways()) != len(target.GetDelegatedHttpGateways()) {
+		return false
+	}
+	for idx, v := range m.GetDelegatedHttpGateways() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDelegatedHttpGateways()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetDelegatedHttpGateways()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }
 
 // Equal function
-func (m *MultiHttpGateway) Equal(that interface{}) bool {
+func (m *DelegatedHttpGateway) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*MultiHttpGateway)
+	target, ok := that.(*DelegatedHttpGateway)
 	if !ok {
-		that2, ok := that.(MultiHttpGateway)
+		that2, ok := that.(DelegatedHttpGateway)
 		if ok {
 			target = &that2
 		} else {
@@ -306,8 +308,8 @@ func (m *MultiHttpGateway) Equal(that interface{}) bool {
 
 	switch m.SelectionType.(type) {
 
-	case *MultiHttpGateway_Ref:
-		if _, ok := target.SelectionType.(*MultiHttpGateway_Ref); !ok {
+	case *DelegatedHttpGateway_Ref:
+		if _, ok := target.SelectionType.(*DelegatedHttpGateway_Ref); !ok {
 			return false
 		}
 
@@ -321,8 +323,8 @@ func (m *MultiHttpGateway) Equal(that interface{}) bool {
 			}
 		}
 
-	case *MultiHttpGateway_Selector:
-		if _, ok := target.SelectionType.(*MultiHttpGateway_Selector); !ok {
+	case *DelegatedHttpGateway_Selector:
+		if _, ok := target.SelectionType.(*DelegatedHttpGateway_Selector); !ok {
 			return false
 		}
 

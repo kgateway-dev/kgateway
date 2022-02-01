@@ -31,8 +31,13 @@ weight: 5
 ### MatchableHttpGateway
 
  
-A MatchableHttpGateway describes a single FilterChain (bind address:port)
-and the routing configuration to upstreams that are reachable via a specific port on the Gateway Proxy itself.
+A MatchableHttpGateway describes a single FilterChain configured with:
+- The HttpConnectionManager NetworkFilter
+- A FilterChainMatch and TransportSocket that support TLS configuration and Source IP matching
+
+A Gateway CR may select one or more MatchableHttpGateways on a single listener.
+This enables separate teams to own Listener configuration (Gateway CR)
+and FilterChain configuration (MatchableHttpGateway CR)
 
 ```yaml
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
@@ -46,8 +51,8 @@ and the routing configuration to upstreams that are reachable via a specific por
 | ----- | ---- | ----------- | 
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gateway during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
-| `matcher` | [.gateway.solo.io.MatchableHttpGateway.Matcher](../http_gateway.proto.sk/#matcher) |  |
-| `httpGateway` | [.gateway.solo.io.HttpGateway](../http_gateway.proto.sk/#httpgateway) |  |
+| `matcher` | [.gateway.solo.io.MatchableHttpGateway.Matcher](../http_gateway.proto.sk/#matcher) | Matcher creates a FilterChainMatch and TransportSocket for a FilterChain For each MatchableHttpGateway on a Gateway CR, the matcher must be unique. If there are any identical matchers, the Gateway will be rejected. An empty matcher will produce an empty FilterChainMatch (https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#envoy-v3-api-msg-config-listener-v3-filterchainmatch) effectively matching all incoming connections. |
+| `httpGateway` | [.gateway.solo.io.HttpGateway](../http_gateway.proto.sk/#httpgateway) | HttpGateway creates a FilterChain with an HttpConnectionManager. |
 
 
 
@@ -66,7 +71,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) | CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange. |
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) |  |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | Ssl configuration applied to the FilterChain: - FilterChainMatch: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#config-listener-v3-filterchainmatch) - TransportSocket: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-transportsocket. |
 
 
 

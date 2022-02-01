@@ -66,8 +66,7 @@ message Gateway {
     oneof GatewayType {
         HttpGateway http_gateway = 9;
         TcpGateway tcp_gateway = 10;
-        HybridGateway hybrid_gateway = 11 [deprecated=true];
-        MultiHttpGateway multi_http_gateway = 15;
+        HybridGateway hybrid_gateway = 11;
     }
 
     /*
@@ -106,12 +105,22 @@ message TcpGateway {
 }
 
 message HybridGateway {
+    // MatchedGateways can be used to define both HttpGateways and TcpGateways directly on the Gateway resource.
+    // Only one of `MatchedGateways` or `DelegatedHttpGateways` should be provided.
+    // If more than one is provided only one will be checked with priority MatchedGateways, DelegatedHttpGateways
     repeated MatchedGateway matched_gateways = 1;
+
+    // DelegatedHttpGateways can be used to configure multiple HttpGateways
+    // using the MatchableHttpGateway CR and select them on this Gateway
+    // using a resourceRef or label selection
+    // Only one of `MatchedGateways` or `DelegatedHttpGateways` should be provided.
+    // If more than one is provided only one will be checked with priority MatchedGateways, DelegatedHttpGateways
+    repeated DelegatedHttpGateway delegated_http_gateways = 2;
 }
 
-message MultiHttpGateway {
+message DelegatedHttpGateway {
 
-    // How to select MatchableHttpGateways to aggregate
+    // How to select MatchableHttpGateways
     oneof selection_type {
         // Delegate to the resource with the given `name` and `namespace.
         core.solo.io.ResourceRef ref = 3;

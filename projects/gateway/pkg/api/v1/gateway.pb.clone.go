@@ -126,18 +126,6 @@ func (m *Gateway) Clone() proto.Message {
 			}
 		}
 
-	case *Gateway_MultiHttpGateway:
-
-		if h, ok := interface{}(m.GetMultiHttpGateway()).(clone.Cloner); ok {
-			target.GatewayType = &Gateway_MultiHttpGateway{
-				MultiHttpGateway: h.Clone().(*MultiHttpGateway),
-			}
-		} else {
-			target.GatewayType = &Gateway_MultiHttpGateway{
-				MultiHttpGateway: proto.Clone(m.GetMultiHttpGateway()).(*MultiHttpGateway),
-			}
-		}
-
 	}
 
 	return target
@@ -194,39 +182,52 @@ func (m *HybridGateway) Clone() proto.Message {
 		}
 	}
 
+	if m.GetDelegatedHttpGateways() != nil {
+		target.DelegatedHttpGateways = make([]*DelegatedHttpGateway, len(m.GetDelegatedHttpGateways()))
+		for idx, v := range m.GetDelegatedHttpGateways() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.DelegatedHttpGateways[idx] = h.Clone().(*DelegatedHttpGateway)
+			} else {
+				target.DelegatedHttpGateways[idx] = proto.Clone(v).(*DelegatedHttpGateway)
+			}
+
+		}
+	}
+
 	return target
 }
 
 // Clone function
-func (m *MultiHttpGateway) Clone() proto.Message {
-	var target *MultiHttpGateway
+func (m *DelegatedHttpGateway) Clone() proto.Message {
+	var target *DelegatedHttpGateway
 	if m == nil {
 		return target
 	}
-	target = &MultiHttpGateway{}
+	target = &DelegatedHttpGateway{}
 
 	switch m.SelectionType.(type) {
 
-	case *MultiHttpGateway_Ref:
+	case *DelegatedHttpGateway_Ref:
 
 		if h, ok := interface{}(m.GetRef()).(clone.Cloner); ok {
-			target.SelectionType = &MultiHttpGateway_Ref{
+			target.SelectionType = &DelegatedHttpGateway_Ref{
 				Ref: h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef),
 			}
 		} else {
-			target.SelectionType = &MultiHttpGateway_Ref{
+			target.SelectionType = &DelegatedHttpGateway_Ref{
 				Ref: proto.Clone(m.GetRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef),
 			}
 		}
 
-	case *MultiHttpGateway_Selector:
+	case *DelegatedHttpGateway_Selector:
 
 		if h, ok := interface{}(m.GetSelector()).(clone.Cloner); ok {
-			target.SelectionType = &MultiHttpGateway_Selector{
+			target.SelectionType = &DelegatedHttpGateway_Selector{
 				Selector: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_selectors.Selector),
 			}
 		} else {
-			target.SelectionType = &MultiHttpGateway_Selector{
+			target.SelectionType = &DelegatedHttpGateway_Selector{
 				Selector: proto.Clone(m.GetSelector()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_selectors.Selector),
 			}
 		}

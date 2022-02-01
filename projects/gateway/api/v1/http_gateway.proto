@@ -20,8 +20,13 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/
 
 
 /*
-A MatchableHttpGateway describes a single FilterChain (bind address:port)
-and the routing configuration to upstreams that are reachable via a specific port on the Gateway Proxy itself.
+A MatchableHttpGateway describes a single FilterChain configured with:
+- The HttpConnectionManager NetworkFilter
+- A FilterChainMatch and TransportSocket that support TLS configuration and Source IP matching
+
+A Gateway CR may select one or more MatchableHttpGateways on a single listener.
+This enables separate teams to own Listener configuration (Gateway CR)
+and FilterChain configuration (MatchableHttpGateway CR)
 */
 message MatchableHttpGateway {
 
@@ -40,11 +45,20 @@ message MatchableHttpGateway {
     // See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange
     repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 1;
 
+    // Ssl configuration applied to the FilterChain:
+    //  - FilterChainMatch: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#config-listener-v3-filterchainmatch)
+    //  - TransportSocket: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-transportsocket
     gloo.solo.io.SslConfig ssl_config = 2;
   }
 
+  // Matcher creates a FilterChainMatch and TransportSocket for a FilterChain
+  // For each MatchableHttpGateway on a Gateway CR, the matcher must be unique.
+  // If there are any identical matchers, the Gateway will be rejected.
+  // An empty matcher will produce an empty FilterChainMatch (https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#envoy-v3-api-msg-config-listener-v3-filterchainmatch)
+  // effectively matching all incoming connections
   Matcher matcher = 3;
 
+  // HttpGateway creates a FilterChain with an HttpConnectionManager
   HttpGateway http_gateway = 4;
 }
 
