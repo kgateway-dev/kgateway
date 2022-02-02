@@ -89,6 +89,7 @@ gateway:
     setTtlAfterFinished: true
     ttlSecondsAfterFinished: 60
     runAsUser: 10101
+    runOnUpdate: false
   proxyServiceAccount: {}
   serviceAccount: {}
 gatewayProxies:
