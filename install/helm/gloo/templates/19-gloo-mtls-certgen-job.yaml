@@ -4,6 +4,7 @@
 {{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}
 {{- end }}
 {{- if .Values.global.glooMtls.enabled }}
+{{- $secretExist := lookup "v1" "Secret" .Release.Namespace "gloo-mtls-certs" }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -13,7 +14,12 @@ metadata:
   name: gloo-mtls-certgen
   namespace: {{ .Release.Namespace }}
   annotations:
+    annotations:
+    {{- if $secretExist }}
     "helm.sh/hook": pre-install
+    {{- else }}
+    "helm.sh/hook": pre-install, pre-upgrade
+    {{- end }}
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
