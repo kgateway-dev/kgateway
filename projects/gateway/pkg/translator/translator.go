@@ -46,10 +46,16 @@ func NewDefaultTranslator(opts Opts) *translator {
 		warnOnRouteShortCircuiting = opts.Validation.WarnOnRouteShortCircuiting
 	}
 
+	httpTranslator := &HttpTranslator{
+		WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting,
+	}
+
 	return NewTranslator([]ListenerFactory{
-		&HttpTranslator{WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting},
+		httpTranslator,
 		&TcpTranslator{},
-		&HybridTranslator{HttpTranslator: &HttpTranslator{WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting}},
+		&HybridTranslator{
+			HttpTranslator: httpTranslator,
+		},
 	}, opts)
 }
 
