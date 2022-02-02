@@ -24,6 +24,8 @@ type Options struct {
 	ServerKeySecretFileName     string
 
 	ValidatingWebhookConfigurationName string
+
+	ForceRotation bool
 }
 
 func Run(ctx context.Context, opts Options) error {
@@ -71,7 +73,7 @@ func Run(ctx context.Context, opts Options) error {
 		return eris.Wrapf(err, "failed validating existing secret")
 	}
 
-	if existAndValid {
+	if existAndValid && !opts.ForceRotation {
 		contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, skipping update to TLS secret and ValidatingWebhookConfiguration since the old TLS secret is still existAndValid",
 			zap.String("secretName", secretConfig.SecretName),
 			zap.String("secretNamespace", secretConfig.SecretNamespace))
