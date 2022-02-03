@@ -128,46 +128,31 @@ To install Gloo Edge Enterprise in an air-gapped environment:
    ```
 2. On the connected device, download the Gloo Edge Enterprise images.
    ```shell
-   wget https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-${GLOO_EE_VERSION}.tgz
-   tar zxvf gloo-ee-${GLOO_EE_VERSION}.tgz
-   find gloo-ee -name "values.yaml" | while read file; do
-     cat $file | yq eval -j | jq -r '.. | .image? | select(. != null) | [.registry?, .repository?, .tag?] | @csv'
-   done | grep -v ",," | sort -u
+   helm template glooe/gloo-ee --version $GLOO_EE_VERSION | yq e '. | .. | select(has("image"))' - | grep image: | sed 's/image: //'
    ```
    
    The example output includes the list of images.
    ```
-   "docker.io","redis","6.2.4"
-   "quay.io/solo-io","gloo-fed","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   "quay.io/solo-io","gloo-fed-apiserver","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   "quay.io/solo-io","gloo-fed-apiserver-envoy","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   "quay.io/solo-io","gloo-fed-rbac-validating-webhook","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   "quay.io/solo-io","gloo-federation-console","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"",
-   ,"access-logger","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"busybox","1.31.1"
-   ,"certgen","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"discovery","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"extauth-ee","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"gateway","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"gloo","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"gloo-ee","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"gloo-ee-envoy-wrapper","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"gloo-envoy-wrapper","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"grafana/grafana","8.2.1"
-   ,"grafana/grafana-image-renderer","latest"
-   ,"ingress","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"jimmidyson/configmap-reload","v0.5.0"
-   ,"observability-ee","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"prom/pushgateway","v1.3.1"
-   ,"quay.io/coreos/kube-state-metrics","v1.9.7"
-   ,"quay.io/kiwigrid/k8s-sidecar","1.12.3"
-   ,"quay.io/prometheus/alertmanager","v0.21.0"
-   ,"quay.io/prometheus/node-exporter","v1.0.1"
-   ,"quay.io/prometheus/prometheus","v2.24.0"
-   ,"rate-limit-ee","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ,"sds","{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}"
-   ```
+   quay.io/solo-io/gloo-fed-apiserver:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/gloo-federation-console:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/gloo-fed-apiserver-envoy:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/gloo-fed:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/gloo-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/discovery-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/gateway:{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
+   quay.io/solo-io/gloo-ee-envoy-wrapper:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   "grafana/grafana:8.2.1"
+   "quay.io/coreos/kube-state-metrics:v1.9.7"
+   "jimmidyson/configmap-reload:v0.5.0"
+   "quay.io/prometheus/prometheus:v2.24.0"
+   docker.io/busybox:1.28
+   docker.io/redis:6.2.4
+   quay.io/solo-io/rate-limit-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/extauth-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/observability-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/certgen:{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
+    ```
+
 3. Push the images from the connected device to a private registry that the disconnected device can pull from. For instructions and any credentials you must set up to complete this step, consult your registry provider, such as [Nexus Repository Manager](https://help.sonatype.com/repomanager3/formats/docker-registry/pushing-images) or [JFrog Artifactory](https://www.jfrog.com/confluence/display/JFROG/Getting+Started+with+Artifactory+as+a+Docker+Registry).
 4. Optional: You might want to set up your private registry so that you can also pull the Helm charts. For instructions, consult your registry provider, such as [Nexus Repository Manager](https://help.sonatype.com/repomanager3/formats/helm-repositories) or [JFrog Artifactory](https://www.jfrog.com/confluence/display/JFROG/Kubernetes+Helm+Chart+Repositories).
 5. When you [install Gloo Edge Enterprise with a custom Helm chart values file](#customizing-your-installation-with-helm), make sure to use the specific images that you downloaded and stored in your private registry in the previous steps.
@@ -226,6 +211,33 @@ Gloo Edge Open Source Helm values in Enterprise must be prefixed with `gloo`, un
 | observability.customGrafana.apiKey                        | string   | authenticate to the custom grafana instance using this api key
 | observability.customGrafana.url                           | string   | the URL for the custom grafana instance
 ---
+
+## Enterprise UI
+
+For version 1.8.9 and later, Gloo Edge Enterprise includes the user interface (UI) by default. Prior versions have the UI only when you enable Gloo Federation.
+
+Note that when you enable Gloo Federation in version 1.8.9 or later, the UI does not show any data until you [register one or more clusters]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}). If you do not use Gloo Federation, the UI shows the installed Gloo Edge instance automatically without cluster registration.
+
+To disable Gloo Federation, you can set `gloo-fed.enabled=false` during installation as shown in the following examples.
+
+{{< tabs >}}
+{{% tab name="glooctl install" %}}
+```shell script
+echo "gloo-fed:
+  enabled: false" > values.yaml
+glooctl install gateway enterprise --values values.yaml --license-key=<LICENSE_KEY>
+```
+{{% /tab %}}
+{{% tab name="helm install" %}}
+```shell script
+helm install gloo glooe/gloo-ee --namespace gloo-system --set gloo-fed.enabled=false --set license_key=<LICENSE_KEY>
+```
+{{% /tab %}}
+{{< /tabs >}}
+
+
+
+
 ## Verify your Installation
 
 Check that the Gloo Edge pods and services have been created. Depending on your install option, you may see some differences
