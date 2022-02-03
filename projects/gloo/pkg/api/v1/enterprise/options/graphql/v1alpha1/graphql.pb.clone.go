@@ -215,6 +215,8 @@ func (m *Resolution) Clone() proto.Message {
 	}
 	target = &Resolution{}
 
+	target.StatPrefix = m.GetStatPrefix()
+
 	switch m.Resolver.(type) {
 
 	case *Resolution_RestResolver:
@@ -271,6 +273,8 @@ func (m *GraphQLSchema) Clone() proto.Message {
 	} else {
 		target.ExecutableSchema = proto.Clone(m.GetExecutableSchema()).(*ExecutableSchema)
 	}
+
+	target.StatPrefix = m.GetStatPrefix()
 
 	return target
 }

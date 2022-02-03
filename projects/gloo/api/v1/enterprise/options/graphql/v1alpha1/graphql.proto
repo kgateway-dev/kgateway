@@ -182,6 +182,10 @@ message Resolution {
     RESTResolver rest_resolver = 1;
     GrpcResolver grpc_resolver = 2;
   }
+
+  // The stats prefix which will be used for this resolver.
+  // If empty, will generate a stats prefix ${RESOLVER_TYPE}-${UPSTREAM_REF}
+  string stat_prefix = 3;
 }
 
 // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
@@ -204,6 +208,10 @@ message GraphQLSchema {
   core.solo.io.Metadata metadata = 2;
 
   ExecutableSchema executable_schema = 6;
+
+  // The stats prefix which will be used for this route config.
+  // If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}
+  string stat_prefix = 3;
 }
 
 message ExecutableSchema {

@@ -351,6 +351,10 @@ func (m *Resolution) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetStatPrefix(), target.GetStatPrefix()) != 0 {
+		return false
+	}
+
 	switch m.Resolver.(type) {
 
 	case *Resolution_RestResolver:
@@ -442,6 +446,10 @@ func (m *GraphQLSchema) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetExecutableSchema(), target.GetExecutableSchema()) {
 			return false
 		}
+	}
+
+	if strings.Compare(m.GetStatPrefix(), target.GetStatPrefix()) != 0 {
+		return false
 	}
 
 	return true

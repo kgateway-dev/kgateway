@@ -402,6 +402,10 @@ func (m *Resolution) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetStatPrefix())); err != nil {
+		return 0, err
+	}
+
 	switch m.Resolver.(type) {
 
 	case *Resolution_RestResolver:
@@ -504,6 +508,10 @@ func (m *GraphQLSchema) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	if _, err = hasher.Write([]byte(m.GetStatPrefix())); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
