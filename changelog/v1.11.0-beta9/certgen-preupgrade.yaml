@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4638
+    description: Add a helm option to support running the certgen job on upgrades and installs
