@@ -92,6 +92,7 @@ gateway:
     cron:
       enabled: false
       schedule: "* * * * *"
+    runOnUpdate: false
   proxyServiceAccount: {}
   serviceAccount: {}
 gatewayProxies:
