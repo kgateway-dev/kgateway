@@ -66,7 +66,7 @@ spec:
   ignoreHealthOnHostRemoval: true
 {{< /highlight >}}
 
-Reties are set at the route level:
+Retries are set at the route level:
 
 {{< highlight yaml "hl_lines=17" >}}
 apiVersion: gateway.solo.io/v1
