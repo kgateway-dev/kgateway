@@ -351,8 +351,14 @@ func (m *Resolution) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetStatPrefix(), target.GetStatPrefix()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetStatPrefix()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetStatPrefix()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetStatPrefix(), target.GetStatPrefix()) {
+			return false
+		}
 	}
 
 	switch m.Resolver.(type) {
@@ -448,8 +454,14 @@ func (m *GraphQLSchema) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetStatPrefix(), target.GetStatPrefix()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetStatPrefix()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetStatPrefix()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetStatPrefix(), target.GetStatPrefix()) {
+			return false
+		}
 	}
 
 	return true

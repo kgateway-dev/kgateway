@@ -15,6 +15,8 @@ import (
 
 	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
 
+	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -215,7 +217,11 @@ func (m *Resolution) Clone() proto.Message {
 	}
 	target = &Resolution{}
 
-	target.StatPrefix = m.GetStatPrefix()
+	if h, ok := interface{}(m.GetStatPrefix()).(clone.Cloner); ok {
+		target.StatPrefix = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.StatPrefix = proto.Clone(m.GetStatPrefix()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	}
 
 	switch m.Resolver.(type) {
 
@@ -274,7 +280,11 @@ func (m *GraphQLSchema) Clone() proto.Message {
 		target.ExecutableSchema = proto.Clone(m.GetExecutableSchema()).(*ExecutableSchema)
 	}
 
-	target.StatPrefix = m.GetStatPrefix()
+	if h, ok := interface{}(m.GetStatPrefix()).(clone.Cloner); ok {
+		target.StatPrefix = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.StatPrefix = proto.Clone(m.GetStatPrefix()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	}
 
 	return target
 }

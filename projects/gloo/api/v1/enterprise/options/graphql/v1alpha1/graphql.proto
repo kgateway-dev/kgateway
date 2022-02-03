@@ -22,6 +22,7 @@ import "validate/validate.proto";
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
 
 /**
   Using `string` value templates
@@ -184,8 +185,8 @@ message Resolution {
   }
 
   // The stats prefix which will be used for this resolver.
-  // If empty, will generate a stats prefix ${RESOLVER_TYPE}-${UPSTREAM_REF}
-  string stat_prefix = 3;
+  // If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}-${RESOLVER_NAME}
+  google.protobuf.StringValue stat_prefix = 3;
 }
 
 // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
@@ -211,7 +212,7 @@ message GraphQLSchema {
 
   // The stats prefix which will be used for this route config.
   // If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}
-  string stat_prefix = 3;
+  google.protobuf.StringValue stat_prefix = 3;
 }
 
 message ExecutableSchema {
