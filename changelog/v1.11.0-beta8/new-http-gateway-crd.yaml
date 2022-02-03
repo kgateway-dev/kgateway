@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5767
+    description: |
+      Introduce the new HttpGateway CRD. This will enable more flexible creation of multiple
+      filter chains on a single listener. The translation code to support this resource
+      is not yet created and will be done in a follow-up, hence why this is non user facing.

@@ -12,3 +12,5 @@ gloo-temp
 data/Solo.yaml
 
 search-index.json
+
+.hugo_build.lock

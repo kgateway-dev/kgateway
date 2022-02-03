@@ -51,7 +51,7 @@ message Gzip {
     // higher latency, "SPEED" provides lower compression with minimum impact on response time.
     // "DEFAULT" provides an optimal result between speed and compression. This field will be set to
     // "DEFAULT" if not specified.
-    CompressionLevel.Enum compression_level = 3 [(validate.rules).enum = {defined_only: true}];
+    Gzip.CompressionLevel.Enum compression_level = 3 [(validate.rules).enum = {defined_only: true}];
 
     // A value used for selecting the zlib compression strategy which is directly related to the
     // characteristics of the content. Most of the time "DEFAULT" will be the best choice, though

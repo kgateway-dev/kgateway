@@ -150,7 +150,8 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			if subresource == nil {
 				return core.Status_Pending, fmt.Errorf("no status")
 			}
-			proxyState := subresource["*v1.Proxy.gloo-system.gateway-proxy"]
+			proxyState := subresource["*v1.Proxy.gateway-proxy_gloo-system"]
+
 			if proxyState == nil {
 				return core.Status_Pending, fmt.Errorf("no state")
 			}

@@ -2,6 +2,7 @@ package helm_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -24,16 +25,8 @@ import (
 var _ = Describe("Kube2e: helm", func() {
 
 	var (
-		crdDir                    = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
-		chartUri                  string
-		rlcCrdName                = "ratelimitconfigs.ratelimit.solo.io"
-		rlcCrdTemplateName        = filepath.Join(crdDir, "ratelimit_config.yaml")
-		graphQlSchemaCrdName      = "graphqlschemas.graphql.gloo.solo.io"
-		graphQlSchemaTemplateName = filepath.Join(crdDir, "graphql.gloo.solo.io_v1alpha1_GraphQLSchema.yaml")
-		vhoCrdName                = "virtualhostoptions.gateway.solo.io"
-		vhoCrdTemplateName        = filepath.Join(crdDir, "gateway.solo.io_v1_VirtualHostOption.yaml")
-		rtoCrdName                = "routeoptions.gateway.solo.io"
-		rtoCrdTemplateName        = filepath.Join(crdDir, "gateway.solo.io_v1_RouteOption.yaml")
+		crdDir   string
+		chartUri string
 
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -41,47 +34,47 @@ var _ = Describe("Kube2e: helm", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
+
+		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
+		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 	})
 
-	AfterEach(func() { cancel() })
+	AfterEach(func() {
+		cancel()
+	})
 
 	It("uses helm to upgrade to this gloo version without errors", func() {
 
 		By("should start with gloo version 1.9.0")
 		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(earliestVersionWithV1CRDs))
 
-		By("apply new `RateLimitConfig` CRD")
-		runAndCleanCommand("kubectl", "apply", "-f", rlcCrdTemplateName)
-		Eventually(func() string {
-			outputBytes := runAndCleanCommand("kubectl", "get", "crd", rlcCrdName)
-			return string(outputBytes)
-		}, "5s", "1s").Should(ContainSubstring(rlcCrdName))
+		// CRDs are applied to a cluster when performing a `helm install` operation
+		// However, `helm upgrade` intentionally does not apply CRDs (https://helm.sh/docs/topics/charts/#limitations-on-crds)
+		// Before performing the upgrade, we must manually apply any CRDs that were introduced since v1.9.0
+		type crd struct{ name, file string }
+		crdsToManuallyApply := []crd{
+			{
+				name: "graphqlschemas.graphql.gloo.solo.io",
+				file: filepath.Join(crdDir, "graphql.gloo.solo.io_v1alpha1_GraphQLSchema.yaml"),
+			},
+			{
+				name: "httpgateways.gateway.solo.io",
+				file: filepath.Join(crdDir, "gateway.solo.io_v1_MatchableHttpGateway.yaml"),
+			},
+		}
 
-		By("apply new `GraphQLSchema` CRD")
-		runAndCleanCommand("kubectl", "apply", "-f", graphQlSchemaTemplateName)
-		Eventually(func() string {
-			outputBytes := runAndCleanCommand("kubectl", "get", "crd", graphQlSchemaCrdName)
-			return string(outputBytes)
-		}, "5s", "1s").Should(ContainSubstring(graphQlSchemaCrdName))
+		for _, crd := range crdsToManuallyApply {
+			By(fmt.Sprintf("apply new %s CRD", crd.name))
 
-		By("apply new `VirtualHostOption` CRD")
-		runAndCleanCommand("kubectl", "apply", "-f", vhoCrdTemplateName)
-		Eventually(func() string {
-			outputBytes := runAndCleanCommand("kubectl", "get", "crd", vhoCrdName)
-			return string(outputBytes)
-		}, "5s", "1s").Should(ContainSubstring(vhoCrdName))
-
-		By("apply new `RouteOption` CRD")
-		runAndCleanCommand("kubectl", "apply", "-f", rtoCrdTemplateName)
-		Eventually(func() string {
-			outputBytes := runAndCleanCommand("kubectl", "get", "crd", rtoCrdName)
-			return string(outputBytes)
-		}, "5s", "1s").Should(ContainSubstring(rtoCrdName))
+			// Apply the CRD and ensure it is eventually accepted
+			runAndCleanCommand("kubectl", "apply", "-f", crd.file)
+			Eventually(func() string {
+				return string(runAndCleanCommand("kubectl", "get", "crd", crd.name))
+			}, "5s", "1s").Should(ContainSubstring(crd.name))
+		}
 
 		// upgrade to the gloo version being tested
-		chartUri = filepath.Join("../../..", testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
-		runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
-			"-n", testHelper.InstallNamespace)
+		runAndCleanCommand("helm", "upgrade", "gloo", chartUri, "-n", testHelper.InstallNamespace)
 
 		By("should have upgraded to the gloo version being tested")
 		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))

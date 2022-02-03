@@ -1,6 +1,6 @@
 ---
 title: "Configuring Socket Options"
-weight: 6
+weight: 1
 ---
 
 {{% notice note %}}
@@ -37,15 +37,20 @@ Here is an example set of socket options to configure keep alive:
   level: 1 # means socket level options
   name: 9 # means the keep-alive parameter
   intValue: 1 # a nonzero value means "yes"
-  state: STATE_LISTENING
+  state: STATE_PREBIND
 - description: "idle time before first keep-alive probe is sent" # TCP protocol
   level: 6 # IPPROTO_TCP
   name: 4 # TCP_KEEPIDLE parameter - The time (in seconds) the connection needs to remain idle before TCP starts sending keepalive probes
-  intValue: 90 # seconds
-  state: STATE_LISTENING
+  intValue: 60 # seconds
+  state: STATE_PREBIND
+- description: "keep-alive interval" # TCP protocol
+  level: 6 # IPPROTO_TCP
+  name: 5 # the TCP_KEEPINTVL parameter - The time (in seconds) between individual keepalive probes.
+  intValue: 20 # seconds
+  state: STATE_PREBIND
 - description: "keep-alive probes count" # TCP protocol
   level: 6 # IPPROTO_TCP
   name: 6 # the TCP_KEEPCNT parameter - The maximum number of keepalive probes TCP should send before dropping the connection
-  intValue: 8 # number of failed probes
-  state: STATE_LISTENING
+  intValue: 2 # number of failed probes
+  state: STATE_PREBIND
 ```
