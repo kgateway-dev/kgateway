@@ -1,2 +1,5 @@
-docs/v1/**	        linguist-generated=true
-docs/cli/glooctl*.md	linguist-generated=true
+docs/v1/**	             linguist-generated=true
+docs/cli/glooctl*.md     linguist-generated=true
+*.pb.*	                 linguist-generated=true
+*sk.md	                 linguist-generated=true
+*sk.go	                 linguist-generated=true
