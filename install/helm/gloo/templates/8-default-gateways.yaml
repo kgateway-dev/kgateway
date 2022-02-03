@@ -70,7 +70,7 @@ spec:
   bindPort: {{ $spec.podTemplate.httpsPort }}
 {{- if $gatewaySettings.customHttpsGateway }}
   httpGateway:
-{{ toYaml $gatewaySettings.customHttpsGateway | indent 6}}
+{{ toYaml $gatewaySettings.customHttpsGateway | indent 4}}
 {{- else if $spec.tracing }}
 {{- if $spec.tracing.provider }}
   httpGateway:
