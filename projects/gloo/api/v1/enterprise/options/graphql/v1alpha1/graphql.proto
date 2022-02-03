@@ -185,7 +185,7 @@ message Resolution {
   }
 
   // The stats prefix which will be used for this resolver.
-  // If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}-${RESOLVER_NAME}
+  // If empty, will generate a stats prefix ${RESOLVER_NAME}
   google.protobuf.StringValue stat_prefix = 3;
 }
 

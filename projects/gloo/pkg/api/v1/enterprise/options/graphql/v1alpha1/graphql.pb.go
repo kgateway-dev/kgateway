@@ -523,7 +523,7 @@ type Resolution struct {
 	//	*Resolution_GrpcResolver
 	Resolver isResolution_Resolver `protobuf_oneof:"resolver"`
 	// The stats prefix which will be used for this resolver.
-	// If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}-${RESOLVER_NAME}
+	// If empty, will generate a stats prefix ${RESOLVER_NAME}
 	StatPrefix *wrappers.StringValue `protobuf:"bytes,3,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
 }
 
