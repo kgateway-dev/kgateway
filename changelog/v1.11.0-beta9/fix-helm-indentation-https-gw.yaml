@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    description: Fix indentation for custom HTTPS Gateway settings
+    issueLink: https://github.com/solo-io/gloo/issues/5874
+    resolvesIssue: true
