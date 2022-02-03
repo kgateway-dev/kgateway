@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update admin UI for version 1.8.9 and later.
