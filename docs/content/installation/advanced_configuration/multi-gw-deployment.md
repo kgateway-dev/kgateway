@@ -5,7 +5,7 @@ description: Deploying more gateways and gateway-proxies
 ---
 Create multiple Envoy gateway proxies with Gloo Edge to segregate and customize traffic controls in an environment with multiple types of traffic, such as public internet and a private intranet.
 
-Note that beginning with version 1.10, Gloo Edge offers an alternative to deploying multiple gateways called [Hybrid Gateways]({{< versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/hybrid_gateway/" >}}). Hybrid gateways allow users to define multiple HTTP or TCP Gateways for a single Gateway with distinct matching criteria. It can achieve the benefits of multiple gateways with fewer moving parts and simpler configuration.
+Note that beginning with version 1.10, Gloo Edge offers an alternative to deploying multiple gateways called [Hybrid Gateways]({{< versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/hybrid_gateway/" >}}). Hybrid gateways allow users to define multiple HTTP or TCP Gateways for a single Gateway with distinct matching criteria. Hybrid gateways work best in situations where the matching criteria are based on client IP address or SSL config. If that condition is met, they they can achieve the benefits of multiple gateways with fewer moving parts and simpler configuration.
 
 ## Multiple gateway architecture and terminology
 
