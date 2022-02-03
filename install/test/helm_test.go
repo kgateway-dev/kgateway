@@ -537,7 +537,9 @@ var _ = Describe("Helm Test", func() {
 
 				It("Should have 'pre-install' and 'pre-upgrade' hook if gateway.certGenJob.runOnUpdate is true", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"gateway.certGenJob.runOnUpdate=true"},
+						valuesArgs: []string{
+							"global.glooMtls.enabled=true",
+							"gateway.certGenJob.runOnUpdate=true"},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -560,7 +562,9 @@ var _ = Describe("Helm Test", func() {
 
 				It("Should have only 'pre-install' hook if gateway.certGenJob.runOnUpdate is false", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"gateway.certGenJob.runOnUpdate=false"},
+						valuesArgs: []string{
+							"global.glooMtls.enabled=true",
+							"gateway.certGenJob.runOnUpdate=false"},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
