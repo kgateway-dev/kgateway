@@ -3546,7 +3546,7 @@ metadata:
 							VolumeSource: v1.VolumeSource{
 								Secret: &v1.SecretVolumeSource{
 									SecretName:  "gateway-validation-certs",
-									DefaultMode: proto.Int(420),
+									DefaultMode: proto.Int32(420),
 								},
 							},
 						}}
