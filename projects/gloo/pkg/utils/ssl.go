@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"crypto/tls"
+	"fmt"
+
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -30,6 +33,15 @@ var (
 
 	NotTlsSecretError = func(ref *core.ResourceRef) error {
 		return eris.Errorf("%v is not a TLS secret", ref)
+	}
+
+	InvalidTlsSecretError = func(ref *core.ResourceRef, err error) error {
+		if ref == nil {
+			return eris.Wrapf(err, "Invalid TLS secret")
+		} else {
+			errorString := fmt.Sprintf("%v is not a valid TLS secret", ref)
+			return eris.Wrapf(err, errorString)
+		}
 	}
 
 	NoCertificateFoundError = eris.New("no certificate information found")
@@ -256,6 +268,10 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		}
 	} else if sslSecrets := cs.GetSslFiles(); sslSecrets != nil {
 		certChain, privateKey, rootCa = sslSecrets.GetTlsCert(), sslSecrets.GetTlsKey(), sslSecrets.GetRootCa()
+		err := isValidSslKeyPair(certChain, privateKey)
+		if err != nil {
+			return nil, InvalidTlsSecretError(nil, err)
+		}
 	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
 		tlsContext, err := s.handleSds(sslSecrets, verifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
 		if err != nil {
@@ -344,7 +360,18 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 	certChain := sslSecret.Tls.GetCertChain()
 	privateKey := sslSecret.Tls.GetPrivateKey()
 	rootCa := sslSecret.Tls.GetRootCa()
+
+	err = isValidSslKeyPair(certChain, privateKey)
+	if err != nil {
+		return "", "", "", InvalidTlsSecretError(secret.GetMetadata().Ref(), err)
+	}
+
 	return certChain, privateKey, rootCa, nil
+}
+
+func isValidSslKeyPair(certChain, privateKey string) error {
+	_, err := tls.X509KeyPair([]byte(certChain), []byte(privateKey))
+	return err
 }
 
 func (s *sslConfigTranslator) ResolveSslParamsConfig(params *v1.SslParameters) (*envoyauth.TlsParameters, error) {
