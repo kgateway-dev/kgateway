@@ -127,6 +127,9 @@ spec:
                                           type: string
                                       type: object
                                   type: object
+                                statPrefix:
+                                  nullable: true
+                                  type: string
                               type: object
                             type: object
                         type: object
@@ -150,6 +153,9 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
                     type: object
                 type: object
+              statPrefix:
+                nullable: true
+                type: string
             type: object
           status:
             type: object

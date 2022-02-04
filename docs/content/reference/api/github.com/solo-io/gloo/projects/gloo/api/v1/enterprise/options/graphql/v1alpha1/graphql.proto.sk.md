@@ -177,6 +177,7 @@ If a field with the same name does not exist in the parent, null will be used.
 ```yaml
 "restResolver": .graphql.gloo.solo.io.RESTResolver
 "grpcResolver": .graphql.gloo.solo.io.GrpcResolver
+"statPrefix": .google.protobuf.StringValue
 
 ```
 
@@ -184,6 +185,7 @@ If a field with the same name does not exist in the parent, null will be used.
 | ----- | ---- | ----------- | 
 | `restResolver` | [.graphql.gloo.solo.io.RESTResolver](../graphql.proto.sk/#restresolver) |  Only one of `restResolver` or `grpcResolver` can be set. |
 | `grpcResolver` | [.graphql.gloo.solo.io.GrpcResolver](../graphql.proto.sk/#grpcresolver) |  Only one of `grpcResolver` or `restResolver` can be set. |
+| `statPrefix` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The stats prefix which will be used for this resolver. If empty, will generate a stats prefix ${RESOLVER_NAME}. |
 
 
 
@@ -204,6 +206,7 @@ configure the routes to point to these schema CRs.
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
 "metadata": .core.solo.io.Metadata
 "executableSchema": .graphql.gloo.solo.io.ExecutableSchema
+"statPrefix": .google.protobuf.StringValue
 
 ```
 
@@ -212,6 +215,7 @@ configure the routes to point to these schema CRs.
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `executableSchema` | [.graphql.gloo.solo.io.ExecutableSchema](../graphql.proto.sk/#executableschema) |  |
+| `statPrefix` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The stats prefix which will be used for this route config. If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}. |
 
 
 

@@ -317,6 +317,8 @@ message Resolution {
   QueryMatcher matcher = 1;
   // The resolver to use.
   .solo.io.envoy.config.core.v3.TypedExtensionConfig resolver = 2;
+  // The stats prefix which will be used for this resolver.
+  string stat_prefix = 3;
 }
 // Filter Listener config. Empty as the filter must be configured on the route
 // level.
@@ -347,6 +349,9 @@ message GraphQLRouteConfig {
   // Type.Field where the latter takes precedence.
   // ??consider  Type and Type.Field **MUST** be in the schema ??
   // missing resolvers will yield error in the response
+
+  // The stats prefix which will be used for this route config.
+  string stat_prefix = 5;
 }
 
 
