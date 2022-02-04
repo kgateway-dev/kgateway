@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5651
+    description: >
+      No longer add filter chains if they are not used.
+      Old behavior can be reinstated via setting settings.Gloo.addUnusedFilters 
+      to true. (it defaults to false). 
+
