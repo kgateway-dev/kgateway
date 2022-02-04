@@ -57,4 +57,4 @@ spec:
 {{- if .Values.gateway.certGenJob -}}
 {{- $kubeResourceOverride = .Values.gateway.certGenJob.mtlsKubeResourceOverride -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $kubeResourceOverride "glooMtls.certGenJobSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "glooMtls.certGenCronJobSpec") -}}
