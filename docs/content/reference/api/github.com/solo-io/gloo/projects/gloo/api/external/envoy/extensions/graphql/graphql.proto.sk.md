@@ -499,6 +499,7 @@ exist in the parent, null will be used.
 ```yaml
 "matcher": .envoy.config.filter.http.graphql.v2.QueryMatcher
 "resolver": .solo.io.envoy.config.core.v3.TypedExtensionConfig
+"statPrefix": string
 
 ```
 
@@ -506,6 +507,7 @@ exist in the parent, null will be used.
 | ----- | ---- | ----------- | 
 | `matcher` | [.envoy.config.filter.http.graphql.v2.QueryMatcher](../graphql.proto.sk/#querymatcher) | Match an object type and field. |
 | `resolver` | [.solo.io.envoy.config.core.v3.TypedExtensionConfig](../../../config/core/v3/extension.proto.sk/#typedextensionconfig) | The resolver to use. |
+| `statPrefix` | `string` | The stats prefix which will be used for this resolver. |
 
 
 
@@ -540,6 +542,7 @@ terminate the request for these routes.
 "enableIntrospection": bool
 "resolutions": []envoy.config.filter.http.graphql.v2.Resolution
 "executableSchema": .envoy.config.filter.http.graphql.v2.ExecutableSchema
+"statPrefix": string
 
 ```
 
@@ -549,6 +552,7 @@ terminate the request for these routes.
 | `enableIntrospection` | `bool` | Deprecated. will be removed when gloo 1.10 is released. |
 | `resolutions` | [[]envoy.config.filter.http.graphql.v2.Resolution](../graphql.proto.sk/#resolution) | Deprecated. will be removed when gloo 1.10 is released. |
 | `executableSchema` | [.envoy.config.filter.http.graphql.v2.ExecutableSchema](../graphql.proto.sk/#executableschema) |  |
+| `statPrefix` | `string` | The stats prefix which will be used for this route config. |
 
 
 
