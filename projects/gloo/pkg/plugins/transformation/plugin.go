@@ -66,7 +66,7 @@ func (p *Plugin) Name() string {
 
 func (p *Plugin) Init(params plugins.InitParams) error {
 	p.RequireEarlyTransformation = false
-	p.filterNeeded = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
+	p.filterNeeded = !params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
 	return nil
