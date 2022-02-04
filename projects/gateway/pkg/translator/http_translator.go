@@ -22,6 +22,10 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 )
 
+var _ ListenerTranslator = new(HttpTranslator)
+
+const HttpTranslatorName = "http"
+
 var (
 	NoVirtualHostErr = func(vs *v1.VirtualService) error {
 		return errors.Errorf("virtual service [%s] does not specify a virtual host", vs.GetMetadata().Ref().Key())
@@ -80,25 +84,29 @@ type HttpTranslator struct {
 	WarnOnRouteShortCircuiting bool
 }
 
-func (t *HttpTranslator) GenerateListeners(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
-	if len(snap.VirtualServices) == 0 {
-		snapHash := hashutils.MustHash(snap)
-		contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snapHash)
+func (t *HttpTranslator) Name() string {
+	return HttpTranslatorName
+}
+
+func (t *HttpTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway, reports reporter.ResourceReports) *gloov1.Listener {
+	httpGateway := gateway.GetHttpGateway()
+	if httpGateway == nil {
 		return nil
 	}
-	var result []*gloov1.Listener
-	for _, gateway := range filteredGateways {
-		if gateway.GetHttpGateway() == nil {
-			continue
-		}
 
-		virtualServices := getVirtualServicesForHttpGateway(gateway.GetHttpGateway(), gateway, snap.VirtualServices, reports, gateway.GetSsl())
-		applyGlobalVirtualServiceSettings(ctx, virtualServices)
-		validateVirtualServiceDomains(gateway, virtualServices, reports)
-		listener := t.desiredListenerForHttp(gateway, proxyName, virtualServices, snap, reports)
-		result = append(result, listener)
+	snap := params.snapshot
+	if len(snap.VirtualServices) == 0 {
+		snapHash := hashutils.MustHash(snap)
+		contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services", snapHash)
+		return nil
 	}
-	return result
+
+	virtualServices := getVirtualServicesForHttpGateway(gateway.GetHttpGateway(), gateway, snap.VirtualServices, reports, gateway.GetSsl())
+	applyGlobalVirtualServiceSettings(params.ctx, virtualServices)
+	validateVirtualServiceDomains(gateway, virtualServices, reports)
+	listener := t.desiredListenerForHttp(gateway, proxyName, virtualServices, snap, reports)
+
+	return listener
 }
 
 func applyGlobalVirtualServiceSettings(ctx context.Context, virtualServices v1.VirtualServiceList) {

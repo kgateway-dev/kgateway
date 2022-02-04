@@ -43,7 +43,7 @@ var _ = Describe("Translator", func() {
 
 	Context("translator", func() {
 		BeforeEach(func() {
-			translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}, &HybridTranslator{&HttpTranslator{}}}, Opts{})
+			translator = NewDefaultTranslator(Opts{})
 			snap = &v1.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
@@ -253,7 +253,7 @@ var _ = Describe("Translator", func() {
 
 		Context("when the gateway CRDs don't clash", func() {
 			BeforeEach(func() {
-				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}, &HybridTranslator{HttpTranslator: &HttpTranslator{}}}, Opts{
+				translator = NewDefaultTranslator(Opts{
 					ReadGatewaysFromAllNamespaces: true,
 				})
 				snap = &v1.ApiSnapshot{
@@ -334,13 +334,8 @@ var _ = Describe("Translator", func() {
 
 		Context("all-in-one virtual service", func() {
 
-			var (
-				factory *HttpTranslator
-			)
-
 			BeforeEach(func() {
-				factory = &HttpTranslator{}
-				translator = NewTranslator([]ListenerFactory{factory}, Opts{})
+				translator = NewTranslator([]ListenerTranslator{&HttpTranslator{}}, Opts{})
 				snap = &v1.ApiSnapshot{
 					Gateways: v1.GatewayList{
 						{
@@ -820,7 +815,11 @@ var _ = Describe("Translator", func() {
 			Context("validate matcher short-circuiting warnings", func() {
 
 				BeforeEach(func() {
-					translator = NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: true}, &TcpTranslator{}, &HybridTranslator{HttpTranslator: &HttpTranslator{WarnOnRouteShortCircuiting: true}}}, Opts{})
+					translator = NewDefaultTranslator(Opts{
+						Validation: &ValidationOpts{
+							WarnOnRouteShortCircuiting: true,
+						},
+					})
 				})
 
 				DescribeTable("warns on route short-circuiting", func(earlyMatcher, lateMatcher *matchers.Matcher, expectedErr error) {
@@ -985,7 +984,7 @@ var _ = Describe("Translator", func() {
 				mergedLeafLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &wrappers.StringValue{Value: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
 
 				BeforeEach(func() {
-					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}}, Opts{})
+					translator = NewTranslator([]ListenerTranslator{&HttpTranslator{}}, Opts{})
 					snap = &v1.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
@@ -1350,7 +1349,7 @@ var _ = Describe("Translator", func() {
 
 			Context("delegation cycle", func() {
 				BeforeEach(func() {
-					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}}, Opts{})
+					translator = NewTranslator([]ListenerTranslator{&HttpTranslator{}}, Opts{})
 					snap = &v1.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
@@ -1439,7 +1438,7 @@ var _ = Describe("Translator", func() {
 
 		Context("generating unique route names", func() {
 			BeforeEach(func() {
-				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}}, Opts{})
+				translator = NewTranslator([]ListenerTranslator{&HttpTranslator{}}, Opts{})
 			})
 
 			It("should generate unique names for multiple gateways", func() {
@@ -1758,14 +1757,12 @@ var _ = Describe("Translator", func() {
 
 	Context("tcp", func() {
 		var (
-			factory            *TcpTranslator
 			idleTimeout        *duration.Duration
 			tcpListenerOptions *gloov1.TcpListenerOptions
 			tcpHost            *gloov1.TcpHost
 		)
 		BeforeEach(func() {
-			factory = &TcpTranslator{}
-			translator = NewTranslator([]ListenerFactory{factory}, Opts{})
+			translator = NewTranslator([]ListenerTranslator{&TcpTranslator{}}, Opts{})
 
 			idleTimeout = prototime.DurationToProto(5 * time.Second)
 			tcpListenerOptions = &gloov1.TcpListenerOptions{
@@ -1816,17 +1813,16 @@ var _ = Describe("Translator", func() {
 	})
 
 	Context("hybrid", func() {
-		var (
-			factory *HybridTranslator
 
+		var (
 			idleTimeout        *duration.Duration
 			tcpListenerOptions *gloov1.TcpListenerOptions
 			tcpHost            *gloov1.TcpHost
 		)
 
 		BeforeEach(func() {
-			factory = &HybridTranslator{HttpTranslator: &HttpTranslator{}}
-			translator = NewTranslator([]ListenerFactory{factory}, Opts{})
+			hybridTranslator := &HybridTranslator{HttpTranslator: &HttpTranslator{}}
+			translator = NewTranslator([]ListenerTranslator{hybridTranslator}, Opts{})
 
 			idleTimeout = prototime.DurationToProto(5 * time.Second)
 			tcpListenerOptions = &gloov1.TcpListenerOptions{
