@@ -582,6 +582,16 @@ func (m *GlooOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAddUnusedFilters()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAddUnusedFilters()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAddUnusedFilters(), target.GetAddUnusedFilters()) {
+			return false
+		}
+	}
+
 	return true
 }
 

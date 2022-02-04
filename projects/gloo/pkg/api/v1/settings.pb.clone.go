@@ -387,6 +387,12 @@ func (m *GlooOptions) Clone() proto.Message {
 		target.FailoverUpstreamDnsPollingInterval = proto.Clone(m.GetFailoverUpstreamDnsPollingInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
+	if h, ok := interface{}(m.GetAddUnusedFilters()).(clone.Cloner); ok {
+		target.AddUnusedFilters = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.AddUnusedFilters = proto.Clone(m.GetAddUnusedFilters()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

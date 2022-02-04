@@ -51,6 +51,7 @@ type TranslateTransformationFn func(*transformation.Transformation) (*envoytrans
 // methods were exported
 type Plugin struct {
 	RequireEarlyTransformation bool
+	filterNeeded               bool
 	TranslateTransformation    TranslateTransformationFn
 	settings                   *v1.Settings
 }
@@ -65,6 +66,7 @@ func (p *Plugin) Name() string {
 
 func (p *Plugin) Init(params plugins.InitParams) error {
 	p.RequireEarlyTransformation = false
+	p.filterNeeded = false
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
 	return nil
@@ -91,6 +93,8 @@ func (p *Plugin) ProcessVirtualHost(
 		return err
 	}
 
+	p.filterNeeded = true
+
 	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
@@ -111,6 +115,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return err
 	}
 
+	p.filterNeeded = true
 	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyTransformation)
 }
 
@@ -135,25 +140,31 @@ func (p *Plugin) ProcessWeightedDestination(
 	if err != nil {
 		return err
 	}
-
+	p.filterNeeded = true
 	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	earlyStageConfig := &envoytransformation.FilterTransformations{
-		Stage: EarlyStageNumber,
-	}
-	earlyFilter, err := plugins.NewStagedFilterWithConfig(FilterName, earlyStageConfig, earlyPluginStage)
-	if err != nil {
-		return nil, err
-	}
 	var filters []plugins.StagedHttpFilter
+
+	if !p.filterNeeded {
+		return filters, nil
+	}
+
 	if p.RequireEarlyTransformation {
 		// only add early transformations if we have to, to allow rolling gloo updates;
 		// i.e. an older envoy without stages connects to gloo, it shouldn't have 2 filters.
+		earlyStageConfig := &envoytransformation.FilterTransformations{
+			Stage: EarlyStageNumber,
+		}
+		earlyFilter, err := plugins.NewStagedFilterWithConfig(FilterName, earlyStageConfig, earlyPluginStage)
+		if err != nil {
+			return nil, err
+		}
 		filters = append(filters, earlyFilter)
 	}
 	filters = append(filters, plugins.NewStagedFilter(FilterName, pluginStage))
+
 	return filters, nil
 }
 

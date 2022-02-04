@@ -255,6 +255,9 @@ spec:
                 type: object
               gloo:
                 properties:
+                  addUnusedFilters:
+                    nullable: true
+                    type: boolean
                   awsOptions:
                     properties:
                       enableCredentialsDiscovey:
