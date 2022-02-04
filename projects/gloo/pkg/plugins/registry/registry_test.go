@@ -70,7 +70,7 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 			potentiallyNonConformingFilters := []plugins.StagedHttpFilter{}
 			for _, p := range plugs {
 				// Many plugins require safety via an init which is outside of the creation step
-				p.Init(plugins.InitParams{Ctx: ctx, Settings: &gloov1.Settings{Gloo: &gloov1.GlooOptions{AddUnusedFilters: &wrapperspb.BoolValue{Value: true}}}})
+				p.Init(plugins.InitParams{Ctx: ctx, Settings: &gloov1.Settings{Gloo: &gloov1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: true}}}})
 				httpPlug, ok := p.(plugins.HttpFilterPlugin)
 				if !ok {
 					continue
@@ -98,9 +98,10 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 		})
 		t.Run("Http Filters with override value", func(t *testing.T) {
 			plugs := pluginRegistry.GetPlugins()
+			filterCount := 0
 			for _, p := range plugs {
 				// Many plugins require safety via an init which is outside of the creation step
-				p.Init(plugins.InitParams{Ctx: ctx, Settings: &gloov1.Settings{Gloo: &gloov1.GlooOptions{AddUnusedFilters: &wrapperspb.BoolValue{Value: true}}}})
+				p.Init(plugins.InitParams{Ctx: ctx, Settings: &gloov1.Settings{Gloo: &gloov1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
 				httpPlug, ok := p.(plugins.HttpFilterPlugin)
 				if !ok {
 					continue
@@ -109,11 +110,11 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 				if err != nil {
 					t.Fatalf("plugin http filter failed %v", err)
 				}
-				if len(filters) > len(knownBaseFilters) {
-					t.Fatalf("reinstating to old behavior for unused filters failed with %v", len(filters))
-				}
+				filterCount += len(filters)
 			}
-
+			if len(knownBaseFilters) >= filterCount {
+				t.Fatalf("reinstating to old behavior for unused filters failed with to have more filters than %d", filterCount)
+			}
 		})
 
 	})

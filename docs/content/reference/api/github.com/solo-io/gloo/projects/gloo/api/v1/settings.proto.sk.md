@@ -545,7 +545,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "restXdsBindAddr": string
 "enableRestEds": .google.protobuf.BoolValue
 "failoverUpstreamDnsPollingInterval": .google.protobuf.Duration
-"addUnusedFilters": .google.protobuf.BoolValue
+"removeUnusedFilters": .google.protobuf.BoolValue
 
 ```
 
@@ -564,7 +564,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `restXdsBindAddr` | `string` | Where the `gloo` REST xDS server should bind. Defaults to `0.0.0.0:9976`. |
 | `enableRestEds` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether or not to use rest xds for all EDS by default. Rest XDS, as opposed to grpc, uses http polling rather than streaming. |
 | `failoverUpstreamDnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server if upstream failover is configured. If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 10s. |
-| `addUnusedFilters` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Most plugins will not be addded to envoy filter chains unless this setting is true Defaults to false. |
+| `removeUnusedFilters` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Most plugins will not be addded to envoy filter chains unless this setting is true Defaults to false. |
 
 
 

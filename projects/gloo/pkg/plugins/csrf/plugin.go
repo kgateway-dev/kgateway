@@ -46,7 +46,7 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
-	p.filterNeeded = false
+	p.filterNeeded = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
 	return nil
 }
 

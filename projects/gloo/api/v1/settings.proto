@@ -537,7 +537,7 @@ message GlooOptions {
 
     // Most plugins will not be addded to envoy filter chains unless this setting is true
     // Defaults to false
-    google.protobuf.BoolValue add_unused_filters = 14;
+    google.protobuf.BoolValue remove_unused_filters = 14;
 }
 
 

@@ -255,9 +255,6 @@ spec:
                 type: object
               gloo:
                 properties:
-                  addUnusedFilters:
-                    nullable: true
-                    type: boolean
                   awsOptions:
                     properties:
                       enableCredentialsDiscovey:
@@ -325,6 +322,9 @@ spec:
                     minimum: 0
                     nullable: true
                     type: integer
+                  removeUnusedFilters:
+                    nullable: true
+                    type: boolean
                   restXdsBindAddr:
                     type: string
                   validationBindAddr:
