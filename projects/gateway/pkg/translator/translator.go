@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/solo-io/gloo/pkg/utils"
-
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -71,7 +69,7 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	}
 
 	params := NewTranslatorParams(ctx, snap)
-	validateGateways(filteredGateways, params.virtualServiceStore, reports)
+	validateGateways(filteredGateways, snap.VirtualServices, reports)
 
 	listeners := make([]*gloov1.Listener, 0, len(filteredGateways))
 	for _, gateway := range filteredGateways {
@@ -132,7 +130,7 @@ func ListenerName(gateway *v1.Gateway) string {
 	return fmt.Sprintf("listener-%s-%d", gateway.GetBindAddress(), gateway.GetBindPort())
 }
 
-func validateGateways(gateways v1.GatewayList, virtualServiceStore utils.ResourceStore, reports reporter.ResourceReports) {
+func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
 	bindAddresses := map[string]v1.GatewayList{}
 	// if two gateway (=listener) that belong to the same proxy share the same bind address,
 	// they are invalid.
@@ -153,7 +151,7 @@ func validateGateways(gateways v1.GatewayList, virtualServiceStore utils.Resourc
 		}
 
 		for _, vs := range gatewayVirtualServices {
-			if !virtualServiceStore.Has(vs.Strings()) {
+			if _, err := virtualServices.Find(vs.Strings()); err != nil {
 				reports.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
 			}
 		}
