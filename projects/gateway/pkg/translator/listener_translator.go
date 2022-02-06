@@ -22,7 +22,7 @@ type Params struct {
 
 func NewTranslatorParams(ctx context.Context, snapshot *v1.ApiSnapshot) Params {
 	return Params{
-		ctx:  ctx,
+		ctx:      ctx,
 		snapshot: snapshot,
 	}
 }
