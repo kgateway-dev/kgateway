@@ -1,6 +1,7 @@
 package translator_test
 
 import (
+	"context"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -18,10 +19,12 @@ import (
 var _ = Describe("Tcp Translator", func() {
 
 	var (
+		params     Params
 		translator *TcpTranslator
 	)
 
 	BeforeEach(func() {
+		params = NewTranslatorParams(context.TODO(), &v1.ApiSnapshot{})
 		translator = &TcpTranslator{}
 	})
 
@@ -57,11 +60,11 @@ var _ = Describe("Tcp Translator", func() {
 				BindPort: 2,
 			}
 
-			listener := translator.ComputeListener(Params{}, defaults.GatewayProxyName, gw, nil)
+			listener := translator.ComputeListener(params, defaults.GatewayProxyName, gw, nil)
 			Expect(listener).NotTo(BeNil())
 
 			tcpListener := listener.ListenerType.(*gloov1.Listener_TcpListener).TcpListener
-            Expect(tcpListener.Options).To(Equal(tcpListenerOptions))
+			Expect(tcpListener.Options).To(Equal(tcpListenerOptions))
 			Expect(tcpListener.TcpHosts).To(HaveLen(1))
 			Expect(tcpListener.TcpHosts[0]).To(Equal(tcpHost))
 		})
@@ -77,7 +80,7 @@ var _ = Describe("Tcp Translator", func() {
 				BindPort:    2,
 			}
 
-			listener := translator.ComputeListener(Params{}, defaults.GatewayProxyName, gw, nil)
+			listener := translator.ComputeListener(params, defaults.GatewayProxyName, gw, nil)
 			Expect(listener).To(BeNil())
 		})
 
