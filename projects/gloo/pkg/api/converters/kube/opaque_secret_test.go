@@ -77,7 +77,7 @@ var _ = Describe("Opaque Secret Converter", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "foo",
 					Namespace:   "bar",
-					Annotations: map[string]string{"resource_kind": "*v1.Secret"},
+					Annotations: map[string]string{kubeconverters.GlooKindAnnotationKey: "*v1.Secret"},
 				},
 				Data: map[string][]byte{
 					"tls": []byte(tlsValue),
@@ -90,7 +90,7 @@ var _ = Describe("Opaque Secret Converter", func() {
 				Metadata: &core.Metadata{
 					Name:        "foo",
 					Namespace:   "bar",
-					Annotations: map[string]string{"resource_kind": "*v1.Secret"},
+					Annotations: map[string]string{kubeconverters.GlooKindAnnotationKey: "*v1.Secret"},
 				},
 				Kind: &v1.Secret_Tls{
 					Tls: &v1.TlsSecret{
@@ -107,7 +107,7 @@ var _ = Describe("Opaque Secret Converter", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "foo",
 					Namespace:   "bar",
-					Annotations: map[string]string{"resource_kind": "*v1.Secret"},
+					Annotations: map[string]string{kubeconverters.GlooKindAnnotationKey: "*v1.Secret"},
 				},
 				Data: map[string][]byte{
 					"tls": []byte("just some stuff"),
