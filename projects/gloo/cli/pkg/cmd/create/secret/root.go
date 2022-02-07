@@ -18,8 +18,8 @@ func CreateCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobr
 		Aliases: constants.SECRET_COMMAND.Aliases,
 		Short:   "Create a secret",
 		Long: "Create a secret. " +
-			"Note that for TLS, OAuth and ApiKey secrets, glooctl adds the annotation `resource_kind: '*v1.Secret'` " +
-			"so that Gloo can find the secret.",
+			"Note that for certain secrets for which we don't have custom converters, glooctl adds the annotation " +
+			"`resource_kind: '*v1.Secret'` so that Gloo can find the secret.",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
