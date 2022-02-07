@@ -268,6 +268,9 @@ spec:
     roleArn: $SECONDARY_AWS_ROLE_ARN
 EOF
 ```
+If you want to assume this role via the webtoken rather than in a chained form you may set
+envoy.reloadable_features.aws_lambda.sts_chaining to 0.
+
 
 Now we can go ahead and try our route again! Everything should just work, notice that the request may take as long as 
 the initial request since the credentials for this ARN have not been cached yet.

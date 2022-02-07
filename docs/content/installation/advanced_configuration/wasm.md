@@ -76,9 +76,9 @@ and change the `httpGateway` object to the following:
         - config:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: "world"
-          image: webassemblyhub.io/sodman/example-filter:v0.5
+          image: webassemblyhub.io/sodman/example-filter:v0.6
           name: myfilter
-          root_id: add_header_root_id
+          rootId: add_header_root_id
 ```
 
 Once that is saved, the hard work has been done. All traffic on the http gateway will call the wasm filter.
@@ -95,7 +95,7 @@ If your image isn't hosted on an image registry, such as [WebAssembly Hub](https
             value: "world"
           filePath: filters-dir/my-filter.wasm
           name: myfilter
-          root_id: add_header_root_id
+          rootId: add_header_root_id
 ```
 
 When loading directly from file, you'll need to ensure that the given `filePath` contains your `.wasm` file. 

@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -65,9 +66,9 @@ func SimpleSecret() *v1.Secret {
 		},
 		Kind: &v1.Secret_Tls{
 			Tls: &v1.TlsSecret{
-				CertChain:  "cert-chain",
-				PrivateKey: "private-key",
-				RootCa:     "root-ca",
+				CertChain:  gloohelpers.Certificate(),
+				PrivateKey: gloohelpers.PrivateKey(),
+				RootCa:     gloohelpers.Certificate(),
 			},
 		},
 	}
