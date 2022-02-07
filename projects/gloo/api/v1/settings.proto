@@ -535,7 +535,9 @@ message GlooOptions {
     // Defaults to 10s.
     google.protobuf.Duration failover_upstream_dns_polling_interval = 13;
 
-    // Most plugins will not be addded to envoy filter chains unless this setting is true
+    // By default gloo adds a series of filters to envoy to ensure that new routes are picked up
+    // Even if the listener previously did not have a filter on the chain previously.
+    // When set to true unused filters are not added to the chain by default.
     // Defaults to false
     google.protobuf.BoolValue remove_unused_filters = 14;
 }

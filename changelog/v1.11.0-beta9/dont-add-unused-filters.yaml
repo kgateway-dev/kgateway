@@ -2,7 +2,7 @@ changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/5651
     description: >
-      No longer add filter chains if they are not used.
-      Old behavior can be reinstated via setting settings.Gloo.removeunusedfilters 
-      to true. (it defaults to false). 
+      Add new option settings.Gloo.removeunusedfilters 
+      When set to true do not add filters to hcm filter_chain in envoy
+      if they have nothing relying on them.
 
