@@ -626,7 +626,9 @@ type GlooOptions struct {
 	// hostname with the configured frequency to update endpoints with any changes to DNS resolution.
 	// Defaults to 10s.
 	FailoverUpstreamDnsPollingInterval *duration.Duration `protobuf:"bytes,13,opt,name=failover_upstream_dns_polling_interval,json=failoverUpstreamDnsPollingInterval,proto3" json:"failover_upstream_dns_polling_interval,omitempty"`
-	// Most plugins will not be addded to envoy filter chains unless this setting is true
+	// By default gloo adds a series of filters to envoy to ensure that new routes are picked up
+	// Even if the listener previously did not have a filter on the chain previously.
+	// When set to true unused filters are not added to the chain by default.
 	// Defaults to false
 	RemoveUnusedFilters *wrappers.BoolValue `protobuf:"bytes,14,opt,name=remove_unused_filters,json=removeUnusedFilters,proto3" json:"remove_unused_filters,omitempty"`
 }
