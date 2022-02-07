@@ -233,6 +233,7 @@ Some traffic policies can be configured to work both on the listener and virtual
 "matcher": .gloo.solo.io.Matcher
 "httpListener": .gloo.solo.io.HttpListener
 "tcpListener": .gloo.solo.io.TcpListener
+"sslConfigurations": []gloo.solo.io.SslConfig
 
 ```
 
@@ -241,6 +242,7 @@ Some traffic policies can be configured to work both on the listener and virtual
 | `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk/#matcher) | Matchers are used to define unique matching criteria for each MatchedListener Each MatchedListener within a HybridListener must have a unique Matcher If multiple matchers in a HybridListener are identical, the HybridListener will not be accepted Empty Matchers are effectively catch-alls, and there can be no more than one empty Matcher per HybridListener. |
 | `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk/#httplistener) |  Only one of `httpListener` or `tcpListener` can be set. |
 | `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) |  Only one of `tcpListener` or `httpListener` can be set. |
+| `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) | SSL Config is optional for the MatchedListener. If provided, the listener will serve TLS for connections. Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config. |
 
 
 

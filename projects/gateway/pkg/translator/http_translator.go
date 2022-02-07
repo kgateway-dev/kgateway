@@ -111,7 +111,7 @@ func (t *HttpTranslator) ComputeListener(params Params, proxyName string, gatewa
 
 	if sslGateway {
 		virtualServices.Each(func(vs *v1.VirtualService) {
-			listener.SslConfigurations = append(listener.SslConfigurations, vs.GetSslConfig())
+			listener.SslConfigurations = append(listener.GetSslConfigurations(), vs.GetSslConfig())
 		})
 	}
 

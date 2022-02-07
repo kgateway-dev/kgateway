@@ -310,28 +310,24 @@ func (m *HybridGateway) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	for _, v := range m.GetDelegatedHttpGateways() {
-
-		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
+	if h, ok := interface{}(m.GetDelegatedHttpGateways()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("DelegatedHttpGateways")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetDelegatedHttpGateways(), nil); err != nil {
+			return 0, err
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if _, err = hasher.Write([]byte("DelegatedHttpGateways")); err != nil {
 				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
 			}
 		}
-
 	}
 
 	return hasher.Sum64(), nil

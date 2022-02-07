@@ -187,6 +187,10 @@ message MatchedListener {
         HttpListener http_listener = 2;
         TcpListener tcp_listener = 3;
     }
+
+    // SSL Config is optional for the MatchedListener. If provided, the listener will serve TLS for connections.
+    // Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config
+    repeated SslConfig ssl_configurations = 4;
 }
 
 message Matcher {

@@ -97,7 +97,7 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 func (t *translator) getListenerTranslatorForGateway(gateway *v1.Gateway) ListenerTranslator {
 	var listenerTranslatorImpl ListenerTranslator
 
-	switch gateway.GatewayType.(type) {
+	switch gateway.GetGatewayType().(type) {
 	case *v1.Gateway_HttpGateway:
 		listenerTranslatorImpl = t.listenerTranslators[HttpTranslatorName]
 
