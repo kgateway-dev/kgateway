@@ -140,9 +140,9 @@ var _ = Describe("Http Translator", func() {
 		})
 
 		It("should translate an empty gateway to have all virtual services", func() {
-			params := NewTranslatorParams(ctx, snap)
+			params := NewTranslatorParams(ctx, snap, reports)
 
-			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 			Expect(listener).NotTo(BeNil())
 
 			httpListener := listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -152,9 +152,9 @@ var _ = Describe("Http Translator", func() {
 		It("omitting matchers should default to '/' prefix matcher", func() {
 			snap.VirtualServices[0].VirtualHost.Routes[0].Matchers = nil
 			snap.VirtualServices[1].VirtualHost.Routes[0].Matchers = []*matchers.Matcher{}
-			params := NewTranslatorParams(ctx, snap)
+			params := NewTranslatorParams(ctx, snap, reports)
 
-			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 			Expect(listener).NotTo(BeNil())
 
 			httpListener := listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -166,9 +166,9 @@ var _ = Describe("Http Translator", func() {
 		})
 
 		It("should have no ssl config", func() {
-			params := NewTranslatorParams(ctx, snap)
+			params := NewTranslatorParams(ctx, snap, reports)
 
-			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 			Expect(listener).NotTo(BeNil())
 			Expect(listener.SslConfigurations).To(BeEmpty())
 		})
@@ -181,9 +181,9 @@ var _ = Describe("Http Translator", func() {
 						VirtualServices: []*core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
 					},
 				}
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -197,9 +197,9 @@ var _ = Describe("Http Translator", func() {
 						VirtualServices: []*core.ResourceRef{snap.VirtualServices[2].Metadata.Ref()},
 					},
 				}
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -217,9 +217,9 @@ var _ = Describe("Http Translator", func() {
 						VirtualServiceSelector: labelSet,
 					},
 				}
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -269,9 +269,9 @@ var _ = Describe("Http Translator", func() {
 						},
 					},
 				}
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -288,9 +288,9 @@ var _ = Describe("Http Translator", func() {
 						VirtualServiceSelector: labelSet,
 					},
 				}
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -305,9 +305,9 @@ var _ = Describe("Http Translator", func() {
 						VirtualServiceNamespaces: []string{"gloo-system"},
 					},
 				}
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -345,9 +345,9 @@ var _ = Describe("Http Translator", func() {
 					},
 					VirtualHost: &v1.VirtualHost{},
 				})
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -385,9 +385,9 @@ var _ = Describe("Http Translator", func() {
 					},
 					VirtualHost: &v1.VirtualHost{},
 				})
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -421,9 +421,9 @@ var _ = Describe("Http Translator", func() {
 					},
 					VirtualHost: &v1.VirtualHost{},
 				})
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -439,9 +439,9 @@ var _ = Describe("Http Translator", func() {
 
 		It("should not have vhosts with ssl", func() {
 			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
-			params := NewTranslatorParams(ctx, snap)
+			params := NewTranslatorParams(ctx, snap, reports)
 
-			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 			Expect(listener).NotTo(BeNil())
 			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -461,9 +461,9 @@ var _ = Describe("Http Translator", func() {
 		It("should not have vhosts without ssl", func() {
 			snap.Gateways[0].Ssl = true
 			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
-			params := NewTranslatorParams(ctx, snap)
+			params := NewTranslatorParams(ctx, snap, reports)
 
-			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 			Expect(listener).NotTo(BeNil())
 			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -479,9 +479,9 @@ var _ = Describe("Http Translator", func() {
 			})
 
 			It("should error when 2 virtual services linked to the same gateway have overlapping domains", func() {
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				errs := reports.ValidateStrict()
 				Expect(errs).To(HaveOccurred())
@@ -501,9 +501,9 @@ var _ = Describe("Http Translator", func() {
 			It("should error when 2 virtual services linked to the same gateway have empty domains", func() {
 				snap.VirtualServices[1].VirtualHost.Domains = nil
 				snap.VirtualServices[0].VirtualHost.Domains = nil
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				errs := reports.ValidateStrict()
 
 				multiErr, ok := errs.(*multierror.Error)
@@ -520,9 +520,9 @@ var _ = Describe("Http Translator", func() {
 
 			It("should warn when a virtual service does not specify a virtual host", func() {
 				snap.VirtualServices[0].VirtualHost = nil
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(reports.Validate()).NotTo(HaveOccurred())
 
 				errs := reports.ValidateStrict()
@@ -532,9 +532,9 @@ var _ = Describe("Http Translator", func() {
 
 			It("should error when a virtual service has invalid regex", func() {
 				snap.VirtualServices[0].VirtualHost.Routes[0].Matchers[0] = &matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "["}}
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(reports.Validate()).To(HaveOccurred())
 
 				errs := reports.ValidateStrict()
@@ -579,9 +579,9 @@ var _ = Describe("Http Translator", func() {
 				}
 
 				snap.VirtualServices = v1.VirtualServiceList{vs}
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				errs := reports.ValidateStrict()
 				if expectedErr == nil {
 					Expect(errs).ToNot(HaveOccurred())
@@ -937,9 +937,9 @@ var _ = Describe("Http Translator", func() {
 			})
 
 			It("merges the vs and route tables to a single gloov1.VirtualHost", func() {
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, "proxy1", snap.Gateways[0], reports)
+				listener := translator.ComputeListener(params, "proxy1", snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 				Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -1161,9 +1161,9 @@ var _ = Describe("Http Translator", func() {
 			})
 
 			It("detects cycle and returns error", func() {
-				params := NewTranslatorParams(ctx, snap)
+				params := NewTranslatorParams(ctx, snap, reports)
 
-				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0], reports)
+				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				err := reports.ValidateStrict()
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("cycle detected"))
@@ -1225,9 +1225,9 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
-			params := NewTranslatorParams(ctx, snap)
+			params := NewTranslatorParams(ctx, snap, reports)
 
-			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0], reports)
+			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
 			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
 			httpListener := listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -1235,7 +1235,7 @@ var _ = Describe("Http Translator", func() {
 			Expect(httpListener.VirtualHosts[0].Routes).To(HaveLen(1))
 			Expect(httpListener.VirtualHosts[0].Routes[0].Name).To(Equal("vs:gw1_proxy123_gloo-system_vs1_route:route1"))
 
-			listener = translator.ComputeListener(params, "proxy123", snap.Gateways[1], reports)
+			listener = translator.ComputeListener(params, "proxy123", snap.Gateways[1])
 			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
 			httpListener = listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -1287,9 +1287,9 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
-			params := NewTranslatorParams(ctx, snap)
+			params := NewTranslatorParams(ctx, snap, reports)
 
-			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0], reports)
+			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
 			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
 			httpListener := listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -1297,7 +1297,7 @@ var _ = Describe("Http Translator", func() {
 			Expect(httpListener.VirtualHosts[0].Routes).To(HaveLen(1))
 			Expect(httpListener.VirtualHosts[0].Routes[0].Name).To(Equal("vs:gw1_proxy123_gloo-system_vs1_route:route1"))
 
-			listener = translator.ComputeListener(params, "proxy456", snap.Gateways[0], reports)
+			listener = translator.ComputeListener(params, "proxy456", snap.Gateways[0])
 			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
 			httpListener = listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -1379,9 +1379,9 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
-			params := NewTranslatorParams(ctx, snap)
+			params := NewTranslatorParams(ctx, snap, reports)
 
-			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0], reports)
+			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
 			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
 			httpListener := listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -1483,9 +1483,9 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
-			params := NewTranslatorParams(ctx, snap)
+			params := NewTranslatorParams(ctx, snap, reports)
 
-			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0], reports)
+			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
 			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
 			httpListener := listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener

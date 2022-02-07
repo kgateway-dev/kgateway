@@ -48,6 +48,7 @@ func NewDefaultTranslator(opts Opts) *translator {
 	tcpTranslator := &TcpTranslator{}
 	hybridTranslator := &HybridTranslator{
 		HttpTranslator: httpTranslator,
+		TcpTranslator:  tcpTranslator,
 	}
 
 	return NewTranslator([]ListenerTranslator{httpTranslator, tcpTranslator, hybridTranslator}, opts)
@@ -68,13 +69,13 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 		return nil, reports
 	}
 
-	params := NewTranslatorParams(ctx, snap)
+	params := NewTranslatorParams(ctx, snap, reports)
 	validateGateways(filteredGateways, snap.VirtualServices, reports)
 
 	listeners := make([]*gloov1.Listener, 0, len(filteredGateways))
 	for _, gateway := range filteredGateways {
 		listenerTranslator := t.getListenerTranslatorForGateway(gateway)
-		listener := listenerTranslator.ComputeListener(params, proxyName, gateway, reports)
+		listener := listenerTranslator.ComputeListener(params, proxyName, gateway)
 		if listener != nil {
 			listeners = append(listeners, listener)
 		}

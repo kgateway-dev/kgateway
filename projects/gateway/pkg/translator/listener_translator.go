@@ -12,18 +12,20 @@ var _ ListenerTranslator = new(NoOpTranslator)
 
 type ListenerTranslator interface {
 	Name() string
-	ComputeListener(params Params, proxyName string, gateway *v1.Gateway, reports reporter.ResourceReports) *gloov1.Listener
+	ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener
 }
 
 type Params struct {
 	ctx      context.Context
 	snapshot *v1.ApiSnapshot
+	reports  reporter.ResourceReports
 }
 
-func NewTranslatorParams(ctx context.Context, snapshot *v1.ApiSnapshot) Params {
+func NewTranslatorParams(ctx context.Context, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) Params {
 	return Params{
 		ctx:      ctx,
 		snapshot: snapshot,
+		reports:  reports,
 	}
 }
 
@@ -33,6 +35,6 @@ func (n NoOpTranslator) Name() string {
 	return "no-op"
 }
 
-func (n NoOpTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway, reports reporter.ResourceReports) *gloov1.Listener {
+func (n NoOpTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener {
 	return nil
 }

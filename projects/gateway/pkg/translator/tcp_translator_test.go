@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,13 +21,21 @@ import (
 var _ = Describe("Tcp Translator", func() {
 
 	var (
+		ctx        context.Context
+		cancel     context.CancelFunc
 		params     Params
 		translator *TcpTranslator
 	)
 
 	BeforeEach(func() {
-		params = NewTranslatorParams(context.TODO(), &v1.ApiSnapshot{})
+		ctx, cancel = context.WithCancel(context.Background())
+
+		params = NewTranslatorParams(ctx, &v1.ApiSnapshot{}, make(reporter.ResourceReports))
 		translator = &TcpTranslator{}
+	})
+
+	AfterEach(func() {
+		cancel()
 	})
 
 	Context("Tcp Gateway", func() {
@@ -60,7 +70,7 @@ var _ = Describe("Tcp Translator", func() {
 				BindPort: 2,
 			}
 
-			listener := translator.ComputeListener(params, defaults.GatewayProxyName, gw, nil)
+			listener := translator.ComputeListener(params, defaults.GatewayProxyName, gw)
 			Expect(listener).NotTo(BeNil())
 
 			tcpListener := listener.ListenerType.(*gloov1.Listener_TcpListener).TcpListener
@@ -80,7 +90,7 @@ var _ = Describe("Tcp Translator", func() {
 				BindPort:    2,
 			}
 
-			listener := translator.ComputeListener(params, defaults.GatewayProxyName, gw, nil)
+			listener := translator.ComputeListener(params, defaults.GatewayProxyName, gw)
 			Expect(listener).To(BeNil())
 		})
 
