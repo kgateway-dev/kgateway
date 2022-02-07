@@ -8,7 +8,7 @@ Create an OAuth secret with the given name (Enterprise)
 
 ### Synopsis
 
-Create an OAuth secret with the given name. The OAuth secret contains the client_secret as defined in [RFC 6749](https://tools.ietf.org/html/rfc6749). This is an enterprise-only feature. The format of the secret data is: `{"oauth" : [client-secret string]}`. Note that the annotation `resource_kind: '*v1.Secret'` is added in order for Gloo to find this secret. If you're creating a secret through another means, you'll need to add that annotation manually.
+Create an OAuth secret with the given name. The OAuth secret contains the client_secret as defined in [RFC 6749](https://tools.ietf.org/html/rfc6749). This is an enterprise-only feature. The format of the secret data is: `{"oauth" : [client-secret string]}`. 
 
 ```
 glooctl create secret oauth [flags]
