@@ -33,27 +33,24 @@ func (t *HybridTranslator) ComputeListener(params Params, proxyName string, gate
 
 	var hybridListener *gloov1.HybridListener
 
-	// MatchedGateways take precedence over DelegatedHttpGateways
 	matchedGateways := hybridGateway.GetMatchedGateways()
 	delegatedGateways := hybridGateway.GetDelegatedHttpGateways()
-
 	if matchedGateways == nil && delegatedGateways == nil {
 		return nil
 	}
 
-	if len(matchedGateways) > 0 {
-		hybridListener = t.ComputeHybridListenerFromMatchedGateways(params, proxyName, gateway, matchedGateways)
+	// MatchedGateways take precedence over DelegatedHttpGateways
+	if matchedGateways != nil {
+		hybridListener = t.computeHybridListenerFromMatchedGateways(params, proxyName, gateway, matchedGateways)
 		if len(hybridListener.GetMatchedListeners()) == 0 {
 			// matched gateways are define inline, and therefore if they don't produce
 			// any matched listeners, there is an error on the gateway resource
 			params.reports.AddError(gateway, errors.New(EmptyHybridGatewayMessage))
 			return nil
 		}
-	}
-
-	// DelegatedHttpGateways is only processed if there are no MatchedGateways defined
-	if hybridListener == nil {
-		hybridListener = t.ComputeHybridListenerFromDelegatedGateway(params, proxyName, gateway, delegatedGateways)
+	} else {
+		// DelegatedHttpGateways is only processed if there are no MatchedGateways defined
+		hybridListener = t.computeHybridListenerFromDelegatedGateway(params, proxyName, gateway, delegatedGateways)
 		if len(hybridListener.GetMatchedListeners()) == 0 {
 			// missing refs should only result in a warning
 			// this allows resources to be applied asynchronously
@@ -75,7 +72,7 @@ func (t *HybridTranslator) ComputeListener(params Params, proxyName string, gate
 	return listener
 }
 
-func (t *HybridTranslator) ComputeHybridListenerFromMatchedGateways(
+func (t *HybridTranslator) computeHybridListenerFromMatchedGateways(
 	params Params,
 	proxyName string,
 	gateway *v1.Gateway,
@@ -130,7 +127,7 @@ func (t *HybridTranslator) ComputeHybridListenerFromMatchedGateways(
 	return hybridListener
 }
 
-func (t *HybridTranslator) ComputeHybridListenerFromDelegatedGateway(
+func (t *HybridTranslator) computeHybridListenerFromDelegatedGateway(
 	params Params,
 	proxyName string,
 	gateway *v1.Gateway,
