@@ -94,14 +94,14 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 ```yaml
 "matchedGateways": []gateway.solo.io.MatchedGateway
-"delegatedHttpGateways": []gateway.solo.io.DelegatedHttpGateway
+"delegatedHttpGateways": .gateway.solo.io.DelegatedHttpGateway
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `matchedGateways` | [[]gateway.solo.io.MatchedGateway](../gateway.proto.sk/#matchedgateway) | MatchedGateways can be used to define both HttpGateways and TcpGateways directly on the Gateway resource. Only one of `MatchedGateways` or `DelegatedHttpGateways` should be provided. If more than one is provided only one will be checked with priority MatchedGateways, DelegatedHttpGateways. |
-| `delegatedHttpGateways` | [[]gateway.solo.io.DelegatedHttpGateway](../gateway.proto.sk/#delegatedhttpgateway) | DelegatedHttpGateways can be used to configure multiple HttpGateways using the MatchableHttpGateway CR and select them on this Gateway using a resourceRef or label selection Only one of `MatchedGateways` or `DelegatedHttpGateways` should be provided. If more than one is provided only one will be checked with priority MatchedGateways, DelegatedHttpGateways. |
+| `delegatedHttpGateways` | [.gateway.solo.io.DelegatedHttpGateway](../gateway.proto.sk/#delegatedhttpgateway) | DelegatedHttpGateways can be used to configure multiple HttpGateways using the MatchableHttpGateway CR and select them on this Gateway using a resourceRef or label selection Only one of `MatchedGateways` or `DelegatedHttpGateways` should be provided. If more than one is provided only one will be checked with priority MatchedGateways, DelegatedHttpGateways. |
 
 
 

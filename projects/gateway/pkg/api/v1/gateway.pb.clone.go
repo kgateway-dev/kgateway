@@ -182,17 +182,10 @@ func (m *HybridGateway) Clone() proto.Message {
 		}
 	}
 
-	if m.GetDelegatedHttpGateways() != nil {
-		target.DelegatedHttpGateways = make([]*DelegatedHttpGateway, len(m.GetDelegatedHttpGateways()))
-		for idx, v := range m.GetDelegatedHttpGateways() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.DelegatedHttpGateways[idx] = h.Clone().(*DelegatedHttpGateway)
-			} else {
-				target.DelegatedHttpGateways[idx] = proto.Clone(v).(*DelegatedHttpGateway)
-			}
-
-		}
+	if h, ok := interface{}(m.GetDelegatedHttpGateways()).(clone.Cloner); ok {
+		target.DelegatedHttpGateways = h.Clone().(*DelegatedHttpGateway)
+	} else {
+		target.DelegatedHttpGateways = proto.Clone(m.GetDelegatedHttpGateways()).(*DelegatedHttpGateway)
 	}
 
 	return target
