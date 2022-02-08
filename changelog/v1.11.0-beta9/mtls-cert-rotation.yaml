@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Enables you to force cert rotation, even if the existing certificates are still valid
+    issueLink: https://github.com/solo-io/gloo/issues/5855
+    resolvesIssue: true

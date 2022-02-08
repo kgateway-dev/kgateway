@@ -1,0 +1,59 @@
+{{ define "glooMtls.certGenCronJobSpec" }}
+{{- $image := .Values.gateway.certGenJob.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}
+{{- end }}
+{{- if and .Values.global.glooMtls.enabled .Values.gateway.certGenJob.cron.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo-mtls-certgen-cronjob
+  name: gloo-mtls-certgen-cronjob
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.gateway.certGenJob.cron.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            gloo: gloo-mtls-certs
+        spec:
+          {{- include "gloo.pullSecret" $image | nindent 10 -}}
+          serviceAccountName: certgen
+          {{- include "gloo.podSpecStandardFields" .Values.gateway.certGenJob | nindent 10 -}}
+          containers:
+            - image: {{template "gloo.image" $image}}
+              imagePullPolicy: {{ $image.pullPolicy }}
+              name: certgen
+              securityContext:
+                runAsNonRoot: true
+                {{- if not .Values.gateway.certGenJob.floatingUserId }}
+                runAsUser: {{ printf "%.0f" (float64 .Values.gateway.certGenJob.runAsUser) -}}
+                {{- end }}
+              env:
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+              args:
+                - "--secret-name=gloo-mtls-certs"
+                - "--svc-name=gloo"
+          restartPolicy: Never
+      # this feature is still in Alpha, which means it must be manually enabled in the k8s api server
+      # with --feature-gates="TTLAfterFinished=true". This flag also works with minikube start ...
+      # if the feature flag is not enabled in the k8s api server, this setting will be silently ignored at creation time
+      {{- if semverCompare ">=1.12" .Capabilities.KubeVersion.GitVersion }}
+      ttlSecondsAfterFinished: 60
+  {{- end }}
+{{- end }} {{/* if and .Values.global.glooMtls.enabled .Values.gateway.certGenJob.cron.enabled */}}
+{{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.gateway.certGenJob -}}
+{{- $kubeResourceOverride = .Values.gateway.certGenJob.cron.mtlsKubeResourceOverride -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "glooMtls.certGenCronJobSpec") -}}

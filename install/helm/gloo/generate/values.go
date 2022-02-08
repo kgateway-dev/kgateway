@@ -58,19 +58,19 @@ type Image struct {
 }
 
 type ResourceAllocation struct {
-	Memory *string `json:"memory,omitEmpty" desc:"amount of memory"`
-	CPU    *string `json:"cpu,omitEmpty" desc:"amount of CPUs"`
+	Memory *string `json:"memory,omitempty" desc:"amount of memory"`
+	CPU    *string `json:"cpu,omitempty" desc:"amount of CPUs"`
 }
 
 type ResourceRequirements struct {
-	Limits   *ResourceAllocation `json:"limits,omitEmpty" desc:"resource limits of this container"`
-	Requests *ResourceAllocation `json:"requests,omitEmpty" desc:"resource requests of this container"`
+	Limits   *ResourceAllocation `json:"limits,omitempty" desc:"resource limits of this container"`
+	Requests *ResourceAllocation `json:"requests,omitempty" desc:"resource requests of this container"`
 }
 type PodSpec struct {
 	RestartPolicy *string                  `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
 	NodeName      *string                  `json:"nodeName,omitempty" desc:"name of node to run on"`
 	NodeSelector  map[string]string        `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
-	Tolerations   []*appsv1.Toleration     `json:"tolerations,omitEmpty"`
+	Tolerations   []*appsv1.Toleration     `json:"tolerations,omitempty"`
 	Affinity      []map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases   []interface{}            `json:"hostAliases,omitempty"`
 }
@@ -97,54 +97,54 @@ type KubeResourceOverride struct {
 }
 
 type Integrations struct {
-	Knative                 *Knative                 `json:"knative,omitEmpty"`
-	Consul                  *Consul                  `json:"consul,omitEmpty" desc:"Consul settings to inject into the consul client on startup"`
-	ConsulUpstreamDiscovery *ConsulUpstreamDiscovery `json:"consulUpstreamDiscovery,omitEmpty" desc:"Settings for Gloo Edge's behavior when discovering consul services and creating upstreams for them."`
+	Knative                 *Knative                 `json:"knative,omitempty"`
+	Consul                  *Consul                  `json:"consul,omitempty" desc:"Consul settings to inject into the consul client on startup"`
+	ConsulUpstreamDiscovery *ConsulUpstreamDiscovery `json:"consulUpstreamDiscovery,omitempty" desc:"Settings for Gloo Edge's behavior when discovering consul services and creating upstreams for them."`
 }
 
 type Consul struct {
-	Datacenter         *string                  `json:"datacenter,omitEmpty" desc:"Datacenter to use. If not provided, the default agent datacenter is used."`
-	Username           *string                  `json:"username,omitEmpty" desc:"Username to use for HTTP Basic Authentication."`
-	Password           *string                  `json:"password,omitEmpty" desc:"Password to use for HTTP Basic Authentication."`
-	Token              *string                  `json:"token,omitEmpty" desc:"Token is used to provide a per-request ACL token which overrides the agent's default token."`
-	CaFile             *string                  `json:"caFile,omitEmpty" desc:"caFile is the optional path to the CA certificate used for Consul communication, defaults to the system bundle if not specified."`
-	CaPath             *string                  `json:"caPath,omitEmpty" desc:"caPath is the optional path to a directory of CA certificates to use for Consul communication, defaults to the system bundle if not specified."`
-	CertFile           *string                  `json:"certFile,omitEmpty" desc:"CertFile is the optional path to the certificate for Consul communication. If this is set then you need to also set KeyFile."`
-	KeyFile            *string                  `json:"keyFile,omitEmpty" desc:"KeyFile is the optional path to the private key for Consul communication. If this is set then you need to also set CertFile."`
-	InsecureSkipVerify *bool                    `json:"insecureSkipVerify,omitEmpty" desc:"InsecureSkipVerify if set to true will disable TLS host verification."`
-	WaitTime           *Duration                `json:"waitTime,omitEmpty" desc:"WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used."`
-	ServiceDiscovery   *ServiceDiscoveryOptions `json:"serviceDiscovery,omitEmpty" desc:"Enable Service Discovery via Consul with this field set to empty struct '{}' to enable with defaults"`
-	HttpAddress        *string                  `json:"httpAddress,omitEmpty" desc:"The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500."`
-	DnsAddress         *string                  `json:"dnsAddress,omitEmpty" desc:"The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server)"`
-	DnsPollingInterval *Duration                `json:"dnsPollingInterval,omitEmpty" desc:"The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo Edge will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s."`
+	Datacenter         *string                  `json:"datacenter,omitempty" desc:"Datacenter to use. If not provided, the default agent datacenter is used."`
+	Username           *string                  `json:"username,omitempty" desc:"Username to use for HTTP Basic Authentication."`
+	Password           *string                  `json:"password,omitempty" desc:"Password to use for HTTP Basic Authentication."`
+	Token              *string                  `json:"token,omitempty" desc:"Token is used to provide a per-request ACL token which overrides the agent's default token."`
+	CaFile             *string                  `json:"caFile,omitempty" desc:"caFile is the optional path to the CA certificate used for Consul communication, defaults to the system bundle if not specified."`
+	CaPath             *string                  `json:"caPath,omitempty" desc:"caPath is the optional path to a directory of CA certificates to use for Consul communication, defaults to the system bundle if not specified."`
+	CertFile           *string                  `json:"certFile,omitempty" desc:"CertFile is the optional path to the certificate for Consul communication. If this is set then you need to also set KeyFile."`
+	KeyFile            *string                  `json:"keyFile,omitempty" desc:"KeyFile is the optional path to the private key for Consul communication. If this is set then you need to also set CertFile."`
+	InsecureSkipVerify *bool                    `json:"insecureSkipVerify,omitempty" desc:"InsecureSkipVerify if set to true will disable TLS host verification."`
+	WaitTime           *Duration                `json:"waitTime,omitempty" desc:"WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used."`
+	ServiceDiscovery   *ServiceDiscoveryOptions `json:"serviceDiscovery,omitempty" desc:"Enable Service Discovery via Consul with this field set to empty struct '{}' to enable with defaults"`
+	HttpAddress        *string                  `json:"httpAddress,omitempty" desc:"The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500."`
+	DnsAddress         *string                  `json:"dnsAddress,omitempty" desc:"The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server)"`
+	DnsPollingInterval *Duration                `json:"dnsPollingInterval,omitempty" desc:"The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo Edge will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s."`
 }
 
 type ServiceDiscoveryOptions struct {
-	DataCenters []string `json:"dataCenters,omitEmpty" desc:"Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo Edge will use all available data centers."`
+	DataCenters []string `json:"dataCenters,omitempty" desc:"Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo Edge will use all available data centers."`
 }
 
 type ConsulUpstreamDiscovery struct {
-	UseTlsDiscovery  *bool        `json:"useTlsDiscovery,omitEmpty" desc:"Allow Gloo Edge to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true."`
-	TlsTagName       *string      `json:"tlsTagName,omitEmpty" desc:"The tag Gloo Edge should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'."`
-	SplitTlsServices *bool        `json:"splitTlsServices,omitEmpty" desc:"If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without."`
+	UseTlsDiscovery  *bool        `json:"useTlsDiscovery,omitempty" desc:"Allow Gloo Edge to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true."`
+	TlsTagName       *string      `json:"tlsTagName,omitempty" desc:"The tag Gloo Edge should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'."`
+	SplitTlsServices *bool        `json:"splitTlsServices,omitempty" desc:"If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without."`
 	DiscoveryRootCa  *ResourceRef `json:"discoveryRootCa,omitempty" desc:"The name/namespace of the root CA needed to use TLS with consul services."`
 }
 
 // equivalent of core.solo.io.ResourceRef
 type ResourceRef struct {
-	Namespace *string `json:"namespace,omitEmpty" desc:"The namespace of this resource."`
-	Name      *string `json:"name,omitEmpty" desc:"The name of this resource."`
+	Namespace *string `json:"namespace,omitempty" desc:"The namespace of this resource."`
+	Name      *string `json:"name,omitempty" desc:"The name of this resource."`
 }
 
 // google.protobuf.Duration
 type Duration struct {
-	Seconds *int32 `json:"seconds,omitEmpty" desc:"The value of this duration in seconds."`
-	Nanos   *int32 `json:"nanos,omitEmpty" desc:"The value of this duration in nanoseconds."`
+	Seconds *int32 `json:"seconds,omitempty" desc:"The value of this duration in seconds."`
+	Nanos   *int32 `json:"nanos,omitempty" desc:"The value of this duration in nanoseconds."`
 }
 
 type Knative struct {
 	Enabled                    *bool             `json:"enabled,omitempty" desc:"enabled knative components"`
-	Version                    *string           `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, Gloo Edge will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
+	Version                    *string           `json:"version,omitempty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, Gloo Edge will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
 	Proxy                      *KnativeProxy     `json:"proxy,omitempty"`
 	RequireIngressClass        *bool             `json:"requireIngressClass,omitempty" desc:"only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'."`
 	ExtraKnativeInternalLabels map[string]string `json:"extraKnativeInternalLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment."`
@@ -289,10 +289,10 @@ type Webhook struct {
 }
 
 type GatewayDeployment struct {
-	Image              *Image            `json:"image,omitempty,omitempty"`
-	Stats              *Stats            `json:"stats,omitempty,omitempty" desc:"overrides for prometheus stats published by the gateway pod"`
+	Image              *Image            `json:"image,omitempty"`
+	Stats              *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway pod"`
 	FloatingUserId     *bool             `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser          *float64          `json:"runAsUser, omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	RunAsUser          *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	ExtraGatewayLabels map[string]string `json:"extraGatewayLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway deployment."`
 	*DeploymentSpec
 }
@@ -313,6 +313,25 @@ type CertGenJob struct {
 	RunAsUser               *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	Resources               *ResourceRequirements `json:"resources,omitempty"`
 	RunOnUpdate             *bool                 `json:"runOnUpdate,omitempty" desc:"enable to run the job also on pre-upgrade"`
+	Cron                    *CertGenCron          `json:"cron,omitempty" desc:"CronJob parameters"`
+}
+
+/*
+Scheduling:
+┌───────────── minute (0 - 59)
+│ ┌───────────── hour (0 - 23)
+│ │ ┌───────────── day of the month (1 - 31)
+│ │ │ ┌───────────── month (1 - 12)
+│ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday;
+│ │ │ │ │                                   7 is also Sunday on some systems)
+│ │ │ │ │
+│ │ │ │ │
+* * * * *
+*/
+type CertGenCron struct {
+	Enabled                  *bool                  `json:"enabled,omitempty" desc:"enable the cronjob"`
+	Schedule                 *string                `json:"schedule,omitempty" desc:"Cron job scheduling"`
+	MtlsKubeResourceOverride map[string]interface{} `json:"mtlsKubeResourceOverride,omitempty" desc:"override fields in the gloo-mtls-certgen cronjob."`
 }
 
 type GatewayProxy struct {
@@ -407,7 +426,7 @@ type GatewayProxyPodTemplate struct {
 	ExtraAnnotations              map[string]string     `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod"`
 	NodeName                      *string               `json:"nodeName,omitempty" desc:"name of node to run on"`
 	NodeSelector                  map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
-	Tolerations                   []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
+	Tolerations                   []*appsv1.Toleration  `json:"tolerations,omitempty"`
 	Probes                        *bool                 `json:"probes,omitempty" desc:"enable liveness and readiness probes"`
 	Resources                     *ResourceRequirements `json:"resources,omitempty"`
 	DisableNetBind                *bool                 `json:"disableNetBind,omitempty" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
@@ -417,7 +436,7 @@ type GatewayProxyPodTemplate struct {
 	FsGroup                       *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
 	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
 	TerminationGracePeriodSeconds *int                  `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
-	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitEmpty"`
+	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitempty"`
 	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
 	EnablePodSecurityContext      *bool                 `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
 }
