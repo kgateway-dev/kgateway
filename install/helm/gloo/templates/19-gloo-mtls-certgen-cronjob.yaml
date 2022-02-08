@@ -21,9 +21,9 @@ spec:
           labels:
             gloo: gloo-mtls-certs
         spec:
-          {{- include "gloo.pullSecret" $image | nindent 6 -}}
+          {{- include "gloo.pullSecret" $image | nindent 10 -}}
           serviceAccountName: certgen
-          {{- include "gloo.podSpecStandardFields" .Values.gateway.certGenJob | nindent 6 -}}
+          {{- include "gloo.podSpecStandardFields" .Values.gateway.certGenJob | nindent 10 -}}
           containers:
             - image: {{template "gloo.image" $image}}
               imagePullPolicy: {{ $image.pullPolicy }}
