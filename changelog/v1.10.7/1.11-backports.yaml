@@ -1,0 +1,21 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4020
+    description: >
+      Ensure that enterprise features, when used by an open source user, produce error messages
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4367
+    description: >
+      Remove the Upgradable Plugin interface. This abstraction was a little leaky. Now we handle
+      upgrading plugins in the enterprise application itself, as that is the source of truth for
+      what should be upgraded.
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5762
+    resolvesIssue: true
+    description: |
+      Adds support for the Envoy HTTP Connection Manager settings headers_with_underscores_action and max_requests_per_connection.
+      Additionally, adds support for the HTTP Connection Manager allow_chunked_length setting and the cluster-level max_concurrent_streams setting
+  - type: NEW_FEATURE
+    description: Enables you to force cert rotation, even if the existing certificates are still valid
+    issueLink: https://github.com/solo-io/gloo/issues/5855
+    resolvesIssue: true
