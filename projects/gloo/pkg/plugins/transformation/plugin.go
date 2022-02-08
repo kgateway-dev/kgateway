@@ -48,7 +48,8 @@ type TranslateTransformationFn func(*transformation.Transformation) (*envoytrans
 
 // This Plugin is exported only because it is utilized by the enterprise implementation
 // We would prefer if the plugin were not exported and instead the required translation
-// methods were exported
+// methods were exported.
+// Other plugins may
 type Plugin struct {
 	RequireEarlyTransformation bool
 	filterNeeded               bool
@@ -64,6 +65,7 @@ func (p *Plugin) Name() string {
 	return ExtensionName
 }
 
+// Init attempts to set the plugin back to a clean slate state.
 func (p *Plugin) Init(params plugins.InitParams) error {
 	p.RequireEarlyTransformation = false
 	p.filterNeeded = !params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
@@ -144,6 +146,8 @@ func (p *Plugin) ProcessWeightedDestination(
 	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
+// HttpFilters emits the desired set of filters. Either 0, 1 or
+// if earlytransformation is needed then 2 staged filters
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	var filters []plugins.StagedHttpFilter
 
