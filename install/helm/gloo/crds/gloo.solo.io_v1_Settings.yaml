@@ -322,6 +322,9 @@ spec:
                     minimum: 0
                     nullable: true
                     type: integer
+                  removeUnusedFilters:
+                    nullable: true
+                    type: boolean
                   restXdsBindAddr:
                     type: string
                   validationBindAddr:

@@ -26,7 +26,9 @@ const (
 
 var pluginStage = plugins.DuringStage(plugins.FaultStage)
 
-type plugin struct{}
+type plugin struct {
+	filterNeeded bool
+}
 
 func NewPlugin() *plugin {
 	return &plugin{}
@@ -37,10 +39,14 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	p.filterNeeded = !params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
 	return nil
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+	if !p.filterNeeded {
+		return []plugins.StagedHttpFilter{}, nil
+	}
 	// put the filter in the chain, but the actual faults will be configured on the routes
 	return []plugins.StagedHttpFilter{
 		plugins.NewStagedFilter(wellknown.Fault, pluginStage),
@@ -61,6 +67,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		if routeAbort == nil && routeDelay == nil {
 			return nil, nil
 		}
+		p.filterNeeded = true
 		return generateEnvoyConfigForHttpFault(routeAbort, routeDelay), nil
 	}
 	return pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, wellknown.Fault, markFilterConfigFunc)

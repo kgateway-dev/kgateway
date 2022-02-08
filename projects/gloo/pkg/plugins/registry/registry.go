@@ -1,3 +1,4 @@
+// Package registry is responsible for managing
 package registry
 
 import (
@@ -129,6 +130,9 @@ type pluginRegistry struct {
 	weightedDestinationPlugins   []plugins.WeightedDestinationPlugin
 }
 
+// NewPluginRegistry creates a plugin registry and places all registered plugins
+// into their appropriate plugin lists. This process is referred to as
+// registering the plugins.
 func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 	var listenerPlugins []plugins.ListenerPlugin
 	var tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
@@ -216,50 +220,62 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 	}
 }
 
+// GetPlugins returns the plugins that were registered within the registery.
 func (p *pluginRegistry) GetPlugins() []plugins.Plugin {
 	return p.plugins
 }
 
+// GetListenerPlugins returns the plugins that were registered which act on Listener.
 func (p *pluginRegistry) GetListenerPlugins() []plugins.ListenerPlugin {
 	return p.listenerPlugins
 }
 
+// GetTcpFilterChainPlugins returns the plugins that were registered which act on TcpFilterChain.
 func (p *pluginRegistry) GetTcpFilterChainPlugins() []plugins.TcpFilterChainPlugin {
 	return p.tcpFilterChainPlugins
 }
 
+// GetHttpFilterPlugins returns the plugins that were registered which act on HttpFilter.
 func (p *pluginRegistry) GetHttpFilterPlugins() []plugins.HttpFilterPlugin {
 	return p.httpFilterPlugins
 }
 
+// GetHttpConnectionManagerPlugins returns the plugins that were registered which act on HttpConnectionManager.
 func (p *pluginRegistry) GetHttpConnectionManagerPlugins() []plugins.HttpConnectionManagerPlugin {
 	return p.httpConnectionManagerPlugins
 }
 
+// GetVirtualHostPlugins returns the plugins that were registered which act on VirtualHost.
 func (p *pluginRegistry) GetVirtualHostPlugins() []plugins.VirtualHostPlugin {
 	return p.virtualHostPlugins
 }
 
+// GetResourceGeneratorPlugins returns the plugins that were registered which act on ResourceGenerator.
 func (p *pluginRegistry) GetResourceGeneratorPlugins() []plugins.ResourceGeneratorPlugin {
 	return p.resourceGeneratorPlugins
 }
 
+// GetUpstreamPlugins returns the plugins that were registered which act on Upstream.
 func (p *pluginRegistry) GetUpstreamPlugins() []plugins.UpstreamPlugin {
 	return p.upstreamPlugins
 }
 
+// GetEndpointPlugins returns the plugins that were registered which act on Endpoint.
 func (p *pluginRegistry) GetEndpointPlugins() []plugins.EndpointPlugin {
 	return p.endpointPlugins
 }
 
+// GetRoutePlugins returns the plugins that were registered which act on Route.
 func (p *pluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
 	return p.routePlugins
 }
 
+// GetRouteActionPlugins returns the plugins that were registered which act on RouteAction.
 func (p *pluginRegistry) GetRouteActionPlugins() []plugins.RouteActionPlugin {
 	return p.routeActionPlugins
 }
 
+// GetWeightedDestinationPlugins returns the plugins that were registered which act on WeightedDestination.
 func (p *pluginRegistry) GetWeightedDestinationPlugins() []plugins.WeightedDestinationPlugin {
 	return p.weightedDestinationPlugins
 }
