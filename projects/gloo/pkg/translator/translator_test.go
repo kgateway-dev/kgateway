@@ -2252,6 +2252,7 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
+	const expectedHybridListeners = 6
 	Context("Hybrid", func() {
 
 		It("can properly create a hybrid listener", func() {
@@ -2288,7 +2289,45 @@ var _ = Describe("Translator", func() {
 			Expect(ParseTypedConfig(hcmFilter, &hcmTypedCfg)).NotTo(HaveOccurred())
 			Expect(hcmTypedCfg.GetRds()).NotTo(BeNil())
 			Expect(hcmTypedCfg.GetRds().RouteConfigName).To(Equal(glooutils.MatchedRouteConfigName(proxy.GetListeners()[2], proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())))
-			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(6)) // TODO: is this the right number? is there more we can/should do to ensure correctness?
+			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(expectedHybridListeners)) // TODO: is this the right number? is there more we can/should do to ensure correctness?
+		})
+
+		It("can properly create a hybrid listeners without unused filters", func() {
+			settings.Gloo = &v1.GlooOptions{RemoveUnusedFilters: &wrappers.BoolValue{Value: true}}
+			translate()
+			listeners := snapshot.GetResources(resource.ListenerTypeV3).Items
+			Expect(listeners).NotTo(HaveLen(0))
+			val, found := listeners["hybrid-listener"]
+			Expect(found).To(BeTrue())
+			listener, ok := val.ResourceProto().(*envoy_config_listener_v3.Listener)
+			Expect(ok).To(BeTrue())
+			Expect(listener.GetName()).To(Equal("hybrid-listener"))
+			Expect(listener.GetFilterChains()).To(HaveLen(2))
+
+			// tcp
+			tcpFc := listener.GetFilterChains()[0]
+			Expect(tcpFc.Filters).To(HaveLen(1))
+			tcpFilter := tcpFc.Filters[0]
+			tcpCfg := tcpFilter.GetTypedConfig()
+			Expect(tcpCfg).NotTo(BeNil())
+			var tcpTypedCfg envoytcp.TcpProxy
+			Expect(ParseTypedConfig(tcpFilter, &tcpTypedCfg)).NotTo(HaveOccurred())
+			clusterSpec := tcpTypedCfg.GetCluster()
+			Expect(clusterSpec).To(Equal("test_gloo-system"))
+			Expect(listener.GetListenerFilters()).To(HaveLen(1))
+			Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
+
+			// http
+			httpFc := listener.GetFilterChains()[1]
+			Expect(httpFc.Filters).To(HaveLen(1))
+			hcmFilter := httpFc.Filters[0]
+			hcmCfg := hcmFilter.GetConfigType()
+			Expect(hcmCfg).NotTo(BeNil())
+			var hcmTypedCfg envoyhttp.HttpConnectionManager
+			Expect(ParseTypedConfig(hcmFilter, &hcmTypedCfg)).NotTo(HaveOccurred())
+			Expect(hcmTypedCfg.GetRds()).NotTo(BeNil())
+			Expect(hcmTypedCfg.GetRds().RouteConfigName).To(Equal(glooutils.MatchedRouteConfigName(proxy.GetListeners()[2], proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())))
+			Expect(hcmTypedCfg.GetHttpFilters()).ToNot(HaveLen(expectedHybridListeners)) // check that its lower. Actual list/ number handled at registery test
 		})
 
 		It("skips listeners with invalid downstream ssl config", func() {
