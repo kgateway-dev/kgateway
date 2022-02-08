@@ -136,7 +136,7 @@ func (t *HybridTranslator) ComputeHybridListenerFromDelegatedGateway(
 	gateway *v1.Gateway,
 	delegatedGateway *v1.DelegatedHttpGateway,
 ) *gloov1.HybridListener {
-	httpGatewaySelector := NewHttpGatewaySelector(params.snapshot)
+	httpGatewaySelector := NewHttpGatewaySelector(params.snapshot.HttpGateways)
 	onSelectionError := func(err error) {
 		params.reports.AddError(gateway, err)
 	}

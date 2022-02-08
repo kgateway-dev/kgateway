@@ -22,9 +22,7 @@ var _ = Describe("HttpGatewaySelector", func() {
 	JustBeforeEach(func() {
 		// Instantiate the HttpGatewaySelector in the JustBeforeEach to enable each sub-context
 		// to modify the availableHttpGateways
-		httpGatewaySelector = translator.NewHttpGatewaySelector(&v1.ApiSnapshot{
-			HttpGateways: availableHttpGateways,
-		})
+		httpGatewaySelector = translator.NewHttpGatewaySelector(availableHttpGateways)
 
 		// We do not expect a selection error to occur. To be extra certain, panic if one does
 		onSelectionError = func(err error) {

@@ -31,9 +31,9 @@ type gatewaySelector struct {
 	availableGateways v1.MatchableHttpGatewayList
 }
 
-func NewHttpGatewaySelector(snapshot *v1.ApiSnapshot) *gatewaySelector {
+func NewHttpGatewaySelector(gwList v1.MatchableHttpGatewayList) *gatewaySelector {
 	return &gatewaySelector{
-		availableGateways: snapshot.HttpGateways,
+		availableGateways: gwList,
 	}
 }
 
