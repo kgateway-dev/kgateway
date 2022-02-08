@@ -2,6 +2,7 @@ package translator_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -25,19 +26,17 @@ import (
 var _ = Describe("Hybrid Translator", func() {
 
 	var (
-		ctx        context.Context
-		cancel     context.CancelFunc
-		translator *HybridTranslator
-		snap       *v1.ApiSnapshot
-		reports    reporter.ResourceReports
-
-		labelSet = map[string]string{"a": "b"}
+		ctx              context.Context
+		cancel           context.CancelFunc
+		hybridTranslator *HybridTranslator
+		snap             *v1.ApiSnapshot
+		reports          reporter.ResourceReports
 	)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
-		translator = &HybridTranslator{
+		hybridTranslator = &HybridTranslator{
 			HttpTranslator: &HttpTranslator{
 				WarnOnRouteShortCircuiting: false,
 			},
@@ -76,7 +75,7 @@ var _ = Describe("Hybrid Translator", func() {
 		It("does not generate a listener", func() {
 			params := NewTranslatorParams(ctx, snap, reports)
 
-			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+			listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 			Expect(listener).To(BeNil())
 		})
 
@@ -116,66 +115,9 @@ var _ = Describe("Hybrid Translator", func() {
 						},
 
 						VirtualServices: v1.VirtualServiceList{
-							{
-								Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
-								VirtualHost: &v1.VirtualHost{
-									Domains: []string{"d1.com"},
-									Routes: []*v1.Route{
-										{
-											Matchers: []*matchers.Matcher{{
-												PathSpecifier: &matchers.Matcher_Prefix{
-													Prefix: "/1",
-												},
-											}},
-											Action: &v1.Route_DirectResponseAction{
-												DirectResponseAction: &gloov1.DirectResponseAction{
-													Body: "d1",
-												},
-											},
-										},
-									},
-								},
-							},
-							{
-								Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
-								VirtualHost: &v1.VirtualHost{
-									Domains: []string{"d2.com"},
-									Routes: []*v1.Route{
-										{
-											Matchers: []*matchers.Matcher{{
-												PathSpecifier: &matchers.Matcher_Prefix{
-													Prefix: "/2",
-												},
-											}},
-											Action: &v1.Route_DirectResponseAction{
-												DirectResponseAction: &gloov1.DirectResponseAction{
-													Body: "d2",
-												},
-											},
-										},
-									},
-								},
-							},
-							{
-								Metadata: &core.Metadata{Namespace: ns + "-other-namespace", Name: "name3", Labels: labelSet},
-								VirtualHost: &v1.VirtualHost{
-									Domains: []string{"d3.com"},
-									Routes: []*v1.Route{
-										{
-											Matchers: []*matchers.Matcher{{
-												PathSpecifier: &matchers.Matcher_Prefix{
-													Prefix: "/3",
-												},
-											}},
-											Action: &v1.Route_DirectResponseAction{
-												DirectResponseAction: &gloov1.DirectResponseAction{
-													Body: "d3",
-												},
-											},
-										},
-									},
-								},
-							},
+							createVirtualService("name1", ns, false),
+							createVirtualService("name2", ns, false),
+							createVirtualService("name3", ns+"-other-namespace", false),
 						},
 					}
 				})
@@ -183,7 +125,7 @@ var _ = Describe("Hybrid Translator", func() {
 				It("works", func() {
 					params := NewTranslatorParams(ctx, snap, reports)
 
-					listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 					Expect(listener).NotTo(BeNil())
 
 					hybridListener := listener.ListenerType.(*gloov1.Listener_HybridListener).HybridListener
@@ -231,75 +173,9 @@ var _ = Describe("Hybrid Translator", func() {
 						},
 
 						VirtualServices: v1.VirtualServiceList{
-							{
-								Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
-								VirtualHost: &v1.VirtualHost{
-									Domains: []string{"d1.com"},
-									Routes: []*v1.Route{
-										{
-											Matchers: []*matchers.Matcher{{
-												PathSpecifier: &matchers.Matcher_Prefix{
-													Prefix: "/1",
-												},
-											}},
-											Action: &v1.Route_DirectResponseAction{
-												DirectResponseAction: &gloov1.DirectResponseAction{
-													Body: "d1",
-												},
-											},
-										},
-									},
-								},
-								SslConfig: &gloov1.SslConfig{
-									SniDomains: []string{"d1.com"},
-								},
-							},
-							{
-								Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
-								VirtualHost: &v1.VirtualHost{
-									Domains: []string{"d2.com"},
-									Routes: []*v1.Route{
-										{
-											Matchers: []*matchers.Matcher{{
-												PathSpecifier: &matchers.Matcher_Prefix{
-													Prefix: "/2",
-												},
-											}},
-											Action: &v1.Route_DirectResponseAction{
-												DirectResponseAction: &gloov1.DirectResponseAction{
-													Body: "d2",
-												},
-											},
-										},
-									},
-								},
-								SslConfig: &gloov1.SslConfig{
-									SniDomains: []string{"d2.com"},
-								},
-							},
-							{
-								Metadata: &core.Metadata{Namespace: ns + "-other-namespace", Name: "name3", Labels: labelSet},
-								VirtualHost: &v1.VirtualHost{
-									Domains: []string{"d3.com"},
-									Routes: []*v1.Route{
-										{
-											Matchers: []*matchers.Matcher{{
-												PathSpecifier: &matchers.Matcher_Prefix{
-													Prefix: "/3",
-												},
-											}},
-											Action: &v1.Route_DirectResponseAction{
-												DirectResponseAction: &gloov1.DirectResponseAction{
-													Body: "d3",
-												},
-											},
-										},
-									},
-								},
-								SslConfig: &gloov1.SslConfig{
-									SniDomains: []string{"d3.com"},
-								},
-							},
+							createVirtualService("name1", ns, true),
+							createVirtualService("name2", ns, true),
+							createVirtualService("name3", ns+"-other-namespace", true),
 						},
 					}
 				})
@@ -307,7 +183,7 @@ var _ = Describe("Hybrid Translator", func() {
 				It("works", func() {
 					params := NewTranslatorParams(ctx, snap, reports)
 
-					listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 					Expect(listener).NotTo(BeNil())
 
 					hybridListener := listener.ListenerType.(*gloov1.Listener_HybridListener).HybridListener
@@ -390,7 +266,7 @@ var _ = Describe("Hybrid Translator", func() {
 			It("works", func() {
 				params := NewTranslatorParams(ctx, snap, reports)
 
-				listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+				listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 				Expect(listener).NotTo(BeNil())
 
 				hybridListener := listener.ListenerType.(*gloov1.Listener_HybridListener).HybridListener
@@ -412,10 +288,174 @@ var _ = Describe("Hybrid Translator", func() {
 
 		Context("http", func() {
 
-			// TODO - ssl and non-ssl tests
+			Context("non-ssl", func() {
+
+				BeforeEach(func() {
+					snap = &v1.ApiSnapshot{
+						Gateways: v1.GatewayList{
+							{
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+								GatewayType: &v1.Gateway_HybridGateway{
+									HybridGateway: &v1.HybridGateway{
+										DelegatedHttpGateways: &v1.DelegatedHttpGateway{
+											SelectionType: &v1.DelegatedHttpGateway_Ref{
+												Ref: &core.ResourceRef{
+													Name:      "name",
+													Namespace: ns,
+												},
+											},
+										},
+									},
+								},
+								BindPort: 2,
+							},
+						},
+
+						HttpGateways: v1.MatchableHttpGatewayList{
+							{
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+								Matcher: &v1.MatchableHttpGateway_Matcher{
+									SourcePrefixRanges: []*v3.CidrRange{
+										{
+											AddressPrefix: "match1",
+										},
+									},
+								},
+								HttpGateway: &v1.HttpGateway{},
+							},
+						},
+
+						VirtualServices: v1.VirtualServiceList{
+							createVirtualService("name1", ns, false),
+							createVirtualService("name2", ns, false),
+							createVirtualService("name3", ns+"-other-namespace", false),
+						},
+					}
+				})
+
+				It("works", func() {
+					params := NewTranslatorParams(ctx, snap, reports)
+
+					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+					Expect(listener).NotTo(BeNil())
+
+					hybridListener := listener.ListenerType.(*gloov1.Listener_HybridListener).HybridListener
+					Expect(hybridListener.MatchedListeners).To(HaveLen(1))
+
+					matchedHttpListener := hybridListener.MatchedListeners[0]
+					Expect(matchedHttpListener.Matcher.SourcePrefixRanges).To(HaveLen(1))
+					Expect(matchedHttpListener.Matcher.SourcePrefixRanges[0].AddressPrefix).To(Equal("match1"))
+					Expect(matchedHttpListener.GetHttpListener()).NotTo(BeNil())
+					Expect(matchedHttpListener.GetHttpListener().VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
+				})
+
+			})
+
+			Context("ssl", func() {
+
+				BeforeEach(func() {
+					snap = &v1.ApiSnapshot{
+						Gateways: v1.GatewayList{
+							{
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+								GatewayType: &v1.Gateway_HybridGateway{
+									HybridGateway: &v1.HybridGateway{
+										DelegatedHttpGateways: &v1.DelegatedHttpGateway{
+											SelectionType: &v1.DelegatedHttpGateway_Ref{
+												Ref: &core.ResourceRef{
+													Name:      "name",
+													Namespace: ns,
+												},
+											},
+										},
+									},
+								},
+								BindPort: 2,
+							},
+						},
+
+						HttpGateways: v1.MatchableHttpGatewayList{
+							{
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+								Matcher: &v1.MatchableHttpGateway_Matcher{
+									// This is important as it means the Gateway will only select
+									// VirtualServices with Ssl defined
+									SslConfig: &gloov1.SslConfig{},
+									SourcePrefixRanges: []*v3.CidrRange{
+										{
+											AddressPrefix: "match1",
+										},
+									},
+								},
+								HttpGateway: &v1.HttpGateway{},
+							},
+						},
+
+						VirtualServices: v1.VirtualServiceList{
+							createVirtualService("name1", ns, true),
+							createVirtualService("name2", ns, true),
+							createVirtualService("name3", ns+"-other-namespace", true),
+						},
+					}
+				})
+
+				It("works", func() {
+					params := NewTranslatorParams(ctx, snap, reports)
+
+					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+					Expect(listener).NotTo(BeNil())
+
+					hybridListener := listener.ListenerType.(*gloov1.Listener_HybridListener).HybridListener
+					Expect(hybridListener.MatchedListeners).To(HaveLen(1))
+
+					matchedHttpListener := hybridListener.MatchedListeners[0]
+					Expect(matchedHttpListener.Matcher.SourcePrefixRanges).To(HaveLen(1))
+					Expect(matchedHttpListener.Matcher.SourcePrefixRanges[0].AddressPrefix).To(Equal("match1"))
+					Expect(matchedHttpListener.GetHttpListener()).NotTo(BeNil())
+					Expect(matchedHttpListener.GetHttpListener().VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
+
+					// Only the VirtualServices with SslConfig should be aggregated on the Gateway
+					Expect(matchedHttpListener.GetSslConfigurations()).To(HaveLen(len(snap.VirtualServices)))
+				})
+
+			})
 
 		})
 
 	})
 
 })
+
+func createVirtualService(name, namespace string, includeSsl bool) *v1.VirtualService {
+	vs := &v1.VirtualService{
+		Metadata: &core.Metadata{
+			Name:      name,
+			Namespace: namespace,
+		},
+		VirtualHost: &v1.VirtualHost{
+			Domains: []string{fmt.Sprintf("%s.com", name)},
+			Routes: []*v1.Route{
+				{
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: fmt.Sprintf("/%s", name),
+						},
+					}},
+					Action: &v1.Route_DirectResponseAction{
+						DirectResponseAction: &gloov1.DirectResponseAction{
+							Body: name,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if includeSsl {
+		vs.SslConfig = &gloov1.SslConfig{
+			SniDomains: []string{fmt.Sprintf("%s.com", name)},
+		}
+	}
+
+	return vs
+}
