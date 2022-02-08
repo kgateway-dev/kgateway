@@ -13,7 +13,11 @@ metadata:
   name: gloo-mtls-certgen
   namespace: {{ .Release.Namespace }}
   annotations:
+    {{- if .Values.gateway.certGenJob.runOnUpdate }}
+    "helm.sh/hook": pre-install, pre-upgrade
+    {{- else }}
     "helm.sh/hook": pre-install
+    {{- end }}
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
