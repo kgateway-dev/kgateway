@@ -308,6 +308,9 @@
 |gateway.certGenJob.resources.requests.memory|string||amount of memory|
 |gateway.certGenJob.resources.requests.cpu|string||amount of CPUs|
 |gateway.certGenJob.runOnUpdate|bool|false|enable to run the job also on pre-upgrade|
+|gateway.certGenJob.cron.enabled|bool|false|enable the cronjob|
+|gateway.certGenJob.cron.schedule|string|* * * * *|Cron job scheduling|
+|gateway.certGenJob.cron.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen cronjob.|
 |gateway.updateValues|bool||if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.proxyServiceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|

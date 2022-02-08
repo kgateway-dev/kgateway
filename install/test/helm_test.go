@@ -4592,6 +4592,7 @@ metadata:
 					Entry("16-clusteringress-proxy-service", "settings.integrations.knative.proxy.service.kubeResourceOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 					Entry("18-settings", "settings.kubeResourceOverride"),
 					Entry("19-gloo-mtls-certgen-job", "gateway.certGenJob.mtlsKubeResourceOverride", "global.glooMtls.enabled=true"),
+					Entry("19-gloo-mtls-certgen-cronjob", "gateway.certGenJob.cron.mtlsKubeResourceOverride", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 					Entry("26-knative-external-proxy-deployment", "settings.integrations.knative.proxy.deployment.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
 					Entry("27-knative-external-proxy-configmap", "settings.integrations.knative.proxy.configMap.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
 					Entry("28-knative-external-proxy-service", "settings.integrations.knative.proxy.service.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
