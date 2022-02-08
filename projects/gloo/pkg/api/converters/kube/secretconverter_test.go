@@ -8,10 +8,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	. "github.com/solo-io/solo-kit/test/matchers"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -85,9 +85,18 @@ var _ = Describe("SecretConverter", func() {
 		var t TLSSecretConverter
 		kubeSecret, err := t.ToKubeSecret(context.Background(), nil, secret)
 		Expect(err).NotTo(HaveOccurred())
-
-		// use default behavior
-		Expect(kubeSecret).To(BeNil())
+		Expect(kubeSecret).To(MatchProto(&kubev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "s1",
+				Namespace: "ns",
+			},
+			Data: map[string][]byte{
+				"tls.key": []byte("key"),
+				"tls.crt": []byte("cert"),
+				"ca.crt":  []byte("ca"),
+			},
+			Type: "kubernetes.io/tls",
+		}))
 	})
 
 	It("should round trip kube ssl secret back to kube ssl secret", func() {

@@ -155,9 +155,7 @@ metadata:
 ---
 ### TlsSecret
 
- 
-Note that the annotation `resource_kind: '*v1.Secret'` is needed for Gloo to find this secret.
-Glooctl adds it by default when the tls secret is created via `glooctl create secret tls`.
+
 
 ```yaml
 "certChain": string
