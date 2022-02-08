@@ -475,6 +475,7 @@ message GlooOptions {
     AWSOptions aws_options = 5;
 
     // Policy for how Gloo should handle invalid config
+    // [#next-free-field: 15]
     message InvalidConfigPolicy {
 
         // if set to `true`, Gloo removes any routes from the provided configuration
@@ -533,6 +534,12 @@ message GlooOptions {
     // hostname with the configured frequency to update endpoints with any changes to DNS resolution.
     // Defaults to 10s.
     google.protobuf.Duration failover_upstream_dns_polling_interval = 13;
+
+    // By default gloo adds a series of filters to envoy to ensure that new routes are picked up
+    // Even if the listener previously did not have a filter on the chain previously.
+    // When set to true unused filters are not added to the chain by default.
+    // Defaults to false
+    google.protobuf.BoolValue remove_unused_filters = 14;
 }
 
 

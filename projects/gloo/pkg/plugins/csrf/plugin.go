@@ -33,7 +33,9 @@ const (
 // filter should be called after routing decision has been made
 var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
-type plugin struct{}
+type plugin struct {
+	filterNeeded bool
+}
 
 func NewPlugin() *plugin {
 	return &plugin{}
@@ -44,10 +46,15 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	p.filterNeeded = !params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
 	return nil
 }
 
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+	if !p.filterNeeded {
+		return []plugins.StagedHttpFilter{}, nil
+	}
+
 	glooCsrfConfig := listener.GetOptions().GetCsrf()
 	envoyCsrfConfig, err := translateCsrfConfig(glooCsrfConfig)
 	if err != nil {
@@ -72,6 +79,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if err != nil {
 		return err
 	}
+	p.filterNeeded = true
 
 	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
@@ -90,6 +98,7 @@ func (p *plugin) ProcessVirtualHost(
 	if err != nil {
 		return err
 	}
+	p.filterNeeded = true
 
 	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
@@ -108,6 +117,7 @@ func (p *plugin) ProcessWeightedDestination(
 	if err != nil {
 		return err
 	}
+	p.filterNeeded = true
 
 	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
