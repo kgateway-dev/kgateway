@@ -202,7 +202,8 @@ type Listener struct {
 	//	*Listener_HybridListener
 	ListenerType isListener_ListenerType `protobuf_oneof:"ListenerType"`
 	// SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port.
-	// Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config
+	// Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config.
+	// This is set to the aggregated list of SslConfigs that are defined on the selected VirtualServices
 	SslConfigurations []*SslConfig `protobuf:"bytes,6,rep,name=ssl_configurations,json=sslConfigurations,proto3" json:"ssl_configurations,omitempty"`
 	// Enable ProxyProtocol support for this listener.
 	// Deprecated: prefer setting the listener option.
@@ -633,7 +634,8 @@ type MatchedListener struct {
 	//	*MatchedListener_TcpListener
 	ListenerType isMatchedListener_ListenerType `protobuf_oneof:"ListenerType"`
 	// SSL Config is optional for the MatchedListener. If provided, the listener will serve TLS for connections.
-	// Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config
+	// Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config.
+	// This is set to the aggregated list of SslConfigs that are defined on the selected VirtualServices
 	SslConfigurations []*SslConfig `protobuf:"bytes,4,rep,name=ssl_configurations,json=sslConfigurations,proto3" json:"ssl_configurations,omitempty"`
 }
 
