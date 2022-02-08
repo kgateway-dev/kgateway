@@ -32,21 +32,18 @@ import (
 	"google.golang.org/genproto/googleapis/api/annotations"
 )
 
-type ServicesAndDescriptor struct {
-	Spec        *grpcapi.ServiceSpec
-	Descriptors *descriptor.FileDescriptorSet
-}
+var (
+	_ plugins.Plugin           = new(plugin)
+	_ plugins.UpstreamPlugin   = new(plugin)
+	_ plugins.RoutePlugin      = new(plugin)
+	_ plugins.HttpFilterPlugin = new(plugin)
+)
 
-var _ plugins.Plugin = &plugin{}
-var _ plugins.UpstreamPlugin = &plugin{}
-var _ plugins.RoutePlugin = &plugin{}
-var _ plugins.HttpFilterPlugin = &plugin{}
+const (
+	ExtensionName = "grpc"
+)
 
-func NewPlugin() *plugin {
-	return &plugin{
-		recordedUpstreams: make(map[string]*v1.Upstream),
-	}
-}
+var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 
 type plugin struct {
 	recordedUpstreams map[string]*v1.Upstream
@@ -55,7 +52,20 @@ type plugin struct {
 	ctx context.Context
 }
 
-var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
+type ServicesAndDescriptor struct {
+	Spec        *grpcapi.ServiceSpec
+	Descriptors *descriptor.FileDescriptorSet
+}
+
+func NewPlugin() *plugin {
+	return &plugin{
+		recordedUpstreams: make(map[string]*v1.Upstream),
+	}
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
+}
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx

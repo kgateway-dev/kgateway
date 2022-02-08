@@ -1,4 +1,4 @@
-package advanced_http_test
+package faultinjection_test
 
 import (
 	"testing"
@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestAdvancedHttp(t *testing.T) {
+func TestFaultInjection(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "AdvancedHttp Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "Fault Injection Suite", []Reporter{junitReporter})
 }

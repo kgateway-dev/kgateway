@@ -6,21 +6,31 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
+var (
+	_ plugins.Plugin           = new(plugin)
+	_ plugins.HttpFilterPlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "grpc_web"
+)
+
 // filter info
 var pluginStage = plugins.AfterStage(plugins.AuthZStage)
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
-}
-
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpFilterPlugin = new(Plugin)
-
-type Plugin struct {
+type plugin struct {
 	disabled bool
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func NewPlugin() *plugin {
+	return &plugin{}
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) Init(params plugins.InitParams) error {
 	maybeDisabled := params.Settings.GetGloo().GetDisableGrpcWeb()
 	if maybeDisabled != nil {
 		p.disabled = maybeDisabled.GetValue()
@@ -31,7 +41,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) isDisabled(httplistener *v1.HttpListener) bool {
+func (p *plugin) isDisabled(httplistener *v1.HttpListener) bool {
 	if httplistener == nil {
 		return p.disabled
 	}
@@ -46,7 +56,7 @@ func (p *Plugin) isDisabled(httplistener *v1.HttpListener) bool {
 	return grpcweb.GetDisable()
 }
 
-func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	if p.isDisabled(listener) {
 		return nil, nil
 	}

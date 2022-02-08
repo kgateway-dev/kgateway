@@ -1,0 +1,13 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4020
+    description: >
+      Ensure that enterprise features, when used by an open source user, produce error messages
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4367
+    description: >
+      Remove the Upgradable Plugin interface. This abstraction was a little leaky. Now we handle
+      upgrading plugins in the enterprise application itself, as that is the source of truth for
+      what should be upgraded.
+
+

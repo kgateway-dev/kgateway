@@ -7,22 +7,31 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
+var (
+	_ plugins.RoutePlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "metadata"
+)
+
 // Sets [static metadata](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata)
 // on Envoy v3.Route objects.
-type Plugin struct{}
+type plugin struct{}
 
-var _ plugins.RoutePlugin = NewPlugin()
-
-func NewPlugin() *Plugin {
-	return &Plugin{}
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func (p *Plugin) Init(_ plugins.InitParams) error {
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(_ plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-
+func (p *plugin) ProcessRoute(_ plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if envoyMetadata := in.GetOptions().GetEnvoyMetadata(); len(envoyMetadata) > 0 {
 		out.Metadata = &envoy_config_core_v3.Metadata{
 			FilterMetadata: envoyMetadata,

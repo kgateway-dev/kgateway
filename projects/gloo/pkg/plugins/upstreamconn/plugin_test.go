@@ -20,7 +20,7 @@ var _ = Describe("Plugin", func() {
 
 	var (
 		params   plugins.Params
-		plugin   *Plugin
+		plugin   plugins.UpstreamPlugin
 		upstream *v1.Upstream
 		out      *envoy_config_cluster_v3.Cluster
 	)

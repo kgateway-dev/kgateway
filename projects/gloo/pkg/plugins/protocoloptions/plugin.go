@@ -9,25 +9,32 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
-const MinWindowSize = 65535
-const MaxWindowSize = 2147483647
+var (
+	_ plugins.Plugin         = new(plugin)
+	_ plugins.UpstreamPlugin = new(plugin)
+)
 
-type Plugin struct {
+const (
+	ExtensionName = "protocol_options"
+	MinWindowSize = 65535
+	MaxWindowSize = 2147483647
+)
+
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-// Compile-time assertion
-var _ plugins.Plugin = &Plugin{}
-var _ plugins.UpstreamPlugin = &Plugin{}
-
-func NewPlugin() *Plugin {
-	return &Plugin{}
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
 	if in.GetUseHttp2() == nil || !in.GetUseHttp2().GetValue() {
 		return nil

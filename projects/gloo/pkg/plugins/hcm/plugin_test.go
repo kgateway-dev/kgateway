@@ -30,7 +30,7 @@ var _ = Describe("Plugin", func() {
 		ctx    context.Context
 		cancel context.CancelFunc
 
-		p            *Plugin
+		p            plugins.HttpConnectionManagerPlugin
 		pluginParams plugins.Params
 
 		settings *hcm.HttpConnectionManagerSettings

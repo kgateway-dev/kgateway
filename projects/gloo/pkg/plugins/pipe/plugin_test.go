@@ -15,7 +15,7 @@ import (
 var _ = Describe("Plugin", func() {
 
 	var (
-		p            *Plugin
+		p            plugins.UpstreamPlugin
 		params       plugins.Params
 		upstream     *v1.Upstream
 		upstreamSpec *v1pipe.UpstreamSpec
@@ -27,7 +27,7 @@ var _ = Describe("Plugin", func() {
 		out = new(envoy_config_cluster_v3.Cluster)
 		out.Name = "foo"
 
-		p.Init(plugins.InitParams{})
+		_ = p.Init(plugins.InitParams{})
 		upstreamSpec = &v1pipe.UpstreamSpec{
 			Path: "/foo",
 		}
