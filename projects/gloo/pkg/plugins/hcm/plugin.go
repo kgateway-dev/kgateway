@@ -82,6 +82,13 @@ func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		}
 	}
 
+	if in.GetAllowChunkedLength() {
+		if out.GetHttpProtocolOptions() == nil {
+			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
+		}
+		out.GetHttpProtocolOptions().AllowChunkedLength = in.GetAllowChunkedLength()
+	}
+
 	if in.GetIdleTimeout() != nil {
 		if out.GetCommonHttpProtocolOptions() == nil {
 			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
@@ -108,6 +115,20 @@ func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
 		out.GetCommonHttpProtocolOptions().MaxHeadersCount = in.GetMaxHeadersCount()
+	}
+
+	if in.GetMaxRequestsPerConnection() != nil {
+		if out.GetCommonHttpProtocolOptions() == nil {
+			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().MaxRequestsPerConnection = in.GetMaxRequestsPerConnection()
+	}
+
+	if in.GetHeadersWithUnderscoresAction() != hcm.HttpConnectionManagerSettings_ALLOW {
+		if out.GetCommonHttpProtocolOptions() == nil {
+			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().HeadersWithUnderscoresAction = envoycore.HttpProtocolOptions_HeadersWithUnderscoresAction(in.GetHeadersWithUnderscoresAction())
 	}
 
 	// allowed upgrades

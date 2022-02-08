@@ -56,6 +56,11 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 	}
 
+	mcs := in.GetMaxConcurrentStreams()
+	if mcs != nil {
+		out.GetHttp2ProtocolOptions().MaxConcurrentStreams = &wrappers.UInt32Value{Value: mcs.GetValue()}
+	}
+
 	return nil
 }
 

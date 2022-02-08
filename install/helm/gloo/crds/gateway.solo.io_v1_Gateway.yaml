@@ -344,6 +344,8 @@ spec:
                         properties:
                           acceptHttp10:
                             type: boolean
+                          allowChunkedLength:
+                            type: boolean
                           codecType:
                             type: string
                             x-kubernetes-int-or-string: true
@@ -359,6 +361,9 @@ spec:
                           generateRequestId:
                             nullable: true
                             type: boolean
+                          headersWithUnderscoresAction:
+                            type: string
+                            x-kubernetes-int-or-string: true
                           idleTimeout:
                             type: string
                           maxConnectionDuration:
@@ -369,6 +374,11 @@ spec:
                             nullable: true
                             type: integer
                           maxRequestHeadersKb:
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
+                            type: integer
+                          maxRequestsPerConnection:
                             maximum: 4294967295
                             minimum: 0
                             nullable: true
@@ -983,6 +993,8 @@ spec:
                                   properties:
                                     acceptHttp10:
                                       type: boolean
+                                    allowChunkedLength:
+                                      type: boolean
                                     codecType:
                                       type: string
                                       x-kubernetes-int-or-string: true
@@ -998,6 +1010,9 @@ spec:
                                     generateRequestId:
                                       nullable: true
                                       type: boolean
+                                    headersWithUnderscoresAction:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
                                     idleTimeout:
                                       type: string
                                     maxConnectionDuration:
@@ -1008,6 +1023,11 @@ spec:
                                       nullable: true
                                       type: integer
                                     maxRequestHeadersKb:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
+                                      type: integer
+                                    maxRequestsPerConnection:
                                       maximum: 4294967295
                                       minimum: 0
                                       nullable: true

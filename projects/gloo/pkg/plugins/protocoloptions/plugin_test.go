@@ -28,10 +28,12 @@ var _ = Describe("Plugin", func() {
 	Context("upstream", func() {
 		It("should not use window sizes if UseHttp2 is not true", func() {
 			falseVal := &v1.Upstream{
+				MaxConcurrentStreams:        &wrappers.UInt32Value{Value: 123},
 				InitialConnectionWindowSize: &wrappers.UInt32Value{Value: 7777777},
 				UseHttp2:                    &wrappers.BoolValue{Value: false},
 			}
 			nilVal := &v1.Upstream{
+				MaxConcurrentStreams:        &wrappers.UInt32Value{Value: 123},
 				InitialConnectionWindowSize: &wrappers.UInt32Value{Value: 7777777},
 			}
 			var nilOptions *envoy_config_core_v3.Http2ProtocolOptions = nil
@@ -64,8 +66,9 @@ var _ = Describe("Plugin", func() {
 			Expect(err).To(HaveOccurred())
 		})
 
-		It("should accept connection streams that are within the correct range", func() {
+		It("should accept connection streams/max concurrent streams that are within the correct range", func() {
 			validUpstream := &v1.Upstream{
+				MaxConcurrentStreams:        &wrappers.UInt32Value{Value: 1234},
 				InitialStreamWindowSize:     &wrappers.UInt32Value{Value: 268435457},
 				InitialConnectionWindowSize: &wrappers.UInt32Value{Value: 65535},
 				UseHttp2:                    &wrappers.BoolValue{Value: true},
@@ -74,6 +77,7 @@ var _ = Describe("Plugin", func() {
 			err := p.ProcessUpstream(params, validUpstream, out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.Http2ProtocolOptions).NotTo(BeNil())
+			Expect(out.Http2ProtocolOptions.MaxConcurrentStreams).To(Equal(&wrappers.UInt32Value{Value: 1234}))
 			Expect(out.Http2ProtocolOptions.InitialStreamWindowSize).To(Equal(&wrappers.UInt32Value{Value: 268435457}))
 			Expect(out.Http2ProtocolOptions.InitialConnectionWindowSize).To(Equal(&wrappers.UInt32Value{Value: 65535}))
 		})

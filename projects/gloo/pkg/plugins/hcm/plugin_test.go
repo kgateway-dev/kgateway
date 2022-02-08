@@ -2,10 +2,16 @@ package hcm_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"reflect"
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -101,9 +107,12 @@ var _ = Describe("Plugin", func() {
 			MaxConnectionDuration:        prototime.DurationToProto(time.Hour),
 			MaxStreamDuration:            prototime.DurationToProto(time.Hour),
 			MaxHeadersCount:              &wrappers.UInt32Value{Value: 5},
+			HeadersWithUnderscoresAction: hcm.HttpConnectionManagerSettings_REJECT_CLIENT_REQUEST,
+			MaxRequestsPerConnection:     &wrappers.UInt32Value{Value: 5},
 			CodecType:                    1,
 			ServerHeaderTransformation:   hcm.HttpConnectionManagerSettings_OVERWRITE,
 			PathWithEscapedSlashesAction: hcm.HttpConnectionManagerSettings_REJECT_REQUEST,
+			AllowChunkedLength:           true,
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
@@ -125,6 +134,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(settings.AcceptHttp_10))
 		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetProperCaseWords()).ToNot(BeNil()) // expect proper case words is set
 		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetStatefulFormatter()).To(BeNil())  // ...which makes stateful formatter nil
+		Expect(cfg.HttpProtocolOptions.GetAllowChunkedLength()).To(BeTrue())                     // ...which makes stateful formatter nil
 		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(settings.DefaultHostForHttp_10))
 		Expect(cfg.PreserveExternalRequestId).To(Equal(settings.PreserveExternalRequestId))
 
@@ -132,6 +142,8 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(MatchProto(settings.IdleTimeout))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxConnectionDuration()).To(MatchProto(settings.MaxConnectionDuration))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxStreamDuration()).To(MatchProto(settings.MaxStreamDuration))
+		Expect(cfg.CommonHttpProtocolOptions.GetHeadersWithUnderscoresAction()).To(Equal(envoycore.HttpProtocolOptions_REJECT_REQUEST))
+		Expect(cfg.CommonHttpProtocolOptions.GetMaxRequestsPerConnection()).To(MatchProto(settings.MaxRequestsPerConnection))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxHeadersCount()).To(MatchProto(settings.MaxHeadersCount))
 		Expect(cfg.GetCodecType()).To(Equal(envoyhttp.HttpConnectionManager_HTTP1))
 
@@ -234,4 +246,58 @@ var _ = Describe("Plugin", func() {
 
 	})
 
+	Context("supported Envoy HCM settings", func() {
+		// obtain all field names of a given instance's type
+		getTypeFieldsFromInstance := func(instance interface{}) []string {
+			instanceValue := reflect.ValueOf(instance)
+			instanceType := instanceValue.Type()
+
+			fieldNames := []string{}
+			for i := 0; i < instanceValue.NumField(); i++ {
+				fieldNames = append(fieldNames, instanceType.Field(i).Name)
+			}
+
+			return fieldNames
+		}
+
+		It("contains only the fields we expect", func() {
+			// read in expected HCM fields from file
+			expectedFieldsJsonFile, err := os.Open("testing/expected_hcm_fields.json")
+			Expect(err).To(BeNil())
+			defer expectedFieldsJsonFile.Close()
+
+			expectedFieldsJsonByteValue, err := ioutil.ReadAll(expectedFieldsJsonFile)
+			Expect(err).To(BeNil())
+
+			var expectedFields []string
+			json.Unmarshal(expectedFieldsJsonByteValue, &expectedFields)
+
+			expectedFieldsMap := map[string]bool{}
+			for _, fieldName := range expectedFields {
+				expectedFieldsMap[fieldName] = true
+			}
+
+			// Get all of the fields associated with the Envoy HTTP Connection Manager
+			hcmFields := getTypeFieldsFromInstance(envoyhttp.HttpConnectionManager{})
+
+			// Record the names of any fields that were not present the last time we updated this test
+			newFields := []string{}
+			for _, fieldName := range hcmFields {
+				_, found := expectedFieldsMap[fieldName]
+				if !found {
+					newFields = append(newFields, fieldName)
+				}
+			}
+
+			if len(newFields) > 0 {
+				failureMessage := fmt.Sprintf(`
+New Fields have been added to the envoy HTTP Connection Manager.
+You may want to consider adding support for these fields to Gloo Edge's API.
+You can force this test to pass by adding the new fields listed below to projects/gloo/pkg/plugins/hcm/testing/expected_hcm_fields.json
+%+v`,
+					newFields)
+				Fail(failureMessage)
+			}
+		})
+	})
 })
