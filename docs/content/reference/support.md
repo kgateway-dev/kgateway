@@ -42,7 +42,7 @@ Development of a quality stable release on `master` typically follows this proce
 ## Additional support information
 
 ### Kubernetes 
-Gloo Edge Enterprise is supported and tested for the latest Kubernetes version and all Kubernetes versions released up to 1 year before the latest version. However, because you might need to run Gloo Edge on older versions of Kubernetes, Gloo Edge development attempts to maintain backwards compatibility for earlier releases up to Kubernetes 1.11.
+Gloo Edge Enterprise is supported and tested for the latest Kubernetes version and all Kubernetes versions released up to 1 year before the latest version.
 
 ### Envoy
 Officially, Gloo Edge Enterprise offers support for `n-1` of Envoy community releases. In specific support situations, fixes can be backported to `n-2` or more without bumping the Envoy minor version. In other words, a fix can be developed based on the code that you deployed within the `n-2` release timeframe. 
