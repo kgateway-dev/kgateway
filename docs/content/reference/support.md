@@ -19,7 +19,7 @@ Gloo Edge Enterprise offers `n-3` patching support for bug and critical security
 
 ## Release cadence
 
-Gloo Edge Enterprise releases typically follow the equivalent Gloo Edge OSS release. The OSS version is always released as the latest build, while Enterprise version is always released as the first stable build of that version. For example, the latest build of Gloo Edge OSS is {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}, while the latest stable build of Gloo Edge Enterprise is {{< readfile file="static/content/version_gee_latest.md" markdown="true">}}. The Enterprise 1.10 version is built on the OSS 1.10 version code base.
+Gloo Edge Enterprise releases are built on the OSS codebase and typically follow the equivalent Gloo Edge OSS release. The OSS version is always released as the latest build, while Enterprise version is always released as the first stable build of that version. For example, the latest build of Gloo Edge OSS is {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}, while the latest stable build of Gloo Edge Enterprise is {{< readfile file="static/content/version_gee_latest.md" markdown="true">}}.
 
 Stable builds for both Gloo Edge Enterprise and OSS are released as minor versions approximately every three months. A stable branch for a minor version, such as 1.10, is tagged from `master`, and stable builds for both Enterprise and OSS are supported from that branch. 
 
@@ -27,7 +27,7 @@ Stable builds for both Gloo Edge Enterprise and OSS are released as minor versio
 
 ### Beta release process
 
-New features for Gloo Edge Enterprise and OSS are always developed on `master`. For Enterprise, new features are often released as `beta` builds of the latest Gloo Edge Enterprise version. You can use these beta builds to test new features, or wait until the feature is released with the next stable Enterprise minor version. For OSS, new features are released as patches off of `master` for the latest version of Gloo Edge OSS.
+New features for Gloo Edge Enterprise and OSS are always developed on `master`. For Enterprise, new features are often released as `beta` builds of the latest Gloo Edge Enterprise version. You can use these beta builds to test new features, or wait until the feature is released with the next stable Enterprise minor version. For OSS, new features for the latest version are released as patches off of `master`.
 
 ### Stable release process
 
