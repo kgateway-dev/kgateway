@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Updates envoy-gloo version to 1.20.0-patch3
+    issueLink: https://github.com/solo-io/gloo/issues/5597
