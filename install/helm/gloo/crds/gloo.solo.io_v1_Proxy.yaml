@@ -10172,6 +10172,85 @@ spec:
                                         type: array
                                     type: object
                                 type: object
+                              sslConfigurations:
+                                items:
+                                  properties:
+                                    alpnProtocols:
+                                      items:
+                                        type: string
+                                      type: array
+                                    disableTlsSessionResumption:
+                                      nullable: true
+                                      type: boolean
+                                    oneWayTls:
+                                      nullable: true
+                                      type: boolean
+                                    parameters:
+                                      properties:
+                                        cipherSuites:
+                                          items:
+                                            type: string
+                                          type: array
+                                        ecdhCurves:
+                                          items:
+                                            type: string
+                                          type: array
+                                        maximumProtocolVersion:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        minimumProtocolVersion:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                      type: object
+                                    sds:
+                                      properties:
+                                        callCredentials:
+                                          properties:
+                                            fileCredentialSource:
+                                              properties:
+                                                header:
+                                                  type: string
+                                                tokenFileName:
+                                                  type: string
+                                              type: object
+                                          type: object
+                                        certificatesSecretName:
+                                          type: string
+                                        clusterName:
+                                          type: string
+                                        targetUri:
+                                          type: string
+                                        validationContextName:
+                                          type: string
+                                      type: object
+                                    secretRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                    sniDomains:
+                                      items:
+                                        type: string
+                                      type: array
+                                    sslFiles:
+                                      properties:
+                                        rootCa:
+                                          type: string
+                                        tlsCert:
+                                          type: string
+                                        tlsKey:
+                                          type: string
+                                      type: object
+                                    transportSocketConnectTimeout:
+                                      type: string
+                                    verifySubjectAltName:
+                                      items:
+                                        type: string
+                                      type: array
+                                  type: object
+                                type: array
                               tcpListener:
                                 properties:
                                   options:

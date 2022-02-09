@@ -115,7 +115,7 @@ message HybridGateway {
     // using a resourceRef or label selection
     // Only one of `MatchedGateways` or `DelegatedHttpGateways` should be provided.
     // If more than one is provided only one will be checked with priority MatchedGateways, DelegatedHttpGateways
-    repeated DelegatedHttpGateway delegated_http_gateways = 2;
+    DelegatedHttpGateway delegated_http_gateways = 2;
 }
 
 message DelegatedHttpGateway {
