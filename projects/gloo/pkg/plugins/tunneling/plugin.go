@@ -13,21 +13,30 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+var (
+	_ plugins.Plugin                  = new(plugin)
+	_ plugins.ResourceGeneratorPlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "tunneling"
+)
+
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.ResourceGeneratorPlugin = new(Plugin)
-
-type Plugin struct {
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(_ plugins.InitParams) error {
+func (p *plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) GeneratedResources(params plugins.Params,
+func (p *plugin) GeneratedResources(params plugins.Params,
 	inClusters []*envoy_config_cluster_v3.Cluster,
 	inEndpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment,
 	inRouteConfigurations []*envoy_config_route_v3.RouteConfiguration,

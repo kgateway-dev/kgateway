@@ -21,22 +21,30 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
-type plugin struct {
-}
+var (
+	_ plugins.Plugin            = new(plugin)
+	_ plugins.HttpFilterPlugin  = new(plugin)
+	_ plugins.RoutePlugin       = new(plugin)
+	_ plugins.VirtualHostPlugin = new(plugin)
+)
 
-var _ plugins.Plugin = new(plugin)
-var _ plugins.HttpFilterPlugin = new(plugin)
-var _ plugins.RoutePlugin = new(plugin)
-var _ plugins.VirtualHostPlugin = new(plugin)
+const (
+	ExtensionName = "cors"
+)
 
 var (
 	InvalidRouteActionError = errors.New("cannot use cors plugin on non-Route_Route route actions")
+	pluginStage             = plugins.DuringStage(plugins.CorsStage)
 )
 
-var pluginStage = plugins.DuringStage(plugins.CorsStage)
+type plugin struct{}
 
 func NewPlugin() *plugin {
 	return &plugin{}
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {

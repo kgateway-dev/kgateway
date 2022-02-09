@@ -55,6 +55,7 @@ func cmd(ctx context.Context) *cobra.Command {
 		"name of the server cert authority as it will be stored in the secret data")
 	pFlags.StringVar(&opts.ValidatingWebhookConfigurationName, "validating-webhook-configuration-name", "",
 		"name of the ValidatingWebhookConfiguration to patch with the generated CA bundle. leave empty to skip this step.")
-
+	pFlags.BoolVar(&opts.ForceRotation, "force-rotation", false,
+		"if set, will create new certs even if the old one are still valid")
 	return cmd
 }

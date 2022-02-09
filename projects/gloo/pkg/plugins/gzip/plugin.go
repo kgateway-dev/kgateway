@@ -12,31 +12,37 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-// filter should be called after routing decision has been made
-var pluginStage = plugins.DuringStage(plugins.RouteStage)
+var (
+	_ plugins.Plugin           = new(plugin)
+	_ plugins.HttpFilterPlugin = new(plugin)
+)
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
-}
-
-// Compressor not in wellknown names
 const (
+	ExtensionName = "compressor"
+
+	// Compressor not in wellknown names
 	CompressorFilterName = "envoy.filters.http.compressor"
 	GzipLibrary          = "envoy.compression.gzip.compressor"
 )
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpFilterPlugin = new(Plugin)
+// filter should be called after routing decision has been made
+var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
-type Plugin struct {
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-
+func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	gzipConfig := listener.GetOptions().GetGzip()
 
 	if gzipConfig == nil {
@@ -80,7 +86,6 @@ func glooToEnvoyCompressor(gzip *v2.Gzip) (*envoycompressor.Compressor, error) {
 }
 
 func glooToEnvoyGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
-
 	envoyGzip := &envoygzip.Gzip{}
 
 	if gzip.GetMemoryLevel() != nil {

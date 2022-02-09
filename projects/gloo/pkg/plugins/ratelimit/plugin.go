@@ -14,8 +14,15 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
+var (
+	_ plugins.Plugin            = new(plugin)
+	_ plugins.HttpFilterPlugin  = new(plugin)
+	_ plugins.VirtualHostPlugin = new(plugin)
+	_ plugins.RoutePlugin       = new(plugin)
+)
+
 const (
-	ExtensionName      = "rate-limit"
+	ExtensionName      = "rate_limit"
 	EnvoyExtensionName = "envoy-rate-limit"
 	CustomDomain       = "custom"
 	requestType        = "both"
@@ -34,24 +41,22 @@ var (
 	DefaultTimeout = prototime.DurationToProto(100 * time.Millisecond)
 )
 
-// Compile-time assertion
-var _ plugins.Plugin = &Plugin{}
-var _ plugins.HttpFilterPlugin = &Plugin{}
-var _ plugins.VirtualHostPlugin = &Plugin{}
-var _ plugins.RoutePlugin = &Plugin{}
-
-type Plugin struct {
+type plugin struct {
 	upstreamRef         *core.ResourceRef
 	timeout             *duration.Duration
 	denyOnFail          bool
 	rateLimitBeforeAuth bool
 }
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) Init(params plugins.InitParams) error {
 	if rlServer := params.Settings.GetRatelimitServer(); rlServer != nil {
 		p.upstreamRef = rlServer.GetRatelimitServerRef()
 		p.timeout = rlServer.GetRequestTimeout()
@@ -62,7 +67,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessVirtualHost(
+func (p *plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost,
 ) error {
@@ -72,7 +77,7 @@ func (p *Plugin) ProcessVirtualHost(
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if rateLimits := in.GetOptions().GetRatelimit(); rateLimits != nil {
 		if ra := out.GetRoute(); ra != nil {
 			ra.RateLimits = toEnvoyRateLimits(params.Ctx, rateLimits.GetRateLimits())
@@ -85,7 +90,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return nil
 }
 
-func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	var upstreamRef *core.ResourceRef
 	var timeout *duration.Duration
 	var denyOnFail bool

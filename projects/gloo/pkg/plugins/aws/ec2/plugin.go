@@ -4,15 +4,26 @@ import (
 	"context"
 	"reflect"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+)
+
+var (
+	_ plugins.Plugin            = new(plugin)
+	_ plugins.UpstreamPlugin    = new(plugin)
+	_ discovery.DiscoveryPlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "aws_ec2"
 )
 
 /*
@@ -36,11 +47,6 @@ type plugin struct {
 	constructorErr error
 }
 
-// checks to ensure interfaces are implemented
-var _ plugins.Plugin = new(plugin)
-var _ plugins.UpstreamPlugin = new(plugin)
-var _ discovery.DiscoveryPlugin = new(plugin)
-
 func NewPlugin(ctx context.Context, secretFactory factory.ResourceClientFactory) *plugin {
 	p := &plugin{}
 	var err error
@@ -58,6 +64,10 @@ func NewPlugin(ctx context.Context, secretFactory factory.ResourceClientFactory)
 		return p
 	}
 	return p
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {

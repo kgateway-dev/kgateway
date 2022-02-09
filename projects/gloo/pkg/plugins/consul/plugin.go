@@ -6,11 +6,11 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
@@ -19,15 +19,20 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 )
 
-var _ discovery.DiscoveryPlugin = new(plugin)
-var _ plugins.UpstreamPlugin = new(plugin)
-var _ plugins.RouteActionPlugin = new(plugin)
-
 var (
+	_ discovery.DiscoveryPlugin = new(plugin)
+	_ plugins.UpstreamPlugin    = new(plugin)
+	_ plugins.RouteActionPlugin = new(plugin)
+)
+
+const (
+	ExtensionName             = "consul"
 	DefaultDnsAddress         = "127.0.0.1:8600"
 	DefaultDnsPollingInterval = 5 * time.Second
 	DefaultTlsTagName         = "glooUseTls"
+)
 
+var (
 	UnformattedErrorMsg = "Consul settings specify automatic detection of TLS services, " +
 		"but the rootCA resource's name/namespace are not properly specified: {%s}"
 	ConsulTlsInputError = func(nsString string) error {
@@ -42,6 +47,19 @@ type plugin struct {
 	consulUpstreamDiscoverySettings *v1.Settings_ConsulUpstreamDiscoveryConfiguration
 	settings                        *v1.Settings
 	previousDnsResolutions          map[string][]string
+}
+
+func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInterval *time.Duration) *plugin {
+	pollingInterval := DefaultDnsPollingInterval
+	if dnsPollingInterval != nil {
+		pollingInterval = *dnsPollingInterval
+	}
+	previousDnsResolutions := make(map[string][]string)
+	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval, previousDnsResolutions: previousDnsResolutions}
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -101,15 +119,6 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	}
 
 	return nil, eris.Errorf("service with name %s and tags %v not found", spec.GetServiceName(), spec.GetInstanceTags())
-}
-
-func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInterval *time.Duration) *plugin {
-	pollingInterval := DefaultDnsPollingInterval
-	if dnsPollingInterval != nil {
-		pollingInterval = *dnsPollingInterval
-	}
-	previousDnsResolutions := make(map[string][]string)
-	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval, previousDnsResolutions: previousDnsResolutions}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {

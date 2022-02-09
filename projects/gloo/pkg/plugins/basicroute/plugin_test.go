@@ -259,10 +259,10 @@ var _ = Describe("timeout", func() {
 var _ = Describe("retries", func() {
 
 	var (
-		plugin              *Plugin
 		retryPolicy         *retries.RetryPolicy
 		expectedRetryPolicy *envoy_config_route_v3.RetryPolicy
 	)
+
 	BeforeEach(func() {
 		t := prototime.DurationToProto(time.Minute)
 		retryPolicy = &retries.RetryPolicy{
@@ -277,11 +277,10 @@ var _ = Describe("retries", func() {
 			},
 			PerTryTimeout: t,
 		}
-
-		plugin = NewPlugin()
 	})
 
 	It("works", func() {
+		plugin := NewPlugin()
 		routeAction := &envoy_config_route_v3.RouteAction{}
 		out := &envoy_config_route_v3.Route{
 			Action: &envoy_config_route_v3.Route_Route{
@@ -296,7 +295,9 @@ var _ = Describe("retries", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.RetryPolicy).To(Equal(expectedRetryPolicy))
 	})
+
 	It("works on vhost", func() {
+		plugin := NewPlugin()
 		out := &envoy_config_route_v3.VirtualHost{}
 		err := plugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{

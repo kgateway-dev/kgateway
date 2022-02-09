@@ -17,22 +17,31 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
+var (
+	_ plugins.Plugin                    = new(plugin)
+	_ plugins.HttpFilterPlugin          = new(plugin)
+	_ plugins.WeightedDestinationPlugin = new(plugin)
+	_ plugins.VirtualHostPlugin         = new(plugin)
+	_ plugins.RoutePlugin               = new(plugin)
+)
+
+const (
+	ExtensionName = "csrf"
+	FilterName    = "envoy.filters.http.csrf"
+)
+
 // filter should be called after routing decision has been made
 var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
-const FilterName = "envoy.filters.http.csrf"
+type plugin struct{}
 
 func NewPlugin() *plugin {
 	return &plugin{}
 }
 
-var _ plugins.Plugin = new(plugin)
-var _ plugins.HttpFilterPlugin = new(plugin)
-var _ plugins.WeightedDestinationPlugin = new(plugin)
-var _ plugins.VirtualHostPlugin = new(plugin)
-var _ plugins.RoutePlugin = new(plugin)
-
-type plugin struct{}
+func (p *plugin) Name() string {
+	return ExtensionName
+}
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	return nil

@@ -23,10 +23,11 @@ var _ = Describe("Plugin", func() {
 
 	var (
 		params   plugins.Params
-		plugin   *Plugin
+		plugin   plugins.UpstreamPlugin
 		upstream *v1.Upstream
 		out      *envoy_config_cluster_v3.Cluster
 	)
+
 	BeforeEach(func() {
 		out = new(envoy_config_cluster_v3.Cluster)
 
@@ -69,6 +70,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_RANDOM))
 	})
+
 	Context("p2c", func() {
 		BeforeEach(func() {
 			upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
@@ -227,15 +229,19 @@ status: {}
 	})
 
 	Context("route plugin", func() {
+
 		var (
 			routeParams plugins.RouteParams
+			routePlugin plugins.RoutePlugin
 			route       *v1.Route
 			outRoute    *envoy_config_route_v3.Route
 		)
+
 		BeforeEach(func() {
 			outRoute = new(envoy_config_route_v3.Route)
 
 			routeParams = plugins.RouteParams{}
+			routePlugin = NewPlugin()
 			route = &v1.Route{}
 
 		})
@@ -251,7 +257,7 @@ status: {}
 					},
 				},
 			}
-			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			err := routePlugin.ProcessRoute(routeParams, route, outRoute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoy_config_route_v3.RouteAction_HashPolicy{{
 				PolicySpecifier: &envoy_config_route_v3.RouteAction_HashPolicy_Header_{
@@ -321,7 +327,7 @@ spec:
 status: {}
 `
 			Expect(yamlForm).To(Equal(sampleInputYaml))
-			err = plugin.ProcessRoute(routeParams, route, outRoute)
+			err = routePlugin.ProcessRoute(routeParams, route, outRoute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoy_config_route_v3.RouteAction_HashPolicy{
 				{
@@ -374,7 +380,7 @@ status: {}
 					},
 				},
 			}
-			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			err := routePlugin.ProcessRoute(routeParams, route, outRoute)
 			Expect(err).To(HaveOccurred())
 			Expect(outRoute.GetRoute()).To(BeNil())
 		})
@@ -383,7 +389,7 @@ status: {}
 				Route: &envoy_config_route_v3.RouteAction{},
 			}
 			route.Options = &v1.RouteOptions{}
-			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			err := routePlugin.ProcessRoute(routeParams, route, outRoute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outRoute.GetRoute().HashPolicy).To(BeNil())
 		})

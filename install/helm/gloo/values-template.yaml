@@ -89,6 +89,9 @@ gateway:
     setTtlAfterFinished: true
     ttlSecondsAfterFinished: 60
     runAsUser: 10101
+    cron:
+      enabled: false
+      schedule: "* * * * *"
     runOnUpdate: false
   proxyServiceAccount: {}
   serviceAccount: {}

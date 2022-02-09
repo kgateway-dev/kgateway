@@ -21,7 +21,7 @@ import (
 var _ = Describe("Plugin", func() {
 
 	var (
-		plugin       *Plugin
+		plugin       plugins.Plugin
 		pluginParams plugins.Params
 
 		hcmSettings *hcm.HttpConnectionManagerSettings
@@ -42,7 +42,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 		listener := &v1.Listener{}
-		return plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+		return plugin.(plugins.HttpConnectionManagerPlugin).ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 	}
 
 	It("should update listener properly", func() {
@@ -398,7 +398,7 @@ var _ = Describe("Plugin", func() {
 	It("should update routes properly", func() {
 		in := &v1.Route{}
 		out := &envoy_config_route_v3.Route{}
-		err := plugin.ProcessRoute(plugins.RouteParams{}, in, out)
+		err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
@@ -410,7 +410,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 		outFull := &envoy_config_route_v3.Route{}
-		err = plugin.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
+		err = plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))
 		Expect(outFull.Decorator.Propagate).To(Equal(&wrappers.BoolValue{Value: false}))
@@ -422,7 +422,7 @@ var _ = Describe("Plugin", func() {
 	It("should update routes properly - with defaults", func() {
 		in := &v1.Route{}
 		out := &envoy_config_route_v3.Route{}
-		err := plugin.ProcessRoute(plugins.RouteParams{}, in, out)
+		err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
@@ -438,7 +438,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 		outFull := &envoy_config_route_v3.Route{}
-		err = plugin.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
+		err = plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))
 		Expect(outFull.Decorator.Propagate).To(BeNil())

@@ -14,25 +14,31 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
+var (
+	_ plugins.Plugin                      = new(plugin)
+	_ plugins.HttpConnectionManagerPlugin = new(plugin)
+)
+
 const (
+	ExtensionName      = "hcm"
 	PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpConnectionManagerPlugin = new(Plugin)
-
-type Plugin struct {
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(_ plugins.InitParams) error {
+func (p *plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
+func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
 
 	out.UseRemoteAddress = in.GetUseRemoteAddress()
@@ -82,6 +88,13 @@ func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		}
 	}
 
+	if in.GetAllowChunkedLength() {
+		if out.GetHttpProtocolOptions() == nil {
+			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
+		}
+		out.GetHttpProtocolOptions().AllowChunkedLength = in.GetAllowChunkedLength()
+	}
+
 	if in.GetIdleTimeout() != nil {
 		if out.GetCommonHttpProtocolOptions() == nil {
 			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
@@ -108,6 +121,20 @@ func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
 		out.GetCommonHttpProtocolOptions().MaxHeadersCount = in.GetMaxHeadersCount()
+	}
+
+	if in.GetMaxRequestsPerConnection() != nil {
+		if out.GetCommonHttpProtocolOptions() == nil {
+			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().MaxRequestsPerConnection = in.GetMaxRequestsPerConnection()
+	}
+
+	if in.GetHeadersWithUnderscoresAction() != hcm.HttpConnectionManagerSettings_ALLOW {
+		if out.GetCommonHttpProtocolOptions() == nil {
+			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().HeadersWithUnderscoresAction = envoycore.HttpProtocolOptions_HeadersWithUnderscoresAction(in.GetHeadersWithUnderscoresAction())
 	}
 
 	// allowed upgrades
