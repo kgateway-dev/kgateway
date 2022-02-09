@@ -296,6 +296,19 @@ func (m *MatchedListener) Clone() proto.Message {
 		target.Matcher = proto.Clone(m.GetMatcher()).(*Matcher)
 	}
 
+	if m.GetSslConfigurations() != nil {
+		target.SslConfigurations = make([]*SslConfig, len(m.GetSslConfigurations()))
+		for idx, v := range m.GetSslConfigurations() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.SslConfigurations[idx] = h.Clone().(*SslConfig)
+			} else {
+				target.SslConfigurations[idx] = proto.Clone(v).(*SslConfig)
+			}
+
+		}
+	}
+
 	switch m.ListenerType.(type) {
 
 	case *MatchedListener_HttpListener:
