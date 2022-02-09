@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Updates version support reference page to clarify n-2 support.
