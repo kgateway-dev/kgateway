@@ -37,7 +37,7 @@ Development of a quality stable release on `master` typically follows this proce
 3. A full suite fo tests is performed for each release candidate. Testing includes all documented workflows, a test matrix of all supported platforms, and more.
 4. Documentation for that release is prepared, vetted, and staged.
 5. The stable minor version is released.
-6. Feature development on `main` is resumed.
+6. Feature development on `master` is resumed.
 
 ## Additional support information
 
