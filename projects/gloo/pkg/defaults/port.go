@@ -17,4 +17,4 @@ var DefaultRefreshRate = time.Minute
 
 // Used for testing
 var TcpPort uint32 = 8000
-var HybridPort uint32 = 8081
+var HybridPort uint32 = 8082
