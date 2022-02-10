@@ -1,6 +1,8 @@
 package transformation_test
 
 import (
+	"context"
+
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/any"
 	. "github.com/onsi/ginkgo"
@@ -8,6 +10,7 @@ import (
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformers/xslt"
 	matcherv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -28,7 +31,7 @@ var _ = Describe("Plugin", func() {
 	Context("translate transformations", func() {
 		BeforeEach(func() {
 			p = NewPlugin()
-			err := p.Init(plugins.InitParams{})
+			err := p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -103,7 +106,7 @@ var _ = Describe("Plugin", func() {
 		)
 		BeforeEach(func() {
 			p = NewPlugin()
-			err := p.Init(plugins.InitParams{})
+			err := p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
 			Expect(err).NotTo(HaveOccurred())
 			inputTransform = &transformation.Transformations{
 				ClearRouteCache: true,
@@ -171,7 +174,8 @@ var _ = Describe("Plugin", func() {
 		)
 		BeforeEach(func() {
 			p = NewPlugin()
-			err := p.Init(plugins.InitParams{})
+			err := p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+
 			Expect(err).NotTo(HaveOccurred())
 			earlyStageFilterConfig, err = utils.MessageToAny(&envoytransformation.FilterTransformations{
 				Stage: EarlyStageNumber,
