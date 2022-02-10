@@ -205,8 +205,13 @@ func CheckResources(opts *options.Options) error {
 
 func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, error) {
 	printer.AppendCheck("Checking deployments... ")
-	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
+	client, err := helpers.KubeClient()
+	if err != nil {
+		errMessage := "error getting KubeClient"
+		fmt.Println(errMessage)
+		return nil, fmt.Errorf(errMessage+": %v", err)
+	}
+	_, err = client.CoreV1().Namespaces().Get(opts.Top.Ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
 	if err != nil {
 		errMessage := "Gloo namespace does not exist"
 		fmt.Println(errMessage)
@@ -277,7 +282,10 @@ func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, erro
 
 func checkPods(opts *options.Options) error {
 	printer.AppendCheck("Checking pods... ")
-	client := helpers.MustKubeClient()
+	client, err := helpers.KubeClient()
+	if err != nil {
+		return err
+	}
 	pods, err := client.CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -335,7 +343,10 @@ func checkPods(opts *options.Options) error {
 }
 
 func getSettings(opts *options.Options) (*v1.Settings, error) {
-	client := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	client, err := helpers.SettingsClient(opts.Top.Ctx, []string{opts.Metadata.GetNamespace()})
+	if err != nil {
+		return nil, err
+	}
 	return client.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{})
 }
 
@@ -352,9 +363,15 @@ func checkUpstreams(opts *options.Options, namespaces []string) ([]string, error
 	var knownUpstreams []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		upstreams, err := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
+		client, err := helpers.UpstreamClient(opts.Top.Ctx, []string{ns})
 		if err != nil {
-			return nil, err
+			multiErr = multierror.Append(multiErr, err)
+			continue
+		}
+		upstreams, err := client.List(ns, clients.ListOpts{})
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+			continue
 		}
 		for _, upstream := range upstreams {
 			if upstream.GetNamespacedStatuses() != nil {
@@ -387,7 +404,16 @@ func checkUpstreamGroups(opts *options.Options, namespaces []string) error {
 	printer.AppendCheck("Checking upstream groups... ")
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		upstreamGroups, err := helpers.MustNamespacedUpstreamGroupClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
+		upstreamGroupClient, err := helpers.UpstreamGroupClient(opts.Top.Ctx, []string{ns})
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+			continue
+		}
+		upstreamGroups, err := upstreamGroupClient.List(ns, clients.ListOpts{})
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+			continue
+		}
 		if err != nil {
 			return err
 		}
@@ -422,9 +448,15 @@ func checkAuthConfigs(opts *options.Options, namespaces []string) ([]string, err
 	var knownAuthConfigs []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		authConfigs, err := helpers.MustNamespacedAuthConfigClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
+		authConfigClient, err := helpers.AuthConfigClient(opts.Top.Ctx, []string{ns})
 		if err != nil {
-			return nil, err
+			multiErr = multierror.Append(multiErr, err)
+			continue
+		}
+		authConfigs, err := authConfigClient.List(ns, clients.ListOpts{})
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+			continue
 		}
 		for _, authConfig := range authConfigs {
 			if authConfig.GetNamespacedStatuses() != nil {
@@ -588,9 +620,15 @@ func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, kno
 	var multiErr *multierror.Error
 
 	for _, ns := range namespaces {
-		virtualServices, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
+		virtualServiceClient, err := helpers.VirtualServiceClient(opts.Top.Ctx, []string{ns})
 		if err != nil {
-			return err
+			multiErr = multierror.Append(multiErr, err)
+			continue
+		}
+		virtualServices, err := virtualServiceClient.List(ns, clients.ListOpts{})
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+			continue
 		}
 		for _, virtualService := range virtualServices {
 			if virtualService.GetNamespacedStatuses() != nil {
@@ -615,7 +653,7 @@ func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, kno
 						us := route.GetRouteAction().GetSingle()
 						if us.GetUpstream() != nil {
 							if !cliutils.Contains(knownUpstreams, renderRef(us.GetUpstream())) {
-								//TODO warning message if using rejected or warning upstream
+								// TODO warning message if using rejected or warning upstream
 								errMessage := fmt.Sprintf("Virtual service references unknown upstream: ")
 								errMessage += fmt.Sprintf("(Virtual service: %s", renderMetadata(virtualService.GetMetadata()))
 								errMessage += fmt.Sprintf(" | Upstream: %s)", renderRef(us.GetUpstream()))
@@ -630,7 +668,7 @@ func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, kno
 			isAuthConfigRefValid := func(knownConfigs []string, ref *core.ResourceRef) error {
 				// If the virtual service points to a specific, non-existent authconfig, it is not valid.
 				if ref != nil && !cliutils.Contains(knownConfigs, renderRef(ref)) {
-					//TODO: Virtual service references rejected or warning auth config
+					// TODO: Virtual service references rejected or warning auth config
 					errMessage := fmt.Sprintf("Virtual service references unknown auth config:\n")
 					errMessage += fmt.Sprintf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
 					errMessage += fmt.Sprintf("  Auth Config: %s\n", renderRef(ref))
@@ -682,7 +720,7 @@ func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, kno
 					Namespace: ref.GetNamespace(),
 				}
 				if !cliutils.Contains(knownConfigs, renderRef(resourceRef)) {
-					//TODO: check if references rate limit config with error or warning
+					// TODO: check if references rate limit config with error or warning
 					errMessage := fmt.Sprintf("Virtual service references unknown rate limit config:\n")
 					errMessage += fmt.Sprintf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
 					errMessage += fmt.Sprintf("  Rate Limit Config: %s\n", renderRef(resourceRef))
@@ -719,9 +757,15 @@ func checkGateways(opts *options.Options, namespaces []string) error {
 	printer.AppendCheck("Checking gateways... ")
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		gateways, err := helpers.MustNamespacedGatewayClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
+		gatewayClient, err := helpers.GatewayClient(opts.Top.Ctx, []string{ns})
 		if err != nil {
-			return err
+			multiErr = multierror.Append(multiErr, err)
+			continue
+		}
+		gateways, err := gatewayClient.List(ns, clients.ListOpts{})
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+			continue
 		}
 		for _, gateway := range gateways {
 			if gateway.GetNamespacedStatuses() != nil {
@@ -759,9 +803,15 @@ func checkProxies(opts *options.Options, namespaces []string, glooNamespace stri
 	}
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		proxies, err := helpers.MustNamespacedProxyClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
+		proxyClient, err := helpers.ProxyClient(opts.Top.Ctx, []string{ns})
 		if err != nil {
-			return err
+			multiErr = multierror.Append(multiErr, err)
+			continue
+		}
+		proxies, err := proxyClient.List(ns, clients.ListOpts{})
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+			continue
 		}
 		for _, proxy := range proxies {
 			if proxy.GetNamespacedStatuses() != nil {
@@ -797,7 +847,12 @@ func checkProxies(opts *options.Options, namespaces []string, glooNamespace stri
 func checkSecrets(opts *options.Options, namespaces []string) error {
 	printer.AppendCheck("Checking secrets... ")
 	var multiErr *multierror.Error
-	client := helpers.MustSecretClientWithOptions(opts.Top.Ctx, 5*time.Second, namespaces)
+	client, err := helpers.GetSecretClient(opts.Top.Ctx, 5*time.Second, namespaces)
+	if err != nil {
+		multiErr = multierror.Append(multiErr, err)
+		printer.AppendStatus("secrets", fmt.Sprintf("%v Errors!", multiErr.Len()))
+		return multiErr
+	}
 
 	for _, ns := range namespaces {
 		_, err := client.List(ns, clients.ListOpts{})
