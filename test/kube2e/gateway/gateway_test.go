@@ -80,7 +80,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		kubeClient kubernetes.Interface
 
 		gatewayClient           gatewayv1.GatewayClient
-		httpGatewayClient           gatewayv1.MatchableHttpGatewayClient
+		httpGatewayClient       gatewayv1.MatchableHttpGatewayClient
 		virtualServiceClient    gatewayv1.VirtualServiceClient
 		routeTableClient        gatewayv1.RouteTableClient
 		virtualHostOptionClient gatewayv1.VirtualHostOptionClient
@@ -2378,10 +2378,10 @@ spec:
 			})
 
 			// Create a MatchableHttpGateway
-			matchableHttpGateway :=  &gatewayv1.MatchableHttpGateway{
+			matchableHttpGateway := &gatewayv1.MatchableHttpGateway{
 				Metadata: &core.Metadata{
-					Name:        "matchable-http-gateway",
-					Namespace:   testHelper.InstallNamespace,
+					Name:      "matchable-http-gateway",
+					Namespace: testHelper.InstallNamespace,
 				},
 				HttpGateway: &gatewayv1.HttpGateway{
 					// match all virtual services
@@ -2393,8 +2393,8 @@ spec:
 			// Create a HybridGateway that references that MatchableHttpGateway
 			hybridGateway := &gatewayv1.Gateway{
 				Metadata: &core.Metadata{
-					Name:        fmt.Sprintf("%s-hybrid", defaults.GatewayProxyName),
-					Namespace:   testHelper.InstallNamespace,
+					Name:      fmt.Sprintf("%s-hybrid", defaults.GatewayProxyName),
+					Namespace: testHelper.InstallNamespace,
 				},
 				GatewayType: &gatewayv1.Gateway_HybridGateway{
 					HybridGateway: &gatewayv1.HybridGateway{
@@ -2432,8 +2432,7 @@ spec:
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
 				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
-				WithoutStats:      false,
-				Verbose: true,
+				WithoutStats:      true,
 			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
 
 			// destination reachable via HybridGateway
@@ -2445,8 +2444,7 @@ spec:
 				Service:           gatewayProxy,
 				Port:              int(hybridProxyServicePort.Port),
 				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
-				WithoutStats:      false,
-				Verbose: true,
+				WithoutStats:      true,
 			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
 		})
 
