@@ -29,6 +29,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Gateway{},
 		&GatewayList{},
+		&MatchableHttpGateway{},
+		&MatchableHttpGatewayList{},
 		&RouteOption{},
 		&RouteOptionList{},
 		&RouteTable{},

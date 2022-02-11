@@ -237,6 +237,7 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 		WatchNamespaces:         runOptions.NsToWatch,
 		StatusReporterNamespace: statusutils.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem),
 		Gateways:                f,
+		MatchableHttpGateways:   f,
 		VirtualServices:         f,
 		RouteTables:             f,
 		VirtualHostOptions:      f,

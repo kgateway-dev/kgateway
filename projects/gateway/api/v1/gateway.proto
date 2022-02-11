@@ -14,9 +14,12 @@ import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
+import "github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto";
+
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/core/selectors/selectors.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
 
@@ -93,39 +96,6 @@ message Gateway {
     gloo.solo.io.RouteConfigurationOptions route_options = 13;
 }
 
-message HttpGateway {
-    // Names & namespace refs of the virtual services which contain the actual routes for the gateway.
-    // If the list is empty, all virtual services in all namespaces that Gloo watches will apply,
-    // with accordance to `ssl` flag on `Gateway` above.
-    // The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below.
-    // Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided.
-    // If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
-    repeated core.solo.io.ResourceRef virtual_services = 1;
-
-    // Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only
-    // to virtual services in the namespaces specified.
-    // Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided.
-    // If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
-    map<string, string> virtual_service_selector = 2;
-
-    // Select virtual services using expressions. If `virtual_service_namespaces` is provided below, this will apply only
-    // to virtual services in the namespaces specified.
-    // Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided.
-    // If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
-    VirtualServiceSelectorExpressions virtual_service_expressions = 9;
-
-    // The virtual services that compose a gateway are referenced by name via `virtual_services` or by label selector
-    // via `virtual_service_selector` on the `HttpGateway` object.
-    // By default, virtual services match if they are in any namespace watched by Gloo.
-
-    // Restrict the search by providing a list of valid search namespaces here.
-    // Setting '*' will search all namespaces, equivalent to omitting this value.
-    repeated string virtual_service_namespaces = 3;
-
-    // HTTP Gateway configuration
-    gloo.solo.io.HttpListenerOptions options = 8;
-}
-
 message TcpGateway {
     // TCP hosts that the gateway can route to
     repeated gloo.solo.io.TcpHost tcp_hosts = 1;
@@ -135,7 +105,29 @@ message TcpGateway {
 }
 
 message HybridGateway {
+    // MatchedGateways can be used to define both HttpGateways and TcpGateways directly on the Gateway resource.
+    // Only one of `MatchedGateways` or `DelegatedHttpGateways` should be provided.
+    // If more than one is provided only one will be checked with priority MatchedGateways, DelegatedHttpGateways
     repeated MatchedGateway matched_gateways = 1;
+
+    // DelegatedHttpGateways can be used to configure multiple HttpGateways
+    // using the MatchableHttpGateway CR and select them on this Gateway
+    // using a resourceRef or label selection
+    // Only one of `MatchedGateways` or `DelegatedHttpGateways` should be provided.
+    // If more than one is provided only one will be checked with priority MatchedGateways, DelegatedHttpGateways
+    repeated DelegatedHttpGateway delegated_http_gateways = 2;
+}
+
+message DelegatedHttpGateway {
+
+    // How to select MatchableHttpGateways
+    oneof selection_type {
+        // Delegate to the resource with the given `name` and `namespace.
+        core.solo.io.ResourceRef ref = 3;
+
+        // Delegate to the MatchableHttpGateway that match the given selector.
+        selectors.core.gloo.solo.io.Selector selector = 4;
+    }
 }
 
 message MatchedGateway {
@@ -160,48 +152,4 @@ message Matcher {
     // CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range.
     // See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange
     repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 2;
-}
-
-// Expressions to define which virtual services to select
-// Example:
-// expressions:
-//    - key: domain
-//      operator: in
-//      values: example.com
-message VirtualServiceSelectorExpressions {
-
-    message Expression {
-        // Kubernetes label key, must conform to Kubernetes syntax requirements
-        // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
-        string key = 1;
-
-        // Virtual Service Selector expression operator, while the set-based syntax differs from Kubernetes (kubernetes: `key: !mylabel`, gloo: `key: mylabel, operator: "!"` | kubernetes: `key: mylabel`, gloo: `key: mylabel, operator: exists`), the functionality remains the same.
-        enum Operator {
-            // =
-            Equals = 0;
-            // ==
-            DoubleEquals = 1;
-            // !=
-            NotEquals = 2;
-            // in
-            In = 3;
-            // notin
-            NotIn = 4;
-            // exists
-            Exists = 5;
-            // !
-            DoesNotExist = 6;
-            // gt
-            GreaterThan = 7;
-            // lt
-            LessThan = 8;
-        }
-        // The operator can only be in, notin, =, ==, !=, exists, ! (DoesNotExist), gt (GreaterThan), lt (LessThan).
-        Operator operator = 2;
-        repeated string values = 3;
-    }
-
-    // Expressions allow for more flexible virtual service label matching, such as equality-based requirements, set-based requirements, or a combination of both.
-    // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
-    repeated Expression expressions = 3;
 }
