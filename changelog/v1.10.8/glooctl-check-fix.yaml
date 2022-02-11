@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5061
+    description: Prevent glooctl check from producing stackdumps.
+    resolvesIssue: false
