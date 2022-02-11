@@ -19,6 +19,7 @@ type ApiSnapshot struct {
 	Gateways           GatewayList
 	VirtualHostOptions VirtualHostOptionList
 	RouteOptions       RouteOptionList
+	HttpGateways       MatchableHttpGatewayList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {
@@ -28,6 +29,7 @@ func (s ApiSnapshot) Clone() ApiSnapshot {
 		Gateways:           s.Gateways.Clone(),
 		VirtualHostOptions: s.VirtualHostOptions.Clone(),
 		RouteOptions:       s.RouteOptions.Clone(),
+		HttpGateways:       s.HttpGateways.Clone(),
 	}
 }
 
@@ -48,6 +50,9 @@ func (s ApiSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	if _, err := s.hashRouteOptions(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashHttpGateways(hasher); err != nil {
 		return 0, err
 	}
 	return hasher.Sum64(), nil
@@ -71,6 +76,10 @@ func (s ApiSnapshot) hashVirtualHostOptions(hasher hash.Hash64) (uint64, error) 
 
 func (s ApiSnapshot) hashRouteOptions(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.RouteOptions.AsInterfaces()...)
+}
+
+func (s ApiSnapshot) hashHttpGateways(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.HttpGateways.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) HashFields() []zap.Field {
@@ -101,6 +110,11 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("routeOptions", RouteOptionsHash))
+	HttpGatewaysHash, err := s.hashHttpGateways(hasher)
+	if err != nil {
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("httpGateways", HttpGatewaysHash))
 	snapshotHash, err := s.Hash(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
@@ -115,6 +129,7 @@ type ApiSnapshotStringer struct {
 	Gateways           []string
 	VirtualHostOptions []string
 	RouteOptions       []string
+	HttpGateways       []string
 }
 
 func (ss ApiSnapshotStringer) String() string {
@@ -145,6 +160,11 @@ func (ss ApiSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
+	s += fmt.Sprintf("  HttpGateways %v\n", len(ss.HttpGateways))
+	for _, name := range ss.HttpGateways {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
 	return s
 }
 
@@ -160,5 +180,6 @@ func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 		Gateways:           s.Gateways.NamespacesDotNames(),
 		VirtualHostOptions: s.VirtualHostOptions.NamespacesDotNames(),
 		RouteOptions:       s.RouteOptions.NamespacesDotNames(),
+		HttpGateways:       s.HttpGateways.NamespacesDotNames(),
 	}
 }

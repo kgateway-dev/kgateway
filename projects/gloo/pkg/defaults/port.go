@@ -15,6 +15,12 @@ var GlooMtlsModeRestXdsPort = 9998
 var GlooMtlsModeXdsPort = 9999
 var DefaultRefreshRate = time.Minute
 
+// https://github.com/solo-io/gloo/blob/1de5515c1fd655c462dce8f0d1f0342fe5400e4e/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L58
+var PrometheusListenerPort = 8081
+
+// https://github.com/solo-io/gloo/blob/1de5515c1fd655c462dce8f0d1f0342fe5400e4e/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L96
+var ReadConfigListenerPort = 8082
+
 // Used for testing
 var TcpPort uint32 = 8000
-var HybridPort uint32 = 8081
+var HybridPort uint32 = 8087

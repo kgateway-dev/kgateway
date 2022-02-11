@@ -55,6 +55,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=gateway.solo.io, Version=v1
 	case v1.SchemeGroupVersion.WithResource("gateways"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().Gateways().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("matchablehttpgateways"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().MatchableHttpGateways().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("routeoptions"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().RouteOptions().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("routetables"):

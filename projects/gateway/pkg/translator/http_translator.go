@@ -22,6 +22,10 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 )
 
+var _ ListenerTranslator = new(HttpTranslator)
+
+const HttpTranslatorName = "http"
+
 var (
 	NoVirtualHostErr = func(vs *v1.VirtualService) error {
 		return errors.Errorf("virtual service [%s] does not specify a virtual host", vs.GetMetadata().Ref().Key())
@@ -80,25 +84,59 @@ type HttpTranslator struct {
 	WarnOnRouteShortCircuiting bool
 }
 
-func (t *HttpTranslator) GenerateListeners(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
-	if len(snap.VirtualServices) == 0 {
-		snapHash := hashutils.MustHash(snap)
-		contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snapHash)
+func (t *HttpTranslator) Name() string {
+	return HttpTranslatorName
+}
+
+func (t *HttpTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener {
+	httpGateway := gateway.GetHttpGateway()
+	if httpGateway == nil {
 		return nil
 	}
-	var result []*gloov1.Listener
-	for _, gateway := range filteredGateways {
-		if gateway.GetHttpGateway() == nil {
-			continue
-		}
 
-		virtualServices := getVirtualServicesForHttpGateway(gateway.GetHttpGateway(), gateway, snap.VirtualServices, reports, gateway.GetSsl())
-		applyGlobalVirtualServiceSettings(ctx, virtualServices)
-		validateVirtualServiceDomains(gateway, virtualServices, reports)
-		listener := t.desiredListenerForHttp(gateway, proxyName, virtualServices, snap, reports)
-		result = append(result, listener)
+	snap := params.snapshot
+	if len(snap.VirtualServices) == 0 {
+		snapHash := hashutils.MustHash(snap)
+		contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services", snapHash)
+		return nil
 	}
-	return result
+
+	sslGateway := gateway.GetSsl()
+	virtualServices := getVirtualServicesForHttpGateway(params, gateway, httpGateway, sslGateway)
+
+	listener := makeListener(gateway)
+	listener.ListenerType = &gloov1.Listener_HttpListener{
+		HttpListener: t.ComputeHttpListener(params, gateway, httpGateway, virtualServices, proxyName),
+	}
+
+	if sslGateway {
+		virtualServices.Each(func(vs *v1.VirtualService) {
+			listener.SslConfigurations = append(listener.GetSslConfigurations(), vs.GetSslConfig())
+		})
+	}
+
+	if err := appendSource(listener, gateway); err != nil {
+		// should never happen
+		params.reports.AddError(gateway, err)
+	}
+
+	return listener
+}
+
+func (t *HttpTranslator) ComputeHttpListener(
+	params Params,
+	parentGateway *v1.Gateway,
+	httpGateway *v1.HttpGateway,
+	virtualServicesForHttpGateway v1.VirtualServiceList,
+	proxyName string,
+) *gloov1.HttpListener {
+	applyGlobalVirtualServiceSettings(params.ctx, virtualServicesForHttpGateway)
+	validateVirtualServiceDomains(parentGateway, virtualServicesForHttpGateway, params.reports)
+
+	return &gloov1.HttpListener{
+		VirtualHosts: t.computeHttpListenerVirtualHosts(params, parentGateway, virtualServicesForHttpGateway, proxyName),
+		Options:      httpGateway.GetOptions(),
+	}
 }
 
 func applyGlobalVirtualServiceSettings(ctx context.Context, virtualServices v1.VirtualServiceList) {
@@ -157,13 +195,18 @@ func validateVirtualServiceDomains(gateway *v1.Gateway, virtualServices v1.Virtu
 	}
 }
 
-func getVirtualServicesForHttpGateway(httpGateway *v1.HttpGateway, parentGateway *v1.Gateway, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports, gatewaySsl bool) v1.VirtualServiceList {
-
+func getVirtualServicesForHttpGateway(
+	params Params,
+	parentGateway *v1.Gateway,
+	httpGateway *v1.HttpGateway,
+	gatewaySsl bool,
+) v1.VirtualServiceList {
 	var virtualServicesForGateway v1.VirtualServiceList
-	for _, vs := range virtualServices {
+
+	for _, vs := range params.snapshot.VirtualServices {
 		contains, err := HttpGatewayContainsVirtualService(httpGateway, vs, gatewaySsl)
 		if err != nil {
-			reports.AddError(parentGateway, err)
+			params.reports.AddError(parentGateway, err)
 			continue
 		}
 		if contains {
@@ -264,54 +307,22 @@ func hasSsl(vs *v1.VirtualService) bool {
 	return vs.GetSslConfig() != nil
 }
 
-func (t *HttpTranslator) desiredListenerForHttp(gateway *v1.Gateway, proxyName string, virtualServicesForGateway v1.VirtualServiceList, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) *gloov1.Listener {
-	var sslConfigs []*gloov1.SslConfig
-
-	for _, virtualService := range virtualServicesForGateway.Sort() {
-		if virtualService.GetSslConfig() != nil {
-			sslConfigs = append(sslConfigs, virtualService.GetSslConfig())
-		}
-	}
-
-	listener := makeListener(gateway)
-	listener.ListenerType = &gloov1.Listener_HttpListener{
-		HttpListener: t.desiredHttpListener(gateway, proxyName, virtualServicesForGateway, snapshot, reports),
-	}
-	listener.SslConfigurations = sslConfigs
-
-	if err := appendSource(listener, gateway); err != nil {
-		// should never happen
-		reports.AddError(gateway, err)
-	}
-
-	return listener
-}
-
-func (t *HttpTranslator) desiredHttpListener(gateway *v1.Gateway, proxyName string, virtualServicesForGateway v1.VirtualServiceList, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) *gloov1.HttpListener {
+func (t *HttpTranslator) computeHttpListenerVirtualHosts(params Params, parentGateway *v1.Gateway, virtualServicesForGateway v1.VirtualServiceList, proxyName string) []*gloov1.VirtualHost {
 	var virtualHosts []*gloov1.VirtualHost
 
-	for _, virtualService := range virtualServicesForGateway.Sort() {
+	for _, virtualService := range virtualServicesForGateway {
 		if virtualService.GetVirtualHost() == nil {
 			virtualService.VirtualHost = &v1.VirtualHost{}
 		}
-		vh, err := t.virtualServiceToVirtualHost(virtualService, gateway, proxyName, snapshot, reports)
+		vh, err := t.virtualServiceToVirtualHost(virtualService, parentGateway, proxyName, params.snapshot, params.reports)
 		if err != nil {
-			reports.AddError(virtualService, err)
+			params.reports.AddError(virtualService, err)
 			continue
 		}
 		virtualHosts = append(virtualHosts, vh)
 	}
 
-	var httpPlugins *gloov1.HttpListenerOptions
-	if httpGateway := gateway.GetHttpGateway(); httpGateway != nil {
-		httpPlugins = httpGateway.GetOptions()
-	}
-	httpListener := &gloov1.HttpListener{
-		VirtualHosts: virtualHosts,
-		Options:      httpPlugins,
-	}
-
-	return httpListener
+	return virtualHosts
 }
 
 func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, gateway *v1.Gateway, proxyName string, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
