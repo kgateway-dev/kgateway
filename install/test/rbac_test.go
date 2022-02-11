@@ -433,11 +433,6 @@ var _ = Describe("RBAC Test", func() {
 								Name:      "gateway",
 								Namespace: namespace,
 							},
-							{
-								Kind:      "ServiceAccount",
-								Name:      "gloo",
-								Namespace: namespace,
-							},
 						},
 					}
 				})
