@@ -265,21 +265,14 @@ func (m *HybridGateway) Equal(that interface{}) bool {
 
 	}
 
-	if len(m.GetDelegatedHttpGateways()) != len(target.GetDelegatedHttpGateways()) {
-		return false
-	}
-	for idx, v := range m.GetDelegatedHttpGateways() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetDelegatedHttpGateways()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetDelegatedHttpGateways()[idx]) {
-				return false
-			}
+	if h, ok := interface{}(m.GetDelegatedHttpGateways()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDelegatedHttpGateways()) {
+			return false
 		}
-
+	} else {
+		if !proto.Equal(m.GetDelegatedHttpGateways(), target.GetDelegatedHttpGateways()) {
+			return false
+		}
 	}
 
 	return true

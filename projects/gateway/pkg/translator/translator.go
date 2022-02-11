@@ -8,20 +8,11 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/go-utils/hashutils"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
-
-// deprecated, use defaults.GatewayProxyName
-const GatewayProxyName = defaults.GatewayProxyName
-
-type ListenerFactory interface {
-	GenerateListeners(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener
-}
 
 //go:generate mockgen -destination mocks/mock_translator.go -package mocks github.com/solo-io/gloo/projects/gateway/pkg/translator Translator
 type Translator interface {
@@ -29,14 +20,19 @@ type Translator interface {
 }
 
 type translator struct {
-	listenerTypes []ListenerFactory
-	opts          Opts
+	listenerTranslators map[string]ListenerTranslator
+	opts                Opts
 }
 
-func NewTranslator(factories []ListenerFactory, opts Opts) *translator {
+func NewTranslator(listenerTranslators []ListenerTranslator, opts Opts) *translator {
+	translatorsByName := make(map[string]ListenerTranslator)
+	for _, t := range listenerTranslators {
+		translatorsByName[t.Name()] = t
+	}
+
 	return &translator{
-		listenerTypes: factories,
-		opts:          opts,
+		listenerTranslators: translatorsByName,
+		opts:                opts,
 	}
 }
 
@@ -46,35 +42,49 @@ func NewDefaultTranslator(opts Opts) *translator {
 		warnOnRouteShortCircuiting = opts.Validation.WarnOnRouteShortCircuiting
 	}
 
-	return NewTranslator([]ListenerFactory{
-		&HttpTranslator{WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting},
-		&TcpTranslator{},
-		&HybridTranslator{HttpTranslator: &HttpTranslator{WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting}},
-	}, opts)
+	httpTranslator := &HttpTranslator{
+		WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting,
+	}
+	tcpTranslator := &TcpTranslator{}
+	hybridTranslator := &HybridTranslator{
+		HttpTranslator: httpTranslator,
+		TcpTranslator:  tcpTranslator,
+	}
+
+	return NewTranslator([]ListenerTranslator{httpTranslator, tcpTranslator, hybridTranslator}, opts)
 }
 
 func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
-	filteredGateways := t.filterGateways(gatewaysByProxy, namespace)
-
 	reports := make(reporter.ResourceReports)
 	reports.Accept(snap.Gateways.AsInputResources()...)
 	reports.Accept(snap.VirtualServices.AsInputResources()...)
 	reports.Accept(snap.RouteTables.AsInputResources()...)
+
+	filteredGateways := t.filterGateways(gatewaysByProxy, namespace)
 	if len(filteredGateways) == 0 {
 		snapHash := hashutils.MustHash(snap)
 		logger.Infof("%v had no gateways", snapHash)
 		return nil, reports
 	}
+
+	params := NewTranslatorParams(ctx, snap, reports)
 	validateGateways(filteredGateways, snap.VirtualServices, reports)
+
 	listeners := make([]*gloov1.Listener, 0, len(filteredGateways))
-	for _, listenerFactory := range t.listenerTypes {
-		listeners = append(listeners, listenerFactory.GenerateListeners(ctx, proxyName, snap, filteredGateways, reports)...)
+	for _, gateway := range filteredGateways {
+		listenerTranslator := t.getListenerTranslatorForGateway(gateway)
+		listener := listenerTranslator.ComputeListener(params, proxyName, gateway)
+		if listener != nil {
+			listeners = append(listeners, listener)
+		}
 	}
+
 	if len(listeners) == 0 {
 		return nil, reports
 	}
+
 	return &gloov1.Proxy{
 		Metadata: &core.Metadata{
 			Name:      proxyName,
@@ -82,6 +92,28 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 		},
 		Listeners: listeners,
 	}, reports
+}
+
+func (t *translator) getListenerTranslatorForGateway(gateway *v1.Gateway) ListenerTranslator {
+	var listenerTranslatorImpl ListenerTranslator
+
+	switch gateway.GetGatewayType().(type) {
+	case *v1.Gateway_HttpGateway:
+		listenerTranslatorImpl = t.listenerTranslators[HttpTranslatorName]
+
+	case *v1.Gateway_TcpGateway:
+		listenerTranslatorImpl = t.listenerTranslators[TcpTranslatorName]
+
+	case *v1.Gateway_HybridGateway:
+		listenerTranslatorImpl = t.listenerTranslators[HybridTranslatorName]
+	}
+
+	if listenerTranslatorImpl == nil {
+		// This should never happen
+		return &NoOpTranslator{}
+	}
+
+	return listenerTranslatorImpl
 }
 
 func makeListener(gateway *v1.Gateway) *gloov1.Listener {
@@ -118,6 +150,7 @@ func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualService
 				}
 			}
 		}
+
 		for _, vs := range gatewayVirtualServices {
 			if _, err := virtualServices.Find(vs.Strings()); err != nil {
 				reports.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
