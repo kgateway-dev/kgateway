@@ -55,7 +55,7 @@ var _ = Describe("Robustness tests", func() {
 	// tests already do: that endpoints are updated and sent to Envoy successfully.
 	// Therefore, we opted to collapse that Test Suite into this file. If in the future there are a larger set
 	// of tests, we can evaluate re-opening that Test Suite.
-	
+
 	const (
 		gatewayProxy = defaults.GatewayProxyName
 		gatewayPort  = int(80)
