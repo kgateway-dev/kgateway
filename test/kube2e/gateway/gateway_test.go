@@ -2319,7 +2319,7 @@ spec:
 
 	})
 
-	FContext("matchable hybrid gateway", func() {
+	Context("matchable hybrid gateway", func() {
 
 		var (
 			hybridProxyServicePort = corev1.ServicePort{
