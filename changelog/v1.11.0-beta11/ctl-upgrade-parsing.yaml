@@ -1,0 +1,3 @@
+changelog:
+  - type: FIX
+    description: Upgrade now takes highest semver in last 10 releases if set to latest

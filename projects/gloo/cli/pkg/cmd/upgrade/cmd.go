@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/go-utils/versionutils"
 
 	"github.com/google/go-github/github"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -76,12 +77,25 @@ func getReleaseWithAsset(ctx context.Context, tag string, expectedAssetName stri
 		if err != nil {
 			return nil, errors.Wrapf(err, "error listing releases")
 		}
+		var largestValidSemVer versionutils.Version
+		var candidateRelease *github.RepositoryRelease
 		for _, release := range releases {
-			if tryGetAssetWithName(release, expectedAssetName) != nil {
-				return release, nil
+			if tryGetAssetWithName(release, expectedAssetName) == nil {
+				continue
+			}
+			v, err := versionutils.ParseVersion(*release.Name)
+			if err != nil {
+				continue
+			}
+			if (*v).MustIsGreaterThan(largestValidSemVer) {
+				largestValidSemVer = (*v)
+				candidateRelease = release
 			}
 		}
-		return nil, errors.Errorf("couldn't find any recent release with the desired asset")
+		if candidateRelease == nil {
+			return nil, errors.Errorf("couldn't find any recent release with the desired asset")
+		}
+		return candidateRelease, nil
 	}
 	release, _, err := g.Repositories.GetReleaseByTag(ctx, "solo-io", "gloo", tag)
 	return release, err
