@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
@@ -19,26 +20,35 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-// default all tracing percentages to 100%
-const oneHundredPercent float32 = 100.0
+var (
+	_ plugins.Plugin                      = new(plugin)
+	_ plugins.HttpConnectionManagerPlugin = new(plugin)
+	_ plugins.RoutePlugin                 = new(plugin)
+)
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+const (
+	ExtensionName = "tracing"
+
+	// default all tracing percentages to 100%
+	oneHundredPercent float32 = 100.0
+)
+
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpConnectionManagerPlugin = new(Plugin)
-var _ plugins.RoutePlugin = new(Plugin)
-
-type Plugin struct {
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
 // Manage the tracing portion of the HCM settings
-func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
+func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 
 	// only apply tracing config to the listener is using the HCM plugin
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
@@ -122,7 +132,7 @@ func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracin
 }
 
 func processEnvoyTracingProvider(
-	snapshot *v1.ApiSnapshot,
+	snapshot *v1snap.ApiSnapshot,
 	tracingSettings *tracing.ListenerTracingSettings,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	if tracingSettings.GetProviderConfig() == nil {
@@ -142,7 +152,7 @@ func processEnvoyTracingProvider(
 }
 
 func processEnvoyZipkinTracing(
-	snapshot *v1.ApiSnapshot,
+	snapshot *v1snap.ApiSnapshot,
 	zipkinTracingSettings *tracing.ListenerTracingSettings_ZipkinConfig,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	var collectorClusterName string
@@ -179,7 +189,7 @@ func processEnvoyZipkinTracing(
 }
 
 func processEnvoyDatadogTracing(
-	snapshot *v1.ApiSnapshot,
+	snapshot *v1snap.ApiSnapshot,
 	datadogTracingSettings *tracing.ListenerTracingSettings_DatadogConfig,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	var collectorClusterName string
@@ -215,7 +225,7 @@ func processEnvoyDatadogTracing(
 	}, nil
 }
 
-func getEnvoyTracingCollectorClusterName(snapshot *v1.ApiSnapshot, collectorUpstreamRef *core.ResourceRef) (string, error) {
+func getEnvoyTracingCollectorClusterName(snapshot *v1snap.ApiSnapshot, collectorUpstreamRef *core.ResourceRef) (string, error) {
 	if snapshot == nil {
 		return "", errors.Errorf("Invalid Snapshot (nil provided)")
 	}
@@ -245,7 +255,7 @@ func envoySimplePercentWithDefault(numerator *wrappers.FloatValue, defaultValue 
 	return envoySimplePercent(numerator.GetValue())
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if in.GetOptions() == nil || in.GetOptions().GetTracing() == nil {
 		return nil
 	}

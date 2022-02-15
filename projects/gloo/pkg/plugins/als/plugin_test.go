@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -183,7 +184,7 @@ var _ = Describe("Plugin", func() {
 	Context("ProcessHcmNetworkFilter", func() {
 
 		var (
-			plugin       *Plugin
+			plugin       plugins.HttpConnectionManagerPlugin
 			pluginParams plugins.Params
 
 			parentListener *v1.Listener

@@ -14,21 +14,31 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-type Plugin struct{}
+var (
+	_ plugins.RoutePlugin       = new(plugin)
+	_ plugins.VirtualHostPlugin = new(plugin)
+)
 
-var _ plugins.RoutePlugin = NewPlugin()
-var _ plugins.VirtualHostPlugin = NewPlugin()
+const (
+	ExtensionName = "basic_route"
+)
 
 // Handles a RoutePlugin APIs which map directly to basic Envoy config
-func NewPlugin() *Plugin {
-	return &Plugin{}
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessVirtualHost(
+func (p *plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,
@@ -39,7 +49,7 @@ func (p *Plugin) ProcessVirtualHost(
 	return applyRetriesVhost(in, out)
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if in.GetOptions() == nil {
 		return nil
 	}

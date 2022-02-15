@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	als2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -21,20 +23,19 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
+var (
+	_ plugins.Plugin               = new(plugin)
+	_ plugins.TcpFilterChainPlugin = new(plugin)
+)
+
 const (
+	ExtensionName        = "tcp"
 	DefaultTcpStatPrefix = "tcp"
 
 	SniFilter = "envoy.filters.network.sni_cluster"
 )
 
-func NewPlugin(sslConfigTranslator utils.SslConfigTranslator) *Plugin {
-	return &Plugin{sslConfigTranslator: sslConfigTranslator}
-}
-
 var (
-	_ plugins.Plugin               = (*Plugin)(nil)
-	_ plugins.TcpFilterChainPlugin = (*Plugin)(nil)
-
 	NoDestinationTypeError = func(host *v1.TcpHost) error {
 		return eris.Errorf("no destination type was specified for tcp host %v", host)
 	}
@@ -44,15 +45,23 @@ var (
 	}
 )
 
-type Plugin struct {
+type plugin struct {
 	sslConfigTranslator utils.SslConfigTranslator
 }
 
-func (p *Plugin) Init(_ plugins.InitParams) error {
+func NewPlugin(sslConfigTranslator utils.SslConfigTranslator) *plugin {
+	return &plugin{sslConfigTranslator: sslConfigTranslator}
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1.Listener, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error) {
+func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1.Listener, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error) {
 	var filterChains []*envoy_config_listener_v3.FilterChain
 	multiErr := multierror.Error{}
 
@@ -84,7 +93,7 @@ func (p *Plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1
 	return filterChains, multiErr.ErrorOrNil()
 }
 
-func (p *Plugin) tcpProxyFilters(
+func (p *plugin) tcpProxyFilters(
 	params plugins.Params,
 	host *v1.TcpHost,
 	plugins *v1.TcpListenerOptions,
@@ -170,7 +179,7 @@ func (p *Plugin) tcpProxyFilters(
 	return filters, nil
 }
 
-func (p *Plugin) convertToWeightedCluster(multiDest *v1.MultiDestination) (*envoytcp.TcpProxy_WeightedCluster, error) {
+func (p *plugin) convertToWeightedCluster(multiDest *v1.MultiDestination) (*envoytcp.TcpProxy_WeightedCluster, error) {
 	if len(multiDest.GetDestinations()) == 0 {
 		return nil, translatorutil.NoDestinationSpecifiedError
 	}
@@ -193,8 +202,8 @@ func (p *Plugin) convertToWeightedCluster(multiDest *v1.MultiDestination) (*envo
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
-func (p *Plugin) computeTcpFilterChain(
-	snap *v1.ApiSnapshot,
+func (p *plugin) computeTcpFilterChain(
+	snap *v1snap.ApiSnapshot,
 	listenerFilters []*envoy_config_listener_v3.Filter,
 	host *v1.TcpHost,
 ) (*envoy_config_listener_v3.FilterChain, error) {
@@ -212,7 +221,7 @@ func (p *Plugin) computeTcpFilterChain(
 	return p.newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters, sslConfig.GetTransportSocketConnectTimeout()), nil
 }
 
-func (p *Plugin) newSslFilterChain(
+func (p *plugin) newSslFilterChain(
 	downstreamConfig *envoyauth.DownstreamTlsContext,
 	sniDomains []string,
 	listenerFilters []*envoy_config_listener_v3.Filter,

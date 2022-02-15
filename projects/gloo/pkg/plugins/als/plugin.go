@@ -10,31 +10,38 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-const (
-	ClusterName = "access_log_cluster"
+var (
+	_ plugins.Plugin                      = new(plugin)
+	_ plugins.HttpConnectionManagerPlugin = new(plugin)
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+const (
+	ExtensionName = "als"
+	ClusterName   = "access_log_cluster"
+)
+
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpConnectionManagerPlugin = new(Plugin)
-
-type Plugin struct {
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, parentListener *v1.Listener, _ *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
+func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, parentListener *v1.Listener, _ *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 	if out == nil {
 		return nil
 	}

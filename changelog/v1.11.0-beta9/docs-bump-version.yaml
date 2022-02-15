@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Bumps versions to match latest releases.

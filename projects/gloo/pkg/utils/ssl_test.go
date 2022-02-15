@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	test_matchers "github.com/solo-io/solo-kit/test/matchers"
@@ -28,15 +29,19 @@ var _ = Describe("Ssl", func() {
 		resolveCommonSslConfig func(cs CertSource, secrets v1.SecretList) (*envoyauth.CommonTlsContext, error)
 	)
 
+	resolveCommonSslConfig = func(cs CertSource, secrets v1.SecretList) (*envoyauth.CommonTlsContext, error) {
+		return configTranslator.ResolveCommonSslConfig(cs, secrets, false)
+	}
+
 	Context("files", func() {
 		BeforeEach(func() {
 			upstreamCfg = &v1.UpstreamSslConfig{
 				Sni: "test.com",
 				SslSecrets: &v1.UpstreamSslConfig_SslFiles{
 					SslFiles: &v1.SSLFiles{
-						RootCa:  "rootca",
-						TlsCert: "tlscert",
-						TlsKey:  "tlskey",
+						TlsCert: gloohelpers.Certificate(),
+						TlsKey:  gloohelpers.PrivateKey(),
+						RootCa:  gloohelpers.Certificate(),
 					},
 				},
 			}
@@ -44,16 +49,13 @@ var _ = Describe("Ssl", func() {
 				SniDomains: []string{"test.com", "test1.com"},
 				SslSecrets: &v1.SslConfig_SslFiles{
 					SslFiles: &v1.SSLFiles{
-						RootCa:  "rootca",
-						TlsCert: "tlscert",
-						TlsKey:  "tlskey",
+						TlsCert: gloohelpers.Certificate(),
+						TlsKey:  gloohelpers.PrivateKey(),
+						RootCa:  gloohelpers.Certificate(),
 					},
 				},
 			}
 			configTranslator = NewSslConfigTranslator()
-			resolveCommonSslConfig = func(cs CertSource, secrets v1.SecretList) (*envoyauth.CommonTlsContext, error) {
-				return configTranslator.ResolveCommonSslConfig(cs, secrets, false)
-			}
 
 		})
 
@@ -85,9 +87,9 @@ var _ = Describe("Ssl", func() {
 	Context("secret", func() {
 		BeforeEach(func() {
 			tlsSecret = &v1.TlsSecret{
-				CertChain:  "tlscert",
-				PrivateKey: "tlskey",
-				RootCa:     "rootca",
+				CertChain:  gloohelpers.Certificate(),
+				PrivateKey: gloohelpers.PrivateKey(),
+				RootCa:     gloohelpers.Certificate(),
 			}
 			secret = &v1.Secret{
 				Kind: &v1.Secret_Tls{
@@ -148,6 +150,16 @@ var _ = Describe("Ssl", func() {
 		DescribeTable("should fail if only private key is not provided",
 			func(c func() CertSource) {
 				tlsSecret.PrivateKey = ""
+				_, err := resolveCommonSslConfig(c(), secrets)
+				Expect(err).To(HaveOccurred())
+
+			},
+			Entry("upstreamCfg", func() CertSource { return upstreamCfg }),
+			Entry("downstreamCfg", func() CertSource { return downstreamCfg }),
+		)
+		DescribeTable("should fail if invalid private key is provided",
+			func(c func() CertSource) {
+				tlsSecret.PrivateKey = "bad_private_key"
 				_, err := resolveCommonSslConfig(c(), secrets)
 				Expect(err).To(HaveOccurred())
 
@@ -527,10 +539,10 @@ func ValidateCommonContextFiles(tlsCfg *envoyauth.CommonTlsContext, err error) {
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	validationCtx := tlsCfg.GetValidationContext()
 	ExpectWithOffset(1, validationCtx).ToNot(BeNil())
-	ExpectWithOffset(1, validationCtx.TrustedCa.GetFilename()).To(Equal("rootca"))
+	ExpectWithOffset(1, validationCtx.TrustedCa.GetFilename()).To(Equal(gloohelpers.Certificate()))
 
-	ExpectWithOffset(1, tlsCfg.GetTlsCertificates()[0].GetCertificateChain().GetFilename()).To(Equal("tlscert"))
-	ExpectWithOffset(1, tlsCfg.GetTlsCertificates()[0].GetPrivateKey().GetFilename()).To(Equal("tlskey"))
+	ExpectWithOffset(1, tlsCfg.GetTlsCertificates()[0].GetCertificateChain().GetFilename()).To(Equal(gloohelpers.Certificate()))
+	ExpectWithOffset(1, tlsCfg.GetTlsCertificates()[0].GetPrivateKey().GetFilename()).To(Equal(gloohelpers.PrivateKey()))
 
 }
 
@@ -539,9 +551,9 @@ func ValidateCommonContextInline(tlsCfg *envoyauth.CommonTlsContext, err error) 
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	validationCtx := tlsCfg.GetValidationContext()
 	ExpectWithOffset(1, validationCtx).ToNot(BeNil())
-	ExpectWithOffset(1, validationCtx.TrustedCa.GetInlineString()).To(Equal("rootca"))
+	ExpectWithOffset(1, validationCtx.TrustedCa.GetInlineString()).To(Equal(gloohelpers.Certificate()))
 
-	ExpectWithOffset(1, tlsCfg.GetTlsCertificates()[0].GetCertificateChain().GetInlineString()).To(Equal("tlscert"))
-	ExpectWithOffset(1, tlsCfg.GetTlsCertificates()[0].GetPrivateKey().GetInlineString()).To(Equal("tlskey"))
+	ExpectWithOffset(1, tlsCfg.GetTlsCertificates()[0].GetCertificateChain().GetInlineString()).To(Equal(gloohelpers.Certificate()))
+	ExpectWithOffset(1, tlsCfg.GetTlsCertificates()[0].GetPrivateKey().GetInlineString()).To(Equal(gloohelpers.PrivateKey()))
 
 }

@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Document Helm configuration of PDB and affinity/anti-affinity rules for ExtAuth and RateLimit
+    issueLink: https://github.com/solo-io/gloo/issues/5648
+    resolvesIssue: true
+  - type: NON_USER_FACING
+    description: Update active documentation versions

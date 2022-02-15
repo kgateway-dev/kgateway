@@ -260,12 +260,16 @@ glooctl delete vs --name test-exact-2
 
 ## Regex Matching {#regex}
 
-Regex matching provides the most flexibility when using path matching, but it also adds complexity. Be sure to fully test your regex expressions before using them in production. Let's create a route that uses a regex matcher to match any path of five characters in the set `[a-z]`.
+Regex matching provides the most flexibility when using path matching, but it also adds complexity. Be sure to fully test your regex expressions before using them in production. 
 
 {{% notice note %}}
 The complexity of the regex is constrained by the regex engine's "program size" setting. If your regex is too complex, you may need to adjust the `regexMaxProgramSize` field
 in the [GlooOptions section of your Settings resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#gloooptions" %}}).
 {{% /notice %}}
+
+### Regex Example 1: Match Precise Count of Characters
+
+Let's create a route that uses a regex matcher to match any path of five characters in the set `[a-z]`.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_regexcreate.mp4"  type="video/mp4">
@@ -364,7 +368,91 @@ curl -v -H "Host: foo" $(glooctl proxy url)/todos
   ...
 ```
 
-You can replace this Virtual Service with other regex expressions to see how they react. When you are finished, let's delete this virtual service.
+You can replace this Virtual Service with other regex expressions to see how they react. 
+
+### Regex Example 2: Match Path Containing a UUID
+
+Let's consider an example where we need to match on a path containing an 8-4-4-4-12 formatted UUID. Let's say we have a requirement to match on paths that contain a UUID, like this:
+* `/api/v1/<uuid>/good-path`
+* `/api/v1/<uuid>`
+But we want to disallow any other paths that don't precisely match the patterns above, for example:
+* `/api/v1/<uuid>/bad-path`
+
+We will accomplish this using a Virtual Service that incorporates a regex to match the UUID:
+
+{{< tabs >}}
+{{< tab name="kubectl" codelang="yaml">}}
+{{< readfile file="guides/traffic_management/destination_selection/path_matching/regex_vs_uuid.yaml">}}
+{{< /tab >}}
+{{< /tabs >}}
+
+Apply the modified Virtual Service spec above and test it with the following scenarios.
+
+#### Test 1: Match full UUID path
+
+```
+curl -i -H "Host: foo" $(glooctl proxy url)/api/v1/123e4567-e89b-12d3-a456-426614174000/good-path
+```
+
+Note that the request contains a valid UUID followed by `good-path` in the request. So the response indicates that it matched a UUID and good-path.
+```
+HTTP/1.1 200 OK
+content-length: 21
+content-type: text/plain
+date: Tue, 08 Feb 2022 22:12:22 GMT
+server: envoy
+
+api v1 uuid good-path
+```
+
+#### Test 2: Match shorter UUID path
+
+```
+curl -i -H "Host: foo" $(glooctl proxy url)/api/v1/123e4567-e89b-12d3-a456-426614174000
+```
+
+Note that the request contains a valid UUID at the end of the path. So the response indicates that it matched the path containing only a UUID.
+```
+HTTP/1.1 200 OK
+content-length: 11
+content-type: text/plain
+date: Tue, 08 Feb 2022 22:13:41 GMT
+server: envoy
+
+api v1 uuid
+```
+
+#### Test 3: Mismatch on invalid UUID format
+
+```
+curl -i -H "Host: foo" $(glooctl proxy url)/api/v1/123e4567-e89b-12d3-a456-bad-uuid/good-path
+```
+
+Note that the request contains a malformed UUID. So the response is an HTTP 404, because no matcher was found.
+```
+HTTP/1.1 404 Not Found
+date: Tue, 08 Feb 2022 22:13:22 GMT
+server: envoy
+content-length: 0
+```
+
+#### Test 4: Mismatch on invalid path request
+
+```
+curl -i -H "Host: foo" $(glooctl proxy url)/api/123e4567-e89b-12d3-a456-426614174000/bad-path
+```
+
+Note that the request contains a `bad-path` at the end of the path, which is not supported by any of the matchers. So the response is an HTTP 404, because no matcher was found.
+```
+HTTP/1.1 404 Not Found
+date: Tue, 08 Feb 2022 22:13:34 GMT
+server: envoy
+content-length: 0
+```
+
+## Cleanup
+
+When you are finished, you can simply delete the `test-regex` virtual service.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_regexdelete.mp4"  type="video/mp4">

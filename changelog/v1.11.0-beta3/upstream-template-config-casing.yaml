@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3717
+    resolvesIssue: false
+    description: >-
+      Adds testing and documentation updates to clarify casing conventions used when customizing discovered upstreams via annotations.

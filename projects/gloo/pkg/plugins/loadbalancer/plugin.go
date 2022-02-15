@@ -12,11 +12,15 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.RoutePlugin = new(Plugin)
-var _ plugins.UpstreamPlugin = new(Plugin)
+var (
+	_ plugins.Plugin         = new(plugin)
+	_ plugins.RoutePlugin    = new(plugin)
+	_ plugins.UpstreamPlugin = new(plugin)
+)
 
-type Plugin struct{}
+const (
+	ExtensionName = "load_balancer"
+)
 
 var (
 	InvalidRouteTypeError = func(e error) error {
@@ -24,15 +28,21 @@ var (
 	}
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	lbPlugin := in.GetOptions().GetLbHash()
 	if lbPlugin == nil {
 		return nil
@@ -78,7 +88,7 @@ func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoy_config_route_v3
 	return policies
 }
 
-func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
 	cfg := in.GetLoadBalancerConfig()
 	if cfg == nil {

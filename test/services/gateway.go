@@ -1,8 +1,10 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -26,9 +28,6 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-
-	"context"
-	"sync/atomic"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -238,6 +237,7 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 		WatchNamespaces:         runOptions.NsToWatch,
 		StatusReporterNamespace: statusutils.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem),
 		Gateways:                f,
+		MatchableHttpGateways:   f,
 		VirtualServices:         f,
 		RouteTables:             f,
 		VirtualHostOptions:      f,
@@ -247,8 +247,9 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 			Ctx:         ctx,
 			RefreshRate: time.Minute,
 		},
-		Validation: validation,
-		DevMode:    false,
+		Validation:             validation,
+		DevMode:                false,
+		ConfigStatusMetricOpts: runOptions.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels(),
 	}
 }
 
@@ -297,6 +298,12 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		AuthConfigs:             f,
 		RateLimitConfigs:        f,
 		GraphQLSchemas:          f,
+		Gateways:                f,
+		MatchableHttpGateways:   f,
+		VirtualServices:         f,
+		RouteTables:             f,
+		RouteOptions:            f,
+		VirtualHostOptions:      f,
 		KubeServiceClient:       newServiceClient(ctx, f, runOptions),
 		WatchNamespaces:         runOptions.NsToWatch,
 		WatchOpts: clients.WatchOpts{

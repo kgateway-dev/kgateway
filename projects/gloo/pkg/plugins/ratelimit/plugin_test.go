@@ -14,6 +14,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
@@ -28,7 +29,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		rlSettings *ratelimitpb.Settings
 		initParams plugins.InitParams
 		params     plugins.Params
-		rlPlugin   *Plugin
+		rlPlugin   plugins.HttpFilterPlugin
 		ref        *core.ResourceRef
 	)
 
@@ -46,7 +47,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		initParams = plugins.InitParams{
 			Settings: &gloov1.Settings{},
 		}
-		params.Snapshot = &gloov1.ApiSnapshot{}
+		params.Snapshot = &gloov1snap.ApiSnapshot{}
 	})
 
 	JustBeforeEach(func() {
@@ -157,7 +158,7 @@ var _ = Describe("RateLimit Plugin", func() {
 			Expect(filters).To(HaveLen(1), "Should only have created one custom filter")
 
 			customStagedFilter := filters[0]
-			extAuthPlugin := extauth.NewCustomAuthPlugin()
+			extAuthPlugin := extauth.NewPlugin()
 			err = extAuthPlugin.Init(initParams)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to initialize the ext auth plugin")
 			extAuthFilters, err := extAuthPlugin.HttpFilters(params, nil)

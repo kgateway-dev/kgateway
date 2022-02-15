@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Updates version support reference page to clarify n-2 support.
+    issueLink: https://github.com/solo-io/gloo/issues/5799

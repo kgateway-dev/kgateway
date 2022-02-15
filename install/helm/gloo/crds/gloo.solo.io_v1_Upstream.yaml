@@ -770,6 +770,11 @@ spec:
                   updateMergeWindow:
                     type: string
                 type: object
+              maxConcurrentStreams:
+                maximum: 4294967295
+                minimum: 0
+                nullable: true
+                type: integer
               namespacedStatuses:
                 properties:
                   statuses:

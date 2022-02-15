@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -105,7 +106,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		initParams = plugins.InitParams{}
-		params.Snapshot = &v1.ApiSnapshot{
+		params.Snapshot = &v1snap.ApiSnapshot{
 			Secrets: v1.SecretList{{
 				Metadata: &core.Metadata{
 					Name:      "secretref",
@@ -323,6 +324,19 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
 			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
+		})
+
+		It("should process route with addon options", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().InvocationStyle = 1
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
+			Expect(err).Should(BeNil())
+			cfg := msg.(*AWSLambdaPerRoute)
+			Expect(cfg.UnwrapAsAlb).Should(Equal(true))
+			Expect(cfg.Async).Should(Equal(true))
 		})
 	})
 

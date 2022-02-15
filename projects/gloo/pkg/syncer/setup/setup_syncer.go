@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
@@ -24,6 +26,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -322,61 +325,9 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 }
 
 type Extensions struct {
-	// Deprecated. Use PluginExtensionsFuncs instead.
-	PluginExtensions      []plugins.Plugin
-	PluginExtensionsFuncs []func() plugins.Plugin
+	PluginRegistryFactory plugins.PluginRegistryFactory
 	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
 	XdsCallbacks          xdsserver.Callbacks
-}
-
-func GetPluginsWithExtensionsAndRegistry(opts bootstrap.Opts, registryPlugins func(opts bootstrap.Opts) []plugins.Plugin, extensions Extensions) func() []plugins.Plugin {
-	pluginfuncs := extensions.PluginExtensionsFuncs
-	for _, p := range extensions.PluginExtensions {
-		p := p
-		pluginfuncs = append(pluginfuncs, func() plugins.Plugin { return p })
-	}
-	return func() []plugins.Plugin {
-		upgradedPlugins := make(map[string]bool)
-		plugs := registryPlugins(opts)
-		for _, pluginExtension := range pluginfuncs {
-			pe := pluginExtension()
-			if uPlug, ok := pe.(plugins.Upgradable); ok && uPlug.IsUpgrade() {
-				upgradedPlugins[uPlug.PluginName()] = true
-			}
-
-			plugs = append(plugs, pe)
-		}
-		plugs = reconcileUpgradedPlugins(plugs, upgradedPlugins)
-
-		return plugs
-	}
-}
-
-// removes any redundant plugins from the pluginList, if we have added an upgraded version to replace them
-func reconcileUpgradedPlugins(pluginList []plugins.Plugin, upgradedPlugins map[string]bool) []plugins.Plugin {
-	var pluginsToDrop []int
-	for i, plugin := range pluginList {
-		uPlug, upgradable := plugin.(plugins.Upgradable)
-		if upgradable {
-			_, inMap := upgradedPlugins[uPlug.PluginName()]
-			if inMap && !uPlug.IsUpgrade() {
-				// An upgraded version of this plug exists,
-				// mark this one for removal
-				pluginsToDrop = append(pluginsToDrop, i)
-			}
-		}
-	}
-
-	// Walk back through the pluginList and remove the redundant plugins
-	for i := len(pluginsToDrop) - 1; i >= 0; i-- {
-		badIndex := pluginsToDrop[i]
-		pluginList = append(pluginList[:badIndex], pluginList[badIndex+1:]...)
-	}
-	return pluginList
-}
-
-func GetPluginsWithExtensions(opts bootstrap.Opts, extensions Extensions) func() []plugins.Plugin {
-	return GetPluginsWithExtensionsAndRegistry(opts, registry.Plugins, extensions)
 }
 
 func RunGloo(opts bootstrap.Opts) error {
@@ -472,17 +423,58 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		return err
 	}
 
+	virtualServiceClient, err := gateway.NewVirtualServiceClient(watchOpts.Ctx, opts.VirtualServices)
+	if err != nil {
+		return err
+	}
+	if err := virtualServiceClient.Register(); err != nil {
+		return err
+	}
+
+	rtClient, err := gateway.NewRouteTableClient(watchOpts.Ctx, opts.RouteTables)
+	if err != nil {
+		return err
+	}
+	if err := rtClient.Register(); err != nil {
+		return err
+	}
+
+	gatewayClient, err := gateway.NewGatewayClient(watchOpts.Ctx, opts.Gateways)
+	if err != nil {
+		return err
+	}
+	if err := gatewayClient.Register(); err != nil {
+		return err
+	}
+
+	virtualHostOptionClient, err := gateway.NewVirtualHostOptionClient(watchOpts.Ctx, opts.VirtualHostOptions)
+	if err != nil {
+		return err
+	}
+	if err := virtualHostOptionClient.Register(); err != nil {
+		return err
+	}
+
+	routeOptionClient, err := gateway.NewRouteOptionClient(watchOpts.Ctx, opts.RouteOptions)
+	if err != nil {
+		return err
+	}
+	if err := routeOptionClient.Register(); err != nil {
+		return err
+	}
+
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
 
-	getPlugins := GetPluginsWithExtensions(opts, extensions)
-	getPluginRegistry := func() plugins.PluginRegistry {
-		return registry.NewPluginRegistry(getPlugins())
+	pluginRegistryFactory := extensions.PluginRegistryFactory
+	if pluginRegistryFactory == nil {
+		pluginRegistryFactory = registry.GetPluginRegistryFactory(opts)
 	}
 
+	pluginRegistry := pluginRegistryFactory(watchOpts.Ctx)
 	var discoveryPlugins []discovery.DiscoveryPlugin
-	for _, plug := range getPlugins() {
+	for _, plug := range pluginRegistry.GetPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
 			discoveryPlugins = append(discoveryPlugins, disc)
@@ -529,7 +521,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
 
-	apiCache := v1.NewApiEmitterWithEmit(
+	apiCache := v1snap.NewApiEmitterWithEmit(
 		artifactClient,
 		endpointClient,
 		proxyClient,
@@ -538,6 +530,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		hybridUsClient,
 		authConfigClient,
 		rlClient,
+		virtualServiceClient,
+		rtClient,
+		gatewayClient,
+		virtualHostOptionClient,
+		routeOptionClient,
 		graphqlSchemaClient,
 		apiEmitterChan,
 	)
@@ -551,7 +548,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		rlReporterClient,
 	)
 
-	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPluginRegistry)
+	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistryFactory)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
@@ -592,14 +589,18 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	}
 	syncerExtensions = reconcileUpgradedTranslatorSyncerExtensions(syncerExtensions, upgradedExtensions)
 
-	translationSync := syncer.NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings)
+	statusMetrics, err := metrics.NewConfigStatusMetrics(opts.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels())
+	if err != nil {
+		return err
+	}
+	translationSync := syncer.NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings, statusMetrics)
 
-	syncers := v1.ApiSyncers{
+	syncers := v1snap.ApiSyncers{
 		translationSync,
 		validator,
 	}
 
-	apiEventLoop := v1.NewApiEventLoop(apiCache, syncers)
+	apiEventLoop := v1snap.NewApiEventLoop(apiCache, syncers)
 	apiEventLoopErrs, err := apiEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err
@@ -814,16 +815,46 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
+	virtualServiceFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.VirtualServiceCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	routeTableFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.RouteTableCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	virtualHostOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.VirtualHostOptionCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	routeOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.RouteOptionCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.GatewayCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	return bootstrap.Opts{
-		Upstreams:         upstreamFactory,
-		KubeServiceClient: kubeServiceClient,
-		Proxies:           proxyFactory,
-		UpstreamGroups:    upstreamGroupFactory,
-		Secrets:           secretFactory,
-		Artifacts:         artifactFactory,
-		AuthConfigs:       authConfigFactory,
-		RateLimitConfigs:  rateLimitConfigFactory,
-		GraphQLSchemas:    graphqlSchemaFactory,
-		KubeCoreCache:     kubeCoreCache,
+		Upstreams:          upstreamFactory,
+		KubeServiceClient:  kubeServiceClient,
+		Proxies:            proxyFactory,
+		UpstreamGroups:     upstreamGroupFactory,
+		Secrets:            secretFactory,
+		Artifacts:          artifactFactory,
+		AuthConfigs:        authConfigFactory,
+		RateLimitConfigs:   rateLimitConfigFactory,
+		GraphQLSchemas:     graphqlSchemaFactory,
+		VirtualServices:    virtualServiceFactory,
+		RouteTables:        routeTableFactory,
+		VirtualHostOptions: virtualHostOptionFactory,
+		RouteOptions:       routeOptionFactory,
+		Gateways:           gatewayFactory,
+		KubeCoreCache:      kubeCoreCache,
 	}, nil
 }

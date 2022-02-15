@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+
 	"github.com/solo-io/solo-kit/test/matchers"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -237,7 +239,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 
-		glooSnapshot := &v1.ApiSnapshot{
+		glooSnapshot := &v1snap.ApiSnapshot{
 			Upstreams: v1.UpstreamList{us},
 		}
 
@@ -305,7 +307,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		sanitizer, err := NewRouteReplacingSanitizer(invalidCfgPolicy)
 		Expect(err).NotTo(HaveOccurred())
 
-		glooSnapshot := &v1.ApiSnapshot{
+		glooSnapshot := &v1snap.ApiSnapshot{
 			Upstreams: v1.UpstreamList{us},
 		}
 

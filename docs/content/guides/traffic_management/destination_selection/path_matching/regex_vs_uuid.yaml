@@ -1,0 +1,20 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: test-regex
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - 'foo'
+    routes:
+      - matchers:
+         - regex: /api/v1/\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b/good-path
+        directResponseAction:
+          status: 200
+          body: "api v1 uuid good-path"
+      - matchers:
+         - regex: /api/v1/\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
+        directResponseAction:
+          status: 200
+          body: "api v1 uuid"

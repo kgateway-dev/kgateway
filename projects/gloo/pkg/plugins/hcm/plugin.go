@@ -3,30 +3,42 @@ package hcm
 import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_extensions_http_header_formatters_preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+var (
+	_ plugins.Plugin                      = new(plugin)
+	_ plugins.HttpConnectionManagerPlugin = new(plugin)
+)
+
+const (
+	ExtensionName      = "hcm"
+	PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
+)
+
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpConnectionManagerPlugin = new(Plugin)
-
-type Plugin struct {
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
-func (p *Plugin) Init(_ plugins.InitParams) error {
+func (p *plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
+func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
 
 	out.UseRemoteAddress = in.GetUseRemoteAddress()
@@ -55,15 +67,32 @@ func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		}
 	}
 
+	// if we want to set a header format with `in`, ensure `out` has a non-nil value
+	if in.GetHeaderFormat() != nil && out.GetHttpProtocolOptions() == nil {
+		out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
+	}
 	if in.GetProperCaseHeaderKeyFormat() {
-		if out.GetHttpProtocolOptions() == nil {
-			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
-		}
 		out.GetHttpProtocolOptions().HeaderKeyFormat = &envoycore.Http1ProtocolOptions_HeaderKeyFormat{
 			HeaderFormat: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{
 				ProperCaseWords: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords{},
 			},
 		}
+	} else if in.GetPreserveCaseHeaderKeyFormat() {
+		out.GetHttpProtocolOptions().HeaderKeyFormat = &envoycore.Http1ProtocolOptions_HeaderKeyFormat{
+			HeaderFormat: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
+				StatefulFormatter: &envoycore.TypedExtensionConfig{
+					Name:        PreserveCasePlugin,
+					TypedConfig: utils.MustMessageToAny(&envoy_extensions_http_header_formatters_preserve_case_v3.PreserveCaseFormatterConfig{}),
+				},
+			},
+		}
+	}
+
+	if in.GetAllowChunkedLength() {
+		if out.GetHttpProtocolOptions() == nil {
+			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
+		}
+		out.GetHttpProtocolOptions().AllowChunkedLength = in.GetAllowChunkedLength()
 	}
 
 	if in.GetIdleTimeout() != nil {
@@ -92,6 +121,20 @@ func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
 		out.GetCommonHttpProtocolOptions().MaxHeadersCount = in.GetMaxHeadersCount()
+	}
+
+	if in.GetMaxRequestsPerConnection() != nil {
+		if out.GetCommonHttpProtocolOptions() == nil {
+			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().MaxRequestsPerConnection = in.GetMaxRequestsPerConnection()
+	}
+
+	if in.GetHeadersWithUnderscoresAction() != hcm.HttpConnectionManagerSettings_ALLOW {
+		if out.GetCommonHttpProtocolOptions() == nil {
+			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().HeadersWithUnderscoresAction = envoycore.HttpProtocolOptions_HeadersWithUnderscoresAction(in.GetHeadersWithUnderscoresAction())
 	}
 
 	// allowed upgrades

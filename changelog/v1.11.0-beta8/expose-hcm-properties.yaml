@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5762
+    resolvesIssue: true
+    description: |
+      Adds support for the Envoy HTTP Connection Manager settings headers_with_underscores_action and max_requests_per_connection.
+      Additionally, adds support for the HTTP Connection Manager allow_chunked_length setting and the cluster-level max_concurrent_streams setting

@@ -17,8 +17,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-var _ discovery.DiscoveryPlugin = new(plugin)
-var _ plugins.UpstreamPlugin = new(plugin)
+var (
+	_ discovery.DiscoveryPlugin = new(plugin)
+	_ plugins.UpstreamPlugin    = new(plugin)
+)
+
+const (
+	ExtensionName = "kubernetes"
+)
 
 type plugin struct {
 	kube kubernetes.Interface
@@ -30,15 +36,6 @@ type plugin struct {
 	settings *v1.Settings
 }
 
-func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
-	kubeSpec, ok := u.GetUpstreamType().(*v1.Upstream_Kube)
-	if !ok {
-		return nil, nil
-	}
-
-	return url.Parse(fmt.Sprintf("tcp://%v.%v.svc.cluster.local:%v", kubeSpec.Kube.GetServiceName(), kubeSpec.Kube.GetServiceNamespace(), kubeSpec.Kube.GetServicePort()))
-}
-
 func NewPlugin(kube kubernetes.Interface, kubeCoreCache corecache.KubeCoreCache) plugins.Plugin {
 	return &plugin{
 		kube:              kube,
@@ -47,9 +44,22 @@ func NewPlugin(kube kubernetes.Interface, kubeCoreCache corecache.KubeCoreCache)
 	}
 }
 
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.settings = params.Settings
 	return nil
+}
+
+func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
+	kubeSpec, ok := u.GetUpstreamType().(*v1.Upstream_Kube)
+	if !ok {
+		return nil, nil
+	}
+
+	return url.Parse(fmt.Sprintf("tcp://%v.%v.svc.cluster.local:%v", kubeSpec.Kube.GetServiceName(), kubeSpec.Kube.GetServiceNamespace(), kubeSpec.Kube.GetServicePort()))
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {

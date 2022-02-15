@@ -4,56 +4,51 @@ description: Expected release cadence and support of Gloo Edge
 weight: 52
 ---
 
+Review the following information about supported release versions for Gloo Edge Enterprise and Gloo Edge OSS (open source).
 
-The following documents the expected release cadence and support of both Gloo Edge Enterprise and Gloo Edge OSS (opensource). In general, Gloo Edge Enterprise releases will follow from the Gloo Edge OSS releases (ie, Gloo Edge Enterprise 1.3 would come from Gloo Edge OSS 1.3 code base). In other words, the community will always see the "latest releases" while enterprise would always see the first stable release of that version. 
+## Supported versions
 
-
-## Stable releases every three months
-
-For both Gloo Edge Enterprise and open-source Gloo Edge, we release stable builds approximately every three months. These builds will be tagged from `master` and will bump the minor version (ie, `1.3` to `1.4`). Support for both Gloo Edge Enterprise and Gloo Edge OSS will be provided on stable branches of these releases. 
-
-## Support will be release N through N-2
-
-When stable branches are created for a particular release, i.e. a Gloo Edge Enterprise release, we'll support both EE and OSS from that branch. We will support the current release as well as the two previous releases. For example, if Gloo Edge 1.5 is the latest Enterprise release, we will be releasing 1.6.x from master (OSS) but supporting Enterprise/OSS 1.5.x, 1.4.x, and 1.3.x. Support in this context means bug fixes and critical security fixes. Gloo Edge Enterprise customers will always have priority-fix support from Solo.io, but the OSS project will eventually get those fixes as well as whatever else the community contributes.
-
-Gloo Edge Enterprise customers can purchase additional N-x support, _but the max support that can be purchased is N-3_.
-
-The recommended version for helm clients is v3.0 or greater, but helm v2 will also work.
+Gloo Edge Enterprise offers `n-3` patching support for bug and critical security fixes. In other words, the current release and the two previous releases are supported. For example, if the latest stable Gloo Edge Enterprise release is 1.10, then Gloo Edge Enterprise 1.9.x and 1.8.x are also supported.
 
 | Gloo Edge | Kubernetes | Envoy | Helm | Istio |
 |------|----------|---------|--------|------|
+| 1.10.x | 1.19 - 1.23 | v3 xDS API | >= 3.0 | 1.7 - 1.11 |
 | 1.9.x | 1.19 - 1.22 | v3 xDS API | >= 3.0 | 1.7 - 1.11 |
 | 1.8.x | 1.19 - 1.21 | v3 xDS API | >= 3.0 | 1.7 - 1.8 |
 | 1.7.x | 1.19 - 1.21 | v3 xDS API | >= 3.0 | 1.7 - 1.8 |
 
+## Release cadence
 
+Gloo Edge Enterprise releases are built on the OSS codebase and typically follow the equivalent Gloo Edge OSS release. The OSS version is always released as the latest build, while Enterprise version is always released as the first stable build of that version. For example, the latest build of Gloo Edge OSS is {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}, while the latest stable build of Gloo Edge Enterprise is {{< readfile file="static/content/version_gee_latest.md" markdown="true">}}.
 
-## New features developed on master
+Stable builds for both Gloo Edge Enterprise and OSS are released as minor versions approximately every three months. A stable branch for a minor version, such as 1.10, is tagged from `master`, and stable builds for both Enterprise and OSS are supported from that branch. 
 
-New features for Gloo Edge Enterprise/OSS will always be developed on `master`. If a Gloo Edge Enterprise customer wants a new feature, it's expected they will test a release candidate with that feature or wait for a stable release. For Enterprise, these can be released as `beta` releases of Gloo Edge Enterprise. For Gloo Edge OSS these would be released as patch releases off master for the latest version of Gloo Edge OSS.
+## Release development
 
-## Stable release process
+### Beta release process
 
-To create a quality stable release on `master` the process looks like this:
+New features for Gloo Edge Enterprise and OSS are always developed on `master`. For Enterprise, new features are often released as `beta` builds of the latest Gloo Edge Enterprise version. You can use these beta builds to test new features, or wait until the feature is released with the next stable Enterprise minor version. For OSS, new features for the latest version are released as patches off of `master`.
 
-* Suspend new feature development on `master`
-* Begin release candidates and performing full suite of testing (`1.4.0-rc1`, `1.4.0-rc2` ... `1.4.0`)
-* Testing includes all documented workflows, test matrix of all supported platforms, etc
-* Preparing/vetting/staging the documentation for that release
-* Resume feature development after the stable release
+### Stable release process
 
-
+Development of a quality stable release on `master` typically follows this process:
+1. New feature development is suspended on `master`.
+2. Release candidates are created, such as `1.10.0-rc1`, `1.10.0-rc2`, and so on.
+3. A full suite fo tests is performed for each release candidate. Testing includes all documented workflows, a test matrix of all supported platforms, and more.
+4. Documentation for that release is prepared, vetted, and staged.
+5. The stable minor version is released.
+6. Feature development on `master` is resumed.
 
 ## Additional support information
 
 ### Kubernetes 
-We officially support and test 1 year of previous versions of Kubernetes, however, we expect customers to run older versions and for Gloo Edge Enterprise would provide ability to do so. As we add new features to Gloo Edge, we are mindful of what Kubernetes features we leverage so as not to raise the minimum required version. Currently our backward compatibility target is Kubernetes 1.11.
+Gloo Edge Enterprise is supported and tested for the latest Kubernetes version and all Kubernetes versions released up to 1 year before the latest version.
 
 ### Envoy
-Officially, Envoy community releases are supported only N-1 (one prior release). We have the ability to back port to N-2 or more, etc in support situations without bumping the Envoy version (ie, we will fix based on the code you have deployed within the N-2 window). 
+Officially, Gloo Edge Enterprise offers support for `n-1` of Envoy community releases. In specific support situations, fixes can be backported to `n-2` or more without bumping the Envoy minor version. In other words, a fix can be developed based on the code that you deployed within the `n-2` release timeframe. 
 
 ### Gloo Edge
-We will not do new feature development (or backport to) on stable branches. Additionally, we will backport critical patches, bug fixes, and documentation fixes on all actively supported branches.
+New features are not developed on or backported to stable branches. However, critical patches, bug fixes, and documentation fixes are backported to all actively supported branches.
 
 
-Please reach out to us [on slack](https://slack.solo.io) or email [sales@solo.io](mailto:sales@solo.io) for any questions 
+Have other questions? Reach out to us [on slack](https://slack.solo.io) or email [sales@solo.io](mailto:sales@solo.io).

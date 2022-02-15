@@ -3,7 +3,7 @@ package sanitizer
 import (
 	"context"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -14,7 +14,7 @@ import (
 type XdsSanitizer interface {
 	SanitizeSnapshot(
 		ctx context.Context,
-		glooSnapshot *v1.ApiSnapshot,
+		glooSnapshot *v1snap.ApiSnapshot,
 		xdsSnapshot envoycache.Snapshot,
 		reports reporter.ResourceReports,
 	) (envoycache.Snapshot, error)
@@ -24,7 +24,7 @@ type XdsSanitizers []XdsSanitizer
 
 func (s XdsSanitizers) SanitizeSnapshot(
 	ctx context.Context,
-	glooSnapshot *v1.ApiSnapshot,
+	glooSnapshot *v1snap.ApiSnapshot,
 	xdsSnapshot envoycache.Snapshot,
 	reports reporter.ResourceReports,
 ) (envoycache.Snapshot, error) {

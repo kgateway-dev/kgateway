@@ -94,5 +94,7 @@ func (m *DestinationSpec) Clone() proto.Message {
 
 	target.ResponseTransformation = m.GetResponseTransformation()
 
+	target.UnwrapAsAlb = m.GetUnwrapAsAlb()
+
 	return target
 }

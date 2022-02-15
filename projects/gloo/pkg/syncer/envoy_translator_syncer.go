@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
@@ -67,7 +67,7 @@ func measureResource(ctx context.Context, resource string, len int) {
 	}
 }
 
-func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, allReports reporter.ResourceReports) error {
+func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) error {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 

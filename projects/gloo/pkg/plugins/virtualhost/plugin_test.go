@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("AttemptCount Plugin", func() {
 	var (
-		acPlugin *Plugin
+		acPlugin plugins.VirtualHostPlugin
 	)
 
 	BeforeEach(func() {

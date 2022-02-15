@@ -322,6 +322,9 @@ spec:
                     minimum: 0
                     nullable: true
                     type: integer
+                  removeUnusedFilters:
+                    nullable: true
+                    type: boolean
                   restXdsBindAddr:
                     type: string
                   validationBindAddr:
@@ -445,6 +448,15 @@ spec:
                 type: object
               observabilityOptions:
                 properties:
+                  configStatusMetricLabels:
+                    additionalProperties:
+                      properties:
+                        labelToPath:
+                          additionalProperties:
+                            type: string
+                          type: object
+                      type: object
+                    type: object
                   grafanaIntegration:
                     properties:
                       defaultDashboardFolderId:

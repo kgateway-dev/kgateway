@@ -13,21 +13,30 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.UpstreamPlugin = new(Plugin)
+var (
+	_ plugins.Plugin         = new(plugin)
+	_ plugins.UpstreamPlugin = new(plugin)
+)
 
-type Plugin struct{}
+const (
+	ExtensionName = "upstream_conn"
+)
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
-
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 	cfg := in.GetConnectionConfig()
 	if cfg == nil {
 		return nil

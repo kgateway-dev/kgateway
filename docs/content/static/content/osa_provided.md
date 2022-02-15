@@ -30,7 +30,6 @@ Name|Version|License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.5|MIT License
 [onsi/ginkgo](https://github.com/onsi/ginkgo)|v1.16.5|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.16.0|MIT License
-[opencontainers/go-digest](https://github.com/opencontainers/go-digest)|v1.0.0-rc1|Apache License 2.0
 [pkg/browser](https://github.com/pkg/browser)|v0.0.0-20180916011732-0a3d74bf9ce4|BSD 2-clause "Simplified" License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.11.0|Apache License 2.0
 [prometheus/prometheus](https://github.com/prometheus/prometheus)|v2.5.0+incompatible|Apache License 2.0

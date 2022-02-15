@@ -1,0 +1,40 @@
+name: Docs Issue
+description: Fix our docs or add new information
+labels: ["Type: Docs"]
+body:
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: Which version of the Gloo Edge docs does this affect?
+      options:
+        - master
+        - 1.9.x (latest)
+        - 1.8.x
+        - 1.7.x
+    validations:
+      required: true
+  - type: textarea
+    id: change-details
+    attributes:
+      label: Describe the requested changes
+      placeholder: List the desired changes to be made to the Gloo Edge docs.
+  - type: textarea
+    id: docs-links
+    attributes:
+      label: Link to any relevant existing docs
+      placeholder: |
+        1. https://docs.solo.io/gloo-edge/latest...
+        2. ...
+  - type: textarea
+    id: browser-details
+    attributes:
+      label: Browser Information
+      placeholder: 
+        If the change isn't related to content, please include your browser version and any other relevant information 
+        (e.g., browser zoom) to help us reproduce docs-related bugs.
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      placeholder: Add any other context or screenshots about the feature request here.

@@ -386,6 +386,24 @@ message Settings {
 
         // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
         GrafanaIntegration grafanaIntegration = 1;
+
+
+        message MetricLabels {
+            // Each (key, value) pair in the map defines a label to be applied. Keys specify the name of the label
+            // (e.g. "namespace"). Values specify the jsonpath (https://kubernetes.io/docs/reference/kubectl/jsonpath/)
+            // string corresponding to the field of a resource to use as the label value (e.g. "{.metadata.namespace}").
+            // For example, if labelToPath = {name: '{.metadata.name}', namespace: '{.metadata.namespace}'} for
+            // Upstream.v1.gateway.solo.io, the following metric would be produced:
+            // validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0
+            map<string, string> labelToPath = 1;
+        }
+
+        // Enable metrics that track the configuration status of various resource types.
+        // Each (key, value) pair in the map defines a metric for a particular resource type. Configuration status
+        // metrics are not recorded by default; metrics are recorded only for the resources specified in this map.
+        // Keys specify the resource type (GroupVersionKind) to track for status changes
+        // (e.g. "VirtualService.v1.gateway.solo.io"). Values specify the labels to set on the metric.
+        map<string, MetricLabels> configStatusMetricLabels = 2;
     }
 
     // Provides settings related to the observability deployment (enterprise only)
@@ -457,6 +475,7 @@ message GlooOptions {
     AWSOptions aws_options = 5;
 
     // Policy for how Gloo should handle invalid config
+    // [#next-free-field: 15]
     message InvalidConfigPolicy {
 
         // if set to `true`, Gloo removes any routes from the provided configuration
@@ -515,6 +534,12 @@ message GlooOptions {
     // hostname with the configured frequency to update endpoints with any changes to DNS resolution.
     // Defaults to 10s.
     google.protobuf.Duration failover_upstream_dns_polling_interval = 13;
+
+    // By default gloo adds a series of filters to envoy to ensure that new routes are picked up
+    // Even if the listener previously did not have a filter on the chain previously.
+    // When set to true unused filters are not added to the chain by default.
+    // Defaults to false
+    google.protobuf.BoolValue remove_unused_filters = 14;
 }
 
 

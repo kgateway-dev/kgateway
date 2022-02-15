@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
@@ -102,18 +103,18 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 					extauthSettings *extauthv1.Settings
 					initParams      plugins.InitParams
 					params          plugins.Params
-					extauthPlugin   *Plugin
+					extauthPlugin   plugins.HttpFilterPlugin
 					listener        *gloov1.HttpListener
 					ref             core.ResourceRef
 				)
 
 				BeforeEach(func() {
-					extauthPlugin = &Plugin{}
+					extauthPlugin = NewPlugin()
 					ref = core.ResourceRef{
 						Name:      "test",
 						Namespace: "test",
 					}
-					params.Snapshot = &gloov1.ApiSnapshot{
+					params.Snapshot = &v1snap.ApiSnapshot{
 						Upstreams: []*gloov1.Upstream{
 							{
 								Metadata: &core.Metadata{
