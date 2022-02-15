@@ -13,8 +13,6 @@ body:
         - 1.9.x 
         - 1.8.x
         - 1.7.x
-    validations:
-      required: true
   - type: textarea
     id: problem-details
     attributes:
