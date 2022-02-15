@@ -566,7 +566,7 @@ kubectl port-forward -n gloo-system deploy/extauth 9091
 
 Now, you can set the log level to debug with the following curl command:
 ```
-curl -XPUT localhost:9091/logging -d '{"level":"debug"}'
+curl -XPUT -H "Content-Type: application/json" localhost:9091/logging -d '{"level":"debug"}'
 ```
 
 With debug logging enabled, the extauth server logs will now contain the OPA input, evaluation trace, 
