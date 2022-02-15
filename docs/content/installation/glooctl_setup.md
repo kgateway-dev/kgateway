@@ -1,48 +1,50 @@
-### Install the Gloo Edge command line tool (CLI)
+### Install the Gloo Edge command line tool (CLI) {#install-glooctl}
 
-The `glooctl` command line provides useful functions to install, configure, and debug Gloo Edge, though it is not required to use Gloo Edge.
+You can install the Gloo Edge command line, `glooctl`, to help install, configure, and debug Gloo Edge. Depending on your operating system, you have several installation options.
 
-* To install `glooctl` using the [Homebrew](https://brew.sh) package manager, run the following.
+* **macOS**: You can use the [Homebrew](https://brew.sh) package manager.
 
   ```shell
   brew install glooctl
   ```
 
-* To install on most platforms you can use the install script. Python is required for installation to execute properly.
+* **Most platforms**: You can use the following installation script, which requires Python to execute properly.
 
   ```bash
   curl -sL https://run.solo.io/gloo/install | sh
   export PATH=$HOME/.gloo/bin:$PATH
   ```
 
-* To install on windows you can use this install script. Openssl is required for installation to execute properly.
+* **Windows**: You can use the following installation script, which requires OpenSSL to execute properly.
   
   ```pwsh
   (New-Object System.Net.WebClient).DownloadString("https://run.solo.io/gloo/windows/install") | iex
   $env:Path += ";$env:userprofile/.gloo/bin/"
   ```
 
-* You can download `glooctl` directly via the [GitHub releases page](https://github.com/solo-io/gloo/releases). You will need to rename the executable to `glooctl` and add it to your system's `PATH` after downloading.
+* **Direct download**: You can download `glooctl` directly via the [GitHub releases page](https://github.com/solo-io/gloo/releases). After downloading, rename the executable to `glooctl` and add it to your system's `PATH`.
 
-You can verify the `glooctl` CLI is installed and running correctly by executing the command:
+### Update glooctl CLI version {#update-glooctl}
+
+If you already installed `glooctl`, make sure to update `glooctl` to the same minor version as the version of Gloo Edge that is installed in your cluster. For example, if you're using Gloo Edge 1.10.0, you should use a 1.10.0 release of `glooctl`.
+
+You can use the `glooctl upgrade` command to set the `--release` that you want to use. You can use this command to upgrade or roll back the `glooctl` version. For example, you might change versions during an upgrade process, or when you have multiple versions of Gloo Edge across clusters that you manage from the same workstation.
+
+```bash
+glooctl upgrade --release v1.10.0
+```
+
+### Verify that glooctl is installed {#verify-glooctl}
+
+You can verify the `glooctl` CLI is installed and running the appropriate version.
 
 ```bash
 glooctl version
 ```
-The command returns your client version and a missing server version (we have not installed Gloo Edge yet!):
+
+In the output, the **Client** is your local version. The **Server** is the version that runs in your cluster, and is `undefined` if you did not install Gloo Edge yet!
+
 ```shell
-Client: {"version":"1.2.3"}
+Client: {"version":"1.10.0"}
 Server: version undefined, could not find any version of gloo running
 ```
-
-### Update glooctl CLI version
-
-You should always try to use the same minor `glooctl` version as the version of Gloo Edge installed in your cluster. For example, if you're using Gloo Edge {{< readfile file="static/content/version_gee_latest.md" markdown="true">}}, you should use a {{< readfile file="static/content/version_gee_latest.md" markdown="true">}} release of `glooctl`.
-
-Fortunately, `glooctl` is able to update itself to different versions. To change the version of glooctl you currently have installed, you can run:
-
-```bash
-glooctl upgrade --release v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-```
-
-**Note**: The glooctl upgrade command can also be used to roll back your glooctl version to previous releases. This can be convenient if you are using an older version of Gloo Edge and want to use the same verison of glooctl to ensure compatability.
