@@ -504,14 +504,14 @@ func MustSecretClient(ctx context.Context) v1.SecretClient {
 }
 
 func MustSecretClientWithOptions(ctx context.Context, timeout time.Duration, namespaces []string) v1.SecretClient {
-	client, err := getSecretClient(ctx, timeout, namespaces)
+	client, err := GetSecretClient(ctx, timeout, namespaces)
 	if err != nil {
 		log.Fatalf("failed to create Secret client: %v", err)
 	}
 	return client
 }
 
-func getSecretClient(ctx context.Context, timeout time.Duration, namespaces []string) (v1.SecretClient, error) {
+func GetSecretClient(ctx context.Context, timeout time.Duration, namespaces []string) (v1.SecretClient, error) {
 	customFactory := getSecretClientFactory()
 	if customFactory != nil {
 		return v1.NewSecretClient(ctx, customFactory)

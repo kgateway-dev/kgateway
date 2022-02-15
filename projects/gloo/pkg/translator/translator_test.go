@@ -2339,9 +2339,9 @@ var _ = Describe("Translator", func() {
 			}
 
 			proxyClone := proto.Clone(proxy).(*v1.Proxy)
-			proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher().SslConfig = &v1.SslConfig{
+			proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].SslConfigurations = []*v1.SslConfig{{
 				SslSecrets: invalidSslSecretRef,
-			}
+			}}
 
 			_, errs, _, err := translator.Translate(params, proxyClone)
 

@@ -12,7 +12,7 @@ import (
 var glooFederationPolicyRules = []v1.PolicyRule{
 	{
 		Verbs:     []string{"*"},
-		APIGroups: []string{"gloo.solo.io", "gateway.solo.io", "enterprise.gloo.solo.io", "ratelimit.solo.io"},
+		APIGroups: []string{"gloo.solo.io", "gateway.solo.io", "enterprise.gloo.solo.io", "graphql.gloo.solo.io", "ratelimit.solo.io"},
 		Resources: []string{"*"},
 	},
 	{
