@@ -20,6 +20,8 @@ package v1
 
 type GatewayExpansion interface{}
 
+type MatchableHttpGatewayExpansion interface{}
+
 type RouteOptionExpansion interface{}
 
 type RouteTableExpansion interface{}

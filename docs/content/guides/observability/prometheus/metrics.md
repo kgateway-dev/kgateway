@@ -111,6 +111,42 @@ And then open <http://localhost:9091> for the admin page, including the Promethe
 
 More information on Gloo Edge's admin ports can be found [here]({{% versioned_link_path fromRoot="/introduction/observability/#grafana-and-prometheus" %}}).
 
+### Monitoring the configuration status of Gloo resources
+
+When Gloo Edge fails to process a resource, we see that reflected in the resource's {{< protobuf name="core.solo.io.Status" display="Status">}}.
+You can configure Gloo Edge to publish metrics that record the configuration status of resources.
+
+In the `observabilityOptions` of the Settings CRD, you can enable status metrics by specifying the resource type and any labels to apply
+to the metric. Consider the following, which will add metrics for virtual services and
+upstreams, both having labels that include the namespace and name of each individual resource:
+
+```yaml
+observabilityOptions:
+  configStatusMetricLabels:
+    Upstream.v1.gloo.solo.io:
+      labelToPath:
+        name: '{.metadata.name}'
+        namespace: '{.metadata.namespace}'
+    VirtualService.v1.gateway.solo.io:
+      labelToPath:
+        name: '{.metadata.name}'
+        namespace: '{.metadata.namespace}'
+```
+
+After completing the [Hello World guide]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) 
+to generate some resources, the metrics defined above can be found at: <http://localhost:9091/metrics>. If the port
+forwarding is directed towards the gloo pod, the `default-petstore-8080` upstream can be seen in a healthy state:
+```
+validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0
+```
+
+If the port forwarding is switched to the gateway pod, you can see the metrics defined for virtual services by
+revisiting the metrics endpoint: <http://localhost:9091/metrics>.
+```
+validation_gateway_solo_io_virtual_service_config_status{name="default",namespace="gloo-system"} 0
+```
+
+
 #### Metrics Context
 
 You can see exactly what metrics are published from a particular pod by taking a look at our Prometheus

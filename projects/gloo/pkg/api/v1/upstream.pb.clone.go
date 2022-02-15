@@ -140,6 +140,12 @@ func (m *Upstream) Clone() proto.Message {
 		target.InitialConnectionWindowSize = proto.Clone(m.GetInitialConnectionWindowSize()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
+	if h, ok := interface{}(m.GetMaxConcurrentStreams()).(clone.Cloner); ok {
+		target.MaxConcurrentStreams = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.MaxConcurrentStreams = proto.Clone(m.GetMaxConcurrentStreams()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
+
 	if h, ok := interface{}(m.GetHttpProxyHostname()).(clone.Cloner); ok {
 		target.HttpProxyHostname = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	} else {

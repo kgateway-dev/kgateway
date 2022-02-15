@@ -17,6 +17,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
@@ -28,27 +29,20 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+var (
+	_ plugins.Plugin           = new(plugin)
+	_ plugins.UpstreamPlugin   = new(plugin)
+	_ plugins.RoutePlugin      = new(plugin)
+	_ plugins.HttpFilterPlugin = new(plugin)
+)
+
 const (
+	ExtensionName = "aws_lambda"
 	// filter info
 	FilterName = "io.solo.aws_lambda"
 )
 
-var _ plugins.Plugin = new(plugin)
-var _ plugins.UpstreamPlugin = new(plugin)
-var _ plugins.RoutePlugin = new(plugin)
-var _ plugins.HttpFilterPlugin = new(plugin)
-
 var pluginStage = plugins.DuringStage(plugins.OutAuthStage)
-
-func getLambdaHostname(s *aws.UpstreamSpec) string {
-	return fmt.Sprintf("lambda.%s.amazonaws.com", s.GetRegion())
-}
-
-func NewPlugin(earlyTransformsAdded *bool) plugins.Plugin {
-	return &plugin{
-		earlyTransformsAdded: earlyTransformsAdded,
-	}
-}
 
 type plugin struct {
 	recordedUpstreams map[string]*aws.UpstreamSpec
@@ -62,12 +56,26 @@ type plugin struct {
 	upstreamOptions      *v1.UpstreamOptions
 }
 
+func NewPlugin(earlyTransformsAdded *bool) plugins.Plugin {
+	return &plugin{
+		earlyTransformsAdded: earlyTransformsAdded,
+	}
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
 	p.recordedUpstreams = make(map[string]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
 	p.upstreamOptions = params.Settings.GetUpstreamOptions()
 	return nil
+}
+
+func getLambdaHostname(s *aws.UpstreamSpec) string {
+	return fmt.Sprintf("lambda.%s.amazonaws.com", s.GetRegion())
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
@@ -194,8 +202,9 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 						Async: awsDestinationSpec.Aws.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
 						// we need to query escape per AWS spec:
 						// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-						Qualifier: url.QueryEscape(lambdaFunc.GetQualifier()),
-						Name:      lambdaFunc.GetLambdaFunctionName(),
+						Qualifier:   url.QueryEscape(lambdaFunc.GetQualifier()),
+						Name:        lambdaFunc.GetLambdaFunctionName(),
+						UnwrapAsAlb: awsDestinationSpec.Aws.GetUnwrapAsAlb(),
 					}
 
 					return lambdaRouteFunc, nil

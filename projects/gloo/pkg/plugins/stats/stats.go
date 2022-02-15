@@ -16,6 +16,15 @@ import (
 )
 
 var (
+	_ plugins.Plugin            = new(plugin)
+	_ plugins.VirtualHostPlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "stat"
+)
+
+var (
 	invalidVirtualClusterErr = func(err error, vcName string) error {
 		return eris.Wrapf(err, "failed to process virtual cluster [%s]", vcName)
 	}
@@ -26,20 +35,21 @@ var (
 	}
 )
 
-type Plugin struct{}
+type plugin struct{}
 
-// Compile-time assertion
-var _ plugins.VirtualHostPlugin = &Plugin{}
-
-func NewPlugin() *Plugin {
-	return &Plugin{}
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessVirtualHost(
+func (p *plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,

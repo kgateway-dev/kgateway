@@ -30,6 +30,7 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
    * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
 3. Review the version-specific upgrade docs.
+   * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.10.0/" >}})
    * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.9.0/" >}})
    * [1.8.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.8.0/" >}})
    * [1.7.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.7.0/" >}})
@@ -159,6 +160,8 @@ Looking to upgrade from an open source to an enterprise deployment? You can use 
 If you are upgrading across minor versions, such as to version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} from {{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}} or older, the upgrade process does not work. 
 
 Newer versions can add CRDs that Helm upgrades cannot handle seamlessly. Instead, review the version-specific upgrading docs.
+
+   * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.10.0/" >}})
    * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.9.0/" >}})
    * [1.8.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.8.0/" >}})
    * [1.7.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.7.0/" >}})

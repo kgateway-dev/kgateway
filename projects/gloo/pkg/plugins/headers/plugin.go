@@ -5,9 +5,20 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/errors"
+)
+
+var (
+	_ plugins.RoutePlugin               = new(plugin)
+	_ plugins.VirtualHostPlugin         = new(plugin)
+	_ plugins.WeightedDestinationPlugin = new(plugin)
+)
+
+const (
+	ExtensionName = "headers"
 )
 
 var (
@@ -15,21 +26,21 @@ var (
 )
 
 // Puts Header Manipulation config on Routes, VirtualHosts, and Weighted Clusters
-type Plugin struct{}
+type plugin struct{}
 
-var _ plugins.RoutePlugin = NewPlugin()
-var _ plugins.VirtualHostPlugin = NewPlugin()
-var _ plugins.WeightedDestinationPlugin = NewPlugin()
-
-func NewPlugin() *Plugin {
-	return &Plugin{}
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-func (p *Plugin) Init(_ plugins.InitParams) error {
+func (p *plugin) Name() string {
+	return ExtensionName
+}
+
+func (p *plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessWeightedDestination(
+func (p *plugin) ProcessWeightedDestination(
 	params plugins.RouteParams,
 	in *v1.WeightedDestination,
 	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
@@ -52,7 +63,7 @@ func (p *Plugin) ProcessWeightedDestination(
 	return nil
 }
 
-func (p *Plugin) ProcessVirtualHost(
+func (p *plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,
@@ -76,7 +87,7 @@ func (p *Plugin) ProcessVirtualHost(
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	headerManipulation := in.GetOptions().GetHeaderManipulation()
 
 	if headerManipulation == nil {
@@ -103,7 +114,7 @@ type envoyHeaderManipulation struct {
 	ResponseHeadersToRemove []string
 }
 
-func getSecretsFromSnapshot(snapshot *v1.ApiSnapshot) *v1.SecretList {
+func getSecretsFromSnapshot(snapshot *v1snap.ApiSnapshot) *v1.SecretList {
 	var secrets *v1.SecretList
 	if snapshot == nil {
 		secrets = &v1.SecretList{}

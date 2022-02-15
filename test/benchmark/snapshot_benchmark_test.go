@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	"github.com/golang/protobuf/proto"
@@ -133,7 +135,7 @@ var _ = Describe("SnapshotBenchmark", func() {
 
 			params = plugins.Params{
 				Ctx: context.TODO(),
-				Snapshot: &v1.ApiSnapshot{
+				Snapshot: &v1snap.ApiSnapshot{
 					Endpoints: endpoints,
 					Upstreams: allUpstreams,
 				},
@@ -158,14 +160,11 @@ var _ = Describe("SnapshotBenchmark", func() {
 		BeforeEach(beforeEach)
 
 		JustBeforeEach(func() {
-			getPlugins := func() []plugins.Plugin {
-				return registeredPlugins
+			pluginRegistryFactory := func(ctx context.Context) plugins.PluginRegistry {
+				return registry.NewPluginRegistry(registeredPlugins)
 			}
-			getPluginRegistry := func() plugins.PluginRegistry {
-				return registry.NewPluginRegistry(getPlugins())
-			}
-			fnvTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, getPluginRegistry, translator.EnvoyCacheResourcesListToFnvHash)
-			hashstructureTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, getPluginRegistry, translator.EnvoyCacheResourcesListToHash)
+			fnvTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistryFactory, translator.EnvoyCacheResourcesListToFnvHash)
+			hashstructureTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistryFactory, translator.EnvoyCacheResourcesListToHash)
 
 			httpListener := &v1.Listener{
 				Name:        "http-listener",

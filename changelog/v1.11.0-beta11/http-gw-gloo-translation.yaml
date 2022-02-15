@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5767
+    resolvesIssue: false
+    description: |
+      Introduce httpgateways.gateway.solo.io CRD.
+      HybridGateways can delegate to this resource, instead of requiring the
+      entire definition to be inline.

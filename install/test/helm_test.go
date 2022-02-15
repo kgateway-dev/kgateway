@@ -406,7 +406,7 @@ var _ = Describe("Helm Test", func() {
 							Secret: &v1.SecretVolumeSource{
 								SecretName:  "gloo-mtls-certs",
 								Items:       nil,
-								DefaultMode: proto.Int(420),
+								DefaultMode: proto.Int32(420),
 							},
 						},
 					}
@@ -531,6 +531,56 @@ var _ = Describe("Helm Test", func() {
 						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
 							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
 							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
+
+				It("Should have 'pre-install' and 'pre-upgrade' hook if gateway.certGenJob.runOnUpdate is true", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"global.glooMtls.enabled=true",
+							"gateway.certGenJob.runOnUpdate=true"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Job"
+					}).ExpectAll(func(job *unstructured.Unstructured) {
+						jobObject, err := kuberesource.ConvertUnstructured(job)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Job %+v should be able to convert from unstructured", job))
+						structuredDeployment, ok := jobObject.(*jobsv1.Job)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %+v should be able to cast to a structured job", job))
+
+						if structuredDeployment.GetName() == "gloo-mtls-certgen" {
+							for annotation_name, annotation_value := range structuredDeployment.GetAnnotations() {
+								if annotation_name == "helm.sh/hook" {
+									Expect(annotation_value).To(Equal("pre-install, pre-upgrade"))
+								}
+							}
+						}
+					})
+				})
+
+				It("Should have only 'pre-install' hook if gateway.certGenJob.runOnUpdate is false", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"global.glooMtls.enabled=true",
+							"gateway.certGenJob.runOnUpdate=false"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Job"
+					}).ExpectAll(func(job *unstructured.Unstructured) {
+						jobObject, err := kuberesource.ConvertUnstructured(job)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Job %+v should be able to convert from unstructured", job))
+						structuredDeployment, ok := jobObject.(*jobsv1.Job)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %+v should be able to cast to a structured job", job))
+
+						if structuredDeployment.GetName() == "gloo-mtls-certgen" {
+							for annotation_name, annotation_value := range structuredDeployment.GetAnnotations() {
+								if annotation_name == "helm.sh/hook" {
+									Expect(annotation_value).To(Equal("pre-install"))
+								}
+							}
 						}
 					})
 				})
@@ -3500,7 +3550,7 @@ metadata:
 							VolumeSource: v1.VolumeSource{
 								Secret: &v1.SecretVolumeSource{
 									SecretName:  "gateway-validation-certs",
-									DefaultMode: proto.Int(420),
+									DefaultMode: proto.Int32(420),
 								},
 							},
 						}}
@@ -4542,6 +4592,7 @@ metadata:
 					Entry("16-clusteringress-proxy-service", "settings.integrations.knative.proxy.service.kubeResourceOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 					Entry("18-settings", "settings.kubeResourceOverride"),
 					Entry("19-gloo-mtls-certgen-job", "gateway.certGenJob.mtlsKubeResourceOverride", "global.glooMtls.enabled=true"),
+					Entry("19-gloo-mtls-certgen-cronjob", "gateway.certGenJob.cron.mtlsKubeResourceOverride", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 					Entry("26-knative-external-proxy-deployment", "settings.integrations.knative.proxy.deployment.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
 					Entry("27-knative-external-proxy-configmap", "settings.integrations.knative.proxy.configMap.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
 					Entry("28-knative-external-proxy-service", "settings.integrations.knative.proxy.service.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),

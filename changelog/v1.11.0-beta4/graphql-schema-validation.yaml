@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/2948
+    resolvesIssue: false
+    description: Add graphql CRD validation. If using `helm upgrade` to this version, this requires a re-install of the graphql schema CRD.

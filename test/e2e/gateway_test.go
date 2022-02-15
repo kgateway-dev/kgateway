@@ -9,34 +9,28 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-
-	"github.com/solo-io/solo-kit/pkg/errors"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	corev1 "k8s.io/api/core/v1"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("Gateway", func() {
@@ -46,6 +40,8 @@ var _ = Describe("Gateway", func() {
 		cancel         context.CancelFunc
 		testClients    services.TestClients
 		writeNamespace string
+
+		vsMetric = metrics.Names[gatewayv1.VirtualServiceGVK]
 	)
 
 	BeforeEach(func() {
@@ -77,6 +73,17 @@ var _ = Describe("Gateway", func() {
 					Gateway: &gloov1.GatewayOptions{
 						Validation: &gloov1.GatewayOptions_ValidationOptions{
 							ProxyValidationServerAddr: fmt.Sprintf("127.0.0.1:%v", validationPort),
+						},
+					},
+					// Record the config status for virtual services. Use the resource name as a
+					// label on the metric so that a unique time series is tracked for each VS
+					ObservabilityOptions: &gloov1.Settings_ObservabilityOptions{
+						ConfigStatusMetricLabels: map[string]*metrics.Labels{
+							"VirtualService.v1.gateway.solo.io": {
+								LabelToPath: map[string]string{
+									"name": "{.metadata.name}",
+								},
+							},
 						},
 					},
 				},
@@ -218,7 +225,7 @@ var _ = Describe("Gateway", func() {
 				svc, err := testClients.ServiceClient.Write(svc, clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
-				// Create a trivial, working service with a route pointing to the above service
+				// Create a trivial, working VS with a route pointing to the above service
 				vs1 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				vs1.VirtualHost.Domains = []string{"vs1"}
 				vs1.Metadata.Name = "vs1"
@@ -320,6 +327,11 @@ var _ = Describe("Gateway", func() {
 					Expect(service.Ref.Name).To(Equal(svc.Name))
 					Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
 				}
+
+				// Make sure each virtual service's status metric is as expected:
+				Expect(gloohelpers.ReadMetricByLabel(vsMetric, "name", "vs1")).To(Equal(0))
+				Expect(gloohelpers.ReadMetricByLabel(vsMetric, "name", "vs2")).To(Equal(1))
+				Expect(gloohelpers.ReadMetricByLabel(vsMetric, "name", "vs3")).To(Equal(0))
 			})
 
 			Context("traffic", func() {

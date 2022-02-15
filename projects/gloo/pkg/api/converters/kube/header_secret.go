@@ -27,7 +27,7 @@ func (t *HeaderSecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 		return nil, nil
 	}
 
-	if secret.Type == HeaderSecretType {
+	if secret.Type == HeaderSecretType || secret.Type == kubev1.SecretTypeOpaque {
 		if len(secret.Data) == 0 {
 			contextutils.LoggerFrom(ctx).Warnw("skipping header secret with no headers",
 				zap.String("name", secret.Name), zap.String("namespace", secret.Namespace))

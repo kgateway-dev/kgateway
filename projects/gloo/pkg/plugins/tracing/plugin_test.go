@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -21,7 +22,7 @@ import (
 var _ = Describe("Plugin", func() {
 
 	var (
-		plugin       *Plugin
+		plugin       plugins.Plugin
 		pluginParams plugins.Params
 
 		hcmSettings *hcm.HttpConnectionManagerSettings
@@ -42,7 +43,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 		listener := &v1.Listener{}
-		return plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+		return plugin.(plugins.HttpConnectionManagerPlugin).ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 	}
 
 	It("should update listener properly", func() {
@@ -171,7 +172,7 @@ var _ = Describe("Plugin", func() {
 		Describe("when zipkin provider config", func() {
 			It("references invalid upstream", func() {
 				pluginParams = plugins.Params{
-					Snapshot: &v1.ApiSnapshot{
+					Snapshot: &v1snap.ApiSnapshot{
 						Upstreams: v1.UpstreamList{
 							// No valid upstreams
 						},
@@ -199,7 +200,7 @@ var _ = Describe("Plugin", func() {
 			It("references valid upstream", func() {
 				us := v1.NewUpstream("default", "valid")
 				pluginParams = plugins.Params{
-					Snapshot: &v1.ApiSnapshot{
+					Snapshot: &v1snap.ApiSnapshot{
 						Upstreams: v1.UpstreamList{us},
 					},
 				}
@@ -290,7 +291,7 @@ var _ = Describe("Plugin", func() {
 		Describe("when datadog provider config", func() {
 			It("references invalid upstream", func() {
 				pluginParams = plugins.Params{
-					Snapshot: &v1.ApiSnapshot{
+					Snapshot: &v1snap.ApiSnapshot{
 						Upstreams: v1.UpstreamList{
 							// No valid upstreams
 						},
@@ -318,7 +319,7 @@ var _ = Describe("Plugin", func() {
 			It("references valid upstream", func() {
 				us := v1.NewUpstream("default", "valid")
 				pluginParams = plugins.Params{
-					Snapshot: &v1.ApiSnapshot{
+					Snapshot: &v1snap.ApiSnapshot{
 						Upstreams: v1.UpstreamList{us},
 					},
 				}
@@ -398,7 +399,7 @@ var _ = Describe("Plugin", func() {
 	It("should update routes properly", func() {
 		in := &v1.Route{}
 		out := &envoy_config_route_v3.Route{}
-		err := plugin.ProcessRoute(plugins.RouteParams{}, in, out)
+		err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
@@ -410,7 +411,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 		outFull := &envoy_config_route_v3.Route{}
-		err = plugin.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
+		err = plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))
 		Expect(outFull.Decorator.Propagate).To(Equal(&wrappers.BoolValue{Value: false}))
@@ -422,7 +423,7 @@ var _ = Describe("Plugin", func() {
 	It("should update routes properly - with defaults", func() {
 		in := &v1.Route{}
 		out := &envoy_config_route_v3.Route{}
-		err := plugin.ProcessRoute(plugins.RouteParams{}, in, out)
+		err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
@@ -438,7 +439,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 		outFull := &envoy_config_route_v3.Route{}
-		err = plugin.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
+		err = plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))
 		Expect(outFull.Decorator.Propagate).To(BeNil())

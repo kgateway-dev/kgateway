@@ -354,6 +354,8 @@ spec:
                               properties:
                                 acceptHttp10:
                                   type: boolean
+                                allowChunkedLength:
+                                  type: boolean
                                 codecType:
                                   type: string
                                   x-kubernetes-int-or-string: true
@@ -369,6 +371,9 @@ spec:
                                 generateRequestId:
                                   nullable: true
                                   type: boolean
+                                headersWithUnderscoresAction:
+                                  type: string
+                                  x-kubernetes-int-or-string: true
                                 idleTimeout:
                                   type: string
                                 maxConnectionDuration:
@@ -383,6 +388,11 @@ spec:
                                   minimum: 0
                                   nullable: true
                                   type: integer
+                                maxRequestsPerConnection:
+                                  maximum: 4294967295
+                                  minimum: 0
+                                  nullable: true
+                                  type: integer
                                 maxStreamDuration:
                                   type: string
                                 mergeSlashes:
@@ -393,6 +403,8 @@ spec:
                                 pathWithEscapedSlashesAction:
                                   type: string
                                   x-kubernetes-int-or-string: true
+                                preserveCaseHeaderKeyFormat:
+                                  type: boolean
                                 preserveExternalRequestId:
                                   type: boolean
                                 properCaseHeaderKeyFormat:
@@ -3771,6 +3783,8 @@ spec:
                                                                 type: boolean
                                                               responseTransformation:
                                                                 type: boolean
+                                                              unwrapAsAlb:
+                                                                type: boolean
                                                             type: object
                                                           azure:
                                                             properties:
@@ -4889,6 +4903,8 @@ spec:
                                                       type: boolean
                                                     responseTransformation:
                                                       type: boolean
+                                                    unwrapAsAlb:
+                                                      type: boolean
                                                   type: object
                                                 azure:
                                                   properties:
@@ -5364,6 +5380,8 @@ spec:
                                         properties:
                                           acceptHttp10:
                                             type: boolean
+                                          allowChunkedLength:
+                                            type: boolean
                                           codecType:
                                             type: string
                                             x-kubernetes-int-or-string: true
@@ -5379,6 +5397,9 @@ spec:
                                           generateRequestId:
                                             nullable: true
                                             type: boolean
+                                          headersWithUnderscoresAction:
+                                            type: string
+                                            x-kubernetes-int-or-string: true
                                           idleTimeout:
                                             type: string
                                           maxConnectionDuration:
@@ -5393,6 +5414,11 @@ spec:
                                             minimum: 0
                                             nullable: true
                                             type: integer
+                                          maxRequestsPerConnection:
+                                            maximum: 4294967295
+                                            minimum: 0
+                                            nullable: true
+                                            type: integer
                                           maxStreamDuration:
                                             type: string
                                           mergeSlashes:
@@ -5403,6 +5429,8 @@ spec:
                                           pathWithEscapedSlashesAction:
                                             type: string
                                             x-kubernetes-int-or-string: true
+                                          preserveCaseHeaderKeyFormat:
+                                            type: boolean
                                           preserveExternalRequestId:
                                             type: boolean
                                           properCaseHeaderKeyFormat:
@@ -8781,6 +8809,8 @@ spec:
                                                                           type: boolean
                                                                         responseTransformation:
                                                                           type: boolean
+                                                                        unwrapAsAlb:
+                                                                          type: boolean
                                                                       type: object
                                                                     azure:
                                                                       properties:
@@ -9899,6 +9929,8 @@ spec:
                                                                 type: boolean
                                                               responseTransformation:
                                                                 type: boolean
+                                                              unwrapAsAlb:
+                                                                type: boolean
                                                             type: object
                                                           azure:
                                                             properties:
@@ -10140,6 +10172,85 @@ spec:
                                         type: array
                                     type: object
                                 type: object
+                              sslConfigurations:
+                                items:
+                                  properties:
+                                    alpnProtocols:
+                                      items:
+                                        type: string
+                                      type: array
+                                    disableTlsSessionResumption:
+                                      nullable: true
+                                      type: boolean
+                                    oneWayTls:
+                                      nullable: true
+                                      type: boolean
+                                    parameters:
+                                      properties:
+                                        cipherSuites:
+                                          items:
+                                            type: string
+                                          type: array
+                                        ecdhCurves:
+                                          items:
+                                            type: string
+                                          type: array
+                                        maximumProtocolVersion:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        minimumProtocolVersion:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                      type: object
+                                    sds:
+                                      properties:
+                                        callCredentials:
+                                          properties:
+                                            fileCredentialSource:
+                                              properties:
+                                                header:
+                                                  type: string
+                                                tokenFileName:
+                                                  type: string
+                                              type: object
+                                          type: object
+                                        certificatesSecretName:
+                                          type: string
+                                        clusterName:
+                                          type: string
+                                        targetUri:
+                                          type: string
+                                        validationContextName:
+                                          type: string
+                                      type: object
+                                    secretRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                    sniDomains:
+                                      items:
+                                        type: string
+                                      type: array
+                                    sslFiles:
+                                      properties:
+                                        rootCa:
+                                          type: string
+                                        tlsCert:
+                                          type: string
+                                        tlsKey:
+                                          type: string
+                                      type: object
+                                    transportSocketConnectTimeout:
+                                      type: string
+                                    verifySubjectAltName:
+                                      items:
+                                        type: string
+                                      type: array
+                                  type: object
+                                type: array
                               tcpListener:
                                 properties:
                                   options:
@@ -10202,6 +10313,8 @@ spec:
                                                                   requestTransformation:
                                                                     type: boolean
                                                                   responseTransformation:
+                                                                    type: boolean
+                                                                  unwrapAsAlb:
                                                                     type: boolean
                                                                 type: object
                                                               azure:
@@ -11321,6 +11434,8 @@ spec:
                                                           type: boolean
                                                         responseTransformation:
                                                           type: boolean
+                                                        unwrapAsAlb:
+                                                          type: boolean
                                                       type: object
                                                     azure:
                                                       properties:
@@ -11802,6 +11917,8 @@ spec:
                                                         requestTransformation:
                                                           type: boolean
                                                         responseTransformation:
+                                                          type: boolean
+                                                        unwrapAsAlb:
                                                           type: boolean
                                                       type: object
                                                     azure:
@@ -12920,6 +13037,8 @@ spec:
                                               requestTransformation:
                                                 type: boolean
                                               responseTransformation:
+                                                type: boolean
+                                              unwrapAsAlb:
                                                 type: boolean
                                             type: object
                                           azure:

@@ -44,6 +44,8 @@ func AddRouteFlags(set *pflag.FlagSet, route *options.InputRoute) {
 	set.BoolVarP(&route.Destination.DestinationSpec.Aws.ResponseTransformation, "aws-unescape", "", false,
 		"unescape JSON returned by this lambda function (useful if the response is not intended to be JSON formatted, "+
 			"e.g. in the case of static content (images, HTML, etc.) being served by Lambda")
+	set.BoolVarP(&route.Destination.DestinationSpec.Aws.UnwrapAsAlb, "aws-alb-unwrap", "", false,
+		"Sets if gloo should handle responses as if it was an ALB. Appropriately handles the response body and sets headers.")
 
 	set.StringVarP(&route.Destination.DestinationSpec.Rest.FunctionName, "rest-function-name", "f", "",
 		"name of the REST function to invoke with this route. use if destination has a REST service spec")

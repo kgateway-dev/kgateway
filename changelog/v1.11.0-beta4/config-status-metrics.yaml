@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3964
+    resolvesIssue: true
+    description: >
+      Add the ability to record metrics tracking the configuration status of various resource types.
+      By default, these metrics are not recorded; however, they can be enabled/configured via
+      `settings.observabilityOptions.configStatusMetricLabels`.

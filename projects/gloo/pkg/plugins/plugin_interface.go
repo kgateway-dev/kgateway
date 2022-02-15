@@ -12,6 +12,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 )
 
 type InitParams struct {
@@ -20,20 +21,13 @@ type InitParams struct {
 }
 
 type Plugin interface {
+	Name() string
 	Init(params InitParams) error
-}
-
-// Upgradable plugins are those which can be replaced by
-// another version with enhanced functionality. Identified
-// by PluginName().
-type Upgradable interface {
-	PluginName() string
-	IsUpgrade() bool
 }
 
 type Params struct {
 	Ctx      context.Context
-	Snapshot *v1.ApiSnapshot
+	Snapshot *v1snap.ApiSnapshot
 }
 
 type VirtualHostParams struct {
@@ -278,13 +272,21 @@ type ResourceGeneratorPlugin interface {
 // Historically, all plugins were passed around as an argument, and each translator
 // would iterate over all plugins, and only apply the relevant ones.
 // This interface enables translators to only know of the relevant plugins
-// NOTE:
-// 	This is not complete. As translators are modified, we can gradually expose
-//	more methods on a PluginRegistry
 type PluginRegistry interface {
 	GetPlugins() []Plugin
 	GetListenerPlugins() []ListenerPlugin
 	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
 	GetHttpFilterPlugins() []HttpFilterPlugin
 	GetHttpConnectionManagerPlugins() []HttpConnectionManagerPlugin
+	GetVirtualHostPlugins() []VirtualHostPlugin
+	GetResourceGeneratorPlugins() []ResourceGeneratorPlugin
+	GetUpstreamPlugins() []UpstreamPlugin
+	GetEndpointPlugins() []EndpointPlugin
+	GetRoutePlugins() []RoutePlugin
+	GetRouteActionPlugins() []RouteActionPlugin
+	GetWeightedDestinationPlugins() []WeightedDestinationPlugin
 }
+
+// A PluginRegistryFactory generates a PluginRegistry
+// It is executed each translation loop, ensuring we have up to date configuration of all plugins
+type PluginRegistryFactory func(ctx context.Context) PluginRegistry

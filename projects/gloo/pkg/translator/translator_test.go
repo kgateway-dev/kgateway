@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	"github.com/onsi/ginkgo/extensions/table"
@@ -52,6 +54,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
+	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -126,7 +129,7 @@ var _ = Describe("Translator", func() {
 
 		params = plugins.Params{
 			Ctx: context.Background(),
-			Snapshot: &v1.ApiSnapshot{
+			Snapshot: &v1snap.ApiSnapshot{
 				Endpoints: v1.EndpointList{
 					{
 						Upstreams: []*core.ResourceRef{upName.Ref()},
@@ -168,14 +171,11 @@ var _ = Describe("Translator", func() {
 	BeforeEach(beforeEach)
 
 	JustBeforeEach(func() {
-		getPlugins := func() []plugins.Plugin {
-			return registeredPlugins
+		pluginRegistryFactory := func(ctx context.Context) plugins.PluginRegistry {
+			return registry.NewPluginRegistry(registeredPlugins)
 		}
 
-		getPluginRegistry := func() plugins.PluginRegistry {
-			return registry.NewPluginRegistry(getPlugins())
-		}
-		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, getPluginRegistry)
+		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, pluginRegistryFactory)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",
@@ -213,8 +213,8 @@ var _ = Describe("Translator", func() {
 							SslConfig: &v1.SslConfig{
 								SslSecrets: &v1.SslConfig_SslFiles{
 									SslFiles: &v1.SSLFiles{
-										TlsCert: "cert1",
-										TlsKey:  "key1",
+										TlsCert: gloohelpers.Certificate(),
+										TlsKey:  gloohelpers.PrivateKey(),
 									},
 								},
 								SniDomains: []string{
@@ -238,8 +238,8 @@ var _ = Describe("Translator", func() {
 								SslConfig: &v1.SslConfig{
 									SslSecrets: &v1.SslConfig_SslFiles{
 										SslFiles: &v1.SSLFiles{
-											TlsCert: "cert1",
-											TlsKey:  "key1",
+											TlsCert: gloohelpers.Certificate(),
+											TlsKey:  gloohelpers.PrivateKey(),
 										},
 									},
 									SniDomains: []string{
@@ -274,8 +274,8 @@ var _ = Describe("Translator", func() {
 											SslConfig: &v1.SslConfig{
 												SslSecrets: &v1.SslConfig_SslFiles{
 													SslFiles: &v1.SSLFiles{
-														TlsCert: "cert1",
-														TlsKey:  "key1",
+														TlsCert: gloohelpers.Certificate(),
+														TlsKey:  gloohelpers.PrivateKey(),
 													},
 												},
 												SniDomains: []string{
@@ -292,8 +292,8 @@ var _ = Describe("Translator", func() {
 								SslConfig: &v1.SslConfig{
 									SslSecrets: &v1.SslConfig_SslFiles{
 										SslFiles: &v1.SSLFiles{
-											TlsCert: "cert2",
-											TlsKey:  "key2",
+											TlsCert: gloohelpers.Certificate(),
+											TlsKey:  gloohelpers.PrivateKey(),
 										},
 									},
 									SniDomains: []string{
@@ -2251,7 +2251,10 @@ var _ = Describe("Translator", func() {
 			Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
 		})
 	})
+
+	const expectedHybridListeners = 6
 	Context("Hybrid", func() {
+
 		It("can properly create a hybrid listener", func() {
 			translate()
 			listeners := snapshot.GetResources(resource.ListenerTypeV3).Items
@@ -2286,8 +2289,67 @@ var _ = Describe("Translator", func() {
 			Expect(ParseTypedConfig(hcmFilter, &hcmTypedCfg)).NotTo(HaveOccurred())
 			Expect(hcmTypedCfg.GetRds()).NotTo(BeNil())
 			Expect(hcmTypedCfg.GetRds().RouteConfigName).To(Equal(glooutils.MatchedRouteConfigName(proxy.GetListeners()[2], proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())))
-			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(6)) // TODO: is this the right number? is there more we can/should do to ensure correctness?
+			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(expectedHybridListeners)) // TODO: is this the right number? is there more we can/should do to ensure correctness?
 		})
+
+		It("can properly create a hybrid listeners without unused filters", func() {
+			settings.Gloo = &v1.GlooOptions{RemoveUnusedFilters: &wrappers.BoolValue{Value: true}}
+			translate()
+			listeners := snapshot.GetResources(resource.ListenerTypeV3).Items
+			Expect(listeners).NotTo(HaveLen(0))
+			val, found := listeners["hybrid-listener"]
+			Expect(found).To(BeTrue())
+			listener, ok := val.ResourceProto().(*envoy_config_listener_v3.Listener)
+			Expect(ok).To(BeTrue())
+			Expect(listener.GetName()).To(Equal("hybrid-listener"))
+			Expect(listener.GetFilterChains()).To(HaveLen(2))
+
+			// tcp
+			tcpFc := listener.GetFilterChains()[0]
+			Expect(tcpFc.Filters).To(HaveLen(1))
+			tcpFilter := tcpFc.Filters[0]
+			tcpCfg := tcpFilter.GetTypedConfig()
+			Expect(tcpCfg).NotTo(BeNil())
+			var tcpTypedCfg envoytcp.TcpProxy
+			Expect(ParseTypedConfig(tcpFilter, &tcpTypedCfg)).NotTo(HaveOccurred())
+			clusterSpec := tcpTypedCfg.GetCluster()
+			Expect(clusterSpec).To(Equal("test_gloo-system"))
+			Expect(listener.GetListenerFilters()).To(HaveLen(1))
+			Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
+
+			// http
+			httpFc := listener.GetFilterChains()[1]
+			Expect(httpFc.Filters).To(HaveLen(1))
+			hcmFilter := httpFc.Filters[0]
+			hcmCfg := hcmFilter.GetConfigType()
+			Expect(hcmCfg).NotTo(BeNil())
+			var hcmTypedCfg envoyhttp.HttpConnectionManager
+			Expect(ParseTypedConfig(hcmFilter, &hcmTypedCfg)).NotTo(HaveOccurred())
+			Expect(hcmTypedCfg.GetRds()).NotTo(BeNil())
+			Expect(hcmTypedCfg.GetRds().RouteConfigName).To(Equal(glooutils.MatchedRouteConfigName(proxy.GetListeners()[2], proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())))
+			Expect(hcmTypedCfg.GetHttpFilters()).ToNot(HaveLen(expectedHybridListeners)) // check that its lower. Actual list/ number handled at registery test
+		})
+
+		It("skips listeners with invalid downstream ssl config", func() {
+			invalidSslSecretRef := &v1.SslConfig_SecretRef{
+				SecretRef: &core.ResourceRef{
+					Name:      "invalid",
+					Namespace: "invalid",
+				},
+			}
+
+			proxyClone := proto.Clone(proxy).(*v1.Proxy)
+			proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].SslConfigurations = []*v1.SslConfig{{
+				SslSecrets: invalidSslSecretRef,
+			}}
+
+			_, errs, _, err := translator.Translate(params, proxyClone)
+
+			Expect(err).To(BeNil())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring("Listener Error: SSLConfigError. Reason: SSL secret not found: list did not find secret"))
+		})
+
 	})
 
 	Context("Ssl - cluster", func() {
@@ -2315,7 +2377,7 @@ var _ = Describe("Translator", func() {
 			}
 			params = plugins.Params{
 				Ctx: context.Background(),
-				Snapshot: &v1.ApiSnapshot{
+				Snapshot: &v1snap.ApiSnapshot{
 					Secrets:   v1.SecretList{secret},
 					Upstreams: v1.UpstreamList{upstream},
 				},
@@ -2332,27 +2394,32 @@ var _ = Describe("Translator", func() {
 		}
 
 		It("should process an upstream with tls config", func() {
-			translate()
-			Expect(tlsContext()).ToNot(BeNil())
-		})
 
-		It("should process an upstream with tls config", func() {
+			pk := gloohelpers.PrivateKey()
+			cc := gloohelpers.Certificate()
 
-			tlsConf.PrivateKey = "private"
-			tlsConf.CertChain = "certchain"
+			tlsConf.PrivateKey = pk
+			tlsConf.CertChain = cc
 
 			translate()
 			Expect(tlsContext()).ToNot(BeNil())
-			Expect(tlsContext().CommonTlsContext.TlsCertificates[0].PrivateKey.GetInlineString()).To(Equal("private"))
-			Expect(tlsContext().CommonTlsContext.TlsCertificates[0].CertificateChain.GetInlineString()).To(Equal("certchain"))
+			Expect(tlsContext().CommonTlsContext.TlsCertificates[0].PrivateKey.GetInlineString()).To(Equal(pk))
+			Expect(tlsContext().CommonTlsContext.TlsCertificates[0].CertificateChain.GetInlineString()).To(Equal(cc))
 		})
 
 		It("should process an upstream with rootca", func() {
-			tlsConf.RootCa = "rootca"
+
+			pk := gloohelpers.PrivateKey()
+			cc := gloohelpers.Certificate()
+			rca := gloohelpers.Certificate()
+
+			tlsConf.PrivateKey = pk
+			tlsConf.CertChain = cc
+			tlsConf.RootCa = rca
 
 			translate()
 			Expect(tlsContext()).ToNot(BeNil())
-			Expect(tlsContext().CommonTlsContext.GetValidationContext().TrustedCa.GetInlineString()).To(Equal("rootca"))
+			Expect(tlsContext().CommonTlsContext.GetValidationContext().TrustedCa.GetInlineString()).To(Equal(rca))
 		})
 
 		Context("SslParameters", func() {
@@ -2367,6 +2434,12 @@ var _ = Describe("Translator", func() {
 				}
 
 				upstream.SslConfig.Parameters = upstreamSslParameters
+				upstream.SslConfig.SslSecrets = &v1.UpstreamSslConfig_SslFiles{
+					SslFiles: &v1.SSLFiles{
+						TlsCert: gloohelpers.Certificate(),
+						TlsKey:  gloohelpers.PrivateKey(),
+					},
+				}
 				settings.UpstreamOptions = &v1.UpstreamOptions{
 					SslParameters: settingsSslParameters,
 				}
@@ -2382,6 +2455,12 @@ var _ = Describe("Translator", func() {
 				}
 
 				upstream.SslConfig.Parameters = nil
+				upstream.SslConfig.SslSecrets = &v1.UpstreamSslConfig_SslFiles{
+					SslFiles: &v1.SSLFiles{
+						TlsCert: gloohelpers.Certificate(),
+						TlsKey:  gloohelpers.PrivateKey(),
+					},
+				}
 				settings.UpstreamOptions = &v1.UpstreamOptions{
 					SslParameters: settingsSslParameters,
 				}
@@ -2394,25 +2473,29 @@ var _ = Describe("Translator", func() {
 		})
 
 		Context("failure", func() {
+			It("should fail with an upstream with no tls config", func() {
+				_, errs, _, err := translator.Translate(params, proxy)
+
+				Expect(err).To(BeNil())
+				Expect(errs.Validate()).To(HaveOccurred())
+			})
 
 			It("should fail with only private key", func() {
 
-				tlsConf.PrivateKey = "private"
+				tlsConf.PrivateKey = gloohelpers.PrivateKey()
 				_, errs, _, err := translator.Translate(params, proxy)
 
 				Expect(err).To(BeNil())
 				Expect(errs.Validate()).To(HaveOccurred())
-				Expect(errs.Validate().Error()).To(ContainSubstring("both or none of cert chain and private key must be provided"))
 			})
 			It("should fail with only cert chain", func() {
 
-				tlsConf.CertChain = "certchain"
+				tlsConf.CertChain = gloohelpers.Certificate()
 
 				_, errs, _, err := translator.Translate(params, proxy)
 
 				Expect(err).To(BeNil())
 				Expect(errs.Validate()).To(HaveOccurred())
-				Expect(errs.Validate().Error()).To(ContainSubstring("both or none of cert chain and private key must be provided"))
 			})
 		})
 	})
@@ -2467,8 +2550,8 @@ var _ = Describe("Translator", func() {
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
 							SslFiles: &v1.SSLFiles{
-								TlsCert: "cert",
-								TlsKey:  "key",
+								TlsCert: gloohelpers.Certificate(),
+								TlsKey:  gloohelpers.PrivateKey(),
 							},
 						},
 					},
@@ -2481,12 +2564,21 @@ var _ = Describe("Translator", func() {
 			})
 
 			It("should not merge 2 ssl config if they are different", func() {
+				cert1, privateKey1 := gloohelpers.GetCerts(gloohelpers.Params{
+					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
+					IsCA:  true,
+				})
+				cert2, privateKey2 := gloohelpers.GetCerts(gloohelpers.Params{
+					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
+					IsCA:  true,
+				})
+
 				prep([]*v1.SslConfig{
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
 							SslFiles: &v1.SSLFiles{
-								TlsCert: "cert1",
-								TlsKey:  "key1",
+								TlsCert: cert1,
+								TlsKey:  privateKey1,
 							},
 						},
 						SniDomains: []string{
@@ -2496,8 +2588,8 @@ var _ = Describe("Translator", func() {
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
 							SslFiles: &v1.SSLFiles{
-								TlsCert: "cert2",
-								TlsKey:  "key2",
+								TlsCert: cert2,
+								TlsKey:  privateKey2,
 							},
 						},
 						SniDomains: []string{
@@ -2515,16 +2607,16 @@ var _ = Describe("Translator", func() {
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
 							SslFiles: &v1.SSLFiles{
-								TlsCert: "cert",
-								TlsKey:  "key",
+								TlsCert: gloohelpers.Certificate(),
+								TlsKey:  gloohelpers.PrivateKey(),
 							},
 						},
 					},
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
 							SslFiles: &v1.SSLFiles{
-								TlsCert: "cert",
-								TlsKey:  "key",
+								TlsCert: gloohelpers.Certificate(),
+								TlsKey:  gloohelpers.PrivateKey(),
 							},
 						},
 					},
@@ -2561,8 +2653,8 @@ var _ = Describe("Translator", func() {
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
 							SslFiles: &v1.SSLFiles{
-								TlsCert: "cert",
-								TlsKey:  "key",
+								TlsCert: gloohelpers.Certificate(),
+								TlsKey:  gloohelpers.PrivateKey(),
 							},
 						},
 						SniDomains: []string{"a.com"},
@@ -2570,8 +2662,8 @@ var _ = Describe("Translator", func() {
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
 							SslFiles: &v1.SSLFiles{
-								TlsCert: "cert",
-								TlsKey:  "key",
+								TlsCert: gloohelpers.Certificate(),
+								TlsKey:  gloohelpers.PrivateKey(),
 							},
 						},
 						SniDomains: []string{"b.com"},
@@ -2582,8 +2674,8 @@ var _ = Describe("Translator", func() {
 				fc := listener.GetFilterChains()[0]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetFilename()).To(Equal("cert"))
-				Expect(cert.GetPrivateKey().GetFilename()).To(Equal("key"))
+				Expect(cert.GetCertificateChain().GetFilename()).To(Equal(gloohelpers.Certificate()))
+				Expect(cert.GetPrivateKey().GetFilename()).To(Equal(gloohelpers.PrivateKey()))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
 				Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
 			})
@@ -2593,16 +2685,16 @@ var _ = Describe("Translator", func() {
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
 							SslFiles: &v1.SSLFiles{
-								TlsCert: "cert",
-								TlsKey:  "key",
+								TlsCert: gloohelpers.Certificate(),
+								TlsKey:  gloohelpers.PrivateKey(),
 							},
 						},
 					},
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
 							SslFiles: &v1.SSLFiles{
-								TlsCert: "cert",
-								TlsKey:  "key",
+								TlsCert: gloohelpers.Certificate(),
+								TlsKey:  gloohelpers.PrivateKey(),
 							},
 						},
 						SniDomains: []string{"b.com"},
@@ -2626,8 +2718,8 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain",
-							PrivateKey: "key",
+							CertChain:  gloohelpers.Certificate(),
+							PrivateKey: gloohelpers.PrivateKey(),
 						},
 					},
 				})
@@ -2657,12 +2749,25 @@ var _ = Describe("Translator", func() {
 				fc := listener.GetFilterChains()[0]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain"))
-				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal(gloohelpers.Certificate()))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal(gloohelpers.PrivateKey()))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
 				Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
 			})
 			It("should not combine when not matching", func() {
+
+				cert1, privateKey1 := gloohelpers.GetCerts(gloohelpers.Params{
+					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
+					IsCA:  true,
+				})
+				cert2, privateKey2 := gloohelpers.GetCerts(gloohelpers.Params{
+					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
+					IsCA:  true,
+				})
+				cert3, privateKey3 := gloohelpers.GetCerts(gloohelpers.Params{
+					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
+					IsCA:  true,
+				})
 
 				params.Snapshot.Secrets = append(params.Snapshot.Secrets, &v1.Secret{
 					Metadata: &core.Metadata{
@@ -2671,8 +2776,8 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain1",
-							PrivateKey: "key1",
+							CertChain:  cert1,
+							PrivateKey: privateKey1,
 						},
 					},
 				}, &v1.Secret{
@@ -2682,9 +2787,9 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain2",
-							PrivateKey: "key2",
-							RootCa:     "rootca2",
+							CertChain:  cert2,
+							PrivateKey: privateKey2,
+							RootCa:     cert2,
 						},
 					},
 				}, &v1.Secret{
@@ -2694,8 +2799,8 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain3",
-							PrivateKey: "key3",
+							CertChain:  cert3,
+							PrivateKey: privateKey3,
 						},
 					},
 				})
@@ -2759,8 +2864,8 @@ var _ = Describe("Translator", func() {
 				fc := listener.GetFilterChains()[0]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
-				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key1"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal(cert1))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal(privateKey1))
 				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com"}))
 
@@ -2768,26 +2873,26 @@ var _ = Describe("Translator", func() {
 				fc = listener.GetFilterChains()[1]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain2"))
-				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key2"))
-				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal("rootca2"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal(cert2))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal(privateKey2))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal(cert2))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"b.com"}))
 
 				By("checking third filter chain")
 				fc = listener.GetFilterChains()[2]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain3"))
-				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key3"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal(cert3))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal(privateKey3))
 				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"c.com"}))
 
-				By("checking forth filter chain")
+				By("checking fourth filter chain")
 				fc = listener.GetFilterChains()[3]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain3"))
-				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key3"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal(cert3))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal(privateKey3))
 				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"d.com", "e.com"}))
 				Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
@@ -2801,8 +2906,8 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain1",
-							PrivateKey: "key1",
+							CertChain:  gloohelpers.Certificate(),
+							PrivateKey: gloohelpers.PrivateKey(),
 						},
 					},
 				})
@@ -2845,8 +2950,8 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain1",
-							PrivateKey: "key1",
+							CertChain:  gloohelpers.Certificate(),
+							PrivateKey: gloohelpers.PrivateKey(),
 						},
 					},
 				})
@@ -2887,8 +2992,8 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain1",
-							PrivateKey: "key1",
+							CertChain:  gloohelpers.Certificate(),
+							PrivateKey: gloohelpers.PrivateKey(),
 						},
 					},
 				})
@@ -2921,8 +3026,8 @@ var _ = Describe("Translator", func() {
 				fc := listener.GetFilterChains()[0]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
-				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key1"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal(gloohelpers.Certificate()))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal(gloohelpers.PrivateKey()))
 				params := tlsContext(fc).GetCommonTlsContext().GetTlsParams()
 				Expect(params.GetTlsMinimumProtocolVersion().String()).To(Equal("TLS_AUTO"))
 				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
@@ -2931,8 +3036,8 @@ var _ = Describe("Translator", func() {
 				fc = listener.GetFilterChains()[1]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
-				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key1"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal(gloohelpers.Certificate()))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal(gloohelpers.PrivateKey()))
 				params = tlsContext(fc).GetCommonTlsContext().GetTlsParams()
 				Expect(params.GetTlsMinimumProtocolVersion().String()).To(Equal("TLSv1_2"))
 				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
@@ -3047,6 +3152,10 @@ type routePluginMock struct {
 	ProcessRouteFunc func(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error
 }
 
+func (p *routePluginMock) Name() string {
+	return "route_plugin_mock"
+}
+
 func (p *routePluginMock) Init(params plugins.InitParams) error {
 	return nil
 }
@@ -3061,6 +3170,10 @@ type endpointPluginMock struct {
 
 func (e *endpointPluginMock) ProcessEndpoints(params plugins.Params, in *v1.Upstream, out *envoy_config_endpoint_v3.ClusterLoadAssignment) error {
 	return e.ProcessEndpointFunc(params, in, out)
+}
+
+func (e *endpointPluginMock) Name() string {
+	return "endpoint_plugin_mock"
 }
 
 func (e *endpointPluginMock) Init(params plugins.InitParams) error {

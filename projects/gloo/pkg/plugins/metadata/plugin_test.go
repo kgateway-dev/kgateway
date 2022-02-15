@@ -15,7 +15,7 @@ import (
 var _ = Describe("Metadata Plugin", func() {
 
 	var (
-		plugin     *Plugin
+		plugin     plugins.RoutePlugin
 		glooRoute  *v1.Route
 		envoyRoute *envoy_route_v3.Route
 	)

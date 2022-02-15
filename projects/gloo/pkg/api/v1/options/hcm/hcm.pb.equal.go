@@ -154,7 +154,7 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetProperCaseHeaderKeyFormat() != target.GetProperCaseHeaderKeyFormat() {
+	if m.GetAllowChunkedLength() != target.GetAllowChunkedLength() {
 		return false
 	}
 
@@ -233,6 +233,20 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetHeadersWithUnderscoresAction() != target.GetHeadersWithUnderscoresAction() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetMaxRequestsPerConnection()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxRequestsPerConnection()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxRequestsPerConnection(), target.GetMaxRequestsPerConnection()) {
+			return false
+		}
+	}
+
 	if m.GetServerHeaderTransformation() != target.GetServerHeaderTransformation() {
 		return false
 	}
@@ -255,6 +269,33 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetNormalizePath(), target.GetNormalizePath()) {
+			return false
+		}
+	}
+
+	switch m.HeaderFormat.(type) {
+
+	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
+		if _, ok := target.HeaderFormat.(*HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat); !ok {
+			return false
+		}
+
+		if m.GetProperCaseHeaderKeyFormat() != target.GetProperCaseHeaderKeyFormat() {
+			return false
+		}
+
+	case *HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat:
+		if _, ok := target.HeaderFormat.(*HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat); !ok {
+			return false
+		}
+
+		if m.GetPreserveCaseHeaderKeyFormat() != target.GetPreserveCaseHeaderKeyFormat() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.HeaderFormat != target.HeaderFormat {
 			return false
 		}
 	}

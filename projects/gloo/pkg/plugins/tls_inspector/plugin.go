@@ -9,16 +9,24 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-func NewPlugin() *plugin {
-	return &plugin{}
-}
-
 var (
 	_ plugins.Plugin         = new(plugin)
 	_ plugins.ListenerPlugin = new(plugin)
 )
 
+const (
+	ExtensionName = "tls_inspector"
+)
+
 type plugin struct{}
+
+func NewPlugin() *plugin {
+	return &plugin{}
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
+}
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	return nil

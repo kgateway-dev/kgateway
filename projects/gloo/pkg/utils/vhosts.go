@@ -14,8 +14,7 @@ func GetVhostsFromListener(listener *v1.Listener) []*v1.VirtualHost {
 		virtualHosts = typedListener.HttpListener.GetVirtualHosts()
 	case *v1.Listener_HybridListener:
 		for _, matchedListener := range typedListener.HybridListener.GetMatchedListeners() {
-			httpListener := matchedListener.GetHttpListener()
-			if httpListener != nil {
+			if httpListener := matchedListener.GetHttpListener(); httpListener != nil {
 				virtualHosts = append(virtualHosts, httpListener.GetVirtualHosts()...)
 			}
 		}

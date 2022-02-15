@@ -1,6 +1,7 @@
 package gateway_test
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -35,8 +36,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 
-	"context"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -54,7 +53,7 @@ var _ = Describe("Robustness tests", func() {
 	// Historically, we had an EDS Test Suite (https://github.com/solo-io/gloo/tree/197272444efae0e6649c798997d6efa94bb7a8d9/test/kube2e/eds)
 	// however, those tests often flaked, and the purpose of those tests was to validate what these
 	// tests already do: that endpoints are updated and sent to Envoy successfully.
-	// Therefore, we opted to collapste that Test Suite into this file. If in the future there are a larger set
+	// Therefore, we opted to collapse that Test Suite into this file. If in the future there are a larger set
 	// of tests, we can evaluate re-opening that Test Suite.
 
 	const (

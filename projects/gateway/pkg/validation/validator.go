@@ -424,7 +424,7 @@ func (v *validator) validateVirtualServiceInternal(ctx context.Context, vs *v1.V
 			snap.VirtualServices.Sort()
 		}
 
-		return proxiesForVirtualService(snap.Gateways, vs), vs, vsRef
+		return proxiesForVirtualService(ctx, snap.Gateways, snap.HttpGateways, vs), vs, vsRef
 	}
 
 	if acquireLock {
@@ -450,16 +450,10 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef *cor
 
 	var parentGateways []*core.ResourceRef
 	snap.Gateways.Each(func(element *v1.Gateway) {
-		var virtualServices []*core.ResourceRef
-		switch gatewayType := element.GetGatewayType().(type) {
-		case *v1.Gateway_HttpGateway:
-			virtualServices = gatewayType.HttpGateway.GetVirtualServices()
-		case *v1.Gateway_HybridGateway:
-			for _, matchedGateway := range gatewayType.HybridGateway.GetMatchedGateways() {
-				if httpGateway := matchedGateway.GetHttpGateway(); httpGateway != nil {
-					virtualServices = append(virtualServices, httpGateway.GetVirtualServices()...)
-				}
-			}
+		virtualServices := virtualServicesForGateway(ctx, snap, element)
+		if len(virtualServices) == 0 {
+			contextutils.LoggerFrom(ctx).Debugw("Accepted deletion of Virtual Service %v", vsRef)
+			return
 		}
 
 		for _, ref := range virtualServices {
@@ -512,7 +506,7 @@ func (v *validator) validateRouteTableInternal(ctx context.Context, rt *v1.Route
 			snap.RouteTables.Sort()
 		}
 
-		proxiesToConsider := proxiesForRouteTable(snap.Gateways, snap.VirtualServices, snap.RouteTables, rt)
+		proxiesToConsider := proxiesForRouteTable(ctx, snap, rt)
 
 		return proxiesToConsider, rt, rtRef
 	}
@@ -742,14 +736,13 @@ func (v *validator) sendGlooValidationServiceRequest(
 	return response, err
 }
 
-func proxiesForVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) []string {
-
+func proxiesForVirtualService(ctx context.Context, gwList v1.GatewayList, httpGwList v1.MatchableHttpGatewayList, vs *v1.VirtualService) []string {
 	gatewaysByProxy := utils.GatewaysByProxyName(gwList)
 
 	var proxiesToConsider []string
 
 	for proxyName, gatewayList := range gatewaysByProxy {
-		if gatewayListContainsVirtualService(gatewayList, vs) {
+		if gatewayListContainsVirtualService(ctx, gatewayList, httpGwList, vs) {
 			// we only care about validating this proxy if it contains this virtual service
 			proxiesToConsider = append(proxiesToConsider, proxyName)
 		}
@@ -760,12 +753,45 @@ func proxiesForVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) []st
 	return proxiesToConsider
 }
 
-func proxiesForRouteTable(gwList v1.GatewayList, vsList v1.VirtualServiceList, rtList v1.RouteTableList, rt *v1.RouteTable) []string {
-	affectedVirtualServices := virtualServicesForRouteTable(rt, vsList, rtList)
+func virtualServicesForGateway(ctx context.Context, snap v1.ApiSnapshot, gateway *v1.Gateway) []*core.ResourceRef {
+	var virtualServices []*core.ResourceRef
+
+	switch gatewayType := gateway.GetGatewayType().(type) {
+	case *v1.Gateway_TcpGateway:
+		// TcpGateway does not configure VirtualServices
+		break
+	case *v1.Gateway_HttpGateway:
+		virtualServices = gatewayType.HttpGateway.GetVirtualServices()
+	case *v1.Gateway_HybridGateway:
+		matchedGateways := gatewayType.HybridGateway.GetMatchedGateways()
+		if matchedGateways != nil {
+			for _, matchedGateway := range matchedGateways {
+				if httpGateway := matchedGateway.GetHttpGateway(); httpGateway != nil {
+					virtualServices = append(virtualServices, httpGateway.GetVirtualServices()...)
+				}
+			}
+		} else {
+			delegatedGateways := gatewayType.HybridGateway.GetDelegatedHttpGateways()
+			httpGatewayList := translator.NewHttpGatewaySelector(snap.HttpGateways).SelectMatchableHttpGateways(delegatedGateways, func(err error) {
+				logger := contextutils.LoggerFrom(ctx)
+				logger.Warnf("failed to select matchable http gateways on gateway: %v", err.Error())
+			})
+
+			httpGatewayList.Each(func(element *v1.MatchableHttpGateway) {
+				virtualServices = append(virtualServices, element.GetHttpGateway().GetVirtualServices()...)
+			})
+		}
+	}
+
+	return virtualServices
+}
+
+func proxiesForRouteTable(ctx context.Context, snap *v1.ApiSnapshot, rt *v1.RouteTable) []string {
+	affectedVirtualServices := virtualServicesForRouteTable(rt, snap.VirtualServices, snap.RouteTables)
 
 	affectedProxies := make(map[string]struct{})
 	for _, vs := range affectedVirtualServices {
-		proxiesToConsider := proxiesForVirtualService(gwList, vs)
+		proxiesToConsider := proxiesForVirtualService(ctx, snap.Gateways, snap.HttpGateways, vs)
 		for _, proxy := range proxiesToConsider {
 			affectedProxies[proxy] = struct{}{}
 		}
@@ -891,38 +917,59 @@ func getDelegateRef(delegate *v1.DelegateAction) *core.ResourceRef {
 	return nil
 }
 
-func gatewayListContainsVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) bool {
+func gatewayListContainsVirtualService(ctx context.Context, gwList v1.GatewayList, httpGwList v1.MatchableHttpGatewayList, vs *v1.VirtualService) bool {
 	for _, gw := range gwList {
-		if gw.GetTcpGateway() != nil {
-			return false
-		}
-		if httpGateway := gw.GetHttpGateway(); httpGateway != nil {
-			contains, err := translator.HttpGatewayContainsVirtualService(httpGateway, vs, gw.GetSsl())
-			if err != nil {
-				return false
-			}
-			if contains {
-				return true
-			}
-
-		}
-		if hybridGateway := gw.GetHybridGateway(); hybridGateway != nil {
-			for _, mg := range hybridGateway.GetMatchedGateways() {
-				if httpGateway := mg.GetHttpGateway(); httpGateway != nil {
-					contains, err := translator.HttpGatewayContainsVirtualService(httpGateway, vs, mg.GetMatcher().GetSslConfig() != nil)
-					if err != nil {
-						return false
-					}
-					if contains {
-						return true
-					}
-
-				}
-			}
+		if gatewayContainsVirtualService(ctx, httpGwList, gw, vs) {
+			return true
 		}
 	}
 
 	return false
+}
+
+func gatewayContainsVirtualService(ctx context.Context, httpGwList v1.MatchableHttpGatewayList, gw *v1.Gateway, vs *v1.VirtualService) bool {
+	if gw.GetTcpGateway() != nil {
+		return false
+	}
+
+	if httpGateway := gw.GetHttpGateway(); httpGateway != nil {
+		return httpGatewayContainsVirtualService(httpGateway, vs, gw.GetSsl())
+	}
+
+	if hybridGateway := gw.GetHybridGateway(); hybridGateway != nil {
+		matchedGateways := hybridGateway.GetMatchedGateways()
+		if matchedGateways != nil {
+			for _, mg := range hybridGateway.GetMatchedGateways() {
+				if httpGateway := mg.GetHttpGateway(); httpGateway != nil {
+					if httpGatewayContainsVirtualService(httpGateway, vs, mg.GetMatcher().GetSslConfig() != nil) {
+						return true
+					}
+				}
+			}
+		} else {
+			delegatedGateway := hybridGateway.GetDelegatedHttpGateways()
+			selectedGatewayList := translator.NewHttpGatewaySelector(httpGwList).SelectMatchableHttpGateways(delegatedGateway, func(err error) {
+				logger := contextutils.LoggerFrom(ctx)
+				logger.Warnf("failed to select matchable http gateways on gateway: %v", err.Error())
+			})
+			for _, selectedHttpGw := range selectedGatewayList {
+				if httpGatewayContainsVirtualService(selectedHttpGw.GetHttpGateway(), vs, selectedHttpGw.GetMatcher().GetSslConfig() != nil) {
+					return true
+				}
+			}
+		}
+
+	}
+
+	return false
+}
+
+func httpGatewayContainsVirtualService(httpGateway *v1.HttpGateway, vs *v1.VirtualService, requireSsl bool) bool {
+	contains, err := translator.HttpGatewayContainsVirtualService(httpGateway, vs, requireSsl)
+	if err != nil {
+		return false
+	}
+	return contains
 }
 
 func resourceReportToMultiErr(resourceRpt *validation.ResourceReport) error {

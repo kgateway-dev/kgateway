@@ -18,6 +18,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+var (
+	_ plugins.Plugin         = new(plugin)
+	_ plugins.UpstreamPlugin = new(plugin)
+)
+
 const (
 	// TODO: make solo-projects use this constant
 	TransportSocketMatchKey = "envoy.transport_socket_match"
@@ -25,10 +30,8 @@ const (
 	AdvancedHttpCheckerName = "io.solo.health_checkers.advanced_http"
 	PathFieldName           = "path"
 	MethodFieldName         = "method"
+	ExtensionName           = "static"
 )
-
-var _ plugins.Plugin = new(plugin)
-var _ plugins.UpstreamPlugin = new(plugin)
 
 type plugin struct {
 	settings *v1.Settings
@@ -36,6 +39,10 @@ type plugin struct {
 
 func NewPlugin() plugins.Plugin {
 	return &plugin{}
+}
+
+func (p *plugin) Name() string {
+	return ExtensionName
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {

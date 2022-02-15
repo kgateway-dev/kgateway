@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/tcp"
@@ -45,7 +46,7 @@ var _ = Describe("Plugin", func() {
 
 	Context("listener filter chain plugin", func() {
 		var (
-			snap *v1.ApiSnapshot
+			snap *v1snap.ApiSnapshot
 			tcps *tcp.TcpProxySettings
 
 			ns = "one"
@@ -76,7 +77,7 @@ var _ = Describe("Plugin", func() {
 		)
 
 		BeforeEach(func() {
-			snap = &v1.ApiSnapshot{
+			snap = &v1snap.ApiSnapshot{
 				Upstreams: v1.UpstreamList{
 					{
 						Metadata: &core.Metadata{

@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -44,7 +45,7 @@ func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyn
 
 func (s *TranslatorSyncerExtension) Sync(
 	ctx context.Context,
-	snap *gloov1.ApiSnapshot,
+	snap *gloov1snap.ApiSnapshot,
 	settings *gloov1.Settings,
 	xdsCache envoycache.SnapshotCache,
 	reports reporter.ResourceReports,

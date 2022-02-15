@@ -1,4 +1,6 @@
 name: security-scan-scheduled
+env:
+    SLACK_DEBUG_TESTING: false   # when set to "true", send notifications to #slack-integration-testing.  Otherwise, post to #edge-team-bots
 on:
   # allow for version to be manually specified under actions page
   workflow_dispatch: {}
@@ -61,4 +63,7 @@ jobs:
       - name: Alert on workflow failure
         if: ${{ failure() }}
         run : |
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"Gloo Edge Vulnerability Scan has failed, visit https://github.com/solo-io/gloo/actions/runs/${{github.run_id}} to view logs."}' ${{ secrets.SLACK_BOT_URL }}
+          curl -X POST\
+               -H 'Content-type: application/json'\
+               --data '{"text":"Gloo Edge Vulnerability Scan has failed, visit https://github.com/solo-io/gloo/actions/runs/${{github.run_id}} to view logs."}'\
+               ${{ env.SLACK_DEBUG_TESTING && secrets.SLACK_INTEGRATION_TESTING_WEBHOOK || secrets.EDGE_TEAM_BOTS_WEBHOOK }}

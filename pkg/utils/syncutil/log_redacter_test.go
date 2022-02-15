@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	xdsproto "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -25,7 +26,7 @@ var _ = Describe("Log Redacter", func() {
 				},
 			}},
 		}
-		snapshotWithSecrets = &v1.ApiSnapshot{
+		snapshotWithSecrets = &v1snap.ApiSnapshot{
 			Endpoints: []*v1.Endpoint{{
 				Metadata: &core.Metadata{
 					Name:      "endpoint",

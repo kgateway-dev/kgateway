@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5767
+    resolvesIssue: false
+    description: |
+      Introduce the Gateway translation and validation of the new HttpGateway CRD.
+      The Gloo translation for this feature will be done in a follow-up,
+      which is why this is non user facing.

@@ -205,8 +205,13 @@ var _ = Describe("RBAC Test", func() {
 						},
 						Rules: []rbacv1.PolicyRule{
 							{
-								APIGroups: []string{"gloo.solo.io", "enterprise.gloo.solo.io"},
-								Resources: []string{"upstreams", "upstreamgroups", "proxies", "authconfigs"},
+								APIGroups: []string{"gloo.solo.io"},
+								Resources: []string{"upstreams", "upstreamgroups", "proxies"},
+								Verbs:     []string{"get", "list", "watch", "update"},
+							},
+							{
+								APIGroups: []string{"enterprise.gloo.solo.io"},
+								Resources: []string{"authconfigs"},
 								Verbs:     []string{"get", "list", "watch", "update"},
 							},
 							{
@@ -216,7 +221,7 @@ var _ = Describe("RBAC Test", func() {
 							},
 							{
 								APIGroups: []string{"graphql.gloo.solo.io"},
-								Resources: []string{"graphqlschemas", "graphqlschemas/status"},
+								Resources: []string{"graphqlschemas"},
 								Verbs:     []string{"get", "list", "watch", "update"},
 							},
 							{
@@ -409,12 +414,12 @@ var _ = Describe("RBAC Test", func() {
 						Rules: []rbacv1.PolicyRule{
 							{
 								APIGroups: []string{"gateway.solo.io"},
-								Resources: []string{"virtualservices", "routetables", "virtualhostoptions", "routeoptions"},
+								Resources: []string{"gateways", "httpgateways", "virtualservices", "routetables", "virtualhostoptions", "routeoptions"},
 								Verbs:     []string{"get", "list", "watch", "update"},
 							}, {
 								APIGroups: []string{"gateway.solo.io"},
 								Resources: []string{"gateways"},
-								Verbs:     []string{"get", "list", "watch", "create", "update"},
+								Verbs:     []string{"create"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -422,11 +427,18 @@ var _ = Describe("RBAC Test", func() {
 							Kind:     "ClusterRole",
 							Name:     "gateway-resource-reader",
 						},
-						Subjects: []rbacv1.Subject{{
-							Kind:      "ServiceAccount",
-							Name:      "gateway",
-							Namespace: namespace,
-						}},
+						Subjects: []rbacv1.Subject{
+							{
+								Kind:      "ServiceAccount",
+								Name:      "gateway",
+								Namespace: namespace,
+							},
+							{
+								Kind:      "ServiceAccount",
+								Name:      "gloo",
+								Namespace: namespace,
+							},
+						},
 					}
 				})
 				Context("cluster scope", func() {

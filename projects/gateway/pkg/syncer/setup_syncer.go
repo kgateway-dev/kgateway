@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
@@ -89,6 +90,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
+	matchableHttpGatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.MatchableHttpGatewayCrd)
+	if err != nil {
+		return err
+	}
+
 	refreshRate := prototime.DurationFromProto(settings.GetRefreshRate())
 
 	writeNamespace := settings.GetDiscoveryNamespace()
@@ -149,6 +155,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		StatusReporterNamespace: statusReporterNamespace,
 		WatchNamespaces:         watchNamespaces,
 		Gateways:                gatewayFactory,
+		MatchableHttpGateways:   matchableHttpGatewayFactory,
 		VirtualServices:         virtualServiceFactory,
 		RouteTables:             routeTableFactory,
 		Proxies:                 proxyFactory,
@@ -161,6 +168,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		DevMode:                       true,
 		ReadGatewaysFromAllNamespaces: settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
 		Validation:                    validation,
+		ConfigStatusMetricOpts:        settings.GetObservabilityOptions().GetConfigStatusMetricLabels(),
 	}
 
 	return RunGateway(opts)
@@ -177,6 +185,14 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 	if err := gatewayClient.Register(); err != nil {
+		return err
+	}
+
+	matchableHttpGatewayClient, err := v1.NewMatchableHttpGatewayClient(ctx, opts.MatchableHttpGateways)
+	if err != nil {
+		return err
+	}
+	if err := matchableHttpGatewayClient.Register(); err != nil {
 		return err
 	}
 
@@ -221,10 +237,15 @@ func RunGateway(opts translator.Opts) error {
 	}
 
 	statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+	statusMetrics, err := metrics.NewConfigStatusMetrics(opts.ConfigStatusMetricOpts)
+	if err != nil {
+		return err
+	}
 
 	rpt := reporter.NewReporter("gateway",
 		statusClient,
 		gatewayClient.BaseClient(),
+		matchableHttpGatewayClient.BaseClient(),
 		virtualServiceClient.BaseClient(),
 		routeTableClient.BaseClient(),
 		virtualHostOptionClient.BaseClient(),
@@ -263,7 +284,15 @@ func RunGateway(opts translator.Opts) error {
 		allowWarnings = opts.Validation.AllowWarnings
 	}
 
-	emitter := v1.NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, virtualHostOptionClient, routeOptionClient, notifications)
+	emitter := v1.NewApiEmitterWithEmit(
+		virtualServiceClient,
+		routeTableClient,
+		gatewayClient,
+		virtualHostOptionClient,
+		routeOptionClient,
+		matchableHttpGatewayClient,
+		notifications,
+	)
 
 	validationSyncer := gatewayvalidation.NewValidator(gatewayvalidation.NewValidatorConfig(
 		txlator,
@@ -282,7 +311,8 @@ func RunGateway(opts translator.Opts) error {
 		proxyReconciler,
 		rpt,
 		txlator,
-		statusClient)
+		statusClient,
+		statusMetrics)
 
 	gatewaySyncers := v1.ApiSyncers{
 		translatorSyncer,
