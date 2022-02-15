@@ -41,6 +41,7 @@ spec:
               args:
                 - "--secret-name=gloo-mtls-certs"
                 - "--svc-name=gloo"
+                - "--force-rotation=true"
           restartPolicy: Never
       # this feature is still in Alpha, which means it must be manually enabled in the k8s api server
       # with --feature-gates="TTLAfterFinished=true". This flag also works with minikube start ...
