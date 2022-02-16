@@ -847,7 +847,7 @@ func checkProxies(opts *options.Options, namespaces []string, glooNamespace stri
 func checkSecrets(opts *options.Options, namespaces []string) error {
 	printer.AppendCheck("Checking secrets... ")
 	var multiErr *multierror.Error
-	client, err := helpers.GetSecretClient(opts.Top.Ctx, 5*time.Second, namespaces)
+	client, err := helpers.GetSecretClient(opts.Top.Ctx, 30*time.Second, namespaces)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 		printer.AppendStatus("secrets", fmt.Sprintf("%v Errors!", multiErr.Len()))
