@@ -32,6 +32,9 @@ spec:
       serviceAccountCredentials:
         cluster: aws_sts_cluster
         uri: sts.us-east-2.amazonaws.com
+      credentialRefreshDelay: 
+        seconds: 2022
+      propagateOriginalRouting: true
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
