@@ -257,7 +257,11 @@ spec:
                 properties:
                   awsOptions:
                     properties:
+                      credentialRefreshDelay:
+                        type: string
                       enableCredentialsDiscovey:
+                        type: boolean
+                      propagateOriginalRouting:
                         type: boolean
                       serviceAccountCredentials:
                         properties:

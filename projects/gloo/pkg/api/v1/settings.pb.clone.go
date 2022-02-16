@@ -805,6 +805,14 @@ func (m *GlooOptions_AWSOptions) Clone() proto.Message {
 	}
 	target = &GlooOptions_AWSOptions{}
 
+	target.PropagateOriginalRouting = m.GetPropagateOriginalRouting()
+
+	if h, ok := interface{}(m.GetCredentialRefreshDelay()).(clone.Cloner); ok {
+		target.CredentialRefreshDelay = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.CredentialRefreshDelay = proto.Clone(m.GetCredentialRefreshDelay()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
 	switch m.CredentialsFetcher.(type) {
 
 	case *GlooOptions_AWSOptions_EnableCredentialsDiscovey:

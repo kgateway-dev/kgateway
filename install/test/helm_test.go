@@ -2993,6 +2993,7 @@ spec:
 							valuesArgs: []string{
 								"settings.aws.enableServiceAccountCredentials=true",
 								"settings.aws.stsCredentialsRegion=us-east-2",
+								"settings.aws.credentialRefreshDelay.seconds=1",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
