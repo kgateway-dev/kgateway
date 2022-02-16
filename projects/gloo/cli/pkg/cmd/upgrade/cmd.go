@@ -67,16 +67,9 @@ func upgradeGlooCtl(ctx context.Context, upgrade options.Upgrade) error {
 	return nil
 }
 
-// maxReleaseQueryDepth states the number of pages of results after which we stop scraping github to find a
-// release of the specified form. This likely could be a variable that could be overriden
-// but in general if someone wants something sufficiently old they can just use the exact release string.
-const maxReleaseQueryDepth = 10 // thats the past 100 releases!
-
 func getReleaseWithAsset(ctx context.Context, tag string, expectedAssetName string) (*github.RepositoryRelease, error) {
 	g := github.NewClient(nil)
-	// Gloo has releases and we gaurantee that our releases are correctly following versioning and for a given
-	// minor version the patch version will monotonically increase
-	if tag == "latest" || tag == "devel" {
+	if tag == "latest" {
 		// don't use latest tag, because that might not have the assets yet if the release build is running.
 		listOpts := github.ListOptions{PerPage: 10}
 		releases, _, err := g.Repositories.ListReleases(ctx, "solo-io", "gloo", &listOpts)
