@@ -20,6 +20,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/matchers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -488,7 +489,7 @@ var _ = Describe("Plugin", func() {
 		})
 		It("can enable all config options", func() {
 
-			initParams.Settings.Gloo.AwsOptions.PropagateOriginalRouting = true
+			initParams.Settings.Gloo.AwsOptions.PropagateOriginalRouting = wrapperspb.Bool(true)
 			initParams.Settings.Gloo.AwsOptions.CredentialRefreshDelay = &duration.Duration{Seconds: 1}
 
 			process()
