@@ -1,0 +1,3 @@
+changelog:
+  - type: FIX
+    description: Make sure that aws lambda refresh and propagation of origin are always respected
