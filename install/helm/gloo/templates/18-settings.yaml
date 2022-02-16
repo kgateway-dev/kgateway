@@ -45,8 +45,13 @@ spec:
 {{- else if .Values.settings.aws.enableCredentialsDiscovery }}
       enableCredentialsDiscovey: true
 {{- end }}
-      credentialRefreshDelay: {{ .Values.settings.aws.credential_refresh_delay }}
+
+ {{- if  .Values.settings.aws.credential_refresh_delay }}
+      credentialRefreshDelay: {{ toYaml  .Values.settings.aws.credential_refresh_delay }}
+{{- end }}
+{{- if  .Values.settings.aws.propagateOriginalRouting }}
       propagateOriginalRouting: {{ .Values.settings.aws.propagateOriginalRouting }}
+{{- end }}
 {{- end }}
 
   {{- if .Values.settings.integrations.consul }}

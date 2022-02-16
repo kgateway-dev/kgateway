@@ -2993,7 +2993,6 @@ spec:
 							valuesArgs: []string{
 								"settings.aws.enableServiceAccountCredentials=true",
 								"settings.aws.stsCredentialsRegion=us-east-2",
-								"settings.aws.credential_refresh_delay.seconds=2022",
 								"settings.aws.propagateOriginalRouting=true",
 							},
 						})

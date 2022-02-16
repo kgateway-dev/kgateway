@@ -262,6 +262,7 @@ spec:
                       enableCredentialsDiscovey:
                         type: boolean
                       propagateOriginalRouting:
+                        nullable: true
                         type: boolean
                       serviceAccountCredentials:
                         properties:
