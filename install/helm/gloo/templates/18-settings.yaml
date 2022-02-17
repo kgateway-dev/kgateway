@@ -47,7 +47,7 @@ spec:
 {{- end }}
 
  {{- if  .Values.settings.aws.credential_refresh_delay }}
-      credentialRefreshDelay: {{ toYaml  .Values.settings.aws.credential_refresh_delay }}
+      credentialRefreshDelay: {{  .Values.settings.aws.credential_refresh_delay }}
 {{- end }}
 {{- if  .Values.settings.aws.propagateOriginalRouting }}
       propagateOriginalRouting: {{ .Values.settings.aws.propagateOriginalRouting }}
