@@ -54,6 +54,15 @@ func makeUpstream(nameSuffix string) resources.Resource {
 	}
 }
 
+func makeUpstreamGroup(nameSuffix string) resources.Resource {
+	return &gloov1.UpstreamGroup{
+		Metadata: &core.Metadata{
+			Namespace: namespace,
+			Name:      "usg-" + nameSuffix,
+		},
+	}
+}
+
 func makeSecret(nameSuffix string) resources.Resource {
 	return &gloov1.Secret{
 		Metadata: &core.Metadata{
@@ -119,6 +128,7 @@ var _ = Describe("ConfigStatusMetrics Test", func() {
 		Entry("Gateway", "Gateway.v1.gateway.solo.io", metrics.Names[gwv1.GatewayGVK], makeGateway),
 		Entry("RouteTable", "RouteTable.v1.gateway.solo.io", metrics.Names[gwv1.RouteTableGVK], makeRouteTable),
 		Entry("Upstream", "Upstream.v1.gloo.solo.io", metrics.Names[gloov1.UpstreamGVK], makeUpstream),
+		Entry("UpstreamGroup", "UpstreamGroup.v1.gloo.solo.io", metrics.Names[gloov1.UpstreamGroupGVK], makeUpstreamGroup),
 		Entry("Secret", "Secret.v1.gloo.solo.io", metrics.Names[gloov1.SecretGVK], makeSecret),
 		Entry("Proxy", "Proxy.v1.gloo.solo.io", metrics.Names[gloov1.ProxyGVK], makeProxy),
 	)
