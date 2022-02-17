@@ -333,6 +333,9 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 			ServiceAccountCredentials: typedFetcher.ServiceAccountCredentials,
 		}
 	}
+	filterconfig.CredentialRefreshDelay = p.settings.GetCredentialRefreshDelay()
+	filterconfig.PropagateOriginalRouting = p.settings.GetPropagateOriginalRouting().GetValue()
+
 	f, err := plugins.NewStagedFilterWithConfig(FilterName, filterconfig, pluginStage)
 	if err != nil {
 		return nil, err
