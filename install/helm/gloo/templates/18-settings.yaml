@@ -32,8 +32,9 @@ spec:
 {{- if .Values.settings.regexMaxProgramSize }}
     regexMaxProgramSize: {{ .Values.settings.regexMaxProgramSize }}
 {{- end }}
-{{- if .Values.settings.aws.enableServiceAccountCredentials }}
+{{- if .Values.settings.aws }}
     awsOptions:
+{{- if .Values.settings.aws.enableServiceAccountCredentials }}
       serviceAccountCredentials:
         cluster: aws_sts_cluster
 {{- if not .Values.settings.aws.stsCredentialsRegion }}
@@ -42,8 +43,15 @@ spec:
         uri: sts.{{ .Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
 {{- end }}
 {{- else if .Values.settings.aws.enableCredentialsDiscovery }}
-    awsOptions:
       enableCredentialsDiscovey: true
+{{- end }}
+
+ {{- if  .Values.settings.aws.credential_refresh_delay }}
+      credentialRefreshDelay: {{  .Values.settings.aws.credential_refresh_delay }}
+{{- end }}
+{{- if  .Values.settings.aws.propagateOriginalRouting }}
+      propagateOriginalRouting: {{ .Values.settings.aws.propagateOriginalRouting }}
+{{- end }}
 {{- end }}
 
   {{- if .Values.settings.integrations.consul }}
