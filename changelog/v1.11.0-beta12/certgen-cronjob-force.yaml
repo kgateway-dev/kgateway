@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4638
+    description: Run the CertGen CronJob with 'force-rotation' flag so it will make the rotation
