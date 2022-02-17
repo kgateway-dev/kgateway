@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5935
+    description: Add configuration status metric support for UpstreamGroup CRs
