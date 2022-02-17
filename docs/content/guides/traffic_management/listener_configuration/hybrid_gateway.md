@@ -233,3 +233,12 @@ client ip forbidden
 {{% notice note %}}
 Although we demonstrate gateway delegation using ref selection in this guide, label selection is also supported.
 {{% /notice %}}
+
+
+### How are SSL Configurations managed in Hybrid Gateways?
+
+Before Hybrid Gateways were introduced, SSL configuration was defined on Virtual Services. This enabled the teams owning those services to define the SSL configuration required to establish connections.
+
+With Hybrid Gateways, SSL configuration can be defined in the matcher on the Gateway.
+
+To support the legacy model, the SSL configuration defined on the Gateway acts as the default, and SSL configuration defined on the Virtual Services override that default.
