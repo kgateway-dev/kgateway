@@ -250,6 +250,7 @@ gloo:
 gloo-fed:
   enabled: false
   glooFedApiserver:
+    enable: false #optionally disable the admin console, too
     floatingUserId: true
 prometheus:
   enabled: false
