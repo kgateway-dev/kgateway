@@ -265,7 +265,7 @@ type Gateway struct {
 
 type ServiceAccount struct {
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the service account"`
-	DisableAutomount *bool             `json:"disableAutomount,omitempty" desc:"disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations"`
+	DisableAutomount *bool             `json:"disableAutomount,omitempty" desc:"disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations"`
 	*KubeResourceOverride
 }
 
