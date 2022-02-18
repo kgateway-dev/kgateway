@@ -10,7 +10,7 @@ Click on the links below for details specific to your Kubernetes distribution:
 
 - [Minikube](#minikube)
 - [Minishift](#minishift)
-- [Kind (Kubernetes in Docker)](#kind)
+- [Kind](#kind)
 - [OpenShift](#openshift)
 - [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
   - [Private clusters](#private-clusters)
@@ -250,6 +250,7 @@ gloo:
 gloo-fed:
   enabled: false
   glooFedApiserver:
+    enable: false #optionally disable the admin console, too
     floatingUserId: true
 prometheus:
   enabled: false
