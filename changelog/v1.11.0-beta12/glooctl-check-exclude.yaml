@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5881
+    description: Add support for exlcuding all types with `glooctl check -x`

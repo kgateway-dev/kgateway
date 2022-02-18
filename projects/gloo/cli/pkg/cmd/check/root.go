@@ -87,7 +87,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	pflags := cmd.PersistentFlags()
 	flagutils.AddCheckOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
-	flagutils.AddExcludecheckFlag(pflags, &opts.Top.CheckName)
+	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
@@ -101,13 +101,16 @@ func CheckResources(opts *options.Options) error {
 		return multiErr
 	}
 
-	deployments, err := getAndCheckDeployments(opts)
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
+	var deployments *appsv1.DeploymentList
+	deploymentsIncluded := doesNotContain(opts.Top.CheckName, "deployments")
+	if deploymentsIncluded {
+		deployments, err = getAndCheckDeployments(opts)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
 	}
 
-	includePods := doesNotContain(opts.Top.CheckName, "pods")
-	if includePods {
+	if included := doesNotContain(opts.Top.CheckName, "pods"); included {
 		err := checkPods(opts)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
@@ -124,27 +127,35 @@ func CheckResources(opts *options.Options) error {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
-	knownUpstreams, err := checkUpstreams(opts, namespaces)
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
+	var knownUpstreams []string
+	if included := doesNotContain(opts.Top.CheckName, "upstreams"); included {
+		knownUpstreams, err = checkUpstreams(opts, namespaces)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
 	}
 
-	includeUpstreamGroup := doesNotContain(opts.Top.CheckName, "upstreamgroup")
-	if includeUpstreamGroup {
+	if included := doesNotContain(opts.Top.CheckName, "upstreamgroup"); included {
 		err := checkUpstreamGroups(opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	knownAuthConfigs, err := checkAuthConfigs(opts, namespaces)
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
+	var knownAuthConfigs []string
+	if included := doesNotContain(opts.Top.CheckName, "auth-configs"); included {
+		knownAuthConfigs, err = checkAuthConfigs(opts, namespaces)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
 	}
 
-	knownRateLimitConfigs, err := checkRateLimitConfigs(opts, namespaces)
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
+	var knownRateLimitConfigs []string
+	if included := doesNotContain(opts.Top.CheckName, "rate-limit-configs"); included {
+		knownRateLimitConfigs, err = checkRateLimitConfigs(opts, namespaces)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
 	}
 
 	knownVirtualHostOptions, err := checkVirtualHostOptions(opts, namespaces)
@@ -157,37 +168,35 @@ func CheckResources(opts *options.Options) error {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
-	includeSecrets := doesNotContain(opts.Top.CheckName, "secrets")
-	if includeSecrets {
+	if included := doesNotContain(opts.Top.CheckName, "secrets"); included {
 		err := checkSecrets(opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	err = checkVirtualServices(opts, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions)
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
+	if included := doesNotContain(opts.Top.CheckName, "virtual-services"); included {
+		err = checkVirtualServices(opts, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
 	}
 
-	includeGateway := doesNotContain(opts.Top.CheckName, "gateways")
-	if includeGateway {
+	if included := doesNotContain(opts.Top.CheckName, "gateways"); included {
 		err := checkGateways(opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	includeProxy := doesNotContain(opts.Top.CheckName, "proxies")
-	if includeProxy {
-		err := checkProxies(opts, namespaces, opts.Metadata.GetNamespace(), deployments)
+	if included := doesNotContain(opts.Top.CheckName, "proxies"); included {
+		err := checkProxies(opts, namespaces, opts.Metadata.GetNamespace(), deployments, deploymentsIncluded)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	includePrometheusStatsCheck := doesNotContain(opts.Top.CheckName, "xds-metrics")
-	if includePrometheusStatsCheck {
+	if included := doesNotContain(opts.Top.CheckName, "xds-metrics"); included {
 		err = checkXdsMetrics(opts, opts.Metadata.GetNamespace(), deployments)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
@@ -795,8 +804,12 @@ func checkGateways(opts *options.Options, namespaces []string) error {
 	return nil
 }
 
-func checkProxies(opts *options.Options, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList) error {
+func checkProxies(opts *options.Options, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList, deploymentsIncluded bool) error {
 	printer.AppendCheck("Checking proxies... ")
+	if !deploymentsIncluded {
+		printer.AppendStatus("proxies", "Skipping proxies because deployments were excluded")
+		return nil
+	}
 	if deployments == nil {
 		fmt.Println("Skipping due to an error in checking deployments")
 		return fmt.Errorf("proxy check was skipped due to an error in checking deployments")
