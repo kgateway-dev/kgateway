@@ -155,13 +155,13 @@ This feature is available in Gloo Edge version 1.10.x and later.
 {{% /notice %}}
 
 {{% notice warn %}}
-Hybrid Gateway delegation is only supported for Http Gateways
+Hybrid Gateway delegation is supported only for HTTP Gateways.
 {{% /notice %}}
 
 
-The Hybrid Gateway makes it possible to define multiple HTTP and TCP Gateways, each with distinct matching criteria, on a single Gateway CR.
+With Hybrid Gateways, you can define multiple HTTP and TCP Gateways, each with distinct matching criteria, on a single Gateway CR.
 
-However, condensing all listener and routing configuration onto a single object can be cumbersome when dealing with a large number of matching and routing crtieria.
+However, condensing all listener and routing configuration onto a single object can be cumbersome when dealing with a large number of matching and routing criteria.
 
 Similar to how Gloo Edge provides delegation between Virtual Services and Route Tables, Hybrid Gateways can be assembled from separate resources. The root Gateway resource selects HttpGateways and assembles the Hybrid Gateway, as though it were defined in a single resource.
 
@@ -170,12 +170,12 @@ Similar to how Gloo Edge provides delegation between Virtual Services and Route 
 
 We will use Hybrid Gateway delegation to achieve the same functionality that we demonstrated earlier in this guide.
 
-1. Confirm that we have a Virtual Service that matches all requests and has a Direct Response Action
+1. Confirm that a Virtual Service exists which matches all requests and has a Direct Response Action.
 ```bash
 kubectl get -n gloo-system vs client-ip-reject
 ```
 
-2. Create a MatchableHttpGateway to define the Http Gateway
+2. Create a MatchableHttpGateway to define the HTTP Gateway.
 ```yaml
 kubectl apply -n gloo-system -f - <<EOF
 apiVersion: gateway.solo.io/v1
@@ -192,12 +192,12 @@ spec:
 EOF
 ```
 
-3. Confirm the MatchableHttpGateway was created
+3. Confirm the MatchableHttpGateway was created.
 ```bash
 kubectl get -n gloo-system hgw client-ip-reject-gateway
 ```
 
-4. Modify the Gateway CR to reference this MatchableHttpGateway
+4. Modify the Gateway CR to reference this MatchableHttpGateway.
 ```bash
 kubectl edit -n gloo-system gateway gateway-proxy
 ```
@@ -219,11 +219,11 @@ spec:
 status: # collapsed for brevity
 {{< /highlight >}}
     
-4. Confirm expected routing behavior
+5. Confirm expected routing behavior.
 
-At this point we have created a Gateway who matching and routing behavior is defined in the MatchableHttpGateway.
+We now have a Gateway which has matching and routing behavior defined in the MatchableHttpGateway.
 
-We expect all requests (an empty matcher is treated as a match-all) to be matched and delegated to the `client-ip-reject` Virtual Service.
+At this point, all requests (an empty matcher is treated as a match-all) are expected to be matched and delegated to the `client-ip-reject` Virtual Service.
 
 ```bash
 $ curl "$(glooctl proxy url)/all-pets"
@@ -231,14 +231,15 @@ client ip forbidden
 ```
 
 {{% notice note %}}
-Although we demonstrate gateway delegation using ref selection in this guide, label selection is also supported.
+Although we demonstrate gateway delegation using reference selection in this guide, label selection is also supported.
 {{% /notice %}}
 
 
 ### How are SSL Configurations managed in Hybrid Gateways?
 
-Before Hybrid Gateways were introduced, SSL configuration was defined on Virtual Services. This enabled the teams owning those services to define the SSL configuration required to establish connections.
+Before Hybrid Gateways were introduced, SSL configuration was exclusively defined on Virtual Services. This enabled the teams owning those services to define the SSL configuration required to establish connections.
 
-With Hybrid Gateways, SSL configuration can be defined in the matcher on the Gateway.
+With Hybrid Gateways, SSL configuration can also be defined in the matcher on the Gateway.
 
-To support the legacy model, the SSL configuration defined on the Gateway acts as the default, and SSL configuration defined on the Virtual Services override that default.
+To support the legacy model, the SSL configuration defined on the Gateway acts as the default, and SSL configurations defined on the Virtual Services override that default.
+The presence of SSL configuration on the matcher determines whether a given matched Gateway will have any SSL configuration. Therefore one can define empty SSL configuration on Gateway matchers in order to exclusively use SSL configuration from Virtual Services.
