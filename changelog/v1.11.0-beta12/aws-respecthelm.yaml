@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5253
+    description: Make sure that aws lambda refresh and propagation of origin are always respected
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5253
+    description: glooctl get us will no longer panic on upstreams that have no secret (aws + azure)
+

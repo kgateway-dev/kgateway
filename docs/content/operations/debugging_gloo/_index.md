@@ -206,9 +206,9 @@ To change the log levels of individual Gloo Edge deployments from the CLI instea
 ```bash
 kubectl port-forward -n gloo-system deploy/discovery 9091:9091
 # Change log level to debug for discovery deployment
-% curl -X PUT -d '{"level": "debug"}' http://localhost:9091/logging
+% curl -X PUT -H "Content-Type: application/json" -d '{"level": "debug"}' http://localhost:9091/logging
 # Change log level to info for discovery deployment
-% curl -X PUT -d '{"level": "info"}' http://localhost:9091/logging
+% curl -X PUT -H "Content-Type: application/json" -d '{"level": "info"}' http://localhost:9091/logging
 ```
 
 #### Declaratively setting log levels on start
