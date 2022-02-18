@@ -202,4 +202,196 @@ var _ = Describe("Root", func() {
 		})
 	})
 
+	Context("Exclude", func() {
+
+		BeforeEach(func() {
+			client := helpers.MustKubeClient()
+			_, err := client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaults.GlooSystem,
+				},
+			}, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			appName := "default"
+			_, err = client.AppsV1().Deployments("gloo-system").Create(ctx, &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      appName,
+					Namespace: "gloo-system",
+				},
+				Spec: appsv1.DeploymentSpec{},
+			}, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = helpers.MustNamespacedSettingsClient(ctx, "gloo-system").Write(&v1.Settings{
+				Metadata: &core.Metadata{
+					Name:      "default",
+					Namespace: "gloo-system",
+				},
+			}, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("can exclude deployments", func() {
+			output, err := testutils.GlooctlOut("check -x xds-metrics,deployments")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).NotTo(ContainSubstring("Checking deployments..."))
+			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+			Expect(output).To(ContainSubstring("Checking secrets... OK"))
+			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+			Expect(output).To(ContainSubstring("Checking gateways... OK"))
+			Expect(output).To(ContainSubstring("Checking proxies... Skipping proxies because deployments were excluded"))
+		})
+
+		It("can exclude pods", func() {
+			output, err := testutils.GlooctlOut("check -x xds-metrics,pods")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking deployments... OK"))
+			Expect(output).NotTo(ContainSubstring("Checking pods..."))
+			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+			Expect(output).To(ContainSubstring("Checking secrets... OK"))
+			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+			Expect(output).To(ContainSubstring("Checking gateways... OK"))
+			Expect(output).To(ContainSubstring("Checking proxies... OK"))
+		})
+
+		It("can exclude upstreams", func() {
+			output, err := testutils.GlooctlOut("check -x xds-metrics,upstreams")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking deployments... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).NotTo(ContainSubstring("Checking upstreams..."))
+			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+			Expect(output).To(ContainSubstring("Checking secrets... OK"))
+			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+			Expect(output).To(ContainSubstring("Checking gateways... OK"))
+			Expect(output).To(ContainSubstring("Checking proxies... OK"))
+		})
+
+		It("can exclude upstreamgroups", func() {
+			output, err := testutils.GlooctlOut("check -x xds-metrics,upstreamgroup")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking deployments... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+			Expect(output).NotTo(ContainSubstring("Checking upstream groups..."))
+			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+			Expect(output).To(ContainSubstring("Checking secrets... OK"))
+			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+			Expect(output).To(ContainSubstring("Checking gateways... OK"))
+			Expect(output).To(ContainSubstring("Checking proxies... OK"))
+		})
+
+		It("can exclude auth-configs", func() {
+			output, err := testutils.GlooctlOut("check -x xds-metrics,auth-configs")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking deployments... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+			Expect(output).NotTo(ContainSubstring("Checking auth configs..."))
+			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+			Expect(output).To(ContainSubstring("Checking secrets... OK"))
+			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+			Expect(output).To(ContainSubstring("Checking gateways... OK"))
+			Expect(output).To(ContainSubstring("Checking proxies... OK"))
+		})
+
+		It("can exclude rate-limit-configs", func() {
+			output, err := testutils.GlooctlOut("check -x xds-metrics,rate-limit-configs")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking deployments... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+			Expect(output).NotTo(ContainSubstring("Checking rate limit configs..."))
+			Expect(output).To(ContainSubstring("Checking secrets... OK"))
+			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+			Expect(output).To(ContainSubstring("Checking gateways... OK"))
+			Expect(output).To(ContainSubstring("Checking proxies... OK"))
+		})
+
+		It("can exclude secrets", func() {
+			output, err := testutils.GlooctlOut("check -x xds-metrics,secrets")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking deployments... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+			Expect(output).NotTo(ContainSubstring("Checking secrets..."))
+			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+			Expect(output).To(ContainSubstring("Checking gateways... OK"))
+			Expect(output).To(ContainSubstring("Checking proxies... OK"))
+		})
+
+		It("can exclude virtual-services", func() {
+			output, err := testutils.GlooctlOut("check -x xds-metrics,virtual-services")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking deployments... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+			Expect(output).To(ContainSubstring("Checking secrets... OK"))
+			Expect(output).NotTo(ContainSubstring("Checking virtual services..."))
+			Expect(output).To(ContainSubstring("Checking gateways... OK"))
+			Expect(output).To(ContainSubstring("Checking proxies... OK"))
+		})
+
+		It("can exclude gateways", func() {
+			output, err := testutils.GlooctlOut("check -x xds-metrics,gateways")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking deployments... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+			Expect(output).To(ContainSubstring("Checking secrets... OK"))
+			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+			Expect(output).NotTo(ContainSubstring("Checking gateways..."))
+			Expect(output).To(ContainSubstring("Checking proxies... OK"))
+		})
+
+		It("can exclude proxies", func() {
+			output, err := testutils.GlooctlOut("check -x xds-metrics,proxies")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking deployments... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+			Expect(output).To(ContainSubstring("Checking secrets... OK"))
+			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+			Expect(output).To(ContainSubstring("Checking gateways... OK"))
+			Expect(output).NotTo(ContainSubstring("Checking proxies..."))
+		})
+
+	})
+
 })
