@@ -151,7 +151,7 @@ This is expected since the IP of our client is not `1.2.3.4`.
 ## Hybrid Gateway Delegation
 
 {{% notice note %}}
-This feature was introduced in Gloo Edge 1.10.x.
+This feature is available in Gloo Edge version 1.10.x and later.
 {{% /notice %}}
 
 {{% notice warn %}}
