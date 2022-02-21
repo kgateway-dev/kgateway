@@ -303,7 +303,7 @@ Note: Unnecessary use of -X or --request, POST is already inferred.
 "ABC"* Closing connection 0
 ```
 
-## Lambda Cold Start Notes
+## Preparing for Lambda cold starts
 
 When you invoke a new function in AWS Lambda, you might notice significant latency, or a cold start, as Lambda downloads your code and prepares the execution environment. The latency can vary from under 100 ms to more than 1 second.  The chances of a cold start increase if you write the function in a programming language that takes a long time to start up a VM, such as Java. For more information, see the [AWS blog](https://aws.amazon.com/blogs/compute/operating-lambda-performance-optimization-part-1).
 
