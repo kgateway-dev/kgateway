@@ -309,7 +309,7 @@ When you invoke a new function in AWS Lambda, you might notice significant laten
 
 Keep in mind cold start latency as you prepare the timeout values of your Virtual Services. If you do not, you might notice `500`-level server error responses. The following `options` example for a VirtualService allows for a total 35-second timeout window (default is 15 seconds), in which up to three requests with 10-second timeouts will be attempted.
 
-```
+```yaml
       options:
         timeout: 35s  # default value is 15s
         retries:
