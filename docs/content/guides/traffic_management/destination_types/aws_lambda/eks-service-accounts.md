@@ -303,3 +303,19 @@ Note: Unnecessary use of -X or --request, POST is already inferred.
 "ABC"* Closing connection 0
 ```
 
+## Lambda Cold Start Notes
+
+AWS Lambda functions often exhibit significant latencies for the initial invocations of new function instances. From an [AWS blog](https://aws.amazon.com/blogs/compute/operating-lambda-performance-optimization-part-1): "According to an analysis of production Lambda workloads, cold starts typically occur in under 1% of invocations. The duration of a cold start varies from under 100 ms to over 1 second." This is especially true for functions written in languages with lengthy initial VM start-up times, like Java.
+
+Failing to account for lengthy cold starts like this may result in `50x` Server Errors if your Virtual Services do not provide adequate timeout values. The following `options` example on a VirtualService allows for a total 35-second timeout window (default is 15 seconds), in which up to three requests with 10-second timeouts will be attempted.
+
+```
+      options:
+        timeout: 35s  # default value is 15s
+        retries:
+          retryOn: '5xx'
+          numRetries: 3
+          perTryTimeout: '10s'
+```
+
+More details on the APIs that control these timeout and retry settings are available [here](https://docs.solo.io/gloo-edge/latest/reference/api/envoy/api/v2/route/route.proto.sk/#retrypolicy).
