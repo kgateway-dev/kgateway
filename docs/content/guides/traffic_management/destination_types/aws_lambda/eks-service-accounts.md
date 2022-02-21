@@ -307,7 +307,7 @@ Note: Unnecessary use of -X or --request, POST is already inferred.
 
 When you invoke a new function in AWS Lambda, you might notice significant latency, or a cold start, as Lambda downloads your code and prepares the execution environment. The latency can vary from under 100 ms to more than 1 second.  The chances of a cold start increase if you write the function in a programming language that takes a long time to start up a VM, such as Java. For more information, see the [AWS blog](https://aws.amazon.com/blogs/compute/operating-lambda-performance-optimization-part-1).
 
-Failing to account for lengthy cold starts like this may result in `50x` Server Errors if your Virtual Services do not provide adequate timeout values. The following `options` example on a VirtualService allows for a total 35-second timeout window (default is 15 seconds), in which up to three requests with 10-second timeouts will be attempted.
+Keep in mind cold start latency as you prepare the timeout values of your Virtual Services. If you do not, you might notice `500`-level server error responses. The following `options` example for a VirtualService allows for a total 35-second timeout window (default is 15 seconds), in which up to three requests with 10-second timeouts will be attempted.
 
 ```
       options:
