@@ -318,4 +318,4 @@ Keep in mind cold start latency as you prepare the timeout values of your Virtua
           perTryTimeout: '10s'
 ```
 
-More details on the APIs that control these timeout and retry settings are available [here](https://docs.solo.io/gloo-edge/latest/reference/api/envoy/api/v2/route/route.proto.sk/#retrypolicy).
+For more information about controlling timeout and retry settings, see the [API documentation](https://docs.solo.io/gloo-edge/latest/reference/api/envoy/api/v2/route/route.proto.sk/#retrypolicy).
