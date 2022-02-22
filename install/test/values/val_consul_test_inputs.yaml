@@ -3,7 +3,7 @@ settings:
     consul:
       datacenter: datacenter
       username: user
-      password: 1234
+      password: password
       token: aToken
       caFile: testCaFile
       caPath: testCaPath

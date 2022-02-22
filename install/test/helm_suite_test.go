@@ -2,12 +2,15 @@ package test
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"testing"
 	"text/template"
+
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
 
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
@@ -153,6 +156,11 @@ func BuildHelm3Release(chartDir, namespace string, values helmValues) (*release.
 		return nil, err
 	}
 
+	err = validateHelmValues(helmValues)
+	if err != nil {
+		return nil, err
+	}
+
 	client, err := buildRenderer(namespace)
 	if err != nil {
 		return nil, err
@@ -189,6 +197,23 @@ func buildHelmValues(chartDir string, values helmValues) (map[string]interface{}
 	}
 
 	return finalValues, nil
+}
+
+func validateHelmValues(unstructuredHelmValues map[string]interface{}) error {
+	// This Go type is the source of truth for the Helm docs
+	var structuredHelmValues generate.HelmConfig
+
+	unstructuredHelmValueBytes, err := json.Marshal(unstructuredHelmValues)
+	if err != nil {
+		return err
+	}
+
+	// This ensures that an error will be raised if there is an unstructured helm value
+	// defined but there is not the equivalent type defined in our Go struct
+	//
+	// When an error occurs, this means the Go type needs to be amended
+	// to include the new field (which is the source of truth for our docs)
+	return k8syamlutil.UnmarshalStrict(unstructuredHelmValueBytes, &structuredHelmValues)
 }
 
 func readValuesFile(filePath string) (map[string]interface{}, error) {

@@ -16,7 +16,9 @@
 |settings.integrations.knative.proxy.httpsPort|int|8443|HTTPS port for the proxy|
 |settings.integrations.knative.proxy.tracing|string||tracing configuration|
 |settings.integrations.knative.proxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
+|settings.integrations.knative.proxy.stats|bool||Controls whether or not envoy stats are enabled|
 |settings.integrations.knative.proxy.extraClusterIngressProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment.|
+|settings.integrations.knative.proxy.extraClusterIngressProxyAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the cluster ingress proxy deployment.|
 |settings.integrations.knative.proxy.internal.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |settings.integrations.knative.proxy.internal.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |settings.integrations.knative.proxy.internal.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -48,7 +50,7 @@
 |settings.integrations.knative.proxy.tolerations[].value|string|||
 |settings.integrations.knative.proxy.tolerations[].effect|string|||
 |settings.integrations.knative.proxy.tolerations[].tolerationSeconds|int64|||
-|settings.integrations.knative.proxy.affinity[].NAME|interface|||
+|settings.integrations.knative.proxy.affinity.NAME|interface|||
 |settings.integrations.knative.proxy.hostAliases[]|interface|||
 |settings.integrations.knative.proxy.resources.limits.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
@@ -62,9 +64,12 @@
 |settings.integrations.knative.proxy.service.httpsPort|int|443|HTTPS port for the knative/ingress proxy service|
 |settings.integrations.knative.proxy.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |settings.integrations.knative.proxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|settings.integrations.knative.proxy.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.integrations.knative.extraKnativeInternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment.|
+|settings.integrations.knative.extraKnativeInternalAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the knative internal deployment.|
 |settings.integrations.knative.extraKnativeExternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative external deployment.|
+|settings.integrations.knative.extraKnativeExternalAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the knative external deployment.|
 |settings.integrations.consul.datacenter|string||Datacenter to use. If not provided, the default agent datacenter is used.|
 |settings.integrations.consul.username|string||Username to use for HTTP Basic Authentication.|
 |settings.integrations.consul.password|string||Password to use for HTTP Basic Authentication.|
@@ -121,6 +126,7 @@
 |gloo.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
 |gloo.deployment.extraGlooLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment.|
+|gloo.deployment.extraGlooAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment.|
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
 |gloo.deployment.customEnv[].value|string|||
@@ -149,7 +155,7 @@
 |gloo.deployment.tolerations[].value|string|||
 |gloo.deployment.tolerations[].effect|string|||
 |gloo.deployment.tolerations[].tolerationSeconds|int64|||
-|gloo.deployment.affinity[].NAME|interface|||
+|gloo.deployment.affinity.NAME|interface|||
 |gloo.deployment.hostAliases[]|interface|||
 |gloo.deployment.resources.limits.memory|string||amount of memory|
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -175,6 +181,7 @@
 |discovery.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |discovery.deployment.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |discovery.deployment.extraDiscoveryLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment.|
+|discovery.deployment.extraDiscoveryAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the gloo edge discovery deployment.|
 |discovery.deployment.enablePodSecurityContext|bool|true|Whether or not to render the pod security context. Default is true|
 |discovery.deployment.replicas|int|1|number of instances to deploy|
 |discovery.deployment.customEnv[].name|string|||
@@ -204,7 +211,7 @@
 |discovery.deployment.tolerations[].value|string|||
 |discovery.deployment.tolerations[].effect|string|||
 |discovery.deployment.tolerations[].tolerationSeconds|int64|||
-|discovery.deployment.affinity[].NAME|interface|||
+|discovery.deployment.affinity.NAME|interface|||
 |discovery.deployment.hostAliases[]|interface|||
 |discovery.deployment.resources.limits.memory|string||amount of memory|
 |discovery.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -244,6 +251,7 @@
 |gateway.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gateway.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gateway.deployment.extraGatewayLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway deployment.|
+|gateway.deployment.extraGatewayAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the gloo edge gateway deployment.|
 |gateway.deployment.replicas|int|1|number of instances to deploy|
 |gateway.deployment.customEnv[].name|string|||
 |gateway.deployment.customEnv[].value|string|||
@@ -272,7 +280,7 @@
 |gateway.deployment.tolerations[].value|string|||
 |gateway.deployment.tolerations[].effect|string|||
 |gateway.deployment.tolerations[].tolerationSeconds|int64|||
-|gateway.deployment.affinity[].NAME|interface|||
+|gateway.deployment.affinity.NAME|interface|||
 |gateway.deployment.hostAliases[]|interface|||
 |gateway.deployment.resources.limits.memory|string||amount of memory|
 |gateway.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -294,7 +302,7 @@
 |gateway.certGenJob.tolerations[].value|string|||
 |gateway.certGenJob.tolerations[].effect|string|||
 |gateway.certGenJob.tolerations[].tolerationSeconds|int64|||
-|gateway.certGenJob.affinity[].NAME|interface|||
+|gateway.certGenJob.affinity.NAME|interface|||
 |gateway.certGenJob.hostAliases[]|interface|||
 |gateway.certGenJob.kubeResourceOverride.NAME|interface||override fields in the gateway-certgen job.|
 |gateway.certGenJob.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen job.|
@@ -350,7 +358,7 @@
 |gatewayProxies.NAME.kind.deployment.tolerations[].value|string|||
 |gatewayProxies.NAME.kind.deployment.tolerations[].effect|string|||
 |gatewayProxies.NAME.kind.deployment.tolerations[].tolerationSeconds|int64|||
-|gatewayProxies.NAME.kind.deployment.affinity[].NAME|interface|||
+|gatewayProxies.NAME.kind.deployment.affinity.NAME|interface|||
 |gatewayProxies.NAME.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.NAME.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
@@ -429,31 +437,20 @@
 |gatewayProxies.NAME.service.configDumpService.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
-|gatewayProxies.NAME.affinity[].NAME|interface|||
-|gatewayProxies.NAME.tracing.provider|string|||
-|gatewayProxies.NAME.tracing.cluster|string|||
+|gatewayProxies.NAME.affinity.NAME|interface|||
+|gatewayProxies.NAME.tracing.provider.NAME|interface|||
+|gatewayProxies.NAME.tracing.cluster.NAME|interface|||
 |gatewayProxies.NAME.gatewaySettings.disableGeneratedGateways|bool||set to true to disable the gateway generation for a gateway proxy|
 |gatewayProxies.NAME.gatewaySettings.disableHttpGateway|bool||Set to true to disable http gateway generation.|
 |gatewayProxies.NAME.gatewaySettings.disableHttpsGateway|bool||Set to true to disable https gateway generation.|
 |gatewayProxies.NAME.gatewaySettings.ipv4Only|bool||set to true if your network allows ipv4 addresses only. Sets the Gateway spec's bindAddress to 0.0.0.0 instead of ::|
 |gatewayProxies.NAME.gatewaySettings.useProxyProto|bool||use proxy protocol|
-|gatewayProxies.NAME.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
-|gatewayProxies.NAME.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
-|gatewayProxies.NAME.gatewaySettings.accessLoggingService.access_log[]|interface|||
-|gatewayProxies.NAME.gatewaySettings.options.access_logging_service.access_log[]|interface|||
-|gatewayProxies.NAME.gatewaySettings.options.extensions.configs.NAME.fields.NAME|interface|||
-|gatewayProxies.NAME.gatewaySettings.options.per_connection_buffer_limit_bytes.value|uint32|||
-|gatewayProxies.NAME.gatewaySettings.options.socket_options[].description|string|||
-|gatewayProxies.NAME.gatewaySettings.options.socket_options[].level|int64|||
-|gatewayProxies.NAME.gatewaySettings.options.socket_options[].name|int64|||
-|gatewayProxies.NAME.gatewaySettings.options.socket_options[]|interface|||
-|gatewayProxies.NAME.gatewaySettings.options.socket_options[].state|int32|||
-|gatewayProxies.NAME.gatewaySettings.options.proxy_protocol.rules[].tlv_type|uint32|||
-|gatewayProxies.NAME.gatewaySettings.options.proxy_protocol.rules[].on_tlv_present.metadata_namespace|string|||
-|gatewayProxies.NAME.gatewaySettings.options.proxy_protocol.rules[].on_tlv_present.key|string|||
-|gatewayProxies.NAME.gatewaySettings.options.proxy_protocol.allow_requests_without_proxy_protocol|bool|||
-|gatewayProxies.NAME.gatewaySettings.httpGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gatewayProxies.NAME.gatewaySettings.httpsGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gatewayProxies.NAME.gatewaySettings.customHttpGateway.NAME|interface||custom yaml to use for http gateway settings|
+|gatewayProxies.NAME.gatewaySettings.customHttpsGateway.NAME|interface||custom yaml to use for https gateway settings|
+|gatewayProxies.NAME.gatewaySettings.accessLoggingService.NAME|interface||cust yaml to use for access logging service (https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/)|
+|gatewayProxies.NAME.gatewaySettings.options.NAME|interface||custom options for http(s) gateways (https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#listeneroptions)|
+|gatewayProxies.NAME.gatewaySettings.httpGatewayKubeOverride.NAME|interface|||
+|gatewayProxies.NAME.gatewaySettings.httpsGatewayKubeOverride.NAME|interface|||
 |gatewayProxies.NAME.gatewaySettings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.NAME.extraContainersHelper|string|||
@@ -521,7 +518,7 @@
 |gatewayProxies.gatewayProxy.kind.deployment.tolerations[].value|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.tolerations[].effect|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.tolerations[].tolerationSeconds|int64|||
-|gatewayProxies.gatewayProxy.kind.deployment.affinity[].NAME|interface|||
+|gatewayProxies.gatewayProxy.kind.deployment.affinity.NAME|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
@@ -600,31 +597,20 @@
 |gatewayProxies.gatewayProxy.service.configDumpService.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
-|gatewayProxies.gatewayProxy.affinity[].NAME|interface|||
-|gatewayProxies.gatewayProxy.tracing.provider|string|||
-|gatewayProxies.gatewayProxy.tracing.cluster|string|||
+|gatewayProxies.gatewayProxy.affinity.NAME|interface|||
+|gatewayProxies.gatewayProxy.tracing.provider.NAME|interface|||
+|gatewayProxies.gatewayProxy.tracing.cluster.NAME|interface|||
 |gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways|bool||set to true to disable the gateway generation for a gateway proxy|
 |gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway|bool||Set to true to disable http gateway generation.|
 |gatewayProxies.gatewayProxy.gatewaySettings.disableHttpsGateway|bool||Set to true to disable https gateway generation.|
 |gatewayProxies.gatewayProxy.gatewaySettings.ipv4Only|bool||set to true if your network allows ipv4 addresses only. Sets the Gateway spec's bindAddress to 0.0.0.0 instead of ::|
 |gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto|bool|false|use proxy protocol|
-|gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
-|gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
-|gatewayProxies.gatewayProxy.gatewaySettings.accessLoggingService.access_log[]|interface|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.access_logging_service.access_log[]|interface|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.extensions.configs.NAME.fields.NAME|interface|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.per_connection_buffer_limit_bytes.value|uint32|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].description|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].level|int64|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].name|int64|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[]|interface|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].state|int32|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.proxy_protocol.rules[].tlv_type|uint32|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.proxy_protocol.rules[].on_tlv_present.metadata_namespace|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.proxy_protocol.rules[].on_tlv_present.key|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.proxy_protocol.allow_requests_without_proxy_protocol|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.httpGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway.NAME|interface||custom yaml to use for http gateway settings|
+|gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway.NAME|interface||custom yaml to use for https gateway settings|
+|gatewayProxies.gatewayProxy.gatewaySettings.accessLoggingService.NAME|interface||cust yaml to use for access logging service (https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/)|
+|gatewayProxies.gatewayProxy.gatewaySettings.options.NAME|interface||custom options for http(s) gateways (https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#listeneroptions)|
+|gatewayProxies.gatewayProxy.gatewaySettings.httpGatewayKubeOverride.NAME|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.NAME|interface|||
 |gatewayProxies.gatewayProxy.gatewaySettings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.gatewayProxy.extraContainersHelper|string|||
@@ -675,6 +661,8 @@
 |ingress.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |ingress.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |ingress.deployment.extraIngressLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment.|
+|ingress.deployment.extraIngressAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the ingress deployment.|
+|ingress.deployment.stats|bool||Controls whether or not envoy stats are enabled|
 |ingress.deployment.replicas|int|1|number of instances to deploy|
 |ingress.deployment.customEnv[].name|string|||
 |ingress.deployment.customEnv[].value|string|||
@@ -703,7 +691,7 @@
 |ingress.deployment.tolerations[].value|string|||
 |ingress.deployment.tolerations[].effect|string|||
 |ingress.deployment.tolerations[].tolerationSeconds|int64|||
-|ingress.deployment.affinity[].NAME|interface|||
+|ingress.deployment.affinity.NAME|interface|||
 |ingress.deployment.hostAliases[]|interface|||
 |ingress.deployment.resources.limits.memory|string||amount of memory|
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -726,6 +714,7 @@
 |ingressProxy.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |ingressProxy.deployment.runAsUser|float64||Explicitly set the user ID for the pod to run as. Default is 10101|
 |ingressProxy.deployment.extraIngressProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress proxy deployment.|
+|ingressProxy.deployment.stats|bool||Controls whether or not envoy stats are enabled|
 |ingressProxy.deployment.replicas|int|1|number of instances to deploy|
 |ingressProxy.deployment.customEnv[].name|string|||
 |ingressProxy.deployment.customEnv[].value|string|||
@@ -754,7 +743,7 @@
 |ingressProxy.deployment.tolerations[].value|string|||
 |ingressProxy.deployment.tolerations[].effect|string|||
 |ingressProxy.deployment.tolerations[].tolerationSeconds|int64|||
-|ingressProxy.deployment.affinity[].NAME|interface|||
+|ingressProxy.deployment.affinity.NAME|interface|||
 |ingressProxy.deployment.hostAliases[]|interface|||
 |ingressProxy.deployment.resources.limits.memory|string||amount of memory|
 |ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -788,7 +777,9 @@
 |accessLogger.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |accessLogger.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |accessLogger.extraAccessLoggerLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment.|
+|accessLogger.extraAccessLoggerAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the access logger deployment.|
 |accessLogger.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|accessLogger.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |accessLogger.replicas|int|1|number of instances to deploy|
 |accessLogger.customEnv[].name|string|||
 |accessLogger.customEnv[].value|string|||
@@ -817,7 +808,7 @@
 |accessLogger.tolerations[].value|string|||
 |accessLogger.tolerations[].effect|string|||
 |accessLogger.tolerations[].tolerationSeconds|int64|||
-|accessLogger.affinity[].NAME|interface|||
+|accessLogger.affinity.NAME|interface|||
 |accessLogger.hostAliases[]|interface|||
 |accessLogger.resources.limits.memory|string||amount of memory|
 |accessLogger.resources.limits.cpu|string||amount of CPUs|
