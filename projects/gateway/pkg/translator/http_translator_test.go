@@ -698,6 +698,22 @@ var _ = Describe("Http Translator", func() {
 					&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "["}},
 					&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"}},
 					InvalidRegexErr("gloo-system.name1", "error parsing regexp: missing closing ]: `[`")),
+				Entry("regex hijacking - handles lack of methods, headers, or query params",
+					&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/anything"}},
+					&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/nomatch"}},
+					nil),
+				Entry("regex hijacking - handles later matcher with more specific methods",
+					&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/anything"}},
+					&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/nomatch"}, Methods: []string{"GET", "POST"}},
+					nil),
+				Entry("regex hijacking - handles later matcher with more specific headers",
+					&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/anything"}},
+					&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/nomatch"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}},
+					nil),
+				Entry("regex hijacking - handles later matcher with more specific query params",
+					&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/anything"}},
+					&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/nomatch"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}},
+					nil),
 			)
 		})
 	})
