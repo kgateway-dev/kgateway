@@ -199,6 +199,10 @@ func buildHelmValues(chartDir string, values helmValues) (map[string]interface{}
 	return finalValues, nil
 }
 
+// validateHelmValues ensures that the unstructured helm values that are provided
+// to a chart match the Go type used to generate the Helm documentation
+// Returns nil if all the provided values are all included in the Go struct
+// Returns an error if a provided value is not included in the Go struct.
 func validateHelmValues(unstructuredHelmValues map[string]interface{}) error {
 	// This Go type is the source of truth for the Helm docs
 	var structuredHelmValues generate.HelmConfig

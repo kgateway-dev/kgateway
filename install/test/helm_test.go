@@ -1542,7 +1542,6 @@ spec:
 						BeforeEach(func() {
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
-									//"gatewayProxies.anotherGatewayProxy.specKey=testing",
 									"gatewayProxies.anotherGatewayProxy.gatewaySettings.options.socketOptions[0].description=enable keep-alive}",
 								},
 							})
@@ -4070,23 +4069,19 @@ metadata:
 						testManifest.ExpectConfigMapWithYamlData(proxy)
 					})
 
-					/*
-						TODO
-						It("has a proxy with tracing cluster", func() {
-							prepareMakefileFromValuesFile("values/val_tracing_provider_cluster.yaml")
-							proxySpec := make(map[string]string)
-							proxySpec["envoy.yaml"] = confWithTracingCluster
-							cmRb := ResourceBuilder{
-								Namespace: namespace,
-								Name:      gatewayProxyConfigMapName,
-								Labels:    labels,
-								Data:      proxySpec,
-							}
-							proxy := cmRb.GetConfigMap()
-							testManifest.ExpectConfigMapWithYamlData(proxy)
-						})
-
-					*/
+					It("has a proxy with tracing cluster", func() {
+						prepareMakefileFromValuesFile("values/val_tracing_provider_cluster.yaml")
+						proxySpec := make(map[string]string)
+						proxySpec["envoy.yaml"] = confWithTracingCluster
+						cmRb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      gatewayProxyConfigMapName,
+							Labels:    labels,
+							Data:      proxySpec,
+						}
+						proxy := cmRb.GetConfigMap()
+						testManifest.ExpectConfigMapWithYamlData(proxy)
+					})
 				})
 
 				Describe("gateway proxy -- readConfig config", func() {

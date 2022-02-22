@@ -472,8 +472,8 @@ type GatewayProxyService struct {
 }
 
 type Tracing struct {
-	Provider map[string]interface{} `json:"provider,omitempty"`
-	Cluster  map[string]interface{} `json:"cluster,omitempty"`
+	Provider map[string]interface{}   `json:"provider,omitempty"`
+	Cluster  []map[string]interface{} `json:"cluster,omitempty"`
 }
 
 type Failover struct {
