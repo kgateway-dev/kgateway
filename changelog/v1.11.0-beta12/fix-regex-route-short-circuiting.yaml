@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5958
+    description: Fix bug where regex route short-circuiting was reported when it shouldn't have been.
+    resolvesIssue: false
