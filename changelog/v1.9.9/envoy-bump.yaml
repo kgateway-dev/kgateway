@@ -1,0 +1,10 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/solo-projects/issues/3037
+  resolvesIssue: false
+  description: >
+    Fixes Envoy CVEs CVE-2021-43826, CVE-2021-43824, CVE-2022-21654, CVE-2022-21655, CVE-2021-43825, CVE-2022-23606.
+- type: DEPENDENCY_BUMP
+  dependencyRepo: envoy-gloo
+  dependencyOwner: solo-io
+  dependencyTag: v1.20.0-patch4
