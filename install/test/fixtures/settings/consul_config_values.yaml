@@ -38,16 +38,14 @@ spec:
    certFile: testCertFile
    keyFile: testKeyFile
    insecureSkipVerify: true
-   waitTime: 
-     seconds: 12
+   waitTime: 12s
    serviceDiscovery: 
      dataCenters:
        - dc1
        - dc2
    httpAddress: 1.2.3.4
    dnsAddress: 5.6.7.8
-   dnsPollingInterval: 
-     nanos: 5
+   dnsPollingInterval: 5s
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}

@@ -118,7 +118,7 @@ spec:
 {{- end }}
 
 {{- if .Values.settings.rateLimit }}
-  rateLimit:
+  ratelimit:
 {{- toYaml .Values.settings.rateLimit | nindent 4 }}
 {{- end }}
 
