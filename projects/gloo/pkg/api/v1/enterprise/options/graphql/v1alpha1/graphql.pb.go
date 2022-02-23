@@ -849,7 +849,7 @@ type ExecutableSchema struct {
 
 	// The following directives are supported:
 	//- @resolve(name: string)
-	//- @cacheControl(max_age: uint32, inherit_max_age: bool, scope: unset/public/private)
+	//- @cacheControl(maxAge: uint32, inheritMaxAge: bool, scope: unset/public/private)
 	//
 	//Define named resolvers on the `Executor.Local.resolutions` message, and reference them here using @resolve:
 	//```gql
@@ -859,12 +859,12 @@ type ExecutableSchema struct {
 	//
 	//Further, fields/types can be annotated with the @cacheControl directive, e.g.
 	//```gql
-	//type Query @cacheControl(max_age: 60) {
-	//author: String @resolve(name: "authorResolver") @cacheControl(max_age: 90, scope: private)
+	//type Query @cacheControl(maxAge: 60) {
+	//author: String @resolve(name: "authorResolver") @cacheControl(maxAge: 90, scope: private)
 	//}
 	//```
 	//Any type-level cache control defaults are overridden by field settings, if provided.
-	//The most restrictive cache control setting (smallest max_age and scope) across all fields in
+	//The most restrictive cache control setting (smallest maxAge and scope) across all fields in
 	//an entire query will be returned to the client.
 	SchemaDefinition string `protobuf:"bytes,1,opt,name=schema_definition,json=schemaDefinition,proto3" json:"schema_definition,omitempty"`
 	// how to execute the schema
