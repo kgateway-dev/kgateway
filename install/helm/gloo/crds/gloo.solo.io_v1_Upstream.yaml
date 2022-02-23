@@ -143,6 +143,11 @@ spec:
                     type: object
                   connectTimeout:
                     type: string
+                  http1ProtocolOptions:
+                    properties:
+                      enableTrailers:
+                        type: boolean
+                    type: object
                   maxRequestsPerConnection:
                     format: int32
                     type: integer
