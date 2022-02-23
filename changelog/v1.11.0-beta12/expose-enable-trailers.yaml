@@ -1,4 +1,4 @@
-hangelog:
+changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/5633
     resolvesIssue: true
