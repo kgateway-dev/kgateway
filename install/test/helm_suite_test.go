@@ -213,8 +213,8 @@ func buildHelmValues(chartDir string, values helmValues) (map[string]interface{}
 //          error unmarshaling JSON: while decoding JSON: json: unknown field "useTlsTagging"
 //      occurred
 //
-//	This means that the unstructured values provided to the Helm chart contain a field `useTlsTagging`
-//	but the Go struct does not contain that field.
+// This means that the unstructured values provided to the Helm chart contain a field `useTlsTagging`
+// but the Go struct does not contain that field.
 func validateHelmValues(unstructuredHelmValues map[string]interface{}) error {
 	// This Go type is the source of truth for the Helm docs
 	var structuredHelmValues generate.HelmConfig
