@@ -54,6 +54,10 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 		if reports[up].Errors != nil {
 
 			clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
+			if clusters.Items[clusterName] == nil {
+				// cluster has already been removed from the snapshot
+				continue
+			}
 			endpointName := clusterName
 			cluster, _ := clusters.Items[clusterName].ResourceProto().(*envoy_config_cluster_v3.Cluster)
 			if cluster.GetType() == envoy_config_cluster_v3.Cluster_EDS {
