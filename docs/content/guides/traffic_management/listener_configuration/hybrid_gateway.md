@@ -147,3 +147,99 @@ client ip forbidden
 ```
 
 This is expected since the IP of our client is not `1.2.3.4`.
+
+## Hybrid Gateway Delegation
+
+{{% notice note %}}
+This feature is available in Gloo Edge version 1.10.x and later.
+{{% /notice %}}
+
+{{% notice warn %}}
+Hybrid Gateway delegation is supported only for HTTP Gateways.
+{{% /notice %}}
+
+
+With Hybrid Gateways, you can define multiple HTTP and TCP Gateways, each with distinct matching criteria, on a single Gateway CR.
+
+However, condensing all listener and routing configuration onto a single object can be cumbersome when dealing with a large number of matching and routing criteria.
+
+Similar to how Gloo Edge provides delegation between Virtual Services and Route Tables, Hybrid Gateways can be assembled from separate resources. The root Gateway resource selects HttpGateways and assembles the Hybrid Gateway, as though it were defined in a single resource.
+
+
+### Only accept requests from a particular CIDR range
+
+We will use Hybrid Gateway delegation to achieve the same functionality that we demonstrated earlier in this guide.
+
+1. Confirm that a Virtual Service exists which matches all requests and has a Direct Response Action.
+```bash
+kubectl get -n gloo-system vs client-ip-reject
+```
+
+2. Create a MatchableHttpGateway to define the HTTP Gateway.
+```yaml
+kubectl apply -n gloo-system -f - <<EOF
+apiVersion: gateway.solo.io/v1
+kind: MatchableHttpGateway
+metadata:
+  name: client-ip-reject-gateway
+  namespace: gloo-system
+spec:
+  httpGateway:
+    virtualServices:
+      - name: client-ip-reject
+        namespace: gloo-system
+  matcher: {}
+EOF
+```
+
+3. Confirm the MatchableHttpGateway was created.
+```bash
+kubectl get -n gloo-system hgw client-ip-reject-gateway
+```
+
+4. Modify the Gateway CR to reference this MatchableHttpGateway.
+```bash
+kubectl edit -n gloo-system gateway gateway-proxy
+```
+{{< highlight yaml "hl_lines=7-11" >}}
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata: # collapsed for brevity
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  hybridGateway:
+    delegatedHttpGateways:
+      ref:
+        name: client-ip-reject-gateway
+        namespace: gloo-system
+  proxyNames:
+  - gateway-proxy
+  useProxyProto: false
+status: # collapsed for brevity
+{{< /highlight >}}
+    
+5. Confirm expected routing behavior.
+
+We now have a Gateway which has matching and routing behavior defined in the MatchableHttpGateway.
+
+At this point, all requests (an empty matcher is treated as a match-all) are expected to be matched and delegated to the `client-ip-reject` Virtual Service.
+
+```bash
+$ curl "$(glooctl proxy url)/all-pets"
+client ip forbidden
+```
+
+{{% notice note %}}
+Although we demonstrate gateway delegation using reference selection in this guide, label selection is also supported.
+{{% /notice %}}
+
+
+### How are SSL Configurations managed in Hybrid Gateways?
+
+Before Hybrid Gateways were introduced, SSL configuration was exclusively defined on Virtual Services. This enabled the teams owning those services to define the SSL configuration required to establish connections.
+
+With Hybrid Gateways, SSL configuration can also be defined in the matcher on the Gateway.
+
+To support the legacy model, the SSL configuration defined on the Gateway acts as the default, and SSL configurations defined on the Virtual Services override that default.
+The presence of SSL configuration on the matcher determines whether a given matched Gateway will have any SSL configuration. Therefore one can define empty SSL configuration on Gateway matchers in order to exclusively use SSL configuration from Virtual Services.
