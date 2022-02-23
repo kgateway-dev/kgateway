@@ -11,6 +11,7 @@ weight: 5
 #### Types:
 
 
+- [Setter](#setter)
 - [TemplatedPath](#templatedpath)
 - [RequestTemplate](#requesttemplate)
 - [ResponseTemplate](#responsetemplate)
@@ -35,20 +36,39 @@ weight: 5
 
 
 ---
-### TemplatedPath
+### Setter
 
 
 
 ```yaml
-"pathTemplate": string
+"templatedPath": .graphql.gloo.solo.io.Setter.TemplatedPath
 "path": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `pathTemplate` | `string` | If non-empty, Inserts named paths into a template string. For example, if the template is '/api/{apiVersionPath}/pet/{petIdPath}' and we have two named paths defined in `named_paths`, apiVersionPath and petIdPath, with extracted values 'v2' and '123' respectively, the final resulting value will be '/api/v2/pet/123' Use {PATH_NAME} as the interpolation notation (even repeated) regardless of the type of the provided value. If an undefined PATH_NAME is used in the template, this will nack during configuration. If this is empty, only the value of the first provider will be used as the resulting value. |
-| `path` | `string` |  |
+| `templatedPath` | [.graphql.gloo.solo.io.Setter.TemplatedPath](../graphql.proto.sk/#templatedpath) |  Only one of `templatedPath` or `path` can be set. |
+| `path` | `string` |  Only one of `path` or `templatedPath` can be set. |
+
+
+
+
+---
+### TemplatedPath
+
+
+
+```yaml
+"template": string
+"namedPaths": map<string, string>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `template` | `string` | If non-empty, Inserts named paths into a template string. For example, if the template is '/api/{apiVersionPath}/pet/{petIdPath}' and we have two named paths defined in `named_paths`, apiVersionPath and petIdPath, with extracted values 'v2' and '123' respectively, the final resulting value will be '/api/v2/pet/123'. Use {PATH_NAME} as the interpolation notation (even repeated) regardless of the type of the provided value. If an undefined PATH_NAME is used in the template, this will nack during configuration. It is an error for this to be empty (use `path` instead of `templated_path`). |
+| `namedPaths` | `map<string, string>` | Named extractors for values from JSON. |
 
 
 
@@ -82,14 +102,14 @@ Defines a configuration for generating outgoing requests for a resolver.
 
 ```yaml
 "resultRoot": string
-"setters": map<string, .graphql.gloo.solo.io.TemplatedPath>
+"setters": map<string, .graphql.gloo.solo.io.Setter>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `resultRoot` | `string` | Sets the "root" of the upstream response to be turned into a graphql type by the graphql server. For example, if the graphql type is: type Simple { name String } and the upstream response is `{"data": {"simple": {"name": "simple name"}}}`, the graphql server will not be able to marshal the upstream response into the Simple graphql type because it doesn't know where the relevant data is. If we set result_root to "data.simple", we can give the graphql server a hint of where to look in the upstream response for the relevant data that graphql type wants. |
-| `setters` | `map<string, .graphql.gloo.solo.io.TemplatedPath>` | Field-specific mapping for a graphql field to a JSON path in the upstream response. For example, if the graphql type is type Simple { name String number String } and the upstream response is `{"name": "simple name", "details": {"num": "1234567890"}}`, the graphql server will not be able to marshal the upstream response into the Simple graphql type because of the nested `number` field. We can use a simple setter here: setters: number: path: "details.num" and the graphql server will be able to extract data for a field given the path to the relevant data in the upstream JSON response. We don't need to have a setter for the `name` field because the JSON response has that field in a position the graphql server can understand automatically. |
+| `setters` | `map<string, .graphql.gloo.solo.io.Setter>` | Field-specific mapping for a graphql field to a JSON path in the upstream response. For example, if the graphql type is: type Person { firstname String lastname String fullname String } and the upstream response is `{"firstname": "Joe", "details": {"lastname": "Smith"}}`, the graphql server will not be able to marshal the upstream response into the Person graphql type because of the nested `lastname` field. We can use a simple setter here: setters: lastname: path: "details.lastname" fullname: templatedPath: template: '{nickname} {surname}' namedPaths: nickname: "details.firstname" surname: "details.lastname" and the graphql server will be able to extract data for a field given the path to the relevant data in the upstream JSON response. We don't need to have a setter for the `firstname` or `lastname` field because the JSON response has that field in a position the graphql server can understand automatically. |
 
 
 

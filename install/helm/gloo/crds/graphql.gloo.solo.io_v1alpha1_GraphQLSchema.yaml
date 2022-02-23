@@ -121,8 +121,15 @@ spec:
                                             properties:
                                               path:
                                                 type: string
-                                              pathTemplate:
-                                                type: string
+                                              templatedPath:
+                                                properties:
+                                                  namedPaths:
+                                                    additionalProperties:
+                                                      type: string
+                                                    type: object
+                                                  template:
+                                                    type: string
+                                                type: object
                                             type: object
                                           type: object
                                       type: object

@@ -26,14 +26,14 @@ var (
 )
 
 // Equal function
-func (m *TemplatedPath) Equal(that interface{}) bool {
+func (m *Setter) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*TemplatedPath)
+	target, ok := that.(*Setter)
 	if !ok {
-		that2, ok := that.(TemplatedPath)
+		that2, ok := that.(Setter)
 		if ok {
 			target = &that2
 		} else {
@@ -46,12 +46,37 @@ func (m *TemplatedPath) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetPathTemplate(), target.GetPathTemplate()) != 0 {
-		return false
-	}
+	switch m.PathType.(type) {
 
-	if strings.Compare(m.GetPath(), target.GetPath()) != 0 {
-		return false
+	case *Setter_TemplatedPath_:
+		if _, ok := target.PathType.(*Setter_TemplatedPath_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetTemplatedPath()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTemplatedPath()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetTemplatedPath(), target.GetTemplatedPath()) {
+				return false
+			}
+		}
+
+	case *Setter_Path:
+		if _, ok := target.PathType.(*Setter_Path); !ok {
+			return false
+		}
+
+		if strings.Compare(m.GetPath(), target.GetPath()) != 0 {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.PathType != target.PathType {
+			return false
+		}
 	}
 
 	return true
@@ -639,6 +664,45 @@ func (m *Executor) Equal(that interface{}) bool {
 		if m.Executor != target.Executor {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Setter_TemplatedPath) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Setter_TemplatedPath)
+	if !ok {
+		that2, ok := that.(Setter_TemplatedPath)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetTemplate(), target.GetTemplate()) != 0 {
+		return false
+	}
+
+	if len(m.GetNamedPaths()) != len(target.GetNamedPaths()) {
+		return false
+	}
+	for k, v := range m.GetNamedPaths() {
+
+		if strings.Compare(v, target.GetNamedPaths()[k]) != 0 {
+			return false
+		}
+
 	}
 
 	return true
