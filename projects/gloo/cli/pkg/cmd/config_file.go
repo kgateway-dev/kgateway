@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/spf13/cobra"
@@ -18,6 +19,9 @@ const (
 	defaultYaml = `# glooctl configuration file
 # see https://gloo.solo.io/installation/advanced_configuration/glooctl-config/ for more information
 
+# The maximum length of time to wait before giving up on a secret request. A value of zero means no timeout.
+secretClientTimeoutSeconds: 30
+
 `
 	dirPermissions  = 0755
 	filePermissions = 0644
@@ -29,7 +33,8 @@ const (
 	homeDir = "<home_directory>"
 
 	// note that the available keys in this config file should be kept up to date in our public docs
-	disableUsageReporting = "disableUsageReporting"
+	disableUsageReporting      = "disableUsageReporting"
+	secretClientTimeoutSeconds = "secretClientTimeoutSeconds"
 )
 
 var DefaultConfigPath = path.Join(homeDir, ConfigDirName, ConfigFileName)
@@ -61,7 +66,21 @@ func ReadConfigFile(opts *options.Options, cmd *cobra.Command) error {
 		return err
 	}
 
-	return err
+	setDefaultValues()
+	loadValuesIntoOptions(opts)
+
+	return nil
+}
+
+// Values to be used if a field is not specified in the config file (~/.gloo/glooctl-config.yaml)
+func setDefaultValues() {
+	viper.SetDefault(secretClientTimeoutSeconds, 30)
+}
+
+// Assigns values from config file (or default) into the provided Options struct
+func loadValuesIntoOptions(opts *options.Options) {
+	timeoutSeconds := viper.GetInt64(secretClientTimeoutSeconds)
+	opts.Check.SecretClientTimeout = time.Duration(timeoutSeconds) * time.Second
 }
 
 // ensure that both the directory containing the file and the file itself exist
