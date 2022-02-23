@@ -235,7 +235,7 @@ type ResponseTemplate struct {
 	//surname: "details.lastname"
 	//
 	//and the graphql server will be able to extract data for a field given the path to the relevant data
-	//in the upstream JSON response. We don't need to have a setter for the `firstname` or `lastname` field because the
+	//in the upstream JSON response. We don't need to have a setter for the `firstname` or field because the
 	//JSON response has that field in a position the graphql server can understand automatically.
 	Setters map[string]*Setter `protobuf:"bytes,2,rep,name=setters,proto3" json:"setters,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
