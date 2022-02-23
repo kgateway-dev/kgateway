@@ -203,6 +203,18 @@ func buildHelmValues(chartDir string, values helmValues) (map[string]interface{}
 // to a chart match the Go type used to generate the Helm documentation
 // Returns nil if all the provided values are all included in the Go struct
 // Returns an error if a provided value is not included in the Go struct.
+//
+// Example:
+//  Failed to render manifest
+//      Unexpected error:
+//          <*errors.errorString | 0xc000fedf40>: {
+//              s: "error unmarshaling JSON: while decoding JSON: json: unknown field \"useTlsTagging\"",
+//          }
+//          error unmarshaling JSON: while decoding JSON: json: unknown field "useTlsTagging"
+//      occurred
+//
+//	This means that the unstructured values provided to the Helm chart contain a field `useTlsTagging`
+//	but the Go struct does not contain that field.
 func validateHelmValues(unstructuredHelmValues map[string]interface{}) error {
 	// This Go type is the source of truth for the Helm docs
 	var structuredHelmValues generate.HelmConfig

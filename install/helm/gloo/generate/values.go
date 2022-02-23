@@ -110,11 +110,11 @@ type Consul struct {
 	CertFile           *string                  `json:"certFile,omitempty" desc:"CertFile is the optional path to the certificate for Consul communication. If this is set then you need to also set KeyFile."`
 	KeyFile            *string                  `json:"keyFile,omitempty" desc:"KeyFile is the optional path to the private key for Consul communication. If this is set then you need to also set CertFile."`
 	InsecureSkipVerify *bool                    `json:"insecureSkipVerify,omitempty" desc:"InsecureSkipVerify if set to true will disable TLS host verification."`
-	WaitTime           *Duration                `json:"waitTime,omitempty" desc:"WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used."`
+	WaitTime           *string                  `json:"waitTime,omitempty" desc:"WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used."`
 	ServiceDiscovery   *ServiceDiscoveryOptions `json:"serviceDiscovery,omitempty" desc:"Enable Service Discovery via Consul with this field set to empty struct '{}' to enable with defaults"`
 	HttpAddress        *string                  `json:"httpAddress,omitempty" desc:"The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500."`
 	DnsAddress         *string                  `json:"dnsAddress,omitempty" desc:"The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server)"`
-	DnsPollingInterval *Duration                `json:"dnsPollingInterval,omitempty" desc:"The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo Edge will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s."`
+	DnsPollingInterval *string                  `json:"dnsPollingInterval,omitempty" desc:"The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo Edge will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s."`
 }
 
 type ServiceDiscoveryOptions struct {
@@ -122,10 +122,10 @@ type ServiceDiscoveryOptions struct {
 }
 
 type ConsulUpstreamDiscovery struct {
-	UseTlsDiscovery  *bool        `json:"useTlsDiscovery,omitempty" desc:"Allow Gloo Edge to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true."`
+	UseTlsTagging    *bool        `json:"useTlsTagging,omitempty" desc:"Allow Gloo Edge to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true."`
 	TlsTagName       *string      `json:"tlsTagName,omitempty" desc:"The tag Gloo Edge should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'."`
 	SplitTlsServices *bool        `json:"splitTlsServices,omitempty" desc:"If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without."`
-	DiscoveryRootCa  *ResourceRef `json:"discoveryRootCa,omitempty" desc:"The name/namespace of the root CA needed to use TLS with consul services."`
+	RootCa           *ResourceRef `json:"rootCa,omitempty" desc:"The name/namespace of the root CA needed to use TLS with consul services."`
 }
 
 // equivalent of core.solo.io.ResourceRef
