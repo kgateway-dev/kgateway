@@ -21,8 +21,8 @@ weight: 5
 - [GrpcResolver](#grpcresolver)
 - [Resolution](#resolution)
 - [GraphQLSchema](#graphqlschema) **Top-Level Resource**
-- [ExecutableSchema](#executableschema)
 - [PersistedQueryCacheConfig](#persistedquerycacheconfig)
+- [ExecutableSchema](#executableschema)
 - [Executor](#executor)
 - [Local](#local)
   
@@ -109,7 +109,7 @@ Defines a configuration for generating outgoing requests for a resolver.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `resultRoot` | `string` | Sets the "root" of the upstream response to be turned into a graphql type by the graphql server. For example, if the graphql type is: type Simple { name String } and the upstream response is `{"data": {"simple": {"name": "simple name"}}}`, the graphql server will not be able to marshal the upstream response into the Simple graphql type because it doesn't know where the relevant data is. If we set result_root to "data.simple", we can give the graphql server a hint of where to look in the upstream response for the relevant data that graphql type wants. |
-| `setters` | `map<string, .graphql.gloo.solo.io.Setter>` | Field-specific mapping for a graphql field to a JSON path in the upstream response. For example, if the graphql type is: type Person { firstname String lastname String fullname String } and the upstream response is `{"firstname": "Joe", "details": {"lastname": "Smith"}}`, the graphql server will not be able to marshal the upstream response into the Person graphql type because of the nested `lastname` field. We can use a simple setter here: setters: lastname: path: "details.lastname" fullname: templatedPath: template: '{nickname} {surname}' namedPaths: nickname: "details.firstname" surname: "details.lastname" and the graphql server will be able to extract data for a field given the path to the relevant data in the upstream JSON response. We don't need to have a setter for the `firstname` or field because the JSON response has that field in a position the graphql server can understand automatically. |
+| `setters` | `map<string, .graphql.gloo.solo.io.Setter>` | Field-specific mapping for a graphql field to a JSON path in the upstream response. For example, if the graphql type is: type Person { firstname String lastname String fullname String } and the upstream response is `{"firstname": "Joe", "details": {"lastname": "Smith"}}`, the graphql server will not be able to marshal the upstream response into the Person graphql type because of the nested `lastname` field. We can use a simple setter here: setters: lastname: path: "details.lastname" fullname: templatedPath: template: '{nickname} {surname}' namedPaths: nickname: "details.firstname" surname: "details.lastname" and the graphql server will be able to extract data for a field given the path to the relevant data in the upstream JSON response. We don't need to have a setter for the `firstname` field because the JSON response has that field in a position the graphql server can understand automatically. |
 
 
 
@@ -247,6 +247,9 @@ configure the routes to point to these schema CRs.
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
 "metadata": .core.solo.io.Metadata
 "executableSchema": .graphql.gloo.solo.io.ExecutableSchema
+"statPrefix": .google.protobuf.StringValue
+"persistedQueryCacheConfig": .graphql.gloo.solo.io.PersistedQueryCacheConfig
+"allowedQueryHashes": []string
 
 ```
 
@@ -255,33 +258,9 @@ configure the routes to point to these schema CRs.
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `executableSchema` | [.graphql.gloo.solo.io.ExecutableSchema](../graphql.proto.sk/#executableschema) |  |
-
-
-
-
----
-### ExecutableSchema
-
-
-
-```yaml
-"schemaDefinition": string
-"executor": .graphql.gloo.solo.io.Executor
-"statPrefix": string
-"persistedQueryCacheConfig": .graphql.gloo.solo.io.PersistedQueryCacheConfig
-"allowedQueryHashes": []string
-"grpcDescriptorRegistry": .graphql.gloo.solo.io.GrpcDescriptorRegistry
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `schemaDefinition` | `string` | The following directives are supported: - @resolve(name: string) - @cacheControl(max_age: uint32, inherit_max_age: bool, scope: unset/public/private) Define named resolvers on the `Executor.Local.resolutions` message, and reference them here using @resolve: ```gql type Query { author: String @resolve(name: "authorResolver") } Further, fields/types can be annotated with the @cacheControl directive, e.g. ```gql type Query @cacheControl(max_age: 60) { author: String @resolve(name: "authorResolver") @cacheControl(max_age: 90, scope: private) } ``` Any type-level cache control defaults are overridden by field settings, if provided. The most restrictive cache control setting (smallest max_age and scope) across all fields in an entire query will be returned to the client. |
-| `executor` | [.graphql.gloo.solo.io.Executor](../graphql.proto.sk/#executor) | how to execute the schema. |
-| `statPrefix` | `string` | The stats prefix which will be used for this route config. |
+| `statPrefix` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The stats prefix which will be used for this route config. If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}. |
 | `persistedQueryCacheConfig` | [.graphql.gloo.solo.io.PersistedQueryCacheConfig](../graphql.proto.sk/#persistedquerycacheconfig) | Configuration settings for persisted query cache. |
 | `allowedQueryHashes` | `[]string` | Safelist: only allow queries to be executed that match these sha256 hashes. The hash can be computed from the query string or provided (i.e. persisted queries). |
-| `grpcDescriptorRegistry` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry](../graphql.proto.sk/#grpcdescriptorregistry) | Schema extensions. |
 
 
 
@@ -300,6 +279,27 @@ This message specifies Persisted Query Cache configuration.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `cacheSize` | `int` | The unit is number of queries to store, default to 1000. |
+
+
+
+
+---
+### ExecutableSchema
+
+
+
+```yaml
+"schemaDefinition": string
+"executor": .graphql.gloo.solo.io.Executor
+"grpcDescriptorRegistry": .graphql.gloo.solo.io.GrpcDescriptorRegistry
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `schemaDefinition` | `string` | The following directives are supported: - @resolve(name: string) - @cacheControl(max_age: uint32, inherit_max_age: bool, scope: unset/public/private) Define named resolvers on the `Executor.Local.resolutions` message, and reference them here using @resolve: ```gql type Query { author: String @resolve(name: "authorResolver") } Further, fields/types can be annotated with the @cacheControl directive, e.g. ```gql type Query @cacheControl(max_age: 60) { author: String @resolve(name: "authorResolver") @cacheControl(max_age: 90, scope: private) } ``` Any type-level cache control defaults are overridden by field settings, if provided. The most restrictive cache control setting (smallest max_age and scope) across all fields in an entire query will be returned to the client. |
+| `executor` | [.graphql.gloo.solo.io.Executor](../graphql.proto.sk/#executor) | how to execute the schema. |
+| `grpcDescriptorRegistry` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry](../graphql.proto.sk/#grpcdescriptorregistry) | Schema extensions. |
 
 
 

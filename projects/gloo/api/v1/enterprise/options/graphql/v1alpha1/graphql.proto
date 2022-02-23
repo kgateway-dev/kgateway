@@ -142,7 +142,7 @@ message ResponseTemplate {
             surname: "details.lastname"
 
     and the graphql server will be able to extract data for a field given the path to the relevant data
-    in the upstream JSON response. We don't need to have a setter for the `firstname` or field because the
+    in the upstream JSON response. We don't need to have a setter for the `firstname` field because the
     JSON response has that field in a position the graphql server can understand automatically.
   */
   map<string, Setter> setters = 2;
@@ -241,6 +241,23 @@ message GraphQLSchema {
   core.solo.io.Metadata metadata = 2;
 
   ExecutableSchema executable_schema = 6;
+
+  // The stats prefix which will be used for this route config.
+  // If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}
+  google.protobuf.StringValue stat_prefix = 3;
+
+  // Configuration settings for persisted query cache
+  PersistedQueryCacheConfig persisted_query_cache_config = 4;
+
+  // Safelist: only allow queries to be executed that match these sha256 hashes.
+  // The hash can be computed from the query string or provided (i.e. persisted queries).
+  repeated string allowed_query_hashes = 5;
+}
+
+// This message specifies Persisted Query Cache configuration.
+message PersistedQueryCacheConfig {
+  // The unit is number of queries to store, default to 1000.
+  uint32 cache_size = 1;
 }
 
 message ExecutableSchema {
@@ -271,24 +288,8 @@ message ExecutableSchema {
   // how to execute the schema
   Executor executor = 2;
 
-  // The stats prefix which will be used for this route config.
-  string stat_prefix = 4;
-
-  // Configuration settings for persisted query cache
-  PersistedQueryCacheConfig persisted_query_cache_config = 5;
-
-  // Safelist: only allow queries to be executed that match these sha256 hashes.
-  // The hash can be computed from the query string or provided (i.e. persisted queries).
-  repeated string allowed_query_hashes = 6;
-
   // Schema extensions
   GrpcDescriptorRegistry grpc_descriptor_registry = 3;
-}
-
-// This message specifies Persisted Query Cache configuration.
-message PersistedQueryCacheConfig {
-  // The unit is number of queries to store, default to 1000.
-  uint32 cache_size = 1;
 }
 
 message Executor {
