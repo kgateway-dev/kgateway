@@ -26,6 +26,38 @@ var (
 )
 
 // Equal function
+func (m *TemplatedPath) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*TemplatedPath)
+	if !ok {
+		that2, ok := that.(TemplatedPath)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetPathTemplate(), target.GetPathTemplate()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetPath(), target.GetPath()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *RequestTemplate) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -111,8 +143,14 @@ func (m *ResponseTemplate) Equal(that interface{}) bool {
 	}
 	for k, v := range m.GetSetters() {
 
-		if strings.Compare(v, target.GetSetters()[k]) != 0 {
-			return false
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSetters()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSetters()[k]) {
+				return false
+			}
 		}
 
 	}
@@ -454,16 +492,6 @@ func (m *GraphQLSchema) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetStatPrefix()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetStatPrefix()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetStatPrefix(), target.GetStatPrefix()) {
-			return false
-		}
-	}
-
 	return true
 }
 
@@ -502,6 +530,31 @@ func (m *ExecutableSchema) Equal(that interface{}) bool {
 		}
 	}
 
+	if strings.Compare(m.GetStatPrefix(), target.GetStatPrefix()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetPersistedQueryCacheConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPersistedQueryCacheConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPersistedQueryCacheConfig(), target.GetPersistedQueryCacheConfig()) {
+			return false
+		}
+	}
+
+	if len(m.GetAllowedQueryHashes()) != len(target.GetAllowedQueryHashes()) {
+		return false
+	}
+	for idx, v := range m.GetAllowedQueryHashes() {
+
+		if strings.Compare(v, target.GetAllowedQueryHashes()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	if h, ok := interface{}(m.GetGrpcDescriptorRegistry()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetGrpcDescriptorRegistry()) {
 			return false
@@ -510,6 +563,34 @@ func (m *ExecutableSchema) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetGrpcDescriptorRegistry(), target.GetGrpcDescriptorRegistry()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *PersistedQueryCacheConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*PersistedQueryCacheConfig)
+	if !ok {
+		that2, ok := that.(PersistedQueryCacheConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetCacheSize() != target.GetCacheSize() {
+		return false
 	}
 
 	return true

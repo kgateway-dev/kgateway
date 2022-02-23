@@ -32,6 +32,21 @@ var (
 )
 
 // Clone function
+func (m *TemplatedPath) Clone() proto.Message {
+	var target *TemplatedPath
+	if m == nil {
+		return target
+	}
+	target = &TemplatedPath{}
+
+	target.PathTemplate = m.GetPathTemplate()
+
+	target.Path = m.GetPath()
+
+	return target
+}
+
+// Clone function
 func (m *RequestTemplate) Clone() proto.Message {
 	var target *RequestTemplate
 	if m == nil {
@@ -77,10 +92,14 @@ func (m *ResponseTemplate) Clone() proto.Message {
 	target.ResultRoot = m.GetResultRoot()
 
 	if m.GetSetters() != nil {
-		target.Setters = make(map[string]string, len(m.GetSetters()))
+		target.Setters = make(map[string]*TemplatedPath, len(m.GetSetters()))
 		for k, v := range m.GetSetters() {
 
-			target.Setters[k] = v
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Setters[k] = h.Clone().(*TemplatedPath)
+			} else {
+				target.Setters[k] = proto.Clone(v).(*TemplatedPath)
+			}
 
 		}
 	}
@@ -280,12 +299,6 @@ func (m *GraphQLSchema) Clone() proto.Message {
 		target.ExecutableSchema = proto.Clone(m.GetExecutableSchema()).(*ExecutableSchema)
 	}
 
-	if h, ok := interface{}(m.GetStatPrefix()).(clone.Cloner); ok {
-		target.StatPrefix = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
-	} else {
-		target.StatPrefix = proto.Clone(m.GetStatPrefix()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
-	}
-
 	return target
 }
 
@@ -305,11 +318,41 @@ func (m *ExecutableSchema) Clone() proto.Message {
 		target.Executor = proto.Clone(m.GetExecutor()).(*Executor)
 	}
 
+	target.StatPrefix = m.GetStatPrefix()
+
+	if h, ok := interface{}(m.GetPersistedQueryCacheConfig()).(clone.Cloner); ok {
+		target.PersistedQueryCacheConfig = h.Clone().(*PersistedQueryCacheConfig)
+	} else {
+		target.PersistedQueryCacheConfig = proto.Clone(m.GetPersistedQueryCacheConfig()).(*PersistedQueryCacheConfig)
+	}
+
+	if m.GetAllowedQueryHashes() != nil {
+		target.AllowedQueryHashes = make([]string, len(m.GetAllowedQueryHashes()))
+		for idx, v := range m.GetAllowedQueryHashes() {
+
+			target.AllowedQueryHashes[idx] = v
+
+		}
+	}
+
 	if h, ok := interface{}(m.GetGrpcDescriptorRegistry()).(clone.Cloner); ok {
 		target.GrpcDescriptorRegistry = h.Clone().(*GrpcDescriptorRegistry)
 	} else {
 		target.GrpcDescriptorRegistry = proto.Clone(m.GetGrpcDescriptorRegistry()).(*GrpcDescriptorRegistry)
 	}
+
+	return target
+}
+
+// Clone function
+func (m *PersistedQueryCacheConfig) Clone() proto.Message {
+	var target *PersistedQueryCacheConfig
+	if m == nil {
+		return target
+	}
+	target = &PersistedQueryCacheConfig{}
+
+	target.CacheSize = m.GetCacheSize()
 
 	return target
 }

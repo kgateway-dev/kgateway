@@ -25,6 +25,10 @@ spec:
             properties:
               executableSchema:
                 properties:
+                  allowedQueryHashes:
+                    items:
+                      type: string
+                    type: array
                   executor:
                     properties:
                       local:
@@ -114,7 +118,12 @@ spec:
                                           type: string
                                         setters:
                                           additionalProperties:
-                                            type: string
+                                            properties:
+                                              path:
+                                                type: string
+                                              pathTemplate:
+                                                type: string
+                                            type: object
                                           type: object
                                       type: object
                                     spanName:
@@ -142,7 +151,15 @@ spec:
                         format: byte
                         type: string
                     type: object
+                  persistedQueryCacheConfig:
+                    properties:
+                      cacheSize:
+                        format: int32
+                        type: integer
+                    type: object
                   schemaDefinition:
+                    type: string
+                  statPrefix:
                     type: string
                 type: object
               namespacedStatuses:
@@ -153,9 +170,6 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
                     type: object
                 type: object
-              statPrefix:
-                nullable: true
-                type: string
             type: object
           status:
             type: object

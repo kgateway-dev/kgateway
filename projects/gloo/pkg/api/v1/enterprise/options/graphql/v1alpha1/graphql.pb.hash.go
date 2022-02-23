@@ -26,6 +26,30 @@ var (
 )
 
 // Hash function
+func (m *TemplatedPath) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.TemplatedPath")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetPathTemplate())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetPath())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *RequestTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -130,8 +154,24 @@ func (m *ResponseTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 		for k, v := range m.GetSetters() {
 			innerHash.Reset()
 
-			if _, err = innerHash.Write([]byte(v)); err != nil {
-				return 0, err
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+				if _, err = innerHash.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if _, err = h.Hash(innerHash); err != nil {
+					return 0, err
+				}
+			} else {
+				if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+					return 0, err
+				} else {
+					if _, err = innerHash.Write([]byte("")); err != nil {
+						return 0, err
+					}
+					if err := binary.Write(innerHash, binary.LittleEndian, fieldValue); err != nil {
+						return 0, err
+					}
+				}
 			}
 
 			if _, err = innerHash.Write([]byte(k)); err != nil {
@@ -526,26 +566,6 @@ func (m *GraphQLSchema) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetStatPrefix()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("StatPrefix")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetStatPrefix(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("StatPrefix")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	return hasher.Sum64(), nil
 }
 
@@ -586,6 +606,38 @@ func (m *ExecutableSchema) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if _, err = hasher.Write([]byte(m.GetStatPrefix())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetPersistedQueryCacheConfig()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("PersistedQueryCacheConfig")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetPersistedQueryCacheConfig(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("PersistedQueryCacheConfig")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	for _, v := range m.GetAllowedQueryHashes() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
 	if h, ok := interface{}(m.GetGrpcDescriptorRegistry()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("GrpcDescriptorRegistry")); err != nil {
 			return 0, err
@@ -604,6 +656,27 @@ func (m *ExecutableSchema) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *PersistedQueryCacheConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.PersistedQueryCacheConfig")); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetCacheSize())
+	if err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
