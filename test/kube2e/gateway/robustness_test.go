@@ -176,6 +176,22 @@ var _ = Describe("Robustness tests", func() {
 		})
 
 		JustBeforeEach(func() {
+			var vsList gatewayv1.VirtualServiceList
+			Eventually(func() bool {
+				vsList, err = virtualServiceClient.List(appService.Namespace, clients.ListOpts{})
+				if err != nil {
+					return false
+				}
+				if len(vsList) == 0 {
+					return true
+				}
+				for _, vs := range vsList {
+					virtualServiceClient.Delete(appService.Namespace, vs.GetMetadata().Name, clients.DeleteOpts{})
+				}
+
+				return false
+
+			}, "12s", "1s").Should(BeTrue())
 			_, writeErr := virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
 			Expect(writeErr).NotTo(HaveOccurred())
 

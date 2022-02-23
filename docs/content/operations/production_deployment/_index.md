@@ -41,6 +41,7 @@ gloo:
       alwaysAcceptResources: false # reject invalid resources
       warnRouteShortCircuiting: true
 ```
+<!--Commenting out as it’s still an experimental feature and should not be used/recommended in the docs for production until the fetaure is GA. See https://solo-io-corp.slack.com/archives/CHJV572TG/p1645032058593229 
 
 ### xDS Relay
 
@@ -101,7 +102,7 @@ gatewayProxies:
     xdsServiceAddress: xds-relay.default.svc.cluster.local
     xdsServicePort: 9991
 ```
-
+-->
 
 ## Performance tips
 

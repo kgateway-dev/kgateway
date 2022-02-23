@@ -16,6 +16,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
+// PrintUpstreams
 func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *xdsinspection.XdsDump) error {
 	if outputType == KUBE_YAML {
 		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
@@ -100,9 +101,10 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 		for _, fn := range usType.Aws.GetLambdaFunctions() {
 			functions = append(functions, fn.GetLambdaFunctionName())
 		}
+
 		add(
 			fmt.Sprintf("region: %v", usType.Aws.GetRegion()),
-			fmt.Sprintf("secret: %v", usType.Aws.GetSecretRef().Key()),
+			fmt.Sprintf("secret: %s", stringifyKey(usType.Aws.GetSecretRef())),
 		)
 		for i := range functions {
 			if i == 0 {
@@ -131,7 +133,7 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 		}
 		add(
 			fmt.Sprintf("function app name: %v", usType.Azure.GetFunctionAppName()),
-			fmt.Sprintf("secret: %v", usType.Azure.GetSecretRef().Key()),
+			fmt.Sprintf("secret: %s", stringifyKey(usType.Azure.GetSecretRef())),
 		)
 
 		for i := range functions {
@@ -217,6 +219,17 @@ func linesForServiceSpec(serviceSpec *plugins.ServiceSpec) []string {
 	}
 
 	return spec
+}
+
+// stringifyKey for a resource likely could be done more nicely with spew
+// or a better accessor but minimall this avoids panicing on nested references to nils
+func stringifyKey(plausiblyNilRef *core.ResourceRef) string {
+
+	if plausiblyNilRef == nil {
+		return "<None>"
+	}
+	return plausiblyNilRef.Key()
+
 }
 
 func getEc2TagFiltersString(filters []*ec2.TagFilter) []string {

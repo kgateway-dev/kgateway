@@ -20,6 +20,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/matchers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -478,7 +479,6 @@ var _ = Describe("Plugin", func() {
 			goTypedConfig := filters[0].HttpFilter.GetTypedConfig()
 			err = ptypes.UnmarshalAny(goTypedConfig, cfg)
 			Expect(err).NotTo(HaveOccurred())
-
 		}
 
 		It("should enable service account credentials in the filter", func() {
@@ -486,6 +486,15 @@ var _ = Describe("Plugin", func() {
 			saCredentialsExpected := cfg.GetServiceAccountCredentials()
 			Expect(saCredentialsExpected).NotTo(BeNil())
 			Expect(saCredentialsExpected).To(matchers.MatchProto(saCredentials))
+		})
+		It("can enable all config options", func() {
+
+			initParams.Settings.Gloo.AwsOptions.PropagateOriginalRouting = wrapperspb.Bool(true)
+			initParams.Settings.Gloo.AwsOptions.CredentialRefreshDelay = &duration.Duration{Seconds: 1}
+
+			process()
+			Expect(cfg.PropagateOriginalRouting).To(Equal(true))
+			Expect(*cfg.CredentialRefreshDelay).To(Equal(duration.Duration{Seconds: 1}))
 		})
 
 		It("will add the token if it is present on the secret", func() {
