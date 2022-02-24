@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo-portal-issues/issues/49
+    description: Un-nest the IntrospectionValidation and JwtValidation fields from AccessTokenValidation to help with CRD schema gen.
+    resolvesIssue: false
