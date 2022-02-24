@@ -32,39 +32,6 @@ var (
 )
 
 // Clone function
-func (m *Setter) Clone() proto.Message {
-	var target *Setter
-	if m == nil {
-		return target
-	}
-	target = &Setter{}
-
-	switch m.PathType.(type) {
-
-	case *Setter_TemplatedPath_:
-
-		if h, ok := interface{}(m.GetTemplatedPath()).(clone.Cloner); ok {
-			target.PathType = &Setter_TemplatedPath_{
-				TemplatedPath: h.Clone().(*Setter_TemplatedPath),
-			}
-		} else {
-			target.PathType = &Setter_TemplatedPath_{
-				TemplatedPath: proto.Clone(m.GetTemplatedPath()).(*Setter_TemplatedPath),
-			}
-		}
-
-	case *Setter_Path:
-
-		target.PathType = &Setter_Path{
-			Path: m.GetPath(),
-		}
-
-	}
-
-	return target
-}
-
-// Clone function
 func (m *RequestTemplate) Clone() proto.Message {
 	var target *RequestTemplate
 	if m == nil {
@@ -110,14 +77,10 @@ func (m *ResponseTemplate) Clone() proto.Message {
 	target.ResultRoot = m.GetResultRoot()
 
 	if m.GetSetters() != nil {
-		target.Setters = make(map[string]*Setter, len(m.GetSetters()))
+		target.Setters = make(map[string]string, len(m.GetSetters()))
 		for k, v := range m.GetSetters() {
 
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Setters[k] = h.Clone().(*Setter)
-			} else {
-				target.Setters[k] = proto.Clone(v).(*Setter)
-			}
+			target.Setters[k] = v
 
 		}
 	}
@@ -401,28 +364,6 @@ func (m *Executor) Clone() proto.Message {
 			}
 		}
 
-	}
-
-	return target
-}
-
-// Clone function
-func (m *Setter_TemplatedPath) Clone() proto.Message {
-	var target *Setter_TemplatedPath
-	if m == nil {
-		return target
-	}
-	target = &Setter_TemplatedPath{}
-
-	target.Template = m.GetTemplate()
-
-	if m.GetNamedPaths() != nil {
-		target.NamedPaths = make(map[string]string, len(m.GetNamedPaths()))
-		for k, v := range m.GetNamedPaths() {
-
-			target.NamedPaths[k] = v
-
-		}
 	}
 
 	return target
