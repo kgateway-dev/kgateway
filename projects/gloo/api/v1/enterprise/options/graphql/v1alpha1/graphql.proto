@@ -46,31 +46,6 @@ import "google/protobuf/wrappers.proto";
       - use `a[*][1]` to create a list of all values from object "a"
  */
 
-message Setter {
-
-  message TemplatedPath {
-    /*
-    If non-empty, Inserts named paths into a template string.
-    For example, if the template is '/api/{apiVersionPath}/pet/{petIdPath}'
-    and we have two named paths defined in `named_paths`, apiVersionPath and petIdPath,
-    with extracted values 'v2' and '123' respectively, the final resulting value will be '/api/v2/pet/123'.
-    Use {PATH_NAME} as the interpolation notation (even repeated) regardless of the type of the
-    provided value.
-    If an undefined PATH_NAME is used in the template, this will nack during configuration.
-    It is an error for this to be empty (use `path` instead of `templated_path`).
-    */
-    string template = 1;
-
-    // Named extractors for values from JSON
-    map<string, string> named_paths = 2;
-  }
-
-  oneof path_type {
-    TemplatedPath templated_path = 1;
-    string path = 2;
-  }
-}
-
 // Defines a configuration for generating outgoing requests for a resolver.
 message RequestTemplate {
   // Use this attribute to set request headers to your REST service. It consists of a
@@ -132,20 +107,14 @@ message ResponseTemplate {
     nested `lastname` field. We can use a simple setter here:
 
     setters:
-      lastname:
-        path: "details.lastname"
-      fullname:
-        templatedPath:
-          template: '{nickname} {surname}'
-          namedPaths:
-            nickname: "details.firstname"
-            surname: "details.lastname"
+      lastname: '{$response.details.lastname}'
+      fullname: '{$response.details.firstname} {$response.details.lastname}'
 
     and the graphql server will be able to extract data for a field given the path to the relevant data
     in the upstream JSON response. We don't need to have a setter for the `firstname` field because the
     JSON response has that field in a position the graphql server can understand automatically.
   */
-  map<string, Setter> setters = 2;
+  map<string, string> setters = 2;
 }
 
 // Defines a configuration for generating outgoing requests for a resolver.
