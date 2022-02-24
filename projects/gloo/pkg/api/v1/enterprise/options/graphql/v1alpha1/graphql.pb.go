@@ -145,12 +145,14 @@ type ResponseTemplate struct {
 	//nested `lastname` field. We can use a simple setter here:
 	//
 	//setters:
-	//lastname: '{$response.details.lastname}'
-	//fullname: '{$response.details.firstname} {$response.details.lastname}'
+	//lastname: '{$body.details.lastname}'
+	//fullname: '{$body.details.firstname} {$body.details.lastname}'
 	//
 	//and the graphql server will be able to extract data for a field given the path to the relevant data
 	//in the upstream JSON response. We don't need to have a setter for the `firstname` field because the
 	//JSON response has that field in a position the graphql server can understand automatically.
+	//
+	//So far only the $body keyword is supported, but in the future we may add support for others such as $headers.
 	Setters map[string]string `protobuf:"bytes,2,rep,name=setters,proto3" json:"setters,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
