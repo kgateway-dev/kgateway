@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5377
+    resolvesIssue: false
+    description: Ensure that ratelimit settings are configured through helm correctly.
