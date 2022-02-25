@@ -38,15 +38,12 @@ Now we are ready to either [install Gloo Edge Enterprise](#install-gloo-edge-ent
 
 ## Install Gloo Edge Enterprise
 
-To add the customization of a trusted certificate authority to the Gloo Edge Enterprise installation, we are going to need to use Helm for the installation and `kustomize` to perform a last mile helm chart customization, as outlined [in this guide]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/helm_advanced/" >}}). Essentially, we are going to have Helm render an installation manifest, and then tailor the manifest using kustomize to add the necessary configuration.
+To add the customization of a trusted certificate authority to the Gloo Edge Enterprise installation, we are going to need to use Helm for the installation and customization.
 
 ```bash
 # Add the Gloo Edge Enterprise repo to Helm if you haven't already
 helm repo add glooe https://storage.googleapis.com/gloo-ee-helm
 helm repo update
-
-# Grab the current Gloo Edge Enterprise version
-version=$(helm search repo glooe -ojson | jq .[0].version -r)
 
 # Create the helm values file (or merge into existing)
 cat > gloo-edge-bring-cert-values.yaml <<EOF
@@ -54,32 +51,15 @@ global:
   extensions:
     extAuth:
       deployment:
-        kubeResourceOverride:
-          spec:
-            template:
-              spec:
-                volumes:
-                - name: certs
-                  emptyDir: {}
-                - name: ca-certs
-                  secret:
-                    secretName: trusted-ca
-                    items:
-                    - key: tls.crt
-                      path: ca.crt
-                initContainers:
-                - name: add-ca-cert
-                  image: quay.io/solo-io/extauth-ee:$version
-                  command:
-                    - sh
-                  args:
-                    - "-c"
-                    - "cp -r /etc/ssl/certs/* /certs; cat /etc/ssl/certs/ca-certificates.crt /ca-certs/ca.crt > /certs/ca-certificates.crt"
-                  volumeMounts:
-                    - name: certs
-                      mountPath: /certs
-                    - name: ca-certs
-                      mountPath: /ca-certs
+        extraVolume:
+        - name: ca-certs-custom
+          secret:
+            secretName: trusted-ca
+        extraVolumeMount:
+        - name: ca-certs-custom
+          mountPath: /etc/ssl/certs/ca-certs-custom.crt
+          subPath: tls.crt
+          readOnly: true
 EOF
 ```
 
@@ -95,15 +75,7 @@ helm upgrade --install gloo glooe/gloo-ee --namespace gloo-system \
 Once the installation is complete, we can validate our change with the following command:
 
 ```bash
-kubectl -n gloo-system get pod -l gloo=extauth -o json| jq '.items[0].status.initContainerStatuses' 
-```
-
-You should see the init container `add-ca-cert` has completed its work.
-
-```bash
-  State:          Terminated
-    Reason:       Completed
-    Exit Code:    0
+kubectl exec -n gloo-system deploy/extauth -- cat /etc/ssl/certs/ca-certs-custom.crt
 ```
 
 You've successfully added a custom certificate authority for external authentication!
