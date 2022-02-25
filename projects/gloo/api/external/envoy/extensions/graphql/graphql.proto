@@ -14,7 +14,7 @@ import "validate/validate.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/extension.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
-
+import "google/protobuf/wrappers.proto";
 
 // used to reference into json structures by key(s)
 message PathSegment {
@@ -24,13 +24,29 @@ message PathSegment {
     string key = 1 [(validate.rules).string = {min_len: 1}];
     // Extract element at list
     uint32 index = 2;
-    // Extracts all elements from a list
+    // Extracts all elements from a map or a list
     bool all = 3;
   }
 }
 
 message Path {
   repeated PathSegment segments = 1;
+}
+
+message TemplatedPath {
+  /*
+  If non-empty, Inserts named paths into a template string.
+  For example, if the template is '/api/{apiVersionPath}/pet/{petIdPath}'
+  and we have two named paths defined in `named_paths`, apiVersionPath and petIdPath, with extracted values 'v2' and '123' respectively,
+  the final resulting value will be '/api/v2/pet/123'
+  Use {PATH_NAME} as the interpolation notation (even repeated) regardless of the type of the
+  provided value.
+  If an undefined PATH_NAME is used in the template, this will nack during configuration.
+  If this is empty, only the value of the first provider will be used as the resulting value.
+  */
+  string path_template = 1;
+
+  map<string, Path> named_paths = 2;
 }
 
 // In the future we may add support for regex and subgroups
@@ -94,7 +110,7 @@ message ValueProvider {
   /*
   If non-empty, Inserts named providers into a template string.
   For example, if the provider_template is '/api/{apiVersionProvider}/pet/{petIdProvider}'
-  and we have to named providers defined in `providers`, apiVersionProvider and petIdProvider, with extracted values 'v2' and '123' respectively,
+  and we have two named providers defined in `providers`, apiVersionProvider and petIdProvider, with extracted values 'v2' and '123' respectively,
   the final resulting value will be '/api/v2/pet/123'
   Use {PROVIDER_NAME} as the interpolation notation (even repeated) regardless of the type of the
   provided value.
@@ -216,7 +232,7 @@ message ResponseTemplate {
           - key: address
   `yaml
   */
-  map<string, Path> setters = 2;
+  map<string, TemplatedPath> setters = 2;
 }
 
 message RESTResolver {
@@ -250,7 +266,7 @@ message GrpcRequestTemplate {
   // once we know better what the use cases are
   map<string, string> request_metadata = 4;
 
-  // GraphQL Mesh fields not supported in our datplane API today and reasons:
+  // GraphQL Mesh fields not supported in our dataplane API today and reasons:
 
   // think about graphql subscriptions we may need a new resolver for grpc streaming
 
@@ -283,6 +299,23 @@ message GrpcResolver {
   string span_name = 4;
 }
 
+// Only meant for integration testing
+message StaticResolver {
+  message AsyncResponse {
+    string response = 1;
+    uint32 delay_ms = 2;
+  }
+  oneof response {
+    // Responds synchronously (on the same dispatch loop as the resolve call)
+    string sync_response = 1;
+
+    // Responds asynchronously after delay_ms
+    AsyncResponse async_response = 2;
+
+    //todo - include error_response as needed for testing errors
+  }
+}
+
 // NOT IMPLEMENTED
 // Resolve an abstract type (union or interface) to a real type.
 // When implemented, this message will be a field in the Resolution message.
@@ -293,15 +326,25 @@ message AbstractTypeResolver {
 // NOT IMPLEMENTED
 // When we'll support prepared queries, this will be the type containing the
 // query.
-message Query { .solo.io.envoy.config.core.v3.DataSource query = 1; }
+//message Query { .solo.io.envoy.config.core.v3.DataSource query = 1; }
 
 message QueryMatcher {
   message FieldMatcher {
     // Object type. For example, Query.
     string type = 1;
-    // Field with in the object.
+    // Field within the object.
     string field = 2;
   }
+
+  // NOT IMPLEMENTED
+  // can be used to set default configuration.
+  // any type configuration provided with a field as well takes precedence.
+  // Note: we may want this to live higher up than on the Resolution message
+  //
+  // message TypeMatcher {
+  //   // Object type. For example, Query.
+  //   string type = 1;
+  // }
 
   oneof match { FieldMatcher field_matcher = 1; }
 }
@@ -319,7 +362,49 @@ message Resolution {
   .solo.io.envoy.config.core.v3.TypedExtensionConfig resolver = 2;
   // The stats prefix which will be used for this resolver.
   string stat_prefix = 3;
+  // caching configuration, defaults to no caching
+  CacheControl cache_control = 4;
 }
+
+// Resolvers for scalar, non-root fields rarely fetch data and instead usually populate data via the parent argument.
+// Consequently, these fields inherit their default maxAge from their parent to reduce schema clutter.
+//
+// TODO: Talk with product -- apollo does not do this, but we could factor in upstream Cache-Control header
+// response into our inheritance model.
+message CacheControl {
+  // number of seconds to cache result for. the max_age used for a single graphql request is the minimum
+  // of all fields requested.
+  //
+  // default max_age rules work as follows:
+  // - root fields (i.e. Query, Mutation, Subscription) default to 0s
+  // - non-root, non-scalar fields (i.e. object, interface, or union; or a list of those types) default to 0s
+  // - all other fields inherit the max_age from their parent.
+  google.protobuf.UInt32Value max_age = 1;
+  enum CacheControlScope {
+    UNSET = 0;
+    // Responses for requests with Authorization header fields must not be stored in a shared cache.
+    // But the public directive will cause such responses to be stored in a shared cache.
+    //
+    // In general, when pages are under Basic Auth or Digest Auth, the browser sends requests with
+    // the Authorization header. That means the response is access-controlled for restricted users
+    // (who have accounts), and it's fundamentally not shared-cacheable, even if it has max-age.
+    //
+    // You can use the public directive to unlock that restriction.
+    PUBLIC = 1;
+    // You should add the private directive for user-personalized content — in particular, responses
+    // received after login, and sessions managed via cookies.
+    //
+    // If you forget to add private to a response with personalized content, then that response can be
+    // stored in a shared cache and end up being reused for multiple users, which can cause personal
+    // information to leak.
+    PRIVATE = 2;
+  }
+  // provide controls to which users can access cached content
+  CacheControlScope scope = 2;
+  // whether or not to inherit the caching configuration of any parent fields
+  bool inherit_max_age = 3;
+}
+
 // Filter Listener config. Empty as the filter must be configured on the route
 // level.
 message GraphQLConfig {}
@@ -328,13 +413,6 @@ message GraphQLConfig {}
 // queries, and will not make it to the router filter. i.e. this filter will
 // terminate the request for these routes.
 message GraphQLRouteConfig {
-  // Deprecated. will be removed when gloo 1.10 is released
-  .solo.io.envoy.config.core.v3.DataSource schema = 1;
-  // Deprecated. will be removed when gloo 1.10 is released
-  bool enable_introspection = 2;
-  // Deprecated. will be removed when gloo 1.10 is released
-  repeated Resolution resolutions = 3;
-
   ExecutableSchema executable_schema = 4;
   // In the future, we will support persistent queries, this will be a map of
   // query id to query.
@@ -352,8 +430,18 @@ message GraphQLRouteConfig {
 
   // The stats prefix which will be used for this route config.
   string stat_prefix = 5;
+  // Configuration settings for persisted query cache
+  PersistedQueryCacheConfig persisted_query_cache_config = 6;
+  // Safelist: only allow queries to be executed that match these sha256 hashes.
+  // The hash can be computed from the query string or provided (i.e. persisted queries).
+  repeated string allowed_query_hashes = 7;
 }
 
+// This message specifies Persisted Query Cache configuration.
+message PersistedQueryCacheConfig {
+  // The unit is number of queries to store, default to 1000.
+  uint32 cache_size = 1;
+}
 
 message ExecutableSchema {
   // Schema to use in string format.

@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/envoy-gloo-ee/issues/272
+    resolvesIssue: false
+    description: >-
+      Add API for persisted queries, safelists, `Cache-Control` header CDN caching, and response template setters to
+      the Gloo Edge envoy GraphQL filter, to be implemented in enterprise.
