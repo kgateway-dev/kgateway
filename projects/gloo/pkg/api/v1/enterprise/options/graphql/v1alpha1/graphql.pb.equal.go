@@ -464,6 +464,55 @@ func (m *GraphQLSchema) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPersistedQueryCacheConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPersistedQueryCacheConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPersistedQueryCacheConfig(), target.GetPersistedQueryCacheConfig()) {
+			return false
+		}
+	}
+
+	if len(m.GetAllowedQueryHashes()) != len(target.GetAllowedQueryHashes()) {
+		return false
+	}
+	for idx, v := range m.GetAllowedQueryHashes() {
+
+		if strings.Compare(v, target.GetAllowedQueryHashes()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *PersistedQueryCacheConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*PersistedQueryCacheConfig)
+	if !ok {
+		that2, ok := that.(PersistedQueryCacheConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetCacheSize() != target.GetCacheSize() {
+		return false
+	}
+
 	return true
 }
 
