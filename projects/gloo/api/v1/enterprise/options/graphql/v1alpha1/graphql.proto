@@ -252,7 +252,8 @@ message ExecutableSchema {
    ```
    Any type-level cache control defaults are overridden by field settings, if provided.
    The most restrictive cache control setting (smallest maxAge and scope) across all fields in
-   an entire query will be returned to the client.
+   an entire query will be returned to the client in the `Cache-Control` header with appropriate
+   `max-age` and  scope (unset, `public`, or `private`) directives.
   */
   string schema_definition = 1;
 
