@@ -114,7 +114,50 @@ In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backe
 
 1. Deploy the Bookinfo sample application to the default namespace, which you will expose behind a GraphQL server embedded in Envoy.
    ```sh
-   kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/bookinfo/platform/kube/bookinfo.yaml
+   k apply -f - <<EOF
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     labels:
+       app: petstore
+     name: petstore
+     namespace: default
+   spec:
+     selector:
+       matchLabels:
+         app: petstore
+     replicas: 1
+     template:
+       metadata:
+         labels:
+           app: petstore
+       spec:
+         containers:
+         - image: openapitools/openapi-petstore
+           name: petstore
+           env:
+             - name: DISABLE_OAUTH
+               value: "1"
+             - name: DISABLE_API_KEY
+               value: "1"
+           ports:
+           - containerPort: 8080
+             name: http
+   ---
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: petstore
+     namespace: default
+     labels:
+       service: petstore
+   spec:
+     ports:
+     - port: 8080
+       protocol: TCP
+     selector:
+       app: petstore
+   EOF
    ```
 
 2. Verify that Gloo Edge automatically discovered the Bookinfo services and created corresponding `default-productpage-9080` upstream, which you will use in the REST resolver.
