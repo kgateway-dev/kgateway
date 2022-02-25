@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Fixes docs for things such as backporting, version bumps, and links.
