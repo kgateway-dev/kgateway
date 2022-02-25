@@ -781,7 +781,8 @@ type ExecutableSchema struct {
 	//```
 	//Any type-level cache control defaults are overridden by field settings, if provided.
 	//The most restrictive cache control setting (smallest maxAge and scope) across all fields in
-	//an entire query will be returned to the client.
+	//an entire query will be returned to the client in the `Cache-Control` header with appropriate
+	//`max-age` and  scope (unset, `public`, or `private`) directives.
 	SchemaDefinition string `protobuf:"bytes,1,opt,name=schema_definition,json=schemaDefinition,proto3" json:"schema_definition,omitempty"`
 	// how to execute the schema
 	Executor *Executor `protobuf:"bytes,2,opt,name=executor,proto3" json:"executor,omitempty"`
