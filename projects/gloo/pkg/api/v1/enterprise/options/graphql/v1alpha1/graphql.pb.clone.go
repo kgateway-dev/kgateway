@@ -286,6 +286,34 @@ func (m *GraphQLSchema) Clone() proto.Message {
 		target.StatPrefix = proto.Clone(m.GetStatPrefix()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	}
 
+	if h, ok := interface{}(m.GetPersistedQueryCacheConfig()).(clone.Cloner); ok {
+		target.PersistedQueryCacheConfig = h.Clone().(*PersistedQueryCacheConfig)
+	} else {
+		target.PersistedQueryCacheConfig = proto.Clone(m.GetPersistedQueryCacheConfig()).(*PersistedQueryCacheConfig)
+	}
+
+	if m.GetAllowedQueryHashes() != nil {
+		target.AllowedQueryHashes = make([]string, len(m.GetAllowedQueryHashes()))
+		for idx, v := range m.GetAllowedQueryHashes() {
+
+			target.AllowedQueryHashes[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *PersistedQueryCacheConfig) Clone() proto.Message {
+	var target *PersistedQueryCacheConfig
+	if m == nil {
+		return target
+	}
+	target = &PersistedQueryCacheConfig{}
+
+	target.CacheSize = m.GetCacheSize()
+
 	return target
 }
 

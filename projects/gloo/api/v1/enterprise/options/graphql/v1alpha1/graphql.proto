@@ -44,7 +44,6 @@ import "google/protobuf/wrappers.proto";
       - use `a[*]` to create a list of key-value pairs from object "a"
       - use `a[*][0]` to create a list of all keys from object "a"
       - use `a[*][1]` to create a list of all values from object "a"
-
  */
 
 // Defines a configuration for generating outgoing requests for a resolver.
@@ -95,23 +94,27 @@ message ResponseTemplate {
 
   /*
     Field-specific mapping for a graphql field to a JSON path in the upstream response.
-    For example, if the graphql type is
+    For example, if the graphql type is:
 
-    type Simple {
-      name String
-      number String
+    type Person {
+      firstname String
+      lastname String
+      fullname String
     }
 
-    and the upstream response is `{"name": "simple name", "details": {"num": "1234567890"}}`,
-    the graphql server will not be able to marshal the upstream response into the Simple graphql type because of the
-    nested `number` field. We can use a simple setter here:
+    and the upstream response is `{"firstname": "Joe", "details": {"lastname": "Smith"}}`,
+    the graphql server will not be able to marshal the upstream response into the Person graphql type because of the
+    nested `lastname` field. We can use a simple setter here:
 
     setters:
-      number: "details.num"
+      lastname: '{$body.details.lastname}'
+      fullname: '{$body.details.firstname} {$body.details.lastname}'
 
     and the graphql server will be able to extract data for a field given the path to the relevant data
-    in the upstream JSON response. We don't need to have a setter for the `name` field because the JSON
-    response has that field in a position the graphql server can understand automatically.
+    in the upstream JSON response. We don't need to have a setter for the `firstname` field because the
+    JSON response has that field in a position the graphql server can understand automatically.
+
+    So far only the $body keyword is supported, but in the future we may add support for others such as $headers.
   */
   map<string, string> setters = 2;
 }
@@ -213,10 +216,45 @@ message GraphQLSchema {
   // The stats prefix which will be used for this route config.
   // If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}
   google.protobuf.StringValue stat_prefix = 3;
+
+  // Configuration settings for persisted query cache
+  PersistedQueryCacheConfig persisted_query_cache_config = 4;
+
+  // Safelist: only allow queries to be executed that match these sha256 hashes.
+  // The hash can be computed from the query string or provided (i.e. persisted queries).
+  repeated string allowed_query_hashes = 5;
+}
+
+// This message specifies Persisted Query Cache configuration.
+message PersistedQueryCacheConfig {
+  // The unit is number of queries to store, default to 1000.
+  uint32 cache_size = 1;
 }
 
 message ExecutableSchema {
   // Schema to use in string format.
+
+  /* The following directives are supported:
+   - @resolve(name: string)
+   - @cacheControl(maxAge: uint32, inheritMaxAge: bool, scope: unset/public/private)
+
+   Define named resolvers on the `Executor.Local.resolutions` message, and reference them here using @resolve:
+   ```gql
+   type Query {
+     author: String @resolve(name: "authorResolver")
+   }
+
+   Further, fields/types can be annotated with the @cacheControl directive, e.g.
+   ```gql
+   type Query @cacheControl(maxAge: 60) {
+     author: String @resolve(name: "authorResolver") @cacheControl(maxAge: 90, scope: private)
+   }
+   ```
+   Any type-level cache control defaults are overridden by field settings, if provided.
+   The most restrictive cache control setting (smallest maxAge and scope) across all fields in
+   an entire query will be returned to the client in the `Cache-Control` header with appropriate
+   `max-age` and  scope (unset, `public`, or `private`) directives.
+  */
   string schema_definition = 1;
 
   // how to execute the schema

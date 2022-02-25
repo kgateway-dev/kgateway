@@ -72,7 +72,7 @@ require (
 	github.com/solo-io/go-utils v0.21.24
 	github.com/solo-io/k8s-utils v0.0.12
 	github.com/solo-io/protoc-gen-ext v0.0.16
-	github.com/solo-io/protoc-gen-openapi v0.0.2
+	github.com/solo-io/protoc-gen-openapi v0.0.4
 	github.com/solo-io/skv2 v0.21.6
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c

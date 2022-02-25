@@ -260,6 +260,9 @@ apis:
   envoy.config.filter.http.graphql.v2.AbstractTypeResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#AbstractTypeResolver
     package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.CacheControl:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#CacheControl
+    package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.graphql.v2.ExecutableSchema:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#ExecutableSchema
     package: envoy.config.filter.http.graphql.v2
@@ -299,8 +302,8 @@ apis:
   envoy.config.filter.http.graphql.v2.PathSegment:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#PathSegment
     package: envoy.config.filter.http.graphql.v2
-  envoy.config.filter.http.graphql.v2.Query:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#Query
+  envoy.config.filter.http.graphql.v2.PersistedQueryCacheConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#PersistedQueryCacheConfig
     package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.graphql.v2.QueryMatcher:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#QueryMatcher
@@ -316,6 +319,12 @@ apis:
     package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.graphql.v2.ResponseTemplate:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#ResponseTemplate
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.StaticResolver:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#StaticResolver
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.TemplatedPath:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#TemplatedPath
     package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.graphql.v2.ValueProvider:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#ValueProvider
@@ -883,6 +892,9 @@ apis:
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GrpcResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcResolver
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.PersistedQueryCacheConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#PersistedQueryCacheConfig
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.RESTResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#RESTResolver
