@@ -24,12 +24,17 @@ func federation(opts *options.Options) *cobra.Command {
 			}
 			overrideFile := opts.Install.Federation.HelmChartOverride
 			latestGlooEEVersion, err := version.GetLatestEnterpriseVersion(false)
+			// Potentially override glooEE version with --version option
+			glooVersion := opts.Install.Version
+			if glooVersion == "" {
+				glooVersion = latestGlooEEVersion
+			}
 			if err != nil {
 				return eris.Wrapf(err, "Couldn't find latest Gloo Enterprise Version")
 			}
 			runner := common.NewShellRunner(os.Stdin, os.Stdout)
 			return runner.Run("bash", "-c", initGlooFedDemoScript, "init-demo.sh", "local", "remote",
-				latestGlooEEVersion, licenseKey, overrideFile)
+				glooVersion, licenseKey, overrideFile)
 		},
 	}
 	pflags := cmd.PersistentFlags()
@@ -79,7 +84,7 @@ kubectl config use-context kind-"$1"
 
 # Install gloo-fed to cluster $1
 if [ "$5" == "" ]; then
-  glooctl install gateway enterprise --license-key=$4 --version=v1.10.8
+  glooctl install gateway enterprise --license-key=$4 --version=$3
 else
   glooctl install gateway enterprise --license-key=$4 --file $5
 fi
