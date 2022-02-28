@@ -24,12 +24,17 @@ func federation(opts *options.Options) *cobra.Command {
 			}
 			overrideFile := opts.Install.Federation.HelmChartOverride
 			latestGlooEEVersion, err := version.GetLatestEnterpriseVersion(false)
+			// Potentially override glooEE version with --version option
+			glooVersion := opts.Install.Version
+			if glooVersion == "" {
+				glooVersion = latestGlooEEVersion
+			}
 			if err != nil {
 				return eris.Wrapf(err, "Couldn't find latest Gloo Enterprise Version")
 			}
 			runner := common.NewShellRunner(os.Stdin, os.Stdout)
 			return runner.Run("bash", "-c", initGlooFedDemoScript, "init-demo.sh", "local", "remote",
-				latestGlooEEVersion, licenseKey, overrideFile)
+				glooVersion, licenseKey, overrideFile)
 		},
 	}
 	pflags := cmd.PersistentFlags()
@@ -78,13 +83,16 @@ EOF
 kubectl config use-context kind-"$1"
 
 # Install gloo-fed to cluster $1
-# TODO: remove v1.7.0-beta11 version after 1.7.0 release
 if [ "$5" == "" ]; then
-  glooctl install federation --license-key=$4 --version=v1.7.0-beta11
+  glooctl install gateway enterprise --license-key=$4 --version=$3
 else
-  glooctl install federation --license-key=$4 --file $5
+  glooctl install gateway enterprise --license-key=$4 --file $5
 fi
-kubectl -n gloo-fed rollout status deployment gloo-fed --timeout=1m || true
+kubectl -n gloo-system rollout status deployment gloo-fed --timeout=1m || true
+kubectl -n gloo-system rollout status deployment gloo --timeout=2m || true
+kubectl -n gloo-system rollout status deployment discovery --timeout=2m || true
+kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=2m || true
+kubectl -n gloo-system rollout status deployment gateway --timeout=2m || true
 
 # Install gloo to cluster $2
 kubectl config use-context kind-"$2"
@@ -117,35 +125,6 @@ glooctl create secret tls --name failover-downstream --certchain tls.crt --priva
 # Revert back to cluster context $1
 kubectl config use-context kind-"$1"
 
-# Install gloo-ee to cluster $1
-cat > basic-enterprise.yaml << EOF
-rateLimit:
-  enable: false
-global:
-  extensions:
-    extAuth:
-      enabled: false
-observability:
-  enabled: false
-apiServer:
-  enable: false
-prometheus:
-  enabled: false
-grafana:
-  defaultInstallationEnabled: false
-gloo:
-  gatewayProxies:
-    gatewayProxy:
-      service:
-        type: NodePort
-EOF
-glooctl install gateway enterprise --version $3 --values basic-enterprise.yaml --license-key=$4 --with-gloo-fed=false
-rm basic-enterprise.yaml
-kubectl -n gloo-system rollout status deployment gloo --timeout=2m || true
-kubectl -n gloo-system rollout status deployment discovery --timeout=2m || true
-kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=2m || true
-kubectl -n gloo-system rollout status deployment gateway --timeout=2m || true
-
 glooctl create secret tls --name failover-upstream --certchain mtls.crt --privatekey mtls.key
 rm mtls.key mtls.crt tls.crt tls.key
 
@@ -168,8 +147,8 @@ case $(uname) in
 esac
 
 # Register the gloo clusters
-glooctl cluster register --cluster-name kind-$1 --remote-context kind-$1 --local-cluster-domain-override $CLUSTER_DOMAIN_MGMT --federation-namespace gloo-fed
-glooctl cluster register --cluster-name kind-$2 --remote-context kind-$2 --local-cluster-domain-override $CLUSTER_DOMAIN_REMOTE --federation-namespace gloo-fed
+glooctl cluster register --cluster-name kind-$1 --remote-context kind-$1 --local-cluster-domain-override $CLUSTER_DOMAIN_MGMT --federation-namespace gloo-system
+glooctl cluster register --cluster-name kind-$2 --remote-context kind-$2 --local-cluster-domain-override $CLUSTER_DOMAIN_REMOTE --federation-namespace gloo-system
 
 echo "Registered gloo clusters kind-$1 and kind-$2"
 
@@ -448,7 +427,7 @@ apiVersion: fed.gloo.solo.io/v1
 kind: FederatedUpstream
 metadata:
   name: default-service-blue
-  namespace: gloo-fed
+  namespace: gloo-system
 spec:
   placement:
     clusters:
@@ -480,7 +459,7 @@ apiVersion: fed.gateway.solo.io/v1
 kind: FederatedVirtualService
 metadata:
   name: simple-route
-  namespace: gloo-fed
+  namespace: gloo-system
 spec:
   placement:
     clusters:
@@ -507,7 +486,7 @@ apiVersion: fed.solo.io/v1
 kind: FailoverScheme
 metadata:
   name: failover-test-scheme
-  namespace: gloo-fed
+  namespace: gloo-system
 spec:
   primary:
     clusterName: kind-$1
@@ -527,13 +506,13 @@ cat << EOF
 # We now have failover set up correctly!
 
 # To view the federated upstreams, run:
-kubectl get federatedupstream -n gloo-fed -oyaml
+kubectl get federatedupstream -n gloo-system -oyaml
 
 # To view the federated virtual services, run:
-kubectl get federatedvirtualservices -n gloo-fed -oyaml
+kubectl get federatedvirtualservices -n gloo-system -oyaml
 
 # To view the failover schemes, run:
-kubectl get failoverschemes -n gloo-fed -oyaml
+kubectl get failoverschemes -n gloo-system -oyaml
 
 # Wait for the Failover Scheme to be ACCEPTED
 
