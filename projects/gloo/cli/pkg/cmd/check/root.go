@@ -72,7 +72,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 					return err
 				}
 			} else {
-				printer.AppendMessage(fmt.Sprintf("No problems detected."))
+				printer.AppendMessage("No problems detected.")
 			}
 
 			CheckMulticlusterResources(opts)
@@ -347,7 +347,7 @@ func checkPods(opts *options.Options) error {
 		printer.AppendStatus("pods", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printer.AppendStatus("pods", fmt.Sprintf("OK"))
+	printer.AppendStatus("pods", "OK")
 	return nil
 }
 
@@ -405,7 +405,7 @@ func checkUpstreams(opts *options.Options, namespaces []string) ([]string, error
 		printer.AppendStatus("upstreams", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return nil, multiErr
 	}
-	printer.AppendStatus("upstreams", fmt.Sprintf("OK"))
+	printer.AppendStatus("upstreams", "OK")
 	return knownUpstreams, nil
 }
 
@@ -448,7 +448,7 @@ func checkUpstreamGroups(opts *options.Options, namespaces []string) error {
 		printer.AppendStatus("upstream groups", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printer.AppendStatus("upstream groups", fmt.Sprintf("OK"))
+	printer.AppendStatus("upstream groups", "OK")
 	return nil
 }
 
@@ -490,7 +490,7 @@ func checkAuthConfigs(opts *options.Options, namespaces []string) ([]string, err
 		printer.AppendStatus("auth configs", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return nil, multiErr
 	}
-	printer.AppendStatus("auth configs", fmt.Sprintf("OK"))
+	printer.AppendStatus("auth configs", "OK")
 	return knownAuthConfigs, nil
 }
 
@@ -530,7 +530,7 @@ func checkRateLimitConfigs(opts *options.Options, namespaces []string) ([]string
 		return nil, multiErr
 	}
 
-	printer.AppendStatus("rate limit configs", fmt.Sprintf("OK"))
+	printer.AppendStatus("rate limit configs", "OK")
 	return knownConfigs, nil
 }
 
@@ -575,7 +575,7 @@ func checkVirtualHostOptions(opts *options.Options, namespaces []string) ([]stri
 		printer.AppendStatus("VirtualHostOptions", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return nil, multiErr
 	}
-	printer.AppendStatus("VirtualHostOptions", fmt.Sprintf("OK"))
+	printer.AppendStatus("VirtualHostOptions", "OK")
 	return knownVhOpts, nil
 }
 
@@ -620,7 +620,7 @@ func checkRouteOptions(opts *options.Options, namespaces []string) ([]string, er
 		printer.AppendStatus("RouteOptions", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return nil, multiErr
 	}
-	printer.AppendStatus("RouteOptions", fmt.Sprintf("OK"))
+	printer.AppendStatus("RouteOptions", "OK")
 	return knownVhOpts, nil
 }
 
@@ -663,7 +663,7 @@ func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, kno
 						if us.GetUpstream() != nil {
 							if !cliutils.Contains(knownUpstreams, renderRef(us.GetUpstream())) {
 								// TODO warning message if using rejected or warning upstream
-								errMessage := fmt.Sprintf("Virtual service references unknown upstream: ")
+								errMessage := "Virtual service references unknown upstream: "
 								errMessage += fmt.Sprintf("(Virtual service: %s", renderMetadata(virtualService.GetMetadata()))
 								errMessage += fmt.Sprintf(" | Upstream: %s)", renderRef(us.GetUpstream()))
 								multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
@@ -678,7 +678,7 @@ func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, kno
 				// If the virtual service points to a specific, non-existent authconfig, it is not valid.
 				if ref != nil && !cliutils.Contains(knownConfigs, renderRef(ref)) {
 					// TODO: Virtual service references rejected or warning auth config
-					errMessage := fmt.Sprintf("Virtual service references unknown auth config:\n")
+					errMessage := "Virtual service references unknown auth config:\n"
 					errMessage += fmt.Sprintf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
 					errMessage += fmt.Sprintf("  Auth Config: %s\n", renderRef(ref))
 					return fmt.Errorf(errMessage)
@@ -689,7 +689,7 @@ func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, kno
 				// If the virtual host points to a specifc, non-existent VirtualHostOption, it is not valid.
 				for _, ref := range refs {
 					if ref != nil && !cliutils.Contains(knownOptions, renderRef(ref)) {
-						errMessage := fmt.Sprintf("Virtual service references unknown VirtualHostOption:\n")
+						errMessage := "Virtual service references unknown VirtualHostOption:\n"
 						errMessage += fmt.Sprintf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
 						errMessage += fmt.Sprintf("  VirtualHostOption: %s\n", renderRef(ref))
 						return fmt.Errorf(errMessage)
@@ -730,7 +730,7 @@ func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, kno
 				}
 				if !cliutils.Contains(knownConfigs, renderRef(resourceRef)) {
 					// TODO: check if references rate limit config with error or warning
-					errMessage := fmt.Sprintf("Virtual service references unknown rate limit config:\n")
+					errMessage := "Virtual service references unknown rate limit config:\n"
 					errMessage += fmt.Sprintf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
 					errMessage += fmt.Sprintf("  Rate Limit Config: %s\n", renderRef(resourceRef))
 					return fmt.Errorf(errMessage)
@@ -758,7 +758,7 @@ func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, kno
 		printer.AppendStatus("virtual services", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printer.AppendStatus("virtual services", fmt.Sprintf("OK"))
+	printer.AppendStatus("virtual services", "OK")
 	return nil
 }
 
@@ -800,7 +800,7 @@ func checkGateways(opts *options.Options, namespaces []string) error {
 		return multiErr
 	}
 
-	printer.AppendStatus("gateways", fmt.Sprintf("OK"))
+	printer.AppendStatus("gateways", "OK")
 	return nil
 }
 
@@ -853,14 +853,14 @@ func checkProxies(opts *options.Options, namespaces []string, glooNamespace stri
 		printer.AppendStatus("proxies", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printer.AppendStatus("proxies", fmt.Sprintf("OK"))
+	printer.AppendStatus("proxies", "OK")
 	return nil
 }
 
 func checkSecrets(opts *options.Options, namespaces []string) error {
 	printer.AppendCheck("Checking secrets... ")
 	var multiErr *multierror.Error
-	client, err := helpers.GetSecretClient(opts.Top.Ctx, 5*time.Second, namespaces)
+	client, err := helpers.GetSecretClient(opts.Top.Ctx, opts.Check.SecretClientTimeout, namespaces)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 		printer.AppendStatus("secrets", fmt.Sprintf("%v Errors!", multiErr.Len()))
@@ -878,7 +878,7 @@ func checkSecrets(opts *options.Options, namespaces []string) error {
 		printer.AppendStatus("secrets", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printer.AppendStatus("secrets", fmt.Sprintf("OK"))
+	printer.AppendStatus("secrets", "OK")
 	return nil
 }
 
