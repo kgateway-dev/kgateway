@@ -130,12 +130,12 @@ spec:
       {{- if $spec.podTemplate.nodeSelector }}
       nodeSelector:
       {{- range $key, $value := $spec.podTemplate.nodeSelector }}
-      {{ $key }}: {{ $value | quote }}
+        {{ $key }}: {{ $value | quote }}
       {{- end }}
       {{- end }}
       {{- if $spec.podTemplate.tolerations }}
       tolerations:
-      {{ toYaml $spec.podTemplate.tolerations | indent 6}}
+{{ toYaml $spec.podTemplate.tolerations | indent 6}}
       {{- end }}
       {{- if $spec.podTemplate.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ $spec.podTemplate.terminationGracePeriodSeconds }}
