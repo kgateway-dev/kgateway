@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4917
+    description: Fix gloo-fed demo (glooctl demo federation).
+
