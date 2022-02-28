@@ -28,6 +28,7 @@ func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
 func AddFederationDemoFlags(set *pflag.FlagSet, install *options.Install) {
 	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate Gloo Fed features")
 	set.StringVar(&install.Federation.HelmChartOverride, "file", "", "Install Gloo Fed from this Helm chart archive file rather than from a release")
+	set.StringVar(&install.Version, "version", "", "Version of Gloo Enterprise to install (defaults to latest)")
 }
 
 func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
