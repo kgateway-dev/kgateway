@@ -114,7 +114,7 @@ In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backe
 
 1. Deploy the Bookinfo sample application to the default namespace, which you will expose behind a GraphQL server embedded in Envoy.
    ```sh
-   k apply -f - <<EOF
+   kubectl apply -f - <<EOF
    apiVersion: apps/v1
    kind: Deployment
    metadata:
