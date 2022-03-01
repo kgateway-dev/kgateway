@@ -473,6 +473,12 @@ message RouteAction {
         // `traffic splitting (config_http_conn_man_route_table_traffic_splitting_split)`
         // for additional documentation.
         WeightedCluster weighted_clusters = 3;
+
+        // Route to the custom dynamic forward proxy envoy cluster.
+        // Envoy will route based on the DNS response (cached) or pause requests
+        // (for a configurable amount of time on the lister) until DNS has resolved.
+        // For more, see https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_proxy
+        google.protobuf.Empty dynamic_forward_proxy = 4;
     }
 
     enum ClusterNotFoundResponseCode {
