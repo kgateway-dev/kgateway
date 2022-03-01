@@ -18,18 +18,18 @@ k8s:
   clusterName: cluster.local
 namespace:
   create: true
-rbac:
-  create: true
+global:
+  glooRbac:
+    create: true
 settings:
   create: true
   integrations:
     knative:
       enabled: true
       version: 0.8.0
-      installKnative: true
       proxy:
-        httpPort: "80"
-        httpsPort: "443"
+        httpPort: 80
+        httpsPort: 443
         image:
           pullPolicy: Always
           registry: quay.io/solo-io
@@ -37,5 +37,3 @@ settings:
           tag: 0.18.9
         replicas: 1
         stats: true
-global:
-  pullPolicy: Always

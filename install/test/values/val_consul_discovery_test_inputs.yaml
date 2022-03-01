@@ -1,9 +1,9 @@
 settings:
   integrations:
     consulUpstreamDiscovery:
-      useTlsDiscovery: true
+      useTlsTagging: true
       tlsTagName: tag
       splitTlsServices: true
-      discoveryRootCa:
+      rootCa:
         name: testName
         namespace: testNamespace
