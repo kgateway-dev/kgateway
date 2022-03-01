@@ -88,4 +88,13 @@ message ConnectionConfig {
     // Additional options when handling HTTP requests upstream. These options will be applicable to
     // both HTTP1 and HTTP2 requests.
     HttpProtocolOptions common_http_protocol_options = 5;
+
+    message Http1ProtocolOptions {
+        // Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers.
+        // Note: Trailers must also be enabled at the gateway level in order for this option to take effect. 
+        bool enable_trailers = 1;
+    }
+
+    // Additional Options when handling HTTP requests upstream. These options will be applicable only to HTTP1 requests.
+    Http1ProtocolOptions http1_protocol_options = 6;
 }
