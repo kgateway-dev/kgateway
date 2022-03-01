@@ -962,6 +962,21 @@ func (m *Destination) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Destination_DynamicForwardProxy:
+		if _, ok := target.DestinationType.(*Destination_DynamicForwardProxy); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetDynamicForwardProxy()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDynamicForwardProxy()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetDynamicForwardProxy(), target.GetDynamicForwardProxy()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.DestinationType != target.DestinationType {

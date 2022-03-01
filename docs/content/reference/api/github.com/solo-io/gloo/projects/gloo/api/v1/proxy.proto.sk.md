@@ -362,6 +362,7 @@ Destinations define routable destinations for proxied requests.
 "upstream": .core.solo.io.ResourceRef
 "kube": .gloo.solo.io.KubernetesServiceDestination
 "consul": .gloo.solo.io.ConsulServiceDestination
+"dynamicForwardProxy": .google.protobuf.Empty
 "destinationSpec": .gloo.solo.io.DestinationSpec
 "subset": .gloo.solo.io.Subset
 
@@ -369,9 +370,10 @@ Destinations define routable destinations for proxied requests.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Route requests to a Gloo upstream. Only one of `upstream`, `kube`, or `consul` can be set. |
-| `kube` | [.gloo.solo.io.KubernetesServiceDestination](../proxy.proto.sk/#kubernetesservicedestination) | Route requests to a kubernetes service. Only one of `kube`, `upstream`, or `consul` can be set. |
-| `consul` | [.gloo.solo.io.ConsulServiceDestination](../proxy.proto.sk/#consulservicedestination) | Route requests to a consul service. Only one of `consul`, `upstream`, or `kube` can be set. |
+| `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Route requests to a Gloo upstream. Only one of `upstream`, `kube`, `consul`, or `dynamicForwardProxy` can be set. |
+| `kube` | [.gloo.solo.io.KubernetesServiceDestination](../proxy.proto.sk/#kubernetesservicedestination) | Route requests to a kubernetes service. Only one of `kube`, `upstream`, `consul`, or `dynamicForwardProxy` can be set. |
+| `consul` | [.gloo.solo.io.ConsulServiceDestination](../proxy.proto.sk/#consulservicedestination) | Route requests to a consul service. Only one of `consul`, `upstream`, `kube`, or `dynamicForwardProxy` can be set. |
+| `dynamicForwardProxy` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) |  Only one of `dynamicForwardProxy`, `upstream`, `kube`, or `consul` can be set. |
 | `destinationSpec` | [.gloo.solo.io.DestinationSpec](../options.proto.sk/#destinationspec) | Some upstreams utilize options which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources. |
 | `subset` | [.gloo.solo.io.Subset](../subset.proto.sk/#subset) | If specified, traffic will only be routed to a subset of the upstream. If upstream doesn't contain the specified subset, we will fallback to normal upstream routing. |
 

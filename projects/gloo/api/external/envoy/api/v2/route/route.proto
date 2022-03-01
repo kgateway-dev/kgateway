@@ -16,6 +16,7 @@ import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
 
 import "validate/validate.proto";
 import "extproto/ext.proto";
@@ -478,7 +479,7 @@ message RouteAction {
         // Envoy will route based on the DNS response (cached) or pause requests
         // (for a configurable amount of time on the lister) until DNS has resolved.
         // For more, see https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_proxy
-        google.protobuf.Empty dynamic_forward_proxy = 4;
+        google.protobuf.Empty dynamic_forward_proxy = 30;
     }
 
     enum ClusterNotFoundResponseCode {

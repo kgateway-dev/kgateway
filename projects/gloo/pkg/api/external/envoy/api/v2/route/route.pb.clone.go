@@ -17,6 +17,8 @@ import (
 
 	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
 
+	github_com_golang_protobuf_ptypes_empty "github.com/golang/protobuf/ptypes/empty"
+
 	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
 
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
@@ -663,6 +665,18 @@ func (m *RouteAction) Clone() proto.Message {
 		} else {
 			target.ClusterSpecifier = &RouteAction_WeightedClusters{
 				WeightedClusters: proto.Clone(m.GetWeightedClusters()).(*WeightedCluster),
+			}
+		}
+
+	case *RouteAction_DynamicForwardProxy:
+
+		if h, ok := interface{}(m.GetDynamicForwardProxy()).(clone.Cloner); ok {
+			target.ClusterSpecifier = &RouteAction_DynamicForwardProxy{
+				DynamicForwardProxy: h.Clone().(*github_com_golang_protobuf_ptypes_empty.Empty),
+			}
+		} else {
+			target.ClusterSpecifier = &RouteAction_DynamicForwardProxy{
+				DynamicForwardProxy: proto.Clone(m.GetDynamicForwardProxy()).(*github_com_golang_protobuf_ptypes_empty.Empty),
 			}
 		}
 

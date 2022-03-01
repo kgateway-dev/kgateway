@@ -622,6 +622,18 @@ func (m *Destination) Clone() proto.Message {
 			}
 		}
 
+	case *Destination_DynamicForwardProxy:
+
+		if h, ok := interface{}(m.GetDynamicForwardProxy()).(clone.Cloner); ok {
+			target.DestinationType = &Destination_DynamicForwardProxy{
+				DynamicForwardProxy: h.Clone().(*github_com_golang_protobuf_ptypes_empty.Empty),
+			}
+		} else {
+			target.DestinationType = &Destination_DynamicForwardProxy{
+				DynamicForwardProxy: proto.Clone(m.GetDynamicForwardProxy()).(*github_com_golang_protobuf_ptypes_empty.Empty),
+			}
+		}
+
 	}
 
 	return target

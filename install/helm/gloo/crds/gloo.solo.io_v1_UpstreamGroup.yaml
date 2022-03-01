@@ -164,6 +164,9 @@ spec:
                                   type: object
                               type: object
                           type: object
+                        dynamicForwardProxy:
+                          maxProperties: 0
+                          type: object
                         kube:
                           properties:
                             port:

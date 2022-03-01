@@ -20,15 +20,12 @@ require (
 	github.com/envoyproxy/go-control-plane v0.10.1
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
 	github.com/fatih/color v1.10.0 // indirect
-	github.com/fgrosse/zaptest v1.1.0
-	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.6
 	github.com/go-openapi/swag v0.19.15
 	github.com/go-swagger/go-swagger v0.21.0
-	github.com/gogo/googleapis v1.3.2
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2

@@ -313,6 +313,8 @@ message Destination {
 
         // Route requests to a consul service
         ConsulServiceDestination consul = 12;
+
+        google.protobuf.Empty dynamic_forward_proxy = 13;
     }
 
     // Note: When in the context of a TCP gateway the below 2 fields will be ignored
