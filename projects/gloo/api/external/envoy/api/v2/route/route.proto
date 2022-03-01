@@ -462,7 +462,7 @@ message RouteAction {
         // header is not found or the referenced cluster does not exist, Envoy will
         // return a 404 response.
         //
-                //
+        //
         //   Internally, Envoy always uses the HTTP/2 *:authority* header to represent the HTTP/1
         //   *Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
         string cluster_header = 2 [(validate.rules).string.min_bytes = 1];
