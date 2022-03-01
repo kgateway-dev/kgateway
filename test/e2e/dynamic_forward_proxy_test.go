@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"io"
 	"net/http"
 	"time"
@@ -74,11 +76,40 @@ var _ = Describe("dynamic forward proxy", func() {
 
 	JustBeforeEach(func() {
 
-		// write a virtual service so we have a proxy to our test upstream
-		testVs := getTrivialVirtualService(writeNamespace)
+		removeMeUs := &gloov1.Upstream{Metadata: &core.Metadata{
+			Name:            "placeholder",
+			Namespace:       "gloo-system",
+		}}
+		_, err := testClients.UpstreamClient.Write(removeMeUs, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 
 		// write a virtual service so we have a proxy to our test upstream
-		_, err := testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+		testVs := getTrivialVirtualService(writeNamespace)
+		testVs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_DynamicForwardProxy{DynamicForwardProxy: &empty.Empty{}}
+
+		// TODO(kdorosh) move to before each
+		//testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{}
+		//testVs.VirtualHost.Routes[0].Options.StagedTransformations = &transformation.TransformationStages{
+		//	Early: &transformation.RequestResponseTransformations{
+		//		RequestTransforms: []*transformation.RequestMatch{{
+		//			Matcher:               nil,
+		//			ClearRouteCache:       true,
+		//			RequestTransformation: &transformation.Transformation{
+		//				TransformationType: &transformation.Transformation_TransformationTemplate{
+		//					TransformationTemplate: &envoytransformation.TransformationTemplate{
+		//						ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+		//						Headers: map[string]*envoytransformation.InjaTemplate{
+		//							"x-rewrite-me": {Text: "postman-echo.com"},
+		//						},
+		//					},
+		//				},
+		//			},
+		//		}},
+		//	},
+		//}
+
+		// write a virtual service so we have a proxy to our test upstream
+		_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
 		checkProxy()
@@ -92,22 +123,23 @@ var _ = Describe("dynamic forward proxy", func() {
 		cancel()
 	})
 
-	testRequest := func(jsonStr string) string {
+	testRequest := func(dest string) string {
 		By("Make request")
 		responseBody := ""
 		EventuallyWithOffset(1, func() error {
 			var client http.Client
 			scheme := "http"
-			var json = []byte(jsonStr)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s://%s:%d/get", scheme, "localhost", defaults.HttpPort), nil)
 			if err != nil {
 				return err
 			}
 
 			// TODO(kdorosh) ensure works with transformations for via use case
+			// use https://github.com/envoyproxy/envoy/blob/935868923883b731f81140c613e8cc3b78e023f9/api/envoy/extensions/filters/http/dynamic_forward_proxy/v3/dynamic_forward_proxy.proto#L39
 			//req.Header.Set(":authority", "jsonplaceholder.typicode.com")
+			req.Header.Set("x-rewrite-me", dest)
 
 			res, err := client.Do(req)
 			if err != nil {
@@ -123,14 +155,24 @@ var _ = Describe("dynamic forward proxy", func() {
 			defer res.Body.Close()
 			responseBody = p.String()
 			return nil
-		}, "10s", ".1s").Should(BeNil())
+		}, "10s", "3s").Should(BeNil()) // TODO(kdorosh) make .1s interval
 		return responseBody
 	}
 
-	FIt("should proxy http", func() {
-		jsonStr := `{"value":"Hello, world!"}`
-		testReq := testRequest(jsonStr)
-		Expect(testReq).Should(ContainSubstring(jsonStr))
+	It("should proxy http", func() {
+		destEcho := `postman-echo.com`
+		expectedSubstr := `"host":"postman-echo.com"`
+		testReq := testRequest(destEcho)
+		Expect(testReq).Should(ContainSubstring(expectedSubstr))
+	})
+
+	Context("with transformation can grab and set header to rewrite authority", func() {
+		FIt("should proxy http", func() {
+			destEcho := `postman-echo.com`
+			expectedSubstr := `"host":"postman-echo.com"`
+			testReq := testRequest(destEcho)
+			Expect(testReq).Should(ContainSubstring(expectedSubstr))
+		})
 	})
 
 })

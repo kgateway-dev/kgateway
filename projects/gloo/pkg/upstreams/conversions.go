@@ -23,6 +23,13 @@ func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
 		ref = kubernetes.DestinationToUpstreamRef(d.Kube)
 	case *v1.Destination_Consul:
 		ref = consul.DestinationToUpstreamRef(d.Consul)
+	case *v1.Destination_DynamicForwardProxy:
+		ref = &core.ResourceRef{
+			Name:      "placeholder",
+			Namespace: "gloo-system",
+		}
+		// TODO(kdorosH)
+		//ref = consul.DestinationToUpstreamRef(d.Consul)
 	default:
 		return nil, eris.Errorf("no destination type specified")
 	}

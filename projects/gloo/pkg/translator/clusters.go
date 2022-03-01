@@ -223,6 +223,10 @@ func createLbConfig(upstream *v1.Upstream) *envoy_config_cluster_v3.Cluster_LbSu
 
 // TODO: add more validation here
 func validateCluster(c *envoy_config_cluster_v3.Cluster) error {
+
+	// TODO(kdorosh) fixme
+	return nil
+
 	if c.GetClusterType() != nil {
 		// TODO(yuval-k): this is a custom cluster, we cant validate it for now.
 		return nil
