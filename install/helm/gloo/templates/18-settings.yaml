@@ -59,7 +59,7 @@ spec:
   {{- toYaml .Values.settings.integrations.consul | nindent 4 }}
   {{- end }}
   {{- if .Values.settings.integrations.consulUpstreamDiscovery }}
-  consulUpstreamDiscovery:
+  consulDiscovery:
   {{- toYaml .Values.settings.integrations.consulUpstreamDiscovery | nindent 4 }}
   {{- end }}
 
@@ -118,7 +118,7 @@ spec:
 {{- end }}
 
 {{- if .Values.settings.rateLimit }}
-  rateLimit:
+  ratelimit:
 {{- toYaml .Values.settings.rateLimit | nindent 4 }}
 {{- end }}
 
