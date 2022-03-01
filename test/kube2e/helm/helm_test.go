@@ -256,7 +256,7 @@ func makeUnstructured(yam string) *unstructured.Unstructured {
 	return runtimeObj.(*unstructured.Unstructured)
 }
 
-func makeUnstructureFromTemplateFile(fixtureName string, values interface{}) *unstructured.Unstructured {
+func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *unstructured.Unstructured {
 	tmpl, err := template.ParseFiles(fixtureName)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	var b bytes.Buffer
