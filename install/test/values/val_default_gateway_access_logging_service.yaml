@@ -3,6 +3,6 @@ gatewayProxies:
     gatewaySettings:
       accessLoggingService:
         accessLog:
-          - fileSink:
-              path: /dev/stdout
-              stringFormat: ""
+        - fileSink:
+            path: /dev/stdout
+            stringFormat: ""
