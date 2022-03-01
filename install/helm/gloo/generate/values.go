@@ -70,6 +70,7 @@ type PodSpec struct {
 	NodeSelector  map[string]string      `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
 	Tolerations   []*appsv1.Toleration   `json:"tolerations,omitempty"`
 	Affinity      map[string]interface{} `json:"affinity,omitempty"`
+	AntiAffinity  map[string]interface{} `json:"antiAffinity,omitempty"`
 	HostAliases   []interface{}          `json:"hostAliases,omitempty"`
 }
 
