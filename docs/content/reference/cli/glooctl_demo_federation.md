@@ -19,6 +19,7 @@ glooctl demo federation [flags]
 ```
   -h, --help                 help for federation
       --license-key string   License key to activate Gloo Fed features
+      --version string       Version of Gloo Enterprise to install (defaults to latest)
 ```
 
 ### Options inherited from parent commands

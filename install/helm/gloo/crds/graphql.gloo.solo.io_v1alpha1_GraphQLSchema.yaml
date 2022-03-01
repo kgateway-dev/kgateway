@@ -23,6 +23,10 @@ spec:
         properties:
           spec:
             properties:
+              allowedQueryHashes:
+                items:
+                  type: string
+                type: array
               executableSchema:
                 properties:
                   executor:
@@ -41,24 +45,7 @@ spec:
                                         methodName:
                                           type: string
                                         outgoingMessageJson:
-                                          properties:
-                                            boolValue:
-                                              type: boolean
-                                            listValue:
-                                              items:
-                                                type: object
-                                              type: array
-                                            nullValue:
-                                              type: string
-                                              x-kubernetes-int-or-string: true
-                                            numberValue:
-                                              type: number
-                                            stringValue:
-                                              type: string
-                                            structValue:
-                                              type: object
-                                              x-kubernetes-preserve-unknown-fields: true
-                                          type: object
+                                          x-kubernetes-preserve-unknown-fields: true
                                         requestMetadata:
                                           additionalProperties:
                                             type: string
@@ -81,24 +68,7 @@ spec:
                                     request:
                                       properties:
                                         body:
-                                          properties:
-                                            boolValue:
-                                              type: boolean
-                                            listValue:
-                                              items:
-                                                type: object
-                                              type: array
-                                            nullValue:
-                                              type: string
-                                              x-kubernetes-int-or-string: true
-                                            numberValue:
-                                              type: number
-                                            stringValue:
-                                              type: string
-                                            structValue:
-                                              type: object
-                                              x-kubernetes-preserve-unknown-fields: true
-                                          type: object
+                                          x-kubernetes-preserve-unknown-fields: true
                                         headers:
                                           additionalProperties:
                                             type: string
@@ -152,6 +122,12 @@ spec:
                       type: object
                       x-kubernetes-preserve-unknown-fields: true
                     type: object
+                type: object
+              persistedQueryCacheConfig:
+                properties:
+                  cacheSize:
+                    format: int32
+                    type: integer
                 type: object
               statPrefix:
                 nullable: true
