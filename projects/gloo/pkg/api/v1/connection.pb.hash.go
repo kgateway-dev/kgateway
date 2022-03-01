@@ -123,6 +123,26 @@ func (m *ConnectionConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetHttp1ProtocolOptions()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Http1ProtocolOptions")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetHttp1ProtocolOptions(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Http1ProtocolOptions")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -246,6 +266,27 @@ func (m *ConnectionConfig_HttpProtocolOptions) Hash(hasher hash.Hash64) (uint64,
 	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetHeadersWithUnderscoresAction())
+	if err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ConnectionConfig_Http1ProtocolOptions) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ConnectionConfig_Http1ProtocolOptions")); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetEnableTrailers())
 	if err != nil {
 		return 0, err
 	}
