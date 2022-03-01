@@ -70,6 +70,14 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		out.CommonHttpProtocolOptions = commonHttpProtocolOptions
 	}
 
+	if cfg.GetHttp1ProtocolOptions() != nil {
+		http1ProtocolOptions, err := convertHttp1ProtocolOptions(cfg.GetHttp1ProtocolOptions())
+		if err != nil {
+			return err
+		}
+		out.HttpProtocolOptions = http1ProtocolOptions
+	}
+
 	return nil
 }
 
@@ -112,6 +120,16 @@ func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*
 	default:
 		return &envoy_config_core_v3.HttpProtocolOptions{},
 			eris.Errorf("invalid HeadersWithUnderscoresAction %v in CommonHttpProtocolOptions", hpo.GetHeadersWithUnderscoresAction())
+	}
+
+	return out, nil
+}
+
+func convertHttp1ProtocolOptions(hpo *v1.ConnectionConfig_Http1ProtocolOptions) (*envoy_config_core_v3.Http1ProtocolOptions, error) {
+	out := &envoy_config_core_v3.Http1ProtocolOptions{}
+
+	if hpo.GetEnableTrailers() {
+		out.EnableTrailers = hpo.GetEnableTrailers()
 	}
 
 	return out, nil

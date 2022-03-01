@@ -95,6 +95,14 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		out.GetHttpProtocolOptions().AllowChunkedLength = in.GetAllowChunkedLength()
 	}
 
+	if in.GetEnableTrailers() {
+		if out.GetHttpProtocolOptions() == nil {
+			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
+		}
+
+		out.GetHttpProtocolOptions().EnableTrailers = in.GetEnableTrailers()
+	}
+
 	if in.GetIdleTimeout() != nil {
 		if out.GetCommonHttpProtocolOptions() == nil {
 			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}

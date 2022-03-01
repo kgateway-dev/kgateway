@@ -113,6 +113,7 @@ var _ = Describe("Plugin", func() {
 			ServerHeaderTransformation:   hcm.HttpConnectionManagerSettings_OVERWRITE,
 			PathWithEscapedSlashesAction: hcm.HttpConnectionManagerSettings_REJECT_REQUEST,
 			AllowChunkedLength:           true,
+			EnableTrailers:               true,
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
@@ -135,6 +136,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetProperCaseWords()).ToNot(BeNil()) // expect proper case words is set
 		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetStatefulFormatter()).To(BeNil())  // ...which makes stateful formatter nil
 		Expect(cfg.HttpProtocolOptions.GetAllowChunkedLength()).To(BeTrue())                     // ...which makes stateful formatter nil
+		Expect(cfg.HttpProtocolOptions.GetEnableTrailers()).To(BeTrue())
 		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(settings.DefaultHostForHttp_10))
 		Expect(cfg.PreserveExternalRequestId).To(Equal(settings.PreserveExternalRequestId))
 
