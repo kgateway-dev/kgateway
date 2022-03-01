@@ -173,6 +173,16 @@ static_resources:
       typed_config:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: sts.amazonaws.com
+  - name: dynamic_forward_proxy_cluster
+    connect_timeout: 5.000s
+    lb_policy: CLUSTER_PROVIDED
+    cluster_type:
+      name: envoy.clusters.dynamic_forward_proxy
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.clusters.dynamic_forward_proxy.v3.ClusterConfig
+        dns_cache_config:
+          name: dynamic_forward_proxy_cache_config
+          dns_lookup_family: V4_ONLY
 dynamic_resources:
   ads_config:
     transport_api_version: {{ .ApiVersion }}
@@ -578,7 +588,7 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 	}
 
 	image := "quay.io/solo-io/gloo-envoy-wrapper:" + envoyImageTag
-	args := []string{"run", "--rm", "--name", containerName,
+	args := []string{"run", "--name", containerName,
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpPort, defaults.HttpPort),
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpsPort, defaults.HttpsPort),
 		"-p", fmt.Sprintf("%d:%d", defaults.HybridPort, defaults.HybridPort),
