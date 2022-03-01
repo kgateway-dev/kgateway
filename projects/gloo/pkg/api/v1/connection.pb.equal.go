@@ -90,6 +90,16 @@ func (m *ConnectionConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetHttp1ProtocolOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttp1ProtocolOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttp1ProtocolOptions(), target.GetHttp1ProtocolOptions()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -187,6 +197,34 @@ func (m *ConnectionConfig_HttpProtocolOptions) Equal(that interface{}) bool {
 	}
 
 	if m.GetHeadersWithUnderscoresAction() != target.GetHeadersWithUnderscoresAction() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ConnectionConfig_Http1ProtocolOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ConnectionConfig_Http1ProtocolOptions)
+	if !ok {
+		that2, ok := that.(ConnectionConfig_Http1ProtocolOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetEnableTrailers() != target.GetEnableTrailers() {
 		return false
 	}
 
