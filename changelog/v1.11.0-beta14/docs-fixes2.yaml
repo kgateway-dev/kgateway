@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Fixes various issues with the docs, such as removing NATS support.
