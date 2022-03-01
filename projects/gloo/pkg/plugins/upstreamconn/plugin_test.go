@@ -116,6 +116,23 @@ var _ = Describe("Plugin", func() {
 		Expect(*outChpo).To(Equal(expectedValue))
 	})
 
+	It("Should set Http1ProtocolOptions", func() {
+		upstream.ConnectionConfig = &v1.ConnectionConfig{
+			Http1ProtocolOptions: &v1.ConnectionConfig_Http1ProtocolOptions{
+				EnableTrailers: true,
+			},
+		}
+
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		outHpo := out.GetHttpProtocolOptions()
+		expectedValue := envoy_config_core_v3.Http1ProtocolOptions{
+			EnableTrailers: true,
+		}
+
+		Expect(*outHpo).To(Equal(expectedValue))
+	})
+
 	It("should error setting CommonHttpProtocolOptions when an invalid enum value is used", func() {
 		upstream.ConnectionConfig = &v1.ConnectionConfig{
 			CommonHttpProtocolOptions: &v1.ConnectionConfig_HttpProtocolOptions{
