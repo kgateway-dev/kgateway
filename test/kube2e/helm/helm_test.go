@@ -217,7 +217,7 @@ var _ = Describe("Kube2e: helm", func() {
 					return nil
 				}
 
-				templatedSettings := makeUnstructureFromTemplateFile(settingsFixtureFile, namespace)
+				templatedSettings := makeUnstructuredFromTemplateFile(settingsFixtureFile, namespace)
 				settingsBytes, err := templatedSettings.MarshalJSON()
 
 				// Apply the fixture
