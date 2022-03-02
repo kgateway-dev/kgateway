@@ -20,7 +20,7 @@ Gloo Edge is a feature-rich, Kubernetes-native ingress controller, and next-gene
 
 * **Function-level routing allows integration of legacy applications, microservices and serverless**: Gloo Edge can route requests directly to _functions_, which can be: a serverless function call (e.g. Lambda, Google Cloud Function, OpenFaaS function, etc.); an API call on a microservice or a legacy service (e.g. a REST API call, OpenAPI operation, XML/SOAP request etc.); or publishing to a message queue. This unique ability is what makes Gloo Edge the only API gateway that supports hybrid apps, as well as the only one that does not tie the user to a specific paradigm.
 
-* **Gloo Edge incorporates vetted open-source projects to provide broad functionality**: Gloo Edge supports high-quality features by integrating with top open-source projects, including gRPC, GraphQL, OpenTracing, NATS and more. Gloo Edge's architecture allows rapid integration of future popular open-source projects as they emerge.
+* **Gloo Edge incorporates vetted open-source projects to provide broad functionality**: Gloo Edge supports high-quality features by integrating with top open-source projects, including gRPC, GraphQL, OpenTracing, and more. Gloo Edge's architecture allows rapid integration of future popular open-source projects as they emerge.
 
 * **Full automated discovery lets users move fast**: Upon launch, Gloo Edge creates a catalog of all available destinations, and continuously maintains it up to date. This takes the responsibility for 'bookkeeping' away from the developers, and guarantees that new features become available as soon as they are ready. Gloo Edge discovers across IaaS, PaaS and FaaS providers, as well as Swagger, gRPC, and GraphQL.
 
@@ -56,7 +56,7 @@ Gloo Edge makes it easy to solve your challenges of managing ingress traffic int
 
 * **Integration of legacy applications**: Gloo Edge can route requests directly to _functions_, an API call on a microservice or a legacy service, or publishing to a message queue. This unique ability makes Gloo Edge the only API gateway supporting hybrid apps without tying the user to a specific paradigm.
 
-* **Incorporate vetted open-source projects for broad functionality**: Gloo Edge support high-quality features by integrating with top open-source projects, including gRPC, GraphQL, OpenTracing, NATS and more. Gloo Edge's architecture allows rapid integration of future popular open-source projects as they emerge.
+* **Incorporate vetted open-source projects for broad functionality**: Gloo Edge support high-quality features by integrating with top open-source projects, including gRPC, GraphQL, OpenTracing, and more. Gloo Edge's architecture allows rapid integration of future popular open-source projects as they emerge.
 
 * **Fully automated discovery lets users move fast**: Upon launch, Gloo Edge creates a catalog of all available destinations, and continuously maintains it up to date. Gloo Edge discovers across IaaS, PaaS and FaaS providers, as well as Swagger, gRPC, and GraphQL.
 

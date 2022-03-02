@@ -35,7 +35,7 @@ Gloo Edge is a high-performance, plugin-extendable, platform-agnostic API Gatewa
   - Global ExtAuth Settings: {{< protobuf name="enterprise.gloo.solo.io.Settings" >}}
   
 - RateLimit
-  - RateLimitConfig: {{< protobuf name="ratelimit.solo.io.RateLimitConfig" >}}
+  - RateLimitConfig: {{< protobuf name="ratelimit.api.solo.io.RateLimitConfig" >}}
 
 <!-- Start of HubSpot Embed Code -->
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
