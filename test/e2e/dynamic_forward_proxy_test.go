@@ -99,7 +99,7 @@ var _ = Describe("dynamic forward proxy", func() {
 			Early: &transformation.RequestResponseTransformations{
 				RequestTransforms: []*transformation.RequestMatch{{
 					Matcher:         nil,
-					ClearRouteCache: true,
+					//ClearRouteCache: true,
 					RequestTransformation: &transformation.Transformation{
 						TransformationType: &transformation.Transformation_TransformationTemplate{
 							TransformationTemplate: &envoytransformation.TransformationTemplate{

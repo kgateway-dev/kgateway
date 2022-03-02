@@ -175,7 +175,7 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params)
 	})
 
 	httpConnectionManager.HttpFilters = append(httpConnectionManager.GetHttpFilters(), &envoyhttp.HttpFilter{
-		Name: "envoy.router",
+		Name: "envoy.filters.http.router",
 	})
 
 	// 4. Generate the typedConfig for the HCM
