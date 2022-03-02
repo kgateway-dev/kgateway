@@ -3841,6 +3841,17 @@ metadata:
 						testManifest.ExpectServiceAccount(discoveryServiceAccount)
 					})
 
+					It("is not created when service is disabled", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.enabled=false",
+							},
+						})
+						testManifest.ExpectUnstructured(
+							discoveryServiceAccount.Kind,
+							discoveryServiceAccount.Namespace,
+							discoveryServiceAccount.Name).To(BeNil())
+					})
 				})
 
 				Context("discovery deployment", func() {
