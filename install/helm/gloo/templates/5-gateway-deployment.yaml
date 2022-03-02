@@ -54,7 +54,7 @@ spec:
 {{ toYaml .Values.gateway.deployment.resources | indent 10}}
 {{- end}}
 
-{{- if or (.Values.gateway.validation.enabled) (.Values.global.glooStats.podMonitor) }}
+{{- if or (.Values.gateway.validation.enabled) (.Values.global.glooStats.podMonitorEnabled) }}
         ports:
 {{- end}}
 {{- if .Values.gateway.validation.enabled }}
