@@ -669,7 +669,7 @@ type isHttpConnectionManagerSettings_HeaderFormat interface {
 }
 
 type HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat struct {
-	// Formats the header by proper casing words: the first character and any character following
+	// Formats the RESPONSE HEADER by proper casing words: the first character and any character following
 	// a special character will be capitalized if it's an alpha character. For example,
 	// "content-type" becomes "Content-Type", and "foo$b#$are" becomes "Foo$B#$Are".
 	// Note that while this results in most headers following conventional casing, certain headers
@@ -679,7 +679,7 @@ type HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat struct {
 
 type HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat struct {
 	// Generates configuration for a stateful formatter extension that allows using received headers to
-	// affect the output of encoding headers. Specifically: preserving case during proxying.
+	// affect the output of encoding headers. Specifically: preserving RESPONSE HEADER case during proxying.
 	PreserveCaseHeaderKeyFormat bool `protobuf:"varint,31,opt,name=preserve_case_header_key_format,json=preserveCaseHeaderKeyFormat,proto3,oneof"`
 }
 
