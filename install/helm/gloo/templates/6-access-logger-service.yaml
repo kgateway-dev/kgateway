@@ -15,7 +15,7 @@ spec:
     targetPort: {{ .Values.accessLogger.port }}
     protocol: TCP
     name: http
-{{- if .Values.global.glooStats.serviceMonitor }}
+{{- if .Values.global.glooStats.serviceMonitorEnabled }}
   - name: http-monitoring
     port: 9091
 {{- end }}
