@@ -3,10 +3,11 @@ package grpc
 import (
 	"context"
 	"encoding/base64"
-	"github.com/hashicorp/go-multierror"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-multierror"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
