@@ -41,7 +41,50 @@ Explore GraphQL service discovery with the Pet Store sample application.
 
 1. Start by deploying the Pet Store sample application, which you will expose behind a GraphQL server embedded in Envoy.
    ```sh
-   kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+   kubectl apply -f - <<EOF
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     labels:
+       app: petstore
+     name: petstore
+     namespace: default
+   spec:
+     selector:
+       matchLabels:
+         app: petstore
+     replicas: 1
+     template:
+       metadata:
+         labels:
+           app: petstore
+       spec:
+         containers:
+         - image: openapitools/openapi-petstore
+           name: petstore
+           env:
+             - name: DISABLE_OAUTH
+               value: "1"
+             - name: DISABLE_API_KEY
+               value: "1"
+           ports:
+           - containerPort: 8080
+             name: http
+   ---
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: petstore
+     namespace: default
+     labels:
+       service: petstore
+   spec:
+     ports:
+     - port: 8080
+       protocol: TCP
+     selector:
+       app: petstore
+   EOF
    ```
    Optional: You can [create a route and send a `/GET` request to `/api/pets` of this service]({{% versioned_link_path fromRoot="/guides/security/auth/custom_auth/#setup" %}}), which returns the following unfiltered JSON output:
    ```json
