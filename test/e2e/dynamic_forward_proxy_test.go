@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
@@ -24,7 +25,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("dynamic forward proxy", func() {
+var _ = FDescribe("dynamic forward proxy", func() {
 
 	var (
 		ctx            context.Context
@@ -32,6 +33,7 @@ var _ = Describe("dynamic forward proxy", func() {
 		testClients    services.TestClients
 		envoyInstance  *services.EnvoyInstance
 		writeNamespace = defaults.GlooSystem
+		testVs         *gatewayv1.VirtualService
 	)
 
 	checkProxy := func() {
@@ -78,41 +80,19 @@ var _ = Describe("dynamic forward proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
+
+		// write a virtual service so we have a proxy to our test upstream
+		testVs = getTrivialVirtualService(writeNamespace)
+		testVs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_DynamicForwardProxy{DynamicForwardProxy: &empty.Empty{}}
 	})
 
 	JustBeforeEach(func() {
-
 		removeMeUs := &gloov1.Upstream{Metadata: &core.Metadata{
 			Name:      "placeholder",
 			Namespace: "gloo-system",
 		}}
 		_, err := testClients.UpstreamClient.Write(removeMeUs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-
-		// write a virtual service so we have a proxy to our test upstream
-		testVs := getTrivialVirtualService(writeNamespace)
-		testVs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_DynamicForwardProxy{DynamicForwardProxy: &empty.Empty{}}
-
-		// TODO(kdorosh) move to before each
-		testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{}
-		testVs.VirtualHost.Routes[0].Options.StagedTransformations = &transformation.TransformationStages{
-			Early: &transformation.RequestResponseTransformations{
-				RequestTransforms: []*transformation.RequestMatch{{
-					Matcher:         nil,
-					//ClearRouteCache: true,
-					RequestTransformation: &transformation.Transformation{
-						TransformationType: &transformation.Transformation_TransformationTemplate{
-							TransformationTemplate: &envoytransformation.TransformationTemplate{
-								ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-								Headers: map[string]*envoytransformation.InjaTemplate{
-									"x-rewrite-me": {Text: "postman-echo.com"},
-								},
-							},
-						},
-					},
-				}},
-			},
-		}
 
 		// write a virtual service so we have a proxy to our test upstream
 		_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
@@ -129,7 +109,8 @@ var _ = Describe("dynamic forward proxy", func() {
 		cancel()
 	})
 
-	testRequest := func(dest string) string {
+	// TODO(kdorosh) note in API that (auto) host rewrite doesn't work and that custom cluster DFP rewrite must be used
+	testRequest := func(dest string, updateReq func(r *http.Request)) string {
 		By("Make request")
 		responseBody := ""
 		EventuallyWithOffset(1, func() error {
@@ -141,12 +122,9 @@ var _ = Describe("dynamic forward proxy", func() {
 			if err != nil {
 				return err
 			}
-
-			// TODO(kdorosh) ensure works with transformations for via use case
-			// use https://github.com/envoyproxy/envoy/blob/935868923883b731f81140c613e8cc3b78e023f9/api/envoy/extensions/filters/http/dynamic_forward_proxy/v3/dynamic_forward_proxy.proto#L39
-			//req.Header.Set(":authority", "jsonplaceholder.typicode.com")
-			//req.Header.Set("x-rewrite-me", dest)
-
+			if updateReq != nil {
+				updateReq(req)
+			}
 			res, err := client.Do(req)
 			if err != nil {
 				return err
@@ -165,18 +143,46 @@ var _ = Describe("dynamic forward proxy", func() {
 		return responseBody
 	}
 
-	It("should proxy http", func() {
+	// simpler e2e test without transformation to validate basic behavior
+	It("should proxy http if dynamic forward proxy header provided on request", func() {
 		destEcho := `postman-echo.com`
 		expectedSubstr := `"host":"postman-echo.com"`
-		testReq := testRequest(destEcho)
+		testReq := testRequest(destEcho, func(r *http.Request) {
+			r.Header.Set("x-rewrite-me", destEcho)
+		})
 		Expect(testReq).Should(ContainSubstring(expectedSubstr))
 	})
 
-	Context("with transformation can grab and set header to rewrite authority", func() {
-		FIt("should proxy http", func() {
+	Context("with transformation can set dynamic forward proxy header to rewrite authority", func() {
+
+		BeforeEach(func() {
+			testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{}
+			testVs.VirtualHost.Routes[0].Options.StagedTransformations = &transformation.TransformationStages{
+				Early: &transformation.RequestResponseTransformations{
+					RequestTransforms: []*transformation.RequestMatch{{
+						Matcher: nil,
+						//ClearRouteCache: true,
+						RequestTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &envoytransformation.TransformationTemplate{
+									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+									Headers: map[string]*envoytransformation.InjaTemplate{
+										"x-rewrite-me": {Text: "postman-echo.com"},
+									},
+								},
+							},
+						},
+					}},
+				},
+			}
+		})
+
+		// This is an important test since the most common use case here will be to grab information from the
+		// request using a transformation and use that to determine the upstream destination to route to
+		It("should proxy http", func() {
 			destEcho := `postman-echo.com`
 			expectedSubstr := `"host":"postman-echo.com"`
-			testReq := testRequest(destEcho)
+			testReq := testRequest(destEcho, nil)
 			Expect(testReq).Should(ContainSubstring(expectedSubstr))
 		})
 	})
