@@ -24,7 +24,7 @@ spec:
   - name: wasm-cache
     port: 9979
     protocol: TCP
-{{- if .Values.global.glooStats.serviceMonitor }}
+{{- if .Values.global.glooStats.serviceMonitorEnabled }}
   - name: http-monitoring
     port: 9091
 {{- end }}

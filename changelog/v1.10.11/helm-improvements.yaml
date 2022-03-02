@@ -3,3 +3,11 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/5377
     resolvesIssue: true
     description: Ensure that ratelimit settings are configured through helm correctly.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5992
+    resolvesIssue: true
+    description: Ensure that gateway-proxy ServiceMonitor does not expose metrics externally
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5990
+    resolvesIssue: true
+    description: Introduce Discovery Service to support ServiceMonitor

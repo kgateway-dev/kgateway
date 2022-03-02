@@ -372,7 +372,10 @@ var _ = Describe("Helm Test", func() {
 
 				It("should be able to override global defaults", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"discovery.deployment.stats.enabled=true", "global.glooStats.enabled=false"},
+						valuesArgs: []string{
+							"discovery.deployment.stats.enabled=true",
+							"global.glooStats.enabled=false",
+						},
 					})
 
 					// assert that discovery has stats enabled and gloo has stats disabled
@@ -396,6 +399,89 @@ var _ = Describe("Helm Test", func() {
 						}
 					})
 				})
+
+				It("should be able to expose http-monitoring port on all relevant services", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							// to enable accessLogger service
+							"gateway.enabled=true",
+							"accessLogger.enabled=true",
+
+							"global.glooStats.enabled=true",
+							"global.glooStats.serviceMonitorEnabled=true",
+							"gatewayProxies.gatewayProxy.service.serviceMonitorEnabled=true",
+						},
+					})
+
+					expectedServicesWithHttpMonitoring := []string{
+						"gloo",
+						"discovery",
+						"gateway",
+						"gateway-proxy-access-logger",
+						"gateway-proxy-monitoring-service",
+					}
+					var actualServicesWithHttpMonitoring []string
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Service"
+					}).ExpectAll(func(service *unstructured.Unstructured) {
+						serviceObject, err := kuberesource.ConvertUnstructured(service)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Service %+v should be able to convert from unstructured", service))
+						structuredService, ok := serviceObject.(*v1.Service)
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Service %+v should be able to cast to a structured service", service))
+
+						for _, servicePort := range structuredService.Spec.Ports {
+							if servicePort.Name == "http-monitoring" {
+								actualServicesWithHttpMonitoring = append(actualServicesWithHttpMonitoring, structuredService.GetName())
+							}
+						}
+					})
+
+					Expect(actualServicesWithHttpMonitoring).To(Equal(expectedServicesWithHttpMonitoring))
+				})
+
+				It("should be able to expose http-monitoring port on all relevant deployments", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							// to enable accessLogger deployment
+							"gateway.enabled=true",
+							"accessLogger.enabled=true",
+
+							"global.glooStats.enabled=true",
+							"global.glooStats.podMonitorEnabled=true",
+							"gatewayProxies.gatewayProxy.podMonitorEnabled=true",
+						},
+					})
+
+					expectedDeploymentsWithHttpMonitoring := []string{
+						"gloo",
+						"discovery",
+						"gateway",
+						"gateway-proxy-access-logger",
+						"gateway-proxy",
+					}
+					var actualDeploymentsWithHttpMonitoring []string
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+							for _, containerPort := range container.Ports {
+								if containerPort.Name == "http-monitoring" {
+									actualDeploymentsWithHttpMonitoring = append(actualDeploymentsWithHttpMonitoring, structuredDeployment.GetName())
+								}
+							}
+						}
+					})
+
+					Expect(actualDeploymentsWithHttpMonitoring).To(Equal(expectedDeploymentsWithHttpMonitoring))
+				})
+
 			})
 
 			Context("gloo mtls settings", func() {
@@ -4640,6 +4726,7 @@ metadata:
 					Expect(resources.NumResources()).To(Equal(1))
 				})
 			})
+
 		})
 
 		Context("Reflection", func() {
