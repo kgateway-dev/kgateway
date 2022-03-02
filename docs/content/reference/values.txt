@@ -439,7 +439,6 @@
 |gatewayProxies.NAME.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
 |gatewayProxies.NAME.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
 |gatewayProxies.NAME.service.configDumpService.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gatewayProxies.NAME.service.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that stats be enabled for the Deployment|
 |gatewayProxies.NAME.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.NAME.affinity.NAME|interface|||
@@ -602,7 +601,6 @@
 |gatewayProxies.gatewayProxy.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
 |gatewayProxies.gatewayProxy.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
 |gatewayProxies.gatewayProxy.service.configDumpService.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gatewayProxies.gatewayProxy.service.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that stats be enabled for the Deployment|
 |gatewayProxies.gatewayProxy.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.gatewayProxy.affinity.NAME|interface|||
