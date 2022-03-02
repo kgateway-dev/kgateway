@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/golang/protobuf/ptypes/empty"
+	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -57,6 +60,9 @@ var _ = Describe("dynamic forward proxy", func() {
 				DisableFds: true,
 				DisableUds: true,
 			},
+			//Settings: &gloov1.Settings{
+			//	Gateway: &gloov1.GatewayOptions{Validation: &gloov1.GatewayOptions_ValidationOptions{DisableTransformationValidation: &wrappers.BoolValue{Value: true}}},
+			//},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
@@ -77,8 +83,8 @@ var _ = Describe("dynamic forward proxy", func() {
 	JustBeforeEach(func() {
 
 		removeMeUs := &gloov1.Upstream{Metadata: &core.Metadata{
-			Name:            "placeholder",
-			Namespace:       "gloo-system",
+			Name:      "placeholder",
+			Namespace: "gloo-system",
 		}}
 		_, err := testClients.UpstreamClient.Write(removeMeUs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -88,25 +94,25 @@ var _ = Describe("dynamic forward proxy", func() {
 		testVs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_DynamicForwardProxy{DynamicForwardProxy: &empty.Empty{}}
 
 		// TODO(kdorosh) move to before each
-		//testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{}
-		//testVs.VirtualHost.Routes[0].Options.StagedTransformations = &transformation.TransformationStages{
-		//	Early: &transformation.RequestResponseTransformations{
-		//		RequestTransforms: []*transformation.RequestMatch{{
-		//			Matcher:               nil,
-		//			ClearRouteCache:       true,
-		//			RequestTransformation: &transformation.Transformation{
-		//				TransformationType: &transformation.Transformation_TransformationTemplate{
-		//					TransformationTemplate: &envoytransformation.TransformationTemplate{
-		//						ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-		//						Headers: map[string]*envoytransformation.InjaTemplate{
-		//							"x-rewrite-me": {Text: "postman-echo.com"},
-		//						},
-		//					},
-		//				},
-		//			},
-		//		}},
-		//	},
-		//}
+		testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{}
+		testVs.VirtualHost.Routes[0].Options.StagedTransformations = &transformation.TransformationStages{
+			Early: &transformation.RequestResponseTransformations{
+				RequestTransforms: []*transformation.RequestMatch{{
+					Matcher:         nil,
+					ClearRouteCache: true,
+					RequestTransformation: &transformation.Transformation{
+						TransformationType: &transformation.Transformation_TransformationTemplate{
+							TransformationTemplate: &envoytransformation.TransformationTemplate{
+								ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+								Headers: map[string]*envoytransformation.InjaTemplate{
+									"x-rewrite-me": {Text: "postman-echo.com"},
+								},
+							},
+						},
+					},
+				}},
+			},
+		}
 
 		// write a virtual service so we have a proxy to our test upstream
 		_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
@@ -139,7 +145,7 @@ var _ = Describe("dynamic forward proxy", func() {
 			// TODO(kdorosh) ensure works with transformations for via use case
 			// use https://github.com/envoyproxy/envoy/blob/935868923883b731f81140c613e8cc3b78e023f9/api/envoy/extensions/filters/http/dynamic_forward_proxy/v3/dynamic_forward_proxy.proto#L39
 			//req.Header.Set(":authority", "jsonplaceholder.typicode.com")
-			req.Header.Set("x-rewrite-me", dest)
+			//req.Header.Set("x-rewrite-me", dest)
 
 			res, err := client.Do(req)
 			if err != nil {

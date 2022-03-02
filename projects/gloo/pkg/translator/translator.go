@@ -2,9 +2,10 @@ package translator
 
 import (
 	"fmt"
+	"hash/fnv"
+
 	envoy_extensions_filters_http_dynamic_forward_proxy_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-	"hash/fnv"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"

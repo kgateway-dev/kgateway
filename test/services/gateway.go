@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
@@ -144,6 +146,13 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if glooOpts.Settings.GetGloo().GetRestXdsBindAddr() == "" {
 		glooOpts.Settings.GetGloo().RestXdsBindAddr = fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort))
 	}
+	if glooOpts.Settings.GetGateway() == nil {
+		glooOpts.Settings.Gateway = &gloov1.GatewayOptions{}
+	}
+	if glooOpts.Settings.GetGateway().GetValidation() == nil {
+		glooOpts.Settings.Gateway.Validation = &gloov1.GatewayOptions_ValidationOptions{}
+	}
+	glooOpts.Settings.GetGateway().Validation.DisableTransformationValidation = &wrappers.BoolValue{Value: true}
 
 	runOptions.Extensions.SyncerExtensions = []syncer.TranslatorSyncerExtensionFactory{
 		ratelimitExt.NewTranslatorSyncerExtension,

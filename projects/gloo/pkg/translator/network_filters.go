@@ -148,8 +148,8 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params)
 
 	dfp := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{
 		DnsCacheConfig: &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
-			Name:                   "dynamic_forward_proxy_cache_config",
-			DnsLookupFamily:        envoy_config_cluster_v3.Cluster_V4_ONLY,
+			Name:            "dynamic_forward_proxy_cache_config",
+			DnsLookupFamily: envoy_config_cluster_v3.Cluster_V4_ONLY,
 			//DnsRefreshRate:         nil,
 			//HostTtl:                nil,
 			//MaxHosts:               nil,
