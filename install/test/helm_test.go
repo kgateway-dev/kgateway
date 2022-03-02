@@ -406,6 +406,7 @@ var _ = Describe("Helm Test", func() {
 							// to enable accessLogger service
 							"gateway.enabled=true",
 							"accessLogger.enabled=true",
+							"accessLogger.stats.serviceMonitorEnabled=true",
 
 							"global.glooStats.enabled=true",
 							"global.glooStats.serviceMonitorEnabled=true",
@@ -446,6 +447,7 @@ var _ = Describe("Helm Test", func() {
 							// to enable accessLogger deployment
 							"gateway.enabled=true",
 							"accessLogger.enabled=true",
+							"accessLogger.stats.podMonitorEnabled=true",
 
 							"global.glooStats.enabled=true",
 							"global.glooStats.podMonitorEnabled=true",
