@@ -291,5 +291,23 @@ func (m *ConnectionConfig_Http1ProtocolOptions) Hash(hasher hash.Hash64) (uint64
 		return 0, err
 	}
 
+	switch m.HeaderFormat.(type) {
+
+	case *ConnectionConfig_Http1ProtocolOptions_ProperCaseHeaderKeyFormat:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetProperCaseHeaderKeyFormat())
+		if err != nil {
+			return 0, err
+		}
+
+	case *ConnectionConfig_Http1ProtocolOptions_PreserveCaseHeaderKeyFormat:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetPreserveCaseHeaderKeyFormat())
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
 	return hasher.Sum64(), nil
 }
