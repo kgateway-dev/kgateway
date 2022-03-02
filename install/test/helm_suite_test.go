@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	"io/ioutil"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"os"
 	"os/exec"
 	"path"
 	"testing"
 	"text/template"
+
+	"github.com/solo-io/k8s-utils/installutils/kuberesource"
+	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
 
