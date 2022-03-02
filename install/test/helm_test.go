@@ -370,33 +370,68 @@ var _ = Describe("Helm Test", func() {
 					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 				})
 
+				deploymentContainsMonitoringPort := func(deployment *appsv1.Deployment) bool {
+					for _, container := range deployment.Spec.Template.Spec.Containers {
+						for _, containerPort := range container.Ports {
+							if containerPort.Name == "http-monitoring" {
+								return true
+							}
+						}
+					}
+					return false
+				}
+
+				serviceContainsMonitoringPort := func(service *v1.Service) bool {
+					for _, servicePort := range service.Spec.Ports {
+						if servicePort.Name == "http-monitoring" {
+							return true
+						}
+					}
+					return false
+				}
+
 				It("should be able to override global defaults", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"discovery.deployment.stats.enabled=true",
+							"discovery.deployment.stats.podMonitorEnabled=true",
+
 							"global.glooStats.enabled=false",
+							"global.glooStats.podMonitorEnabled=false",
 						},
 					})
 
-					// assert that discovery has stats enabled and gloo has stats disabled
+					// assert that discovery has stats enabled
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-						return resource.GetKind() == "Deployment" &&
-							(resource.GetName() == "gloo" || resource.GetName() == "discovery")
+						return resource.GetKind() == "Deployment" && resource.GetName() == "discovery"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
 						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-						if structuredDeployment.GetName() == "gloo" {
-							ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
-						} else if structuredDeployment.GetName() == "discovery" {
-							for annotation, value := range normalPromAnnotations {
-								ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
-							}
-						} else {
-							Fail(fmt.Sprintf("Unexpected deployment found: %+v", structuredDeployment))
+						for annotation, value := range normalPromAnnotations {
+							ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
 						}
+
+						foundMonitoringPort := deploymentContainsMonitoringPort(structuredDeployment)
+						ExpectWithOffset(1, foundMonitoringPort).To(BeTrue(), fmt.Sprintf("'http-monitoring' port should be set on deployment %+v", deployment))
+
+					})
+
+					// assert that gloo has stats disabled
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment" && resource.GetName() == "gloo"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
+
+						foundMonitoringPort := deploymentContainsMonitoringPort(structuredDeployment)
+						ExpectWithOffset(1, foundMonitoringPort).To(BeFalse(), fmt.Sprintf("'http-monitoring' port should not be set on deployment %+v", deployment))
 					})
 				})
 
@@ -430,10 +465,8 @@ var _ = Describe("Helm Test", func() {
 						structuredService, ok := serviceObject.(*v1.Service)
 						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Service %+v should be able to cast to a structured service", service))
 
-						for _, servicePort := range structuredService.Spec.Ports {
-							if servicePort.Name == "http-monitoring" {
-								actualServicesWithHttpMonitoring = append(actualServicesWithHttpMonitoring, structuredService.GetName())
-							}
+						if serviceContainsMonitoringPort(structuredService) {
+							actualServicesWithHttpMonitoring = append(actualServicesWithHttpMonitoring, structuredService.GetName())
 						}
 					})
 
@@ -470,12 +503,8 @@ var _ = Describe("Helm Test", func() {
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
-							for _, containerPort := range container.Ports {
-								if containerPort.Name == "http-monitoring" {
-									actualDeploymentsWithHttpMonitoring = append(actualDeploymentsWithHttpMonitoring, structuredDeployment.GetName())
-								}
-							}
+						if deploymentContainsMonitoringPort(structuredDeployment) {
+							actualDeploymentsWithHttpMonitoring = append(actualDeploymentsWithHttpMonitoring, structuredDeployment.GetName())
 						}
 					})
 
