@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 
@@ -212,20 +213,26 @@ func (u *updaterUpdater) detectSingle(fp UpstreamFunctionDiscovery, url url.URL,
 		}
 	}
 
-	contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{}).Backoff(u.ctx, func(ctx context.Context) error {
+	err := contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{
+		MaxRetries: 1,
+	}).Backoff(u.ctx, func(ctx context.Context) error {
 		spec, err := fp.DetectType(ctx, &url)
 		if err != nil {
 			return err
 		}
-		if spec != nil {
-			// success
-			result <- detectResult{
-				spec: spec,
-				fp:   fp,
-			}
+		// success
+		result <- detectResult{
+			spec: spec,
+			fp:   fp,
 		}
 		return nil
 	})
+	if err != nil {
+		result <- detectResult{
+			spec: nil,
+			fp:   fp,
+		}
+	}
 }
 
 func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
@@ -233,7 +240,7 @@ func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
 	ctx, cancel := context.WithCancel(u.ctx)
 	defer cancel()
 
-	result := make(chan detectResult, 1)
+	result := make(chan detectResult)
 
 	// run all detections in parallel
 	var waitGroup sync.WaitGroup
@@ -254,8 +261,10 @@ func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
 		select {
 		case res, ok := <-result:
 			numResultsReceived++
-			if ok {
+			if ok && res.spec != nil {
 				results = append(results, &res)
+			} else if !ok {
+				return results, nil
 			}
 			if numResultsReceived == len(u.functionalPlugins) {
 				if len(results) == 0 {
@@ -338,8 +347,8 @@ func (u *updaterUpdater) Run() error {
 					logger.Errorf("Error doing discovery %T: %s", d, err.Error())
 					return
 				}
+				time.Sleep(30 * time.Second)
 			}
-
 		}(discoveryForUpstream)
 	}
 	return nil
