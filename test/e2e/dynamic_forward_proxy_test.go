@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
+
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 
@@ -84,6 +86,9 @@ var _ = FDescribe("dynamic forward proxy", func() {
 		// write a virtual service so we have a proxy to our test upstream
 		testVs = getTrivialVirtualService(writeNamespace)
 		testVs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_DynamicForwardProxy{DynamicForwardProxy: &empty.Empty{}}
+		testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{DynamicForwardProxy: &dynamic_forward_proxy.PerRouteConfig{
+			HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"}},
+		}
 	})
 
 	JustBeforeEach(func() {
@@ -156,7 +161,6 @@ var _ = FDescribe("dynamic forward proxy", func() {
 	Context("with transformation can set dynamic forward proxy header to rewrite authority", func() {
 
 		BeforeEach(func() {
-			testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{}
 			testVs.VirtualHost.Routes[0].Options.StagedTransformations = &transformation.TransformationStages{
 				Early: &transformation.RequestResponseTransformations{
 					RequestTransforms: []*transformation.RequestMatch{{

@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	envoy_extensions_filters_http_dynamic_forward_proxy_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -132,17 +129,6 @@ func (t *translatorInstance) Translate(
 		endpoints = append(endpoints, generatedEndpoints...)
 		routeConfigs = append(routeConfigs, generatedRouteConfigs...)
 		listeners = append(listeners, generatedListeners...)
-	}
-
-	for _, r := range routeConfigs {
-		dfpRouteCfg := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig{
-			HostRewriteSpecifier: &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig_HostRewriteHeader{
-				HostRewriteHeader: "x-rewrite-me",
-			},
-		}
-		if len(r.GetVirtualHosts()) > 0 && len(r.GetVirtualHosts()[0].GetRoutes()) > 0 {
-			pluginutils.SetRoutePerFilterConfig(r.GetVirtualHosts()[0].GetRoutes()[0], "envoy.filters.http.dynamic_forward_proxy", dfpRouteCfg)
-		}
 	}
 
 	xdsSnapshot := t.generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
