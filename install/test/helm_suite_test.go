@@ -3,7 +3,10 @@ package test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	"io/ioutil"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"os"
 	"os/exec"
 	"path"
@@ -310,4 +313,20 @@ func makeUnstructureFromTemplateFile(fixtureName string, values interface{}) *un
 	err = tmpl.Execute(&b, values)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return makeUnstructured(b.String())
+}
+
+func makeRoleBindingFromUnstructured(resource *unstructured.Unstructured) *rbacv1.RoleBinding {
+	bindingObject, err := kuberesource.ConvertUnstructured(resource)
+	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("RoleBinding %+v should be able to convert from unstructured", resource))
+	structuredRoleBinding, ok := bindingObject.(*rbacv1.RoleBinding)
+	Expect(ok).To(BeTrue(), fmt.Sprintf("RoleBinding %+v should be able to cast to a structured role binding", resource))
+	return structuredRoleBinding
+}
+
+func makeClusterRoleBindingFromUnstructured(resource *unstructured.Unstructured) *rbacv1.ClusterRoleBinding {
+	bindingObject, err := kuberesource.ConvertUnstructured(resource)
+	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ClusterRoleBinding %+v should be able to convert from unstructured", resource))
+	structuredClusterRoleBinding, ok := bindingObject.(*rbacv1.ClusterRoleBinding)
+	Expect(ok).To(BeTrue(), fmt.Sprintf("ClusterRoleBinding %+v should be able to cast to a structured cluster role binding", resource))
+	return structuredClusterRoleBinding
 }

@@ -15,9 +15,11 @@ subjects:
 - kind: ServiceAccount
   name: gloo
   namespace: {{ .Release.Namespace }}
+{{- if .Values.discovery.enabled }}
 - kind: ServiceAccount
   name: discovery
   namespace: {{ .Release.Namespace }}
+{{- end }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
   name: kube-resource-watcher{{ include "gloo.rbacNameSuffix" . }}
@@ -34,9 +36,11 @@ metadata:
     app: gloo
     gloo: rbac
 subjects:
+  {{- if .Values.discovery.enabled }}
 - kind: ServiceAccount
   name: discovery
   namespace: {{ .Release.Namespace }}
+{{- end}}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
   name: gloo-upstream-mutator{{ include "gloo.rbacNameSuffix" . }}
@@ -78,9 +82,11 @@ subjects:
 - kind: ServiceAccount
   name: gateway
   namespace: {{ .Release.Namespace }}
+{{- if .Values.discovery.enabled }}
 - kind: ServiceAccount
   name: discovery
   namespace: {{ .Release.Namespace }}
+{{- end}}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
   name: settings-user{{ include "gloo.rbacNameSuffix" . }}
@@ -138,9 +144,11 @@ metadata:
     app: gloo
     gloo: rbac
 subjects:
+{{- if .Values.discovery.enabled }}
   - kind: ServiceAccount
     name: discovery
     namespace: {{ .Release.Namespace }}
+{{- end}}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
   name: gloo-graphqlschema-mutator{{ include "gloo.rbacNameSuffix" . }}
