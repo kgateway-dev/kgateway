@@ -62,7 +62,7 @@ spec:
             name: https
             protocol: TCP
 {{- end}}
-{{- if $statsConfig.podMonitorEnabled }}
+{{- if and $statsConfig.enabled $statsConfig.podMonitorEnabled }}
           - name: http-monitoring
             containerPort: 9091
 {{- end }}

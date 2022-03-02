@@ -410,7 +410,6 @@ var _ = Describe("Helm Test", func() {
 
 							"global.glooStats.enabled=true",
 							"global.glooStats.serviceMonitorEnabled=true",
-							"gatewayProxies.gatewayProxy.service.serviceMonitorEnabled=true",
 						},
 					})
 
@@ -451,7 +450,6 @@ var _ = Describe("Helm Test", func() {
 
 							"global.glooStats.enabled=true",
 							"global.glooStats.podMonitorEnabled=true",
-							"gatewayProxies.gatewayProxy.podMonitorEnabled=true",
 						},
 					})
 

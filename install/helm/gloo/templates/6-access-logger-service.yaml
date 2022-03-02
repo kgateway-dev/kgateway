@@ -15,7 +15,7 @@ spec:
     targetPort: {{ .Values.accessLogger.port }}
     protocol: TCP
     name: http
-{{- if $statsConfig.serviceMonitorEnabled }}
+{{- if and $statsConfig.enabled $statsConfig.serviceMonitorEnabled }}
   - name: http-monitoring
     port: 9091
 {{- end }}
