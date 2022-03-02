@@ -26,6 +26,198 @@ var (
 )
 
 // Hash function
+func (m *FilterConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy.FilterConfig")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetDnsCacheConfig()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("DnsCacheConfig")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetDnsCacheConfig(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("DnsCacheConfig")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *DnsCacheCircuitBreakers) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy.DnsCacheCircuitBreakers")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetMaxPendingRequests()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("MaxPendingRequests")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetMaxPendingRequests(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("MaxPendingRequests")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *DnsCacheConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy.DnsCacheConfig")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetDnsRefreshRate()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("DnsRefreshRate")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetDnsRefreshRate(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("DnsRefreshRate")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetHostTtl()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("HostTtl")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetHostTtl(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("HostTtl")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetMaxHosts()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("MaxHosts")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetMaxHosts(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("MaxHosts")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetDnsCacheCircuitBreaker()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("DnsCacheCircuitBreaker")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetDnsCacheCircuitBreaker(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("DnsCacheCircuitBreaker")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetDnsQueryTimeout()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("DnsQueryTimeout")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetDnsQueryTimeout(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("DnsQueryTimeout")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *PerRouteConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil

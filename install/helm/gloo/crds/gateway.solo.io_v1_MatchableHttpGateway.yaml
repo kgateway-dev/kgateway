@@ -179,6 +179,33 @@ spec:
                             type: string
                             x-kubernetes-int-or-string: true
                         type: object
+                      dynamicForwardProxy:
+                        properties:
+                          dnsCacheConfig:
+                            properties:
+                              dnsCacheCircuitBreaker:
+                                properties:
+                                  maxPendingRequests:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    nullable: true
+                                    type: integer
+                                type: object
+                              dnsQueryTimeout:
+                                type: string
+                              dnsRefreshRate:
+                                type: string
+                              hostTtl:
+                                type: string
+                              maxHosts:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                              name:
+                                type: string
+                            type: object
+                        type: object
                       extauth:
                         properties:
                           clearRouteCache:

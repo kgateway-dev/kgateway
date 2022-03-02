@@ -98,6 +98,7 @@ Optional, feature-specific configuration that lives on http listeners
 "grpcJsonTranscoder": .grpc_json.options.gloo.solo.io.GrpcJsonTranscoder
 "sanitizeClusterHeader": .google.protobuf.BoolValue
 "leftmostXffAddress": .google.protobuf.BoolValue
+"dynamicForwardProxy": .dfp.options.gloo.solo.io.FilterConfig
 
 ```
 
@@ -119,6 +120,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `grpcJsonTranscoder` | [.grpc_json.options.gloo.solo.io.GrpcJsonTranscoder](../options/grpc_json/grpc_json.proto.sk/#grpcjsontranscoder) | Exposed envoy config for the gRPC to JSON transcoding filter, envoy.filters.http.grpc_json_transcoder. For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/grpc_json_transcoder/v3/transcoder.proto. |
 | `sanitizeClusterHeader` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enterprise-only: If using the HTTP header specified by cluster_header to direct traffic to a cluster, this option will sanitize that header from downstream traffic. Defaults to false. |
 | `leftmostXffAddress` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enterprise-only: Setting this value to true will grab the leftmost IP address from the x-forwarded-for header and set it as the downstream address. It is worth noting that the x-forwarded-for header can be tampered with by clients and should therefore be sanitized by any preceding proxies / load balancers if this option is to be used. |
+| `dynamicForwardProxy` | [.dfp.options.gloo.solo.io.FilterConfig](../options/dynamic_forward_proxy/dynamic_forward_proxy.proto.sk/#filterconfig) |  |
 
 
 

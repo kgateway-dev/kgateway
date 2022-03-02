@@ -156,7 +156,7 @@ message HttpListenerOptions {
     // and should therefore be sanitized by any preceding proxies / load balancers if this option is to be used.
     google.protobuf.BoolValue leftmost_xff_address = 16;
 
-
+    dfp.options.gloo.solo.io.FilterConfig dynamic_forward_proxy = 28;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners

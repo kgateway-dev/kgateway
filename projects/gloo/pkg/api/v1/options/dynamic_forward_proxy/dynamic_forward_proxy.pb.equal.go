@@ -26,6 +26,152 @@ var (
 )
 
 // Equal function
+func (m *FilterConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*FilterConfig)
+	if !ok {
+		that2, ok := that.(FilterConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetDnsCacheConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDnsCacheConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDnsCacheConfig(), target.GetDnsCacheConfig()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *DnsCacheCircuitBreakers) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*DnsCacheCircuitBreakers)
+	if !ok {
+		that2, ok := that.(DnsCacheCircuitBreakers)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetMaxPendingRequests()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxPendingRequests()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxPendingRequests(), target.GetMaxPendingRequests()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *DnsCacheConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*DnsCacheConfig)
+	if !ok {
+		that2, ok := that.(DnsCacheConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetDnsRefreshRate()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDnsRefreshRate()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDnsRefreshRate(), target.GetDnsRefreshRate()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetHostTtl()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHostTtl()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHostTtl(), target.GetHostTtl()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetMaxHosts()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxHosts()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxHosts(), target.GetMaxHosts()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetDnsCacheCircuitBreaker()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDnsCacheCircuitBreaker()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDnsCacheCircuitBreaker(), target.GetDnsCacheCircuitBreaker()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetDnsQueryTimeout()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDnsQueryTimeout()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDnsQueryTimeout(), target.GetDnsQueryTimeout()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *PerRouteConfig) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil

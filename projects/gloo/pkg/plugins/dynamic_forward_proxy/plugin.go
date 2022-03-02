@@ -32,7 +32,7 @@ type plugin struct{}
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
 	//return []plugins.StagedHttpFilter{}, nil
-	//listener.Options
+	//listener.Options.
 
 	dfp := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{
 		DnsCacheConfig: &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
@@ -70,7 +70,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return nil
 	}
 	dfpRouteCfg := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig{}
-	switch d := dfpCfg.HostRewriteSpecifier.(type) {
+	switch d := dfpCfg.GetHostRewriteSpecifier().(type) {
 	case *dynamic_forward_proxy.PerRouteConfig_HostRewrite:
 		dfpRouteCfg.HostRewriteSpecifier = &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig_HostRewriteLiteral{
 			HostRewriteLiteral: d.HostRewrite,

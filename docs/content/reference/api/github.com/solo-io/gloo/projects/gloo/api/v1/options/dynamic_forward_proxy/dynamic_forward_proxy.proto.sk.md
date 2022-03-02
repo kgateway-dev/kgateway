@@ -11,6 +11,9 @@ weight: 5
 #### Types:
 
 
+- [FilterConfig](#filterconfig)
+- [DnsCacheCircuitBreakers](#dnscachecircuitbreakers)
+- [DnsCacheConfig](#dnscacheconfig)
 - [PerRouteConfig](#perrouteconfig)
   
 
@@ -18,6 +21,74 @@ weight: 5
 
 ##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto)
 
+
+
+
+
+---
+### FilterConfig
+
+ 
+Configuration for the dynamic forward proxy HTTP filter. See the :ref:`architecture overview
+<arch_overview_http_dynamic_forward_proxy>` for more information.
+[#extension: envoy.filters.http.dynamic_forward_proxy]
+
+```yaml
+"dnsCacheConfig": .dfp.options.gloo.solo.io.DnsCacheConfig
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `dnsCacheConfig` | [.dfp.options.gloo.solo.io.DnsCacheConfig](../dynamic_forward_proxy.proto.sk/#dnscacheconfig) | The DNS cache configuration that the filter will attach to. Note this configuration must match that of associated :ref:`dynamic forward proxy cluster configuration <envoy_api_field_config.cluster.dynamic_forward_proxy.v2alpha.ClusterConfig.dns_cache_config>`. |
+
+
+
+
+---
+### DnsCacheCircuitBreakers
+
+ 
+Configuration of circuit breakers for resolver.
+
+```yaml
+"maxPendingRequests": .google.protobuf.UInt32Value
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `maxPendingRequests` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The maximum number of pending requests that Envoy will allow to the resolver. If not specified, the default is 1024. |
+
+
+
+
+---
+### DnsCacheConfig
+
+ 
+Configuration for the dynamic forward proxy DNS cache. See the :ref:`architecture overview
+<arch_overview_http_dynamic_forward_proxy>` for more information.
+[#next-free-field: 14]
+
+```yaml
+"name": string
+"dnsRefreshRate": .google.protobuf.Duration
+"hostTtl": .google.protobuf.Duration
+"maxHosts": .google.protobuf.UInt32Value
+"dnsCacheCircuitBreaker": .dfp.options.gloo.solo.io.DnsCacheCircuitBreakers
+"dnsQueryTimeout": .google.protobuf.Duration
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | The name of the cache. Multiple named caches allow independent dynamic forward proxy configurations to operate within a single Envoy process using different configurations. All configurations with the same name *must* otherwise have the same settings when referenced from different configuration components. Configuration will fail to load if this is not the case. |
+| `dnsRefreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The DNS refresh rate for unresolved DNS hosts. If not specified defaults to 60s. The refresh rate is rounded to the closest millisecond, and must be at least 1ms. Once a host has been resolved, the refresh rate will be the DNS TTL, capped at a minimum of 5s. |
+| `hostTtl` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The TTL for hosts that are unused. Hosts that have not been used in the configured time interval will be purged. If not specified defaults to 5m. .. note: The TTL is only checked at the time of DNS refresh, as specified by *dns_refresh_rate*. This means that if the configured TTL is shorter than the refresh rate the host may not be removed immediately. .. note: The TTL has no relation to DNS TTL and is only used to control Envoy's resource usage. |
+| `maxHosts` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The maximum number of hosts that the cache will hold. If not specified defaults to 1024. .. note: The implementation is approximate and enforced independently on each worker thread, thus it is possible for the maximum hosts in the cache to go slightly above the configured value depending on timing. This is similar to how other circuit breakers work. |
+| `dnsCacheCircuitBreaker` | [.dfp.options.gloo.solo.io.DnsCacheCircuitBreakers](../dynamic_forward_proxy.proto.sk/#dnscachecircuitbreakers) | The config of circuit breakers for resolver. It provides a configurable threshold. Envoy will use dns cache circuit breakers with default settings even if this value is not set. |
+| `dnsQueryTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout used for DNS queries. This timeout is independent of any timeout and retry policy used by the underlying DNS implementation (e.g., c-areas and Apple DNS) which are opaque. Setting this timeout will ensure that queries succeed or fail within the specified time frame and are then retried using the standard refresh rates. Defaults to 5s if not set. |
 
 
 
