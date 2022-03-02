@@ -3,11 +3,6 @@ package translator
 import (
 	"sort"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_extensions_common_dynamic_forward_proxy_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/dynamic_forward_proxy/v3"
-	envoy_extensions_filters_http_dynamic_forward_proxy_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
-	"google.golang.org/protobuf/types/known/anypb"
-
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -141,42 +136,6 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params)
 				err.Error())
 		}
 	}
-
-	if len(httpConnectionManager.GetHttpFilters()) > 0 {
-		httpConnectionManager.HttpFilters = httpConnectionManager.GetHttpFilters()[:len(httpConnectionManager.GetHttpFilters())-1]
-	}
-
-	dfp := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{
-		DnsCacheConfig: &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
-			Name:            "dynamic_forward_proxy_cache_config",
-			DnsLookupFamily: envoy_config_cluster_v3.Cluster_V4_ONLY,
-			//DnsRefreshRate:         nil,
-			//HostTtl:                nil,
-			//MaxHosts:               nil,
-			//DnsFailureRefreshRate:  nil,
-			//DnsCacheCircuitBreaker: nil,
-			//UseTcpForDnsLookups:    false,
-			//DnsResolutionConfig:    nil,
-			//TypedDnsResolverConfig: nil,
-			//PreresolveHostnames:    nil,
-			//DnsQueryTimeout:        nil,
-			//KeyValueConfig:         nil,
-		},
-		//SaveUpstreamAddress: false,
-	}
-
-	typedDfpConfig, err := anypb.New(dfp)
-	httpConnectionManager.HttpFilters = append(httpConnectionManager.GetHttpFilters(), &envoyhttp.HttpFilter{
-		Name: "envoy.filters.http.dynamic_forward_proxy",
-		ConfigType: &envoyhttp.HttpFilter_TypedConfig{
-			TypedConfig: typedDfpConfig,
-		},
-		//IsOptional: false,
-	})
-
-	httpConnectionManager.HttpFilters = append(httpConnectionManager.GetHttpFilters(), &envoyhttp.HttpFilter{
-		Name: "envoy.filters.http.router",
-	})
 
 	// 4. Generate the typedConfig for the HCM
 	hcmFilter, err := NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, httpConnectionManager)
