@@ -141,7 +141,7 @@ func (t *translatorInstance) Translate(
 			},
 		}
 		if len(r.GetVirtualHosts()) > 0 && len(r.GetVirtualHosts()[0].GetRoutes()) > 0 {
-			pluginutils.SetRoutePerFilterConfig(r.GetVirtualHosts()[0].Routes[0], "envoy.filters.http.dynamic_forward_proxy", dfpRouteCfg)
+			pluginutils.SetRoutePerFilterConfig(r.GetVirtualHosts()[0].GetRoutes()[0], "envoy.filters.http.dynamic_forward_proxy", dfpRouteCfg)
 		}
 	}
 

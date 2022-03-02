@@ -150,9 +150,9 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		glooOpts.Settings.Gateway = &gloov1.GatewayOptions{}
 	}
 	if glooOpts.Settings.GetGateway().GetValidation() == nil {
-		glooOpts.Settings.Gateway.Validation = &gloov1.GatewayOptions_ValidationOptions{}
+		glooOpts.Settings.GetGateway().Validation = &gloov1.GatewayOptions_ValidationOptions{}
 	}
-	glooOpts.Settings.GetGateway().Validation.DisableTransformationValidation = &wrappers.BoolValue{Value: true}
+	glooOpts.Settings.GetGateway().GetValidation().DisableTransformationValidation = &wrappers.BoolValue{Value: true}
 
 	runOptions.Extensions.SyncerExtensions = []syncer.TranslatorSyncerExtensionFactory{
 		ratelimitExt.NewTranslatorSyncerExtension,

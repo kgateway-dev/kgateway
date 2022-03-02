@@ -1934,6 +1934,13 @@ spec:
                                   type: string
                                   x-kubernetes-int-or-string: true
                               type: object
+                            dynamicForwardProxy:
+                              properties:
+                                autoHostRewriteHeader:
+                                  type: string
+                                hostRewrite:
+                                  type: string
+                              type: object
                             envoyMetadata:
                               additionalProperties:
                                 type: object

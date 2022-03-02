@@ -92,6 +92,9 @@ apis:
   cors.options.gloo.solo.io.CorsPolicy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/#CorsPolicy
     package: cors.options.gloo.solo.io
+  dfp.options.gloo.solo.io.PerRouteConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto.sk/#PerRouteConfig
+    package: dfp.options.gloo.solo.io
   dlp.options.gloo.solo.io.Action:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto.sk/#Action
     package: dlp.options.gloo.solo.io

@@ -875,6 +875,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetDynamicForwardProxy()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDynamicForwardProxy()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDynamicForwardProxy(), target.GetDynamicForwardProxy()) {
+			return false
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:

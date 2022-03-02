@@ -49,6 +49,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_faultinjection "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
@@ -603,6 +605,12 @@ func (m *RouteOptions) Clone() proto.Message {
 		target.RegexRewrite = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
 	} else {
 		target.RegexRewrite = proto.Clone(m.GetRegexRewrite()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
+	}
+
+	if h, ok := interface{}(m.GetDynamicForwardProxy()).(clone.Cloner); ok {
+		target.DynamicForwardProxy = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.PerRouteConfig)
+	} else {
+		target.DynamicForwardProxy = proto.Clone(m.GetDynamicForwardProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.PerRouteConfig)
 	}
 
 	switch m.HostRewriteType.(type) {
