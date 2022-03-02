@@ -1,4 +1,5 @@
-{{- if .Values.global.glooStats.serviceMonitorEnabled }}
+{{- $statsConfig := coalesce .Values.discovery.deployment.stats .Values.global.glooStats -}}
+{{- if $statsConfig.serviceMonitorEnabled }}
 apiVersion: v1
 kind: Service
 metadata:
