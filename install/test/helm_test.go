@@ -1005,9 +1005,9 @@ var _ = Describe("Helm Test", func() {
 					It("does not overwrite nodeSelectors specified for custom gateway proxy", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=true",
+								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=default",
 								// anotherGatewayProxy should have its own nodeSelector and not the default
-								"gatewayProxies.anotherGatewayProxy.podTemplate.nodeSelector.custom=true",
+								"gatewayProxies.anotherGatewayProxy.podTemplate.nodeSelector.custom=custom",
 							},
 						})
 						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
@@ -1015,13 +1015,13 @@ var _ = Describe("Helm Test", func() {
 						Expect(err).NotTo(HaveOccurred())
 						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						gwpStr := *gwp.(*appsv1.Deployment)
-						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "true"}))
+						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "custom"}))
 					})
 
 					It("uses default nodeSelectors for custom gateway proxy when none is specified", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=true",
+								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=default",
 								// anotherGatewayProxy should get the default nodeSelector
 								"gatewayProxies.anotherGatewayProxy.loopbackAddress=127.0.0.1",
 							},
@@ -1031,7 +1031,7 @@ var _ = Describe("Helm Test", func() {
 						Expect(err).NotTo(HaveOccurred())
 						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						gwpStr := *gwp.(*appsv1.Deployment)
-						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "true"}))
+						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "default"}))
 					})
 
 					It("uses appropriate nodeSelectors for custom gateway proxies depending on whether any is specified", func() {
@@ -1040,9 +1040,9 @@ var _ = Describe("Helm Test", func() {
 								// unspecifiedGatewayProxy should get the default nodeSelector
 								"gatewayProxies.unspecifiedGatewayProxy.loopbackAddress=127.0.0.1",
 								// specifiedGatewayProxy should keep its specified nodeSelector
-								"gatewayProxies.specifiedGatewayProxy.podTemplate.nodeSelector.custom=true",
+								"gatewayProxies.specifiedGatewayProxy.podTemplate.nodeSelector.custom=custom",
 								// default specified last to catch accidental overwriting
-								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=true",
+								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=default",
 							},
 						})
 
@@ -1051,21 +1051,21 @@ var _ = Describe("Helm Test", func() {
 						Expect(err).NotTo(HaveOccurred())
 						Expect(unspecified).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						unspecifiedStr := *unspecified.(*appsv1.Deployment)
-						Expect(unspecifiedStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "true"}))
+						Expect(unspecifiedStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "default"}))
 
 						specifiedUns := testManifest.ExpectCustomResource("Deployment", namespace, "specified-gateway-proxy")
 						specified, err := kuberesource.ConvertUnstructured(specifiedUns)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(specified).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						specifiedStr := *specified.(*appsv1.Deployment)
-						Expect(specifiedStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "true"}))
+						Expect(specifiedStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "custom"}))
 
 						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "gateway-proxy")
 						gwp, err := kuberesource.ConvertUnstructured(gwpUns)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						gwpStr := *gwp.(*appsv1.Deployment)
-						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "true"}))
+						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "default"}))
 					})
 
 					It("renders with http/https gateways by default", func() {
@@ -1542,7 +1542,6 @@ spec:
 						BeforeEach(func() {
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
-									"gatewayProxies.anotherGatewayProxy.specKey=testing",
 									"gatewayProxies.anotherGatewayProxy.gatewaySettings.options.socketOptions[0].description=enable keep-alive}",
 								},
 							})
@@ -2038,7 +2037,7 @@ spec:
 					It("supports not specifying replicas to envoy", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.kind.deployment.replicas=",
+								"gatewayProxies.gatewayProxy.kind.deployment.replicas=0",
 							},
 						})
 						// deployment exists for for second declaration of gateway proxy
@@ -2266,22 +2265,22 @@ spec:
 					It("has limits", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podTemplate.resources.limits.memory=2",
-								"gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu=3",
-								"gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory=4",
-								"gatewayProxies.gatewayProxy.podTemplate.resources.requests.cpu=5",
+								"gatewayProxies.gatewayProxy.podTemplate.resources.limits.memory=2Mi",
+								"gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu=3m",
+								"gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory=4Mi",
+								"gatewayProxies.gatewayProxy.podTemplate.resources.requests.cpu=5m",
 							},
 						})
 
 						// Add the limits we are testing:
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
 							Limits: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("2"),
-								v1.ResourceCPU:    resource.MustParse("3"),
+								v1.ResourceMemory: resource.MustParse("2Mi"),
+								v1.ResourceCPU:    resource.MustParse("3m"),
 							},
 							Requests: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("4"),
-								v1.ResourceCPU:    resource.MustParse("5"),
+								v1.ResourceMemory: resource.MustParse("4Mi"),
+								v1.ResourceCPU:    resource.MustParse("5m"),
 							},
 						}
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
@@ -2572,17 +2571,6 @@ spec:
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.logLevel=debug"},
-						})
-						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
-					})
-
-					It("can set the envoy log level arg", func() {
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args = append(
-							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args,
-							"--log-level debug",
-						)
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gatewayProxies.gatewayProxy.envoyLogLevel=debug"},
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
@@ -3378,22 +3366,22 @@ metadata:
 					It("has limits", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gloo.deployment.resources.limits.memory=2",
-								"gloo.deployment.resources.limits.cpu=3",
-								"gloo.deployment.resources.requests.memory=4",
-								"gloo.deployment.resources.requests.cpu=5",
+								"gloo.deployment.resources.limits.memory=2Mi",
+								"gloo.deployment.resources.limits.cpu=3m",
+								"gloo.deployment.resources.requests.memory=4Mi",
+								"gloo.deployment.resources.requests.cpu=5m",
 							},
 						})
 
 						// Add the limits we are testing:
 						glooDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
 							Limits: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("2"),
-								v1.ResourceCPU:    resource.MustParse("3"),
+								v1.ResourceMemory: resource.MustParse("2Mi"),
+								v1.ResourceCPU:    resource.MustParse("3m"),
 							},
 							Requests: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("4"),
-								v1.ResourceCPU:    resource.MustParse("5"),
+								v1.ResourceMemory: resource.MustParse("4Mi"),
+								v1.ResourceCPU:    resource.MustParse("5m"),
 							},
 						}
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
@@ -3591,22 +3579,22 @@ metadata:
 					It("has limits", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gateway.deployment.resources.limits.memory=2",
-								"gateway.deployment.resources.limits.cpu=3",
-								"gateway.deployment.resources.requests.memory=4",
-								"gateway.deployment.resources.requests.cpu=5",
+								"gateway.deployment.resources.limits.memory=2Mi",
+								"gateway.deployment.resources.limits.cpu=3m",
+								"gateway.deployment.resources.requests.memory=4Mi",
+								"gateway.deployment.resources.requests.cpu=5m",
 							},
 						})
 
 						// Add the limits we are testing:
 						gatewayDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
 							Limits: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("2"),
-								v1.ResourceCPU:    resource.MustParse("3"),
+								v1.ResourceMemory: resource.MustParse("2Mi"),
+								v1.ResourceCPU:    resource.MustParse("3m"),
 							},
 							Requests: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("4"),
-								v1.ResourceCPU:    resource.MustParse("5"),
+								v1.ResourceMemory: resource.MustParse("4Mi"),
+								v1.ResourceCPU:    resource.MustParse("5m"),
 							},
 						}
 						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
@@ -3777,34 +3765,25 @@ metadata:
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 
-					It("disables probes", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"discovery.deployment.probes=false"},
-						})
-						discoveryDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
-						discoveryDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
-						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
-					})
-
 					It("has limits", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"discovery.deployment.resources.limits.memory=2",
-								"discovery.deployment.resources.limits.cpu=3",
-								"discovery.deployment.resources.requests.memory=4",
-								"discovery.deployment.resources.requests.cpu=5",
+								"discovery.deployment.resources.limits.memory=2Mi",
+								"discovery.deployment.resources.limits.cpu=3m",
+								"discovery.deployment.resources.requests.memory=4Mi",
+								"discovery.deployment.resources.requests.cpu=5m",
 							},
 						})
 
 						// Add the limits we are testing:
 						discoveryDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
 							Limits: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("2"),
-								v1.ResourceCPU:    resource.MustParse("3"),
+								v1.ResourceMemory: resource.MustParse("2Mi"),
+								v1.ResourceCPU:    resource.MustParse("3m"),
 							},
 							Requests: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("4"),
-								v1.ResourceCPU:    resource.MustParse("5"),
+								v1.ResourceMemory: resource.MustParse("4Mi"),
+								v1.ResourceCPU:    resource.MustParse("5m"),
 							},
 						}
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
@@ -4521,9 +4500,9 @@ metadata:
 							valuesArgs: append([]string{
 								value + ".nodeSelector.label=someLabel",
 								value + ".nodeName=someNodeName",
-								value + ".tolerations=someToleration",
-								value + ".hostAliases=someHostAlias",
-								value + ".affinity=someNodeAffinity",
+								value + ".tolerations[0].operator=someToleration",
+								value + ".hostAliases[0]=someHostAlias",
+								value + ".affinity.nodeAffinity=someNodeAffinity",
 								value + ".restartPolicy=someRestartPolicy",
 							}, extraArgs...),
 						})
@@ -4534,11 +4513,11 @@ metadata:
 								a = getFieldFromUnstructured(u, "spec", "template", "spec", "nodeName")
 								Expect(a).To(Equal("someNodeName"))
 								a = getFieldFromUnstructured(u, "spec", "template", "spec", "tolerations")
-								Expect(a).To(Equal("someToleration"))
+								Expect(a).To(Equal([]interface{}{map[string]interface{}{"operator": "someToleration"}}))
 								a = getFieldFromUnstructured(u, "spec", "template", "spec", "hostAliases")
-								Expect(a).To(Equal("someHostAlias"))
+								Expect(a).To(Equal([]interface{}{"someHostAlias"}))
 								a = getFieldFromUnstructured(u, "spec", "template", "spec", "affinity")
-								Expect(a).To(Equal("someNodeAffinity"))
+								Expect(a).To(Equal(map[string]interface{}{"nodeAffinity": "someNodeAffinity"}))
 								a = getFieldFromUnstructured(u, "spec", "template", "spec", "restartPolicy")
 								Expect(a).To(Equal("someRestartPolicy"))
 								return true

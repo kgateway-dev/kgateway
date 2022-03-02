@@ -23,9 +23,7 @@ gatewayProxies:
           namespace: one
     kind:
       deployment:
-        antiAffinity: false
         replicas: 1
-        resources: null
     podTemplate:
       disableNetBind: false
       floatingUserId: false
@@ -36,7 +34,6 @@ gatewayProxies:
         repository: gloo-envoy-wrapper
         tag: dev
       probes: false
-      resources: null
       runAsUser: 10101
       runUnprivileged: false
       tolerations: null

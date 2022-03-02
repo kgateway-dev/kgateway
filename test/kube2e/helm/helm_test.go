@@ -1,10 +1,16 @@
 package helm_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"text/template"
+
+	"github.com/ghodss/yaml"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
@@ -182,6 +188,50 @@ var _ = Describe("Kube2e: helm", func() {
 		})
 	})
 
+	Context("applies settings manifests used in helm unit tests (install/test/fixtures/settings)", func() {
+		// The local helm tests involve templating settings with various values set
+		// and then validating that the templated data matches fixture data.
+		// The tests assume that the fixture data we have defined is valid yaml that
+		// will be accepted by a cluster. However, this has not always been the case
+		// and it's important that we validate the settings end to end
+		//
+		// This solution may not be the best way to validate settings, but it
+		// attempts to avoid re-running all the helm template tests against a live cluster
+		var settingsFixturesFolder string
+
+		BeforeEach(func() {
+			settingsFixturesFolder = filepath.Join(util.GetModuleRoot(), "install", "test", "fixtures", "settings")
+
+			// Apply the Settings CRD to ensure it is the most up to date version
+			// this ensures that any new fields that have been added are included in the CRD validation schemas
+			settingsCrdFilePath := filepath.Join(crdDir, "gloo.solo.io_v1_Settings.yaml")
+			runAndCleanCommand("kubectl", "apply", "-f", settingsCrdFilePath)
+		})
+
+		It("works using kubectl apply", func() {
+			err := filepath.Walk(settingsFixturesFolder, func(settingsFixtureFile string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if info.IsDir() {
+					return nil
+				}
+
+				templatedSettings := makeUnstructuredFromTemplateFile(settingsFixtureFile, namespace)
+				settingsBytes, err := templatedSettings.MarshalJSON()
+
+				// Apply the fixture
+				err = exec.RunCommandInput(string(settingsBytes), testHelper.RootDir, false, "kubectl", "apply", "-f", "-")
+				Expect(err).NotTo(HaveOccurred(), "should be able to kubectl apply -f %s", settingsFixtureFile)
+
+				// continue traversing
+				return nil
+			})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+	})
+
 })
 
 func GetGlooServerVersion(ctx context.Context, namespace string) (v string) {
@@ -196,4 +246,21 @@ func GetGlooServerVersion(ctx context.Context, namespace string) (v string) {
 		}
 	}
 	return v
+}
+
+func makeUnstructured(yam string) *unstructured.Unstructured {
+	jsn, err := yaml.YAMLToJSON([]byte(yam))
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	runtimeObj, err := runtime.Decode(unstructured.UnstructuredJSONScheme, jsn)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return runtimeObj.(*unstructured.Unstructured)
+}
+
+func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *unstructured.Unstructured {
+	tmpl, err := template.ParseFiles(fixtureName)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	var b bytes.Buffer
+	err = tmpl.Execute(&b, values)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return makeUnstructured(b.String())
 }

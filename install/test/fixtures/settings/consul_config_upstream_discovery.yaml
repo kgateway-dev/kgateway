@@ -28,11 +28,11 @@ spec:
      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.
      invalidRouteResponseCode: 404
      replaceInvalidRoutes: false
- consulUpstreamDiscovery:
-   useTlsDiscovery: true
+ consulDiscovery:
+   useTlsTagging: true
    tlsTagName: tag
    splitTlsServices: true
-   discoveryRootCa:
+   rootCa:
      name: testName
      namespace: testNamespace
  kubernetesArtifactSource: {}
