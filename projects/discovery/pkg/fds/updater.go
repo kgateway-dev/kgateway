@@ -3,12 +3,10 @@ package fds
 import (
 	"context"
 	"errors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 	"net/url"
 	"sync"
 	"sync/atomic"
-	"time"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/go-utils/contextutils"
@@ -338,16 +336,19 @@ func (u *updaterUpdater) Run() error {
 			for {
 				select {
 				case <-u.ctx.Done():
+					logger.Debugf("context done, stopping upstream discovery %T for upstream %s.%s",
+						d,
+						u.upstream.GetMetadata().GetName(),
+						u.upstream.GetMetadata().GetNamespace())
 					return
 				default:
 					// continue to detect functions, as you were
 				}
-				err := d.DetectFunctions(context.Background(), resolvedUrl, u.dependencies, upstreamSave)
+				err := d.DetectFunctions(u.ctx, resolvedUrl, u.dependencies, upstreamSave)
 				if err != nil {
 					logger.Errorf("Error doing discovery %T: %s", d, err.Error())
 					return
 				}
-				time.Sleep(30 * time.Second)
 			}
 		}(discoveryForUpstream)
 	}

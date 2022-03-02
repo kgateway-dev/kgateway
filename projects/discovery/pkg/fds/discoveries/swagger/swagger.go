@@ -129,7 +129,7 @@ func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
 			if ctx.Err() != nil {
-				return nil, ctx.Err()
+				return nil, multierror.Append(err, ctx.Err())
 			}
 			errs = multierror.Append(errs, errors.Wrapf(err, "could not perform HTTP GET on resolved addr: %v", url))
 			continue
@@ -139,7 +139,7 @@ func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 			if _, err := RetrieveSwaggerDocFromUrl(ctx, url); err != nil {
 				// first check if this is a context error
 				if ctx.Err() != nil {
-					return nil, ctx.Err()
+					return nil, multierror.Append(err, ctx.Err())
 				}
 				errs = multierror.Append(errs, err)
 				continue

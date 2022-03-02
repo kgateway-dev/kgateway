@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"encoding/base64"
+	"github.com/hashicorp/go-multierror"
 	"net/url"
 	"strings"
 	"time"
@@ -106,7 +107,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctions(ctx context.Context, url *ur
 
 	if err != nil {
 		if ctx.Err() != nil {
-			return ctx.Err()
+			return multierror.Append(err, ctx.Err())
 		}
 		// only log other errors as we would like to continue forever.
 		contextutils.LoggerFrom(ctx).Warnf("Unable to perform grpc function discovery for upstream %s in namespace %s, error: ",
