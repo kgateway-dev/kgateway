@@ -56,6 +56,7 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 			clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
 			if clusters.Items[clusterName] == nil {
 				// cluster has already been removed from the snapshot
+				contextutils.LoggerFrom(ctx).Debugf("cluster %s does not exist in the xds snapshot", clusterName)
 				continue
 			}
 			endpointName := clusterName
