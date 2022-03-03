@@ -311,8 +311,7 @@ EOF
 
 ## Next steps
 
-API Reference
-Looks like we’re already including this in the API Reference section:
-https://docs.solo.io/gloo-edge/master/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/
-
-Would be nice to call it out in the main GraphQL docs. Maybe just link from one or more pages where we’re discussing other stuff?
+Now that you've tried out GraphQL with Gloo Edge, check out the following pages to configure your own services for GraphQL integration.
+* [TODO need title for resolver config pg]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/resolver/" %}})
+* [Visualize and monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/observability/" %}})
+* [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/" %}})

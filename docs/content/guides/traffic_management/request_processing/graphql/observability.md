@@ -1,7 +1,7 @@
 ---
 title: Observability
-weight: 40
-description: TODO
+weight: 30
+description: Visualize and monitor your GraphQL services.
 ---
 
 ## UI
