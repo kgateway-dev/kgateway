@@ -23,8 +23,6 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
-
 	github_com_solo_io_solo_kit_pkg_api_external_envoy_api_v2_core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
 	github_com_solo_io_solo_kit_pkg_api_external_envoy_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
@@ -665,18 +663,6 @@ func (m *RouteAction) Clone() proto.Message {
 		} else {
 			target.ClusterSpecifier = &RouteAction_WeightedClusters{
 				WeightedClusters: proto.Clone(m.GetWeightedClusters()).(*WeightedCluster),
-			}
-		}
-
-	case *RouteAction_DynamicForwardProxy:
-
-		if h, ok := interface{}(m.GetDynamicForwardProxy()).(clone.Cloner); ok {
-			target.ClusterSpecifier = &RouteAction_DynamicForwardProxy{
-				DynamicForwardProxy: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.PerRouteConfig),
-			}
-		} else {
-			target.ClusterSpecifier = &RouteAction_DynamicForwardProxy{
-				DynamicForwardProxy: proto.Clone(m.GetDynamicForwardProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.PerRouteConfig),
 			}
 		}
 

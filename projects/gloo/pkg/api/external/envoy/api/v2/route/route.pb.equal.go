@@ -984,21 +984,6 @@ func (m *RouteAction) Equal(that interface{}) bool {
 			}
 		}
 
-	case *RouteAction_DynamicForwardProxy:
-		if _, ok := target.ClusterSpecifier.(*RouteAction_DynamicForwardProxy); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetDynamicForwardProxy()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetDynamicForwardProxy()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetDynamicForwardProxy(), target.GetDynamicForwardProxy()) {
-				return false
-			}
-		}
-
 	default:
 		// m is nil but target is not nil
 		if m.ClusterSpecifier != target.ClusterSpecifier {

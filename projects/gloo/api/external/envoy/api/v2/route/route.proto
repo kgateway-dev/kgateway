@@ -17,8 +17,6 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto";
-
 import "validate/validate.proto";
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
@@ -464,7 +462,7 @@ message RouteAction {
         // header is not found or the referenced cluster does not exist, Envoy will
         // return a 404 response.
         //
-        //
+                //
         //   Internally, Envoy always uses the HTTP/2 *:authority* header to represent the HTTP/1
         //   *Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
         string cluster_header = 2 [(validate.rules).string.min_bytes = 1];
@@ -475,13 +473,6 @@ message RouteAction {
         // `traffic splitting (config_http_conn_man_route_table_traffic_splitting_split)`
         // for additional documentation.
         WeightedCluster weighted_clusters = 3;
-
-        // Route requests to a custom dynamic forward proxy envoy cluster.
-        // Envoy will route based on the DNS response (cached) or pause requests
-        // (for a configurable amount of time on the listener) until DNS has resolved for
-        // the host header rewrite as provided here.
-        // For more, see https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_proxy
-        dfp.options.gloo.solo.io.PerRouteConfig dynamic_forward_proxy = 30;
     }
 
     enum ClusterNotFoundResponseCode {
