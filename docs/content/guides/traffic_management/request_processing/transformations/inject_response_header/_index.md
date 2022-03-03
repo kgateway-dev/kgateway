@@ -4,7 +4,7 @@ weight: 10
 description: Inject request headers into response
 ---
 
-Sometimes an upstream service does not communicate a failure via HTTP response status codes, but rather includes the failure information within the response body. But what if some of your downstream clients expect the status code to be set? In this tutorial we will see how to use transformations to change the HTTP status code based on the contents of the response payload.
+What if you require a routing policy to inject a header from an inbound request into a response header?
 
 ### Setup
 {{< readfile file="/static/content/setup_postman_echo.md" markdown="true">}}
@@ -89,7 +89,7 @@ spec:
 {{< /highlight >}}
 
 #### Test the modified configuration
-We'll teset our modified Virtual Service by issuing the same curl command as before:
+We'll test our modified Virtual Service by issuing the same curl command as before:
 
 ```shell
 curl -H "x-solo-hdr1: val1" $(glooctl proxy url)/get -i
