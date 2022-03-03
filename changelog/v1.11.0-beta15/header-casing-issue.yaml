@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5522
+    resolvesIssue: false
+    description: |
+      Adds support for [Preserving Case](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-http1protocoloptions-headerkeyformat-proper-case-words) and [Proper Case](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-http1protocoloptions-headerkeyformat-proper-case-words) to https REQUEST headers.  Previous releases added the ability to do the same for RESPONSE headers--this closes the gap.
