@@ -1,0 +1,7 @@
+changelog:
+  - type: HELM
+    description: >-
+      Allow users to disable the default gateways, which can be helpful for users who configure the validation webhook
+      to strict failures (i.e. `gloo.gateway.validation.failurePolicy: Fail`) so validation works on installation and
+      upgrades. Once the gateway pod is running and healthy, the user can then apply the default gateways.
+    issueLink: https://github.com/solo-io/gloo/issues/4468
