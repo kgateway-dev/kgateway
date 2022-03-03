@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5992
+    resolvesIssue: false
+    description: Ensure that gateway-proxy ServiceMonitor does not expose metrics externally
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5990
+    resolvesIssue: false
+    description: Introduce Discovery Service to support ServiceMonitor

@@ -89,7 +89,7 @@ spec:
           - name: LOG_LEVEL
             value: {{ .Values.discovery.logLevel }}
         {{- end}}
-        {{- if .Values.global.glooStats.serviceMonitor }}
+        {{- if and $statsConfig.enabled $statsConfig.podMonitorEnabled }}
         ports:
           - name: http-monitoring
             containerPort: 9091
