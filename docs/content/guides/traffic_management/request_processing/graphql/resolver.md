@@ -1,5 +1,5 @@
 ---
-title: TODO
+title: TODO title for resolver pg
 weight: 20
 description: TODO
 ---
@@ -8,7 +8,7 @@ TODO shortdesc
 
 ## Automatic schema generation with GraphQL service discovery
 
-TODO do we need to add the behind-the-scenes info for this feature? eg Sai has a great overview here: https://docs.google.com/presentation/d/1ArxEdVVAOowz4wYcXIYlg4Wd-psadUTrOYH9DPPWwpk/edit#slide=id.g10a8760f3dd_24_181
+**QUESTION do we need to add the behind-the-scenes info for this feature?** eg Sai has a great overview here: https://docs.google.com/presentation/d/1ArxEdVVAOowz4wYcXIYlg4Wd-psadUTrOYH9DPPWwpk/edit#slide=id.g10a8760f3dd_24_181
 
 Gloo Edge can automatically discover API specifications and create GraphQL schemas. Gloo Edge supports two modes of discovery: allowlist and blocklist. For more information about these discovery modes, see the [Function Discovery Service (FDS) guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#function-discovery-service-fds" %}}).
 
@@ -103,7 +103,7 @@ resolutions:
 
 ### gRPC resolvers
 
-TODO need the actual fields for a grpcResolver. Relevant section in the Proto: https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto#L171
+**QUESTION need the actual fields for a grpcResolver** Relevant section in the Proto: https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto#L171
 
 ```yaml
 resolutions:
@@ -119,7 +119,7 @@ resolutions:
         namespace:
 ```
 
-TODO need example grpcResolver
+**QUESTION need example grpcResolver**
 
 ### Schema definitions
 
@@ -155,7 +155,7 @@ schema_definition: |
   }
 ```
 
-TODO is this where the information about stitching should go?? Or, should we have the stitching explanation elsewhere (either leave it on this page at the bottom or move it somewhere else) and just link to it from here?
+**QUESTION is this where the information about stitching should go?** Or, should we have the stitching explanation elsewhere (either leave it on this page at the bottom or move it somewhere else) and just link to it from here?
 
 ### Sample GraphQL API
 
@@ -202,7 +202,7 @@ There are three parts to this:
 
 ## Stitching
 
-TODO not sure where this info should go, as it is pretty extended. Up where the schema def config section is? Somwhere else?
+**QUESTION not sure where this info should go, as it is pretty extended.** Up where the schema def config section is? Somwhere else?
 
 When you use GraphQL in Gloo Edge, you can stitch multiple schemas together to expose one unified GraphQL server to your clients.
 
@@ -281,7 +281,7 @@ Example response from the product service:
 But consider a client that wants the full name of the seller for a given product, instead the username of the seller. Given the product ID, the client cannot get the seller's full name from the product service. However, the full name of any user _is_ provided by the user service. 
 
 To solve this problem, you can specify a configuration file to merge the types between the services. In the `merge_config` section for a `user-service` configuration file, you can specify which fields are unique to the `User` type, and how to get these fields. If a client provides the username for a user and wants the full name, Gloo Edge can use the `getUserWithFullName` query to provide the full name from the user service.
-TODO is the user providing this merging config somewhere??
+**QUESTION is the user providing this merging config somewhere?**
 ```yaml
 name: user-service
 namespace: products-app
