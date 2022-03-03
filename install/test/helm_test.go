@@ -2149,21 +2149,19 @@ spec:
 						}
 
 						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-							return resource.GetKind() == "Deployment"
+							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
 						}).ExpectAll(func(deployment *unstructured.Unstructured) {
 							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
 							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-							if structuredDeployment.GetName() == "gateway-proxy" {
-								for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
-									if _, ok := expectedContainers[container.Name]; ok {
-										// delete found containers from our expectedContainers list
-										delete(expectedContainers, container.Name)
-									} else {
-										Fail(fmt.Sprintf("Unexpected container found: %+v", container.Name))
-									}
+							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+								if _, ok := expectedContainers[container.Name]; ok {
+									// delete found containers from our expectedContainers list
+									delete(expectedContainers, container.Name)
+								} else {
+									Fail(fmt.Sprintf("Unexpected container found: %+v", container.Name))
 								}
 							}
 						})
