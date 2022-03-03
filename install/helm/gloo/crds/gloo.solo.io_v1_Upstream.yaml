@@ -147,6 +147,10 @@ spec:
                     properties:
                       enableTrailers:
                         type: boolean
+                      preserveCaseHeaderKeyFormat:
+                        type: boolean
+                      properCaseHeaderKeyFormat:
+                        type: boolean
                     type: object
                   maxRequestsPerConnection:
                     format: int32
