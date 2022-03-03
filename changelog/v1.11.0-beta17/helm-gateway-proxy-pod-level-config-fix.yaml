@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Move pod-level options away from being in-between container's configuration in gateway-proxy's Helm template.
+    issueLink: https://github.com/solo-io/gloo/issues/5604

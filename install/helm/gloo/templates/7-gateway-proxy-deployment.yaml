@@ -118,6 +118,28 @@ spec:
 {{- end}}
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gateway-proxy
+      {{- if $spec.kind.daemonSet }}
+      {{- if $spec.kind.daemonSet.hostPort }}
+      hostNetwork: {{ ne "false" ($spec.kind.daemonSet.hostNetwork | toString) }} {{/* defaults to true if undefined */}}
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end}}
+      {{- end}}
+      {{- if $spec.podTemplate.nodeName }}
+      nodeName: {{$spec.podTemplate.nodeName}}
+      {{- end }}
+      {{- if $spec.podTemplate.nodeSelector }}
+      nodeSelector:
+      {{- range $key, $value := $spec.podTemplate.nodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+      {{- end }}
+      {{- end }}
+      {{- if $spec.podTemplate.tolerations }}
+      tolerations:
+{{ toYaml $spec.podTemplate.tolerations | indent 6}}
+      {{- end }}
+      {{- if $spec.podTemplate.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $spec.podTemplate.terminationGracePeriodSeconds }}
+      {{- end }}
       {{- if $spec.extraInitContainersHelper }}
       initContainers:
       {{- include $spec.extraInitContainersHelper . | nindent 6 }}
@@ -297,28 +319,6 @@ spec:
           name: sds
           protocol: TCP
 {{- end }} {{- /* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
-      {{- if $spec.kind.daemonSet }}
-      {{- if $spec.kind.daemonSet.hostPort }}
-      hostNetwork: {{ ne "false" ($spec.kind.daemonSet.hostNetwork | toString) }} {{/* defaults to true if undefined */}}
-      dnsPolicy: ClusterFirstWithHostNet
-      {{- end}}
-      {{- end}}
-      {{- if $spec.podTemplate.nodeName }}
-      nodeName: {{$spec.podTemplate.nodeName}}
-      {{- end }}
-      {{- if $spec.podTemplate.nodeSelector }}
-      nodeSelector:
-      {{- range $key, $value := $spec.podTemplate.nodeSelector }}
-        {{ $key }}: {{ $value | quote }}
-      {{- end }}
-      {{- end }}
-      {{- if $spec.podTemplate.tolerations }}
-      tolerations:
-{{ toYaml $spec.podTemplate.tolerations | indent 6}}
-      {{- end }}
-      {{- if $spec.podTemplate.terminationGracePeriodSeconds }}
-      terminationGracePeriodSeconds: {{ $spec.podTemplate.terminationGracePeriodSeconds }}
-      {{- end }}
 {{- if $global.istioSDS.enabled }}
 {{- if $global.istioSDS.customSidecars }}
 {{ toYaml $global.istioSDS.customSidecars | indent 6}}
