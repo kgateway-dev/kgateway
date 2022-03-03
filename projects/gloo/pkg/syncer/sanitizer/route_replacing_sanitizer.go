@@ -178,7 +178,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 	}
 
 	// mark all valid destination clusters
-	validClusters := getClusters(glooSnapshot)
+	validClusters := getClusters(glooSnapshot, xdsSnapshot)
 
 	proxyReports := reports.FilterByKind("*v1.Proxy")
 	erroredRouteNames := s.removeErroredRoutesFromReport(proxyReports, reports)
@@ -227,12 +227,15 @@ func getRoutes(snap envoycache.Snapshot) ([]*envoy_config_route_v3.RouteConfigur
 	return routeConfigs, nil
 }
 
-func getClusters(snap *v1snap.ApiSnapshot) map[string]struct{} {
-	// mark all valid destination clusters
+func getClusters(glooSnapshot *v1snap.ApiSnapshot, xdsSnapshot envoycache.Snapshot) map[string]struct{} {
+	// mark all valid destination clusters, i.e. those that are in both the gloo snapshot and xds snapshot
 	validClusters := make(map[string]struct{})
-	for _, up := range snap.Upstreams.AsInputResources() {
+	xdsClusters := xdsSnapshot.GetResources(resource.ClusterTypeV3)
+	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
 		clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
-		validClusters[clusterName] = struct{}{}
+		if xdsClusters.Items[clusterName] != nil {
+			validClusters[clusterName] = struct{}{}
+		}
 	}
 	return validClusters
 }
