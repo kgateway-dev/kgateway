@@ -8,7 +8,7 @@ to generate the following files:
 - `Chart.yaml`: contains information about the Gloo Edge chart
 - `values.yaml`: default configuration values for the chart
 
-Check the [Gloo Edge docs](https://gloo.solo.io/installation/quick_start/#2-choosing-a-deployment-option)
+Check the [Gloo Edge docs](https://docs.solo.io/gloo-edge/latest/installation/)
 for a description of the different installation options.
 
 ## /crds
