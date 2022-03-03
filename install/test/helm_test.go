@@ -2133,6 +2133,43 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("doesn't break containers when enabling multiple containers", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true",
+								"global.istioSDS.enabled=true",
+							},
+						})
+
+						// Containers we expect to have
+						expectedContainers := map[string]struct{}{
+							"gateway-proxy": {},
+							"istio-proxy":   {},
+							"sds":           {},
+						}
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+								if _, ok := expectedContainers[container.Name]; ok {
+									// delete found containers from our expectedContainers list
+									delete(expectedContainers, container.Name)
+								} else {
+									Fail(fmt.Sprintf("Unexpected container found: %+v", container.Name))
+								}
+							}
+						})
+
+						// An expected container was not correctly set
+						Expect(len(expectedContainers)).To(BeZero(), "all enabled containers must have been found")
+					})
+
 					It("supports extra args to envoy", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
