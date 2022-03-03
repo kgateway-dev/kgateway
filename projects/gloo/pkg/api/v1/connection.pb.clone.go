@@ -134,5 +134,21 @@ func (m *ConnectionConfig_Http1ProtocolOptions) Clone() proto.Message {
 
 	target.EnableTrailers = m.GetEnableTrailers()
 
+	switch m.HeaderFormat.(type) {
+
+	case *ConnectionConfig_Http1ProtocolOptions_ProperCaseHeaderKeyFormat:
+
+		target.HeaderFormat = &ConnectionConfig_Http1ProtocolOptions_ProperCaseHeaderKeyFormat{
+			ProperCaseHeaderKeyFormat: m.GetProperCaseHeaderKeyFormat(),
+		}
+
+	case *ConnectionConfig_Http1ProtocolOptions_PreserveCaseHeaderKeyFormat:
+
+		target.HeaderFormat = &ConnectionConfig_Http1ProtocolOptions_PreserveCaseHeaderKeyFormat{
+			PreserveCaseHeaderKeyFormat: m.GetPreserveCaseHeaderKeyFormat(),
+		}
+
+	}
+
 	return target
 }
