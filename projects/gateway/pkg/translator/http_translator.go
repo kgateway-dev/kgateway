@@ -471,7 +471,7 @@ func regexShortCircuits(laterMatcher, earlierMatcher *matchers.Matcher) bool {
 	foundIndex := re.FindStringIndex(laterPath)
 	// later matcher is always non-regex. to validate against the regex, we need to ensure that it's either
 	// unset or set to false
-	return foundIndex != nil && (laterMatcher.GetCaseSensitive() == nil || laterMatcher.GetCaseSensitive().GetValue() == false)
+	return foundIndex != nil && laterMatcher.GetCaseSensitive().GetValue() == false
 }
 
 // As future matcher APIs get added, this validation will need to be updated as well.
