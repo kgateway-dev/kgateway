@@ -1934,13 +1934,6 @@ spec:
                                   type: string
                                   x-kubernetes-int-or-string: true
                               type: object
-                            dynamicForwardProxy:
-                              properties:
-                                autoHostRewriteHeader:
-                                  type: string
-                                hostRewrite:
-                                  type: string
-                              type: object
                             envoyMetadata:
                               additionalProperties:
                                 type: object
@@ -3422,7 +3415,11 @@ spec:
                                                 type: object
                                             type: object
                                           dynamicForwardProxy:
-                                            maxProperties: 0
+                                            properties:
+                                              autoHostRewriteHeader:
+                                                type: string
+                                              hostRewrite:
+                                                type: string
                                             type: object
                                           kube:
                                             properties:
@@ -4545,7 +4542,11 @@ spec:
                                       type: object
                                   type: object
                                 dynamicForwardProxy:
-                                  maxProperties: 0
+                                  properties:
+                                    autoHostRewriteHeader:
+                                      type: string
+                                    hostRewrite:
+                                      type: string
                                   type: object
                                 kube:
                                   properties:

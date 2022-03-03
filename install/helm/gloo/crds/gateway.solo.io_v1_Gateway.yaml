@@ -1684,7 +1684,11 @@ spec:
                                                           type: object
                                                       type: object
                                                     dynamicForwardProxy:
-                                                      maxProperties: 0
+                                                      properties:
+                                                        autoHostRewriteHeader:
+                                                          type: string
+                                                        hostRewrite:
+                                                          type: string
                                                       type: object
                                                     kube:
                                                       properties:
@@ -2807,7 +2811,11 @@ spec:
                                                 type: object
                                             type: object
                                           dynamicForwardProxy:
-                                            maxProperties: 0
+                                            properties:
+                                              autoHostRewriteHeader:
+                                                type: string
+                                              hostRewrite:
+                                                type: string
                                             type: object
                                           kube:
                                             properties:
@@ -3222,7 +3230,11 @@ spec:
                                                 type: object
                                             type: object
                                           dynamicForwardProxy:
-                                            maxProperties: 0
+                                            properties:
+                                              autoHostRewriteHeader:
+                                                type: string
+                                              hostRewrite:
+                                                type: string
                                             type: object
                                           kube:
                                             properties:
@@ -4345,7 +4357,11 @@ spec:
                                       type: object
                                   type: object
                                 dynamicForwardProxy:
-                                  maxProperties: 0
+                                  properties:
+                                    autoHostRewriteHeader:
+                                      type: string
+                                    hostRewrite:
+                                      type: string
                                   type: object
                                 kube:
                                   properties:

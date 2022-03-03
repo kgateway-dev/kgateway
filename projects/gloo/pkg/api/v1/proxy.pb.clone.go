@@ -23,6 +23,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
+
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -626,11 +628,11 @@ func (m *Destination) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetDynamicForwardProxy()).(clone.Cloner); ok {
 			target.DestinationType = &Destination_DynamicForwardProxy{
-				DynamicForwardProxy: h.Clone().(*github_com_golang_protobuf_ptypes_empty.Empty),
+				DynamicForwardProxy: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.PerRouteConfig),
 			}
 		} else {
 			target.DestinationType = &Destination_DynamicForwardProxy{
-				DynamicForwardProxy: proto.Clone(m.GetDynamicForwardProxy()).(*github_com_golang_protobuf_ptypes_empty.Empty),
+				DynamicForwardProxy: proto.Clone(m.GetDynamicForwardProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.PerRouteConfig),
 			}
 		}
 
