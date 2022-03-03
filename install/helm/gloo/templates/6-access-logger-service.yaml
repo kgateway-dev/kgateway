@@ -1,6 +1,6 @@
 {{- define "accessLogger.serviceSpec"}}
 {{- if and .Values.gateway.enabled .Values.accessLogger.enabled }}
-
+{{- $statsConfig := coalesce .Values.accessLogger.stats .Values.global.glooStats -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -15,7 +15,7 @@ spec:
     targetPort: {{ .Values.accessLogger.port }}
     protocol: TCP
     name: http
-{{- if .Values.global.glooStats.serviceMonitor }}
+{{- if and $statsConfig.enabled $statsConfig.serviceMonitorEnabled }}
   - name: http-monitoring
     port: 9091
 {{- end }}

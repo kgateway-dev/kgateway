@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6008
+    description: Fix invalid route replacement when upstream points to missing service.
+    resolvesIssue: false
