@@ -99,6 +99,7 @@ gatewayProxies:
   gatewayProxy:
     envoyApiVersion: V3
     gatewaySettings:
+      enabled: true
       useProxyProto: false
     failover:
       enabled: false
