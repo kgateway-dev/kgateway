@@ -1,0 +1,39 @@
+---
+title: Observability
+weight: 40
+description: 
+---
+
+## UI
+
+I have a basic walkthrough of the UI here:
+https://drive.google.com/drive/folders/1RnHCx1diNebjZ2nShFjstTe_Xord56hE
+
+It would be good to discuss the basic workflows with screen captures and summary:
+API listing / registry page
+The API Details page - viewing an existing API
+Explorer - invoking an API (similar to Try It Now in Portal)
+Creating a new GraphQL API through the UI
+
+## Observability
+
+This is the complete set of metrics we have right now:
+
+```
+envoy_gloo_system_bookinfo_graphql_graphql_Query_productsForHome_rest_resolver_failed_resolutions
+envoy_gloo_system_bookinfo_graphql_graphql_Query_productsForHome_rest_resolver_total_resolutions
+envoy_gloo_system_bookinfo_graphql_graphql_author_rest_resolver_failed_resolutions 
+envoy_gloo_system_bookinfo_graphql_graphql_author_rest_resolver_total_resolutions
+envoy_gloo_system_bookinfo_graphql_graphql_pages_rest_resolver_failed_resolutions
+envoy_gloo_system_bookinfo_graphql_graphql_pages_rest_resolver_total_resolutions
+envoy_gloo_system_bookinfo_graphql_graphql_review_rest_resolver_failed_resolutions envoy_gloo_system_bookinfo_graphql_graphql_review_rest_resolver_total_resolutions
+envoy_gloo_system_bookinfo_graphql_graphql_rq_error
+envoy_gloo_system_bookinfo_graphql_graphql_rq_invalid_query_error
+envoy_gloo_system_bookinfo_graphql_graphql_rq_parse_json_error
+envoy_gloo_system_bookinfo_graphql_graphql_rq_parse_query_error
+envoy_gloo_system_bookinfo_graphql_graphql_rq_total
+envoy_gloo_system_bookinfo_graphql_graphql_year_rest_resolver_failed_resolutions
+envoy_gloo_system_bookinfo_graphql_graphql_year_rest_resolver_total_resolutions
+```
+
+These are envoy stats that are also available through the Prometheus (and then Grafana if customers want to visualize through a dashboard)
