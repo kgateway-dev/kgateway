@@ -12,8 +12,6 @@ import (
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -89,23 +87,11 @@ var _ = FDescribe("dynamic forward proxy", func() {
 				HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"},
 			},
 		}
-		//testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{
-		//	DynamicForwardProxy: &dynamic_forward_proxy.PerRouteConfig{
-		//		HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"},
-		//	},
-		//}
 	})
 
 	JustBeforeEach(func() {
-		removeMeUs := &gloov1.Upstream{Metadata: &core.Metadata{
-			Name:      "placeholder",
-			Namespace: "gloo-system",
-		}}
-		_, err := testClients.UpstreamClient.Write(removeMeUs, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-
 		// write a virtual service so we have a proxy to our test upstream
-		_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+		_, err := testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
 		checkProxy()

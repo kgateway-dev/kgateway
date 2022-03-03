@@ -227,12 +227,12 @@ func (h *httpRouteConfigurationTranslator) setAction(
 ) {
 	switch action := in.GetAction().(type) {
 	case *v1.Route_RouteAction:
-		if err := ValidateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
-			validation.AppendRouteWarning(routeReport,
-				validationapi.RouteReport_Warning_InvalidDestinationWarning,
-				err.Error(),
-			)
-		}
+		//if err := ValidateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
+		//	validation.AppendRouteWarning(routeReport,
+		//		validationapi.RouteReport_Warning_InvalidDestinationWarning,
+		//		err.Error(),
+		//	)
+		//}
 
 		out.Action = &envoy_config_route_v3.Route_Route{
 			Route: &envoy_config_route_v3.RouteAction{},
