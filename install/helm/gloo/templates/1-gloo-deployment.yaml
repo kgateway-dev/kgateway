@@ -158,7 +158,7 @@ spec:
         - containerPort: 9979
           name: wasm-cache
           protocol: TCP
-        {{- if .Values.global.glooStats.serviceMonitor }}
+        {{- if and $statsConfig.enabled $statsConfig.podMonitorEnabled }}
         - name: http-monitoring
           containerPort: 9091
         {{- end }}
