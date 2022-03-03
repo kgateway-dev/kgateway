@@ -183,7 +183,7 @@ var _ = FDescribe("dynamic forward proxy", func() {
 
 		// This is an important test since the most common use case here will be to grab information from the
 		// request using a transformation and use that to determine the upstream destination to route to
-		It("should proxy http", func() {
+		FIt("should proxy http", func() {
 			destEcho := `postman-echo.com`
 			expectedSubstr := `"host":"postman-echo.com"`
 			testReq := testRequest(destEcho, nil)
