@@ -5,11 +5,13 @@ import (
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_extensions_http_header_formatters_preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
@@ -19,7 +21,8 @@ var (
 )
 
 const (
-	ExtensionName = "upstream_conn"
+	ExtensionName      = "upstream_conn"
+	PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
 )
 
 type plugin struct{}
@@ -130,6 +133,23 @@ func convertHttp1ProtocolOptions(hpo *v1.ConnectionConfig_Http1ProtocolOptions) 
 
 	if hpo.GetEnableTrailers() {
 		out.EnableTrailers = hpo.GetEnableTrailers()
+	}
+
+	if hpo.GetProperCaseHeaderKeyFormat() {
+		out.HeaderKeyFormat = &envoy_config_core_v3.Http1ProtocolOptions_HeaderKeyFormat{
+			HeaderFormat: &envoy_config_core_v3.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{
+				ProperCaseWords: &envoy_config_core_v3.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords{},
+			},
+		}
+	} else if hpo.GetPreserveCaseHeaderKeyFormat() {
+		out.HeaderKeyFormat = &envoy_config_core_v3.Http1ProtocolOptions_HeaderKeyFormat{
+			HeaderFormat: &envoy_config_core_v3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
+				StatefulFormatter: &envoy_config_core_v3.TypedExtensionConfig{
+					Name:        PreserveCasePlugin,
+					TypedConfig: utils.MustMessageToAny(&envoy_extensions_http_header_formatters_preserve_case_v3.PreserveCaseFormatterConfig{}),
+				},
+			},
+		}
 	}
 
 	return out, nil
