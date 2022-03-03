@@ -86,8 +86,10 @@ var _ = FDescribe("dynamic forward proxy", func() {
 		// write a virtual service so we have a proxy to our test upstream
 		testVs = getTrivialVirtualService(writeNamespace)
 		testVs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_DynamicForwardProxy{DynamicForwardProxy: &empty.Empty{}}
-		testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{DynamicForwardProxy: &dynamic_forward_proxy.PerRouteConfig{
-			HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"}},
+		testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{
+			DynamicForwardProxy: &dynamic_forward_proxy.PerRouteConfig{
+				HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"},
+			},
 		}
 	})
 
