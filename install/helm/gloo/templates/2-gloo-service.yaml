@@ -25,7 +25,7 @@ spec:
   - name: wasm-cache
     port: 9979
     protocol: TCP
-{{- if $statsConfig.serviceMonitorEnabled }}
+{{- if and $statsConfig.enabled $statsConfig.serviceMonitorEnabled }}
   - name: http-monitoring
     port: 9091
 {{- end }}

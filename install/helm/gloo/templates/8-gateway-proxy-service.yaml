@@ -142,6 +142,7 @@ spec:
 {{- end }} {{/* define gatewayProxy.monitoringServiceSpec */}}
 
 {{- if .Values.gateway.enabled }}
+{{- $global := .Values.global }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $defaultGatewayProxySafe := deepCopy $gatewayProxy -}}
@@ -164,10 +165,11 @@ spec:
 ---
 {{- include "gloo.util.merge" (list $ctx $configDumpServiceYamlOverride "gatewayProxy.configDumpServiceSpec") -}}
 {{- end }} {{/* if and ($spec.readConfig $spec.readConfigMulticluster) */}}
-{{- if $spec.service.serviceMonitorEnabled }}
+{{- $statsConfig := coalesce $spec.stats $global.glooStats }}
+{{- if and $statsConfig.enabled $statsConfig.serviceMonitorEnabled }}
 ---
 {{- include "gatewayProxy.monitoringServiceSpec" $ctx -}}
-{{- end }} {{/* if $spec.service.serviceMonitorEnabled */}}
+{{- end }} {{/* if $statsConfig.serviceMonitorEnabled */}}
 {{- end }}{{/* if not $spec.disabled */}}
 {{- end }} {{/* range $name, $spec := .Values.gatewayProxies */}}
 {{- end }} {{/* if .Values.gateway.enabled */}}

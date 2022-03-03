@@ -120,8 +120,8 @@
 |gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
 |gloo.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gloo.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
-|gloo.deployment.stats.serviceMonitorEnabled|bool|||
-|gloo.deployment.stats.podMonitorEnabled|bool|||
+|gloo.deployment.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
+|gloo.deployment.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |gloo.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gloo.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
@@ -177,8 +177,8 @@
 |discovery.deployment.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |discovery.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |discovery.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
-|discovery.deployment.stats.serviceMonitorEnabled|bool|||
-|discovery.deployment.stats.podMonitorEnabled|bool|||
+|discovery.deployment.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
+|discovery.deployment.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |discovery.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |discovery.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |discovery.deployment.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
@@ -250,8 +250,8 @@
 |gateway.deployment.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |gateway.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gateway.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
-|gateway.deployment.stats.serviceMonitorEnabled|bool|||
-|gateway.deployment.stats.podMonitorEnabled|bool|||
+|gateway.deployment.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
+|gateway.deployment.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |gateway.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gateway.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gateway.deployment.extraGatewayLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway deployment.|
@@ -439,7 +439,6 @@
 |gatewayProxies.NAME.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
 |gatewayProxies.NAME.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
 |gatewayProxies.NAME.service.configDumpService.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gatewayProxies.NAME.service.serviceMonitorEnabled|bool|||
 |gatewayProxies.NAME.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.NAME.affinity.NAME|interface|||
@@ -465,8 +464,8 @@
 |gatewayProxies.NAME.extraListenersHelper|string|||
 |gatewayProxies.NAME.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gatewayProxies.NAME.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
-|gatewayProxies.NAME.stats.serviceMonitorEnabled|bool|||
-|gatewayProxies.NAME.stats.podMonitorEnabled|bool|||
+|gatewayProxies.NAME.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
+|gatewayProxies.NAME.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
 |gatewayProxies.NAME.readConfigMulticluster|bool||expose a read-only subset of the envoy admin api to gloo-fed|
 |gatewayProxies.NAME.extraProxyVolumeMounts[].NAME|interface|||
@@ -491,7 +490,6 @@
 |gatewayProxies.NAME.podDisruptionBudget.minAvailable|int32||An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying "100%".|
 |gatewayProxies.NAME.podDisruptionBudget.maxUnavailable|int32||An eviction is allowed if at most "maxUnavailable" pods selected by "selector" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with "minAvailable".|
 |gatewayProxies.NAME.podDisruptionBudget.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gatewayProxies.NAME.podMonitorEnabled|bool|||
 |gatewayProxies.NAME.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Defaults to "cluster.local"|
 |gatewayProxies.NAME.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
 |gatewayProxies.NAME.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
@@ -603,7 +601,6 @@
 |gatewayProxies.gatewayProxy.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
 |gatewayProxies.gatewayProxy.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
 |gatewayProxies.gatewayProxy.service.configDumpService.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gatewayProxies.gatewayProxy.service.serviceMonitorEnabled|bool|||
 |gatewayProxies.gatewayProxy.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.gatewayProxy.affinity.NAME|interface|||
@@ -629,8 +626,8 @@
 |gatewayProxies.gatewayProxy.extraListenersHelper|string|||
 |gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gatewayProxies.gatewayProxy.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
-|gatewayProxies.gatewayProxy.stats.serviceMonitorEnabled|bool|||
-|gatewayProxies.gatewayProxy.stats.podMonitorEnabled|bool|||
+|gatewayProxies.gatewayProxy.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
+|gatewayProxies.gatewayProxy.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |gatewayProxies.gatewayProxy.readConfig|bool||expose a read-only subset of the envoy admin api|
 |gatewayProxies.gatewayProxy.readConfigMulticluster|bool||expose a read-only subset of the envoy admin api to gloo-fed|
 |gatewayProxies.gatewayProxy.extraProxyVolumeMounts[].NAME|interface|||
@@ -655,7 +652,6 @@
 |gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable|int32||An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying "100%".|
 |gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable|int32||An eviction is allowed if at most "maxUnavailable" pods selected by "selector" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with "minAvailable".|
 |gatewayProxies.gatewayProxy.podDisruptionBudget.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gatewayProxies.gatewayProxy.podMonitorEnabled|bool|||
 |gatewayProxies.gatewayProxy.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Defaults to "cluster.local"|
 |gatewayProxies.gatewayProxy.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
 |gatewayProxies.gatewayProxy.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
@@ -786,8 +782,8 @@
 |accessLogger.enabled|bool|false||
 |accessLogger.stats.enabled|bool|true|Controls whether or not envoy stats are enabled|
 |accessLogger.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
-|accessLogger.stats.serviceMonitorEnabled|bool|||
-|accessLogger.stats.podMonitorEnabled|bool|||
+|accessLogger.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
+|accessLogger.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |accessLogger.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |accessLogger.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |accessLogger.extraAccessLoggerLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment.|
@@ -842,8 +838,8 @@
 |global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo Edge RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
 |global.glooStats.enabled|bool|true|Controls whether or not envoy stats are enabled|
 |global.glooStats.routePrefixRewrite|string|/stats/prometheus|The envoy stats endpoint to which the metrics are written|
-|global.glooStats.serviceMonitorEnabled|bool|||
-|global.glooStats.podMonitorEnabled|bool|||
+|global.glooStats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
+|global.glooStats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |global.glooMtls.enabled|bool|false|Enables internal mtls authentication|
 |global.glooMtls.sds.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |global.glooMtls.sds.image.repository|string|sds|image name (repository) for the container.|

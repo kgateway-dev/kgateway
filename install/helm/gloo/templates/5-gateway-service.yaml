@@ -17,7 +17,7 @@ spec:
     protocol: TCP
     # this should map to projects/gateway/pkg/defaults.ValidationWebhookBindPort
     targetPort: 8443
-{{- if $statsConfig.serviceMonitorEnabled }}
+{{- if and $statsConfig.enabled $statsConfig.serviceMonitorEnabled }}
   - name: http-monitoring
     port: 9091
 {{- end }}
