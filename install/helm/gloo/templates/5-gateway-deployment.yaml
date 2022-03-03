@@ -54,7 +54,7 @@ spec:
 {{ toYaml .Values.gateway.deployment.resources | indent 10}}
 {{- end}}
 
-{{- if or (.Values.gateway.validation.enabled) (.Values.global.glooStats.serviceMonitor) }}
+{{- if or (.Values.gateway.validation.enabled) ($statsConfig.podMonitorEnabled) }}
         ports:
 {{- end}}
 {{- if .Values.gateway.validation.enabled }}
@@ -62,7 +62,7 @@ spec:
             name: https
             protocol: TCP
 {{- end}}
-{{- if .Values.global.glooStats.serviceMonitor }}
+{{- if and $statsConfig.enabled $statsConfig.podMonitorEnabled }}
           - name: http-monitoring
             containerPort: 9091
 {{- end }}
