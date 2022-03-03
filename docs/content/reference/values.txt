@@ -444,6 +444,7 @@
 |gatewayProxies.NAME.affinity.NAME|interface|||
 |gatewayProxies.NAME.tracing.provider.NAME|interface|||
 |gatewayProxies.NAME.tracing.cluster[].NAME|interface|||
+|gatewayProxies.NAME.gatewaySettings.enabled|bool||enable/disable default gateways|
 |gatewayProxies.NAME.gatewaySettings.disableGeneratedGateways|bool||set to true to disable the gateway generation for a gateway proxy|
 |gatewayProxies.NAME.gatewaySettings.disableHttpGateway|bool||Set to true to disable http gateway generation.|
 |gatewayProxies.NAME.gatewaySettings.disableHttpsGateway|bool||Set to true to disable https gateway generation.|
@@ -606,6 +607,7 @@
 |gatewayProxies.gatewayProxy.affinity.NAME|interface|||
 |gatewayProxies.gatewayProxy.tracing.provider.NAME|interface|||
 |gatewayProxies.gatewayProxy.tracing.cluster[].NAME|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.enabled|bool|true|enable/disable default gateways|
 |gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways|bool||set to true to disable the gateway generation for a gateway proxy|
 |gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway|bool||Set to true to disable http gateway generation.|
 |gatewayProxies.gatewayProxy.gatewaySettings.disableHttpsGateway|bool||Set to true to disable https gateway generation.|

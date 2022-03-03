@@ -1067,6 +1067,21 @@ var _ = Describe("Helm Test", func() {
 
 				Context("default gateways", func() {
 
+					It("does not render when disabled", func() {
+						prepareMakefile(namespace, helmValues{})
+						testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true"},
+						})
+						testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=false"},
+						})
+						testManifest.Expect("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+					})
+
 					It("does not render when gatewayProxy is disabled", func() {
 						prepareMakefile(namespace, helmValues{})
 						testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
