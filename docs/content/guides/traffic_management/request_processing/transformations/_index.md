@@ -384,6 +384,7 @@ In addition to the standard functions available in the core _Inja_ library, you 
 - `env(env_var_name)`: returns the value of the environment variable with the given name.
 - `body()`: returns the request/response body.
 - `context()`: returns the base JSON context (allowing for example to range on a JSON body that is an array).
+- `request_header(header_name)`: return the value of the request header with the given name. Useful for including request header values in response transformations.
 
 You can use templates to mutate [headers](#headers), the [body](#body), and [dynamic metadata](#dynamicmetadatavalues).
 
