@@ -365,6 +365,12 @@ func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RoutePa
 	switch dest := in.GetDestination().(type) {
 	case *v1.RouteAction_Single:
 		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{}
+
+		if dest.Single.GetDynamicForwardProxy() != nil {
+			out.GetClusterSpecifier().(*envoy_config_route_v3.RouteAction_Cluster).Cluster = "placeholder_gloo-system"
+			return nil
+		}
+
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
 		if err != nil {
 			return err

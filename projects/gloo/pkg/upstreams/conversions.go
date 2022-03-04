@@ -24,10 +24,11 @@ func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
 	case *v1.Destination_Consul:
 		ref = consul.DestinationToUpstreamRef(d.Consul)
 	case *v1.Destination_DynamicForwardProxy:
-		ref = &core.ResourceRef{
-			Name:      "placeholder",
-			Namespace: "gloo-system",
-		}
+		return nil, eris.Errorf("logic error")
+		//ref = &core.ResourceRef{
+		//	Name:      "placeholder",
+		//	Namespace: "gloo-system",
+		//}
 		// TODO(kdorosH)
 		//ref = consul.DestinationToUpstreamRef(d.Consul)
 	default:
