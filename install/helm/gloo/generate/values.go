@@ -380,6 +380,7 @@ type GatewayProxy struct {
 }
 
 type GatewayProxyGatewaySettings struct {
+	Enabled                  *bool                  `json:"enabled,omitempty" desc:"enable/disable default gateways"`
 	DisableGeneratedGateways *bool                  `json:"disableGeneratedGateways,omitempty" desc:"set to true to disable the gateway generation for a gateway proxy"`
 	DisableHttpGateway       *bool                  `json:"disableHttpGateway,omitempty" desc:"Set to true to disable http gateway generation."`
 	DisableHttpsGateway      *bool                  `json:"disableHttpsGateway,omitempty" desc:"Set to true to disable https gateway generation."`
