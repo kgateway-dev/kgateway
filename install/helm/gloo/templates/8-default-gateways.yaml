@@ -3,6 +3,7 @@
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
+{{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -45,6 +46,7 @@ spec:
   ssl: false
   proxyNames:
   - {{ $name | kebabcase }}
+{{- end }}{{/* $gatewaySettings.enabled */}}
 {{- end }}{{/* with */}}
 {{- end }}{{/* define "defaultGateway.gateway" */}}
 
@@ -54,6 +56,7 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
+{{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -96,6 +99,7 @@ spec:
   ssl: true
   proxyNames:
   - {{ $name | kebabcase }}
+{{- end }}{{/* $gatewaySettings.enabled */}}
 {{- end }}{{/* with */}}
 {{- end }}{{/* define "defaultGatway.sslGateway" */}}
 
@@ -104,6 +108,7 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
+{{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -129,6 +134,7 @@ spec:
         forwardSniClusterName: {}
   proxyNames:
   - {{ $name | kebabcase }}
+{{- end }}{{/* $gatewaySettings.enabled */}}
 {{- end }}{{/* with */}}
 {{- end }}{{/* define "defaultGateway.failoverGateway" */}}
 
