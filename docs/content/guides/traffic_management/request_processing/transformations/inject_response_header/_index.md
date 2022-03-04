@@ -41,14 +41,12 @@ curl -v -H "x-solo-hdr1: val1" $(glooctl proxy url)/get -i
 
 You should get a response with status `200` and a JSON body similar to the one below. Note that the `x-solo-hdr1` header is in the payload response from postman-echo, but it is not included in the response headers reported by curl.
 
-```json
+```
 HTTP/1.1 200 OK
 date: Thu, 03 Mar 2022 22:29:21 GMT
 content-type: application/json; charset=utf-8
 content-length: 349
-etag: W/"15d-GLNZVV52l8+8pLgZieJhZCfLjvA"
 vary: Accept-Encoding
-set-cookie: sails.sid=s%3AMQUCB_VqMqP28JCHLVeTiXKRLI9_QyrR.FIRk4gLlE6ZkvkLwGLVVt5w5WCYXZamyfmcNOR0%2B8x0; Path=/; HttpOnly
 x-envoy-upstream-service-time: 42
 server: envoy
 
@@ -102,9 +100,7 @@ HTTP/1.1 200 OK
 date: Thu, 03 Mar 2022 22:40:27 GMT
 content-type: application/json; charset=utf-8
 content-length: 349
-etag: W/"15d-Sq22PuFGXldWA92t2OydtO+XmX4"
 vary: Accept-Encoding
-set-cookie: sails.sid=s%3APSaTdEJLAFjQe9_zkJQSJhIV7Uh_PhW_.IvO411%2FVxk9Td4ea9mP1B8jvZkjuOHieDWXVVNsHZ7M; Path=/; HttpOnly
 x-envoy-upstream-service-time: 45
 x-solo-resp-hdr1: val1
 server: envoy
