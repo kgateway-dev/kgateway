@@ -9,6 +9,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/ghodss/yaml"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -2485,6 +2487,81 @@ spec:
 								Expect(istioMetaClusterID).To(Equal(value), "ISTIO_META_CLUSTER_ID should equal "+value)
 							}
 
+						})
+					})
+
+					It("can set discoveryAddress value in PROXY_CONFIG env var", func() {
+						val := "istiod-1-8-6.istio-system.svc:15012"
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true",
+								"global.istioSDS.enabled=true",
+								"gatewayProxies.gatewayProxy.istioDiscoveryAddress=" + val,
+							},
+						})
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+							var discoveryAddress interface{}
+							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+								for _, env := range container.Env {
+									if env.Name == "PROXY_CONFIG" {
+										var proxyConfigMap map[string]interface{}
+										err := yaml.Unmarshal([]byte(env.Value), &proxyConfigMap)
+										Expect(err).ToNot(HaveOccurred())
+
+										discoveryAddress, ok = proxyConfigMap["discoveryAddress"]
+										Expect(ok).To(BeTrue(), "discoveryAddress should be set in PROXY_CONFIG")
+										break
+									}
+								}
+							}
+
+							Expect(discoveryAddress).To(Equal(val), fmt.Sprintf("discoveryAddress should be set to value: %v", val))
+						})
+					})
+
+					It("istio's discoveryAddress default value set", func() {
+						def := "istiod.istio-system.svc:15012"
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true",
+								"global.istioSDS.enabled=true",
+							},
+						})
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+							var discoveryAddress interface{}
+							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+								for _, env := range container.Env {
+									if env.Name == "PROXY_CONFIG" {
+										var proxyConfigMap map[string]interface{}
+										err := yaml.Unmarshal([]byte(env.Value), &proxyConfigMap)
+										Expect(err).NotTo(HaveOccurred())
+
+										discoveryAddress, ok = proxyConfigMap["discoveryAddress"]
+										Expect(ok).To(BeTrue(), "discoveryAddress should be set in PROXY_CONFIG")
+										break
+									}
+								}
+							}
+
+							Expect(discoveryAddress).To(Equal(def), fmt.Sprintf("discoveryAddress should be default value: %v", def))
 						})
 					})
 
