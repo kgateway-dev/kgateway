@@ -311,6 +311,7 @@ EOF
 
 ## Next steps
 
+TODO fix links/add new pages
 Now that you've tried out GraphQL with Gloo Edge, check out the following pages to configure your own services for GraphQL integration.
 * [TODO need title for resolver config pg]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/resolver/" %}})
 * [Visualize and monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/observability/" %}})

@@ -1,6 +1,6 @@
 ---
 title: GraphQL (Enterprise)
-weight: 120
+weight: 70
 description: Enable GraphQL resolution
 ---
 

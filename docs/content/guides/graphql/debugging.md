@@ -1,6 +1,6 @@
 ---
 title: Debugging
-weight: 40
+weight: 80
 description: TODO
 ---
 
