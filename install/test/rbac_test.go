@@ -1,6 +1,8 @@
 package test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
@@ -22,6 +24,32 @@ var _ = Describe("RBAC Test", func() {
 				})
 				Expect(err).NotTo(HaveOccurred(), "Should be able to render the manifest in the RBAC unit test")
 				testManifest = tm
+			}
+
+			ExpectDiscoveryNotInRoleBindingSubjects := func(roleBindingName string) {
+				selectedResources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+					return resource.GetKind() == "RoleBinding" && resource.GetName() == roleBindingName
+				})
+				Expect(selectedResources.NumResources()).ToNot(BeZero(), fmt.Sprintf("could not find expected role binding: %s", roleBindingName))
+				selectedResources.ExpectAll(func(resource *unstructured.Unstructured) {
+					roleBinding := makeRoleBindingFromUnstructured(resource)
+					for _, subject := range roleBinding.Subjects {
+						Expect(subject.Name).To(Not(Equal("discovery")), "disabled discovery service should not be bound in %s", roleBinding.Name)
+					}
+				})
+			}
+
+			ExpectDiscoveryNotInClusterRoleBindingSubjects := func(clusterRoleBindingName string) {
+				selectedResources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+					return resource.GetKind() == "ClusterRoleBinding" && resource.GetName() == clusterRoleBindingName
+				})
+				Expect(selectedResources.NumResources()).ToNot(BeZero(), fmt.Sprintf("could not find expected cluster role binding: %s", clusterRoleBindingName))
+				selectedResources.ExpectAll(func(resource *unstructured.Unstructured) {
+					clusterRoleBinding := makeClusterRoleBindingFromUnstructured(resource)
+					for _, subject := range clusterRoleBinding.Subjects {
+						Expect(subject.Name).To(Not(Equal("discovery")), "disabled discovery service should not be bound in %s", clusterRoleBinding.Name)
+					}
+				})
 			}
 
 			Context("implementation-agnostic permissions", func() {
@@ -115,6 +143,13 @@ var _ = Describe("RBAC Test", func() {
 						prepareMakefile("global.glooRbac.namespaced=false")
 						testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 					})
+
+					It("disabling discovery removes its service account from cluster role binding", func() {
+						resourceBuilder.Name += "-binding-" + namespace
+						resourceBuilder.RoleRef.Name += "-" + namespace
+						prepareMakefile("global.glooRbac.namespaced=false", "discovery.enabled=false")
+						ExpectDiscoveryNotInClusterRoleBindingSubjects(resourceBuilder.GetClusterRoleBinding().GetName())
+					})
 				})
 				Context("namespace scope", func() {
 					BeforeEach(func() {
@@ -131,6 +166,12 @@ var _ = Describe("RBAC Test", func() {
 						resourceBuilder.Name += "-binding"
 						prepareMakefile("global.glooRbac.namespaced=true")
 						testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
+					})
+
+					It("disabling discovery removes its service account from role binding", func() {
+						resourceBuilder.Name += "-binding"
+						prepareMakefile("global.glooRbac.namespaced=true", "discovery.enabled=false")
+						ExpectDiscoveryNotInRoleBindingSubjects(resourceBuilder.GetRoleBinding().GetName())
 					})
 				})
 			})
@@ -175,6 +216,13 @@ var _ = Describe("RBAC Test", func() {
 						prepareMakefile("global.glooRbac.namespaced=false")
 						testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 					})
+
+					It("disabling discovery removes its service account from cluster role binding", func() {
+						resourceBuilder.Name += "-binding-" + namespace
+						resourceBuilder.RoleRef.Name += "-" + namespace
+						prepareMakefile("global.glooRbac.namespaced=false", "discovery.enabled=false")
+						ExpectDiscoveryNotInClusterRoleBindingSubjects(resourceBuilder.GetClusterRoleBinding().GetName())
+					})
 				})
 				Context("namespace scope", func() {
 					BeforeEach(func() {
@@ -191,6 +239,12 @@ var _ = Describe("RBAC Test", func() {
 						resourceBuilder.Name += "-binding"
 						prepareMakefile("global.glooRbac.namespaced=true")
 						testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
+					})
+
+					It("disabling discovery removes its service account from role binding", func() {
+						resourceBuilder.Name += "-binding"
+						prepareMakefile("global.glooRbac.namespaced=true", "discovery.enabled=false")
+						ExpectDiscoveryNotInRoleBindingSubjects(resourceBuilder.GetRoleBinding().GetName())
 					})
 				})
 			})
@@ -275,6 +329,79 @@ var _ = Describe("RBAC Test", func() {
 				})
 			})
 
+			Context("gloo-graphqlschema-mutator", func() {
+				BeforeEach(func() {
+					resourceBuilder = ResourceBuilder{
+						Name: "gloo-graphqlschema-mutator",
+						Labels: map[string]string{
+							"app":  "gloo",
+							"gloo": "rbac",
+						},
+						Rules: []rbacv1.PolicyRule{
+							{
+								APIGroups: []string{"graphql.gloo.solo.io"},
+								Resources: []string{"graphqlschemas"},
+								Verbs:     []string{"get", "list", "watch", "update", "create"},
+							},
+						},
+						RoleRef: rbacv1.RoleRef{
+							APIGroup: "rbac.authorization.k8s.io",
+							Kind:     "ClusterRole",
+							Name:     "gloo-graphqlschema-mutator",
+						},
+						Subjects: []rbacv1.Subject{{
+							Kind:      "ServiceAccount",
+							Name:      "discovery",
+							Namespace: namespace,
+						}},
+					}
+				})
+				Context("cluster scope", func() {
+					It("role", func() {
+						resourceBuilder.Name += "-" + namespace
+						prepareMakefile("global.glooRbac.namespaced=false")
+						testManifest.ExpectClusterRole(resourceBuilder.GetClusterRole())
+					})
+
+					It("role binding", func() {
+						resourceBuilder.Name += "-binding-" + namespace
+						resourceBuilder.RoleRef.Name += "-" + namespace
+						prepareMakefile("global.glooRbac.namespaced=false")
+						testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
+					})
+
+					It("disabling discovery removes its service account from cluster role binding", func() {
+						resourceBuilder.Name += "-binding-" + namespace
+						resourceBuilder.RoleRef.Name += "-" + namespace
+						prepareMakefile("global.glooRbac.namespaced=false", "discovery.enabled=false")
+						ExpectDiscoveryNotInClusterRoleBindingSubjects(resourceBuilder.GetClusterRoleBinding().GetName())
+					})
+				})
+				Context("namespace scope", func() {
+					BeforeEach(func() {
+						resourceBuilder.RoleRef.Kind = "Role"
+						resourceBuilder.Namespace = namespace
+					})
+
+					It("role", func() {
+						prepareMakefile("global.glooRbac.namespaced=true")
+						testManifest.ExpectRole(resourceBuilder.GetRole())
+					})
+
+					It("role binding", func() {
+						resourceBuilder.Name += "-binding"
+						prepareMakefile("global.glooRbac.namespaced=true")
+						testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
+					})
+
+					It("disabling discovery removes its service account from role binding", func() {
+						resourceBuilder.Name += "-binding"
+						prepareMakefile("global.glooRbac.namespaced=true", "discovery.enabled=false")
+						ExpectDiscoveryNotInRoleBindingSubjects(resourceBuilder.GetRoleBinding().GetName())
+					})
+				})
+			})
+
 			Context("settings-user", func() {
 				BeforeEach(func() {
 					resourceBuilder = ResourceBuilder{
@@ -323,6 +450,13 @@ var _ = Describe("RBAC Test", func() {
 						prepareMakefile("global.glooRbac.namespaced=false")
 						testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 					})
+
+					It("disabling discovery removes its service account from cluster role binding", func() {
+						resourceBuilder.Name += "-binding-" + namespace
+						resourceBuilder.RoleRef.Name += "-" + namespace
+						prepareMakefile("global.glooRbac.namespaced=false", "discovery.enabled=false")
+						ExpectDiscoveryNotInClusterRoleBindingSubjects(resourceBuilder.GetClusterRoleBinding().GetName())
+					})
 				})
 				Context("namespace scope", func() {
 					BeforeEach(func() {
@@ -339,6 +473,12 @@ var _ = Describe("RBAC Test", func() {
 						resourceBuilder.Name += "-binding"
 						prepareMakefile("global.glooRbac.namespaced=true")
 						testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
+					})
+
+					It("disabling discovery removes its service account from role binding", func() {
+						resourceBuilder.Name += "-binding"
+						prepareMakefile("global.glooRbac.namespaced=true", "discovery.enabled=false")
+						ExpectDiscoveryNotInRoleBindingSubjects(resourceBuilder.GetRoleBinding().GetName())
 					})
 				})
 			})
