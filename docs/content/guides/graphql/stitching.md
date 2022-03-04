@@ -1,7 +1,9 @@
+<!-- Hiding this content for now until it is fully developed and ready for release.
+
 ---
-title: Service stitching
+title: Schema stitching
 weight: 50
-description: TODO
+description: Use Gloo Edge to stitch together schemas for multiple GraphQL services.
 ---
 
 When you use GraphQL in Gloo Edge, you can stitch multiple schemas together to expose one unified GraphQL server to your clients.
@@ -81,7 +83,7 @@ Example response from the product service:
 But consider a client that wants the full name of the seller for a given product, instead the username of the seller. Given the product ID, the client cannot get the seller's full name from the product service. However, the full name of any user _is_ provided by the user service. 
 
 To solve this problem, you can specify a configuration file to merge the types between the services. In the `merge_config` section for a `user-service` configuration file, you can specify which fields are unique to the `User` type, and how to get these fields. If a client provides the username for a user and wants the full name, Gloo Edge can use the `getUserWithFullName` query to provide the full name from the user service.
-**QUESTION is the user providing this merging config somewhere?**
+**QUESTION is the user providing this merging config somewhere? Sounds like in **
 ```yaml
 name: user-service
 namespace: products-app
@@ -165,3 +167,5 @@ Example response from the stitched service:
   }
 }
 ```
+
+-->

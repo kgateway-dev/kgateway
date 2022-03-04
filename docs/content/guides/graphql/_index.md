@@ -1,7 +1,7 @@
 ---
 title: GraphQL (Enterprise)
 weight: 70
-description: Enable GraphQL resolution
+description: Enable GraphQL resolution.
 ---
 
 Set up API gateway and GraphQL server functionality for your apps in the same process by using Gloo Edge.
