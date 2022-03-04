@@ -381,6 +381,7 @@ type GatewayProxy struct {
 }
 
 type GatewayProxyGatewaySettings struct {
+	Enabled                  *bool                  `json:"enabled,omitempty" desc:"enable/disable default gateways"`
 	DisableGeneratedGateways *bool                  `json:"disableGeneratedGateways,omitempty" desc:"set to true to disable the gateway generation for a gateway proxy"`
 	DisableHttpGateway       *bool                  `json:"disableHttpGateway,omitempty" desc:"Set to true to disable http gateway generation."`
 	DisableHttpsGateway      *bool                  `json:"disableHttpsGateway,omitempty" desc:"Set to true to disable https gateway generation."`
@@ -566,8 +567,10 @@ type K8s struct {
 }
 
 type Stats struct {
-	Enabled            *bool   `json:"enabled,omitempty" desc:"Controls whether or not envoy stats are enabled"`
-	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty" desc:"The envoy stats endpoint to which the metrics are written"`
+	Enabled               *bool   `json:"enabled,omitempty" desc:"Controls whether or not envoy stats are enabled"`
+	RoutePrefixRewrite    *string `json:"routePrefixRewrite,omitempty" desc:"The envoy stats endpoint to which the metrics are written"`
+	ServiceMonitorEnabled *bool   `json:"serviceMonitorEnabled,omitempty" desc:"Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true"`
+	PodMonitorEnabled     *bool   `json:"podMonitorEnabled,omitempty" desc:"Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true"`
 }
 
 type Mtls struct {

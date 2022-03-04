@@ -372,32 +372,147 @@ var _ = Describe("Helm Test", func() {
 					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 				})
 
+				deploymentContainsMonitoringPort := func(deployment *appsv1.Deployment) bool {
+					for _, container := range deployment.Spec.Template.Spec.Containers {
+						for _, containerPort := range container.Ports {
+							if containerPort.Name == "http-monitoring" {
+								return true
+							}
+						}
+					}
+					return false
+				}
+
+				serviceContainsMonitoringPort := func(service *v1.Service) bool {
+					for _, servicePort := range service.Spec.Ports {
+						if servicePort.Name == "http-monitoring" {
+							return true
+						}
+					}
+					return false
+				}
+
 				It("should be able to override global defaults", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"discovery.deployment.stats.enabled=true", "global.glooStats.enabled=false"},
+						valuesArgs: []string{
+							"discovery.deployment.stats.enabled=true",
+							"discovery.deployment.stats.podMonitorEnabled=true",
+
+							"global.glooStats.enabled=false",
+							"global.glooStats.podMonitorEnabled=false",
+						},
 					})
 
-					// assert that discovery has stats enabled and gloo has stats disabled
+					// assert that discovery has stats enabled
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-						return resource.GetKind() == "Deployment" &&
-							(resource.GetName() == "gloo" || resource.GetName() == "discovery")
+						return resource.GetKind() == "Deployment" && resource.GetName() == "discovery"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
 						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-						if structuredDeployment.GetName() == "gloo" {
-							ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
-						} else if structuredDeployment.GetName() == "discovery" {
-							for annotation, value := range normalPromAnnotations {
-								ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
-							}
-						} else {
-							Fail(fmt.Sprintf("Unexpected deployment found: %+v", structuredDeployment))
+						for annotation, value := range normalPromAnnotations {
+							ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
 						}
+
+						foundMonitoringPort := deploymentContainsMonitoringPort(structuredDeployment)
+						ExpectWithOffset(1, foundMonitoringPort).To(BeTrue(), fmt.Sprintf("'http-monitoring' port should be set on deployment %+v", deployment))
+
+					})
+
+					// assert that gloo has stats disabled
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment" && resource.GetName() == "gloo"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
+
+						foundMonitoringPort := deploymentContainsMonitoringPort(structuredDeployment)
+						ExpectWithOffset(1, foundMonitoringPort).To(BeFalse(), fmt.Sprintf("'http-monitoring' port should not be set on deployment %+v", deployment))
 					})
 				})
+
+				It("should be able to expose http-monitoring port on all relevant services", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							// to enable accessLogger service
+							"gateway.enabled=true",
+							"accessLogger.enabled=true",
+							"accessLogger.stats.serviceMonitorEnabled=true",
+
+							"global.glooStats.enabled=true",
+							"global.glooStats.serviceMonitorEnabled=true",
+						},
+					})
+
+					expectedServicesWithHttpMonitoring := []string{
+						"gloo",
+						"discovery",
+						"gateway",
+						"gateway-proxy-access-logger",
+						"gateway-proxy-monitoring-service",
+					}
+					var actualServicesWithHttpMonitoring []string
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Service"
+					}).ExpectAll(func(service *unstructured.Unstructured) {
+						serviceObject, err := kuberesource.ConvertUnstructured(service)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Service %+v should be able to convert from unstructured", service))
+						structuredService, ok := serviceObject.(*v1.Service)
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Service %+v should be able to cast to a structured service", service))
+
+						if serviceContainsMonitoringPort(structuredService) {
+							actualServicesWithHttpMonitoring = append(actualServicesWithHttpMonitoring, structuredService.GetName())
+						}
+					})
+
+					Expect(actualServicesWithHttpMonitoring).To(Equal(expectedServicesWithHttpMonitoring))
+				})
+
+				It("should be able to expose http-monitoring port on all relevant deployments", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							// to enable accessLogger deployment
+							"gateway.enabled=true",
+							"accessLogger.enabled=true",
+							"accessLogger.stats.podMonitorEnabled=true",
+
+							"global.glooStats.enabled=true",
+							"global.glooStats.podMonitorEnabled=true",
+						},
+					})
+
+					expectedDeploymentsWithHttpMonitoring := []string{
+						"gloo",
+						"discovery",
+						"gateway",
+						"gateway-proxy-access-logger",
+						"gateway-proxy",
+					}
+					var actualDeploymentsWithHttpMonitoring []string
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						if deploymentContainsMonitoringPort(structuredDeployment) {
+							actualDeploymentsWithHttpMonitoring = append(actualDeploymentsWithHttpMonitoring, structuredDeployment.GetName())
+						}
+					})
+
+					Expect(actualDeploymentsWithHttpMonitoring).To(Equal(expectedDeploymentsWithHttpMonitoring))
+				})
+
 			})
 
 			Context("gloo mtls settings", func() {
@@ -953,6 +1068,21 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				Context("default gateways", func() {
+
+					It("does not render when disabled", func() {
+						prepareMakefile(namespace, helmValues{})
+						testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true"},
+						})
+						testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=false"},
+						})
+						testManifest.Expect("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+					})
 
 					It("does not render when gatewayProxy is disabled", func() {
 						prepareMakefile(namespace, helmValues{})
@@ -2018,6 +2148,43 @@ spec:
 						})
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = "quay.io/solo-io/gloo-ee-envoy-wrapper-fips:" + version
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("doesn't break containers when enabling multiple containers", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true",
+								"global.istioSDS.enabled=true",
+							},
+						})
+
+						// Containers we expect to have
+						expectedContainers := map[string]struct{}{
+							"gateway-proxy": {},
+							"istio-proxy":   {},
+							"sds":           {},
+						}
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+								if _, ok := expectedContainers[container.Name]; ok {
+									// delete found containers from our expectedContainers list
+									delete(expectedContainers, container.Name)
+								} else {
+									Fail(fmt.Sprintf("Unexpected container found: %+v", container.Name))
+								}
+							}
+						})
+
+						// An expected container was not correctly set
+						Expect(len(expectedContainers)).To(BeZero(), "all enabled containers must have been found")
 					})
 
 					It("supports extra args to envoy", func() {
@@ -3803,6 +3970,17 @@ metadata:
 						testManifest.ExpectServiceAccount(discoveryServiceAccount)
 					})
 
+					It("is not created when service is disabled", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.enabled=false",
+							},
+						})
+						testManifest.ExpectUnstructured(
+							discoveryServiceAccount.Kind,
+							discoveryServiceAccount.Namespace,
+							discoveryServiceAccount.Name).To(BeNil())
+					})
 				})
 
 				Context("discovery deployment", func() {
@@ -4717,6 +4895,7 @@ metadata:
 					Expect(resources.NumResources()).To(Equal(1))
 				})
 			})
+
 		})
 
 		Context("Reflection", func() {

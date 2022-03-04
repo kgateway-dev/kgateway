@@ -133,6 +133,38 @@ var _ = Describe("Plugin", func() {
 		Expect(*outHpo).To(Equal(expectedValue))
 	})
 
+	It("Should set preserve_case_header_key_format", func() {
+		upstream.ConnectionConfig = &v1.ConnectionConfig{
+			Http1ProtocolOptions: &v1.ConnectionConfig_Http1ProtocolOptions{
+				HeaderFormat: &v1.ConnectionConfig_Http1ProtocolOptions_PreserveCaseHeaderKeyFormat{
+					PreserveCaseHeaderKeyFormat: true,
+				},
+			},
+		}
+
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(out.GetHttpProtocolOptions().GetHeaderKeyFormat().GetStatefulFormatter()).ToNot(BeNil()) // expect preserve_case_words to be set
+		Expect(out.GetHttpProtocolOptions().GetHeaderKeyFormat().GetProperCaseWords()).To(BeNil())      // ...which makes proper_case_words nil
+	})
+
+	It("Should set proper_case_header_key_format", func() {
+		upstream.ConnectionConfig = &v1.ConnectionConfig{
+			Http1ProtocolOptions: &v1.ConnectionConfig_Http1ProtocolOptions{
+				HeaderFormat: &v1.ConnectionConfig_Http1ProtocolOptions_ProperCaseHeaderKeyFormat{
+					ProperCaseHeaderKeyFormat: true,
+				},
+			},
+		}
+
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(out.GetHttpProtocolOptions().GetHeaderKeyFormat().GetProperCaseWords()).ToNot(BeNil()) // expect proper_case_words to be set
+		Expect(out.GetHttpProtocolOptions().GetHeaderKeyFormat().GetStatefulFormatter()).To(BeNil())  // ...which makes preserve_case_words nil
+	})
+
 	It("should error setting CommonHttpProtocolOptions when an invalid enum value is used", func() {
 		upstream.ConnectionConfig = &v1.ConnectionConfig{
 			CommonHttpProtocolOptions: &v1.ConnectionConfig_HttpProtocolOptions{
