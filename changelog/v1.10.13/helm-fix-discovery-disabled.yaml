@@ -1,4 +1,5 @@
 changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/5866
+    resolvesIssue: true
     description: Disabling discovery prevents creation of Service Account and assignment to Role Binding resources
