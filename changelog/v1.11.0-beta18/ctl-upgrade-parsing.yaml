@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: > 
+      Glooctl upgrade attempts to follow semver and will pull greatest stable by default.

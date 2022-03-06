@@ -33,7 +33,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	}
 
 	cmd.PersistentFlags().StringVar(&opts.Upgrade.ReleaseTag, "release", "latest", "Which glooctl release "+
-		"to download. Specify a git tag corresponding to the desired version of glooctl.")
+		"to download. Specify a release tag corresponding to the desired version of glooctl "+
+		"or specify experimental to get bleeding edge release.")
 	cmd.PersistentFlags().StringVar(&opts.Upgrade.DownloadPath, "path", "", "Desired path for your "+
 		"upgraded glooctl binary. Defaults to the location of your currently executing binary.")
 	cliutils.ApplyOptions(cmd, optionsFunc)
