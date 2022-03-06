@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"runtime"
+	"strings"
 
 	update "github.com/inconshreveable/go-update"
 
@@ -38,6 +40,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
+var knownTags = map[string]struct{}{"experimental": struct{}{}, "latest": struct{}{}}
+
 func upgradeGlooCtl(ctx context.Context, upgrade options.Upgrade) error {
 	glooctlBinaryName := fmt.Sprintf("glooctl-%v-%v", runtime.GOOS, runtime.GOARCH)
 	release, err := getReleaseWithAsset(ctx, upgrade.ReleaseTag, glooctlBinaryName)
@@ -68,37 +72,102 @@ func upgradeGlooCtl(ctx context.Context, upgrade options.Upgrade) error {
 	return nil
 }
 
+const maxPages = 10
+
 func getReleaseWithAsset(ctx context.Context, tag string, expectedAssetName string) (*github.RepositoryRelease, error) {
 	g := github.NewClient(nil)
-	if tag == "latest" {
-		// don't use latest tag, because that might not have the assets yet if the release build is running.
-		listOpts := github.ListOptions{PerPage: 10}
+
+	if versionutils.MatchesRegex(tag) {
+		release, _, err := g.Repositories.GetReleaseByTag(ctx, "solo-io", "gloo", tag)
+		return release, err
+	}
+
+	regex := regexp.MustCompile("(v[0-9]+[.][0-9]+)")
+	specifiedVersion := regex.FindString(tag)
+	if specifiedVersion != "" {
+		// not using logger as is not used previously
+		fmt.Println("searching for ", specifiedVersion)
+	} else if _, ok := knownTags[tag]; !ok {
+		return nil, fmt.Errorf("unknown release specification %s", tag)
+	}
+
+	var largestValidSemVer versionutils.Version
+	var candidateRelease *github.RepositoryRelease
+
+	// inexact version requested may be prerelease and not have assets
+	// We do assume that within a minor version has monotnically increasing patch numbers
+	// We also assume that the first release that is not valid semver is latest sem ver
+	for i := 0; i < maxPages; i++ {
+		// Get the next page of
+		listOpts := github.ListOptions{PerPage: 10, Page: i} // max per request
 		releases, _, err := g.Repositories.ListReleases(ctx, "solo-io", "gloo", &listOpts)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error listing releases")
 		}
-		var largestValidSemVer versionutils.Version
-		var candidateRelease *github.RepositoryRelease
+
 		for _, release := range releases {
-			if tryGetAssetWithName(release, expectedAssetName) == nil {
-				continue
-			}
 			v, err := versionutils.ParseVersion(*release.Name)
 			if err != nil {
 				continue
 			}
+
+			// We only consider releases that have assets to download.
+			// More expensive to do this call than to check version infos.
+			if tryGetAssetWithName(release, expectedAssetName) == nil {
+				continue
+			}
+
+			// Real asset and valid version at this point
+
+			// the user has specified something of the form v%d.%d.x
+			if specifiedVersion != "" {
+				// take the first valid from this version
+				// as we assume increasing ordering
+				if strings.HasPrefix(v.String(), specifiedVersion) {
+					return release, nil
+				}
+				continue
+			}
+
+			// If is not just semver and we arent looking in a given
+			if specifiedVersion == "" && v.Label != "" {
+				if tag == "experimental" {
+					// we take this as we assume that it is the cutting edge.
+					return release, nil
+				}
+				if tag == "latest" {
+					stableMinor := v.Minor - 1
+					// for major increase this will be pretty bad performance wise
+					// but at least its valid and only bad for a single release cycle
+					if stableMinor > 0 {
+						specifiedVersion = fmt.Sprintf("v%d.%d", v.Major, stableMinor)
+						if candidateRelease == nil {
+							continue
+						}
+						candidateV, _ := versionutils.ParseVersion(*candidateRelease.Name)
+						// we may have already captured the latest stable
+						if strings.HasPrefix(specifiedVersion, candidateV.String()) {
+							return release, nil
+						}
+					}
+				}
+				continue
+			}
+			// Track best candidate if latest
 			if (*v).MustIsGreaterThan(largestValidSemVer) {
 				largestValidSemVer = (*v)
 				candidateRelease = release
 			}
 		}
-		if candidateRelease == nil {
-			return nil, errors.Errorf("couldn't find any recent release with the desired asset")
-		}
+	}
+
+	// edge case for major version increase
+	if tag == "latest" {
 		return candidateRelease, nil
 	}
-	release, _, err := g.Repositories.GetReleaseByTag(ctx, "solo-io", "gloo", tag)
-	return release, err
+
+	return nil, errors.Errorf("couldn't find any recent release with the desired asset")
+
 }
 
 func tryGetAssetWithName(release *github.RepositoryRelease, expectedAssetName string) *github.ReleaseAsset {
