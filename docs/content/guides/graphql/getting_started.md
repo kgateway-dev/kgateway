@@ -1,7 +1,7 @@
 ---
-title: GraphQL (Enterprise)
-weight: 120
-description: Enables GraphQL resolution
+title: Getting started
+weight: 10
+description: Get started with GraphQL in Gloo Edge.
 ---
 
 Set up API gateway and GraphQL server functionality for your apps in the same process by using Gloo Edge.
@@ -13,16 +13,6 @@ This feature is available only in Gloo Edge Enterprise version 1.10.0 and later.
 {{% notice warning %}}
 This is an alpha feature. Do not use this feature in a production environment.
 {{% /notice %}}
-
-## About
-
-### Why GraphQL?
-GraphQL is a server-side query language and runtime you can use to expose your APIs as an alternative to REST APIs. GraphQL allows you to request only the data you want and handle any subsequent requests on the server side, saving numerous expensive origin-to-client requests by instead handling requests in your internal network.
-
-### Using GraphQL in an API gateway
-API gateways expose microservices with different implementations from a single location and schema. The API gateway acts like a single owner for all requests and responses. As such, it can shape traffic according to consistent policies that you set. When you integrate with GraphQL, you get the benefits of an API gateway and more. GraphQL exposes your API without versioning and lets clients interact with the API on their own terms. Additionally, you can mix and match your GraphQL graph with your existing REST routes. This setup lets you test and migrate to GraphQL at a pace that makes sense for your organization.
-
-Gloo Edge extends API gateway and GraphQL capabilities with route-level control.  Usually, API gateways apply edge networking logic at the route level. For example, the gateway might rate limit, authorize, and authenticate requests. Most GraphQL servers are a separate endpoint behind the API gateway. Therefore, you cannot add route-level customizations. In contrast, Gloo Edge embeds route-level customization logic into the API gateway.
 
 ## Step 1: Install GraphQL
 
@@ -319,15 +309,11 @@ EOF
    {"data":{"productsForHome":[{"id":"0","title":"The Comedy of Errors","author":"William Shakespeare","pages":200,"year":1595}]}}
    ```
 
-## Try it yourself
-
-You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration.
-
-To get started, check out the in-depth example in the [`graphql-bookinfo` repository](https://github.com/solo-io/graphql-bookinfo). You can model your own use case based on the contents of this example:
-* The `kubernetes` directory contains the Bookinfo sample app deployment, the example GraphQL schema, and the virtual service to route requests to the `/graphql` endpoint.
-* The `openapi` directory contains the OpenAPI specifications for the individual BookInfo microservices, along with the original consolidated BookInfo REST API.
-
-
 ## Next steps
 
-To learn more about the advantages of using GraphQL, see the [Apollo documentation](https://www.apollographql.com/docs/intro/benefits/#graphql-provides-declarative-efficient-data-fetching).
+Now that you've tried out GraphQL with Gloo Edge, check out the following pages to configure your own services for GraphQL integration.
+<!--* [Visualize your GraphQL services in the UI]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/graphql_ui/" %}})-->
+* [Explore automatic schema generation with GraphQL service discovery]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/automatic_discovery/" %}})
+* [Manually configure resolvers and schema for your GraphQL API]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/resolver_config/" %}})
+<!--* [Monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/observability/" %}})-->
+* [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/" %}})
