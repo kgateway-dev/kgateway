@@ -12,7 +12,6 @@ import (
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	rest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -159,14 +158,14 @@ var _ = Describe("UdsConvert", func() {
 				Expect(upstreamConfigJson).To(Equal(expectedCfgJson))
 			}
 
-			CreateUpstreamWithSpec := func(uc *KubeUpstreamConverter, ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, upstream *v1.Upstream) *v1.Upstream {
+			CreateUpstreamWithSpec := func(uc *KubeUpstreamConverter, ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, upstream *v1.Upstream) (*v1.Upstream, error) {
 				for _, sc := range uc.serviceConverters {
 					if err := sc.ConvertService(svc, port, upstream); err != nil {
-						contextutils.LoggerFrom(ctx).Errorf("error: failed to process service options with err %v", err)
+						return nil, err
 					}
 				}
 
-				return upstream
+				return upstream, nil
 			}
 
 			Describe("deep merge", func() {
@@ -236,7 +235,8 @@ var _ = Describe("UdsConvert", func() {
 						},
 					}
 
-					up := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
+					up, err := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
+					Expect(err).To(BeNil())
 					actualSslConfig := up.GetSslConfig()
 					Expect(actualSslConfig).NotTo(BeNil())
 
@@ -300,7 +300,8 @@ var _ = Describe("UdsConvert", func() {
 						},
 					}
 
-					up := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
+					up, err := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
+					Expect(err).To(BeNil())
 					actualServiceSpec := up.GetKube()
 					Expect(actualServiceSpec).NotTo(BeNil())
 
