@@ -22,8 +22,6 @@ weight: 5
 - [Matcher](#matcher)
 - [VirtualHost](#virtualhost)
 - [Route](#route)
-- [SourceMetadata](#sourcemetadata)
-- [SourceRef](#sourceref)
 - [RouteAction](#routeaction)
 - [Destination](#destination)
 - [KubernetesServiceDestination](#kubernetesservicedestination)
@@ -34,6 +32,8 @@ weight: 5
 - [RedirectAction](#redirectaction)
 - [RedirectResponseCode](#redirectresponsecode)
 - [DirectResponseAction](#directresponseaction)
+- [SourceMetadata](#sourcemetadata)
+- [SourceRef](#sourceref)
   
 
 
@@ -337,44 +337,6 @@ Routes declare the entry points on virtual hosts and the action to take for matc
 
 
 ---
-### SourceMetadata
-
-
-
-```yaml
-"sources": []gloo.solo.io.SourceMetadata.SourceRef
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `sources` | [[]gloo.solo.io.SourceMetadata.SourceRef](../proxy.proto.sk/#sourceref) |  |
-
-
-
-
----
-### SourceRef
-
-
-
-```yaml
-"resourceRef": .core.solo.io.ResourceRef
-"resourceKind": string
-"observedGeneration": int
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `resourceRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
-| `resourceKind` | `string` |  |
-| `observedGeneration` | `int` |  |
-
-
-
-
----
 ### RouteAction
 
  
@@ -592,6 +554,48 @@ DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy
 | ----- | ---- | ----------- | 
 | `status` | `int` | Specifies the HTTP response status to be returned. |
 | `body` | `string` | Specifies the content of the response body. If this setting is omitted, no body is included in the generated response. Note: Headers can be specified using the Header Modification feature in the enclosing Route, Virtual Host, or Listener options. |
+
+
+
+
+---
+### SourceMetadata
+
+ 
+SourceMetadata is an internal message used to track ownership of nested proxy objects:
+- Listener
+- VirtualHost
+- Route
+
+```yaml
+"sources": []gloo.solo.io.SourceMetadata.SourceRef
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `sources` | [[]gloo.solo.io.SourceMetadata.SourceRef](../proxy.proto.sk/#sourceref) | A list of sources. |
+
+
+
+
+---
+### SourceRef
+
+
+
+```yaml
+"resourceRef": .core.solo.io.ResourceRef
+"resourceKind": string
+"observedGeneration": int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `resourceRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The resource being referenced. |
+| `resourceKind` | `string` | The resource Kind. |
+| `observedGeneration` | `int` | The observed generation of the resource. |
 
 
 

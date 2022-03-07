@@ -574,30 +574,6 @@ func (m *Route) Clone() proto.Message {
 }
 
 // Clone function
-func (m *SourceMetadata) Clone() proto.Message {
-	var target *SourceMetadata
-	if m == nil {
-		return target
-	}
-	target = &SourceMetadata{}
-
-	if m.GetSources() != nil {
-		target.Sources = make([]*SourceMetadata_SourceRef, len(m.GetSources()))
-		for idx, v := range m.GetSources() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Sources[idx] = h.Clone().(*SourceMetadata_SourceRef)
-			} else {
-				target.Sources[idx] = proto.Clone(v).(*SourceMetadata_SourceRef)
-			}
-
-		}
-	}
-
-	return target
-}
-
-// Clone function
 func (m *RouteAction) Clone() proto.Message {
 	var target *RouteAction
 	if m == nil {
@@ -898,6 +874,30 @@ func (m *DirectResponseAction) Clone() proto.Message {
 	target.Status = m.GetStatus()
 
 	target.Body = m.GetBody()
+
+	return target
+}
+
+// Clone function
+func (m *SourceMetadata) Clone() proto.Message {
+	var target *SourceMetadata
+	if m == nil {
+		return target
+	}
+	target = &SourceMetadata{}
+
+	if m.GetSources() != nil {
+		target.Sources = make([]*SourceMetadata_SourceRef, len(m.GetSources()))
+		for idx, v := range m.GetSources() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Sources[idx] = h.Clone().(*SourceMetadata_SourceRef)
+			} else {
+				target.Sources[idx] = proto.Clone(v).(*SourceMetadata_SourceRef)
+			}
+
+		}
+	}
 
 	return target
 }

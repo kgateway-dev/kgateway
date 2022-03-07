@@ -875,47 +875,6 @@ func (m *Route) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *SourceMetadata) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*SourceMetadata)
-	if !ok {
-		that2, ok := that.(SourceMetadata)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetSources()) != len(target.GetSources()) {
-		return false
-	}
-	for idx, v := range m.GetSources() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetSources()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetSources()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	return true
-}
-
-// Equal function
 func (m *RouteAction) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1432,6 +1391,47 @@ func (m *DirectResponseAction) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetBody(), target.GetBody()) != 0 {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *SourceMetadata) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SourceMetadata)
+	if !ok {
+		that2, ok := that.(SourceMetadata)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSources()) != len(target.GetSources()) {
+		return false
+	}
+	for idx, v := range m.GetSources() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSources()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSources()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true

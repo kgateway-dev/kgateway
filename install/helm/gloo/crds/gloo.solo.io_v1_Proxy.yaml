@@ -666,12 +666,12 @@ spec:
                                   sources:
                                     items:
                                       properties:
-                                        ResourceKind:
-                                          type: string
                                         observedGeneration:
                                           format: int64
                                           type: integer
                                           x-kubernetes-int-or-string: true
+                                        resourceKind:
+                                          type: string
                                         resourceRef:
                                           properties:
                                             name:
@@ -2305,12 +2305,12 @@ spec:
                                         sources:
                                           items:
                                             properties:
-                                              ResourceKind:
-                                                type: string
                                               observedGeneration:
                                                 format: int64
                                                 type: integer
                                                 x-kubernetes-int-or-string: true
+                                              resourceKind:
+                                                type: string
                                               resourceRef:
                                                 properties:
                                                   name:
@@ -5736,12 +5736,12 @@ spec:
                                             sources:
                                               items:
                                                 properties:
-                                                  ResourceKind:
-                                                    type: string
                                                   observedGeneration:
                                                     format: int64
                                                     type: integer
                                                     x-kubernetes-int-or-string: true
+                                                  resourceKind:
+                                                    type: string
                                                   resourceRef:
                                                     properties:
                                                       name:
@@ -7375,12 +7375,12 @@ spec:
                                                   sources:
                                                     items:
                                                       properties:
-                                                        ResourceKind:
-                                                          type: string
                                                         observedGeneration:
                                                           format: int64
                                                           type: integer
                                                           x-kubernetes-int-or-string: true
+                                                        resourceKind:
+                                                          type: string
                                                         resourceRef:
                                                           properties:
                                                             name:
@@ -11761,12 +11761,12 @@ spec:
                         sources:
                           items:
                             properties:
-                              ResourceKind:
-                                type: string
                               observedGeneration:
                                 format: int64
                                 type: integer
                                 x-kubernetes-int-or-string: true
+                              resourceKind:
+                                type: string
                               resourceRef:
                                 properties:
                                   name:
