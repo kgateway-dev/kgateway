@@ -311,7 +311,7 @@ EOF
 
 ## Next steps
 
-Now that you've tried out GraphQL with Gloo Edge, check out the following pages to configure your own services for GraphQL integration. v-->
+Now that you've tried out GraphQL with Gloo Edge, check out the following pages to configure your own services for GraphQL integration.
 <!--* [Visualize your GraphQL services in the UI]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/graphql_ui/" %}})-->
 * [Explore automatic schema generation with GraphQL service discovery]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/automatic_discovery/" %}})
 <!--* [Manually configure resolvers and schema for your GraphQL API]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/resolver_config/" %}})
