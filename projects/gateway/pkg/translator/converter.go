@@ -340,6 +340,7 @@ func (rv *routeVisitor) visit(
 
 	// Append source metadata to all the routes
 	for _, r := range routes {
+		r.GetMetadataStatic()
 		if err := appendSource(r, resource.InputResource()); err != nil {
 			// should never happen
 			return nil, err

@@ -45,7 +45,24 @@ spec:
                                         methodName:
                                           type: string
                                         outgoingMessageJson:
-                                          x-kubernetes-preserve-unknown-fields: true
+                                          properties:
+                                            boolValue:
+                                              type: boolean
+                                            listValue:
+                                              items:
+                                                type: object
+                                              type: array
+                                            nullValue:
+                                              type: string
+                                              x-kubernetes-int-or-string: true
+                                            numberValue:
+                                              type: number
+                                            stringValue:
+                                              type: string
+                                            structValue:
+                                              type: object
+                                              x-kubernetes-preserve-unknown-fields: true
+                                          type: object
                                         requestMetadata:
                                           additionalProperties:
                                             type: string
@@ -68,7 +85,24 @@ spec:
                                     request:
                                       properties:
                                         body:
-                                          x-kubernetes-preserve-unknown-fields: true
+                                          properties:
+                                            boolValue:
+                                              type: boolean
+                                            listValue:
+                                              items:
+                                                type: object
+                                              type: array
+                                            nullValue:
+                                              type: string
+                                              x-kubernetes-int-or-string: true
+                                            numberValue:
+                                              type: number
+                                            stringValue:
+                                              type: string
+                                            structValue:
+                                              type: object
+                                              x-kubernetes-preserve-unknown-fields: true
+                                          type: object
                                         headers:
                                           additionalProperties:
                                             type: string
