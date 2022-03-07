@@ -961,18 +961,6 @@ var _ = Describe("Http Translator", func() {
 
 				httpListener := listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 				Expect(httpListener.VirtualHosts).To(HaveLen(2))
-				//
-				// // hack to assert equality on Metadata
-				// // gomega.Equals does not like *types.Struct
-				// for i, vh := range httpListener.VirtualHosts {
-				// 	for j, route := range vh.Routes {
-				// 		routeMeta, err := sourceMetaFromStruct(route.Metadata)
-				// 		Expect(err).NotTo(HaveOccurred())
-				// 		Expect(routeMeta).To(Equal(expectedRouteMetadata(i, j)))
-				// 		// after asserting Metadata equality, zero it out
-				// 		route.Metadata = nil
-				// 	}
-				// }
 
 				Expect(httpListener.VirtualHosts[0].Routes).To(Equal([]*gloov1.Route{
 					{
