@@ -38,7 +38,7 @@ In blocklist mode, discovery is enabled for all supported services, unless you e
    kubectl patch settings -n gloo-system default --type=merge --patch '{"spec":{"discovery":{"fdsMode":"BLACKLIST"}}}'
    ```
 
-## Verifying automatic resolver generation
+## Verifying automatic schema generation
 
 You can verify that OpenAPI specification discovery is enabled by viewing the GraphQL custom resource that was automatically generated for your service.
 ```sh
