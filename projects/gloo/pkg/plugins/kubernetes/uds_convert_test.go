@@ -8,8 +8,12 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	rest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubev1 "k8s.io/api/core/v1"
@@ -45,7 +49,7 @@ var _ = Describe("UdsConvert", func() {
 				Spec: kubev1.ServiceSpec{},
 			}
 			svc.Name = "test"
-			svc.Namespace = "test"
+			svc.Namespace = "test-ns"
 
 			port := kubev1.ServicePort{
 				Port: 123,
@@ -63,7 +67,7 @@ var _ = Describe("UdsConvert", func() {
 			}
 			svc.Labels = testLabels
 			svc.Name = "test"
-			svc.Namespace = "test"
+			svc.Namespace = "test-ns"
 
 			port := kubev1.ServicePort{
 				Port: 123,
@@ -78,7 +82,7 @@ var _ = Describe("UdsConvert", func() {
 				Spec: kubev1.ServiceSpec{},
 			}
 			svc.Name = "test"
-			svc.Namespace = "test"
+			svc.Namespace = "test-ns"
 
 			port := kubev1.ServicePort{
 				Port: 123,
@@ -108,7 +112,7 @@ var _ = Describe("UdsConvert", func() {
 					"use_http2": false
 				}`
 				svc.Name = "test"
-				svc.Namespace = "test"
+				svc.Namespace = "test-ns"
 
 				port := kubev1.ServicePort{
 					Port: 123,
@@ -127,7 +131,7 @@ var _ = Describe("UdsConvert", func() {
 					},
 				}
 				svc.Name = "test"
-				svc.Namespace = "test"
+				svc.Namespace = "test-ns"
 
 				port := kubev1.ServicePort{
 					Port: 123,
@@ -153,6 +157,228 @@ var _ = Describe("UdsConvert", func() {
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(upstreamConfigJson).To(Equal(expectedCfgJson))
 			}
+
+			CreateUpstreamWithSpec := func(uc *KubeUpstreamConverter, ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, upstream *v1.Upstream) (*v1.Upstream, error) {
+				for _, sc := range uc.serviceConverters {
+					if err := sc.ConvertService(svc, port, upstream); err != nil {
+						return nil, err
+					}
+				}
+
+				return upstream, nil
+			}
+
+			Describe("deep merge", func() {
+				var (
+					svc      *kubev1.Service
+					port     kubev1.ServicePort
+					meta     metav1.ObjectMeta
+					coremeta *core.Metadata
+					labels   map[string]string
+				)
+
+				BeforeEach(func() {
+					svc = &kubev1.Service{
+						Spec: kubev1.ServiceSpec{},
+					}
+					svc.Name = "test"
+					svc.Namespace = "test-ns"
+
+					port = kubev1.ServicePort{
+						Port: 123,
+					}
+
+					meta = svc.ObjectMeta
+					coremeta = kubeutils.FromKubeMeta(meta, false)
+					coremeta.ResourceVersion = ""
+					coremeta.Name = UpstreamName(meta.Namespace, meta.Name, port.Port)
+					labels = coremeta.GetLabels()
+					coremeta.Labels = make(map[string]string)
+				})
+
+				It("Should not deep merge upstream fields when merge is not enabled", func() {
+					annotations := map[string]string{
+						serviceconverter.DeepMergeAnnotationPrefix: "false",
+						serviceconverter.GlooAnnotationPrefix: `{
+							"sslConfig": {
+								"sslFiles": {
+									"tlsCert": "certB",
+									"rootCa":  "ca"
+								}
+							}
+						}`,
+					}
+
+					svc.ObjectMeta = metav1.ObjectMeta{
+						Annotations: annotations,
+					}
+
+					us := &v1.Upstream{
+						Metadata: coremeta,
+						DiscoveryMetadata: &v1.DiscoveryMetadata{
+							Labels: labels,
+						},
+						SslConfig: &v1.UpstreamSslConfig{
+							SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+								SslFiles: &v1.SSLFiles{
+									TlsCert: "certA",
+									TlsKey:  "testKey",
+								},
+							},
+						},
+					}
+
+					up, err := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
+					Expect(err).To(BeNil())
+					actualSslConfig := up.GetSslConfig()
+					Expect(actualSslConfig).NotTo(BeNil())
+
+					expectedSslConfig := &v1.UpstreamSslConfig{
+						SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "certB",
+								RootCa:  "ca",
+							},
+						},
+					}
+					Expect(actualSslConfig.GetSslFiles().GetRootCa()).To(BeEquivalentTo(expectedSslConfig.GetSslFiles().GetRootCa()))
+					Expect(actualSslConfig.GetSslFiles().GetTlsCert()).To(BeEquivalentTo(expectedSslConfig.GetSslFiles().GetTlsCert()))
+					Expect(actualSslConfig.GetSslFiles().GetTlsKey()).To(BeEquivalentTo(expectedSslConfig.GetSslFiles().GetTlsKey()))
+				})
+				It("should merge upstream fields properly with merge enabled", func() {
+					annotations := map[string]string{
+						serviceconverter.DeepMergeAnnotationPrefix: "true",
+						serviceconverter.GlooAnnotationPrefix: `{
+							"sslConfig": {
+								"sslFiles": {
+									"tlsCert": "certB",
+									"rootCa":  "ca"
+								}
+							}
+						}`,
+					}
+
+					svc.ObjectMeta = metav1.ObjectMeta{
+						Annotations: annotations,
+					}
+
+					us := &v1.Upstream{
+						Metadata: coremeta,
+						UpstreamType: &v1.Upstream_Kube{
+							Kube: &kubeplugin.UpstreamSpec{
+								ServiceName:      meta.Name,
+								ServiceNamespace: meta.Namespace,
+								ServicePort:      uint32(port.Port),
+								Selector:         svc.Spec.Selector,
+							},
+						},
+						DiscoveryMetadata: &v1.DiscoveryMetadata{
+							Labels: labels,
+						},
+						SslConfig: &v1.UpstreamSslConfig{
+							SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+								SslFiles: &v1.SSLFiles{
+									TlsCert: "certA",
+									TlsKey:  "testKey",
+								},
+							},
+						},
+					}
+
+					up, err := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
+					Expect(err).To(BeNil())
+					actualSslConfig := up.GetSslConfig()
+					Expect(actualSslConfig).NotTo(BeNil())
+
+					expectedSslConfig := &v1.UpstreamSslConfig{
+						SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "certB",
+								TlsKey:  "testKey",
+								RootCa:  "ca",
+							},
+						},
+					}
+					Expect(actualSslConfig.GetSslFiles().GetRootCa()).To(BeEquivalentTo(expectedSslConfig.GetSslFiles().GetRootCa()))
+					Expect(actualSslConfig.GetSslFiles().GetTlsCert()).To(BeEquivalentTo(expectedSslConfig.GetSslFiles().GetTlsCert()))
+					Expect(actualSslConfig.GetSslFiles().GetTlsKey()).To(BeEquivalentTo(expectedSslConfig.GetSslFiles().GetTlsKey()))
+				})
+
+				It("should only merge explicitly set upstream fields properly with deep merge enabled", func() {
+					annotations := map[string]string{
+						serviceconverter.DeepMergeAnnotationPrefix: "true",
+						serviceconverter.GlooAnnotationPrefix: `{
+							"kube": {
+								"serviceSpec": {
+									"rest": {
+										"swaggerInfo": {
+										  "url":"http://newexample.com"
+										}
+									  }
+								}
+							}
+						}`,
+					}
+
+					svc.ObjectMeta = metav1.ObjectMeta{
+						Annotations: annotations,
+					}
+
+					us := &v1.Upstream{
+						Metadata: coremeta,
+						UpstreamType: &v1.Upstream_Kube{
+							Kube: &kubeplugin.UpstreamSpec{
+								ServiceName:      meta.Name,
+								ServiceNamespace: meta.Namespace,
+								ServicePort:      uint32(port.Port),
+								Selector:         svc.Spec.Selector,
+								ServiceSpec: &options.ServiceSpec{
+									PluginType: &options.ServiceSpec_Rest{
+										Rest: &rest.ServiceSpec{
+											SwaggerInfo: &rest.ServiceSpec_SwaggerInfo{
+												SwaggerSpec: &rest.ServiceSpec_SwaggerInfo_Url{
+													Url: "http://example.com",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						DiscoveryMetadata: &v1.DiscoveryMetadata{
+							Labels: labels,
+						},
+					}
+
+					up, err := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
+					Expect(err).To(BeNil())
+					actualServiceSpec := up.GetKube()
+					Expect(actualServiceSpec).NotTo(BeNil())
+
+					expectedServiceSpec := &kubeplugin.UpstreamSpec{
+						ServiceName:      meta.Name,
+						ServiceNamespace: meta.Namespace,
+						ServicePort:      uint32(port.Port),
+						Selector:         svc.Spec.Selector,
+						ServiceSpec: &options.ServiceSpec{
+							PluginType: &options.ServiceSpec_Rest{
+								Rest: &rest.ServiceSpec{
+									SwaggerInfo: &rest.ServiceSpec_SwaggerInfo{
+										SwaggerSpec: &rest.ServiceSpec_SwaggerInfo_Url{
+											Url: "http://newexample.com",
+										},
+									},
+								},
+							},
+						},
+					}
+					Expect(actualServiceSpec.GetServiceName()).To(BeEquivalentTo(expectedServiceSpec.GetServiceName()))
+					Expect(actualServiceSpec.GetServiceNamespace()).To(BeEquivalentTo(expectedServiceSpec.GetServiceNamespace()))
+					Expect(actualServiceSpec.GetServicePort()).To(BeEquivalentTo(expectedServiceSpec.GetServicePort()))
+					Expect(actualServiceSpec.GetSelector()).To(BeEquivalentTo(expectedServiceSpec.GetSelector()))
+					Expect(actualServiceSpec.GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()).To(BeEquivalentTo(expectedServiceSpec.GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()))
+				})
+			})
 
 			DescribeTable("should create upstream with appropriate config when snake_case annotations are present", expectAnnotationsToProduceUpstreamConfig,
 				Entry("Using SetHttp2Converter", map[string]string{
@@ -366,7 +592,7 @@ func testSetUseHttp2Converter() {
 	svc.Annotations = make(map[string]string)
 	svc.Annotations[serviceconverter.GlooH2Annotation] = "true"
 	svc.Name = "test"
-	svc.Namespace = "test"
+	svc.Namespace = "test-ns"
 
 	port := kubev1.ServicePort{
 		Port: 123,
@@ -384,7 +610,7 @@ func testSetSslConfig() {
 			},
 		}
 		svc.Name = "test"
-		svc.Namespace = "test"
+		svc.Namespace = "test-ns"
 
 		port := kubev1.ServicePort{
 			Port: 123,
@@ -402,14 +628,14 @@ func testSetSslConfig() {
 			serviceconverter.GlooSslSecretAnnotation: "mysecret",
 		}, &v1.UpstreamSslConfig{
 			SslSecrets: &v1.UpstreamSslConfig_SecretRef{
-				SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
+				SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test-ns"},
 			},
 		}),
 		Entry("using ssl secret on the target port", map[string]string{
 			serviceconverter.GlooSslSecretAnnotation: "123:mysecret",
 		}, &v1.UpstreamSslConfig{
 			SslSecrets: &v1.UpstreamSslConfig_SecretRef{
-				SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
+				SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test-ns"},
 			},
 		}),
 		Entry("using ssl secret on a different target port", map[string]string{
