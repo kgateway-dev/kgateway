@@ -195,6 +195,56 @@ var _ = Describe("UdsConvert", func() {
 					labels = coremeta.GetLabels()
 					coremeta.Labels = make(map[string]string)
 				})
+
+				It("Should not deep merge upstream fields when merge is not enabled", func() {
+					annotations := map[string]string{
+						serviceconverter.DeepMergeAnnotationPrefix: "false",
+						serviceconverter.GlooAnnotationPrefix: `{
+							"sslConfig": {
+								"sslFiles": {
+									"tlsCert": "certB",
+									"rootCa":  "ca"
+								}
+							}
+						}`,
+					}
+
+					svc.ObjectMeta = metav1.ObjectMeta{
+						Annotations: annotations,
+					}
+
+					us := &v1.Upstream{
+						Metadata: coremeta,
+						DiscoveryMetadata: &v1.DiscoveryMetadata{
+							Labels: labels,
+						},
+						SslConfig: &v1.UpstreamSslConfig{
+							SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+								SslFiles: &v1.SSLFiles{
+									TlsCert: "certA",
+									TlsKey:  "testKey",
+								},
+							},
+						},
+					}
+
+					up, err := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
+					Expect(err).To(BeNil())
+					actualSslConfig := up.GetSslConfig()
+					Expect(actualSslConfig).NotTo(BeNil())
+
+					expectedSslConfig := &v1.UpstreamSslConfig{
+						SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "certB",
+								RootCa:  "ca",
+							},
+						},
+					}
+					Expect(actualSslConfig.GetSslFiles().GetRootCa()).To(BeEquivalentTo(expectedSslConfig.GetSslFiles().GetRootCa()))
+					Expect(actualSslConfig.GetSslFiles().GetTlsCert()).To(BeEquivalentTo(expectedSslConfig.GetSslFiles().GetTlsCert()))
+					Expect(actualSslConfig.GetSslFiles().GetTlsKey()).To(BeEquivalentTo(expectedSslConfig.GetSslFiles().GetTlsKey()))
+				})
 				It("should merge upstream fields properly with merge enabled", func() {
 					annotations := map[string]string{
 						serviceconverter.DeepMergeAnnotationPrefix: "true",
