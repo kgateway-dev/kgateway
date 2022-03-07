@@ -2,7 +2,6 @@ package upstreams
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/dynamic_forward_proxy"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -25,13 +24,13 @@ func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
 	case *v1.Destination_Consul:
 		ref = consul.DestinationToUpstreamRef(d.Consul)
 	case *v1.Destination_DynamicForwardProxy:
-		//return nil, eris.Errorf("logic error")
+		return nil, eris.Errorf("logic error")
 		//ref = &core.ResourceRef{
 		//	Name:      "placeholder",
 		//	Namespace: "gloo-system",
 		//}
 		// TODO(kdorosH)
-		ref = dynamic_forward_proxy.DestinationToUpstreamRef(d.DynamicForwardProxy)
+		//ref = consul.DestinationToUpstreamRef(d.Consul)
 	default:
 		return nil, eris.Errorf("no destination type specified")
 	}

@@ -60,7 +60,7 @@ func generateSelfCluster() *envoy_config_cluster_v3.Cluster {
 		panic(err)
 	}
 	return &envoy_config_cluster_v3.Cluster{
-		Name:           "dynamic-forward-proxy-svc:6088654553110210931_gloo-system",//"placeholder_gloo-system",
+		Name:           "placeholder_gloo-system",
 		ConnectTimeout: &duration.Duration{Seconds: 5},
 		LbPolicy:       envoy_config_cluster_v3.Cluster_CLUSTER_PROVIDED,
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_ClusterType{
