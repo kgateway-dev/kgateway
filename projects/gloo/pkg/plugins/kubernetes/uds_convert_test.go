@@ -49,7 +49,7 @@ var _ = Describe("UdsConvert", func() {
 				Spec: kubev1.ServiceSpec{},
 			}
 			svc.Name = "test"
-			svc.Namespace = "test"
+			svc.Namespace = "test-ns"
 
 			port := kubev1.ServicePort{
 				Port: 123,
@@ -67,7 +67,7 @@ var _ = Describe("UdsConvert", func() {
 			}
 			svc.Labels = testLabels
 			svc.Name = "test"
-			svc.Namespace = "test"
+			svc.Namespace = "test-ns"
 
 			port := kubev1.ServicePort{
 				Port: 123,
@@ -82,7 +82,7 @@ var _ = Describe("UdsConvert", func() {
 				Spec: kubev1.ServiceSpec{},
 			}
 			svc.Name = "test"
-			svc.Namespace = "test"
+			svc.Namespace = "test-ns"
 
 			port := kubev1.ServicePort{
 				Port: 123,
@@ -112,7 +112,7 @@ var _ = Describe("UdsConvert", func() {
 					"use_http2": false
 				}`
 				svc.Name = "test"
-				svc.Namespace = "test"
+				svc.Namespace = "test-ns"
 
 				port := kubev1.ServicePort{
 					Port: 123,
@@ -131,7 +131,7 @@ var _ = Describe("UdsConvert", func() {
 					},
 				}
 				svc.Name = "test"
-				svc.Namespace = "test"
+				svc.Namespace = "test-ns"
 
 				port := kubev1.ServicePort{
 					Port: 123,
@@ -182,7 +182,7 @@ var _ = Describe("UdsConvert", func() {
 						Spec: kubev1.ServiceSpec{},
 					}
 					svc.Name = "test"
-					svc.Namespace = "test"
+					svc.Namespace = "test-ns"
 
 					port = kubev1.ServicePort{
 						Port: 123,
@@ -199,10 +199,10 @@ var _ = Describe("UdsConvert", func() {
 					annotations := map[string]string{
 						serviceconverter.DeepMergeAnnotationPrefix: "true",
 						serviceconverter.GlooAnnotationPrefix: `{
-							"ssl_config": {
-								"ssl_files": {
-									"tls_cert": "certB",
-									"root_ca":  "ca"
+							"sslConfig": {
+								"sslFiles": {
+									"tlsCert": "certB",
+									"rootCa":  "ca"
 								}
 							}
 						}`,
@@ -259,9 +259,9 @@ var _ = Describe("UdsConvert", func() {
 						serviceconverter.DeepMergeAnnotationPrefix: "true",
 						serviceconverter.GlooAnnotationPrefix: `{
 							"kube": {
-								"service_spec": {
+								"serviceSpec": {
 									"rest": {
-										"swagger_info": {
+										"swaggerInfo": {
 										  "url":"http://newexample.com"
 										}
 									  }
@@ -542,7 +542,7 @@ func testSetUseHttp2Converter() {
 	svc.Annotations = make(map[string]string)
 	svc.Annotations[serviceconverter.GlooH2Annotation] = "true"
 	svc.Name = "test"
-	svc.Namespace = "test"
+	svc.Namespace = "test-ns"
 
 	port := kubev1.ServicePort{
 		Port: 123,
@@ -560,7 +560,7 @@ func testSetSslConfig() {
 			},
 		}
 		svc.Name = "test"
-		svc.Namespace = "test"
+		svc.Namespace = "test-ns"
 
 		port := kubev1.ServicePort{
 			Port: 123,
@@ -578,14 +578,14 @@ func testSetSslConfig() {
 			serviceconverter.GlooSslSecretAnnotation: "mysecret",
 		}, &v1.UpstreamSslConfig{
 			SslSecrets: &v1.UpstreamSslConfig_SecretRef{
-				SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
+				SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test-ns"},
 			},
 		}),
 		Entry("using ssl secret on the target port", map[string]string{
 			serviceconverter.GlooSslSecretAnnotation: "123:mysecret",
 		}, &v1.UpstreamSslConfig{
 			SslSecrets: &v1.UpstreamSslConfig_SecretRef{
-				SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
+				SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test-ns"},
 			},
 		}),
 		Entry("using ssl secret on a different target port", map[string]string{
