@@ -1,3 +1,4 @@
+<!--
 ---
 title: Observability
 weight: 70
@@ -24,3 +25,4 @@ envoy_gloo_system_bookinfo_graphql_graphql_year_rest_resolver_total_resolutions
 ```
 
 These are envoy stats that are also available through the Prometheus (and then Grafana if customers want to visualize through a dashboard)
+-->

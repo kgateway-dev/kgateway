@@ -1,3 +1,4 @@
+<!--
 ---
 title: GraphQL UI
 weight: 20
@@ -12,3 +13,4 @@ API listing / registry page
 The API Details page - viewing an existing API
 Explorer - invoking an API (similar to Try It Now in Portal)
 Creating a new GraphQL API through the UI
+-->

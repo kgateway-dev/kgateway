@@ -4,7 +4,7 @@ weight: 40
 description: Manually configure resolvers and schema for your GraphQL API.
 ---
 
-You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure resolvers, you create a Gloo Edge GraphQL schema CRD. The following sections describe the configuration for REST or gRPC resolvers, schema definitions for the types of data to return to graphQL queries, and an in-depth example.
+You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure resolvers, you create a Gloo Edge GraphQL schema CRD. The following sections describe the configuration for REST <!--or gRPC -->resolvers, schema definitions for the types of data to return to graphQL queries, and an in-depth example.
 
 ## REST resolvers
 
@@ -52,7 +52,7 @@ resolutions:
         name: default-productpage-9080
         namespace: gloo-system
 ```
-
+<!--
 ## gRPC resolvers
 
 **QUESTION need the actual fields for a grpcResolver** Relevant section in the Proto: https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto#L171
@@ -72,7 +72,7 @@ resolutions:
 ```
 
 **QUESTION need example grpcResolver**
-
+-->
 ## Schema definitions
 
 A schema definition determines what kind of data can be returned to a client that makes a GraphQL query to your endpoint. The schema specifies the data that a particular `type`, or service, returns in response to a GraphQL query.
@@ -140,4 +140,4 @@ EOF
 
 ## Reference
 
-For more information, see the [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/" %}})
+For more information, see the [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/" %}}).
