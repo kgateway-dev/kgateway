@@ -15,7 +15,7 @@ glooctl upgrade [flags]
 ```
   -h, --help             help for upgrade
       --path string      Desired path for your upgraded glooctl binary. Defaults to the location of your currently executing binary.
-      --release string   Which glooctl release to download. Specify a git tag corresponding to the desired version of glooctl. (default "latest")
+      --release string   Which glooctl release to download. Specify a release tag corresponding to the desired version of glooctl or specify experimental to get bleeding edge release. (default "latest")
 ```
 
 ### Options inherited from parent commands
