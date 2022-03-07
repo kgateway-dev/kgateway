@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Adds the ability to deep merge discovered annotation config specified via the `gloo.solo.io/upstream_config` annotation with default upstream config.
+      A user can enable this feature by setting the `gloo.solo.io/upstream_config/deep_merge` annotation to `true` on the service for which an upstream is discovered.
+    issueLink: https://github.com/solo-io/gloo/issues/6005
+    resolvesIssue: true

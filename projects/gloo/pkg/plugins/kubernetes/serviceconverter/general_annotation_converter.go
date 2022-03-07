@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/imdario/mergo"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"google.golang.org/protobuf/proto"
@@ -11,6 +12,7 @@ import (
 )
 
 const GlooAnnotationPrefix = "gloo.solo.io/upstream_config"
+const DeepMergeAnnotationPrefix = "gloo.solo.io/upstream_config/deep_merge"
 
 type GeneralServiceConverter struct{}
 
@@ -30,19 +32,30 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 		return err
 	}
 
-	mergeUpstreams(&upstreamConfig, us)
+	deepMerge, ok := svc.Annotations[DeepMergeAnnotationPrefix]
+	var err error
+	if !ok || deepMerge != "true" {
+		err = shallowMergeUpstreams(&upstreamConfig, us)
+	} else {
+		err = deepMergeUpstreams(&upstreamConfig, us)
+	}
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // Merges the fields of src into dst.
-func mergeUpstreams(src, dst *v1.Upstream) {
+func shallowMergeUpstreams(src, dst *v1.Upstream) error {
 	if src == nil {
-		return
+		return nil
 	}
 
 	if dst == nil {
 		dst = proto.Clone(src).(*v1.Upstream)
-		return
+		return nil
 	}
 
 	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
@@ -59,4 +72,15 @@ func mergeUpstreams(src, dst *v1.Upstream) {
 			}
 		}
 	}
+	return nil
+}
+
+// Deep merges the fields of src into dst.
+func deepMergeUpstreams(src, dst *v1.Upstream) error {
+	if err := mergo.Merge(src, dst); err != nil {
+		return err
+	}
+
+	*dst = *src
+	return nil
 }
