@@ -62,22 +62,19 @@ func MarkPerFilterConfig(
 
 	switch dest := inAction.GetDestination().(type) {
 	case *v1.RouteAction_UpstreamGroup:
-
 		upstreamGroup, err := snap.UpstreamGroups.Find(dest.UpstreamGroup.GetNamespace(), dest.UpstreamGroup.GetName())
 		if err != nil {
 			return NewUpstreamGroupNotFoundErr(*dest.UpstreamGroup)
 		}
-
 		return configureMultiDest(upstreamGroup.GetDestinations(), outAction, filterName, perFilterConfig)
 	case *v1.RouteAction_Multi:
-
 		return configureMultiDest(dest.Multi.GetDestinations(), outAction, filterName, perFilterConfig)
 	case *v1.RouteAction_Single:
 		if out.GetTypedPerFilterConfig() == nil {
 			out.TypedPerFilterConfig = make(map[string]*any.Any)
 		}
 		return configureSingleDest(dest.Single, out.GetTypedPerFilterConfig(), filterName, perFilterConfig)
-	// intentionally ignored because destination is not specified at runtime, so perFilterConfig is useless
+	// intentionally ignored because destination is specified at runtime, so perFilterConfig is useless
 	case *v1.RouteAction_ClusterHeader:
 		return nil
 	}

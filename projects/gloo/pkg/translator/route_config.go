@@ -685,7 +685,7 @@ func ValidateRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.RouteAction)
 		return validateMultiDestination(upstreams, dest.Multi.GetDestinations())
 	case *v1.RouteAction_UpstreamGroup:
 		return validateUpstreamGroup(snap, dest.UpstreamGroup)
-	// Cluster Header can not be validated because the cluster name is not provided till runtime
+	// Cluster Header cannot be validated because the cluster name is not provided until runtime
 	case *v1.RouteAction_ClusterHeader:
 		return validateClusterHeader(action.GetClusterHeader())
 	}
