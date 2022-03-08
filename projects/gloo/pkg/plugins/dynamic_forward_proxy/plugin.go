@@ -127,7 +127,7 @@ func convertDnsLookupFamily(family dynamic_forward_proxy.DnsLookupFamily) envoy_
 	return envoy_config_cluster_v3.Cluster_V4_ONLY // TODO(kdorosh) don't make this the default?
 }
 
-func convertPreresolveHostnames(address *v3.SocketAddress) []*envoy_config_core_v3.SocketAddress {
+func convertPreresolveHostnames(address []*v3.SocketAddress) []*envoy_config_core_v3.SocketAddress {
 	if address == nil {
 		return nil
 	}

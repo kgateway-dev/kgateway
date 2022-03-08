@@ -220,22 +220,24 @@ spec:
                               name:
                                 type: string
                               preresolveHostnames:
-                                properties:
-                                  address:
-                                    type: string
-                                  ipv4Compat:
-                                    type: boolean
-                                  namedPort:
-                                    type: string
-                                  portValue:
-                                    format: int32
-                                    type: integer
-                                  protocol:
-                                    type: string
-                                    x-kubernetes-int-or-string: true
-                                  resolverName:
-                                    type: string
-                                type: object
+                                items:
+                                  properties:
+                                    address:
+                                      type: string
+                                    ipv4Compat:
+                                      type: boolean
+                                    namedPort:
+                                      type: string
+                                    portValue:
+                                      format: int32
+                                      type: integer
+                                    protocol:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    resolverName:
+                                      type: string
+                                  type: object
+                                type: array
                             type: object
                         type: object
                       extauth:
@@ -965,22 +967,24 @@ spec:
                                         name:
                                           type: string
                                         preresolveHostnames:
-                                          properties:
-                                            address:
-                                              type: string
-                                            ipv4Compat:
-                                              type: boolean
-                                            namedPort:
-                                              type: string
-                                            portValue:
-                                              format: int32
-                                              type: integer
-                                            protocol:
-                                              type: string
-                                              x-kubernetes-int-or-string: true
-                                            resolverName:
-                                              type: string
-                                          type: object
+                                          items:
+                                            properties:
+                                              address:
+                                                type: string
+                                              ipv4Compat:
+                                                type: boolean
+                                              namedPort:
+                                                type: string
+                                              portValue:
+                                                format: int32
+                                                type: integer
+                                              protocol:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              resolverName:
+                                                type: string
+                                            type: object
+                                          type: array
                                       type: object
                                   type: object
                                 extauth:

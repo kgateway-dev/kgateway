@@ -87,7 +87,7 @@ Configuration for the dynamic forward proxy DNS cache. See the :ref:`architectur
 "maxHosts": .google.protobuf.UInt32Value
 "dnsFailureRefreshRate": .dfp.options.gloo.solo.io.RefreshRate
 "dnsCacheCircuitBreaker": .dfp.options.gloo.solo.io.DnsCacheCircuitBreakers
-"preresolveHostnames": .solo.io.envoy.config.core.v3.SocketAddress
+"preresolveHostnames": []solo.io.envoy.config.core.v3.SocketAddress
 "dnsQueryTimeout": .google.protobuf.Duration
 
 ```
@@ -101,7 +101,7 @@ Configuration for the dynamic forward proxy DNS cache. See the :ref:`architectur
 | `maxHosts` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The maximum number of hosts that the cache will hold. If not specified defaults to 1024. .. note: The implementation is approximate and enforced independently on each worker thread, thus it is possible for the maximum hosts in the cache to go slightly above the configured value depending on timing. This is similar to how other circuit breakers work. |
 | `dnsFailureRefreshRate` | [.dfp.options.gloo.solo.io.RefreshRate](../dynamic_forward_proxy.proto.sk/#refreshrate) | If the DNS failure refresh rate is specified, this is used as the cache's DNS refresh rate when DNS requests are failing. If this setting is not specified, the failure refresh rate defaults to the dns_refresh_rate. |
 | `dnsCacheCircuitBreaker` | [.dfp.options.gloo.solo.io.DnsCacheCircuitBreakers](../dynamic_forward_proxy.proto.sk/#dnscachecircuitbreakers) | The config of circuit breakers for resolver. It provides a configurable threshold. Envoy will use dns cache circuit breakers with default settings even if this value is not set. |
-| `preresolveHostnames` | [.solo.io.envoy.config.core.v3.SocketAddress](../../../../external/envoy/config/core/v3/address.proto.sk/#socketaddress) | Hostnames that should be preresolved into the cache upon creation. This might provide a performance improvement, in the form of cache hits, for hostnames that are going to be resolved during steady state and are known at config load time. |
+| `preresolveHostnames` | [[]solo.io.envoy.config.core.v3.SocketAddress](../../../../external/envoy/config/core/v3/address.proto.sk/#socketaddress) | Hostnames that should be preresolved into the cache upon creation. This might provide a performance improvement, in the form of cache hits, for hostnames that are going to be resolved during steady state and are known at config load time. |
 | `dnsQueryTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout used for DNS queries. This timeout is independent of any timeout and retry policy used by the underlying DNS implementation (e.g., c-areas and Apple DNS) which are opaque. Setting this timeout will ensure that queries succeed or fail within the specified time frame and are then retried using the standard refresh rates. Defaults to 5s if not set. |
 
 

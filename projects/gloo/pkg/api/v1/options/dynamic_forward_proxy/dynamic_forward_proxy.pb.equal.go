@@ -172,14 +172,21 @@ func (m *DnsCacheConfig) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetPreresolveHostnames()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetPreresolveHostnames()) {
-			return false
+	if len(m.GetPreresolveHostnames()) != len(target.GetPreresolveHostnames()) {
+		return false
+	}
+	for idx, v := range m.GetPreresolveHostnames() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPreresolveHostnames()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetPreresolveHostnames()[idx]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetPreresolveHostnames(), target.GetPreresolveHostnames()) {
-			return false
-		}
+
 	}
 
 	if h, ok := interface{}(m.GetDnsQueryTimeout()).(equality.Equalizer); ok {

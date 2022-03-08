@@ -107,10 +107,17 @@ func (m *DnsCacheConfig) Clone() proto.Message {
 		target.DnsCacheCircuitBreaker = proto.Clone(m.GetDnsCacheCircuitBreaker()).(*DnsCacheCircuitBreakers)
 	}
 
-	if h, ok := interface{}(m.GetPreresolveHostnames()).(clone.Cloner); ok {
-		target.PreresolveHostnames = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.SocketAddress)
-	} else {
-		target.PreresolveHostnames = proto.Clone(m.GetPreresolveHostnames()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.SocketAddress)
+	if m.GetPreresolveHostnames() != nil {
+		target.PreresolveHostnames = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.SocketAddress, len(m.GetPreresolveHostnames()))
+		for idx, v := range m.GetPreresolveHostnames() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.PreresolveHostnames[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.SocketAddress)
+			} else {
+				target.PreresolveHostnames[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.SocketAddress)
+			}
+
+		}
 	}
 
 	if h, ok := interface{}(m.GetDnsQueryTimeout()).(clone.Cloner); ok {
