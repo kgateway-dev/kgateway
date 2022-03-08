@@ -95,19 +95,28 @@ func getHashString(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
 
 func convertDnsCacheConfig(dfpListenerConf *dynamic_forward_proxy.DnsCacheConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
 	return &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
-		Name:                  "dynamic_forward_proxy_cache_config", //dfpListenerConf.GetName(), TODO(kdorosh) allow several named caches?
-		DnsLookupFamily:       convertDnsLookupFamily(dfpListenerConf.GetDnsLookupFamily()),
-		DnsRefreshRate:        dfpListenerConf.GetDnsRefreshRate(),
-		HostTtl:               dfpListenerConf.GetHostTtl(),
-		MaxHosts:              dfpListenerConf.GetMaxHosts(),
-		DnsFailureRefreshRate: convertFailureRefreshRate(dfpListenerConf.GetDnsFailureRefreshRate()),
-		//DnsCacheCircuitBreaker: dfpListenerConf.GetDnsCacheCircuitBreaker(),
-		UseTcpForDnsLookups: false, // deprecated, do not use
-		DnsResolutionConfig: nil,   // deprecated, do not use
+		Name:                   "dynamic_forward_proxy_cache_config", //dfpListenerConf.GetName(), TODO(kdorosh) allow several named caches?
+		DnsLookupFamily:        convertDnsLookupFamily(dfpListenerConf.GetDnsLookupFamily()),
+		DnsRefreshRate:         dfpListenerConf.GetDnsRefreshRate(),
+		HostTtl:                dfpListenerConf.GetHostTtl(),
+		MaxHosts:               dfpListenerConf.GetMaxHosts(),
+		DnsFailureRefreshRate:  convertFailureRefreshRate(dfpListenerConf.GetDnsFailureRefreshRate()),
+		DnsCacheCircuitBreaker: convertDnsCacheCircuitBreaker(dfpListenerConf.GetDnsCacheCircuitBreaker()),
+		UseTcpForDnsLookups:    false, // deprecated, do not use
+		DnsResolutionConfig:    nil,   // deprecated, do not use
 		//TypedDnsResolverConfig: nil,
 		PreresolveHostnames: convertPreresolveHostnames(dfpListenerConf.GetPreresolveHostnames()),
 		DnsQueryTimeout:     dfpListenerConf.GetDnsQueryTimeout(),
-		//KeyValueConfig:         nil,
+		KeyValueConfig:      nil, // not-implemented in envoy
+	}
+}
+
+func convertDnsCacheCircuitBreaker(breakers *dynamic_forward_proxy.DnsCacheCircuitBreakers) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheCircuitBreakers {
+	if breakers == nil {
+		return nil
+	}
+	return &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheCircuitBreakers{
+		MaxPendingRequests: breakers.GetMaxPendingRequests(),
 	}
 }
 
@@ -127,11 +136,39 @@ func convertDnsLookupFamily(family dynamic_forward_proxy.DnsLookupFamily) envoy_
 	return envoy_config_cluster_v3.Cluster_V4_ONLY // TODO(kdorosh) don't make this the default?
 }
 
-func convertPreresolveHostnames(address []*v3.SocketAddress) []*envoy_config_core_v3.SocketAddress {
-	if address == nil {
+func convertPreresolveHostnames(sas []*v3.SocketAddress) []*envoy_config_core_v3.SocketAddress {
+	if len(sas) == 0 {
 		return nil
 	}
-	return nil //TODO(kdorosh)
+	var addresses []*envoy_config_core_v3.SocketAddress
+	for _, a := range sas {
+		var protocol envoy_config_core_v3.SocketAddress_Protocol
+		switch a.GetProtocol() {
+		case v3.SocketAddress_TCP:
+			protocol = envoy_config_core_v3.SocketAddress_TCP
+		case v3.SocketAddress_UDP:
+			protocol = envoy_config_core_v3.SocketAddress_UDP
+		}
+		newAddr := &envoy_config_core_v3.SocketAddress{
+			Protocol:      protocol,
+			Address:       a.GetAddress(),
+			PortSpecifier: nil, // set-later
+			ResolverName:  a.ResolverName,
+			Ipv4Compat:    a.Ipv4Compat,
+		}
+		switch ps := a.GetPortSpecifier().(type) {
+		case *v3.SocketAddress_PortValue:
+			newAddr.PortSpecifier = &envoy_config_core_v3.SocketAddress_PortValue{
+				PortValue: ps.PortValue,
+			}
+		case *v3.SocketAddress_NamedPort:
+			newAddr.PortSpecifier = &envoy_config_core_v3.SocketAddress_NamedPort{
+				NamedPort: ps.NamedPort,
+			}
+		}
+		addresses = append(addresses, newAddr)
+	}
+	return addresses
 }
 
 func convertFailureRefreshRate(rate *dynamic_forward_proxy.RefreshRate) *envoy_config_cluster_v3.Cluster_RefreshRate {
