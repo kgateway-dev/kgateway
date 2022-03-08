@@ -92,15 +92,15 @@ func getHashString(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
 
 func convertDnsCacheConfig(dfpListenerConf *dynamic_forward_proxy.DnsCacheConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
 	return &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
-		Name:            "dynamic_forward_proxy_cache_config", //dfpListenerConf.GetName(), TODO(kdorosh) allow several named caches?
-		DnsLookupFamily: envoy_config_cluster_v3.Cluster_V4_ONLY,
-		DnsRefreshRate:  dfpListenerConf.GetDnsRefreshRate(),
-		HostTtl:         dfpListenerConf.GetHostTtl(),
-		MaxHosts:        dfpListenerConf.GetMaxHosts(),
-		//DnsFailureRefreshRate:  nil,
+		Name:                  "dynamic_forward_proxy_cache_config", //dfpListenerConf.GetName(), TODO(kdorosh) allow several named caches?
+		DnsLookupFamily:       envoy_config_cluster_v3.Cluster_V4_ONLY,
+		DnsRefreshRate:        dfpListenerConf.GetDnsRefreshRate(),
+		HostTtl:               dfpListenerConf.GetHostTtl(),
+		MaxHosts:              dfpListenerConf.GetMaxHosts(),
+		DnsFailureRefreshRate: nil,
 		//DnsCacheCircuitBreaker: dfpListenerConf.GetDnsCacheCircuitBreaker(),
-		UseTcpForDnsLookups:    false, // deprecated, do not use
-		DnsResolutionConfig:    nil,   // deprecated, do not use
+		UseTcpForDnsLookups: false, // deprecated, do not use
+		DnsResolutionConfig: nil,   // deprecated, do not use
 		//TypedDnsResolverConfig: nil,
 		//PreresolveHostnames:    nil,
 		DnsQueryTimeout: dfpListenerConf.GetDnsQueryTimeout(),

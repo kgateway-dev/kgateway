@@ -11,6 +11,7 @@ import "validate/validate.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
 
 // Configuration for the dynamic forward proxy HTTP filter. See the :ref:`architecture overview
 // <arch_overview_http_dynamic_forward_proxy>` for more information.
@@ -49,9 +50,7 @@ message DnsCacheConfig {
   // likely build a "happy eyeballs" connection pool which would race the primary / fall back
   // address and return the one that wins. This same method could potentially also be used for
   // QUIC to TCP fall back.]
-
-//  TODO(kdorosh)
-//  config.cluster.v3.Cluster.DnsLookupFamily dns_lookup_family = 2 [(validate.rules).enum = {defined_only: true}];
+  DnsLookupFamily dns_lookup_family = 2 [(validate.rules).enum = {defined_only: true}];
 
   // The DNS refresh rate for unresolved DNS hosts. If not specified defaults to 60s.
   //
@@ -87,9 +86,7 @@ message DnsCacheConfig {
   // If the DNS failure refresh rate is specified,
   // this is used as the cache's DNS refresh rate when DNS requests are failing. If this setting is
   // not specified, the failure refresh rate defaults to the dns_refresh_rate.
-
-//  TODO(kdorosh)
-//  config.cluster.v3.Cluster.RefreshRate dns_failure_refresh_rate = 6;
+  RefreshRate dns_failure_refresh_rate = 6;
 
   // The config of circuit breakers for resolver. It provides a configurable threshold.
   // Envoy will use dns cache circuit breakers with default settings even if this value is not set.
@@ -98,9 +95,8 @@ message DnsCacheConfig {
   // Hostnames that should be preresolved into the cache upon creation. This might provide a
   // performance improvement, in the form of cache hits, for hostnames that are going to be
   // resolved during steady state and are known at config load time.
-
-//  TODO(kdorosh)
-//  repeated config.core.v3.SocketAddress preresolve_hostnames = 10;
+  .solo.io.envoy.config.core.v3.SocketAddress preresolve_hostnames = 10;
+//  repeated config.core.v3.SocketAddress preresolve_hostnames = 10; //TODO(kdorosh)
 
   // The timeout used for DNS queries. This timeout is independent of any timeout and retry policy
   // used by the underlying DNS implementation (e.g., c-areas and Apple DNS) which are opaque.
@@ -109,8 +105,48 @@ message DnsCacheConfig {
   google.protobuf.Duration dns_query_timeout = 11 [(validate.rules).duration = {gt {}}];
 }
 
+// When V4_ONLY is selected, the DNS resolver will only perform a lookup for
+// addresses in the IPv4 family. If V6_ONLY is selected, the DNS resolver will
+// only perform a lookup for addresses in the IPv6 family. If AUTO is
+// specified, the DNS resolver will first perform a lookup for addresses in
+// the IPv6 family and fallback to a lookup for addresses in the IPv4 family.
+// This is semantically equivalent to a non-existent V6_PREFERRED option.
+// AUTO is a legacy name that is more opaque than
+// necessary and will be deprecated in favor of V6_PREFERRED in a future major version of the API.
+// If V4_PREFERRED is specified, the DNS resolver will first perform a lookup for addresses in the
+// IPv4 family and fallback to a lookup for addresses in the IPv6 family. i.e., the callback
+// target will only get v6 addresses if there were NO v4 addresses to return.
+// If ALL is specified, the DNS resolver will perform a lookup for both IPv4 and IPv6 families,
+// and return all resolved addresses.
+// For cluster types other than
+// :ref:`STRICT_DNS<envoy_v3_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.STRICT_DNS>` and
+// :ref:`LOGICAL_DNS<envoy_v3_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.LOGICAL_DNS>`,
+// this setting is
+// ignored.
+// [#next-major-version: deprecate AUTO in favor of a V6_PREFERRED option.]
+enum DnsLookupFamily {
+  AUTO = 0;
+  V4_ONLY = 1;
+  V6_ONLY = 2;
+  V4_PREFERRED = 3;
+  ALL = 4;
+}
 
+message RefreshRate {
+  // Specifies the base interval between refreshes. This parameter is required and must be greater
+  // than zero and less than
+  // :ref:`max_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.max_interval>`.
+  google.protobuf.Duration base_interval = 1 [(validate.rules).duration = {
+    required: true
+    gt {nanos: 1000000}
+  }];
 
+  // Specifies the maximum interval between refreshes. This parameter is optional, but must be
+  // greater than or equal to the
+  // :ref:`base_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`  if set. The default
+  // is 10 times the :ref:`base_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`.
+  google.protobuf.Duration max_interval = 2 [(validate.rules).duration = {gt {nanos: 1000000}}];
+}
 
 // Per route Configuration for the dynamic forward proxy HTTP filter.
 message PerRouteConfig {

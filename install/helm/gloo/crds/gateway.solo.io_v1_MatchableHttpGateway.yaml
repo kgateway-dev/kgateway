@@ -191,6 +191,16 @@ spec:
                                     nullable: true
                                     type: integer
                                 type: object
+                              dnsFailureRefreshRate:
+                                properties:
+                                  baseInterval:
+                                    type: string
+                                  maxInterval:
+                                    type: string
+                                type: object
+                              dnsLookupFamily:
+                                type: string
+                                x-kubernetes-int-or-string: true
                               dnsQueryTimeout:
                                 type: string
                               dnsRefreshRate:
@@ -204,6 +214,23 @@ spec:
                                 type: integer
                               name:
                                 type: string
+                              preresolveHostnames:
+                                properties:
+                                  address:
+                                    type: string
+                                  ipv4Compat:
+                                    type: boolean
+                                  namedPort:
+                                    type: string
+                                  portValue:
+                                    format: int32
+                                    type: integer
+                                  protocol:
+                                    type: string
+                                    x-kubernetes-int-or-string: true
+                                  resolverName:
+                                    type: string
+                                type: object
                             type: object
                         type: object
                       extauth:

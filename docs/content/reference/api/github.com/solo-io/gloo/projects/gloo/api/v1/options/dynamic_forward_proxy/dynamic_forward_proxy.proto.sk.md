@@ -14,8 +14,16 @@ weight: 5
 - [FilterConfig](#filterconfig)
 - [DnsCacheCircuitBreakers](#dnscachecircuitbreakers)
 - [DnsCacheConfig](#dnscacheconfig)
+- [RefreshRate](#refreshrate)
 - [PerRouteConfig](#perrouteconfig)
   
+
+ 
+
+##### Enums:
+
+
+	- [DnsLookupFamily](#dnslookupfamily)
 
 
 
@@ -73,10 +81,13 @@ Configuration for the dynamic forward proxy DNS cache. See the :ref:`architectur
 
 ```yaml
 "name": string
+"dnsLookupFamily": .dfp.options.gloo.solo.io.DnsLookupFamily
 "dnsRefreshRate": .google.protobuf.Duration
 "hostTtl": .google.protobuf.Duration
 "maxHosts": .google.protobuf.UInt32Value
+"dnsFailureRefreshRate": .dfp.options.gloo.solo.io.RefreshRate
 "dnsCacheCircuitBreaker": .dfp.options.gloo.solo.io.DnsCacheCircuitBreakers
+"preresolveHostnames": .solo.io.envoy.config.core.v3.SocketAddress
 "dnsQueryTimeout": .google.protobuf.Duration
 
 ```
@@ -84,11 +95,33 @@ Configuration for the dynamic forward proxy DNS cache. See the :ref:`architectur
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `name` | `string` | The name of the cache. Multiple named caches allow independent dynamic forward proxy configurations to operate within a single Envoy process using different configurations. All configurations with the same name *must* otherwise have the same settings when referenced from different configuration components. Configuration will fail to load if this is not the case. |
+| `dnsLookupFamily` | [.dfp.options.gloo.solo.io.DnsLookupFamily](../dynamic_forward_proxy.proto.sk/#dnslookupfamily) | The DNS lookup family to use during resolution. [#comment:TODO(mattklein123): Figure out how to support IPv4/IPv6 "happy eyeballs" mode. The way this might work is a new lookup family which returns both IPv4 and IPv6 addresses, and then configures a host to have a primary and fall back address. With this, we could very likely build a "happy eyeballs" connection pool which would race the primary / fall back address and return the one that wins. This same method could potentially also be used for QUIC to TCP fall back.]. |
 | `dnsRefreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The DNS refresh rate for unresolved DNS hosts. If not specified defaults to 60s. The refresh rate is rounded to the closest millisecond, and must be at least 1ms. Once a host has been resolved, the refresh rate will be the DNS TTL, capped at a minimum of 5s. |
 | `hostTtl` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The TTL for hosts that are unused. Hosts that have not been used in the configured time interval will be purged. If not specified defaults to 5m. .. note: The TTL is only checked at the time of DNS refresh, as specified by *dns_refresh_rate*. This means that if the configured TTL is shorter than the refresh rate the host may not be removed immediately. .. note: The TTL has no relation to DNS TTL and is only used to control Envoy's resource usage. |
 | `maxHosts` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The maximum number of hosts that the cache will hold. If not specified defaults to 1024. .. note: The implementation is approximate and enforced independently on each worker thread, thus it is possible for the maximum hosts in the cache to go slightly above the configured value depending on timing. This is similar to how other circuit breakers work. |
+| `dnsFailureRefreshRate` | [.dfp.options.gloo.solo.io.RefreshRate](../dynamic_forward_proxy.proto.sk/#refreshrate) | If the DNS failure refresh rate is specified, this is used as the cache's DNS refresh rate when DNS requests are failing. If this setting is not specified, the failure refresh rate defaults to the dns_refresh_rate. |
 | `dnsCacheCircuitBreaker` | [.dfp.options.gloo.solo.io.DnsCacheCircuitBreakers](../dynamic_forward_proxy.proto.sk/#dnscachecircuitbreakers) | The config of circuit breakers for resolver. It provides a configurable threshold. Envoy will use dns cache circuit breakers with default settings even if this value is not set. |
+| `preresolveHostnames` | [.solo.io.envoy.config.core.v3.SocketAddress](../../../../external/envoy/config/core/v3/address.proto.sk/#socketaddress) | Hostnames that should be preresolved into the cache upon creation. This might provide a performance improvement, in the form of cache hits, for hostnames that are going to be resolved during steady state and are known at config load time. |
 | `dnsQueryTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout used for DNS queries. This timeout is independent of any timeout and retry policy used by the underlying DNS implementation (e.g., c-areas and Apple DNS) which are opaque. Setting this timeout will ensure that queries succeed or fail within the specified time frame and are then retried using the standard refresh rates. Defaults to 5s if not set. |
+
+
+
+
+---
+### RefreshRate
+
+
+
+```yaml
+"baseInterval": .google.protobuf.Duration
+"maxInterval": .google.protobuf.Duration
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `baseInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the base interval between refreshes. This parameter is required and must be greater than zero and less than :ref:`max_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.max_interval>`. |
+| `maxInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the maximum interval between refreshes. This parameter is optional, but must be greater than or equal to the :ref:`base_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>` if set. The default is 10 times the :ref:`base_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`. |
 
 
 
@@ -112,6 +145,36 @@ Per route Configuration for the dynamic forward proxy HTTP filter.
 
 
 
+  
+### DnsLookupFamily
+
+Description: When V4_ONLY is selected, the DNS resolver will only perform a lookup for
+addresses in the IPv4 family. If V6_ONLY is selected, the DNS resolver will
+only perform a lookup for addresses in the IPv6 family. If AUTO is
+specified, the DNS resolver will first perform a lookup for addresses in
+the IPv6 family and fallback to a lookup for addresses in the IPv4 family.
+This is semantically equivalent to a non-existent V6_PREFERRED option.
+AUTO is a legacy name that is more opaque than
+necessary and will be deprecated in favor of V6_PREFERRED in a future major version of the API.
+If V4_PREFERRED is specified, the DNS resolver will first perform a lookup for addresses in the
+IPv4 family and fallback to a lookup for addresses in the IPv6 family. i.e., the callback
+target will only get v6 addresses if there were NO v4 addresses to return.
+If ALL is specified, the DNS resolver will perform a lookup for both IPv4 and IPv6 families,
+and return all resolved addresses.
+For cluster types other than
+:ref:`STRICT_DNS<envoy_v3_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.STRICT_DNS>` and
+:ref:`LOGICAL_DNS<envoy_v3_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.LOGICAL_DNS>`,
+this setting is
+ignored.
+[#next-major-version: deprecate AUTO in favor of a V6_PREFERRED option.]
+
+| Name | Description |
+| ----- | ----------- | 
+| AUTO |  |
+| V4_ONLY |  |
+| V6_ONLY |  |
+| V4_PREFERRED |  |
+| ALL |  |
 
 
 <!-- Start of HubSpot Embed Code -->

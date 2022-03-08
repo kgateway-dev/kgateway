@@ -118,6 +118,10 @@ func (m *DnsCacheConfig) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetDnsLookupFamily() != target.GetDnsLookupFamily() {
+		return false
+	}
+
 	if h, ok := interface{}(m.GetDnsRefreshRate()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetDnsRefreshRate()) {
 			return false
@@ -148,6 +152,16 @@ func (m *DnsCacheConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetDnsFailureRefreshRate()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDnsFailureRefreshRate()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDnsFailureRefreshRate(), target.GetDnsFailureRefreshRate()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetDnsCacheCircuitBreaker()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetDnsCacheCircuitBreaker()) {
 			return false
@@ -158,12 +172,66 @@ func (m *DnsCacheConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPreresolveHostnames()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPreresolveHostnames()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPreresolveHostnames(), target.GetPreresolveHostnames()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetDnsQueryTimeout()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetDnsQueryTimeout()) {
 			return false
 		}
 	} else {
 		if !proto.Equal(m.GetDnsQueryTimeout(), target.GetDnsQueryTimeout()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *RefreshRate) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RefreshRate)
+	if !ok {
+		that2, ok := that.(RefreshRate)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetBaseInterval()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetBaseInterval()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetBaseInterval(), target.GetBaseInterval()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetMaxInterval()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxInterval()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxInterval(), target.GetMaxInterval()) {
 			return false
 		}
 	}
