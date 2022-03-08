@@ -10,6 +10,7 @@ import (
 	envoy_extensions_filters_http_dynamic_forward_proxy_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
 	"github.com/golang/protobuf/ptypes/duration"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -50,9 +51,11 @@ func (p *plugin) GeneratedResources(params plugins.Params, inClusters []*envoy_c
 // but then we forward the bytes as raw TCP to the HTTP Connect proxy (which can only be done on a TCP listener)
 func generateSelfCluster() *envoy_config_cluster_v3.Cluster {
 	cc := &envoy_extensions_clusters_dynamic_forward_proxy_v3.ClusterConfig{
-		DnsCacheConfig:              getDnsCacheConfig(),
+		DnsCacheConfig: getDnsCacheConfig(),
+		// AllowInsecureClusterOptions is not needed to be configurable unless we make a
+		// new upstream type so the cluster's upstream_http_protocol_options is configurable
 		AllowInsecureClusterOptions: false,
-		AllowCoalescedConnections:   false,
+		AllowCoalescedConnections:   false, // not-implemented in envoy yet
 	}
 	marshalledConf, err := utils.MessageToAny(cc)
 	if err != nil {
@@ -60,7 +63,7 @@ func generateSelfCluster() *envoy_config_cluster_v3.Cluster {
 		panic(err)
 	}
 	return &envoy_config_cluster_v3.Cluster{
-		Name:           "placeholder_gloo-system",
+		Name:           GetGeneratedClusterName(nil), //TODO(kdorosh) non-nil
 		ConnectTimeout: &duration.Duration{Seconds: 5},
 		LbPolicy:       envoy_config_cluster_v3.Cluster_CLUSTER_PROVIDED,
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_ClusterType{
@@ -70,6 +73,11 @@ func generateSelfCluster() *envoy_config_cluster_v3.Cluster {
 			},
 		},
 	}
+}
+
+func GetGeneratedClusterName(dfpRouteConf *dynamic_forward_proxy.FilterConfig) string {
+	// TODO(kdorosh) generate cluster per route for each listener..
+	return "placeholder_gloo-system"
 }
 
 func getDnsCacheConfig() *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {

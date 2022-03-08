@@ -74,10 +74,13 @@ func MarkPerFilterConfig(
 			out.TypedPerFilterConfig = make(map[string]*any.Any)
 		}
 		return configureSingleDest(dest.Single, out.GetTypedPerFilterConfig(), filterName, perFilterConfig)
-	// intentionally ignored because destination is specified at runtime, so perFilterConfig is useless
 	case *v1.RouteAction_ClusterHeader:
+		// intentionally ignored because destination is specified at runtime, so perFilterConfig is useless
 		return nil
 	case *v1.RouteAction_DynamicForwardProxy:
+		// not supported on generated cluster (no user-provided upstream needed).
+		// if we want to create an upstream so upstream-specific config has a place to live (e.g. tls), then we can
+		// support this on a new upstream type (i.e. will be covered by `configureSingleDest()` code path)
 		return nil
 	}
 

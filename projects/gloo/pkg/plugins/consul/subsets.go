@@ -7,6 +7,7 @@ import (
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -54,7 +55,9 @@ func (p *plugin) ProcessRouteAction(
 		}
 		return nil
 	case *v1.RouteAction_DynamicForwardProxy:
-		out.GetClusterSpecifier().(*envoy_config_route_v3.RouteAction_Cluster).Cluster = "placeholder_gloo-system"
+		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
+			Cluster: dynamic_forward_proxy.GetGeneratedClusterName(params.Listener.GetHttpListener().GetOptions().GetDynamicForwardProxy()),
+		}
 		return nil
 	}
 	return eris.Errorf("unknown upstream destination type")
