@@ -212,9 +212,7 @@ func (u *updaterUpdater) detectSingle(fp UpstreamFunctionDiscovery, url url.URL,
 		}
 	}
 
-	err := contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{
-		MaxRetries: 1,
-	}).Backoff(u.ctx, func(ctx context.Context) error {
+	err := contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{}).Backoff(u.ctx, func(ctx context.Context) error {
 		spec, err := fp.DetectType(ctx, &url)
 		if err != nil {
 			return err
