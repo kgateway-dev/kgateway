@@ -187,9 +187,7 @@ func (f *SwaggerFunctionDiscovery) DetectFunctions(ctx context.Context, _ *url.U
 }
 
 func (f *SwaggerFunctionDiscovery) detectFunctionsFromUrl(ctx context.Context, url string, in *v1.Upstream, updatecb func(fds.UpstreamMutator) error) error {
-	err := contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{
-		MaxDuration: &f.detectionTimeout,
-	}).Backoff(ctx, func(ctx context.Context) error {
+	err := contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{}).Backoff(ctx, func(ctx context.Context) error {
 
 		spec, err := RetrieveSwaggerDocFromUrl(ctx, url)
 		if err != nil {
