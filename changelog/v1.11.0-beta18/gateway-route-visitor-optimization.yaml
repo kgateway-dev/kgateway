@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5976
+    resolvesIssue: false
+    description: |
+      Update proxy API metadata fields to have a non opaque option. The previous option, now deprecated, 
+      was very inefficient due to many json marshal/unmarshals.
