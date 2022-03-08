@@ -7,6 +7,7 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
+	"k8s.io/utils/lru"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -57,13 +58,13 @@ type Plugin struct {
 	TranslateTransformation    TranslateTransformationFn
 	settings                   *v1.Settings
 
-	// validationCache is a map of: (transformation hash) -> (error state)
-	validationCache map[uint64]error
+	// validationLruCache is a map of: (transformation hash) -> (error state)
+	validationLruCache *lru.Cache
 }
 
 func NewPlugin() *Plugin {
 	return &Plugin{
-		validationCache: map[uint64]error{},
+		validationLruCache: lru.New(1024),
 	}
 }
 
@@ -284,13 +285,13 @@ func (p *Plugin) validateTransformation(
 	}
 
 	// This transformation has already been validated, return the result
-	if err, ok := p.validationCache[transformHash]; ok {
+	if err, ok := p.validationLruCache.Get(transformHash); ok {
 		// Error may be nil here since it's just the cached result
-		return err
+		return err.(error)
 	}
 
 	err = bootstrap.ValidateBootstrap(ctx, p.settings, FilterName, transformations)
-	p.validationCache[transformHash] = err
+	p.validationLruCache.Add(transformHash, err)
 	if err != nil {
 		return err
 	}
