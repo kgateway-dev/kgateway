@@ -106,7 +106,6 @@ var _ = FDescribe("dynamic forward proxy", func() {
 		cancel()
 	})
 
-	// TODO(kdorosh) note in API that (auto) host rewrite doesn't work and that custom cluster DFP rewrite must be used
 	testRequest := func(dest string, updateReq func(r *http.Request)) string {
 		By("Make request")
 		responseBody := ""
@@ -136,7 +135,7 @@ var _ = FDescribe("dynamic forward proxy", func() {
 			defer res.Body.Close()
 			responseBody = p.String()
 			return nil
-		}, "10s", "3s").Should(BeNil()) // TODO(kdorosh) make .1s interval
+		}, "10s", ".1s").Should(BeNil())
 		return responseBody
 	}
 
