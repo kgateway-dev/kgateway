@@ -235,7 +235,6 @@ func (u *updaterUpdater) detectSingle(fp UpstreamFunctionDiscovery, url url.URL,
 func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
 	// TODO add global timeout?
 	ctx, cancel := context.WithCancel(u.ctx)
-	defer cancel()
 
 	result := make(chan detectResult)
 
@@ -250,6 +249,7 @@ func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
 	}
 	go func() {
 		waitGroup.Wait()
+		defer cancel()
 		close(result)
 	}()
 	var numResultsReceived int
