@@ -160,16 +160,6 @@ func (m *Listener) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMetadata()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetRouteOptions()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetRouteOptions()) {
 			return false
@@ -230,6 +220,45 @@ func (m *Listener) Equal(that interface{}) bool {
 	default:
 		// m is nil but target is not nil
 		if m.ListenerType != target.ListenerType {
+			return false
+		}
+	}
+
+	switch m.OpaqueMetadata.(type) {
+
+	case *Listener_Metadata:
+		if _, ok := target.OpaqueMetadata.(*Listener_Metadata); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMetadata()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
+				return false
+			}
+		}
+
+	case *Listener_MetadataStatic:
+		if _, ok := target.OpaqueMetadata.(*Listener_MetadataStatic); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetMetadataStatic()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMetadataStatic()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetMetadataStatic(), target.GetMetadataStatic()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.OpaqueMetadata != target.OpaqueMetadata {
 			return false
 		}
 	}
@@ -640,12 +669,41 @@ func (m *VirtualHost) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMetadata()) {
+	switch m.OpaqueMetadata.(type) {
+
+	case *VirtualHost_Metadata:
+		if _, ok := target.OpaqueMetadata.(*VirtualHost_Metadata); !ok {
 			return false
 		}
-	} else {
-		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
+
+		if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMetadata()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
+				return false
+			}
+		}
+
+	case *VirtualHost_MetadataStatic:
+		if _, ok := target.OpaqueMetadata.(*VirtualHost_MetadataStatic); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetMetadataStatic()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMetadataStatic()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetMetadataStatic(), target.GetMetadataStatic()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.OpaqueMetadata != target.OpaqueMetadata {
 			return false
 		}
 	}
@@ -697,16 +755,6 @@ func (m *Route) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMetadata()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
 			return false
 		}
 	}
@@ -780,6 +828,45 @@ func (m *Route) Equal(that interface{}) bool {
 	default:
 		// m is nil but target is not nil
 		if m.Action != target.Action {
+			return false
+		}
+	}
+
+	switch m.OpaqueMetadata.(type) {
+
+	case *Route_Metadata:
+		if _, ok := target.OpaqueMetadata.(*Route_Metadata); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMetadata()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
+				return false
+			}
+		}
+
+	case *Route_MetadataStatic:
+		if _, ok := target.OpaqueMetadata.(*Route_MetadataStatic); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetMetadataStatic()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMetadataStatic()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetMetadataStatic(), target.GetMetadataStatic()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.OpaqueMetadata != target.OpaqueMetadata {
 			return false
 		}
 	}
@@ -1310,6 +1397,47 @@ func (m *DirectResponseAction) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *SourceMetadata) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SourceMetadata)
+	if !ok {
+		that2, ok := that.(SourceMetadata)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSources()) != len(target.GetSources()) {
+		return false
+	}
+	for idx, v := range m.GetSources() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSources()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSources()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *TcpHost_TcpAction) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1397,6 +1525,48 @@ func (m *TcpHost_TcpAction) Equal(that interface{}) bool {
 		if m.Destination != target.Destination {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *SourceMetadata_SourceRef) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SourceMetadata_SourceRef)
+	if !ok {
+		that2, ok := that.(SourceMetadata_SourceRef)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetResourceRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetResourceRef()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetResourceRef(), target.GetResourceRef()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetResourceKind(), target.GetResourceKind()) != 0 {
+		return false
+	}
+
+	if m.GetObservedGeneration() != target.GetObservedGeneration() {
+		return false
 	}
 
 	return true

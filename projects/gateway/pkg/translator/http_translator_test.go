@@ -962,18 +962,6 @@ var _ = Describe("Http Translator", func() {
 				httpListener := listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 				Expect(httpListener.VirtualHosts).To(HaveLen(2))
 
-				// hack to assert equality on Metadata
-				// gomega.Equals does not like *types.Struct
-				for i, vh := range httpListener.VirtualHosts {
-					for j, route := range vh.Routes {
-						routeMeta, err := SourceMetaFromStruct(route.Metadata)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(routeMeta).To(Equal(expectedRouteMetadata(i, j)))
-						// after asserting Metadata equality, zero it out
-						route.Metadata = nil
-					}
-				}
-
 				Expect(httpListener.VirtualHosts[0].Routes).To(Equal([]*gloov1.Route{
 					{
 						Name: "vs:name_proxy1_gloo-system_name1_route:testRouteName_rt:gloo-system_delegate-1_route:<unnamed-0>",
@@ -997,6 +985,28 @@ var _ = Describe("Http Translator", func() {
 							},
 						},
 						Options: rootLevelRoutePlugins,
+						OpaqueMetadata: &gloov1.Route_MetadataStatic{
+							MetadataStatic: &gloov1.SourceMetadata{
+								Sources: []*gloov1.SourceMetadata_SourceRef{
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "delegate-1",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.RouteTable",
+										ObservedGeneration: 0,
+									},
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "name1",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.VirtualService",
+										ObservedGeneration: 0,
+									},
+								},
+							},
+						},
 					},
 					{
 						Name: "vs:name_proxy1_gloo-system_name1_route:testRouteName_rt:gloo-system_delegate-1_route:delegate1Route2_rt:gloo-system_delegate-3_route:<unnamed-0>",
@@ -1020,6 +1030,36 @@ var _ = Describe("Http Translator", func() {
 							},
 						},
 						Options: mergedMidLevelRoutePlugins,
+						OpaqueMetadata: &gloov1.Route_MetadataStatic{
+							MetadataStatic: &gloov1.SourceMetadata{
+								Sources: []*gloov1.SourceMetadata_SourceRef{
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "delegate-3",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.RouteTable",
+										ObservedGeneration: 0,
+									},
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "delegate-1",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.RouteTable",
+										ObservedGeneration: 0,
+									},
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "name1",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.VirtualService",
+										ObservedGeneration: 0,
+									},
+								},
+							},
+						},
 					},
 					{
 						Name: "vs:name_proxy1_gloo-system_name1_route:testRouteName_rt:gloo-system_delegate-1_route:delegate1Route2_rt:gloo-system_delegate-3_route:delegate3Route2",
@@ -1043,6 +1083,36 @@ var _ = Describe("Http Translator", func() {
 							},
 						},
 						Options: mergedLeafLevelRoutePlugins,
+						OpaqueMetadata: &gloov1.Route_MetadataStatic{
+							MetadataStatic: &gloov1.SourceMetadata{
+								Sources: []*gloov1.SourceMetadata_SourceRef{
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "delegate-3",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.RouteTable",
+										ObservedGeneration: 0,
+									},
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "delegate-1",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.RouteTable",
+										ObservedGeneration: 0,
+									},
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "name1",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.VirtualService",
+										ObservedGeneration: 0,
+									},
+								},
+							},
+						},
 					},
 				}))
 				Expect(httpListener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
@@ -1063,6 +1133,28 @@ var _ = Describe("Http Translator", func() {
 												Namespace: "gloo-system",
 											},
 										},
+									},
+								},
+							},
+						},
+						OpaqueMetadata: &gloov1.Route_MetadataStatic{
+							MetadataStatic: &gloov1.SourceMetadata{
+								Sources: []*gloov1.SourceMetadata_SourceRef{
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "delegate-2",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.RouteTable",
+										ObservedGeneration: 0,
+									},
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "name2",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.VirtualService",
+										ObservedGeneration: 0,
 									},
 								},
 							},
@@ -1090,6 +1182,28 @@ var _ = Describe("Http Translator", func() {
 							},
 						},
 						Options: leafLevelRoutePlugins,
+						OpaqueMetadata: &gloov1.Route_MetadataStatic{
+							MetadataStatic: &gloov1.SourceMetadata{
+								Sources: []*gloov1.SourceMetadata_SourceRef{
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "delegate-2",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.RouteTable",
+										ObservedGeneration: 0,
+									},
+									{
+										ResourceRef: &core.ResourceRef{
+											Name:      "name2",
+											Namespace: "gloo-system",
+										},
+										ResourceKind:       "*v1.VirtualService",
+										ObservedGeneration: 0,
+									},
+								},
+							},
+						},
 					},
 				}))
 			})

@@ -1,9 +1,6 @@
 package translator
 
 import (
-	"encoding/json"
-
-	"github.com/golang/protobuf/jsonpb"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -24,9 +21,10 @@ type SourceRef struct {
 
 type ObjectWithMetadata interface {
 	GetMetadata() *structpb.Struct
+	GetMetadataStatic() *v1.SourceMetadata
 }
 
-func SourceMetaFromStruct(s *structpb.Struct) (*SourceMetadata, error) {
+func sourceMetaFromStruct(s *structpb.Struct) (*SourceMetadata, error) {
 	if s == nil {
 		return nil, nil
 	}
@@ -37,25 +35,50 @@ func SourceMetaFromStruct(s *structpb.Struct) (*SourceMetadata, error) {
 	return &m, nil
 }
 
-func objMetaToStruct(meta *SourceMetadata) (*structpb.Struct, error) {
-	data, err := json.Marshal(meta)
-	var pb structpb.Struct
-	err = jsonpb.UnmarshalString(string(data), &pb)
-	return &pb, err
+func sourceMetaFromProto(s *v1.SourceMetadata) *SourceMetadata {
+	if s == nil {
+		return nil
+	}
+	result := &SourceMetadata{}
+	for _, source := range s.GetSources() {
+		result.Sources = append(result.Sources, SourceRef{
+			ResourceRef:        source.GetResourceRef(),
+			ResourceKind:       source.GetResourceKind(),
+			ObservedGeneration: source.GetObservedGeneration(),
+		})
+	}
+	return result
+}
+
+func objMetaToSourceMeta(meta *SourceMetadata) *v1.SourceMetadata {
+	if meta == nil {
+		return nil
+	}
+	result := &v1.SourceMetadata{}
+	for _, source := range meta.Sources {
+		result.Sources = append(result.GetSources(), &v1.SourceMetadata_SourceRef{
+			ResourceRef:        source.ResourceRef,
+			ResourceKind:       source.ResourceKind,
+			ObservedGeneration: source.ObservedGeneration,
+		})
+	}
+	return result
 }
 
 func setObjMeta(obj ObjectWithMetadata, meta *SourceMetadata) error {
-	metaStruct, err := objMetaToStruct(meta)
-	if err != nil {
-		return err
-	}
-	switch obj := obj.(type) {
+	switch typedObj := obj.(type) {
 	case *v1.Route:
-		obj.Metadata = metaStruct
+		typedObj.OpaqueMetadata = &v1.Route_MetadataStatic{
+			MetadataStatic: objMetaToSourceMeta(meta),
+		}
 	case *v1.VirtualHost:
-		obj.Metadata = metaStruct
+		typedObj.OpaqueMetadata = &v1.VirtualHost_MetadataStatic{
+			MetadataStatic: objMetaToSourceMeta(meta),
+		}
 	case *v1.Listener:
-		obj.Metadata = metaStruct
+		typedObj.OpaqueMetadata = &v1.Listener_MetadataStatic{
+			MetadataStatic: objMetaToSourceMeta(meta),
+		}
 	default:
 		return errors.Errorf("unimplemented object type: %T", obj)
 	}
@@ -63,10 +86,12 @@ func setObjMeta(obj ObjectWithMetadata, meta *SourceMetadata) error {
 }
 
 func GetSourceMeta(obj ObjectWithMetadata) (*SourceMetadata, error) {
-	if obj.GetMetadata() == nil {
-		return &SourceMetadata{}, nil
+	if meta := obj.GetMetadataStatic(); meta != nil {
+		return sourceMetaFromProto(meta), nil
+	} else if metaDeprecated := obj.GetMetadata(); metaDeprecated != nil {
+		return sourceMetaFromStruct(obj.GetMetadata())
 	}
-	return SourceMetaFromStruct(obj.GetMetadata())
+	return &SourceMetadata{}, nil
 }
 
 func appendSource(obj ObjectWithMetadata, source resources.InputResource) error {
