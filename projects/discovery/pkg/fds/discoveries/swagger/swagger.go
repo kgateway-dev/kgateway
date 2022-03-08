@@ -87,15 +87,7 @@ func (f *SwaggerFunctionDiscovery) IsFunctional() bool {
 }
 
 func (f *SwaggerFunctionDiscovery) DetectType(ctx context.Context, baseurl *url.URL) (*plugins.ServiceSpec, error) {
-	var spec *plugins.ServiceSpec
-
-	err := contextutils.NewExponentioalBackoff(contextutils.ExponentioalBackoff{MaxDuration: &f.detectionTimeout}).Backoff(ctx, func(ctx context.Context) error {
-		var err error
-		spec, err = f.detectUpstreamTypeOnce(ctx, baseurl)
-		return err
-	})
-
-	return spec, err
+	return f.detectUpstreamTypeOnce(ctx, baseurl)
 }
 
 func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, baseUrl *url.URL) (*plugins.ServiceSpec, error) {
