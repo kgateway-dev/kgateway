@@ -118,10 +118,6 @@ func (m *DnsCacheConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetName(), target.GetName()) != 0 {
-		return false
-	}
-
 	if m.GetDnsLookupFamily() != target.GetDnsLookupFamily() {
 		return false
 	}

@@ -254,8 +254,6 @@ spec:
                                 minimum: 0
                                 nullable: true
                                 type: integer
-                              name:
-                                type: string
                               preresolveHostnames:
                                 items:
                                   properties:

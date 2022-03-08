@@ -82,7 +82,6 @@ Configuration for the dynamic forward proxy DNS cache. See the :ref:`architectur
 [#next-free-field: 14]
 
 ```yaml
-"name": string
 "dnsLookupFamily": .dfp.options.gloo.solo.io.DnsLookupFamily
 "dnsRefreshRate": .google.protobuf.Duration
 "hostTtl": .google.protobuf.Duration
@@ -98,7 +97,6 @@ Configuration for the dynamic forward proxy DNS cache. See the :ref:`architectur
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `name` | `string` | The name of the cache. Multiple named caches allow independent dynamic forward proxy configurations to operate within a single Envoy process using different configurations. All configurations with the same name *must* otherwise have the same settings when referenced from different configuration components. Configuration will fail to load if this is not the case. |
 | `dnsLookupFamily` | [.dfp.options.gloo.solo.io.DnsLookupFamily](../dynamic_forward_proxy.proto.sk/#dnslookupfamily) | The DNS lookup family to use during resolution. [#comment:TODO(mattklein123): Figure out how to support IPv4/IPv6 "happy eyeballs" mode. The way this might work is a new lookup family which returns both IPv4 and IPv6 addresses, and then configures a host to have a primary and fall back address. With this, we could very likely build a "happy eyeballs" connection pool which would race the primary / fall back address and return the one that wins. This same method could potentially also be used for QUIC to TCP fall back.]. |
 | `dnsRefreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The DNS refresh rate for unresolved DNS hosts. If not specified defaults to 60s. The refresh rate is rounded to the closest millisecond, and must be at least 1ms. Once a host has been resolved, the refresh rate will be the DNS TTL, capped at a minimum of 5s. |
 | `hostTtl` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The TTL for hosts that are unused. Hosts that have not been used in the configured time interval will be purged. If not specified defaults to 5m. .. note: The TTL is only checked at the time of DNS refresh, as specified by *dns_refresh_rate*. This means that if the configured TTL is shorter than the refresh rate the host may not be removed immediately. .. note: The TTL has no relation to DNS TTL and is only used to control Envoy's resource usage. |

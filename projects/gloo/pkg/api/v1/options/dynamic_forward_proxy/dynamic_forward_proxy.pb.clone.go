@@ -79,8 +79,6 @@ func (m *DnsCacheConfig) Clone() proto.Message {
 	}
 	target = &DnsCacheConfig{}
 
-	target.Name = m.GetName()
-
 	target.DnsLookupFamily = m.GetDnsLookupFamily()
 
 	if h, ok := interface{}(m.GetDnsRefreshRate()).(clone.Cloner); ok {

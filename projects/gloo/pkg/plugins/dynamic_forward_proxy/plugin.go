@@ -92,13 +92,19 @@ func GetGeneratedClusterName(dfpListenerConf *dynamic_forward_proxy.FilterConfig
 	return fmt.Sprintf("solo_io_generated_dfp:%s", getHashString(dfpListenerConf))
 }
 
+func getGeneratedCacheName(cc *dynamic_forward_proxy.DnsCacheConfig) string {
+	// should be safe, cluster names can get up to 60 characters long https://github.com/envoyproxy/envoy/pull/667/files
+	return fmt.Sprintf("solo_io_generated_dfp:%s", fmt.Sprintf("%v", hashutils.MustHash(cc)))
+}
+
 func getHashString(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
+	dfpListenerConf.GetDnsCacheConfig()
 	return fmt.Sprintf("%v", hashutils.MustHash(dfpListenerConf))
 }
 
 func convertDnsCacheConfig(dfpListenerConf *dynamic_forward_proxy.DnsCacheConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
 	return &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
-		Name:                   "dynamic_forward_proxy_cache_config", //dfpListenerConf.GetName(), TODO(kdorosh) allow several named caches?
+		Name:                   getGeneratedCacheName(dfpListenerConf), // silly envoy behavior, MUST match other caches with exact same DNS config
 		DnsLookupFamily:        convertDnsLookupFamily(dfpListenerConf.GetDnsLookupFamily()),
 		DnsRefreshRate:         dfpListenerConf.GetDnsRefreshRate(),
 		HostTtl:                dfpListenerConf.GetHostTtl(),
