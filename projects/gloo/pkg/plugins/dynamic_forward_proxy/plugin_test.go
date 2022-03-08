@@ -2,14 +2,22 @@ package dynamic_forward_proxy_test
 
 import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_extensions_filters_http_dynamic_forward_proxy_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
+	envoy_extensions_network_dns_resolver_cares_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/network/dns_resolver/cares/v3"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/network/dns_resolver/cares/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("enterprise_warning plugin", func() {
@@ -55,6 +63,97 @@ var _ = Describe("enterprise_warning plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(filterCfg.GetDnsCacheConfig().GetDnsLookupFamily()).To(Equal(envoy_config_cluster_v3.Cluster_V4_PREFERRED))
+		})
+	})
+
+	Context("translates provided config", func() {
+
+		BeforeEach(func() {
+			listener.Options = &v1.HttpListenerOptions{
+				DynamicForwardProxy: &dynamic_forward_proxy.FilterConfig{
+					DnsCacheConfig: &dynamic_forward_proxy.DnsCacheConfig{
+						DnsLookupFamily: dynamic_forward_proxy.DnsLookupFamily_V4_ONLY,
+						DnsRefreshRate: &duration.Duration{
+							Seconds: 10,
+							Nanos:   20,
+						},
+						HostTtl: &duration.Duration{
+							Seconds: 30,
+							Nanos:   40,
+						},
+						MaxHosts: &wrappers.UInt32Value{
+							Value: 10,
+						},
+						DnsCacheType: &dynamic_forward_proxy.DnsCacheConfig_CaresDns{
+							CaresDns: &v3.CaresDnsResolverConfig{
+								Resolvers: []*v32.Address{
+									{
+										Address: &v32.Address_SocketAddress{
+											SocketAddress: &v32.SocketAddress{
+												Protocol: v32.SocketAddress_UDP,
+												Address:  "127.0.0.1",
+												PortSpecifier: &v32.SocketAddress_PortValue{
+													PortValue: 80,
+												},
+												ResolverName: "resolverName",
+												Ipv4Compat:   true,
+											},
+										},
+									},
+								},
+								DnsResolverOptions: &v32.DnsResolverOptions{
+									UseTcpForDnsLookups:   true,
+									NoDefaultSearchDomain: true,
+								},
+							},
+						},
+					},
+					SaveUpstreamAddress: true,
+				},
+			}
+		})
+
+		It("translates cares config and top level fields", func() {
+			p := NewPlugin()
+			err := p.Init(initParams)
+			Expect(err).NotTo(HaveOccurred())
+			filters, err := p.HttpFilters(params, listener)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filters).To(HaveLen(1))
+
+			filterCfg := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{}
+			goTypedConfig := filters[0].HttpFilter.GetTypedConfig()
+			err = ptypes.UnmarshalAny(goTypedConfig, filterCfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(filterCfg.GetDnsCacheConfig().GetDnsLookupFamily()).To(Equal(envoy_config_cluster_v3.Cluster_V4_ONLY))
+			Expect(filterCfg.GetDnsCacheConfig().GetDnsRefreshRate()).To(Equal(&duration.Duration{
+				Seconds: 10,
+				Nanos:   20,
+			}))
+			Expect(filterCfg.GetDnsCacheConfig().GetHostTtl()).To(Equal(&duration.Duration{
+				Seconds: 30,
+				Nanos:   40,
+			}))
+			Expect(filterCfg.GetDnsCacheConfig().GetMaxHosts()).To(Equal(&wrappers.UInt32Value{
+				Value: 10,
+			}))
+
+			Expect(filterCfg.GetDnsCacheConfig().GetTypedDnsResolverConfig().Name).To(Equal("envoy.network.dns_resolver.cares"))
+			caresCfg := utils.MustAnyToMessage(filterCfg.GetDnsCacheConfig().GetTypedDnsResolverConfig().TypedConfig).(*envoy_extensions_network_dns_resolver_cares_v3.CaresDnsResolverConfig)
+			Expect(caresCfg.DnsResolverOptions.UseTcpForDnsLookups).To(Equal(true))
+			Expect(caresCfg.DnsResolverOptions.NoDefaultSearchDomain).To(Equal(true))
+
+			Expect(caresCfg.Resolvers).To(HaveLen(1))
+			Expect(caresCfg.Resolvers[0].GetSocketAddress()).To(matchers.MatchProto(&envoy_config_core_v3.SocketAddress{
+				Protocol: envoy_config_core_v3.SocketAddress_UDP,
+				Address:  "127.0.0.1",
+				PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+					PortValue: 80,
+				},
+				ResolverName: "resolverName",
+				Ipv4Compat:   true,
+			}))
 		})
 	})
 })

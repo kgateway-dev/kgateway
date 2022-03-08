@@ -47,7 +47,15 @@ type plugin struct {
 	filterHashMap map[string]*dynamic_forward_proxy.FilterConfig
 }
 
-func (p *plugin) GeneratedResources(params plugins.Params, inClusters []*envoy_config_cluster_v3.Cluster, inEndpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment, inRouteConfigurations []*envoy_config_route_v3.RouteConfiguration, inListeners []*envoy_config_listener_v3.Listener) ([]*envoy_config_cluster_v3.Cluster, []*envoy_config_endpoint_v3.ClusterLoadAssignment, []*envoy_config_route_v3.RouteConfiguration, []*envoy_config_listener_v3.Listener, error) {
+func (p *plugin) GeneratedResources(_ plugins.Params,
+	_ []*envoy_config_cluster_v3.Cluster,
+	_ []*envoy_config_endpoint_v3.ClusterLoadAssignment,
+	_ []*envoy_config_route_v3.RouteConfiguration,
+	_ []*envoy_config_listener_v3.Listener) (
+	[]*envoy_config_cluster_v3.Cluster,
+	[]*envoy_config_endpoint_v3.ClusterLoadAssignment,
+	[]*envoy_config_route_v3.RouteConfiguration,
+	[]*envoy_config_listener_v3.Listener, error) {
 	var generatedClusters []*envoy_config_cluster_v3.Cluster
 	for _, lCfg := range p.filterHashMap {
 		generatedClusters = append(generatedClusters, generateCustomDynamicForwardProxyCluster(lCfg))
@@ -66,16 +74,16 @@ func (p *plugin) GeneratedResources(params plugins.Params, inClusters []*envoy_c
 // add a new upstream type in the future for dynamic forwarding and make other cluster fields configurable, but this
 // would require very careful validation with all other features and require the extra user step of providing an
 // upstream that in most cases the user does not want to customize at all.
-func generateCustomDynamicForwardProxyCluster(lCfg *dynamic_forward_proxy.FilterConfig) *envoy_config_cluster_v3.Cluster {
+func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy.FilterConfig) *envoy_config_cluster_v3.Cluster {
 	cc := &envoy_extensions_clusters_dynamic_forward_proxy_v3.ClusterConfig{
-		DnsCacheConfig: convertDnsCacheConfig(lCfg.GetDnsCacheConfig()),
+		DnsCacheConfig: convertDnsCacheConfig(listenerCfg.GetDnsCacheConfig()),
 		// AllowInsecureClusterOptions is not needed to be configurable unless we make a
 		// new upstream type so the cluster's upstream_http_protocol_options is configurable
 		AllowInsecureClusterOptions: false,
 		AllowCoalescedConnections:   false, // not-implemented in envoy yet
 	}
 	return &envoy_config_cluster_v3.Cluster{
-		Name:           GetGeneratedClusterName(lCfg),
+		Name:           GetGeneratedClusterName(listenerCfg),
 		ConnectTimeout: &duration.Duration{Seconds: 5},
 		LbPolicy:       envoy_config_cluster_v3.Cluster_CLUSTER_PROVIDED,
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_ClusterType{
@@ -87,35 +95,33 @@ func generateCustomDynamicForwardProxyCluster(lCfg *dynamic_forward_proxy.Filter
 	}
 }
 
-func GetGeneratedClusterName(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
+func GetGeneratedClusterName(dfpListenerCfg *dynamic_forward_proxy.FilterConfig) string {
 	// should be safe, cluster names can get up to 60 characters long https://github.com/envoyproxy/envoy/pull/667/files
-	return fmt.Sprintf("solo_io_generated_dfp:%s", getHashString(dfpListenerConf))
+	return fmt.Sprintf("solo_io_generated_dfp:%s", getHashString(dfpListenerCfg))
 }
 
 func getGeneratedCacheName(cc *dynamic_forward_proxy.DnsCacheConfig) string {
-	// should be safe, cluster names can get up to 60 characters long https://github.com/envoyproxy/envoy/pull/667/files
 	return fmt.Sprintf("solo_io_generated_dfp:%s", fmt.Sprintf("%v", hashutils.MustHash(cc)))
 }
 
-func getHashString(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
-	dfpListenerConf.GetDnsCacheConfig()
-	return fmt.Sprintf("%v", hashutils.MustHash(dfpListenerConf))
+func getHashString(dfpListenerCfg *dynamic_forward_proxy.FilterConfig) string {
+	return fmt.Sprintf("%v", hashutils.MustHash(dfpListenerCfg))
 }
 
-func convertDnsCacheConfig(dfpListenerConf *dynamic_forward_proxy.DnsCacheConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
+func convertDnsCacheConfig(dfpListenerCfg *dynamic_forward_proxy.DnsCacheConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
 	return &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
-		Name:                   getGeneratedCacheName(dfpListenerConf), // silly envoy behavior, MUST match other caches with exact same DNS config
-		DnsLookupFamily:        convertDnsLookupFamily(dfpListenerConf.GetDnsLookupFamily()),
-		DnsRefreshRate:         dfpListenerConf.GetDnsRefreshRate(),
-		HostTtl:                dfpListenerConf.GetHostTtl(),
-		MaxHosts:               dfpListenerConf.GetMaxHosts(),
-		DnsFailureRefreshRate:  convertFailureRefreshRate(dfpListenerConf.GetDnsFailureRefreshRate()),
-		DnsCacheCircuitBreaker: convertDnsCacheCircuitBreaker(dfpListenerConf.GetDnsCacheCircuitBreaker()),
+		Name:                   getGeneratedCacheName(dfpListenerCfg), // silly envoy behavior, MUST match other caches with exact same DNS config
+		DnsLookupFamily:        convertDnsLookupFamily(dfpListenerCfg.GetDnsLookupFamily()),
+		DnsRefreshRate:         dfpListenerCfg.GetDnsRefreshRate(),
+		HostTtl:                dfpListenerCfg.GetHostTtl(),
+		MaxHosts:               dfpListenerCfg.GetMaxHosts(),
+		DnsFailureRefreshRate:  convertFailureRefreshRate(dfpListenerCfg.GetDnsFailureRefreshRate()),
+		DnsCacheCircuitBreaker: convertDnsCacheCircuitBreaker(dfpListenerCfg.GetDnsCacheCircuitBreaker()),
 		UseTcpForDnsLookups:    false, // deprecated, do not use. prefer TypedDnsResolverConfig
 		DnsResolutionConfig:    nil,   // deprecated, do not use. prefer TypedDnsResolverConfig
-		TypedDnsResolverConfig: convertTypedDnsResolverConfig(dfpListenerConf),
-		PreresolveHostnames:    convertPreresolveHostnames(dfpListenerConf.GetPreresolveHostnames()),
-		DnsQueryTimeout:        dfpListenerConf.GetDnsQueryTimeout(),
+		TypedDnsResolverConfig: convertTypedDnsResolverConfig(dfpListenerCfg),
+		PreresolveHostnames:    convertPreresolveHostnames(dfpListenerCfg.GetPreresolveHostnames()),
+		DnsQueryTimeout:        dfpListenerCfg.GetDnsQueryTimeout(),
 		KeyValueConfig:         nil, // not-implemented in envoy yet
 	}
 }
