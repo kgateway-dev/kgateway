@@ -114,12 +114,6 @@ func (m *Listener) Clone() proto.Message {
 		target.Options = proto.Clone(m.GetOptions()).(*ListenerOptions)
 	}
 
-	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
-		target.Metadata = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
-	} else {
-		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_golang_protobuf_ptypes_struct.Struct)
-	}
-
 	if h, ok := interface{}(m.GetRouteOptions()).(clone.Cloner); ok {
 		target.RouteOptions = h.Clone().(*RouteConfigurationOptions)
 	} else {
@@ -161,6 +155,34 @@ func (m *Listener) Clone() proto.Message {
 		} else {
 			target.ListenerType = &Listener_HybridListener{
 				HybridListener: proto.Clone(m.GetHybridListener()).(*HybridListener),
+			}
+		}
+
+	}
+
+	switch m.OpaqueMetadata.(type) {
+
+	case *Listener_Metadata:
+
+		if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
+			target.OpaqueMetadata = &Listener_Metadata{
+				Metadata: h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct),
+			}
+		} else {
+			target.OpaqueMetadata = &Listener_Metadata{
+				Metadata: proto.Clone(m.GetMetadata()).(*github_com_golang_protobuf_ptypes_struct.Struct),
+			}
+		}
+
+	case *Listener_MetadataStatic:
+
+		if h, ok := interface{}(m.GetMetadataStatic()).(clone.Cloner); ok {
+			target.OpaqueMetadata = &Listener_MetadataStatic{
+				MetadataStatic: h.Clone().(*SourceMetadata),
+			}
+		} else {
+			target.OpaqueMetadata = &Listener_MetadataStatic{
+				MetadataStatic: proto.Clone(m.GetMetadataStatic()).(*SourceMetadata),
 			}
 		}
 
@@ -408,10 +430,32 @@ func (m *VirtualHost) Clone() proto.Message {
 		target.Options = proto.Clone(m.GetOptions()).(*VirtualHostOptions)
 	}
 
-	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
-		target.Metadata = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
-	} else {
-		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_golang_protobuf_ptypes_struct.Struct)
+	switch m.OpaqueMetadata.(type) {
+
+	case *VirtualHost_Metadata:
+
+		if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
+			target.OpaqueMetadata = &VirtualHost_Metadata{
+				Metadata: h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct),
+			}
+		} else {
+			target.OpaqueMetadata = &VirtualHost_Metadata{
+				Metadata: proto.Clone(m.GetMetadata()).(*github_com_golang_protobuf_ptypes_struct.Struct),
+			}
+		}
+
+	case *VirtualHost_MetadataStatic:
+
+		if h, ok := interface{}(m.GetMetadataStatic()).(clone.Cloner); ok {
+			target.OpaqueMetadata = &VirtualHost_MetadataStatic{
+				MetadataStatic: h.Clone().(*SourceMetadata),
+			}
+		} else {
+			target.OpaqueMetadata = &VirtualHost_MetadataStatic{
+				MetadataStatic: proto.Clone(m.GetMetadataStatic()).(*SourceMetadata),
+			}
+		}
+
 	}
 
 	return target
@@ -442,12 +486,6 @@ func (m *Route) Clone() proto.Message {
 		target.Options = h.Clone().(*RouteOptions)
 	} else {
 		target.Options = proto.Clone(m.GetOptions()).(*RouteOptions)
-	}
-
-	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
-		target.Metadata = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
-	} else {
-		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_golang_protobuf_ptypes_struct.Struct)
 	}
 
 	target.Name = m.GetName()
@@ -499,6 +537,34 @@ func (m *Route) Clone() proto.Message {
 		} else {
 			target.Action = &Route_GraphqlSchemaRef{
 				GraphqlSchemaRef: proto.Clone(m.GetGraphqlSchemaRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef),
+			}
+		}
+
+	}
+
+	switch m.OpaqueMetadata.(type) {
+
+	case *Route_Metadata:
+
+		if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
+			target.OpaqueMetadata = &Route_Metadata{
+				Metadata: h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct),
+			}
+		} else {
+			target.OpaqueMetadata = &Route_Metadata{
+				Metadata: proto.Clone(m.GetMetadata()).(*github_com_golang_protobuf_ptypes_struct.Struct),
+			}
+		}
+
+	case *Route_MetadataStatic:
+
+		if h, ok := interface{}(m.GetMetadataStatic()).(clone.Cloner); ok {
+			target.OpaqueMetadata = &Route_MetadataStatic{
+				MetadataStatic: h.Clone().(*SourceMetadata),
+			}
+		} else {
+			target.OpaqueMetadata = &Route_MetadataStatic{
+				MetadataStatic: proto.Clone(m.GetMetadataStatic()).(*SourceMetadata),
 			}
 		}
 
@@ -813,6 +879,30 @@ func (m *DirectResponseAction) Clone() proto.Message {
 }
 
 // Clone function
+func (m *SourceMetadata) Clone() proto.Message {
+	var target *SourceMetadata
+	if m == nil {
+		return target
+	}
+	target = &SourceMetadata{}
+
+	if m.GetSources() != nil {
+		target.Sources = make([]*SourceMetadata_SourceRef, len(m.GetSources()))
+		for idx, v := range m.GetSources() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Sources[idx] = h.Clone().(*SourceMetadata_SourceRef)
+			} else {
+				target.Sources[idx] = proto.Clone(v).(*SourceMetadata_SourceRef)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *TcpHost_TcpAction) Clone() proto.Message {
 	var target *TcpHost_TcpAction
 	if m == nil {
@@ -871,6 +961,27 @@ func (m *TcpHost_TcpAction) Clone() proto.Message {
 		}
 
 	}
+
+	return target
+}
+
+// Clone function
+func (m *SourceMetadata_SourceRef) Clone() proto.Message {
+	var target *SourceMetadata_SourceRef
+	if m == nil {
+		return target
+	}
+	target = &SourceMetadata_SourceRef{}
+
+	if h, ok := interface{}(m.GetResourceRef()).(clone.Cloner); ok {
+		target.ResourceRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.ResourceRef = proto.Clone(m.GetResourceRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	target.ResourceKind = m.GetResourceKind()
+
+	target.ObservedGeneration = m.GetObservedGeneration()
 
 	return target
 }

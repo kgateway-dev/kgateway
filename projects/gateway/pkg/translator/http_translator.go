@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
 	errors "github.com/rotisserie/eris"

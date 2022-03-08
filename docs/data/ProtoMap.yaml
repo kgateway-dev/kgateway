@@ -656,6 +656,9 @@ apis:
   gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#Settings
     package: gloo.solo.io
+  gloo.solo.io.SourceMetadata:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#SourceMetadata
+    package: gloo.solo.io
   gloo.solo.io.SslConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SslConfig
     package: gloo.solo.io
