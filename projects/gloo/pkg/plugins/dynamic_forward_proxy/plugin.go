@@ -88,8 +88,8 @@ func generateCustomDynamicForwardProxyCluster(lCfg *dynamic_forward_proxy.Filter
 }
 
 func GetGeneratedClusterName(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
-	// TODO(kdorosh) max cluster length? since currently hashing to zero
-	return fmt.Sprintf("solo_io_generated_dynamic_forward_proxy_cluster:%s", getHashString(dfpListenerConf))
+	// should be safe, cluster names can get up to 60 characters long https://github.com/envoyproxy/envoy/pull/667/files
+	return fmt.Sprintf("solo_io_generated_dfp:%s", getHashString(dfpListenerConf))
 }
 
 func getHashString(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
