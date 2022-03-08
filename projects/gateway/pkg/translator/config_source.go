@@ -86,10 +86,10 @@ func setObjMeta(obj ObjectWithMetadata, meta *SourceMetadata) error {
 }
 
 func GetSourceMeta(obj ObjectWithMetadata) (*SourceMetadata, error) {
-	if metaDeprecated := obj.GetMetadata(); metaDeprecated != nil {
-		return sourceMetaFromStruct(obj.GetMetadata())
-	} else if meta := obj.GetMetadataStatic(); meta != nil {
+	if meta := obj.GetMetadataStatic(); meta != nil {
 		return sourceMetaFromProto(meta), nil
+	} else if metaDeprecated := obj.GetMetadata(); metaDeprecated != nil {
+		return sourceMetaFromStruct(obj.GetMetadata())
 	}
 	return &SourceMetadata{}, nil
 }
