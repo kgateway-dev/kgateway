@@ -63,6 +63,12 @@ func (m *ConnectionConfig) Clone() proto.Message {
 		target.CommonHttpProtocolOptions = proto.Clone(m.GetCommonHttpProtocolOptions()).(*ConnectionConfig_HttpProtocolOptions)
 	}
 
+	if h, ok := interface{}(m.GetHttp1ProtocolOptions()).(clone.Cloner); ok {
+		target.Http1ProtocolOptions = h.Clone().(*ConnectionConfig_Http1ProtocolOptions)
+	} else {
+		target.Http1ProtocolOptions = proto.Clone(m.GetHttp1ProtocolOptions()).(*ConnectionConfig_Http1ProtocolOptions)
+	}
+
 	return target
 }
 
@@ -114,6 +120,35 @@ func (m *ConnectionConfig_HttpProtocolOptions) Clone() proto.Message {
 	}
 
 	target.HeadersWithUnderscoresAction = m.GetHeadersWithUnderscoresAction()
+
+	return target
+}
+
+// Clone function
+func (m *ConnectionConfig_Http1ProtocolOptions) Clone() proto.Message {
+	var target *ConnectionConfig_Http1ProtocolOptions
+	if m == nil {
+		return target
+	}
+	target = &ConnectionConfig_Http1ProtocolOptions{}
+
+	target.EnableTrailers = m.GetEnableTrailers()
+
+	switch m.HeaderFormat.(type) {
+
+	case *ConnectionConfig_Http1ProtocolOptions_ProperCaseHeaderKeyFormat:
+
+		target.HeaderFormat = &ConnectionConfig_Http1ProtocolOptions_ProperCaseHeaderKeyFormat{
+			ProperCaseHeaderKeyFormat: m.GetProperCaseHeaderKeyFormat(),
+		}
+
+	case *ConnectionConfig_Http1ProtocolOptions_PreserveCaseHeaderKeyFormat:
+
+		target.HeaderFormat = &ConnectionConfig_Http1ProtocolOptions_PreserveCaseHeaderKeyFormat{
+			PreserveCaseHeaderKeyFormat: m.GetPreserveCaseHeaderKeyFormat(),
+		}
+
+	}
 
 	return target
 }

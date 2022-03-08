@@ -36,28 +36,28 @@ var _ = Describe("SVC Accnt Test", func() {
 			})
 
 			It("gloo", func() {
-				prepareMakefile("gloo", []string{"rbac.namespaced=false"})
+				prepareMakefile("gloo", []string{"global.glooRbac.namespaced=false"})
 				testManifest.ExpectServiceAccount(resourceBuilder.GetServiceAccount())
 			})
 
 			It("discovery", func() {
-				prepareMakefile("discovery", []string{"rbac.namespaced=false"})
+				prepareMakefile("discovery", []string{"global.glooRbac.namespaced=false"})
 				testManifest.ExpectServiceAccount(resourceBuilder.GetServiceAccount())
 			})
 
 			It("gateway", func() {
-				prepareMakefile("gateway", []string{"rbac.namespaced=false"})
+				prepareMakefile("gateway", []string{"global.glooRbac.namespaced=false"})
 				testManifest.ExpectServiceAccount(resourceBuilder.GetServiceAccount())
 			})
 
 			It("gateway-proxy", func() {
-				prepareMakefile("gateway-proxy", []string{"rbac.namespaced=false"})
+				prepareMakefile("gateway-proxy", []string{"global.glooRbac.namespaced=false"})
 				svcAccount := resourceBuilder.GetServiceAccount()
 				testManifest.ExpectServiceAccount(svcAccount)
 			})
 
 			It("gateway-proxy disables svc account", func() {
-				prepareMakefile("gateway-proxy", []string{"rbac.namespaced=false", "gateway.proxyServiceAccount.disableAutomount=true"})
+				prepareMakefile("gateway-proxy", []string{"global.glooRbac.namespaced=false", "gateway.proxyServiceAccount.disableAutomount=true"})
 				svcAccount := resourceBuilder.GetServiceAccount()
 				falze := false
 				svcAccount.AutomountServiceAccountToken = &falze

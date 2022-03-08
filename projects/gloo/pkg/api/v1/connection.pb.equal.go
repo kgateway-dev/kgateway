@@ -90,6 +90,16 @@ func (m *ConnectionConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetHttp1ProtocolOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttp1ProtocolOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttp1ProtocolOptions(), target.GetHttp1ProtocolOptions()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -188,6 +198,61 @@ func (m *ConnectionConfig_HttpProtocolOptions) Equal(that interface{}) bool {
 
 	if m.GetHeadersWithUnderscoresAction() != target.GetHeadersWithUnderscoresAction() {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ConnectionConfig_Http1ProtocolOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ConnectionConfig_Http1ProtocolOptions)
+	if !ok {
+		that2, ok := that.(ConnectionConfig_Http1ProtocolOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetEnableTrailers() != target.GetEnableTrailers() {
+		return false
+	}
+
+	switch m.HeaderFormat.(type) {
+
+	case *ConnectionConfig_Http1ProtocolOptions_ProperCaseHeaderKeyFormat:
+		if _, ok := target.HeaderFormat.(*ConnectionConfig_Http1ProtocolOptions_ProperCaseHeaderKeyFormat); !ok {
+			return false
+		}
+
+		if m.GetProperCaseHeaderKeyFormat() != target.GetProperCaseHeaderKeyFormat() {
+			return false
+		}
+
+	case *ConnectionConfig_Http1ProtocolOptions_PreserveCaseHeaderKeyFormat:
+		if _, ok := target.HeaderFormat.(*ConnectionConfig_Http1ProtocolOptions_PreserveCaseHeaderKeyFormat); !ok {
+			return false
+		}
+
+		if m.GetPreserveCaseHeaderKeyFormat() != target.GetPreserveCaseHeaderKeyFormat() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.HeaderFormat != target.HeaderFormat {
+			return false
+		}
 	}
 
 	return true

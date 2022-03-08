@@ -1,5 +1,6 @@
 {{- define "gateway.serviceSpec" }}
 {{- if and .Values.gateway.enabled .Values.gateway.validation.enabled }}
+{{- $statsConfig := coalesce .Values.gateway.deployment.stats .Values.global.glooStats -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -16,7 +17,7 @@ spec:
     protocol: TCP
     # this should map to projects/gateway/pkg/defaults.ValidationWebhookBindPort
     targetPort: 8443
-{{- if .Values.global.glooStats.serviceMonitor }}
+{{- if and $statsConfig.enabled $statsConfig.serviceMonitorEnabled }}
   - name: http-monitoring
     port: 9091
 {{- end }}

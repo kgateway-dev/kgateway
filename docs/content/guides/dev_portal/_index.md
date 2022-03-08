@@ -1,6 +1,6 @@
 ---
 title: "Gloo Portal"
-weight: 70
+weight: 80
 description: Publish interactive documentation for your APIs
 ---
 

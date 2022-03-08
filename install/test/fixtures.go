@@ -383,7 +383,7 @@ static_resources:
     upstream_connection_options:
       tcp_keepalive: {}
   - connect_timeout: 1s
-    lb_policy: round_robin
+    lb_policy: ROUND_ROBIN
     load_assignment:
       cluster_name: zipkin
       endpoints:

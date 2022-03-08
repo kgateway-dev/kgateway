@@ -2,12 +2,19 @@ package test
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"testing"
 	"text/template"
+
+	"github.com/solo-io/k8s-utils/installutils/kuberesource"
+	rbacv1 "k8s.io/api/rbac/v1"
+
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
 
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
@@ -153,6 +160,11 @@ func BuildHelm3Release(chartDir, namespace string, values helmValues) (*release.
 		return nil, err
 	}
 
+	err = validateHelmValues(helmValues)
+	if err != nil {
+		return nil, err
+	}
+
 	client, err := buildRenderer(namespace)
 	if err != nil {
 		return nil, err
@@ -189,6 +201,39 @@ func buildHelmValues(chartDir string, values helmValues) (map[string]interface{}
 	}
 
 	return finalValues, nil
+}
+
+// validateHelmValues ensures that the unstructured helm values that are provided
+// to a chart match the Go type used to generate the Helm documentation
+// Returns nil if all the provided values are all included in the Go struct
+// Returns an error if a provided value is not included in the Go struct.
+//
+// Example:
+//  Failed to render manifest
+//      Unexpected error:
+//          <*errors.errorString | 0xc000fedf40>: {
+//              s: "error unmarshaling JSON: while decoding JSON: json: unknown field \"useTlsTagging\"",
+//          }
+//          error unmarshaling JSON: while decoding JSON: json: unknown field "useTlsTagging"
+//      occurred
+//
+// This means that the unstructured values provided to the Helm chart contain a field `useTlsTagging`
+// but the Go struct does not contain that field.
+func validateHelmValues(unstructuredHelmValues map[string]interface{}) error {
+	// This Go type is the source of truth for the Helm docs
+	var structuredHelmValues generate.HelmConfig
+
+	unstructuredHelmValueBytes, err := json.Marshal(unstructuredHelmValues)
+	if err != nil {
+		return err
+	}
+
+	// This ensures that an error will be raised if there is an unstructured helm value
+	// defined but there is not the equivalent type defined in our Go struct
+	//
+	// When an error occurs, this means the Go type needs to be amended
+	// to include the new field (which is the source of truth for our docs)
+	return k8syamlutil.UnmarshalStrict(unstructuredHelmValueBytes, &structuredHelmValues)
 }
 
 func readValuesFile(filePath string) (map[string]interface{}, error) {
@@ -269,4 +314,20 @@ func makeUnstructureFromTemplateFile(fixtureName string, values interface{}) *un
 	err = tmpl.Execute(&b, values)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return makeUnstructured(b.String())
+}
+
+func makeRoleBindingFromUnstructured(resource *unstructured.Unstructured) *rbacv1.RoleBinding {
+	bindingObject, err := kuberesource.ConvertUnstructured(resource)
+	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("RoleBinding %+v should be able to convert from unstructured", resource))
+	structuredRoleBinding, ok := bindingObject.(*rbacv1.RoleBinding)
+	Expect(ok).To(BeTrue(), fmt.Sprintf("RoleBinding %+v should be able to cast to a structured role binding", resource))
+	return structuredRoleBinding
+}
+
+func makeClusterRoleBindingFromUnstructured(resource *unstructured.Unstructured) *rbacv1.ClusterRoleBinding {
+	bindingObject, err := kuberesource.ConvertUnstructured(resource)
+	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ClusterRoleBinding %+v should be able to convert from unstructured", resource))
+	structuredClusterRoleBinding, ok := bindingObject.(*rbacv1.ClusterRoleBinding)
+	Expect(ok).To(BeTrue(), fmt.Sprintf("ClusterRoleBinding %+v should be able to cast to a structured cluster role binding", resource))
+	return structuredClusterRoleBinding
 }

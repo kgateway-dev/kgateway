@@ -392,6 +392,8 @@ spec:
                                   type: string
                                 drainTimeout:
                                   type: string
+                                enableTrailers:
+                                  type: boolean
                                 forwardClientCertDetails:
                                   type: string
                                   x-kubernetes-int-or-string: true
@@ -5452,6 +5454,8 @@ spec:
                                             type: string
                                           drainTimeout:
                                             type: string
+                                          enableTrailers:
+                                            type: boolean
                                           forwardClientCertDetails:
                                             type: string
                                             x-kubernetes-int-or-string: true
