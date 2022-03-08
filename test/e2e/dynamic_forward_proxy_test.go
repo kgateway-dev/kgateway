@@ -152,8 +152,6 @@ var _ = Describe("dynamic forward proxy", func() {
 			testVs.VirtualHost.Routes[0].Options.StagedTransformations = &transformation.TransformationStages{
 				Early: &transformation.RequestResponseTransformations{
 					RequestTransforms: []*transformation.RequestMatch{{
-						Matcher: nil,
-						//ClearRouteCache: true,
 						RequestTransformation: &transformation.Transformation{
 							TransformationType: &transformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
