@@ -13,6 +13,6 @@ spec:
   ports:
     - name: http-monitoring
       port: 9091
-selector:
-  gloo: discovery
+  selector:
+    gloo: discovery
 {{- end -}}
