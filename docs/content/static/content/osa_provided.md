@@ -7,12 +7,15 @@ Name|Version|License
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.10.1|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.6.1|Apache License 2.0
+[fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
+[form3tech-oss/jwt-go](https://github.com/form3tech-oss/jwt-go)|v3.2.3+incompatible|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.4.9|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
 [go-openapi/loads](https://github.com/go-openapi/loads)|v0.19.4|Apache License 2.0
 [go-openapi/spec](https://github.com/go-openapi/spec)|v0.19.6|Apache License 2.0
 [go-openapi/swag](https://github.com/go-openapi/swag)|v0.19.15|Apache License 2.0
 [go-swagger/go-swagger](https://github.com/go-swagger/go-swagger)|v0.21.0|Apache License 2.0
+[gogo/googleapis](https://github.com/gogo/googleapis)|v1.4.1|Apache License 2.0
 [gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.2|BSD 3-clause "New" or "Revised" License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.2|BSD 3-clause "New" or "Revised" License
 [google/go-github](https://github.com/google/go-github)|v17.0.0+incompatible|BSD 3-clause "New" or "Revised" License
