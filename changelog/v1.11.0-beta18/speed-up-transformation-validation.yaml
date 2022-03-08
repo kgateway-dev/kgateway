@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Cache transformation validation results in transformation plugin.
+    issueLink: https://github.com/solo-io/gloo/issues/5720
