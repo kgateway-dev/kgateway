@@ -82,7 +82,8 @@ func generateCustomDynamicForwardProxyCluster(lCfg *dynamic_forward_proxy.Filter
 }
 
 func GetGeneratedClusterName(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
-	return fmt.Sprintf("placeholder_gloo-system:%s", getHashString(dfpListenerConf))
+	// TODO(kdorosh) max cluster length? since currently hashing to zero
+	return fmt.Sprintf("solo_io_generated_dynamic_forward_proxy_cluster:%s", getHashString(dfpListenerConf))
 }
 
 func getHashString(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
