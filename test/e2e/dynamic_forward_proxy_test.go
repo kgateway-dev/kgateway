@@ -23,7 +23,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = FDescribe("dynamic forward proxy", func() {
+var _ = Describe("dynamic forward proxy", func() {
 
 	var (
 		ctx            context.Context
@@ -174,7 +174,7 @@ var _ = FDescribe("dynamic forward proxy", func() {
 
 		// This is an important test since the most common use case here will be to grab information from the
 		// request using a transformation and use that to determine the upstream destination to route to
-		FIt("should proxy http", func() {
+		It("should proxy http", func() {
 			destEcho := `postman-echo.com`
 			expectedSubstr := `"host":"postman-echo.com"`
 			testReq := testRequest(destEcho, nil)
