@@ -561,6 +561,18 @@ func (m *RouteAction) Clone() proto.Message {
 			ClusterHeader: m.GetClusterHeader(),
 		}
 
+	case *RouteAction_DynamicForwardProxy:
+
+		if h, ok := interface{}(m.GetDynamicForwardProxy()).(clone.Cloner); ok {
+			target.Destination = &RouteAction_DynamicForwardProxy{
+				DynamicForwardProxy: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.PerRouteConfig),
+			}
+		} else {
+			target.Destination = &RouteAction_DynamicForwardProxy{
+				DynamicForwardProxy: proto.Clone(m.GetDynamicForwardProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.PerRouteConfig),
+			}
+		}
+
 	}
 
 	return target
@@ -621,18 +633,6 @@ func (m *Destination) Clone() proto.Message {
 		} else {
 			target.DestinationType = &Destination_Consul{
 				Consul: proto.Clone(m.GetConsul()).(*ConsulServiceDestination),
-			}
-		}
-
-	case *Destination_DynamicForwardProxy:
-
-		if h, ok := interface{}(m.GetDynamicForwardProxy()).(clone.Cloner); ok {
-			target.DestinationType = &Destination_DynamicForwardProxy{
-				DynamicForwardProxy: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.PerRouteConfig),
-			}
-		} else {
-			target.DestinationType = &Destination_DynamicForwardProxy{
-				DynamicForwardProxy: proto.Clone(m.GetDynamicForwardProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.PerRouteConfig),
 			}
 		}
 

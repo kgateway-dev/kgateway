@@ -164,13 +164,6 @@ spec:
                                   type: object
                               type: object
                           type: object
-                        dynamicForwardProxy:
-                          properties:
-                            autoHostRewriteHeader:
-                              type: string
-                            hostRewrite:
-                              type: string
-                          type: object
                         kube:
                           properties:
                             port:

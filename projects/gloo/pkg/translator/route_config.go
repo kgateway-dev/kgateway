@@ -366,10 +366,10 @@ func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RoutePa
 	case *v1.RouteAction_Single:
 		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{}
 
-		if dest.Single.GetDynamicForwardProxy() != nil {
-			out.GetClusterSpecifier().(*envoy_config_route_v3.RouteAction_Cluster).Cluster = "placeholder_gloo-system"
-			return nil
-		}
+		//if dest.GetDynamicForwardProxy() != nil {
+		//	out.GetClusterSpecifier().(*envoy_config_route_v3.RouteAction_Cluster).Cluster = "placeholder_gloo-system"
+		//	return nil
+		//}
 
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
 		if err != nil {
@@ -400,6 +400,11 @@ func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RoutePa
 		// ClusterHeader must use the naming convention {{namespace}}_{{clustername}}
 		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_ClusterHeader{
 			ClusterHeader: in.GetClusterHeader(),
+		}
+		return nil
+	case *v1.RouteAction_DynamicForwardProxy:
+		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
+			Cluster: "placeholder_gloo-system",
 		}
 		return nil
 	}
@@ -688,8 +693,10 @@ func ValidateRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.RouteAction)
 	// Cluster Header cannot be validated because the cluster name is not provided until runtime
 	case *v1.RouteAction_ClusterHeader:
 		return validateClusterHeader(action.GetClusterHeader())
+	case *v1.RouteAction_DynamicForwardProxy:
+		return nil
 	}
-	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations' or 'upstreamGroup' for action")
+	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup', 'clusterHeader', or 'dynamicForwardProxy' for action")
 }
 
 func ValidateTcpRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.TcpHost_TcpAction) error {
@@ -733,10 +740,10 @@ func validateMultiDestination(upstreams []*v1.Upstream, destinations []*v1.Weigh
 }
 
 func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destination) error {
-	if destination.GetDynamicForwardProxy() != nil {
-		// we cannot validate dynamic forward proxy cluster, we don't make fake upstreams in memory for this generated cluster
-		return nil
-	}
+	//if destination.GetDynamicForwardProxy() != nil {
+	//	// we cannot validate dynamic forward proxy cluster, we don't make fake upstreams in memory for this generated cluster
+	//	return nil
+	//}
 	upstreamRef, err := usconversion.DestinationToUpstreamRef(destination)
 	if err != nil {
 		return err

@@ -112,7 +112,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	dfpCfg := in.GetRouteAction().GetSingle().GetDynamicForwardProxy()
+	dfpCfg := in.GetRouteAction().GetDynamicForwardProxy()
 	if dfpCfg == nil {
 		return nil
 	}

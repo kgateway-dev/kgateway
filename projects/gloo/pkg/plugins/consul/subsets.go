@@ -53,6 +53,9 @@ func (p *plugin) ProcessRouteAction(
 			ClusterHeader: inAction.GetClusterHeader(),
 		}
 		return nil
+	case *v1.RouteAction_DynamicForwardProxy:
+		out.GetClusterSpecifier().(*envoy_config_route_v3.RouteAction_Cluster).Cluster = "placeholder_gloo-system"
+		return nil
 	}
 	return eris.Errorf("unknown upstream destination type")
 }
