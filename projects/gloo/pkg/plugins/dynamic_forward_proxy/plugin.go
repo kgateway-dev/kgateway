@@ -92,7 +92,7 @@ func getHashString(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
 
 func convertDnsCacheConfig(dfpListenerConf *dynamic_forward_proxy.DnsCacheConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
 	return &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
-		Name:            "dynamic_forward_proxy_cache_config",
+		Name:            "dynamic_forward_proxy_cache_config", //dfpListenerConf.GetName(), TODO(kdorosh) allow several named caches?
 		DnsLookupFamily: envoy_config_cluster_v3.Cluster_V4_ONLY,
 		DnsRefreshRate:  dfpListenerConf.GetDnsRefreshRate(),
 		HostTtl:         dfpListenerConf.GetHostTtl(),
