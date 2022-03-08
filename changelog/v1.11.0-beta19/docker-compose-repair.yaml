@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add missing directory to docker compose setup script.  Allows `gateway` container to spin up correctly on previously-broken versions v1.10.8+.
