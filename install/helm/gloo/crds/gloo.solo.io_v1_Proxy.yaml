@@ -656,6 +656,27 @@ spec:
                               metadata:
                                 type: object
                                 x-kubernetes-preserve-unknown-fields: true
+                              metadataStatic:
+                                properties:
+                                  sources:
+                                    items:
+                                      properties:
+                                        observedGeneration:
+                                          format: int64
+                                          type: integer
+                                          x-kubernetes-int-or-string: true
+                                        resourceKind:
+                                          type: string
+                                        resourceRef:
+                                          properties:
+                                            name:
+                                              type: string
+                                            namespace:
+                                              type: string
+                                          type: object
+                                      type: object
+                                    type: array
+                                type: object
                               name:
                                 type: string
                               options:
@@ -2274,6 +2295,27 @@ spec:
                                     metadata:
                                       type: object
                                       x-kubernetes-preserve-unknown-fields: true
+                                    metadataStatic:
+                                      properties:
+                                        sources:
+                                          items:
+                                            properties:
+                                              observedGeneration:
+                                                format: int64
+                                                type: integer
+                                                x-kubernetes-int-or-string: true
+                                              resourceKind:
+                                                type: string
+                                              resourceRef:
+                                                properties:
+                                                  name:
+                                                    type: string
+                                                  namespace:
+                                                    type: string
+                                                type: object
+                                            type: object
+                                          type: array
+                                      type: object
                                     name:
                                       type: string
                                     options:
@@ -5675,6 +5717,27 @@ spec:
                                         metadata:
                                           type: object
                                           x-kubernetes-preserve-unknown-fields: true
+                                        metadataStatic:
+                                          properties:
+                                            sources:
+                                              items:
+                                                properties:
+                                                  observedGeneration:
+                                                    format: int64
+                                                    type: integer
+                                                    x-kubernetes-int-or-string: true
+                                                  resourceKind:
+                                                    type: string
+                                                  resourceRef:
+                                                    properties:
+                                                      name:
+                                                        type: string
+                                                      namespace:
+                                                        type: string
+                                                    type: object
+                                                type: object
+                                              type: array
+                                          type: object
                                         name:
                                           type: string
                                         options:
@@ -7293,6 +7356,27 @@ spec:
                                               metadata:
                                                 type: object
                                                 x-kubernetes-preserve-unknown-fields: true
+                                              metadataStatic:
+                                                properties:
+                                                  sources:
+                                                    items:
+                                                      properties:
+                                                        observedGeneration:
+                                                          format: int64
+                                                          type: integer
+                                                          x-kubernetes-int-or-string: true
+                                                        resourceKind:
+                                                          type: string
+                                                        resourceRef:
+                                                          properties:
+                                                            name:
+                                                              type: string
+                                                            namespace:
+                                                              type: string
+                                                          type: object
+                                                      type: object
+                                                    type: array
+                                                type: object
                                               name:
                                                 type: string
                                               options:
@@ -11650,6 +11734,27 @@ spec:
                     metadata:
                       type: object
                       x-kubernetes-preserve-unknown-fields: true
+                    metadataStatic:
+                      properties:
+                        sources:
+                          items:
+                            properties:
+                              observedGeneration:
+                                format: int64
+                                type: integer
+                                x-kubernetes-int-or-string: true
+                              resourceKind:
+                                type: string
+                              resourceRef:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      type: object
                     name:
                       type: string
                     options:
