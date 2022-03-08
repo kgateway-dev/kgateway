@@ -234,10 +234,9 @@ func (p *Plugin) convertTransformation(
 	return ret, nil
 }
 
-func (p *Plugin) translateOSSTransformations(glooTransform *transformation.Transformation) (
-	*envoytransformation.Transformation,
-	error,
-) {
+func (p *Plugin) translateOSSTransformations(
+	glooTransform *transformation.Transformation,
+) (*envoytransformation.Transformation, error) {
 	transform, err := p.TranslateTransformation(glooTransform)
 	if err != nil {
 		return nil, eris.Wrap(err, "this transformation type is not supported in open source Gloo Edge")
