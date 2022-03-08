@@ -12,6 +12,8 @@ import "validate/validate.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
+import "projects/gloo/api/external/envoy/extensions/network/dns_resolver/apple/v3/apple_dns_resolver.proto";
+import "projects/gloo/api/external/envoy/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto";
 
 // Configuration for the dynamic forward proxy HTTP filter. See the :ref:`architecture overview
 // <arch_overview_http_dynamic_forward_proxy>` for more information.
@@ -97,6 +99,11 @@ message DnsCacheConfig {
   // The config of circuit breakers for resolver. It provides a configurable threshold.
   // Envoy will use dns cache circuit breakers with default settings even if this value is not set.
   DnsCacheCircuitBreakers dns_cache_circuit_breaker = 7;
+
+  oneof DnsCacheType {
+    .solo.io.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig cares_dns = 8;
+    .solo.io.extensions.network.dns_resolver.apple.v3.AppleDnsResolverConfig apple_dns = 9;
+  }
 
   // Hostnames that should be preresolved into the cache upon creation. This might provide a
   // performance improvement, in the form of cache hits, for hostnames that are going to be

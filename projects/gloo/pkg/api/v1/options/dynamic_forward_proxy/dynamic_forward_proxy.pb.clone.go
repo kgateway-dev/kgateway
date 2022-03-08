@@ -18,6 +18,10 @@ import (
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_apple_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/network/dns_resolver/apple/v3"
+
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_cares_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/network/dns_resolver/cares/v3"
 )
 
 // ensure the imports are used
@@ -126,6 +130,34 @@ func (m *DnsCacheConfig) Clone() proto.Message {
 		target.DnsQueryTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
 	} else {
 		target.DnsQueryTimeout = proto.Clone(m.GetDnsQueryTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	switch m.DnsCacheType.(type) {
+
+	case *DnsCacheConfig_CaresDns:
+
+		if h, ok := interface{}(m.GetCaresDns()).(clone.Cloner); ok {
+			target.DnsCacheType = &DnsCacheConfig_CaresDns{
+				CaresDns: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_cares_v3.CaresDnsResolverConfig),
+			}
+		} else {
+			target.DnsCacheType = &DnsCacheConfig_CaresDns{
+				CaresDns: proto.Clone(m.GetCaresDns()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_cares_v3.CaresDnsResolverConfig),
+			}
+		}
+
+	case *DnsCacheConfig_AppleDns:
+
+		if h, ok := interface{}(m.GetAppleDns()).(clone.Cloner); ok {
+			target.DnsCacheType = &DnsCacheConfig_AppleDns{
+				AppleDns: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_apple_v3.AppleDnsResolverConfig),
+			}
+		} else {
+			target.DnsCacheType = &DnsCacheConfig_AppleDns{
+				AppleDns: proto.Clone(m.GetAppleDns()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_apple_v3.AppleDnsResolverConfig),
+			}
+		}
+
 	}
 
 	return target

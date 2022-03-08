@@ -3,6 +3,9 @@ package dynamic_forward_proxy
 import (
 	"fmt"
 
+	envoy_extensions_network_dns_resolver_apple_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/network/dns_resolver/apple/v3"
+	envoy_extensions_network_dns_resolver_cares_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/network/dns_resolver/cares/v3"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
@@ -102,13 +105,83 @@ func convertDnsCacheConfig(dfpListenerConf *dynamic_forward_proxy.DnsCacheConfig
 		MaxHosts:               dfpListenerConf.GetMaxHosts(),
 		DnsFailureRefreshRate:  convertFailureRefreshRate(dfpListenerConf.GetDnsFailureRefreshRate()),
 		DnsCacheCircuitBreaker: convertDnsCacheCircuitBreaker(dfpListenerConf.GetDnsCacheCircuitBreaker()),
-		UseTcpForDnsLookups:    false, // deprecated, do not use
-		DnsResolutionConfig:    nil,   // deprecated, do not use
-		//TypedDnsResolverConfig: nil,
-		PreresolveHostnames: convertPreresolveHostnames(dfpListenerConf.GetPreresolveHostnames()),
-		DnsQueryTimeout:     dfpListenerConf.GetDnsQueryTimeout(),
-		KeyValueConfig:      nil, // not-implemented in envoy
+		UseTcpForDnsLookups:    false, // deprecated, do not use. prefer TypedDnsResolverConfig
+		DnsResolutionConfig:    nil,   // deprecated, do not use. prefer TypedDnsResolverConfig
+		TypedDnsResolverConfig: convertTypedDnsResolverConfig(dfpListenerConf),
+		PreresolveHostnames:    convertPreresolveHostnames(dfpListenerConf.GetPreresolveHostnames()),
+		DnsQueryTimeout:        dfpListenerConf.GetDnsQueryTimeout(),
+		KeyValueConfig:         nil, // not-implemented in envoy yet
 	}
+}
+
+func convertAddress(addrs []*v3.Address) []*envoy_config_core_v3.Address {
+	if len(addrs) == 0 {
+		return nil
+	}
+
+	var addresses []*envoy_config_core_v3.Address
+	for _, a := range addrs {
+		newAddr := &envoy_config_core_v3.Address{
+			Address: nil, // filled in later
+		}
+		switch ps := a.GetAddress().(type) {
+		case *v3.Address_SocketAddress:
+			newAddr.Address = &envoy_config_core_v3.Address_SocketAddress{
+				SocketAddress: convertSocketAddress(ps.SocketAddress),
+			}
+		case *v3.Address_Pipe:
+			newAddr.Address = &envoy_config_core_v3.Address_Pipe{
+				Pipe: convertPipe(ps.Pipe),
+			}
+		}
+		addresses = append(addresses, newAddr)
+	}
+	return addresses
+}
+
+func convertPipe(pipe *v3.Pipe) *envoy_config_core_v3.Pipe {
+	if pipe == nil {
+		return nil
+	}
+	return &envoy_config_core_v3.Pipe{
+		Path: pipe.GetPath(),
+		Mode: pipe.GetMode(),
+	}
+}
+
+func convertDnsResolverOptions(opts *v3.DnsResolverOptions) *envoy_config_core_v3.DnsResolverOptions {
+	if opts == nil {
+		return nil
+	}
+	return &envoy_config_core_v3.DnsResolverOptions{
+		UseTcpForDnsLookups:   opts.GetUseTcpForDnsLookups(),
+		NoDefaultSearchDomain: opts.GetNoDefaultSearchDomain(),
+	}
+}
+
+func convertTypedDnsResolverConfig(dfpListenerConf *dynamic_forward_proxy.DnsCacheConfig) *envoy_config_core_v3.TypedExtensionConfig {
+	if dfpListenerConf.GetDnsCacheType() == nil {
+		return nil
+	}
+	var typedConf *envoy_config_core_v3.TypedExtensionConfig
+	switch cacheConf := dfpListenerConf.GetDnsCacheType().(type) {
+	case *dynamic_forward_proxy.DnsCacheConfig_CaresDns:
+		c := &envoy_extensions_network_dns_resolver_cares_v3.CaresDnsResolverConfig{
+			Resolvers:          convertAddress(cacheConf.CaresDns.GetResolvers()),
+			DnsResolverOptions: convertDnsResolverOptions(cacheConf.CaresDns.GetDnsResolverOptions()),
+		}
+		typedConf = &envoy_config_core_v3.TypedExtensionConfig{
+			Name:        "envoy.network.dns_resolver.cares",
+			TypedConfig: utils.MustMessageToAny(c),
+		}
+	case *dynamic_forward_proxy.DnsCacheConfig_AppleDns:
+		c := &envoy_extensions_network_dns_resolver_apple_v3.AppleDnsResolverConfig{}
+		typedConf = &envoy_config_core_v3.TypedExtensionConfig{
+			Name:        "envoy.network.dns_resolver.apple",
+			TypedConfig: utils.MustMessageToAny(c),
+		}
+	}
+	return typedConf
 }
 
 func convertDnsCacheCircuitBreaker(breakers *dynamic_forward_proxy.DnsCacheCircuitBreakers) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheCircuitBreakers {
@@ -142,33 +215,37 @@ func convertPreresolveHostnames(sas []*v3.SocketAddress) []*envoy_config_core_v3
 	}
 	var addresses []*envoy_config_core_v3.SocketAddress
 	for _, a := range sas {
-		var protocol envoy_config_core_v3.SocketAddress_Protocol
-		switch a.GetProtocol() {
-		case v3.SocketAddress_TCP:
-			protocol = envoy_config_core_v3.SocketAddress_TCP
-		case v3.SocketAddress_UDP:
-			protocol = envoy_config_core_v3.SocketAddress_UDP
-		}
-		newAddr := &envoy_config_core_v3.SocketAddress{
-			Protocol:      protocol,
-			Address:       a.GetAddress(),
-			PortSpecifier: nil, // set-later
-			ResolverName:  a.GetResolverName(),
-			Ipv4Compat:    a.GetIpv4Compat(),
-		}
-		switch ps := a.GetPortSpecifier().(type) {
-		case *v3.SocketAddress_PortValue:
-			newAddr.PortSpecifier = &envoy_config_core_v3.SocketAddress_PortValue{
-				PortValue: ps.PortValue,
-			}
-		case *v3.SocketAddress_NamedPort:
-			newAddr.PortSpecifier = &envoy_config_core_v3.SocketAddress_NamedPort{
-				NamedPort: ps.NamedPort,
-			}
-		}
-		addresses = append(addresses, newAddr)
+		addresses = append(addresses, convertSocketAddress(a))
 	}
 	return addresses
+}
+
+func convertSocketAddress(a *v3.SocketAddress) *envoy_config_core_v3.SocketAddress {
+	var protocol envoy_config_core_v3.SocketAddress_Protocol
+	switch a.GetProtocol() {
+	case v3.SocketAddress_TCP:
+		protocol = envoy_config_core_v3.SocketAddress_TCP
+	case v3.SocketAddress_UDP:
+		protocol = envoy_config_core_v3.SocketAddress_UDP
+	}
+	newAddr := &envoy_config_core_v3.SocketAddress{
+		Protocol:      protocol,
+		Address:       a.GetAddress(),
+		PortSpecifier: nil, // set-later
+		ResolverName:  a.GetResolverName(),
+		Ipv4Compat:    a.GetIpv4Compat(),
+	}
+	switch ps := a.GetPortSpecifier().(type) {
+	case *v3.SocketAddress_PortValue:
+		newAddr.PortSpecifier = &envoy_config_core_v3.SocketAddress_PortValue{
+			PortValue: ps.PortValue,
+		}
+	case *v3.SocketAddress_NamedPort:
+		newAddr.PortSpecifier = &envoy_config_core_v3.SocketAddress_NamedPort{
+			NamedPort: ps.NamedPort,
+		}
+	}
+	return newAddr
 }
 
 func convertFailureRefreshRate(rate *dynamic_forward_proxy.RefreshRate) *envoy_config_cluster_v3.Cluster_RefreshRate {

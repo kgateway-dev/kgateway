@@ -203,6 +203,45 @@ func (m *DnsCacheConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	switch m.DnsCacheType.(type) {
+
+	case *DnsCacheConfig_CaresDns:
+		if _, ok := target.DnsCacheType.(*DnsCacheConfig_CaresDns); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetCaresDns()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCaresDns()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetCaresDns(), target.GetCaresDns()) {
+				return false
+			}
+		}
+
+	case *DnsCacheConfig_AppleDns:
+		if _, ok := target.DnsCacheType.(*DnsCacheConfig_AppleDns); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAppleDns()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAppleDns()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAppleDns(), target.GetAppleDns()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.DnsCacheType != target.DnsCacheType {
+			return false
+		}
+	}
+
 	return true
 }
 
