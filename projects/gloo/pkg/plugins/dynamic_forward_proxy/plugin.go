@@ -3,6 +3,8 @@ package dynamic_forward_proxy
 import (
 	"fmt"
 
+	"github.com/rotisserie/eris"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -36,7 +38,7 @@ var (
 )
 
 type plugin struct {
-	filterHashMap map[uint64]*dynamic_forward_proxy.FilterConfig
+	filterHashMap map[string]*dynamic_forward_proxy.FilterConfig
 }
 
 func (p *plugin) GeneratedResources(params plugins.Params, inClusters []*envoy_config_cluster_v3.Cluster, inEndpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment, inRouteConfigurations []*envoy_config_route_v3.RouteConfiguration, inListeners []*envoy_config_listener_v3.Listener) ([]*envoy_config_cluster_v3.Cluster, []*envoy_config_endpoint_v3.ClusterLoadAssignment, []*envoy_config_route_v3.RouteConfiguration, []*envoy_config_listener_v3.Listener, error) {
@@ -60,50 +62,47 @@ func (p *plugin) GeneratedResources(params plugins.Params, inClusters []*envoy_c
 // upstream that in most cases the user does not want to customize at all.
 func generateCustomDynamicForwardProxyCluster(lCfg *dynamic_forward_proxy.FilterConfig) *envoy_config_cluster_v3.Cluster {
 	cc := &envoy_extensions_clusters_dynamic_forward_proxy_v3.ClusterConfig{
-		DnsCacheConfig: getDnsCacheConfig(lCfg),
+		DnsCacheConfig: convertDnsCacheConfig(lCfg.GetDnsCacheConfig()),
 		// AllowInsecureClusterOptions is not needed to be configurable unless we make a
 		// new upstream type so the cluster's upstream_http_protocol_options is configurable
 		AllowInsecureClusterOptions: false,
 		AllowCoalescedConnections:   false, // not-implemented in envoy yet
 	}
-	marshalledConf, err := utils.MessageToAny(cc)
-	if err != nil {
-		// this should NEVER HAPPEN!
-		panic(err)
-	}
 	return &envoy_config_cluster_v3.Cluster{
-		Name:           GetGeneratedClusterName(lCfg), //TODO(kdorosh) non-nil
+		Name:           GetGeneratedClusterName(lCfg),
 		ConnectTimeout: &duration.Duration{Seconds: 5},
 		LbPolicy:       envoy_config_cluster_v3.Cluster_CLUSTER_PROVIDED,
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_ClusterType{
 			ClusterType: &envoy_config_cluster_v3.Cluster_CustomClusterType{
 				Name:        "envoy.clusters.dynamic_forward_proxy",
-				TypedConfig: marshalledConf,
+				TypedConfig: utils.MustMessageToAny(cc),
 			},
 		},
 	}
 }
 
 func GetGeneratedClusterName(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
-	// TODO(kdorosh) generate cluster per route for each listener..
-	hash := hashutils.MustHash(dfpListenerConf)
-	return fmt.Sprintf("placeholder_gloo-system:%v", hash)
+	return fmt.Sprintf("placeholder_gloo-system:%s", getHashString(dfpListenerConf))
 }
 
-func getDnsCacheConfig(dfpListenerConf *dynamic_forward_proxy.FilterConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
+func getHashString(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
+	return fmt.Sprintf("%v", hashutils.MustHash(dfpListenerConf))
+}
+
+func convertDnsCacheConfig(dfpListenerConf *dynamic_forward_proxy.DnsCacheConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
 	return &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
 		Name:            "dynamic_forward_proxy_cache_config",
 		DnsLookupFamily: envoy_config_cluster_v3.Cluster_V4_ONLY,
-		//DnsRefreshRate:         nil,
-		//HostTtl:                nil,
-		//MaxHosts:               nil,
+		DnsRefreshRate:  dfpListenerConf.GetDnsRefreshRate(),
+		HostTtl:         dfpListenerConf.GetHostTtl(),
+		MaxHosts:        dfpListenerConf.GetMaxHosts(),
 		//DnsFailureRefreshRate:  nil,
-		//DnsCacheCircuitBreaker: nil,
-		//UseTcpForDnsLookups:    false,
-		//DnsResolutionConfig:    nil,
+		//DnsCacheCircuitBreaker: dfpListenerConf.GetDnsCacheCircuitBreaker(),
+		UseTcpForDnsLookups:    false, // deprecated, do not use
+		DnsResolutionConfig:    nil,   // deprecated, do not use
 		//TypedDnsResolverConfig: nil,
 		//PreresolveHostnames:    nil,
-		//DnsQueryTimeout:        nil,
+		DnsQueryTimeout: dfpListenerConf.GetDnsQueryTimeout(),
 		//KeyValueConfig:         nil,
 	}
 }
@@ -116,12 +115,11 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	}
 
 	dfp := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{
-		DnsCacheConfig: getDnsCacheConfig(cpDfp),
+		DnsCacheConfig: convertDnsCacheConfig(cpDfp.GetDnsCacheConfig()),
 		//SaveUpstreamAddress: false,
 	}
 
-	hash := hashutils.MustHash(cpDfp)
-	p.filterHashMap[hash] = cpDfp
+	p.filterHashMap[getHashString(cpDfp)] = cpDfp
 
 	c, err := plugins.NewStagedFilterWithConfig(FilterName, dfp, pluginStage)
 	if err != nil {
@@ -136,23 +134,18 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return nil
 	}
 	dfpRouteCfg := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig{}
-
-	dfpRouteCfg.HostRewriteSpecifier = &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig_HostRewriteHeader{
-		HostRewriteHeader: "x-rewrite-me",
+	switch d := dfpCfg.GetHostRewriteSpecifier().(type) {
+	case *dynamic_forward_proxy.PerRouteConfig_HostRewrite:
+		dfpRouteCfg.HostRewriteSpecifier = &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig_HostRewriteLiteral{
+			HostRewriteLiteral: d.HostRewrite,
+		}
+	case *dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader:
+		dfpRouteCfg.HostRewriteSpecifier = &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig_HostRewriteHeader{
+			HostRewriteHeader: d.AutoHostRewriteHeader,
+		}
+	default:
+		return eris.Errorf("unimplemented dynamic forward proxy route config type %T", d)
 	}
-
-	//switch d := dfpCfg.GetHostRewriteSpecifier().(type) {
-	//case *dynamic_forward_proxy.PerRouteConfig_HostRewrite:
-	//	dfpRouteCfg.HostRewriteSpecifier = &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig_HostRewriteLiteral{
-	//		HostRewriteLiteral: d.HostRewrite,
-	//	}
-	//case *dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader:
-	//	dfpRouteCfg.HostRewriteSpecifier = &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig_HostRewriteHeader{
-	//		HostRewriteHeader: d.AutoHostRewriteHeader,
-	//	}
-	//default:
-	//	return eris.Errorf("unimplemented dynamic forward proxy route config type %T", d)
-	//}
 	return pluginutils.SetRoutePerFilterConfig(out, FilterName, dfpRouteCfg)
 }
 
@@ -165,6 +158,6 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(_ plugins.InitParams) error {
-	p.filterHashMap = map[uint64]*dynamic_forward_proxy.FilterConfig{}
+	p.filterHashMap = map[string]*dynamic_forward_proxy.FilterConfig{}
 	return nil
 }
