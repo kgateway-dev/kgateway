@@ -27,12 +27,6 @@ func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
 		// other upstreams will exist in memory, e.g. https://github.com/solo-io/gloo/blob/46cefb3f3ad026b1430ef0003e2861e89d526b4d/projects/gloo/pkg/upstreams/kubernetes/upstream_client.go#L44
 		// but no upstream exists, even in memory, for dynamic forward proxy
 		return nil, eris.Errorf("logic error")
-		//ref = &core.ResourceRef{
-		//	Name:      "placeholder",
-		//	Namespace: "gloo-system",
-		//}
-		// TODO(kdorosH)
-		//ref = consul.DestinationToUpstreamRef(d.Consul)
 	default:
 		return nil, eris.Errorf("no destination type specified")
 	}

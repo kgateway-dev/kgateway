@@ -227,12 +227,12 @@ func (h *httpRouteConfigurationTranslator) setAction(
 ) {
 	switch action := in.GetAction().(type) {
 	case *v1.Route_RouteAction:
-		//if err := ValidateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
-		//	validation.AppendRouteWarning(routeReport,
-		//		validationapi.RouteReport_Warning_InvalidDestinationWarning,
-		//		err.Error(),
-		//	)
-		//}
+		if err := ValidateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
+			validation.AppendRouteWarning(routeReport,
+				validationapi.RouteReport_Warning_InvalidDestinationWarning,
+				err.Error(),
+			)
+		}
 
 		out.Action = &envoy_config_route_v3.Route_Route{
 			Route: &envoy_config_route_v3.RouteAction{},
@@ -733,6 +733,10 @@ func validateMultiDestination(upstreams []*v1.Upstream, destinations []*v1.Weigh
 }
 
 func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destination) error {
+	if destination.GetDynamicForwardProxy() != nil {
+		// we cannot validate dynamic forward proxy cluster, we don't make fake upstreams in memory for this generated cluster
+		return nil
+	}
 	upstreamRef, err := usconversion.DestinationToUpstreamRef(destination)
 	if err != nil {
 		return err
