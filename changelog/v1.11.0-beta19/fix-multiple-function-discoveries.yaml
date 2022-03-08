@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/pull/5998
+    description: Fix bug where when multiple function discoveries apply to a single upstream,
+      only one would run indefinitely.
+
