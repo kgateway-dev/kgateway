@@ -176,10 +176,10 @@ ignored.
 
 | Name | Description |
 | ----- | ----------- | 
-| AUTO |  |
+| V4_PREFERRED |  |
 | V4_ONLY |  |
 | V6_ONLY |  |
-| V4_PREFERRED |  |
+| AUTO |  |
 | ALL |  |
 
 

@@ -137,10 +137,10 @@ message DnsCacheConfig {
 // ignored.
 // [#next-major-version: deprecate AUTO in favor of a V6_PREFERRED option.]
 enum DnsLookupFamily {
-  AUTO = 0;
+  V4_PREFERRED = 0;
   V4_ONLY = 1;
   V6_ONLY = 2;
-  V4_PREFERRED = 3;
+  AUTO = 3;
   ALL = 4;
 }
 

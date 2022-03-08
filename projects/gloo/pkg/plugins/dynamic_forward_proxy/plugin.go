@@ -196,7 +196,7 @@ func convertDnsCacheCircuitBreaker(breakers *dynamic_forward_proxy.DnsCacheCircu
 func convertDnsLookupFamily(family dynamic_forward_proxy.DnsLookupFamily) envoy_config_cluster_v3.Cluster_DnsLookupFamily {
 	switch family {
 	case dynamic_forward_proxy.DnsLookupFamily_AUTO:
-		return envoy_config_cluster_v3.Cluster_V4_ONLY // TODO(kdorosh) don't make this the default?
+		return envoy_config_cluster_v3.Cluster_AUTO
 	case dynamic_forward_proxy.DnsLookupFamily_V6_ONLY:
 		return envoy_config_cluster_v3.Cluster_V6_ONLY
 	case dynamic_forward_proxy.DnsLookupFamily_V4_ONLY:
@@ -206,7 +206,7 @@ func convertDnsLookupFamily(family dynamic_forward_proxy.DnsLookupFamily) envoy_
 	case dynamic_forward_proxy.DnsLookupFamily_ALL:
 		return envoy_config_cluster_v3.Cluster_ALL
 	}
-	return envoy_config_cluster_v3.Cluster_V4_ONLY // TODO(kdorosh) don't make this the default?
+	return envoy_config_cluster_v3.Cluster_V4_ONLY
 }
 
 func convertPreresolveHostnames(sas []*v3.SocketAddress) []*envoy_config_core_v3.SocketAddress {
