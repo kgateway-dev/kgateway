@@ -3,6 +3,7 @@ package fds
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"sync"
 	"sync/atomic"
@@ -270,6 +271,7 @@ func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
 				return results, nil
 			}
 		case <-ctx.Done():
+			fmt.Println("CONTEXT CANCLELLED", ctx.Err().Error())
 			return nil, ctx.Err()
 		}
 	}
