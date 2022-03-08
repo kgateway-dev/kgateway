@@ -129,14 +129,18 @@ func (u *Updater) UpstreamAdded(upstream *v1.Upstream) {
 		parent:            u,
 	}
 	u.activeUpstreams[key] = updater
-	err := updater.Run()
-	if err != nil {
-		u.logger.Warnf("unable to discover upstream %s in namespace %s, err: %s",
-			upstream.GetMetadata().GetName(),
-			upstream.GetMetadata().GetNamespace(),
-			err,
-		)
-	}
+	go func() {
+		fmt.Printf("running discovery on upstream %s.%s", upstream.Metadata.Name, upstream.Metadata.Namespace)
+		err := updater.Run()
+		if err != nil {
+			u.logger.Warnf("unable to discover upstream %s in namespace %s, err: %s",
+				upstream.GetMetadata().GetName(),
+				upstream.GetMetadata().GetNamespace(),
+				err,
+			)
+		}
+	}()
+
 	// TODO(yuval-k): consider removing upstream from map.
 	// need to be careful here as there might be a race if an update happens in the same time.
 }
@@ -213,7 +217,9 @@ func (u *updaterUpdater) detectSingle(fp UpstreamFunctionDiscovery, url url.URL,
 		}
 	}
 
-	err := contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{}).Backoff(u.ctx, func(ctx context.Context) error {
+	err := contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{
+		MaxRetries: 1,
+	}).Backoff(u.ctx, func(ctx context.Context) error {
 		spec, err := fp.DetectType(ctx, &url)
 		if err != nil {
 			return err
