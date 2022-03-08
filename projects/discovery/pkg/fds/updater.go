@@ -3,7 +3,6 @@ package fds
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"sync"
 	"sync/atomic"
@@ -130,7 +129,6 @@ func (u *Updater) UpstreamAdded(upstream *v1.Upstream) {
 	}
 	u.activeUpstreams[key] = updater
 	go func() {
-		fmt.Printf("running discovery on upstream %s.%s", upstream.Metadata.Name, upstream.Metadata.Namespace)
 		err := updater.Run()
 		if err != nil {
 			u.logger.Warnf("unable to discover upstream %s in namespace %s, err: %s",
@@ -277,7 +275,6 @@ func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
 				return results, nil
 			}
 		case <-ctx.Done():
-			fmt.Println("CONTEXT CANCLELLED", ctx.Err().Error())
 			return nil, ctx.Err()
 		}
 	}
