@@ -3,6 +3,9 @@ package dynamic_forward_proxy
 import (
 	"fmt"
 
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
 	"github.com/rotisserie/eris"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -93,18 +96,51 @@ func getHashString(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
 func convertDnsCacheConfig(dfpListenerConf *dynamic_forward_proxy.DnsCacheConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
 	return &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
 		Name:                  "dynamic_forward_proxy_cache_config", //dfpListenerConf.GetName(), TODO(kdorosh) allow several named caches?
-		DnsLookupFamily:       envoy_config_cluster_v3.Cluster_V4_ONLY,
+		DnsLookupFamily:       convertDnsLookupFamily(dfpListenerConf.GetDnsLookupFamily()),
 		DnsRefreshRate:        dfpListenerConf.GetDnsRefreshRate(),
 		HostTtl:               dfpListenerConf.GetHostTtl(),
 		MaxHosts:              dfpListenerConf.GetMaxHosts(),
-		DnsFailureRefreshRate: nil,
+		DnsFailureRefreshRate: convertFailureRefreshRate(dfpListenerConf.GetDnsFailureRefreshRate()),
 		//DnsCacheCircuitBreaker: dfpListenerConf.GetDnsCacheCircuitBreaker(),
 		UseTcpForDnsLookups: false, // deprecated, do not use
 		DnsResolutionConfig: nil,   // deprecated, do not use
 		//TypedDnsResolverConfig: nil,
-		//PreresolveHostnames:    nil,
-		DnsQueryTimeout: dfpListenerConf.GetDnsQueryTimeout(),
+		PreresolveHostnames: convertPreresolveHostnames(dfpListenerConf.GetPreresolveHostnames()),
+		DnsQueryTimeout:     dfpListenerConf.GetDnsQueryTimeout(),
 		//KeyValueConfig:         nil,
+	}
+}
+
+func convertDnsLookupFamily(family dynamic_forward_proxy.DnsLookupFamily) envoy_config_cluster_v3.Cluster_DnsLookupFamily {
+	switch family {
+	case dynamic_forward_proxy.DnsLookupFamily_AUTO:
+		return envoy_config_cluster_v3.Cluster_V4_ONLY // TODO(kdorosh) don't make this the default?
+	case dynamic_forward_proxy.DnsLookupFamily_V6_ONLY:
+		return envoy_config_cluster_v3.Cluster_V6_ONLY
+	case dynamic_forward_proxy.DnsLookupFamily_V4_ONLY:
+		return envoy_config_cluster_v3.Cluster_V4_ONLY
+	case dynamic_forward_proxy.DnsLookupFamily_V4_PREFERRED:
+		return envoy_config_cluster_v3.Cluster_V4_PREFERRED
+	case dynamic_forward_proxy.DnsLookupFamily_ALL:
+		return envoy_config_cluster_v3.Cluster_ALL
+	}
+	return envoy_config_cluster_v3.Cluster_V4_ONLY // TODO(kdorosh) don't make this the default?
+}
+
+func convertPreresolveHostnames(address *v3.SocketAddress) []*envoy_config_core_v3.SocketAddress {
+	if address == nil {
+		return nil
+	}
+	return nil //TODO(kdorosh)
+}
+
+func convertFailureRefreshRate(rate *dynamic_forward_proxy.RefreshRate) *envoy_config_cluster_v3.Cluster_RefreshRate {
+	if rate == nil {
+		return nil
+	}
+	return &envoy_config_cluster_v3.Cluster_RefreshRate{
+		BaseInterval: rate.GetBaseInterval(),
+		MaxInterval:  rate.GetMaxInterval(),
 	}
 }
 

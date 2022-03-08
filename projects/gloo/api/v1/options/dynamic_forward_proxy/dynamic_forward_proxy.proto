@@ -95,8 +95,7 @@ message DnsCacheConfig {
   // Hostnames that should be preresolved into the cache upon creation. This might provide a
   // performance improvement, in the form of cache hits, for hostnames that are going to be
   // resolved during steady state and are known at config load time.
-  .solo.io.envoy.config.core.v3.SocketAddress preresolve_hostnames = 10;
-//  repeated config.core.v3.SocketAddress preresolve_hostnames = 10; //TODO(kdorosh)
+  repeated .solo.io.envoy.config.core.v3.SocketAddress preresolve_hostnames = 10;
 
   // The timeout used for DNS queries. This timeout is independent of any timeout and retry policy
   // used by the underlying DNS implementation (e.g., c-areas and Apple DNS) which are opaque.
