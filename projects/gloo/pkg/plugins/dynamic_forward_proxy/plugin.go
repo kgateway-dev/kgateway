@@ -1,6 +1,8 @@
 package dynamic_forward_proxy
 
 import (
+	"fmt"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -14,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/go-utils/hashutils"
 )
 
 var (
@@ -32,26 +35,32 @@ var (
 	pluginStage = plugins.DuringStage(plugins.OutAuthStage)
 )
 
-type plugin struct{}
+type plugin struct {
+	filterHashMap map[uint64]*dynamic_forward_proxy.FilterConfig
+}
 
 func (p *plugin) GeneratedResources(params plugins.Params, inClusters []*envoy_config_cluster_v3.Cluster, inEndpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment, inRouteConfigurations []*envoy_config_route_v3.RouteConfiguration, inListeners []*envoy_config_listener_v3.Listener) ([]*envoy_config_cluster_v3.Cluster, []*envoy_config_endpoint_v3.ClusterLoadAssignment, []*envoy_config_route_v3.RouteConfiguration, []*envoy_config_listener_v3.Listener, error) {
 	var generatedClusters []*envoy_config_cluster_v3.Cluster
-	//for _, listener := range inListeners {
-	//
-	//}
-	generatedClusters = append(generatedClusters, generateSelfCluster())
+	for _, lCfg := range p.filterHashMap {
+		generatedClusters = append(generatedClusters, generateCustomDynamicForwardProxyCluster(lCfg))
+	}
 	return generatedClusters, nil, nil, nil, nil
 }
 
-// the initial route is updated to route to this generated cluster, which routes envoy back to itself (to the
-// generated TCP listener, which forwards to the original destination)
+// envoy is silly and thus dynamic forward proxy DNS config must be identical across HTTP filter and cluster config,
+// https://github.com/envoyproxy/envoy/blob/v1.21.1/source/extensions/filters/http/dynamic_forward_proxy/proxy_filter.cc#L129-L132
 //
-// the purpose of doing this is to allow both the HTTP Connection Manager filter and TCP filter to run.
-// the HTTP Connection Manager runs to allow route-level matching on HTTP parameters (such as request path),
-// but then we forward the bytes as raw TCP to the HTTP Connect proxy (which can only be done on a TCP listener)
-func generateSelfCluster() *envoy_config_cluster_v3.Cluster {
+// to be nice, we hide this behavior from the user and generate a cluster for each DNS cache config as provided
+// in our http listener options.
+//
+// as a result of this, the generated cluster is very simple (e.g., no TLS config). this is intentional as the provided
+// use case did not require it, and I wanted to keep the number of dangerous user configurations to a minimum. we could
+// add a new upstream type in the future for dynamic forwarding and make other cluster fields configurable, but this
+// would require very careful validation with all other features and require the extra user step of providing an
+// upstream that in most cases the user does not want to customize at all.
+func generateCustomDynamicForwardProxyCluster(lCfg *dynamic_forward_proxy.FilterConfig) *envoy_config_cluster_v3.Cluster {
 	cc := &envoy_extensions_clusters_dynamic_forward_proxy_v3.ClusterConfig{
-		DnsCacheConfig: getDnsCacheConfig(),
+		DnsCacheConfig: getDnsCacheConfig(lCfg),
 		// AllowInsecureClusterOptions is not needed to be configurable unless we make a
 		// new upstream type so the cluster's upstream_http_protocol_options is configurable
 		AllowInsecureClusterOptions: false,
@@ -63,7 +72,7 @@ func generateSelfCluster() *envoy_config_cluster_v3.Cluster {
 		panic(err)
 	}
 	return &envoy_config_cluster_v3.Cluster{
-		Name:           GetGeneratedClusterName(nil), //TODO(kdorosh) non-nil
+		Name:           GetGeneratedClusterName(lCfg), //TODO(kdorosh) non-nil
 		ConnectTimeout: &duration.Duration{Seconds: 5},
 		LbPolicy:       envoy_config_cluster_v3.Cluster_CLUSTER_PROVIDED,
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_ClusterType{
@@ -75,12 +84,13 @@ func generateSelfCluster() *envoy_config_cluster_v3.Cluster {
 	}
 }
 
-func GetGeneratedClusterName(dfpRouteConf *dynamic_forward_proxy.FilterConfig) string {
+func GetGeneratedClusterName(dfpListenerConf *dynamic_forward_proxy.FilterConfig) string {
 	// TODO(kdorosh) generate cluster per route for each listener..
-	return "placeholder_gloo-system"
+	hash := hashutils.MustHash(dfpListenerConf)
+	return fmt.Sprintf("placeholder_gloo-system:%v", hash)
 }
 
-func getDnsCacheConfig() *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
+func getDnsCacheConfig(dfpListenerConf *dynamic_forward_proxy.FilterConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
 	return &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
 		Name:            "dynamic_forward_proxy_cache_config",
 		DnsLookupFamily: envoy_config_cluster_v3.Cluster_V4_ONLY,
@@ -99,24 +109,25 @@ func getDnsCacheConfig() *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCa
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-
-	//return []plugins.StagedHttpFilter{}, nil
-	//listener.Options.
+	cpDfp := listener.GetOptions().GetDynamicForwardProxy()
+	if cpDfp == nil {
+		// TODO(kdorosh) add default dns config
+		//return []plugins.StagedHttpFilter{}, nil
+	}
 
 	dfp := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{
-		DnsCacheConfig: getDnsCacheConfig(),
+		DnsCacheConfig: getDnsCacheConfig(cpDfp),
 		//SaveUpstreamAddress: false,
 	}
+
+	hash := hashutils.MustHash(cpDfp)
+	p.filterHashMap[hash] = cpDfp
 
 	c, err := plugins.NewStagedFilterWithConfig(FilterName, dfp, pluginStage)
 	if err != nil {
 		return []plugins.StagedHttpFilter{}, err
 	}
-
-	// put the filter in the chain, but the actual faults will be configured on the routes
-	return []plugins.StagedHttpFilter{
-		c,
-	}, nil
+	return []plugins.StagedHttpFilter{c}, nil
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
@@ -129,6 +140,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	dfpRouteCfg.HostRewriteSpecifier = &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig_HostRewriteHeader{
 		HostRewriteHeader: "x-rewrite-me",
 	}
+
 	//switch d := dfpCfg.GetHostRewriteSpecifier().(type) {
 	//case *dynamic_forward_proxy.PerRouteConfig_HostRewrite:
 	//	dfpRouteCfg.HostRewriteSpecifier = &envoy_extensions_filters_http_dynamic_forward_proxy_v3.PerRouteConfig_HostRewriteLiteral{
@@ -153,5 +165,6 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(_ plugins.InitParams) error {
+	p.filterHashMap = map[uint64]*dynamic_forward_proxy.FilterConfig{}
 	return nil
 }
