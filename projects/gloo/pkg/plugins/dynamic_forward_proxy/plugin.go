@@ -267,15 +267,13 @@ func convertFailureRefreshRate(rate *dynamic_forward_proxy.RefreshRate) *envoy_c
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	cpDfp := listener.GetOptions().GetDynamicForwardProxy()
 	if cpDfp == nil {
-		// TODO(kdorosh) add default dns config
-		//return []plugins.StagedHttpFilter{}, nil
+		return []plugins.StagedHttpFilter{}, nil
 	}
 
 	dfp := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{
 		DnsCacheConfig:      convertDnsCacheConfig(cpDfp.GetDnsCacheConfig()),
 		SaveUpstreamAddress: cpDfp.GetSaveUpstreamAddress(),
 	}
-
 	p.filterHashMap[getHashString(cpDfp)] = cpDfp
 
 	c, err := plugins.NewStagedFilterWithConfig(FilterName, dfp, pluginStage)

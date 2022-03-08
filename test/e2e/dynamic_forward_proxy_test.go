@@ -19,7 +19,6 @@ import (
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
@@ -67,12 +66,13 @@ var _ = FDescribe("dynamic forward proxy", func() {
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
-		// write gateways and wait for them to be created
-		err = gloohelpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
-		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-		Eventually(func() (gatewayv1.GatewayList, error) {
-			return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
-		}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
+		// Write Gateway
+		gateway := gatewaydefaults.DefaultGateway(writeNamespace)
+		gateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+			DynamicForwardProxy: &dynamic_forward_proxy.FilterConfig{}, // pick up system defaults to resolve DNS
+		}
+		_, err = testClients.GatewayClient.Write(gateway, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 
 		// run envoy
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
