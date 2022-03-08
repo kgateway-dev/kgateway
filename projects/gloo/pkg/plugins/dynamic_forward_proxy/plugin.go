@@ -58,7 +58,11 @@ func (p *plugin) GeneratedResources(_ plugins.Params,
 	[]*envoy_config_listener_v3.Listener, error) {
 	var generatedClusters []*envoy_config_cluster_v3.Cluster
 	for _, lCfg := range p.filterHashMap {
-		generatedClusters = append(generatedClusters, generateCustomDynamicForwardProxyCluster(lCfg))
+		generatedCluster, err := generateCustomDynamicForwardProxyCluster(lCfg)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		generatedClusters = append(generatedClusters, generatedCluster)
 	}
 	return generatedClusters, nil, nil, nil, nil
 }
@@ -74,9 +78,13 @@ func (p *plugin) GeneratedResources(_ plugins.Params,
 // add a new upstream type in the future for dynamic forwarding and make other cluster fields configurable, but this
 // would require very careful validation with all other features and require the extra user step of providing an
 // upstream that in most cases the user does not want to customize at all.
-func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy.FilterConfig) *envoy_config_cluster_v3.Cluster {
+func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy.FilterConfig) (*envoy_config_cluster_v3.Cluster, error) {
+	convertedDnsCacheCfg, err := convertDnsCacheConfig(listenerCfg.GetDnsCacheConfig())
+	if err != nil {
+		return nil, err
+	}
 	cc := &envoy_extensions_clusters_dynamic_forward_proxy_v3.ClusterConfig{
-		DnsCacheConfig: convertDnsCacheConfig(listenerCfg.GetDnsCacheConfig()),
+		DnsCacheConfig: convertedDnsCacheCfg,
 		// AllowInsecureClusterOptions is not needed to be configurable unless we make a
 		// new upstream type so the cluster's upstream_http_protocol_options is configurable
 		AllowInsecureClusterOptions: false,
@@ -92,7 +100,7 @@ func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy
 				TypedConfig: utils.MustMessageToAny(cc),
 			},
 		},
-	}
+	}, nil
 }
 
 func GetGeneratedClusterName(dfpListenerCfg *dynamic_forward_proxy.FilterConfig) string {
@@ -108,10 +116,22 @@ func getHashString(dfpListenerCfg *dynamic_forward_proxy.FilterConfig) string {
 	return fmt.Sprintf("%v", hashutils.MustHash(dfpListenerCfg))
 }
 
-func convertDnsCacheConfig(dfpListenerCfg *dynamic_forward_proxy.DnsCacheConfig) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig {
+func convertDnsCacheConfig(dfpListenerCfg *dynamic_forward_proxy.DnsCacheConfig) (*envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig, error) {
+	typedCfg, err := convertTypedDnsResolverConfig(dfpListenerCfg)
+	if err != nil {
+		return nil, err
+	}
+	hostnames, err := convertPreresolveHostnames(dfpListenerCfg.GetPreresolveHostnames())
+	if err != nil {
+		return nil, err
+	}
+	family, err := convertDnsLookupFamily(dfpListenerCfg.GetDnsLookupFamily())
+	if err != nil {
+		return nil, err
+	}
 	return &envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheConfig{
 		Name:                   getGeneratedCacheName(dfpListenerCfg), // silly envoy behavior, MUST match other caches with exact same DNS config
-		DnsLookupFamily:        convertDnsLookupFamily(dfpListenerCfg.GetDnsLookupFamily()),
+		DnsLookupFamily:        family,
 		DnsRefreshRate:         dfpListenerCfg.GetDnsRefreshRate(),
 		HostTtl:                dfpListenerCfg.GetHostTtl(),
 		MaxHosts:               dfpListenerCfg.GetMaxHosts(),
@@ -119,16 +139,16 @@ func convertDnsCacheConfig(dfpListenerCfg *dynamic_forward_proxy.DnsCacheConfig)
 		DnsCacheCircuitBreaker: convertDnsCacheCircuitBreaker(dfpListenerCfg.GetDnsCacheCircuitBreaker()),
 		UseTcpForDnsLookups:    false, // deprecated, do not use. prefer TypedDnsResolverConfig
 		DnsResolutionConfig:    nil,   // deprecated, do not use. prefer TypedDnsResolverConfig
-		TypedDnsResolverConfig: convertTypedDnsResolverConfig(dfpListenerCfg),
-		PreresolveHostnames:    convertPreresolveHostnames(dfpListenerCfg.GetPreresolveHostnames()),
+		TypedDnsResolverConfig: typedCfg,
+		PreresolveHostnames:    hostnames,
 		DnsQueryTimeout:        dfpListenerCfg.GetDnsQueryTimeout(),
 		KeyValueConfig:         nil, // not-implemented in envoy yet
-	}
+	}, nil
 }
 
-func convertAddress(addrs []*v3.Address) []*envoy_config_core_v3.Address {
+func convertAddresses(addrs []*v3.Address) ([]*envoy_config_core_v3.Address, error) {
 	if len(addrs) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	var addresses []*envoy_config_core_v3.Address
@@ -138,17 +158,23 @@ func convertAddress(addrs []*v3.Address) []*envoy_config_core_v3.Address {
 		}
 		switch ps := a.GetAddress().(type) {
 		case *v3.Address_SocketAddress:
+			sa, err := convertSocketAddress(ps.SocketAddress)
+			if err != nil {
+				return nil, err
+			}
 			newAddr.Address = &envoy_config_core_v3.Address_SocketAddress{
-				SocketAddress: convertSocketAddress(ps.SocketAddress),
+				SocketAddress: sa,
 			}
 		case *v3.Address_Pipe:
 			newAddr.Address = &envoy_config_core_v3.Address_Pipe{
 				Pipe: convertPipe(ps.Pipe),
 			}
+		default:
+			return nil, eris.Errorf("unsupported type for address %T", a.GetAddress())
 		}
 		addresses = append(addresses, newAddr)
 	}
-	return addresses
+	return addresses, nil
 }
 
 func convertPipe(pipe *v3.Pipe) *envoy_config_core_v3.Pipe {
@@ -171,15 +197,19 @@ func convertDnsResolverOptions(opts *v3.DnsResolverOptions) *envoy_config_core_v
 	}
 }
 
-func convertTypedDnsResolverConfig(dfpListenerConf *dynamic_forward_proxy.DnsCacheConfig) *envoy_config_core_v3.TypedExtensionConfig {
-	if dfpListenerConf.GetDnsCacheType() == nil {
-		return nil
+func convertTypedDnsResolverConfig(dfpListenerCfg *dynamic_forward_proxy.DnsCacheConfig) (*envoy_config_core_v3.TypedExtensionConfig, error) {
+	if dfpListenerCfg.GetDnsCacheType() == nil {
+		return nil, nil
 	}
 	var typedConf *envoy_config_core_v3.TypedExtensionConfig
-	switch cacheConf := dfpListenerConf.GetDnsCacheType().(type) {
+	switch cacheConf := dfpListenerCfg.GetDnsCacheType().(type) {
 	case *dynamic_forward_proxy.DnsCacheConfig_CaresDns:
+		addrs, err := convertAddresses(cacheConf.CaresDns.GetResolvers())
+		if err != nil {
+			return nil, err
+		}
 		c := &envoy_extensions_network_dns_resolver_cares_v3.CaresDnsResolverConfig{
-			Resolvers:          convertAddress(cacheConf.CaresDns.GetResolvers()),
+			Resolvers:          addrs,
 			DnsResolverOptions: convertDnsResolverOptions(cacheConf.CaresDns.GetDnsResolverOptions()),
 		}
 		typedConf = &envoy_config_core_v3.TypedExtensionConfig{
@@ -192,8 +222,10 @@ func convertTypedDnsResolverConfig(dfpListenerConf *dynamic_forward_proxy.DnsCac
 			Name:        "envoy.network.dns_resolver.apple",
 			TypedConfig: utils.MustMessageToAny(c),
 		}
+	default:
+		return nil, eris.Errorf("unsupported type for dns cache type %T", dfpListenerCfg.GetDnsCacheType())
 	}
-	return typedConf
+	return typedConf, nil
 }
 
 func convertDnsCacheCircuitBreaker(breakers *dynamic_forward_proxy.DnsCacheCircuitBreakers) *envoy_extensions_common_dynamic_forward_proxy_v3.DnsCacheCircuitBreakers {
@@ -205,43 +237,41 @@ func convertDnsCacheCircuitBreaker(breakers *dynamic_forward_proxy.DnsCacheCircu
 	}
 }
 
-func convertDnsLookupFamily(family dynamic_forward_proxy.DnsLookupFamily) envoy_config_cluster_v3.Cluster_DnsLookupFamily {
+func convertDnsLookupFamily(family dynamic_forward_proxy.DnsLookupFamily) (envoy_config_cluster_v3.Cluster_DnsLookupFamily, error) {
 	switch family {
 	case dynamic_forward_proxy.DnsLookupFamily_AUTO:
-		return envoy_config_cluster_v3.Cluster_AUTO
+		return envoy_config_cluster_v3.Cluster_AUTO, nil
 	case dynamic_forward_proxy.DnsLookupFamily_V6_ONLY:
-		return envoy_config_cluster_v3.Cluster_V6_ONLY
+		return envoy_config_cluster_v3.Cluster_V6_ONLY, nil
 	case dynamic_forward_proxy.DnsLookupFamily_V4_ONLY:
-		return envoy_config_cluster_v3.Cluster_V4_ONLY
+		return envoy_config_cluster_v3.Cluster_V4_ONLY, nil
 	case dynamic_forward_proxy.DnsLookupFamily_V4_PREFERRED:
-		return envoy_config_cluster_v3.Cluster_V4_PREFERRED
+		return envoy_config_cluster_v3.Cluster_V4_PREFERRED, nil
 	case dynamic_forward_proxy.DnsLookupFamily_ALL:
-		return envoy_config_cluster_v3.Cluster_ALL
+		return envoy_config_cluster_v3.Cluster_ALL, nil
+	default:
+		return envoy_config_cluster_v3.Cluster_ALL, eris.Errorf("unsupported dns lookup family type %T", family)
 	}
-	return envoy_config_cluster_v3.Cluster_V4_ONLY
 }
 
-func convertPreresolveHostnames(sas []*v3.SocketAddress) []*envoy_config_core_v3.SocketAddress {
+func convertPreresolveHostnames(sas []*v3.SocketAddress) ([]*envoy_config_core_v3.SocketAddress, error) {
 	if len(sas) == 0 {
-		return nil
+		return nil, nil
 	}
 	var addresses []*envoy_config_core_v3.SocketAddress
 	for _, a := range sas {
-		addresses = append(addresses, convertSocketAddress(a))
+		sa, err := convertSocketAddress(a)
+		if err != nil {
+			return nil, err
+		}
+		addresses = append(addresses, sa)
 	}
-	return addresses
+	return addresses, nil
 }
 
-func convertSocketAddress(a *v3.SocketAddress) *envoy_config_core_v3.SocketAddress {
-	var protocol envoy_config_core_v3.SocketAddress_Protocol
-	switch a.GetProtocol() {
-	case v3.SocketAddress_TCP:
-		protocol = envoy_config_core_v3.SocketAddress_TCP
-	case v3.SocketAddress_UDP:
-		protocol = envoy_config_core_v3.SocketAddress_UDP
-	}
+func convertSocketAddress(a *v3.SocketAddress) (*envoy_config_core_v3.SocketAddress, error) {
 	newAddr := &envoy_config_core_v3.SocketAddress{
-		Protocol:      protocol,
+		//Protocol: // set-later
 		Address:       a.GetAddress(),
 		PortSpecifier: nil, // set-later
 		ResolverName:  a.GetResolverName(),
@@ -256,8 +286,18 @@ func convertSocketAddress(a *v3.SocketAddress) *envoy_config_core_v3.SocketAddre
 		newAddr.PortSpecifier = &envoy_config_core_v3.SocketAddress_NamedPort{
 			NamedPort: ps.NamedPort,
 		}
+	default:
+		return nil, eris.Errorf("unsupported type for socket address port specifier %T", a.GetProtocol())
 	}
-	return newAddr
+	switch a.GetProtocol() {
+	case v3.SocketAddress_TCP:
+		newAddr.Protocol = envoy_config_core_v3.SocketAddress_TCP
+	case v3.SocketAddress_UDP:
+		newAddr.Protocol = envoy_config_core_v3.SocketAddress_UDP
+	default:
+		return nil, eris.Errorf("unsupported type for socket address protocol %T", a.GetProtocol())
+	}
+	return newAddr, nil
 }
 
 func convertFailureRefreshRate(rate *dynamic_forward_proxy.RefreshRate) *envoy_config_cluster_v3.Cluster_RefreshRate {
@@ -275,9 +315,12 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	if cpDfp == nil {
 		return []plugins.StagedHttpFilter{}, nil
 	}
-
+	convertedDnsCacheCfg, err := convertDnsCacheConfig(cpDfp.GetDnsCacheConfig())
+	if err != nil {
+		return nil, err
+	}
 	dfp := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{
-		DnsCacheConfig:      convertDnsCacheConfig(cpDfp.GetDnsCacheConfig()),
+		DnsCacheConfig:      convertedDnsCacheCfg,
 		SaveUpstreamAddress: cpDfp.GetSaveUpstreamAddress(),
 	}
 	p.filterHashMap[getHashString(cpDfp)] = cpDfp
