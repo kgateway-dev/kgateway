@@ -45,6 +45,8 @@ func (m *FilterConfig) Clone() proto.Message {
 		target.DnsCacheConfig = proto.Clone(m.GetDnsCacheConfig()).(*DnsCacheConfig)
 	}
 
+	target.SaveUpstreamAddress = m.GetSaveUpstreamAddress()
+
 	return target
 }
 

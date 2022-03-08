@@ -234,6 +234,8 @@ spec:
                                   type: object
                                 type: array
                             type: object
+                          saveUpstreamAddress:
+                            type: boolean
                         type: object
                       extauth:
                         properties:

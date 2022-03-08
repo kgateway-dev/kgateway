@@ -56,6 +56,10 @@ func (m *FilterConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetSaveUpstreamAddress() != target.GetSaveUpstreamAddress() {
+		return false
+	}
+
 	return true
 }
 

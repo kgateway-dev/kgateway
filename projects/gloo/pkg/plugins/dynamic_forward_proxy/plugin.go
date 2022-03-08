@@ -153,8 +153,8 @@ func convertPreresolveHostnames(sas []*v3.SocketAddress) []*envoy_config_core_v3
 			Protocol:      protocol,
 			Address:       a.GetAddress(),
 			PortSpecifier: nil, // set-later
-			ResolverName:  a.ResolverName,
-			Ipv4Compat:    a.Ipv4Compat,
+			ResolverName:  a.GetResolverName(),
+			Ipv4Compat:    a.GetIpv4Compat(),
 		}
 		switch ps := a.GetPortSpecifier().(type) {
 		case *v3.SocketAddress_PortValue:
@@ -189,8 +189,8 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	}
 
 	dfp := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{
-		DnsCacheConfig: convertDnsCacheConfig(cpDfp.GetDnsCacheConfig()),
-		//SaveUpstreamAddress: false,
+		DnsCacheConfig:      convertDnsCacheConfig(cpDfp.GetDnsCacheConfig()),
+		SaveUpstreamAddress: cpDfp.GetSaveUpstreamAddress(),
 	}
 
 	p.filterHashMap[getHashString(cpDfp)] = cpDfp
