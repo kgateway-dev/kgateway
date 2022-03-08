@@ -155,5 +155,41 @@ var _ = Describe("enterprise_warning plugin", func() {
 				Ipv4Compat:   true,
 			}))
 		})
+
+		It("cache config name is per dns cache config", func() {
+			p := NewPlugin()
+			err := p.Init(initParams)
+			Expect(err).NotTo(HaveOccurred())
+
+			listener1 := listener.Clone().(*v1.HttpListener)
+			listener2 := listener.Clone().(*v1.HttpListener)
+			// make a change to listener2 so DNS cache config is different
+			listener1.Options.DynamicForwardProxy.DnsCacheConfig = &dynamic_forward_proxy.DnsCacheConfig{DnsLookupFamily: dynamic_forward_proxy.DnsLookupFamily_V4_ONLY}
+			listener2.Options.DynamicForwardProxy.DnsCacheConfig = &dynamic_forward_proxy.DnsCacheConfig{DnsLookupFamily: dynamic_forward_proxy.DnsLookupFamily_V6_ONLY}
+
+			filters1, err := p.HttpFilters(params, listener1)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filters1).To(HaveLen(1))
+			filterCfg := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{}
+			goTypedConfig := filters1[0].HttpFilter.GetTypedConfig()
+			err = ptypes.UnmarshalAny(goTypedConfig, filterCfg)
+			Expect(err).NotTo(HaveOccurred())
+			expectedName1 := "solo_io_generated_dfp:16275453913408509128"
+			Expect(filterCfg.GetDnsCacheConfig().GetName()).To(Equal(expectedName1))
+
+			filters2, err := p.HttpFilters(params, listener2)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filters2).To(HaveLen(1))
+			filterCfg2 := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{}
+			goTypedConfig2 := filters2[0].HttpFilter.GetTypedConfig()
+			err = ptypes.UnmarshalAny(goTypedConfig2, filterCfg2)
+			Expect(err).NotTo(HaveOccurred())
+			expectedName2 := "solo_io_generated_dfp:13361132607922819491"
+			Expect(filterCfg2.GetDnsCacheConfig().GetName()).To(Equal(expectedName2))
+
+			// different DNS caches should have different cache names
+			Expect(expectedName1).NotTo(Equal(expectedName2))
+		})
+
 	})
 })
