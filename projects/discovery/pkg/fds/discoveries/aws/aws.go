@@ -63,59 +63,63 @@ func (f *AWSLambdaFunctionDiscovery) DetectType(ctx context.Context, url *url.UR
 // DetectFunctions perhaps the in param for the upstream should be a function? in func() *v1.Upstream
 //TODO: how to handle changes in secret or upstream (like the upstream ref)?
 func (f *AWSLambdaFunctionDiscovery) DetectFunctions(ctx context.Context, url *url.URL, dependencies func() fds.Dependencies, updatecb func(fds.UpstreamMutator) error) error {
-	for {
-		// TODO: get backoff values from config?
-		err := contextutils.NewExponentioalBackoff(contextutils.ExponentioalBackoff{}).Backoff(ctx, func(ctx context.Context) error {
-			newFunctions, err := f.DetectFunctionsOnce(ctx, dependencies().Secrets)
+	// TODO: get backoff values from config?
+	err := contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{}).Backoff(ctx, func(ctx context.Context) error {
+		newFunctions, err := f.DetectFunctionsOnce(ctx, dependencies().Secrets)
 
-			if err != nil {
-				return err
-			}
-
-			// sort for idempotency
-			sort.Slice(newFunctions, func(i, j int) bool {
-				return newFunctions[i].GetLogicalName() < newFunctions[j].GetLogicalName()
-			})
-
-			// TODO(yuval-k): only update functions if newFunctions != oldFunctions
-			// no need to constantly write to storage
-
-			err = updatecb(func(out *v1.Upstream) error {
-				// TODO(yuval-k): this should never happen. but it did. add logs?
-				if out == nil {
-					return errors.New("nil upstream")
-				}
-
-				if out.GetUpstreamType() == nil {
-					return errors.New("nil upstream type")
-				}
-
-				awsSpec, ok := out.GetUpstreamType().(*v1.Upstream_Aws)
-				if !ok {
-					return errors.New("not aws upstream")
-				}
-				awsSpec.Aws.LambdaFunctions = newFunctions
-				return nil
-			})
-
-			if err != nil {
-				return errors.Wrap(err, "unable to update upstream")
-			}
-			return nil
-
-		})
 		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			// ignore other errors as we would like to continue forever.
-		}
-
-		// sleep so we are not hogging
-		if err := contextutils.Sleep(ctx, f.timeToWait); err != nil {
 			return err
 		}
+
+		// sort for idempotency
+		sort.Slice(newFunctions, func(i, j int) bool {
+			return newFunctions[i].GetLogicalName() < newFunctions[j].GetLogicalName()
+		})
+
+		// TODO(yuval-k): only update functions if newFunctions != oldFunctions
+		// no need to constantly write to storage
+
+		err = updatecb(func(out *v1.Upstream) error {
+			// TODO(yuval-k): this should never happen. but it did. add logs?
+			if out == nil {
+				return errors.New("nil upstream")
+			}
+
+			if out.GetUpstreamType() == nil {
+				return errors.New("nil upstream type")
+			}
+
+			awsSpec, ok := out.GetUpstreamType().(*v1.Upstream_Aws)
+			if !ok {
+				return errors.New("not aws upstream")
+			}
+			awsSpec.Aws.LambdaFunctions = newFunctions
+			return nil
+		})
+
+		if err != nil {
+			return errors.Wrap(err, "unable to update upstream")
+		}
+		return nil
+
+	})
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		// only log other errors as we would like to continue forever.
+		contextutils.LoggerFrom(ctx).Warnf("Unable to perform aws function discovery for upstream %s in namespace %s, error: ",
+			f.upstream.GetMetadata().GetName(),
+			f.upstream.GetMetadata().GetNamespace(),
+			err.Error(),
+		)
 	}
+
+	// sleep so we are not hogging
+	if err := contextutils.Sleep(ctx, f.timeToWait); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, secrets v1.SecretList) ([]*glooaws.LambdaFunctionSpec, error) {
