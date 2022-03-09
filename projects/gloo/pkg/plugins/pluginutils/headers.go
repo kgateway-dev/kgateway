@@ -33,7 +33,7 @@ func MarkHeaders(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route, out *e
 		return configureHeadersMultiDest(dest.Multi.GetDestinations(), outAction, headers)
 	case *v1.RouteAction_Single:
 		return configureHeadersSingleDest(dest.Single, &out.RequestHeadersToAdd, headers)
-	// Since destination is not known at runtime, headers can not be added using this function for a ClusterHeader destination
+	// Since destination is not known until runtime, headers cannot be added using this function for a ClusterHeader destination
 	case *v1.RouteAction_ClusterHeader:
 		return nil
 	}

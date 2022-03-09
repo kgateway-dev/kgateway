@@ -49,6 +49,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_faultinjection "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
@@ -266,6 +268,12 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.LeftmostXffAddress = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
 		target.LeftmostXffAddress = proto.Clone(m.GetLeftmostXffAddress()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if h, ok := interface{}(m.GetDynamicForwardProxy()).(clone.Cloner); ok {
+		target.DynamicForwardProxy = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.FilterConfig)
+	} else {
+		target.DynamicForwardProxy = proto.Clone(m.GetDynamicForwardProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.FilterConfig)
 	}
 
 	return target
