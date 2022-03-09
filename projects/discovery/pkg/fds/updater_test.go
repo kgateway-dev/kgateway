@@ -54,6 +54,12 @@ type testDiscovery struct {
 	functionsCalled atomic.Value
 }
 
+func NewTestDiscovery() *testDiscovery {
+	testD := &testDiscovery{}
+	testD.functionsCalled.Store(functionsCalled{})
+	return testD
+}
+
 func (t *testDiscovery) getFunctionsCalled() functionsCalled {
 	return t.functionsCalled.Load().(functionsCalled)
 }
@@ -100,12 +106,12 @@ func (t *fakeResolver) Resolve(u *v1.Upstream) (*url.URL, error) {
 }
 
 var _ = Describe("Updater", func() {
-
 	var (
 		ctx                  context.Context
 		cancel               context.CancelFunc
 		resolver             *fakeResolver
-		testDisc             *testDiscovery
+		testDiscovery1       *testDiscovery
+		testDiscovery2       *testDiscovery
 		updater              *Updater
 		up                   *v1.Upstream
 		upstreamWriterClient *testUpstreamWriterClient
@@ -119,9 +125,9 @@ var _ = Describe("Updater", func() {
 		resolver = &fakeResolver{
 			resolveUrl: u,
 		}
-		testDisc = &testDiscovery{}
-		testDisc.functionsCalled.Store(functionsCalled{})
-		updater = NewUpdater(ctx, resolver, nil, upstreamWriterClient, 0, []FunctionDiscoveryFactory{testDisc})
+		testDiscovery1 = NewTestDiscovery()
+		testDiscovery2 = NewTestDiscovery()
+		updater = NewUpdater(ctx, resolver, nil, upstreamWriterClient, 0, []FunctionDiscoveryFactory{testDiscovery1, testDiscovery2})
 		up = &v1.Upstream{
 			Metadata: &core_solo_io.Metadata{
 				Namespace: "ns",
@@ -138,21 +144,34 @@ var _ = Describe("Updater", func() {
 	})
 
 	It("should detect functions when upstream type is known", func() {
-		testDisc.isUpstreamFunctionalResult = true
+		testDiscovery1.isUpstreamFunctionalResult = true
+		testDiscovery2.isUpstreamFunctionalResult = true
 		updater.UpstreamAdded(up)
 		time.Sleep(time.Second / 10)
-		fc := testDisc.getFunctionsCalled()
+		fc := testDiscovery1.getFunctionsCalled()
+		Expect(fc.isUpstreamFunctional).To(BeTrue())
+		Expect(fc.detectUpstreamType).To(BeFalse())
+		Expect(fc.detectFunctions).To(BeTrue())
+
+		fc = testDiscovery2.getFunctionsCalled()
 		Expect(fc.isUpstreamFunctional).To(BeTrue())
 		Expect(fc.detectUpstreamType).To(BeFalse())
 		Expect(fc.detectFunctions).To(BeTrue())
 	})
 
 	It("should detect functions when upstream type is known", func() {
-		testDisc.isUpstreamFunctionalResult = false
-		testDisc.serviceSpec = &plugins.ServiceSpec{}
+		testDiscovery1.isUpstreamFunctionalResult = false
+		testDiscovery2.isUpstreamFunctionalResult = false
+		testDiscovery1.serviceSpec = &plugins.ServiceSpec{}
+		testDiscovery2.serviceSpec = &plugins.ServiceSpec{}
 		updater.UpstreamAdded(up)
 		time.Sleep(time.Second / 10)
-		fc := testDisc.getFunctionsCalled()
+		fc := testDiscovery1.getFunctionsCalled()
+		Expect(fc.isUpstreamFunctional).To(BeTrue())
+		Expect(fc.detectUpstreamType).To(BeTrue())
+		Expect(fc.detectFunctions).To(BeTrue())
+
+		fc = testDiscovery2.getFunctionsCalled()
 		Expect(fc.isUpstreamFunctional).To(BeTrue())
 		Expect(fc.detectUpstreamType).To(BeTrue())
 		Expect(fc.detectFunctions).To(BeTrue())
