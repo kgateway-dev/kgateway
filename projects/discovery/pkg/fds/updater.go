@@ -7,8 +7,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/rotisserie/eris"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 
 	"github.com/golang/protobuf/proto"
@@ -131,11 +129,18 @@ func (u *Updater) UpstreamAdded(upstream *v1.Upstream) {
 	}
 	u.activeUpstreams[key] = updater
 	go func() {
-		updater.Run()
-		cancel()
-		// TODO(yuval-k): consider removing upstream from map.
-		// need to be careful here as there might be a race if an update happens in the same time.
+		err := updater.Run()
+		if err != nil {
+			u.logger.Warnf("unable to discover upstream %s in namespace %s, err: %s",
+				upstream.GetMetadata().GetName(),
+				upstream.GetMetadata().GetNamespace(),
+				err,
+			)
+		}
 	}()
+
+	// TODO(yuval-k): consider removing upstream from map.
+	// need to be careful here as there might be a race if an update happens in the same time.
 }
 
 func (u *Updater) UpstreamRemoved(upstream *v1.Upstream) {
@@ -210,28 +215,33 @@ func (u *updaterUpdater) detectSingle(fp UpstreamFunctionDiscovery, url url.URL,
 		}
 	}
 
-	contextutils.NewExponentioalBackoff(contextutils.ExponentioalBackoff{}).Backoff(u.ctx, func(ctx context.Context) error {
+	err := contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{
+		MaxRetries: 1,
+	}).Backoff(u.ctx, func(ctx context.Context) error {
 		spec, err := fp.DetectType(ctx, &url)
 		if err != nil {
 			return err
 		}
-		if spec != nil {
-			// success
-			result <- detectResult{
-				spec: spec,
-				fp:   fp,
-			}
+		// success
+		result <- detectResult{
+			spec: spec,
+			fp:   fp,
 		}
 		return nil
 	})
+	if err != nil {
+		result <- detectResult{
+			spec: nil,
+			fp:   fp,
+		}
+	}
 }
 
-func (u *updaterUpdater) detectType(url_ url.URL) (*detectResult, error) {
+func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
 	// TODO add global timeout?
 	ctx, cancel := context.WithCancel(u.ctx)
-	defer cancel()
 
-	result := make(chan detectResult, 1)
+	result := make(chan detectResult)
 
 	// run all detections in parallel
 	var waitGroup sync.WaitGroup
@@ -244,17 +254,29 @@ func (u *updaterUpdater) detectType(url_ url.URL) (*detectResult, error) {
 	}
 	go func() {
 		waitGroup.Wait()
+		defer cancel()
 		close(result)
 	}()
-
-	select {
-	case res, ok := <-result:
-		if ok {
-			return &res, nil
+	var numResultsReceived int
+	var results []*detectResult
+	for {
+		select {
+		case res, ok := <-result:
+			numResultsReceived++
+			if ok && res.spec != nil {
+				results = append(results, &res)
+			} else if !ok {
+				return results, nil
+			}
+			if numResultsReceived == len(u.functionalPlugins) {
+				if len(results) == 0 {
+					return nil, errorUndetectableUpstream
+				}
+				return results, nil
+			}
+		case <-ctx.Done():
+			return nil, ctx.Err()
 		}
-		return nil, errorUndetectableUpstream
-	case <-ctx.Done():
-		return nil, ctx.Err()
 	}
 
 }
@@ -300,21 +322,39 @@ func (u *updaterUpdater) Run() error {
 			}
 			return err
 		}
-		discoveriesForUpstream = append(discoveriesForUpstream, res.fp)
-		upstreamSave(func(upstream *v1.Upstream) error {
-			serviceSpecUpstream, ok := upstream.GetUpstreamType().(v1.ServiceSpecSetter)
-			if !ok {
-				return errors.New("can't set spec")
-			}
-			serviceSpecUpstream.SetServiceSpec(res.spec)
-			return nil
-		})
-	}
-	for _, discoveryForUpstream := range discoveriesForUpstream {
-		err := discoveryForUpstream.DetectFunctions(context.Background(), resolvedUrl, u.dependencies, upstreamSave)
-		if err != nil {
-			return eris.Wrapf(err, "Error doing discovery %T", discoveryForUpstream)
+		for _, r := range res {
+			discoveriesForUpstream = append(discoveriesForUpstream, r.fp)
+			upstreamSave(func(upstream *v1.Upstream) error {
+				serviceSpecUpstream, ok := upstream.GetUpstreamType().(v1.ServiceSpecSetter)
+				if !ok {
+					return errors.New("can't set spec")
+				}
+				serviceSpecUpstream.SetServiceSpec(r.spec)
+				return nil
+			})
 		}
+	}
+	logger := contextutils.LoggerFrom(u.ctx)
+	for _, discoveryForUpstream := range discoveriesForUpstream {
+		go func(d UpstreamFunctionDiscovery) {
+			for {
+				select {
+				case <-u.ctx.Done():
+					logger.Debugf("context done, stopping upstream discovery %T for upstream %s.%s",
+						d,
+						u.upstream.GetMetadata().GetName(),
+						u.upstream.GetMetadata().GetNamespace())
+					return
+				default:
+					// continue to detect functions, as you were
+				}
+				err := d.DetectFunctions(u.ctx, resolvedUrl, u.dependencies, upstreamSave)
+				if err != nil {
+					logger.Errorf("Error doing discovery %T: %s", d, err.Error())
+					return
+				}
+			}
+		}(discoveryForUpstream)
 	}
 	return nil
 }
