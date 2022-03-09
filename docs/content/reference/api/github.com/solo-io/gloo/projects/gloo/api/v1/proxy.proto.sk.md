@@ -347,15 +347,17 @@ RouteActions are used to route matched requests to upstreams.
 "multi": .gloo.solo.io.MultiDestination
 "upstreamGroup": .core.solo.io.ResourceRef
 "clusterHeader": string
+"dynamicForwardProxy": .dfp.options.gloo.solo.io.PerRouteConfig
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, `upstreamGroup`, or `clusterHeader` can be set. |
-| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, `upstreamGroup`, or `clusterHeader` can be set. |
-| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, `multi`, or `clusterHeader` can be set. |
-| `clusterHeader` | `string` | Envoy will determine the cluster to route to by reading the value of the HTTP header named by cluster_header from the request headers. If the header is not found or the referenced cluster does not exist, Envoy will return a 404 response. Avoid using this whenever possible, it does not allow for custom filter configuration based on Virtual Host. Only one of `clusterHeader`, `single`, `multi`, or `upstreamGroup` can be set. |
+| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, `upstreamGroup`, `clusterHeader`, or `dynamicForwardProxy` can be set. |
+| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, `upstreamGroup`, `clusterHeader`, or `dynamicForwardProxy` can be set. |
+| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, `multi`, `clusterHeader`, or `dynamicForwardProxy` can be set. |
+| `clusterHeader` | `string` | Envoy will determine the cluster to route to by reading the value of the HTTP header named by cluster_header from the request headers. If the header is not found or the referenced cluster does not exist, Envoy will return a 404 response. Avoid using this whenever possible, it does not allow for custom filter configuration based on Virtual Host. Only one of `clusterHeader`, `single`, `multi`, `upstreamGroup`, or `dynamicForwardProxy` can be set. |
+| `dynamicForwardProxy` | [.dfp.options.gloo.solo.io.PerRouteConfig](../options/dynamic_forward_proxy/dynamic_forward_proxy.proto.sk/#perrouteconfig) | Route requests to a custom dynamic forward proxy envoy cluster. Envoy will route based on the DNS response (cached) or pause requests (for a configurable amount of time on the listener) until DNS has resolved for the host header rewrite as provided here. For more, see https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_proxy. Only one of `dynamicForwardProxy`, `single`, `multi`, `upstreamGroup`, or `clusterHeader` can be set. |
 
 
 
