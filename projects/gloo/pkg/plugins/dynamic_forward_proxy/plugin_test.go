@@ -20,7 +20,7 @@ import (
 	"github.com/solo-io/solo-kit/test/matchers"
 )
 
-var _ = Describe("enterprise_warning plugin", func() {
+var _ = Describe("dynamic forward proxy plugin", func() {
 
 	var (
 		params     plugins.Params

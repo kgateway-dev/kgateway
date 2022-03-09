@@ -415,7 +415,7 @@ type RefreshRate struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Specifies the base interval between refreshes. This parameter is required and must be greater
-	// than zero and less than
+	// than 1ms and less than
 	// :ref:`max_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.max_interval>`.
 	BaseInterval *duration.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3" json:"base_interval,omitempty"`
 	// Specifies the maximum interval between refreshes. This parameter is optional, but must be

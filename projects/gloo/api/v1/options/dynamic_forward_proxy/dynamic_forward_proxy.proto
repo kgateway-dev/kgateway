@@ -138,7 +138,7 @@ enum DnsLookupFamily {
 
 message RefreshRate {
   // Specifies the base interval between refreshes. This parameter is required and must be greater
-  // than zero and less than
+  // than 1ms and less than
   // :ref:`max_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.max_interval>`.
   google.protobuf.Duration base_interval = 1 [(validate.rules).duration = {
     required: true

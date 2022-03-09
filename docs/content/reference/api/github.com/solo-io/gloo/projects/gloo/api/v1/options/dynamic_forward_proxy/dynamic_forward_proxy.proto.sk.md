@@ -124,7 +124,7 @@ Configuration for the dynamic forward proxy DNS cache. See the :ref:`architectur
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `baseInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the base interval between refreshes. This parameter is required and must be greater than zero and less than :ref:`max_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.max_interval>`. |
+| `baseInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the base interval between refreshes. This parameter is required and must be greater than 1ms and less than :ref:`max_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.max_interval>`. |
 | `maxInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the maximum interval between refreshes. This parameter is optional, but must be greater than or equal to the :ref:`base_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>` if set. The default is 10 times the :ref:`base_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`. |
 
 
