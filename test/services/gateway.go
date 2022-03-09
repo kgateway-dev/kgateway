@@ -7,8 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
-
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
@@ -146,13 +144,6 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if glooOpts.Settings.GetGloo().GetRestXdsBindAddr() == "" {
 		glooOpts.Settings.GetGloo().RestXdsBindAddr = fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort))
 	}
-	if glooOpts.Settings.GetGateway() == nil {
-		glooOpts.Settings.Gateway = &gloov1.GatewayOptions{}
-	}
-	if glooOpts.Settings.GetGateway().GetValidation() == nil {
-		glooOpts.Settings.GetGateway().Validation = &gloov1.GatewayOptions_ValidationOptions{}
-	}
-	glooOpts.Settings.GetGateway().GetValidation().DisableTransformationValidation = &wrappers.BoolValue{Value: true}
 
 	runOptions.Extensions.SyncerExtensions = []syncer.TranslatorSyncerExtensionFactory{
 		ratelimitExt.NewTranslatorSyncerExtension,
@@ -225,21 +216,24 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 	meta := runOptions.Settings.GetMetadata()
 
 	var validation *translator.ValidationOpts
-	if runOptions.Settings != nil && runOptions.Settings.GetGateway() != nil && runOptions.Settings.GetGateway().GetValidation() != nil {
-		validation = &translator.ValidationOpts{}
-		if runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr() != "" {
-			validation.ProxyValidationServerAddress = runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr()
+	if runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr() != "" {
+		if validation == nil {
+			validation = &translator.ValidationOpts{}
 		}
-		if runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings() != nil {
-			validation.AllowWarnings = runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings().GetValue()
-
-		}
-		if runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept() != nil {
-			validation.AlwaysAcceptResources = runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue()
-		}
-
+		validation.ProxyValidationServerAddress = runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr()
 	}
-
+	if runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings() != nil {
+		if validation == nil {
+			validation = &translator.ValidationOpts{}
+		}
+		validation.AllowWarnings = runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings().GetValue()
+	}
+	if runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept() != nil {
+		if validation == nil {
+			validation = &translator.ValidationOpts{}
+		}
+		validation.AlwaysAcceptResources = runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue()
+	}
 	return translator.Opts{
 		GlooNamespace:           meta.GetNamespace(),
 		WriteNamespace:          runOptions.NsToWrite,
