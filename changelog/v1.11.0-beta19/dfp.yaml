@@ -1,0 +1,7 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/5920
+  description: >
+    Adds support for dynamic forward proxy, which allows envoy to route to
+    dns-resolved endpoints asynchronously without prior knowledge of what valid
+    dns endpoints are (i.e, configuring a bunch of static upstreams).

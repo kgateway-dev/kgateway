@@ -337,6 +337,11 @@ func validateRouteDestinationForValidLambdas(
 			// no upstream configuration is provided in this case; can't validate the route
 			return
 		}
+	case *v1.RouteAction_DynamicForwardProxy:
+		{
+			// no upstream configuration is provided in this case; can't validate the route
+			return
+		}
 	default:
 		{
 			reports.AddError(proxy, fmt.Errorf("route destination type %T not supported with AWS Lambda", typedRoute))
