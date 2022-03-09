@@ -4,6 +4,8 @@ package registry
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
@@ -93,6 +95,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		grpcjson.NewPlugin(),
 		metadata.NewPlugin(),
 		tunneling.NewPlugin(),
+		dynamic_forward_proxy.NewPlugin(),
 	)
 
 	if opts.KubeClient != nil {

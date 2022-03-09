@@ -23,6 +23,8 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
 
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto";
+
 /*
 A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
 Proxies can be understood as a set of listeners, represents a different bind address/port where the proxy will listen
@@ -314,6 +316,13 @@ message RouteAction {
         // If the header is not found or the referenced cluster does not exist, Envoy will return a 404 response.
         // Avoid using this whenever possible, it does not allow for custom filter configuration based on Virtual Host.
         string cluster_header = 4;
+
+        // Route requests to a custom dynamic forward proxy envoy cluster.
+        // Envoy will route based on the DNS response (cached) or pause requests
+        // (for a configurable amount of time on the listener) until DNS has resolved for
+        // the host header rewrite as provided here.
+        // For more, see https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_proxy
+        dfp.options.gloo.solo.io.PerRouteConfig dynamic_forward_proxy = 5;
     };
 }
 

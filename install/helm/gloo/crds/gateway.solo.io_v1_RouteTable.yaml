@@ -1621,6 +1621,13 @@ spec:
                       properties:
                         clusterHeader:
                           type: string
+                        dynamicForwardProxy:
+                          properties:
+                            autoHostRewriteHeader:
+                              type: string
+                            hostRewrite:
+                              type: string
+                          type: object
                         multi:
                           properties:
                             destinations:
