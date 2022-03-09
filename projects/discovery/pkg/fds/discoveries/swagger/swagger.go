@@ -87,15 +87,7 @@ func (f *SwaggerFunctionDiscovery) IsFunctional() bool {
 }
 
 func (f *SwaggerFunctionDiscovery) DetectType(ctx context.Context, baseurl *url.URL) (*plugins.ServiceSpec, error) {
-	var spec *plugins.ServiceSpec
-
-	err := contextutils.NewExponentioalBackoff(contextutils.ExponentioalBackoff{MaxDuration: &f.detectionTimeout}).Backoff(ctx, func(ctx context.Context) error {
-		var err error
-		spec, err = f.detectUpstreamTypeOnce(ctx, baseurl)
-		return err
-	})
-
-	return spec, err
+	return f.detectUpstreamTypeOnce(ctx, baseurl)
 }
 
 func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, baseUrl *url.URL) (*plugins.ServiceSpec, error) {
@@ -129,7 +121,7 @@ func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
 			if ctx.Err() != nil {
-				return nil, ctx.Err()
+				return nil, multierror.Append(err, ctx.Err())
 			}
 			errs = multierror.Append(errs, errors.Wrapf(err, "could not perform HTTP GET on resolved addr: %v", url))
 			continue
@@ -139,7 +131,7 @@ func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 			if _, err := RetrieveSwaggerDocFromUrl(ctx, url); err != nil {
 				// first check if this is a context error
 				if ctx.Err() != nil {
-					return nil, ctx.Err()
+					return nil, multierror.Append(err, ctx.Err())
 				}
 				errs = multierror.Append(errs, err)
 				continue
@@ -187,31 +179,33 @@ func (f *SwaggerFunctionDiscovery) DetectFunctions(ctx context.Context, _ *url.U
 }
 
 func (f *SwaggerFunctionDiscovery) detectFunctionsFromUrl(ctx context.Context, url string, in *v1.Upstream, updatecb func(fds.UpstreamMutator) error) error {
-	for {
-		err := contextutils.NewExponentioalBackoff(contextutils.ExponentioalBackoff{}).Backoff(ctx, func(ctx context.Context) error {
+	err := contextutils.NewExponentialBackoff(contextutils.ExponentialBackoff{}).Backoff(ctx, func(ctx context.Context) error {
 
-			spec, err := RetrieveSwaggerDocFromUrl(ctx, url)
-			if err != nil {
-				return err
-			}
-			err = f.detectFunctionsFromSpec(ctx, spec, in, updatecb)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
+		spec, err := RetrieveSwaggerDocFromUrl(ctx, url)
 		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			// ignore other errors as we would like to continue forever.
-		}
-
-		if err := contextutils.Sleep(ctx, f.functionPollTime); err != nil {
 			return err
 		}
+		err = f.detectFunctionsFromSpec(ctx, spec, in, updatecb)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		contextutils.LoggerFrom(ctx).Warnf("Unable to perform Swagger function discovery for upstream %s in namespace %s, error: ",
+			f.upstream.GetMetadata().GetName(),
+			f.upstream.GetMetadata().GetNamespace(),
+			err.Error(),
+		)
+		// ignore other errors as we would like to continue forever.
 	}
-
+	if err := contextutils.Sleep(ctx, f.functionPollTime); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f *SwaggerFunctionDiscovery) detectFunctionsFromInline(ctx context.Context, document string, in *v1.Upstream, updatecb func(fds.UpstreamMutator) error) error {
