@@ -45,6 +45,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rba
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto";
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option.proto";
@@ -154,6 +155,8 @@ message HttpListenerOptions {
     // It is worth noting that the x-forwarded-for header can be tampered with by clients
     // and should therefore be sanitized by any preceding proxies / load balancers if this option is to be used.
     google.protobuf.BoolValue leftmost_xff_address = 16;
+
+    dfp.options.gloo.solo.io.FilterConfig dynamic_forward_proxy = 28;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
