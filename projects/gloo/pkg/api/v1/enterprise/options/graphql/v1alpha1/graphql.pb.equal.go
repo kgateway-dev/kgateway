@@ -331,6 +331,47 @@ func (m *GrpcResolver) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *GatewaySchema) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GatewaySchema)
+	if !ok {
+		that2, ok := that.(GatewaySchema)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSubschemas()) != len(target.GetSubschemas()) {
+		return false
+	}
+	for idx, v := range m.GetSubschemas() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSubschemas()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSubschemas()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Resolution) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -450,6 +491,16 @@ func (m *GraphQLSchema) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetExecutableSchema(), target.GetExecutableSchema()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetGatewaySchema()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGatewaySchema()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGatewaySchema(), target.GetGatewaySchema()) {
 			return false
 		}
 	}
@@ -607,6 +658,98 @@ func (m *Executor) Equal(that interface{}) bool {
 		if m.Executor != target.Executor {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GatewaySchema_SubschemaConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GatewaySchema_SubschemaConfig)
+	if !ok {
+		that2, ok := that.(GatewaySchema_SubschemaConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetNamespace(), target.GetNamespace()) != 0 {
+		return false
+	}
+
+	if len(m.GetTypeMerge()) != len(target.GetTypeMerge()) {
+		return false
+	}
+	for k, v := range m.GetTypeMerge() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTypeMerge()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetTypeMerge()[k]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GatewaySchema_SubschemaConfig_TypeMergeConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GatewaySchema_SubschemaConfig_TypeMergeConfig)
+	if !ok {
+		that2, ok := that.(GatewaySchema_SubschemaConfig_TypeMergeConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetSelectionSet(), target.GetSelectionSet()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetQueryName(), target.GetQueryName()) != 0 {
+		return false
+	}
+
+	if len(m.GetArgs()) != len(target.GetArgs()) {
+		return false
+	}
+	for k, v := range m.GetArgs() {
+
+		if strings.Compare(v, target.GetArgs()[k]) != 0 {
+			return false
+		}
+
 	}
 
 	return true

@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package envoy.config.resolver.stitching.v2;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/graphql/v2";
+
+option java_package = "io.envoyproxy.envoy.config.filter.http.graphql.v2";
+option java_outer_classname = "GraphQLStitchingProto";
+option java_multiple_files = true;
+
+import "google/protobuf/any.proto";
+import "validate/validate.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto";
+
+
+// ------------- IN -------------
+message In {
+  repeated Schema subschemas = 1;
+}
+
+message Schema {
+  // actual sdl schema definition
+  string name = 1;
+  string schema = 2;
+  map<string, InputMergeConfig> type_merge_config = 3;
+}
+
+// make MergeConfig proto message
+message InputMergeConfig {
+  string selection_set = 1;
+  string field_name = 2;
+  repeated string args = 3;
+}
+
+// ---------------- OUT ----------------
+
+message FieldNode {
+  //  string kind = 1;
+  string name = 2;
+  //  string selectionSet = 3;
+}
+
+message FieldNodeMap {
+  map<string,FieldNodes> nodes = 1;
+}
+
+message FieldNodes {
+  repeated FieldNode field_nodes = 1;
+}
+
+message ResolverConfig {
+  string selection_set = 1;
+  string field_name = 2;
+}
+
+message Schemas {
+  repeated string schemas = 1;
+}
+
+message ArgPath {
+  // Setter Path
+  repeated string setter_path = 1;
+  // Extraction path
+  repeated string extraction_path = 2;
+}
+
+message ResolverInfo {
+  string field_name = 1;
+  repeated ArgPath args = 2;
+}
+
+message MergedTypeConfig {
+  string type_name = 1;
+  // map of subschema name to selection set string
+  // e.g. name_subschema: '{ id }'
+  map<string, string> selection_sets = 2;
+  // schema -> resolver
+  // map<string, ResolverConfig> resolver_config = 4;
+  // field name -> scema name
+  map<string, string> unique_fields_to_subschema_name = 5;
+  map<string, Schemas> non_unique_fields_to_subschema_names = 6;
+  // schema -> subschemas
+  map<string, Schemas> declarative_target_subschemas = 7;
+  map<string, ResolverInfo> subschema_name_to_resolver_info = 8;
+}
+
+message StitchingInfo {
+  map<string, FieldNodes> field_nodes_by_type = 1;
+  map<string, FieldNodeMap> field_nodes_by_field = 2;
+  map<string, MergedTypeConfig> merged_types = 3;
+  map<string, SubschemaConfig> subschema_names_to_subschema_config = 4;
+}
+
+message SubschemaConfig {
+  envoy.config.filter.http.graphql.v2.ExecutableSchema executable_schema = 1;
+}
+
+message StitchingResolver {
+  // Each query field comes from a specific subschema,
+  // this is the name of the subschema that the query field comes from.
+  string subschema_name = 1;
+}
+
+// The message received from the js stitching info program
+message StitchingInfoOut {
+  map<string, FieldNodes> field_nodes_by_type = 1;
+  map<string, FieldNodeMap> field_nodes_by_field = 2;
+  map<string, MergedTypeConfig> merged_types = 3;
+  string stitched_schema = 5;
+}

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -33,12 +35,17 @@ type Translator interface {
 	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
 }
 
+type TranslatorParams struct {
+	GraphqlSchemaClient v1alpha1.GraphQLSchemaClient
+}
+
 func NewTranslator(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
 	pluginRegistryFactory plugins.PluginRegistryFactory,
+	params *TranslatorParams,
 ) Translator {
-	return NewTranslatorWithHasher(sslConfigTranslator, settings, pluginRegistryFactory, EnvoyCacheResourcesListToFnvHash)
+	return NewTranslatorWithHasher(sslConfigTranslator, settings, pluginRegistryFactory, EnvoyCacheResourcesListToFnvHash, params)
 }
 
 func NewTranslatorWithHasher(
@@ -46,12 +53,14 @@ func NewTranslatorWithHasher(
 	settings *v1.Settings,
 	pluginRegistryFactory plugins.PluginRegistryFactory,
 	hasher func(resources []envoycache.Resource) uint64,
+	params *TranslatorParams,
 ) Translator {
 	return &translatorFactory{
 		pluginRegistryFactory: pluginRegistryFactory,
 		settings:              settings,
 		sslConfigTranslator:   sslConfigTranslator,
 		hasher:                hasher,
+		params:                params,
 	}
 }
 
@@ -60,6 +69,7 @@ type translatorFactory struct {
 	settings              *v1.Settings
 	sslConfigTranslator   utils.SslConfigTranslator
 	hasher                func(resources []envoycache.Resource) uint64
+	params                *TranslatorParams
 }
 
 func (t *translatorFactory) Translate(
@@ -74,6 +84,7 @@ func (t *translatorFactory) Translate(
 		settings:                  t.settings,
 		hasher:                    t.hasher,
 		listenerTranslatorFactory: listenerTranslatorFactory,
+		params:                    t.params,
 	}
 
 	return instance.Translate(params, proxy)
@@ -86,6 +97,7 @@ type translatorInstance struct {
 	sslConfigTranslator       utils.SslConfigTranslator
 	hasher                    func(resources []envoycache.Resource) uint64
 	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
+	params                    *TranslatorParams
 }
 
 func (t *translatorInstance) Translate(
@@ -220,7 +232,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		routeConfigs []*envoy_config_route_v3.RouteConfiguration
 		listeners    []*envoy_config_listener_v3.Listener
 	)
-
+	params.GraphqlSchemaClient = t.params.GraphqlSchemaClient
 	logger := contextutils.LoggerFrom(params.Ctx)
 
 	for i, listener := range proxy.GetListeners() {

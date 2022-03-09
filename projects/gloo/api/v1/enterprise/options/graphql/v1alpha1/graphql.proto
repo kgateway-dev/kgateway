@@ -175,6 +175,21 @@ message GrpcResolver {
   string span_name = 4;
 }
 
+message GatewaySchema {
+
+  message SubschemaConfig {
+    message TypeMergeConfig {
+      string selection_set = 1;
+      string query_name = 2;
+      map<string, string> args = 3;
+    }
+    string name = 1;
+    string namespace = 2;
+    map<string,TypeMergeConfig> type_merge = 3;
+  }
+  repeated SubschemaConfig subschemas = 1;
+}
+
 // Define a named resolver which can be then matched to a field using the `resolve` directive.
 // if a field does not have resolver, the default resolver will be used.
 // the default resolver takes the field with the same name from the parent, and uses that value
@@ -212,6 +227,7 @@ message GraphQLSchema {
   core.solo.io.Metadata metadata = 2;
 
   ExecutableSchema executable_schema = 6;
+  GatewaySchema gateway_schema = 7;
 
   // The stats prefix which will be used for this route config.
   // If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}
