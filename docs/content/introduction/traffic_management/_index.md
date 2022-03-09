@@ -24,7 +24,7 @@ Additional information can be found in the [Gloo Edge Core Concepts document]({{
 
 Let's see what underpins Gloo Edge routing with a high-level look at the layout of the Gloo Edge configuration. This can be seen as 3 layers: the *Gateway listeners*, *Virtual Services*, and *Upstreams*. Mostly, you'll be interacting with [Virtual Services]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#virtual-services" %}}), which allow you to configure the details of the API you wish to expose on the Gateway and how routing happens to the backends. [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#upstreams" %}}) represent those backends. [Gateway]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#gateways" %}}) objects help you control the listeners for incoming traffic.
 
-<figure><img src="{{% versioned_link_path fromRoot="/img/traffic-route-rule.svg" %}}">
+<figure><img src="{{% versioned_link_path fromRoot="/img/traffic-config-ov.svg" %}}">
 <figcaption style="text-align:center;font-style:italic">Figure: Example configuration of Gloo Edge gateway, virtual service, and upstream resources.</figcaption></figure>
 
 ---
@@ -36,7 +36,7 @@ There are many types of **matchers**, including **Path Matching**, **Header Matc
 
 Gloo Edge is capable of sending matching requests to many different types of *Upstreams*, including **Single Upstream**, **Multiple Upstream**, **Upstream Groups**, Kubernetes services, and Consul services. The ability to route a request to multiple *Upstreams* or *Upstream Groups* allows Gloo Edge to load balance requests and perform Canary Releases.
 
-<figure><img src="{{% versioned_link_path fromRoot="/img/traffic-route-rule.svg" %}}>
+<figure><img src="{{% versioned_link_path fromRoot="/img/traffic-route-rule.svg" %}}">
 <figcaption style="text-align:center;font-style:italic">Figure: Sample of routing rules that are configured in a virtual service.</figcaption></figure>
 
 Configuring the routing engine is done with defined predicates that match on incoming requests. The contents of a request, such as headers, path, method, etc., are examined to see if they match the predicates of a route rule. If they do, the request is processed based on enabled routing features and routed to an Upstream destinations such as REST or gRPC services running in Kubernetes, EC2, etc. or Cloud Functions like Lambda. In the [Traffic Management section]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}) we'll dig into this process further.
