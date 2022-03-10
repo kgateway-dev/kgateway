@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/5985
+  description: >
+    Adds an AWS transformation stage, so that transformations and AWS transformations can be used 
+    at the same time.
