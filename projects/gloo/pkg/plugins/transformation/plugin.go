@@ -94,7 +94,7 @@ func mergeFunc(tx *envoytransformation.RouteTransformations) pluginutils.ModifyF
 				return nil, err
 			}
 		}
-		transforms.Transformations = append(transforms.GetTransformations(), tx.Transformations...)
+		transforms.Transformations = append(transforms.GetTransformations(), tx.GetTransformations()...)
 		return &transforms, nil
 	}
 }
