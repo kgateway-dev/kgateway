@@ -44,5 +44,3 @@ curl http://localhost:19000/stats/prometheus
 ```
 
 You can use these to customize the dashboards that get created for every upstream, as described [here]({{% versioned_link_path fromRoot="/guides/observability/grafana/dashboards/#dynamically-generated-dashboards" %}}).
-
-{{% children description="true" %}}
