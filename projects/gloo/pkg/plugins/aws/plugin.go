@@ -47,22 +47,15 @@ var pluginStage = plugins.DuringStage(plugins.OutAuthStage)
 var transformPluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 
 type plugin struct {
-	recordedUpstreams map[string]*aws.UpstreamSpec
-	ctx               context.Context
-	// earlyTransformsAdded is intended to point to the RequireEarlyTransformation property
-	// in the transformation plugin, which controls whether early-stage transforms will be processed
-	// see AWS plugin instantiation at the following link as an example:
-	// https://github.com/solo-io/gloo/blob/2168dff1344d2b488d74cb2c1baabe10a9301757/projects/gloo/pkg/plugins/registry/registry.go#L61
-	earlyTransformsAdded *bool
-	settings             *v1.GlooOptions_AWSOptions
-	upstreamOptions      *v1.UpstreamOptions
-	needTransformation   bool
+	recordedUpstreams  map[string]*aws.UpstreamSpec
+	ctx                context.Context
+	settings           *v1.GlooOptions_AWSOptions
+	upstreamOptions    *v1.UpstreamOptions
+	needTransformation bool
 }
 
-func NewPlugin(earlyTransformsAdded *bool) plugins.Plugin {
-	return &plugin{
-		earlyTransformsAdded: earlyTransformsAdded,
-	}
+func NewPlugin() plugins.Plugin {
+	return &plugin{}
 }
 
 func (p *plugin) Name() string {
@@ -238,59 +231,25 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			if requesttransform {
 				// Early stage transform: place all headers in the request body
 				transformations = append(transformations, &envoy_transform.RouteTransformations_RouteTransformation{
-					Stage: transformation.EarlyStageNumber,
+					Stage: transformation.AwsStageNumber,
 					Match: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
 						RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
 							RequestTransformation: &envoy_transform.Transformation{
 								TransformationType: &envoy_transform.Transformation_HeaderBodyTransform{
-									HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{},
-								},
-							},
-						},
-					},
-				})
-
-				// Regular stage transform: extract the path and querystring
-				transformations = append(transformations, &envoy_transform.RouteTransformations_RouteTransformation{
-					Match: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
-						RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
-							RequestTransformation: &envoy_transform.Transformation{
-								TransformationType: &envoy_transform.Transformation_TransformationTemplate{
-									TransformationTemplate: &envoy_transform.TransformationTemplate{
-										Extractors: map[string]*envoy_transform.Extraction{
-											"path": {
-												Source:   &envoy_transform.Extraction_Header{Header: ":path"},
-												Regex:    `([^\?]+)(\?.*)?`,
-												Subgroup: uint32(1),
-											},
-											"queryString": {
-												Source:   &envoy_transform.Extraction_Header{Header: ":path"},
-												Regex:    `([^\?]+)(\?(.*))?`,
-												Subgroup: uint32(3),
-											},
-											"httpMethod": {
-												Source:   &envoy_transform.Extraction_Header{Header: ":method"},
-												Regex:    `(.*)`,
-												Subgroup: uint32(1),
-											},
-										},
-										BodyTransformation: &envoy_transform.TransformationTemplate_MergeExtractorsToBody{
-											MergeExtractorsToBody: &envoy_transform.MergeExtractorsToBody{},
-										},
+									HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
+										// TODO: once envoy updated, add the config here
 									},
 								},
 							},
 						},
 					},
 				})
-
-				// Tell the transformation filter to process early-stage transformations
-				*p.earlyTransformsAdded = true
 			}
 
 			repsonsetransform := awsDestinationSpec.Aws.GetResponseTransformation()
 			if repsonsetransform {
 				transformations = append(transformations, &envoy_transform.RouteTransformations_RouteTransformation{
+					Stage: transformation.AwsStageNumber,
 					Match: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch_{
 						ResponseMatch: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch{
 							ResponseTransformation: &envoy_transform.Transformation{
