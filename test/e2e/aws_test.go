@@ -32,7 +32,10 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
+	transformationext "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
@@ -82,11 +85,11 @@ var _ = Describe("AWS Lambda", func() {
 			if err != nil {
 				return "", err
 			}
+			defer res.Body.Close()
 			if res.StatusCode != http.StatusOK {
 				return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
 			}
 
-			defer res.Body.Close()
 			body, err := ioutil.ReadAll(res.Body)
 			if err != nil {
 				return "", err
@@ -386,6 +389,90 @@ var _ = Describe("AWS Lambda", func() {
 		validateLambdaUppercase(defaults.HttpPort)
 	}
 
+	testLambdaTransformations := func() {
+		err := envoyInstance.RunWithRoleAndRestXds("gloo-system~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		vs := &gw1.VirtualService{
+			Metadata: &core.Metadata{
+				Name:      "app",
+				Namespace: "gloo-system",
+			},
+			VirtualHost: &gw1.VirtualHost{
+				Domains: []string{"*"},
+				Routes: []*gw1.Route{{
+					Options: &gloov1.RouteOptions{
+						Transformations: &transformation.Transformations{
+							ResponseTransformation: &transformation.Transformation{
+								TransformationType: &transformation.Transformation_TransformationTemplate{
+									TransformationTemplate: &transformationext.TransformationTemplate{
+										Headers: map[string]*transformationext.InjaTemplate{
+											"foo": {
+												Text: "bar",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/transforms-test",
+							},
+						},
+					},
+					Action: &gw1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_Single{
+								Single: &gloov1.Destination{
+									DestinationType: &gloov1.Destination_Upstream{
+										Upstream: upstream.Metadata.Ref(),
+									},
+									DestinationSpec: &gloov1.DestinationSpec{
+										DestinationType: &gloov1.DestinationSpec_Aws{
+											Aws: &aws_plugin.DestinationSpec{
+												LogicalName:            "uppercase",
+												RequestTransformation:  true,
+												ResponseTransformation: true,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}},
+			},
+		}
+
+		var opts clients.WriteOpts
+		_, err = testClients.VirtualServiceClient.Write(vs, opts)
+		Expect(err).NotTo(HaveOccurred())
+		var res *http.Response
+		EventuallyWithOffset(1, func() error {
+			res, err = http.Post(fmt.Sprintf("http://%s:%d/transforms-test", "localhost", defaults.HttpPort), "application/octet-stream", bytes.NewBufferString(`"test"`))
+			if err != nil {
+				return err
+			}
+			if res.StatusCode != http.StatusOK {
+				res.Body.Close()
+				return errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
+			}
+			return nil
+		}, "5m", "1s").ShouldNot(HaveOccurred())
+
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(res.Header).To(HaveKeyWithValue("Foo", ContainElement("bar")))
+		// see that the AWS request transform applied - this means that the lambda will get a json body
+		// and will return its error response - not a string
+		Expect(string(body)).To(ContainSubstring("not a string"))
+	}
+
 	AfterEach(func() {
 		if envoyInstance != nil {
 			_ = envoyInstance.Clean()
@@ -393,7 +480,7 @@ var _ = Describe("AWS Lambda", func() {
 		cancel()
 	})
 
-	Context("Basic Auth", func() {
+	FContext("Basic Auth", func() {
 
 		addCredentials := func() {
 
@@ -439,6 +526,8 @@ var _ = Describe("AWS Lambda", func() {
 		It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 
 		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
+
+		It("should be able to call lambda transformation and regular transformation", testLambdaTransformations)
 	})
 
 	Context("Temporary Credentials", func() {

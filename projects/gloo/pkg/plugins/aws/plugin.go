@@ -12,6 +12,7 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
@@ -43,6 +44,7 @@ const (
 )
 
 var pluginStage = plugins.DuringStage(plugins.OutAuthStage)
+var transformPluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 
 type plugin struct {
 	recordedUpstreams map[string]*aws.UpstreamSpec
@@ -54,6 +56,7 @@ type plugin struct {
 	earlyTransformsAdded *bool
 	settings             *v1.GlooOptions_AWSOptions
 	upstreamOptions      *v1.UpstreamOptions
+	needTransformation   bool
 }
 
 func NewPlugin(earlyTransformsAdded *bool) plugins.Plugin {
@@ -71,6 +74,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	p.recordedUpstreams = make(map[string]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
 	p.upstreamOptions = params.Settings.GetUpstreamOptions()
+	p.needTransformation = false
 	return nil
 }
 
@@ -217,8 +221,8 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if err != nil {
 		return err
 	}
-	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
-		func(spec *v1.Destination) (proto.Message, error) {
+	return pluginutils.ModifyPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
+		func(spec *v1.Destination, existing *any.Any) (proto.Message, error) {
 			// check if it's aws destination
 			if spec.GetDestinationSpec() == nil {
 				return nil, nil
@@ -310,9 +314,22 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				})
 			}
 
-			return &envoy_transform.RouteTransformations{
-				Transformations: transformations,
-			}, nil
+			if len(transformations) == 0 {
+				return nil, nil
+			}
+
+			p.needTransformation = true
+			var transforms envoy_transform.RouteTransformations
+			if existing != nil {
+				err := existing.UnmarshalTo(&transforms)
+				if err != nil {
+					// this should never happen
+					return nil, err
+				}
+			}
+			transforms.Transformations = append(transforms.Transformations, transformations...)
+
+			return &transforms, nil
 		},
 	)
 }
@@ -345,6 +362,16 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 
 	filters := []plugins.StagedHttpFilter{
 		f,
+	}
+	if p.needTransformation {
+		awsStageConfig := &envoy_transform.FilterTransformations{
+			Stage: transformation.AwsStageNumber,
+		}
+		tf, err := plugins.NewStagedFilterWithConfig(transformation.FilterName, awsStageConfig, transformPluginStage)
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, tf)
 	}
 
 	return filters, nil
