@@ -42,7 +42,7 @@ func ModifyRoutePerFilterConfig(out *envoy_config_route_v3.Route, filterName str
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = make(map[string]*any.Any)
 	}
-	protoext, err := mod(out.TypedPerFilterConfig[filterName])
+	protoext, err := mod(out.GetTypedPerFilterConfig()[filterName])
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func ModifyVhostPerFilterConfig(out *envoy_config_route_v3.VirtualHost, filterNa
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = make(map[string]*any.Any)
 	}
-	protoext, err := mod(out.TypedPerFilterConfig[filterName])
+	protoext, err := mod(out.GetTypedPerFilterConfig()[filterName])
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func ModifyWeightedClusterPerFilterConfig(
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = make(map[string]*any.Any)
 	}
-	protoext, err := mod(out.TypedPerFilterConfig[filterName])
+	protoext, err := mod(out.GetTypedPerFilterConfig()[filterName])
 	if err != nil {
 		return err
 	}

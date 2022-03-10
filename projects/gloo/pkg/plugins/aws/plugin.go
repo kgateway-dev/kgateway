@@ -286,7 +286,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 					return nil, err
 				}
 			}
-			transforms.Transformations = append(transforms.Transformations, transformations...)
+			transforms.Transformations = append(transforms.GetTransformations(), transformations...)
 
 			return &transforms, nil
 		},

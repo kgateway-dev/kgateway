@@ -480,7 +480,7 @@ var _ = Describe("AWS Lambda", func() {
 		cancel()
 	})
 
-	FContext("Basic Auth", func() {
+	Context("Basic Auth", func() {
 
 		addCredentials := func() {
 
