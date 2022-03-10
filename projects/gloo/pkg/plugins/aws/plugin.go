@@ -237,7 +237,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 							RequestTransformation: &envoy_transform.Transformation{
 								TransformationType: &envoy_transform.Transformation_HeaderBodyTransform{
 									HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
-										// TODO: once envoy updated, add the config here
+										AddRequestMetadata: true,
 									},
 								},
 							},

@@ -576,6 +576,8 @@ var _ = Describe("AWS Lambda", func() {
 		It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 
 		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
+
+		It("should be able to call lambda transformation and regular transformation", testLambdaTransformations)
 	})
 
 	Context("AssumeRoleWithWebIdentity Credentials", func() {
@@ -731,6 +733,8 @@ var _ = Describe("AWS Lambda", func() {
 		It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 
 		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
+
+		It("should be able to call lambda transformation and regular transformation", testLambdaTransformations)
 	})
 
 })
