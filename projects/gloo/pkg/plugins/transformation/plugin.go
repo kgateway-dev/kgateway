@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/utils/lru"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	envoyroutev3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -35,6 +37,7 @@ const (
 	ExtensionName    = "transformation"
 	FilterName       = "io.solo.transformation"
 	EarlyStageNumber = 1
+	AwsStageNumber   = 2
 )
 
 var (
@@ -81,6 +84,22 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
+func mergeFunc(tx *envoytransformation.RouteTransformations) pluginutils.ModifyFunc {
+	return func(existing *any.Any) (proto.Message, error) {
+		if existing == nil {
+			return tx, nil
+		}
+		var transforms envoytransformation.RouteTransformations
+		err := existing.UnmarshalTo(&transforms)
+		if err != nil {
+			// this should never happen
+			return nil, err
+		}
+		transforms.Transformations = append(transforms.GetTransformations(), tx.GetTransformations()...)
+		return &transforms, nil
+	}
+}
+
 func (p *Plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,
@@ -104,7 +123,7 @@ func (p *Plugin) ProcessVirtualHost(
 
 	p.filterNeeded = true
 
-	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyTransformation)
+	return pluginutils.ModifyVhostPerFilterConfig(out, FilterName, mergeFunc(envoyTransformation))
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
@@ -125,7 +144,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	p.filterNeeded = true
-	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyTransformation)
+	return pluginutils.ModifyRoutePerFilterConfig(out, FilterName, mergeFunc(envoyTransformation))
 }
 
 func (p *Plugin) ProcessWeightedDestination(
@@ -150,7 +169,7 @@ func (p *Plugin) ProcessWeightedDestination(
 		return err
 	}
 	p.filterNeeded = true
-	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, envoyTransformation)
+	return pluginutils.ModifyWeightedClusterPerFilterConfig(out, FilterName, mergeFunc(envoyTransformation))
 }
 
 // HttpFilters emits the desired set of filters. Either 0, 1 or

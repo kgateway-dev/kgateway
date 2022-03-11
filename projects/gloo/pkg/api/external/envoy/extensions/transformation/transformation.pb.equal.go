@@ -672,6 +672,10 @@ func (m *HeaderBodyTransform) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetAddRequestMetadata() != target.GetAddRequestMetadata() {
+		return false
+	}
+
 	return true
 }
 

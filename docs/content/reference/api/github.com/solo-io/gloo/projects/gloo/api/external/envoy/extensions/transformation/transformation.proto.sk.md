@@ -431,11 +431,13 @@ a JSON body that is an array)
 
 
 ```yaml
+"addRequestMetadata": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `addRequestMetadata` | `bool` | When transforming a request, setting this to true will additionally add "queryString", "httpMethod" and "path" to the body. |
 
 
 
