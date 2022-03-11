@@ -12,8 +12,6 @@ import "validate/validate.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
-import "projects/gloo/api/external/envoy/extensions/network/dns_resolver/apple/v3/apple_dns_resolver.proto";
-import "projects/gloo/api/external/envoy/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto";
 
 // Configuration for the dynamic forward proxy HTTP filter. See the :ref:`architecture overview
 // <arch_overview_http_dynamic_forward_proxy>` for more information.
@@ -93,8 +91,8 @@ message DnsCacheConfig {
   DnsCacheCircuitBreakers dns_cache_circuit_breaker = 7;
 
   oneof DnsCacheType {
-    .solo.io.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig cares_dns = 8;
-    .solo.io.extensions.network.dns_resolver.apple.v3.AppleDnsResolverConfig apple_dns = 9;
+    CaresDnsResolverConfig cares_dns = 8;
+    AppleDnsResolverConfig apple_dns = 9;
   }
 
   // Hostnames that should be preresolved into the cache upon creation. This might provide a
@@ -181,4 +179,29 @@ message PerRouteConfig {
     //   If the header appears multiple times only the first value is used.
     string auto_host_rewrite_header = 2;
   }
+}
+
+// Configuration of DNS resolver option flags which control the behavior of the DNS resolver.
+message DnsResolverOptions {
+  // Use TCP for all DNS queries instead of the default protocol UDP.
+  bool use_tcp_for_dns_lookups = 1;
+
+  // Do not use the default search domains; only query hostnames as-is or as aliases.
+  bool no_default_search_domain = 2;
+}
+
+// Configuration for c-ares DNS resolver.
+message CaresDnsResolverConfig {
+  // A list of dns resolver addresses.
+  // :ref:`use_resolvers_as_fallback<envoy_v3_api_field_extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig.use_resolvers_as_fallback>`
+  // below dictates if the DNS client should override system defaults or only use the provided
+  // resolvers if the system defaults are not available, i.e., as a fallback.
+  repeated .solo.io.envoy.config.core.v3.Address resolvers = 1 [(validate.rules).repeated = {min_items: 1}];
+
+  // Configuration of DNS resolver option flags which control the behavior of the DNS resolver.
+  DnsResolverOptions dns_resolver_options = 2;
+}
+
+// Configuration for apple DNS resolver.
+message AppleDnsResolverConfig {
 }
