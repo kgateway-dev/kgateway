@@ -187,7 +187,7 @@ func convertPipe(pipe *v3.Pipe) *envoy_config_core_v3.Pipe {
 	}
 }
 
-func convertDnsResolverOptions(opts *v3.DnsResolverOptions) *envoy_config_core_v3.DnsResolverOptions {
+func convertDnsResolverOptions(opts *dynamic_forward_proxy.DnsResolverOptions) *envoy_config_core_v3.DnsResolverOptions {
 	if opts == nil {
 		return nil
 	}

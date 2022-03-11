@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5920
+    description: >
+      Fixes solo-apis codegen by moving gloo apis out of envoy/external directory and into proper gloo api directory.

@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/network/dns_resolver/cares/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -85,7 +84,7 @@ var _ = Describe("dynamic forward proxy plugin", func() {
 							Value: 10,
 						},
 						DnsCacheType: &dynamic_forward_proxy.DnsCacheConfig_CaresDns{
-							CaresDns: &v3.CaresDnsResolverConfig{
+							CaresDns: &dynamic_forward_proxy.CaresDnsResolverConfig{
 								Resolvers: []*v32.Address{
 									{
 										Address: &v32.Address_SocketAddress{
@@ -101,7 +100,7 @@ var _ = Describe("dynamic forward proxy plugin", func() {
 										},
 									},
 								},
-								DnsResolverOptions: &v32.DnsResolverOptions{
+								DnsResolverOptions: &dynamic_forward_proxy.DnsResolverOptions{
 									UseTcpForDnsLookups:   true,
 									NoDefaultSearchDomain: true,
 								},
