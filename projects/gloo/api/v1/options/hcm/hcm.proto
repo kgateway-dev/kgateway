@@ -55,6 +55,8 @@ message HttpConnectionManagerSettings {
     google.protobuf.Duration drain_timeout = 12;
     google.protobuf.Duration delayed_close_timeout = 13;
     string server_name = 14;
+    bool strip_any_host_port = 36;
+
 
     // For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions
     bool accept_http_10 = 15;
