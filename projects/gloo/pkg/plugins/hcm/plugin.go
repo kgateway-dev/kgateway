@@ -146,7 +146,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 
 	if in.GetStripAnyHostPort() {
 		if out.GetStripPortMode() == nil {
-			out.StripPortMode  = &envoyhttp.HttpConnectionManager_StripAnyHostPort{
+			out.StripPortMode = &envoyhttp.HttpConnectionManager_StripAnyHostPort{
 				StripAnyHostPort: true,
 			}
 		}

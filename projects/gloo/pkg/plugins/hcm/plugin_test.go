@@ -114,7 +114,7 @@ var _ = Describe("Plugin", func() {
 			PathWithEscapedSlashesAction: hcm.HttpConnectionManagerSettings_REJECT_REQUEST,
 			AllowChunkedLength:           true,
 			EnableTrailers:               true,
-			StripAnyHostPort: true,
+			StripAnyHostPort:             true,
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
