@@ -531,6 +531,8 @@ spec:
                             type: boolean
                           streamIdleTimeout:
                             type: string
+                          stripAnyHostPort:
+                            type: boolean
                           tracing:
                             properties:
                               datadogConfig:
@@ -1320,6 +1322,8 @@ spec:
                                       type: boolean
                                     streamIdleTimeout:
                                       type: string
+                                    stripAnyHostPort:
+                                      type: boolean
                                     tracing:
                                       properties:
                                         datadogConfig:
