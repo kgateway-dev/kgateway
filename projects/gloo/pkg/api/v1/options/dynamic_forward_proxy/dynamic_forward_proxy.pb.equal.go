@@ -335,3 +335,110 @@ func (m *PerRouteConfig) Equal(that interface{}) bool {
 
 	return true
 }
+
+// Equal function
+func (m *DnsResolverOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*DnsResolverOptions)
+	if !ok {
+		that2, ok := that.(DnsResolverOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetUseTcpForDnsLookups() != target.GetUseTcpForDnsLookups() {
+		return false
+	}
+
+	if m.GetNoDefaultSearchDomain() != target.GetNoDefaultSearchDomain() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *CaresDnsResolverConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*CaresDnsResolverConfig)
+	if !ok {
+		that2, ok := that.(CaresDnsResolverConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetResolvers()) != len(target.GetResolvers()) {
+		return false
+	}
+	for idx, v := range m.GetResolvers() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetResolvers()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetResolvers()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetDnsResolverOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDnsResolverOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDnsResolverOptions(), target.GetDnsResolverOptions()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AppleDnsResolverConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AppleDnsResolverConfig)
+	if !ok {
+		that2, ok := that.(AppleDnsResolverConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
