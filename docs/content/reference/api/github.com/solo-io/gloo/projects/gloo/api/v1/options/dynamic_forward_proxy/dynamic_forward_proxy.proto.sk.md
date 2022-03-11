@@ -16,6 +16,9 @@ weight: 5
 - [DnsCacheConfig](#dnscacheconfig)
 - [RefreshRate](#refreshrate)
 - [PerRouteConfig](#perrouteconfig)
+- [DnsResolverOptions](#dnsresolveroptions)
+- [CaresDnsResolverConfig](#caresdnsresolverconfig)
+- [AppleDnsResolverConfig](#applednsresolverconfig)
   
 
  
@@ -88,8 +91,8 @@ Configuration for the dynamic forward proxy DNS cache. See the :ref:`architectur
 "maxHosts": .google.protobuf.UInt32Value
 "dnsFailureRefreshRate": .dfp.options.gloo.solo.io.RefreshRate
 "dnsCacheCircuitBreaker": .dfp.options.gloo.solo.io.DnsCacheCircuitBreakers
-"caresDns": .solo.io.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
-"appleDns": .solo.io.extensions.network.dns_resolver.apple.v3.AppleDnsResolverConfig
+"caresDns": .dfp.options.gloo.solo.io.CaresDnsResolverConfig
+"appleDns": .dfp.options.gloo.solo.io.AppleDnsResolverConfig
 "preresolveHostnames": []solo.io.envoy.config.core.v3.SocketAddress
 "dnsQueryTimeout": .google.protobuf.Duration
 
@@ -103,8 +106,8 @@ Configuration for the dynamic forward proxy DNS cache. See the :ref:`architectur
 | `maxHosts` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The maximum number of hosts that the cache will hold. If not specified defaults to 1024. .. note: The implementation is approximate and enforced independently on each worker thread, thus it is possible for the maximum hosts in the cache to go slightly above the configured value depending on timing. This is similar to how other circuit breakers work. |
 | `dnsFailureRefreshRate` | [.dfp.options.gloo.solo.io.RefreshRate](../dynamic_forward_proxy.proto.sk/#refreshrate) | If the DNS failure refresh rate is specified, this is used as the cache's DNS refresh rate when DNS requests are failing. If this setting is not specified, the failure refresh rate defaults to the dns_refresh_rate. |
 | `dnsCacheCircuitBreaker` | [.dfp.options.gloo.solo.io.DnsCacheCircuitBreakers](../dynamic_forward_proxy.proto.sk/#dnscachecircuitbreakers) | The config of circuit breakers for resolver. It provides a configurable threshold. Envoy will use dns cache circuit breakers with default settings even if this value is not set. |
-| `caresDns` | [.solo.io.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig](../../../../external/envoy/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto.sk/#caresdnsresolverconfig) |  Only one of `caresDns` or `appleDns` can be set. |
-| `appleDns` | [.solo.io.extensions.network.dns_resolver.apple.v3.AppleDnsResolverConfig](../../../../external/envoy/extensions/network/dns_resolver/apple/v3/apple_dns_resolver.proto.sk/#applednsresolverconfig) |  Only one of `appleDns` or `caresDns` can be set. |
+| `caresDns` | [.dfp.options.gloo.solo.io.CaresDnsResolverConfig](../dynamic_forward_proxy.proto.sk/#caresdnsresolverconfig) |  Only one of `caresDns` or `appleDns` can be set. |
+| `appleDns` | [.dfp.options.gloo.solo.io.AppleDnsResolverConfig](../dynamic_forward_proxy.proto.sk/#applednsresolverconfig) |  Only one of `appleDns` or `caresDns` can be set. |
 | `preresolveHostnames` | [[]solo.io.envoy.config.core.v3.SocketAddress](../../../../external/envoy/config/core/v3/address.proto.sk/#socketaddress) | Hostnames that should be preresolved into the cache upon creation. This might provide a performance improvement, in the form of cache hits, for hostnames that are going to be resolved during steady state and are known at config load time. |
 | `dnsQueryTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout used for DNS queries. This timeout is independent of any timeout and retry policy used by the underlying DNS implementation (e.g., c-areas and Apple DNS) which are opaque. Setting this timeout will ensure that queries succeed or fail within the specified time frame and are then retried using the standard refresh rates. Defaults to 5s if not set. |
 
@@ -146,6 +149,62 @@ Per route Configuration for the dynamic forward proxy HTTP filter.
 | ----- | ---- | ----------- | 
 | `hostRewrite` | `string` | Indicates that before DNS lookup, the host header will be swapped with this value. If not set or empty, the original host header value will be used and no rewrite will happen. Note: this rewrite affects both DNS lookup and host header forwarding. However, this option shouldn't be used with :ref:`HCM host rewrite <envoy_api_field_route.RouteAction.host_rewrite>` given that the value set here would be used for DNS lookups whereas the value set in the HCM would be used for host header forwarding which is not the desired outcome. Only one of `hostRewrite` or `autoHostRewriteHeader` can be set. |
 | `autoHostRewriteHeader` | `string` | Indicates that before DNS lookup, the host header will be swapped with the value of this header. If not set or empty, the original host header value will be used and no rewrite will happen. Note: this rewrite affects both DNS lookup and host header forwarding. However, this option shouldn't be used with :ref:`HCM host rewrite header <envoy_api_field_route.RouteAction.auto_host_rewrite_header>` given that the value set here would be used for DNS lookups whereas the value set in the HCM would be used for host header forwarding which is not the desired outcome. .. note:: If the header appears multiple times only the first value is used. Only one of `autoHostRewriteHeader` or `hostRewrite` can be set. |
+
+
+
+
+---
+### DnsResolverOptions
+
+ 
+Configuration of DNS resolver option flags which control the behavior of the DNS resolver.
+
+```yaml
+"useTcpForDnsLookups": bool
+"noDefaultSearchDomain": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `useTcpForDnsLookups` | `bool` | Use TCP for all DNS queries instead of the default protocol UDP. |
+| `noDefaultSearchDomain` | `bool` | Do not use the default search domains; only query hostnames as-is or as aliases. |
+
+
+
+
+---
+### CaresDnsResolverConfig
+
+ 
+Configuration for c-ares DNS resolver.
+
+```yaml
+"resolvers": []solo.io.envoy.config.core.v3.Address
+"dnsResolverOptions": .dfp.options.gloo.solo.io.DnsResolverOptions
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `resolvers` | [[]solo.io.envoy.config.core.v3.Address](../../../../external/envoy/config/core/v3/address.proto.sk/#address) | A list of dns resolver addresses. :ref:`use_resolvers_as_fallback<envoy_v3_api_field_extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig.use_resolvers_as_fallback>` below dictates if the DNS client should override system defaults or only use the provided resolvers if the system defaults are not available, i.e., as a fallback. |
+| `dnsResolverOptions` | [.dfp.options.gloo.solo.io.DnsResolverOptions](../dynamic_forward_proxy.proto.sk/#dnsresolveroptions) | Configuration of DNS resolver option flags which control the behavior of the DNS resolver. |
+
+
+
+
+---
+### AppleDnsResolverConfig
+
+ 
+Configuration for apple DNS resolver.
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 
