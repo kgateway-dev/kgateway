@@ -281,7 +281,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				// if we got here, we have a response transform. otherwise, we would have returned early.
 				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch_{
 					ResponseMatch: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch{
-						ResponseTransformation: reqTransform,
+						ResponseTransformation: respTransform,
 					},
 				}
 
