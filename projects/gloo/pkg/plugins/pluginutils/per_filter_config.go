@@ -16,40 +16,74 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func SetRoutePerFilterConfig(out *envoy_config_route_v3.Route, filterName string, protoext proto.Message) error {
-	if out.GetTypedPerFilterConfig() == nil {
-		out.TypedPerFilterConfig = make(map[string]*any.Any)
+type ModifyFunc func(existing *any.Any) (proto.Message, error)
+
+func nopMod(protoext proto.Message) ModifyFunc {
+	return func(existing *any.Any) (proto.Message, error) {
+		return protoext, nil
 	}
-	return setConfig(out.GetTypedPerFilterConfig(), filterName, protoext)
+}
+
+func SetRoutePerFilterConfig(out *envoy_config_route_v3.Route, filterName string, protoext proto.Message) error {
+	return ModifyRoutePerFilterConfig(out, filterName, nopMod(protoext))
 }
 func SetVhostPerFilterConfig(out *envoy_config_route_v3.VirtualHost, filterName string, protoext proto.Message) error {
-	if out.GetTypedPerFilterConfig() == nil {
-		out.TypedPerFilterConfig = make(map[string]*any.Any)
-	}
-	return setConfig(out.GetTypedPerFilterConfig(), filterName, protoext)
+	return ModifyVhostPerFilterConfig(out, filterName, nopMod(protoext))
 }
 func SetWeightedClusterPerFilterConfig(
 	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
 	filterName string,
 	protoext proto.Message,
 ) error {
+	return ModifyWeightedClusterPerFilterConfig(out, filterName, nopMod(protoext))
+}
+
+func ModifyRoutePerFilterConfig(out *envoy_config_route_v3.Route, filterName string, mod ModifyFunc) error {
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = make(map[string]*any.Any)
+	}
+	protoext, err := mod(out.GetTypedPerFilterConfig()[filterName])
+	if err != nil {
+		return err
+	}
+	return setConfig(out.GetTypedPerFilterConfig(), filterName, protoext)
+}
+func ModifyVhostPerFilterConfig(out *envoy_config_route_v3.VirtualHost, filterName string, mod ModifyFunc) error {
+	if out.GetTypedPerFilterConfig() == nil {
+		out.TypedPerFilterConfig = make(map[string]*any.Any)
+	}
+	protoext, err := mod(out.GetTypedPerFilterConfig()[filterName])
+	if err != nil {
+		return err
+	}
+	return setConfig(out.GetTypedPerFilterConfig(), filterName, protoext)
+}
+func ModifyWeightedClusterPerFilterConfig(
+	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
+	filterName string,
+	mod ModifyFunc,
+) error {
+	if out.GetTypedPerFilterConfig() == nil {
+		out.TypedPerFilterConfig = make(map[string]*any.Any)
+	}
+	protoext, err := mod(out.GetTypedPerFilterConfig()[filterName])
+	if err != nil {
+		return err
 	}
 	return setConfig(out.GetTypedPerFilterConfig(), filterName, protoext)
 }
 
 // Return Per-Filter config for destinations, we put them on the Route (single dest) or WeightedCluster (multi dest)
 type PerFilterConfigFunc func(spec *v1.Destination) (proto.Message, error)
+type PerFilterConfigModifyFunc func(spec *v1.Destination, existing *any.Any) (proto.Message, error)
 
-// call this from
-func MarkPerFilterConfig(
+func ModifyPerFilterConfig(
 	ctx context.Context,
 	snap *v1snap.ApiSnapshot,
 	in *v1.Route,
 	out *envoy_config_route_v3.Route,
 	filterName string,
-	perFilterConfig PerFilterConfigFunc,
+	perFilterConfig PerFilterConfigModifyFunc,
 ) error {
 	if in.GetRouteAction() == nil {
 		// nothing to configure
@@ -90,11 +124,25 @@ func MarkPerFilterConfig(
 	return err
 }
 
+// call this from
+func MarkPerFilterConfig(
+	ctx context.Context,
+	snap *v1snap.ApiSnapshot,
+	in *v1.Route,
+	out *envoy_config_route_v3.Route,
+	filterName string,
+	perFilterConfig PerFilterConfigFunc,
+) error {
+	return ModifyPerFilterConfig(ctx, snap, in, out, filterName, func(spec *v1.Destination, existing *any.Any) (proto.Message, error) {
+		return perFilterConfig(spec)
+	})
+}
+
 func configureMultiDest(
 	in []*v1.WeightedDestination,
 	outAction *envoy_config_route_v3.RouteAction,
 	filterName string,
-	perFilterConfig PerFilterConfigFunc,
+	perFilterConfig PerFilterConfigModifyFunc,
 ) error {
 
 	multiClusterSpecifier, ok := outAction.GetClusterSpecifier().(*envoy_config_route_v3.RouteAction_WeightedClusters)
@@ -123,9 +171,9 @@ func configureSingleDest(
 	in *v1.Destination,
 	out map[string]*any.Any,
 	filterName string,
-	perFilterConfig PerFilterConfigFunc,
+	perFilterConfig PerFilterConfigModifyFunc,
 ) error {
-	config, err := perFilterConfig(in)
+	config, err := perFilterConfig(in, out[filterName])
 	if err != nil {
 		return err
 	}

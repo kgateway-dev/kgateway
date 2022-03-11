@@ -233,7 +233,7 @@ MOCK_RESOURCE_INFO := \
 generate-client-mocks:
 	@$(foreach INFO, $(MOCK_RESOURCE_INFO), \
 		echo Generating mock for $(word 3,$(subst :, , $(INFO)))...; \
-		GOBIN=$(DEPSGOBIN) mockgen -destination=projects/$(word 1,$(subst :, , $(INFO)))/pkg/mocks/mock_$(word 2,$(subst :, , $(INFO)))_client.go \
+		GOBIN=$(DEPSGOBIN) $(DEPSGOBIN)/mockgen -destination=projects/$(word 1,$(subst :, , $(INFO)))/pkg/mocks/mock_$(word 2,$(subst :, , $(INFO)))_client.go \
 		-package=mocks \
 		github.com/solo-io/gloo/projects/$(word 1,$(subst :, , $(INFO)))/pkg/api/v1 \
 		$(word 3,$(subst :, , $(INFO))) \
