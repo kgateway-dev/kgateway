@@ -86,13 +86,14 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func mergeFunc(tx *envoytransformation.RouteTransformations) pluginutils.ModifyFunc {
 	return func(existing *any.Any) (proto.Message, error) {
+		if existing == nil {
+			return tx, nil
+		}
 		var transforms envoytransformation.RouteTransformations
-		if existing != nil {
-			err := existing.UnmarshalTo(&transforms)
-			if err != nil {
-				// this should never happen
-				return nil, err
-			}
+		err := existing.UnmarshalTo(&transforms)
+		if err != nil {
+			// this should never happen
+			return nil, err
 		}
 		transforms.Transformations = append(transforms.GetTransformations(), tx.GetTransformations()...)
 		return &transforms, nil
