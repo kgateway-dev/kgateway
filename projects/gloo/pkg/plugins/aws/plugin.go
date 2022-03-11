@@ -43,8 +43,10 @@ const (
 	FilterName = "io.solo.aws_lambda"
 )
 
-var pluginStage = plugins.DuringStage(plugins.OutAuthStage)
-var transformPluginStage = plugins.BeforeStage(plugins.OutAuthStage)
+var (
+	pluginStage          = plugins.DuringStage(plugins.OutAuthStage)
+	transformPluginStage = plugins.BeforeStage(plugins.OutAuthStage)
+)
 
 type plugin struct {
 	recordedUpstreams  map[string]*aws.UpstreamSpec
@@ -225,59 +227,66 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				return nil, nil
 			}
 
-			transformations := []*envoy_transform.RouteTransformations_RouteTransformation{}
-
 			requesttransform := awsDestinationSpec.Aws.GetRequestTransformation()
-			if requesttransform {
-				// Early stage transform: place all headers in the request body
-				transformations = append(transformations, &envoy_transform.RouteTransformations_RouteTransformation{
-					Stage: transformation.AwsStageNumber,
-					Match: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
-						RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
-							RequestTransformation: &envoy_transform.Transformation{
-								TransformationType: &envoy_transform.Transformation_HeaderBodyTransform{
-									HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
-										AddRequestMetadata: true,
-									},
-								},
-							},
-						},
-					},
-				})
-			}
-
 			repsonsetransform := awsDestinationSpec.Aws.GetResponseTransformation()
-			if repsonsetransform {
-				transformations = append(transformations, &envoy_transform.RouteTransformations_RouteTransformation{
-					Stage: transformation.AwsStageNumber,
-					Match: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch_{
-						ResponseMatch: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch{
-							ResponseTransformation: &envoy_transform.Transformation{
-								TransformationType: &envoy_transform.Transformation_TransformationTemplate{
-									TransformationTemplate: &envoy_transform.TransformationTemplate{
-										BodyTransformation: &envoy_transform.TransformationTemplate_Body{
-											Body: &envoy_transform.InjaTemplate{
-												Text: "{{body}}",
-											},
-										},
-										Headers: map[string]*envoy_transform.InjaTemplate{
-											"content-type": {
-												Text: "text/html",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				})
-			}
-
-			if len(transformations) == 0 {
+			if !requesttransform && !repsonsetransform {
 				return nil, nil
 			}
-
 			p.needTransformation = true
+
+			transform := &envoy_transform.RouteTransformations_RouteTransformation{
+				Stage: transformation.AwsStageNumber,
+			}
+			var reqTransform *envoy_transform.Transformation
+			var respTransform *envoy_transform.Transformation
+
+			if requesttransform {
+				reqTransform = &envoy_transform.Transformation{
+					TransformationType: &envoy_transform.Transformation_HeaderBodyTransform{
+						HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
+							AddRequestMetadata: true,
+						},
+					},
+				}
+			}
+
+			if repsonsetransform {
+				respTransform = &envoy_transform.Transformation{
+					TransformationType: &envoy_transform.Transformation_TransformationTemplate{
+						TransformationTemplate: &envoy_transform.TransformationTemplate{
+							BodyTransformation: &envoy_transform.TransformationTemplate_Body{
+								Body: &envoy_transform.InjaTemplate{
+									Text: "{{body}}",
+								},
+							},
+							Headers: map[string]*envoy_transform.InjaTemplate{
+								"content-type": {
+									Text: "text/html",
+								},
+							},
+						},
+					},
+				}
+			}
+
+			if requesttransform {
+				// Early stage transform: place all headers in the request body
+				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
+					RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
+						RequestTransformation:  reqTransform,
+						ResponseTransformation: respTransform,
+					},
+				}
+			} else {
+				// if we got here, we have a response transform. otherwise, we would have returned early.
+				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch_{
+					ResponseMatch: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch{
+						ResponseTransformation: reqTransform,
+					},
+				}
+
+			}
+
 			var transforms envoy_transform.RouteTransformations
 			if existing != nil {
 				err := existing.UnmarshalTo(&transforms)
@@ -286,8 +295,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 					return nil, err
 				}
 			}
-			transforms.Transformations = append(transforms.GetTransformations(), transformations...)
-
+			transforms.Transformations = append(transforms.GetTransformations(), transform)
 			return &transforms, nil
 		},
 	)

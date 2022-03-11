@@ -15,10 +15,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/form3tech-oss/jwt-go"
-	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,6 +28,7 @@ import (
 	"github.com/solo-io/gloo/test/services"
 
 	gw1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -35,6 +36,7 @@ import (
 	transformationext "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -390,69 +392,95 @@ var _ = Describe("AWS Lambda", func() {
 	}
 
 	testLambdaTransformations := func() {
-		err := envoyInstance.RunWithRoleAndRestXds("gloo-system~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
-		Expect(err).NotTo(HaveOccurred())
-
-		vs := &gw1.VirtualService{
-			Metadata: &core.Metadata{
-				Name:      "app",
-				Namespace: "gloo-system",
-			},
-			VirtualHost: &gw1.VirtualHost{
-				Domains: []string{"*"},
-				Routes: []*gw1.Route{{
-					Options: &gloov1.RouteOptions{
-						Transformations: &transformation.Transformations{
-							ResponseTransformation: &transformation.Transformation{
-								TransformationType: &transformation.Transformation_TransformationTemplate{
-									TransformationTemplate: &transformationext.TransformationTemplate{
-										Headers: map[string]*transformationext.InjaTemplate{
-											"foo": {
-												Text: "bar",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/transforms-test",
-							},
-						},
-					},
-					Action: &gw1.Route_RouteAction{
-						RouteAction: &gloov1.RouteAction{
-							Destination: &gloov1.RouteAction_Single{
-								Single: &gloov1.Destination{
-									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: upstream.Metadata.Ref(),
-									},
-									DestinationSpec: &gloov1.DestinationSpec{
-										DestinationType: &gloov1.DestinationSpec_Aws{
-											Aws: &aws_plugin.DestinationSpec{
-												LogicalName:            "uppercase",
-												RequestTransformation:  true,
-												ResponseTransformation: true,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}},
+		// don't generate request id, so that the returned body is predictable (see the MatchJson below).
+		gateway, err := testClients.GatewayClient.Read(defaults.GlooSystem, gwdefaults.GatewayProxyName, clients.ReadOpts{})
+		gateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+			HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
+				GenerateRequestId: wrapperspb.Bool(false),
 			},
 		}
-
-		var opts clients.WriteOpts
-		_, err = testClients.VirtualServiceClient.Write(vs, opts)
+		_, err = testClients.GatewayClient.Write(gateway, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
+
+		err = envoyInstance.RunWithRoleAndRestXds(defaults.GlooSystem+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		prepVs := func(addResp bool) {
+			path := "/transforms-req-test"
+			if addResp {
+				path = "/transforms-resp-test"
+			}
+
+			vs := &gw1.VirtualService{
+				Metadata: &core.Metadata{
+					Name:      "app",
+					Namespace: "gloo-system",
+				},
+				VirtualHost: &gw1.VirtualHost{
+					Domains: []string{"*"},
+					Routes: []*gw1.Route{{
+						Options: &gloov1.RouteOptions{
+							Transformations: &transformation.Transformations{
+								ResponseTransformation: &transformation.Transformation{
+									TransformationType: &transformation.Transformation_TransformationTemplate{
+										TransformationTemplate: &transformationext.TransformationTemplate{
+											Headers: map[string]*transformationext.InjaTemplate{
+												"foo": {
+													Text: "bar",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Matchers: []*matchers.Matcher{
+							{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: path,
+								},
+							},
+						},
+						Action: &gw1.Route_RouteAction{
+							RouteAction: &gloov1.RouteAction{
+								Destination: &gloov1.RouteAction_Single{
+									Single: &gloov1.Destination{
+										DestinationType: &gloov1.Destination_Upstream{
+											Upstream: upstream.Metadata.Ref(),
+										},
+										DestinationSpec: &gloov1.DestinationSpec{
+											DestinationType: &gloov1.DestinationSpec_Aws{
+												Aws: &aws_plugin.DestinationSpec{
+													LogicalName:            "echo",
+													RequestTransformation:  true,
+													ResponseTransformation: addResp,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}},
+				},
+			}
+
+			var opts clients.WriteOpts
+			_, err = testClients.VirtualServiceClient.Write(vs, opts)
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		By("sending a request with no response transformation")
+		prepVs(false)
 		var res *http.Response
-		EventuallyWithOffset(1, func() error {
-			res, err = http.Post(fmt.Sprintf("http://%s:%d/transforms-test", "localhost", defaults.HttpPort), "application/octet-stream", bytes.NewBufferString(`"test"`))
+		var body []byte
+		path := "transforms-req-test"
+		waitForLambdaAndGetBody := func() error {
+			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/%s?foo=bar", "localhost", defaults.HttpPort, path), bytes.NewBufferString(`"test"`))
+			Expect(err).NotTo(HaveOccurred())
+			req.Header.Set("Content-Type", "application/octet-stream")
+			req.Host = "test"
+			res, err = http.DefaultClient.Do(req)
 			if err != nil {
 				return err
 			}
@@ -460,17 +488,30 @@ var _ = Describe("AWS Lambda", func() {
 				res.Body.Close()
 				return errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
 			}
-			return nil
-		}, "5m", "1s").ShouldNot(HaveOccurred())
 
-		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
-		Expect(err).NotTo(HaveOccurred())
+			defer res.Body.Close()
+			body, err = ioutil.ReadAll(res.Body)
+			Expect(err).NotTo(HaveOccurred())
+			return nil
+		}
+		EventuallyWithOffset(1, waitForLambdaAndGetBody, "5m", "1s").ShouldNot(HaveOccurred())
 
 		Expect(res.Header).To(HaveKeyWithValue("Foo", ContainElement("bar")))
 		// see that the AWS request transform applied - this means that the lambda will get a json body
 		// and will return its error response - not a string
-		Expect(string(body)).To(ContainSubstring("not a string"))
+		Expect(string(body)).To(MatchJSON(`{"body":"\"test\"","headers":{":authority":"test",":method":"POST",":path":"/transforms-req-test?foo=bar",":scheme":"http","accept-encoding":"gzip","content-length":"6","content-type":"application/octet-stream","user-agent":"Go-http-client/1.1","x-forwarded-proto":"http"},"httpMethod":"POST","path":"/transforms-req-test","queryString":"foo=bar"}`))
+
+		By("sending a request with response transformation")
+		path = "transforms-resp-test"
+		err = testClients.VirtualServiceClient.Delete("gloo-system", "app", clients.DeleteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		prepVs(true)
+		EventuallyWithOffset(1, waitForLambdaAndGetBody, "5m", "1s").ShouldNot(HaveOccurred())
+
+		Expect(res.Header).To(HaveKeyWithValue("Foo", ContainElement("bar")))
+		// response transform restores the body
+		Expect(string(body)).To(Equal(`"test"`))
+
 	}
 
 	AfterEach(func() {
