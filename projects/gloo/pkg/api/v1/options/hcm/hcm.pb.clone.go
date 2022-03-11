@@ -99,6 +99,8 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 
 	target.ServerName = m.GetServerName()
 
+	target.StripAnyHostPort = m.GetStripAnyHostPort()
+
 	target.AcceptHttp_10 = m.GetAcceptHttp_10()
 
 	target.DefaultHostForHttp_10 = m.GetDefaultHostForHttp_10()
