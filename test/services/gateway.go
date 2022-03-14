@@ -300,7 +300,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		Artifacts:               f,
 		AuthConfigs:             f,
 		RateLimitConfigs:        f,
-		GraphQLSchemas:          f,
+		GraphQLApis:             f,
 		Gateways:                f,
 		MatchableHttpGateways:   f,
 		VirtualServices:         f,
