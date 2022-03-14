@@ -69,7 +69,7 @@ func RunFDSWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if err := secretClient.Register(); err != nil {
 		return err
 	}
-	graphqlClient, err := v1alpha1.NewGraphQLSchemaClient(watchOpts.Ctx, opts.GraphQLSchemas)
+	graphqlClient, err := v1alpha1.NewGraphQLApiClient(watchOpts.Ctx, opts.GraphQLApis)
 	if err != nil {
 		return err
 	}
