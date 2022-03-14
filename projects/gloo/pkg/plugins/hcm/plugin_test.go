@@ -114,6 +114,7 @@ var _ = Describe("Plugin", func() {
 			PathWithEscapedSlashesAction: hcm.HttpConnectionManagerSettings_REJECT_REQUEST,
 			AllowChunkedLength:           true,
 			EnableTrailers:               true,
+			StripAnyHostPort:             true,
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
@@ -139,7 +140,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.HttpProtocolOptions.GetEnableTrailers()).To(BeTrue())
 		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(settings.DefaultHostForHttp_10))
 		Expect(cfg.PreserveExternalRequestId).To(Equal(settings.PreserveExternalRequestId))
-
+		Expect(cfg.GetStripAnyHostPort()).To(Equal(settings.StripAnyHostPort))
 		Expect(cfg.CommonHttpProtocolOptions).NotTo(BeNil())
 		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(MatchProto(settings.IdleTimeout))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxConnectionDuration()).To(MatchProto(settings.MaxConnectionDuration))
@@ -169,6 +170,7 @@ var _ = Describe("Plugin", func() {
 		Expect(ccd.Chain).To(BeTrue())
 		Expect(ccd.Dns).To(BeTrue())
 		Expect(ccd.Uri).To(BeTrue())
+
 	})
 
 	It("should copy stateful_formatter setting to hcm filter", func() {

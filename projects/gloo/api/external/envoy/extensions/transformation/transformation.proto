@@ -284,4 +284,8 @@ message Passthrough {}
 
 message MergeExtractorsToBody {}
 
-message HeaderBodyTransform {}
+message HeaderBodyTransform {
+  // When transforming a request, setting this to true will additionally add "queryString", 
+  // "httpMethod" and "path" to the body
+  bool add_request_metadata = 1;
+}
