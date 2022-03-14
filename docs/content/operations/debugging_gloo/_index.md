@@ -18,7 +18,7 @@ This guide is intended to help you understand where to look if things aren't wor
 
 ## General debugging tools and tips
 
-If you're experiencing unexpected behavior after installing and configuring Gloo Edge, the first thing to do is verify [installation]({{< versioned_link_path fromRoot="/installation/" >}}) and configuration. The fastest way to do that is to run the `glooctl check` [command]({{< versioned_link_path fromRoot="/reference/cli/glooctl_check/" >}}). This command will go through the deployments, pods and Gloo Edge resources to make sure they're in a healthy/Accepted/OK status. Typically if there are some problem syncing resources, you would find an issue here.
+If you're experiencing unexpected behavior after installing and configuring Gloo Edge, the first thing to do is verify [installation]({{< versioned_link_path fromRoot="/installation/" >}}) and configuration. The fastest way to do that is to run the `glooctl check` [command]({{< versioned_link_path fromRoot="/reference/cli/glooctl_check/" >}}). This command will go through the deployments, pods and Gloo Edge resources to make sure they're in a healthy/Accepted/OK status. Typically if there are problems syncing resources, you would find an issue here.
 
 ```bash
 glooctl check
@@ -43,7 +43,7 @@ No problems detected.
 ```
 
 {{% notice note %}}
-Be sure to use the correct version of `glooctl`
+Be sure to use the version of `glooctl` that matches your installed version, such as {{< readfile file="static/content/version_gee_latest.md" markdown="true">}}.
 {{% /notice %}}
 
 This will also report errors if the routes or route options were not accepted by the control plane. To better understand the difference between the `VirtualService` CR, the `Gateway` CR and the _hidden_ `Proxy` CR, please check out [this concept page]({{< versioned_link_path fromRoot="/introduction/architecture/custom_resources/#gateway-and-proxy-configuration" >}}). Quickly said, the `Proxy` CR combines both `Gateway` and `VirtualService` resources into a single document. 
@@ -71,22 +71,22 @@ You can easily see the Envoy proxy configuration by running the following comman
 glooctl proxy dump
 ```
 
-This dumps the entire Envoy configuration, including all static and dynamic resources. Typically at the bottom you can see the VirtualHost and Route sections to verify your settings were picked up correctly.
+This command dumps the entire Envoy configuration, including all static and dynamic resources. Typically near the end, you can see the VirtualHost and Route sections to verify that your settings are picked up correctly.
 
-A more advanced way of generating the Envoy config dump is to port-forward to one of the gateway-proxy pods and to run the following command(s):
+A more advanced way of generating the Envoy config dump is to port-forward to one of the gateway-proxy pods and to run the following commands:
 
 ```bash
 # 1. pick a gateway-proxy pod
 kubectl -n gloo-system get pod -l "gloo=gateway-proxy"
 # 2. port-forward on port 19000
 kubectl -n gloo-system port-forward <pod name> 19000 &
-# 3. generate the config dump
+# 3a. generate the config dump
 curl -X POST 127.0.0.1:19000/config_dump > gateway-config.json
-# 3bis. optionally include the upstream endpoints in the config dump
+# 3b. optionally include the upstream endpoints in the config dump
 curl -X POST 127.0.0.1:19000/config_dump\?include_eds > gateway-config.json
 ```
 
-Finally, we have created a web UI that facilitates browsing the config. You can safely upload your config-dump on the website (it will stay offline) and visit or search through the different configuration nodes: https://envoyui.solo.io/
+Finally, you can use the Solo.io Envoy UI to browse the config. You can safely upload your config-dump on the website (it will stay offline) and visit or search through the different configuration nodes: https://envoyui.solo.io/
 
 ![Envoy UI]({{% versioned_link_path fromRoot="/img/envoy-ui.png" %}})
 
@@ -103,7 +103,7 @@ glooctl proxy logs -f
 When you have the logging window up, send requests through to the proxy and you can get some very detailed debugging logging going through the log tail.
 
 {{% notice warning %}}
-Keep in mind that this command will actually [change](https://github.com/solo-io/gloo/blob/c2e025728df3c66c67275ac718e251a275d32bd3/projects/gloo/cli/pkg/cmd/gateway/logs.go#L65) the log level to `debug`. You may want to revert it to `info` after that (see below).
+Keep in mind that this command will actually [change](https://github.com/solo-io/gloo/blob/c2e025728df3c66c67275ac718e251a275d32bd3/projects/gloo/cli/pkg/cmd/gateway/logs.go#L65) the log level to `debug`. You might want to revert it to `info` after that, as shown in the following commands.
 {{% /notice %}}
 
 A more advanced way of changing the log level, globally or on a per-logger basis, is through the Envoy Admin endpoints:
@@ -119,7 +119,7 @@ curl -X POST "127.0.0.1:19000/logging?aws=debug"
 
 For a full list of the different Envoy loggers, visit the following endpoint: `http://localhost:19000/logging`
 
-Additionally, you can configure access logging to dump specific parts of the request into the logs. Please see the [doc on access logging]({{< versioned_link_path fromRoot="/guides/security/access_logging//" >}}) to configure that. 
+Additionally, you can configure access logging to dump specific parts of the request into the logs. For more information, see [Access Logging]({{< versioned_link_path fromRoot="/guides/security/access_logging//" >}}). 
 
 
 ### Viewing Envoy stats
@@ -180,7 +180,7 @@ rate-limit-6d66688567-5tcx8                            1/1     Running   3      
 redis-57fd559c5c-hcd6n                                 1/1     Running   0          107m
 ```
 
-Each component logs about the sync loops it runs (syncing with various environment signals like the Kube API, or Consul, etc). 
+Each component logs the sync loops that it runs, such as syncing with various environment signals like the Kubernetes API, Consul, etc. 
 
 You can fetch the latest logs for all the components with the following command:
 
@@ -274,4 +274,4 @@ glooctl debug logs -f gloo-logs.log
 glooctl debug yaml -f gloo-yamls.yaml
 ```
 
-This will dump all of the relevant configuration into to files, `gloo-logs.log` and `gloo-yamls.yaml` which gives a complete picture of your deployment. 
+These commands dump all of the relevant configuration into `gloo-logs.log` and `gloo-yamls.yaml` files, which gives a complete picture of your Gloo Edge deployment. 
