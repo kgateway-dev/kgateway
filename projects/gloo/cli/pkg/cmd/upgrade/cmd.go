@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"runtime"
 	"strings"
+	"time"
 
 	update "github.com/inconshreveable/go-update"
 
@@ -33,8 +35,9 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	}
 
 	cmd.PersistentFlags().StringVar(&opts.Upgrade.ReleaseTag, "release", "latest", "Which glooctl release "+
-		"to download. Specify a release tag corresponding to the desired version of glooctl "+
-		"or specify experimental to get bleeding edge release.")
+		"to download. Specify a release tag corresponding to the desired version of glooctl,"+
+		"\"experimental\" to use the version currently under development,"+
+		" or a major+minor release like v1.10.x to get the most recent patch version.")
 	cmd.PersistentFlags().StringVar(&opts.Upgrade.DownloadPath, "path", "", "Desired path for your "+
 		"upgraded glooctl binary. Defaults to the location of your currently executing binary.")
 	cliutils.ApplyOptions(cmd, optionsFunc)
@@ -43,9 +46,18 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 var knownTags = map[string]struct{}{"experimental": struct{}{}, "latest": struct{}{}}
 
+// timeoutseconds for our http client. This should move along with
+// the client options to a higher place in code and become merely a default setting.
+const timeoutSeconds = 10
+
 func upgradeGlooCtl(ctx context.Context, upgrade options.Upgrade) error {
+	// probably should propagate this up higher so we can set option on glooctl http clients in general
+	httpClient := &http.Client{
+		Timeout: time.Duration(timeoutSeconds) * time.Second,
+	}
+
 	glooctlBinaryName := fmt.Sprintf("glooctl-%v-%v", runtime.GOOS, runtime.GOARCH)
-	release, err := getReleaseWithAsset(ctx, upgrade.ReleaseTag, glooctlBinaryName)
+	release, err := getReleaseWithAsset(ctx, httpClient, upgrade.ReleaseTag, glooctlBinaryName)
 	if err != nil {
 		return errors.Wrapf(err, "getting release '%v' from solo-io/gloo repository", upgrade.ReleaseTag)
 	}
@@ -75,8 +87,17 @@ func upgradeGlooCtl(ctx context.Context, upgrade options.Upgrade) error {
 
 const maxPages = 10
 
-func getReleaseWithAsset(ctx context.Context, tag string, expectedAssetName string) (*github.RepositoryRelease, error) {
-	g := github.NewClient(nil)
+// getReleaseWithAsset attempts to get a release per the given tag with the desired asset form of expectedAssetName
+func getReleaseWithAsset(ctx context.Context, httpClient *http.Client, tag string, expectedAssetName string) (*github.RepositoryRelease, error) {
+
+	g := github.NewClient(httpClient)
+
+	// For testing purposes mainly but potentially could be used
+	// for specific on prem managed releases.
+	baseURL := ctx.Value("githubURL")
+	if baseURLStr, ok := baseURL.(string); ok {
+		g.BaseURL, _ = url.Parse(baseURLStr)
+	}
 
 	if versionutils.MatchesRegex(tag) {
 		release, _, err := g.Repositories.GetReleaseByTag(ctx, "solo-io", "gloo", tag)
@@ -94,10 +115,9 @@ func getReleaseWithAsset(ctx context.Context, tag string, expectedAssetName stri
 
 	var largestValidSemVer versionutils.Version
 	var candidateRelease *github.RepositoryRelease
-
 	// inexact version requested may be prerelease and not have assets
-	// We do assume that within a minor version has monotnically increasing patch numbers
-	// We also assume that the first release that is not valid semver is latest sem ver
+	// We do assume that within a minor version we use monotonically increasing patch numbers
+	// We also assume that the first release that is not strict semver is technically the largest
 	for i := 0; i < maxPages; i++ {
 		// Get the next page of
 		listOpts := github.ListOptions{PerPage: 10, Page: i} // max per request
@@ -118,9 +138,10 @@ func getReleaseWithAsset(ctx context.Context, tag string, expectedAssetName stri
 				continue
 			}
 
-			// Real asset and valid version at this point
+			// we have a valid versioned release along with a release asset at this point
 
-			// the user has specified something of the form v%d.%d.x
+			// the user has specified something of the form v%d.%d
+			// for example v1.10.x
 			if specifiedVersion != "" {
 				// take the first valid from this version
 				// as we assume increasing ordering
@@ -130,10 +151,12 @@ func getReleaseWithAsset(ctx context.Context, tag string, expectedAssetName stri
 				continue
 			}
 
-			// If is not just semver and we arent looking in a given
+			// looking for a something like latest or experimental
+			// and need to determine minor / major entirely as we have nothing to go on from the input
 			if specifiedVersion == "" && v.Label != "" {
 				if tag == "experimental" {
-					// we take this as we assume that it is the cutting edge.
+					// the user has requested the experimental release and this is the largest non-strict semver
+					//  therefore web return this value.
 					return release, nil
 				}
 				if tag == "latest" {
@@ -167,9 +190,11 @@ func getReleaseWithAsset(ctx context.Context, tag string, expectedAssetName stri
 		return candidateRelease, nil
 	}
 
-	return nil, errors.Errorf("couldn't find any recent release with the desired asset")
+	return nil, errors.Errorf(errorNotFoundString)
 
 }
+
+const errorNotFoundString = "couldn't find any recent release with the desired asset"
 
 func tryGetAssetWithName(release *github.RepositoryRelease, expectedAssetName string) *github.ReleaseAsset {
 	for _, asset := range release.Assets {
