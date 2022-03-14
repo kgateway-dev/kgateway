@@ -1,0 +1,8 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.20.0-patch7
+    description: >-
+      Upgrade envoy-gloo version to contain fixed base image.  Resolves docker-compose envoy build issues.
+    issueLink: https://github.com/solo-io/gloo/issues/5980 
