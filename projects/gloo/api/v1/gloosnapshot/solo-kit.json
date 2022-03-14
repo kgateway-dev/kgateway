@@ -65,7 +65,7 @@
         "version": "v1"
       },
       {
-        "name": "GraphQLSchema",
+        "name": "GraphQLApi",
         "package": "graphql.gloo.solo.io"
       }
     ]
