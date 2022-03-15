@@ -157,7 +157,7 @@ var (
 		GraphQLApiGVK.Group,
 		GraphQLApiGVK.Version,
 		GraphQLApiGVK.Kind,
-		"gqla",
+		"qgl",
 		false,
 		&GraphQLApi{})
 )

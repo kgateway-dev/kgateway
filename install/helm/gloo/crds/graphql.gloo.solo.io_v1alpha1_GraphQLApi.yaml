@@ -12,8 +12,8 @@ spec:
     listKind: GraphQLApiList
     plural: graphqlapis
     shortNames:
-    - gqla
-    - ggqla
+    - qgl
+    - gqgl
     singular: graphqlapi
   scope: Namespaced
   versions:
