@@ -129,27 +129,27 @@ keys is defined:
 
 ```yaml
 apiVersion: gateway.solo.io/v1
-   kind: Gateway
-   metadata:
-     name: gateway-proxy
-     namespace: gloo-system
-   spec:
-     bindAddress: '::'
-     bindPort: 8080
-     proxyNames:
-       - gateway-proxy
-     httpGateway: {}
-     useProxyProto: false
-     options:
-       accessLoggingService:
-         accessLog:
-           - fileSink:
-               path: /dev/stdout
-               jsonFormat:
-                 protocol: "%PROTOCOL%"
-                 duration: "%DURATION%"
-                 upstreamCluster: "%UPSTREAM_CLUSTER%"
-                 upstreamHost: "%UPSTREAM_HOST%"
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  proxyNames:
+    - gateway-proxy
+  httpGateway: {}
+  useProxyProto: false
+  options:
+    accessLoggingService:
+      accessLog:
+        - fileSink:
+            path: /dev/stdout
+            jsonFormat:
+              protocol: "%PROTOCOL%"
+              duration: "%DURATION%"
+              upstreamCluster: "%UPSTREAM_CLUSTER%"
+              upstreamHost: "%UPSTREAM_HOST%"
 ```
 
 This will cause requests to the HTTP port to be logged to the application logs of the `gateway-proxy` deployment:
