@@ -12,7 +12,7 @@ import (
 )
 
 const GlooAnnotationPrefix = "gloo.solo.io/upstream_config"
-const DeepMergeAnnotationPrefix = "gloo.solo.io/upstream_config/deep_merge"
+const DeepMergeAnnotationPrefix = "gloo.solo.io/upstream_config.deep_merge"
 
 type GeneralServiceConverter struct{}
 
