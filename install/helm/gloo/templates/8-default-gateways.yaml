@@ -18,6 +18,9 @@ spec:
   bindAddress: "::"
   {{- end }}
   bindPort: {{ $spec.podTemplate.httpPort }}
+{{- if $gatewaySettings.httpHybridGateway }}
+{{ toYaml $gatewaySettings.httpHybridGateway | indent 2}}
+{{- end }}
 {{- if $gatewaySettings.customHttpGateway}}
   httpGateway:
 {{ toYaml $gatewaySettings.customHttpGateway | indent 4}}
@@ -71,6 +74,9 @@ spec:
   bindAddress: "::"
   {{- end }}
   bindPort: {{ $spec.podTemplate.httpsPort }}
+{{- if $gatewaySettings.httpsHybridGateway }}
+{{ toYaml $gatewaySettings.httpsHybridGateway | indent 2}}
+{{- end }}
 {{- if $gatewaySettings.customHttpsGateway }}
   httpGateway:
 {{ toYaml $gatewaySettings.customHttpsGateway | indent 4}}
