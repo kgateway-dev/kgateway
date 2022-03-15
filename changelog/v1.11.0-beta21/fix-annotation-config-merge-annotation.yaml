@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Rename the serviceconverter DeepMergeAnnotationPrefix from "gloo.solo.io/upstream_config/deep_merge" to "gloo.solo.io/upstream_config.deep_merge", as the former is not a valid k8s annotation.
+    issueLink: https://github.com/solo-io/gloo/issues/6005
