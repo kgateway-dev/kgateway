@@ -108,7 +108,7 @@ func getReleaseWithAsset(ctx context.Context, httpClient *http.Client, tag strin
 	specifiedVersion := regex.FindString(tag)
 	if specifiedVersion != "" {
 		// not using logger as is not used previously
-		fmt.Println("searching for ", specifiedVersion)
+		fmt.Println("searching for release version", specifiedVersion)
 	} else if _, ok := knownTags[tag]; !ok {
 		return nil, fmt.Errorf("unknown release specification %s", tag)
 	}
@@ -131,7 +131,6 @@ func getReleaseWithAsset(ctx context.Context, httpClient *http.Client, tag strin
 			if err != nil {
 				continue
 			}
-
 			// We only consider releases that have assets to download.
 			// More expensive to do this call than to check version infos.
 			if tryGetAssetWithName(release, expectedAssetName) == nil {
@@ -139,9 +138,18 @@ func getReleaseWithAsset(ctx context.Context, httpClient *http.Client, tag strin
 			}
 
 			// we have a valid versioned release along with a release asset at this point
+			// Now we must check if it fits any of the criteria.
 
-			// the user has specified something of the form v%d.%d
-			// for example v1.10.x
+			// Track best candidate that is fully valid semver (serves the latest)
+			// Dont respect non strictsemver for storage purposes (v.Label)
+			if v.Label == "" && (*v).MustIsGreaterThan(largestValidSemVer) {
+				largestValidSemVer = (*v)
+				candidateRelease = release
+			}
+
+			// either a major-minor was specified something of the form v%d.%d
+			// or are searching for latest stable and have found the most recent
+			// experimental and are now searching for a conforming release
 			if specifiedVersion != "" {
 				// take the first valid from this version
 				// as we assume increasing ordering
@@ -151,36 +159,33 @@ func getReleaseWithAsset(ctx context.Context, httpClient *http.Client, tag strin
 				continue
 			}
 
-			// looking for a something like latest or experimental
-			// and need to determine minor / major entirely as we have nothing to go on from the input
-			if specifiedVersion == "" && v.Label != "" {
-				if tag == "experimental" {
-					// the user has requested the experimental release and this is the largest non-strict semver
-					//  therefore web return this value.
-					return release, nil
-				}
-				if tag == "latest" {
-					stableMinor := v.Minor - 1
-					// for major increase this will be pretty bad performance wise
-					// but at least its valid and only bad for a single release cycle
-					if stableMinor > 0 {
-						specifiedVersion = fmt.Sprintf("v%d.%d", v.Major, stableMinor)
-						if candidateRelease == nil {
-							continue
-						}
-						candidateV, _ := versionutils.ParseVersion(*candidateRelease.Name)
-						// we may have already captured the latest stable
-						if strings.HasPrefix(specifiedVersion, candidateV.String()) {
-							return release, nil
-						}
-					}
-				}
+			// If not strict semver we dont need to analyze our special tags
+			if v.Label == "" {
 				continue
 			}
-			// Track best candidate if latest
-			if (*v).MustIsGreaterThan(largestValidSemVer) {
-				largestValidSemVer = (*v)
-				candidateRelease = release
+
+			// looking for a something like latest or experimental
+			// and need to determine minor / major entirely as we have nothing to go on from the input
+			if tag == "experimental" {
+				// the user has requested the experimental release and this is the largest non-strict semver
+				//  therefore web return this value.
+				return release, nil
+			}
+			if tag == "latest" {
+				stableMinor := v.Minor - 1
+				// for major increase this will be pretty bad performance wise
+				// but at least its valid and only bad for a single release cycle
+				if stableMinor >= 0 {
+					specifiedVersion = fmt.Sprintf("v%d.%d", v.Major, stableMinor)
+					if candidateRelease == nil {
+						continue
+					}
+					candidateV, _ := versionutils.ParseVersion(*candidateRelease.Name)
+					// we may have already captured the latest stable
+					if strings.HasPrefix(specifiedVersion, candidateV.String()) {
+						return release, nil
+					}
+				}
 			}
 		}
 	}
