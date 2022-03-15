@@ -404,14 +404,14 @@ func (m *Resolution) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *GraphQLSchema) Equal(that interface{}) bool {
+func (m *GraphQLApi) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*GraphQLSchema)
+	target, ok := that.(*GraphQLApi)
 	if !ok {
-		that2, ok := that.(GraphQLSchema)
+		that2, ok := that.(GraphQLApi)
 		if ok {
 			target = &that2
 		} else {

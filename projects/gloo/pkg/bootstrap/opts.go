@@ -32,7 +32,7 @@ type Opts struct {
 	Artifacts               factory.ResourceClientFactory
 	AuthConfigs             factory.ResourceClientFactory
 	RateLimitConfigs        factory.ResourceClientFactory
-	GraphQLSchemas          factory.ResourceClientFactory
+	GraphQLApis             factory.ResourceClientFactory
 	VirtualServices         factory.ResourceClientFactory
 	RouteTables             factory.ResourceClientFactory
 	Gateways                factory.ResourceClientFactory

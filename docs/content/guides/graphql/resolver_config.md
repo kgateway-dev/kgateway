@@ -4,7 +4,7 @@ weight: 40
 description: Manually configure resolvers and schema for your GraphQL API.
 ---
 
-You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure GraphQL resolvers, you create a Gloo Edge GraphQL schema CRD. The following sections describe the configuration for REST <!--or gRPC -->resolvers, schema definitions for the types of data to return to graphQL queries, and an in-depth example.
+You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure GraphQL resolvers, you create a Gloo Edge GraphQL API CRD. The following sections describe the configuration for REST <!--or gRPC -->resolvers, schema definitions for the types of data to return to graphQL queries, and an in-depth example.
 
 ## REST resolvers
 
@@ -110,14 +110,14 @@ schema_definition: |
 ## Sample GraphQL API
 
 To get started with your own GraphQL API, check out the in-depth example in the [`graphql-bookinfo` repository](https://github.com/solo-io/graphql-bookinfo). You can model your own use case based on the contents of this example:
-* The `kubernetes` directory contains the Bookinfo sample app deployment, the example GraphQL schema, and the virtual service to route requests to the `/graphql` endpoint.
+* The `kubernetes` directory contains the Bookinfo sample app deployment, the example GraphQL API, and the virtual service to route requests to the `/graphql` endpoint.
 * The `openapi` directory contains the OpenAPI specifications for the individual BookInfo microservices, along with the original consolidated BookInfo REST API.
 
 ## Routing to the GraphQL server
 
-After you automatically or manually create your GraphQL resolver and schema, create a virtual service that defines a `Route` with a `graphqlSchemaRef` as the destination. This route ensures that all GraphQL queries to a specific path are now handled by the GraphQL server in the Envoy proxy.
+After you automatically or manually create your GraphQL resolver and schema, create a virtual service that defines a `Route` with a `graphqlApiRef` as the destination. This route ensures that all GraphQL queries to a specific path are now handled by the GraphQL server in the Envoy proxy.
 
-In this example, all traffic to `/graphql` is handled by the GraphQL server, which uses the `default-petstore-8080` GraphQL schema.
+In this example, all traffic to `/graphql` is handled by the GraphQL server, which uses the `default-petstore-8080` GraphQL API.
 {{< highlight yaml "hl_lines=12-16" >}}
 cat << EOF | kubectl apply -f -
 apiVersion: gateway.solo.io/v1
@@ -130,7 +130,7 @@ spec:
     domains:
     - '*'
     routes:
-    - graphqlSchemaRef:
+    - graphqlApiRef:
         name: default-petstore-8080
         namespace: gloo-system
       matchers:
