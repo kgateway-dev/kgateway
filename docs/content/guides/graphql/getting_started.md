@@ -89,7 +89,7 @@ Explore GraphQL service discovery with the Pet Store sample application.
 
 3. Verify that OpenAPI specification discovery is enabled, and that Gloo Edge created a corresponding GraphQL custom resource.
    ```sh
-   kubectl get graphqlschemas -n gloo-system
+   kubectl get graphqlapis -n gloo-system
    ```
 
    Example output:
@@ -100,10 +100,10 @@ Explore GraphQL service discovery with the Pet Store sample application.
 
 4. Optional: Check out the generated GraphQL schema. 
    ```sh
-   kubectl get graphqlschemas default-petstore-8080 -o yaml -n gloo-system
+   kubectl get graphqlapis default-petstore-8080 -o yaml -n gloo-system
    ```
 
-5. Create a virtual service that defines a `Route` with a `graphqlSchemaRef` as the destination. In this example, all traffic to `/graphql` is handled by the GraphQL server in the Envoy proxy. 
+5. Create a virtual service that defines a `Route` with a `graphqlApiRef` as the destination. In this example, all traffic to `/graphql` is handled by the GraphQL server in the Envoy proxy.
 {{< highlight yaml "hl_lines=12-16" >}}
 cat << EOF | kubectl apply -f -
 apiVersion: gateway.solo.io/v1
@@ -116,7 +116,7 @@ spec:
     domains:
     - '*'
     routes:
-    - graphqlSchemaRef:
+    - graphqlApiRef:
         name: default-petstore-8080
         namespace: gloo-system
       matchers:
@@ -155,7 +155,7 @@ In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backe
    kubectl get upstream -n gloo-system
    ```
 
-3. Check out the contents of the following Gloo Edge GraphQL schema CRD. Specifically, take a look at the `restResolver` and `schema_definition` sections.
+3. Check out the contents of the following Gloo Edge GraphQL API CRD. Specifically, take a look at the `restResolver` and `schema_definition` sections.
    ```sh
    curl https://raw.githubusercontent.com/solo-io/graphql-bookinfo/main/kubernetes/bookinfo-gql.yaml
    ```
@@ -201,12 +201,12 @@ In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backe
        }
      ```
 
-4. Create the GraphQL schema CRD in your cluster to expose the GraphQL API that fetches data from the three Bookinfo services.
+4. Create the GraphQL API CRD in your cluster to expose the GraphQL API that fetches data from the three Bookinfo services.
    ```sh
    kubectl apply -f https://raw.githubusercontent.com/solo-io/graphql-bookinfo/main/kubernetes/bookinfo-gql.yaml -n gloo-system
    ```
 
-5. Update the `default` virtual service that you previously created to route traffic to `/graphql` to the new `bookinfo-graphql` GraphQL schema. 
+5. Update the `default` virtual service that you previously created to route traffic to `/graphql` to the new `bookinfo-graphql` GraphQL API.
 {{< highlight yaml "hl_lines=12-16" >}}
 cat << EOF | kubectl apply -f -
 apiVersion: gateway.solo.io/v1
@@ -219,7 +219,7 @@ spec:
     domains:
     - '*'
     routes:
-    - graphqlSchemaRef:
+    - graphqlApiRef:
         name: bookinfo-graphql
         namespace: gloo-system
       matchers:
@@ -282,7 +282,7 @@ spec:
     domains:
     - '*'
     routes:
-    - graphqlSchemaRef:
+    - graphqlApiRef:
         name: bookinfo-graphql
         namespace: gloo-system
       matchers:

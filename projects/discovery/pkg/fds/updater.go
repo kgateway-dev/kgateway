@@ -43,7 +43,7 @@ type Updater struct {
 	logger            *zap.SugaredLogger
 
 	upstreamWriter UpstreamWriterClient
-	graphqlClient  v1alpha1.GraphQLSchemaClient
+	graphqlClient  v1alpha1.GraphQLApiClient
 
 	maxInParallelSemaphore chan struct{}
 
@@ -64,7 +64,7 @@ func getConcurrencyChan(maxOnCurrency uint) chan struct{} {
 
 }
 
-func NewUpdater(ctx context.Context, resolver Resolver, graphqlClient v1alpha1.GraphQLSchemaClient, upstreamclient UpstreamWriterClient, maxconncurrency uint, functionalPlugins []FunctionDiscoveryFactory) *Updater {
+func NewUpdater(ctx context.Context, resolver Resolver, graphqlClient v1alpha1.GraphQLApiClient, upstreamclient UpstreamWriterClient, maxconncurrency uint, functionalPlugins []FunctionDiscoveryFactory) *Updater {
 	ctx = contextutils.WithLogger(ctx, "function-discovery-updater")
 	return &Updater{
 		logger:                 contextutils.LoggerFrom(ctx),

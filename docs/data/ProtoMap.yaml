@@ -908,8 +908,8 @@ apis:
   graphql.gloo.solo.io.Executor:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#Executor
     package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.GraphQLSchema:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GraphQLSchema
+  graphql.gloo.solo.io.GraphQLApi:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GraphQLApi
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GrpcDescriptorRegistry:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcDescriptorRegistry

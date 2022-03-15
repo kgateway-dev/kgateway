@@ -120,8 +120,8 @@ func (c *apiSimpleEmitter) Snapshots(ctx context.Context) (<-chan *ApiSnapshot, 
 						currentSnapshot.VirtualHostOptions = append(currentSnapshot.VirtualHostOptions, typed)
 					case *gateway_solo_io.RouteOption:
 						currentSnapshot.RouteOptions = append(currentSnapshot.RouteOptions, typed)
-					case *graphql_gloo_solo_io.GraphQLSchema:
-						currentSnapshot.GraphqlSchemas = append(currentSnapshot.GraphqlSchemas, typed)
+					case *graphql_gloo_solo_io.GraphQLApi:
+						currentSnapshot.GraphqlApis = append(currentSnapshot.GraphqlApis, typed)
 					default:
 						select {
 						case errs <- fmt.Errorf("ApiSnapshotEmitter "+

@@ -810,17 +810,17 @@ func (m *Route) Equal(that interface{}) bool {
 			}
 		}
 
-	case *Route_GraphqlSchemaRef:
-		if _, ok := target.Action.(*Route_GraphqlSchemaRef); !ok {
+	case *Route_GraphqlApiRef:
+		if _, ok := target.Action.(*Route_GraphqlApiRef); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetGraphqlSchemaRef()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetGraphqlSchemaRef()) {
+		if h, ok := interface{}(m.GetGraphqlApiRef()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGraphqlApiRef()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetGraphqlSchemaRef(), target.GetGraphqlSchemaRef()) {
+			if !proto.Equal(m.GetGraphqlApiRef(), target.GetGraphqlApiRef()) {
 				return false
 			}
 		}
