@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/5852
+    description: >
+      Add the ability to set hybridGateway for both the http and https gateway via helm values
