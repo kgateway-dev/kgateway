@@ -1,10 +1,6 @@
 changelog:
-  - type: HELM
+  - type: FIX
     description: |
       Update the Helm chart's discovery address setup under PROXY_CONFIG for Istio versions 1.5+.
-      Allow for a custom discovery address to be set in values `istioDiscoveryAddress`.
-    issueLink: https://github.com/solo-io/gloo/issues/5555
-  - type: NEW_FEATURE
-    description: |
-      Add flag to set a custom sidecar discovery address for Istio when injecting with `glooctl istio inject --istio-discovery-address`
+      Allow for Istio discovery address configurability.
     issueLink: https://github.com/solo-io/gloo/issues/5555
