@@ -1,0 +1,8 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/4037
+  description: > 
+    Glooctl upgrade will now pull latest stable version instead of the in development variant
+    upgrade now supports expirmental flag to get the latest in development variant
+    Glooctl upgrade now can be given a major minor version and pull the latest patch version
+    Ie as of writing v1.9.x will retrieve  v1.9.9 
