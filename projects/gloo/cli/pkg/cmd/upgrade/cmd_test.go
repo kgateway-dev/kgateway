@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +24,8 @@ var _ = Describe("Cmd", func() {
 		ctx    context.Context
 		cancel context.CancelFunc
 	)
-
+	name1125 := "v1.12.5"
+	name200Beta1 := "v2.0.0-beta1"
 	name1108 := "v1.10.18"
 	name1107 := "v1.10.7"
 	name197 := "v1.9.7"
@@ -55,21 +57,51 @@ var _ = Describe("Cmd", func() {
 		{Name: &name1108, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
 		{Name: &name1107, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
 	}
+	releasesPostMajorBump := []github.RepositoryRelease{
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		// page 2 as its 11 in
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name197, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name160filler, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name1125, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name200Beta1, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name1108, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name1108, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+		{Name: &name1107, Assets: []github.ReleaseAsset{{Name: &glooctlBinaryName}}},
+	}
 	ts := httptest.NewUnstartedServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			releaseSet := releases
+			if strings.Contains(r.URL.Path, "newMajor") {
+				releaseSet = releasesPostMajorBump
+			}
+
 			// respond with a sub section of the list based on the page query
 			page := r.URL.Query().Get("page")
 			pageInt, _ := strconv.Atoi(page)
 
 			startingIdx := pageInt * 10
-			if startingIdx > len(releases) {
-				startingIdx = len(releases)
+			if startingIdx > len(releaseSet) {
+				startingIdx = len(releaseSet)
 			}
 			endingIdx := startingIdx + 10
-			if endingIdx > len(releases) {
-				endingIdx = len(releases)
+			if endingIdx > len(releaseSet) {
+				endingIdx = len(releaseSet)
 			}
-			releaseJson, _ := json.Marshal(releases[startingIdx:endingIdx])
+			releaseJson, _ := json.Marshal(releaseSet[startingIdx:endingIdx])
 			fmt.Fprintln(w, string(releaseJson))
 		}))
 
@@ -104,4 +136,13 @@ var _ = Describe("Cmd", func() {
 		table.Entry("v1.2.x is not found", "v1.2.x", "", errorNotFoundString),
 		table.Entry("v2.2.x is not found", "v2.2.x", "", errorNotFoundString),
 	)
+
+	It("Can handle new major versions", func() {
+		ctx = context.WithValue(ctx, "githubURL", ts.URL+"/newMajor/")
+
+		relExp, _ := getReleaseWithAsset(ctx, ts.Client(), "experimental", glooctlBinaryName)
+		Expect(*relExp.Name).To(Equal("v2.0.0-beta1"))
+		relLatest, _ := getReleaseWithAsset(ctx, ts.Client(), "latest", glooctlBinaryName)
+		Expect(*relLatest.Name).To(Equal("v1.12.5"))
+	})
 })
