@@ -387,6 +387,8 @@ type GatewayProxyGatewaySettings struct {
 	DisableHttpsGateway      *bool                  `json:"disableHttpsGateway,omitempty" desc:"Set to true to disable https gateway generation."`
 	IPv4Only                 *bool                  `json:"ipv4Only,omitempty" desc:"set to true if your network allows ipv4 addresses only. Sets the Gateway spec's bindAddress to 0.0.0.0 instead of ::"`
 	UseProxyProto            *bool                  `json:"useProxyProto,omitempty" desc:"use proxy protocol"`
+	HttpHybridGateway        map[string]interface{} `json:"httpHybridGateway,omitempty" desc:"custom yaml to use for hybrid gateway settings for the http gateway"`
+	HttpsHybridGateway       map[string]interface{} `json:"httpsHybridGateway,omitempty" desc:"custom yaml to use for hybrid gateway settings for the https gateway"`
 	CustomHttpGateway        map[string]interface{} `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
 	CustomHttpsGateway       map[string]interface{} `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
 	AccessLoggingService     map[string]interface{} `json:"accessLoggingService,omitempty" desc:"cust yaml to use for access logging service (https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/)"`

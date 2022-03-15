@@ -1307,6 +1307,94 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectService(gatewayProxyService)
 					})
 
+					It("sets http hybrid gateway", func() {
+						name := defaults.GatewayProxyName
+						bindPort := "8080"
+						ssl := "false"
+						gw := makeUnstructured(`
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: ` + name + `
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: ` + bindPort + `
+  hybridGateway:
+    matchedGateways:
+    - httpGateway:
+        virtualServices:
+          - name: default
+            namespace: gloo-system
+      matcher:
+        sourcePrefixRanges:
+          - addressPrefix: 0.0.0.0
+            prefixLen: 1
+    - httpGateway:
+        virtualServices:
+          - name: client-ip-reject
+            namespace: gloo-system
+      matcher: {}
+  proxyNames:
+  - gateway-proxy
+  httpGateway: {}
+  ssl: ` + ssl + `
+  useProxyProto: false
+apiVersion: gateway.solo.io/v1
+`)
+						prepareMakefileFromValuesFile("values/val_gwp_http_hybrid_gateway.yaml")
+						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+					})
+
+					It("sets https hybrid gateway", func() {
+						name := defaults.GatewayProxyName + "-ssl"
+						bindPort := "8443"
+						ssl := "true"
+						gw := makeUnstructured(`
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: ` + name + `
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: ` + bindPort + `
+  hybridGateway:
+    matchedGateways:
+    - httpGateway:
+        virtualServices:
+          - name: default
+            namespace: gloo-system
+      matcher:
+        sourcePrefixRanges:
+          - addressPrefix: 0.0.0.0
+            prefixLen: 1
+        sslConfig:
+          secretRef:
+            name: gloo-cert
+            namespace: gloo-system
+    - httpGateway:
+        virtualServices:
+          - name: client-ip-reject
+            namespace: gloo-system
+      matcher:
+        sslConfig:
+          secretRef:
+            name: gloo-cert
+            namespace: gloo-system  
+  proxyNames:
+  - gateway-proxy
+  httpGateway: {}
+  ssl: ` + ssl + `
+  useProxyProto: false
+apiVersion: gateway.solo.io/v1
+`)
+						prepareMakefileFromValuesFile("values/val_gwp_https_hybrid_gateway.yaml")
+						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gw))
+					})
+
 					It("can set accessLoggingService", func() {
 						name := defaults.GatewayProxyName
 						bindPort := "8080"
