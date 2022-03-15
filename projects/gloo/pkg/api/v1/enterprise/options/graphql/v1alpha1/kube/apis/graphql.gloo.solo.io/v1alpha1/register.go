@@ -27,8 +27,8 @@ func Resource(resource string) schema.GroupResource {
 
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&GraphQLSchema{},
-		&GraphQLSchemaList{},
+		&GraphQLApi{},
+		&GraphQLApiList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

@@ -60,8 +60,8 @@ var _ = Describe("Kube2e: helm", func() {
 		type crd struct{ name, file string }
 		crdsToManuallyApply := []crd{
 			{
-				name: "graphqlschemas.graphql.gloo.solo.io",
-				file: filepath.Join(crdDir, "graphql.gloo.solo.io_v1alpha1_GraphQLSchema.yaml"),
+				name: "graphqlapis.graphql.gloo.solo.io",
+				file: filepath.Join(crdDir, "graphql.gloo.solo.io_v1alpha1_GraphQLApi.yaml"),
 			},
 			{
 				name: "httpgateways.gateway.solo.io",

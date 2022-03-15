@@ -25,7 +25,7 @@ rules:
   resources: ["ratelimitconfigs","ratelimitconfigs/status"]
   verbs: ["get", "list", "watch", "update"]
 - apiGroups: ["graphql.gloo.solo.io"]
-  resources: ["graphqlschemas","graphqlschemas/status"]
+  resources: ["graphqlapis","graphqlapis/status"]
   verbs: ["get", "list", "watch", "update"]
 - apiGroups: ["networking.internal.knative.dev"]
   resources: ["clusteringresses"]

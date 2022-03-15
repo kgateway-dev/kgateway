@@ -275,7 +275,7 @@ var _ = Describe("RBAC Test", func() {
 							},
 							{
 								APIGroups: []string{"graphql.gloo.solo.io"},
-								Resources: []string{"graphqlschemas"},
+								Resources: []string{"graphqlapis"},
 								Verbs:     []string{"get", "list", "watch", "update"},
 							},
 							{
@@ -329,10 +329,10 @@ var _ = Describe("RBAC Test", func() {
 				})
 			})
 
-			Context("gloo-graphqlschema-mutator", func() {
+			Context("gloo-graphqlapi-mutator", func() {
 				BeforeEach(func() {
 					resourceBuilder = ResourceBuilder{
-						Name: "gloo-graphqlschema-mutator",
+						Name: "gloo-graphqlapi-mutator",
 						Labels: map[string]string{
 							"app":  "gloo",
 							"gloo": "rbac",
@@ -340,14 +340,14 @@ var _ = Describe("RBAC Test", func() {
 						Rules: []rbacv1.PolicyRule{
 							{
 								APIGroups: []string{"graphql.gloo.solo.io"},
-								Resources: []string{"graphqlschemas"},
+								Resources: []string{"graphqlapis"},
 								Verbs:     []string{"get", "list", "watch", "update", "create"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
 							APIGroup: "rbac.authorization.k8s.io",
 							Kind:     "ClusterRole",
-							Name:     "gloo-graphqlschema-mutator",
+							Name:     "gloo-graphqlapi-mutator",
 						},
 						Subjects: []rbacv1.Subject{{
 							Kind:      "ServiceAccount",

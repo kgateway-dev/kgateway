@@ -21,7 +21,7 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
 - [AuthConfig](../github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk#authconfig)
 - [Endpoint](../github.com/solo-io/gloo/projects/gloo/api/v1/endpoint.proto.sk#endpoint)
 - [Gateway](../github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk#gateway)
-- [GraphQLSchema](../github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk#graphqlschema)
+- [GraphQLApi](../github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk#graphqlapi)
 - [Ingress](../github.com/solo-io/gloo/projects/ingress/api/v1/ingress.proto.sk#ingress)
 - [KubeService](../github.com/solo-io/gloo/projects/ingress/api/v1/service.proto.sk#kubeservice)
 - [MatchableHttpGateway](../github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk#matchablehttpgateway)

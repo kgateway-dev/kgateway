@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Rename the GraphQLSchema custom resource to GraphQLApi.
+    issueLink: https://github.com/solo-io/solo-projects/issues/3265
+    resolvesIssue: false
