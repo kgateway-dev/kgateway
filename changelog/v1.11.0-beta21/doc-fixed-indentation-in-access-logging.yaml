@@ -1,4 +1,4 @@
 changelog:
-  - type: FIX
+  - type: NON_USER_FACING
     description: Fixes indentation error in access logging example
     issueLink: https://github.com/solo-io/gloo/issues/6092
