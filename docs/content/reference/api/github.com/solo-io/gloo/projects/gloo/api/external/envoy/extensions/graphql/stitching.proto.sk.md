@@ -84,7 +84,7 @@ make MergeConfig proto message
 ```yaml
 "selectionSet": string
 "fieldName": string
-"args": []string
+"args": map<string, string>
 
 ```
 
@@ -92,7 +92,7 @@ make MergeConfig proto message
 | ----- | ---- | ----------- | 
 | `selectionSet` | `string` |  |
 | `fieldName` | `string` |  |
-| `args` | `[]string` |  |
+| `args` | `map<string, string>` |  |
 
 
 

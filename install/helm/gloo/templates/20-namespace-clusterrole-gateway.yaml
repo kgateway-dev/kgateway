@@ -94,6 +94,7 @@ rules:
   - graphql.gloo.solo.io
   resources:
   - graphqlschemas
+  - graphqlschemas/status
   verbs:
   - get
   - list

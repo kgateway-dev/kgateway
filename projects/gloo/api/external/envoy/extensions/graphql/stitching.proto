@@ -29,7 +29,7 @@ message Schema {
 message InputMergeConfig {
   string selection_set = 1;
   string field_name = 2;
-  repeated string args = 3;
+  map<string,string> args = 3;
 }
 
 // ---------------- OUT ----------------
