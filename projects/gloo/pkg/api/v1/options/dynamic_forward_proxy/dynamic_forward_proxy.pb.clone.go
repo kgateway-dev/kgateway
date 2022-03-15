@@ -18,10 +18,6 @@ import (
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_apple_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/network/dns_resolver/apple/v3"
-
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_cares_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/network/dns_resolver/cares/v3"
 )
 
 // ensure the imports are used
@@ -136,11 +132,11 @@ func (m *DnsCacheConfig) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetCaresDns()).(clone.Cloner); ok {
 			target.DnsCacheType = &DnsCacheConfig_CaresDns{
-				CaresDns: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_cares_v3.CaresDnsResolverConfig),
+				CaresDns: h.Clone().(*CaresDnsResolverConfig),
 			}
 		} else {
 			target.DnsCacheType = &DnsCacheConfig_CaresDns{
-				CaresDns: proto.Clone(m.GetCaresDns()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_cares_v3.CaresDnsResolverConfig),
+				CaresDns: proto.Clone(m.GetCaresDns()).(*CaresDnsResolverConfig),
 			}
 		}
 
@@ -148,11 +144,11 @@ func (m *DnsCacheConfig) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetAppleDns()).(clone.Cloner); ok {
 			target.DnsCacheType = &DnsCacheConfig_AppleDns{
-				AppleDns: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_apple_v3.AppleDnsResolverConfig),
+				AppleDns: h.Clone().(*AppleDnsResolverConfig),
 			}
 		} else {
 			target.DnsCacheType = &DnsCacheConfig_AppleDns{
-				AppleDns: proto.Clone(m.GetAppleDns()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_network_dns_resolver_apple_v3.AppleDnsResolverConfig),
+				AppleDns: proto.Clone(m.GetAppleDns()).(*AppleDnsResolverConfig),
 			}
 		}
 
@@ -207,6 +203,62 @@ func (m *PerRouteConfig) Clone() proto.Message {
 		}
 
 	}
+
+	return target
+}
+
+// Clone function
+func (m *DnsResolverOptions) Clone() proto.Message {
+	var target *DnsResolverOptions
+	if m == nil {
+		return target
+	}
+	target = &DnsResolverOptions{}
+
+	target.UseTcpForDnsLookups = m.GetUseTcpForDnsLookups()
+
+	target.NoDefaultSearchDomain = m.GetNoDefaultSearchDomain()
+
+	return target
+}
+
+// Clone function
+func (m *CaresDnsResolverConfig) Clone() proto.Message {
+	var target *CaresDnsResolverConfig
+	if m == nil {
+		return target
+	}
+	target = &CaresDnsResolverConfig{}
+
+	if m.GetResolvers() != nil {
+		target.Resolvers = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Address, len(m.GetResolvers()))
+		for idx, v := range m.GetResolvers() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Resolvers[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Address)
+			} else {
+				target.Resolvers[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Address)
+			}
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetDnsResolverOptions()).(clone.Cloner); ok {
+		target.DnsResolverOptions = h.Clone().(*DnsResolverOptions)
+	} else {
+		target.DnsResolverOptions = proto.Clone(m.GetDnsResolverOptions()).(*DnsResolverOptions)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AppleDnsResolverConfig) Clone() proto.Message {
+	var target *AppleDnsResolverConfig
+	if m == nil {
+		return target
+	}
+	target = &AppleDnsResolverConfig{}
 
 	return target
 }

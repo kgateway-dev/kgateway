@@ -28,9 +28,9 @@ type Plugin interface {
 }
 
 type Params struct {
-	GraphqlSchemaClient v1alpha1.GraphQLSchemaClient
-	Ctx                 context.Context
-	Snapshot            *v1snap.ApiSnapshot
+	GraphQLApiClient v1alpha1.GraphQLApiClient
+	Ctx              context.Context
+	Snapshot         *v1snap.ApiSnapshot
 }
 
 type VirtualHostParams struct {

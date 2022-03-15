@@ -282,7 +282,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 			}
 		}
 
-	case *v1.Route_GraphqlSchemaRef:
+	case *v1.Route_GraphqlApiRef:
 		// Envoy needs the route to have an action, so we use a dummy cluster here
 		// But this cluster doesn't really exist.
 		out.Action = &envoy_config_route_v3.Route_Route{

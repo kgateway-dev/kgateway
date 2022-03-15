@@ -4,17 +4,17 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: graphqlschemas.graphql.gloo.solo.io
+  name: graphqlapis.graphql.gloo.solo.io
 spec:
   group: graphql.gloo.solo.io
   names:
-    kind: GraphQLSchema
-    listKind: GraphQLSchemaList
-    plural: graphqlschemas
+    kind: GraphQLApi
+    listKind: GraphQLApiList
+    plural: graphqlapis
     shortNames:
-    - gqls
-    - ggqls
-    singular: graphqlschema
+    - qgl
+    - gqgl
+    singular: graphqlapi
   scope: Namespaced
   versions:
   - name: v1alpha1

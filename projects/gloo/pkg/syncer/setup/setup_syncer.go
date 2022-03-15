@@ -407,11 +407,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		return err
 	}
 
-	graphqlSchemaClient, err := v1alpha1.NewGraphQLSchemaClient(watchOpts.Ctx, opts.GraphQLSchemas)
+	graphqlApiClient, err := v1alpha1.NewGraphQLApiClient(watchOpts.Ctx, opts.GraphQLApis)
 	if err != nil {
 		return err
 	}
-	if err := graphqlSchemaClient.Register(); err != nil {
+	if err := graphqlApiClient.Register(); err != nil {
 		return err
 	}
 
@@ -535,7 +535,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		gatewayClient,
 		virtualHostOptionClient,
 		routeOptionClient,
-		graphqlSchemaClient,
+		graphqlApiClient,
 		apiEmitterChan,
 	)
 
@@ -549,7 +549,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	)
 
 	translatorParams := &translator.TranslatorParams{
-		GraphqlSchemaClient: graphqlSchemaClient,
+		GraphQlApiClient: graphqlApiClient,
 	}
 
 	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistryFactory, translatorParams)
@@ -814,7 +814,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
-	graphqlSchemaFactory, err := bootstrap.ConfigFactoryForSettings(params, v1alpha1.GraphQLSchemaCrd)
+	graphqlApiFactory, err := bootstrap.ConfigFactoryForSettings(params, v1alpha1.GraphQLApiCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
@@ -853,7 +853,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		Artifacts:          artifactFactory,
 		AuthConfigs:        authConfigFactory,
 		RateLimitConfigs:   rateLimitConfigFactory,
-		GraphQLSchemas:     graphqlSchemaFactory,
+		GraphQLApis:        graphqlApiFactory,
 		VirtualServices:    virtualServiceFactory,
 		RouteTables:        routeTableFactory,
 		VirtualHostOptions: virtualHostOptionFactory,

@@ -1,0 +1,7 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.20.0-patch6
+    description: >-
+      Upgrade envoy-gloo version to contain aws filter changes. Transform order and sts race condition.

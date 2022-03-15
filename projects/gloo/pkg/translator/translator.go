@@ -36,7 +36,7 @@ type Translator interface {
 }
 
 type TranslatorParams struct {
-	GraphqlSchemaClient v1alpha1.GraphQLSchemaClient
+	GraphQlApiClient v1alpha1.GraphQLApiClient
 }
 
 func NewTranslator(
@@ -232,7 +232,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		routeConfigs []*envoy_config_route_v3.RouteConfiguration
 		listeners    []*envoy_config_listener_v3.Listener
 	)
-	params.GraphqlSchemaClient = t.params.GraphqlSchemaClient
+	params.GraphQLApiClient = t.params.GraphQlApiClient
 	logger := contextutils.LoggerFrom(params.Ctx)
 
 	for i, listener := range proxy.GetListeners() {

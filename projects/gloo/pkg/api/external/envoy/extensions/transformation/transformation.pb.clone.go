@@ -413,6 +413,8 @@ func (m *HeaderBodyTransform) Clone() proto.Message {
 	}
 	target = &HeaderBodyTransform{}
 
+	target.AddRequestMetadata = m.GetAddRequestMetadata()
+
 	return target
 }
 

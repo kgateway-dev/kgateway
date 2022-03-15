@@ -146,6 +146,10 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetStripAnyHostPort() != target.GetStripAnyHostPort() {
+		return false
+	}
+
 	if m.GetAcceptHttp_10() != target.GetAcceptHttp_10() {
 		return false
 	}

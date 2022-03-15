@@ -18,20 +18,20 @@ type metaOnly struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +resourceName=graphqlschemas
+// +resourceName=graphqlapis
 // +genclient
-type GraphQLSchema struct {
+type GraphQLApi struct {
 	v1.TypeMeta `json:",inline"`
 	// +optional
 	v1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec   api.GraphQLSchema       `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Spec   api.GraphQLApi          `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 	Status core.NamespacedStatuses `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
-func (o *GraphQLSchema) MarshalJSON() ([]byte, error) {
+func (o *GraphQLApi) MarshalJSON() ([]byte, error) {
 	spec, err := protoutils.MarshalMap(&o.Spec)
 	if err != nil {
 		return nil, err
@@ -48,17 +48,17 @@ func (o *GraphQLSchema) MarshalJSON() ([]byte, error) {
 	return json.Marshal(asMap)
 }
 
-func (o *GraphQLSchema) UnmarshalJSON(data []byte) error {
+func (o *GraphQLApi) UnmarshalJSON(data []byte) error {
 	var metaOnly metaOnly
 	if err := json.Unmarshal(data, &metaOnly); err != nil {
 		return err
 	}
-	var spec api.GraphQLSchema
+	var spec api.GraphQLApi
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
 	spec.Metadata = nil
-	*o = GraphQLSchema{
+	*o = GraphQLApi{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
@@ -72,10 +72,10 @@ func (o *GraphQLSchema) UnmarshalJSON(data []byte) error {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// GraphQLSchemaList is a collection of GraphQLSchemas.
-type GraphQLSchemaList struct {
+// GraphQLApiList is a collection of GraphQLApis.
+type GraphQLApiList struct {
 	v1.TypeMeta `json:",inline"`
 	// +optional
 	v1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-	Items       []GraphQLSchema `json:"items" protobuf:"bytes,2,rep,name=items"`
+	Items       []GraphQLApi `json:"items" protobuf:"bytes,2,rep,name=items"`
 }

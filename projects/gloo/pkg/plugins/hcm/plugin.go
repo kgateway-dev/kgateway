@@ -40,7 +40,6 @@ func (p *plugin) Init(_ plugins.InitParams) error {
 
 func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
-
 	out.UseRemoteAddress = in.GetUseRemoteAddress()
 	out.XffNumTrustedHops = in.GetXffNumTrustedHops()
 	out.SkipXffAppend = in.GetSkipXffAppend()
@@ -143,6 +142,14 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 			out.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
 		out.GetCommonHttpProtocolOptions().HeadersWithUnderscoresAction = envoycore.HttpProtocolOptions_HeadersWithUnderscoresAction(in.GetHeadersWithUnderscoresAction())
+	}
+
+	if in.GetStripAnyHostPort() {
+		if out.GetStripPortMode() == nil {
+			out.StripPortMode = &envoyhttp.HttpConnectionManager_StripAnyHostPort{
+				StripAnyHostPort: true,
+			}
+		}
 	}
 
 	// allowed upgrades
