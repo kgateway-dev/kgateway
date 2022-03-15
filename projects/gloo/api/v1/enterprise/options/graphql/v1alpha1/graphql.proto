@@ -199,10 +199,10 @@ message Resolution {
 // Note: while users can provide this configuration manually, the eventual UX will
 // be to generate the Executable Schema CRs from other sources and just have users
 // configure the routes to point to these schema CRs.
-message GraphQLSchema {
+message GraphQLApi {
 
-  option (core.solo.io.resource).short_name = "gqls";
-  option (core.solo.io.resource).plural_name = "graphql_schemas";
+  option (core.solo.io.resource).short_name = "qgl";
+  option (core.solo.io.resource).plural_name = "graphql_apis";
 
   // NamespacedStatuses indicates the validation status of this resource.
   // NamespacedStatuses is read-only by clients, and set by gloo during validation
@@ -214,7 +214,7 @@ message GraphQLSchema {
   ExecutableSchema executable_schema = 6;
 
   // The stats prefix which will be used for this route config.
-  // If empty, will generate a stats prefix ${GRAPHQLSCHEMA_REF}
+  // If empty, will generate a stats prefix ${GRAPHQLAPI_REF}
   google.protobuf.StringValue stat_prefix = 3;
 
   // Configuration settings for persisted query cache

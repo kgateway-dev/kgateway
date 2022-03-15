@@ -6,7 +6,7 @@
   "resource_groups": {
     "enterprise.gloo.solo.io": [
       {
-        "name": "GraphQLSchema",
+        "name": "GraphQLApi",
         "package": "graphql.gloo.solo.io"
       }
     ]
