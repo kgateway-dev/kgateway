@@ -14,7 +14,7 @@ import (
 type UpstreamMutator func(*v1.Upstream) error
 
 type AdditionalClients struct {
-	GraphqlClient v1alpha1.GraphQLSchemaClient
+	GraphqlClient v1alpha1.GraphQLApiClient
 }
 
 /*

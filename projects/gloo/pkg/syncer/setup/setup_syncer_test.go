@@ -168,7 +168,7 @@ var _ = Describe("SetupSyncer", func() {
 					gatewayv1.GatewayCrd,
 					extauthv1.AuthConfigCrd,
 					v1alpha1.RateLimitConfigCrd,
-					v1alpha12.GraphQLSchemaCrd,
+					v1alpha12.GraphQLApiCrd,
 					gatewayv1.VirtualServiceCrd,
 					gatewayv1.RouteOptionCrd,
 					gatewayv1.VirtualHostOptionCrd,

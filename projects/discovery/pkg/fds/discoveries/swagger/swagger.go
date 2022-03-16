@@ -46,7 +46,7 @@ type SwaggerFunctionDiscoveryFactory struct {
 	DetectionTimeout time.Duration
 	FunctionPollTime time.Duration
 	SwaggerUrisToTry []string
-	GraphqlClient    v1alpha1.GraphQLSchemaClient
+	GraphqlClient    v1alpha1.GraphQLApiClient
 }
 
 func (f *SwaggerFunctionDiscoveryFactory) NewFunctionDiscovery(u *v1.Upstream, _ fds.AdditionalClients) fds.UpstreamFunctionDiscovery {

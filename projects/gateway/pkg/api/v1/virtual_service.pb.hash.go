@@ -386,20 +386,20 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *Route_GraphqlSchemaRef:
+	case *Route_GraphqlApiRef:
 
-		if h, ok := interface{}(m.GetGraphqlSchemaRef()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("GraphqlSchemaRef")); err != nil {
+		if h, ok := interface{}(m.GetGraphqlApiRef()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("GraphqlApiRef")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetGraphqlSchemaRef(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetGraphqlApiRef(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("GraphqlSchemaRef")); err != nil {
+				if _, err = hasher.Write([]byte("GraphqlApiRef")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
