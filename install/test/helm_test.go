@@ -2077,8 +2077,7 @@ spec:
 						gatewayProxyDeployment *appsv1.Deployment
 					)
 
-					discoveryAddressEqual := func(expected string) bool {
-						result := false
+					checkDiscoveryAddressEqual := func(expected string) {
 						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
 						}).ExpectAll(func(deployment *unstructured.Unstructured) {
@@ -2086,26 +2085,28 @@ spec:
 							Expect(err).NotTo(HaveOccurred(), "Deployment should be able to convert from unstructured")
 							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 							Expect(ok).To(BeTrue(), "Deployment should be able to cast to a structured deployment")
+							isProxyConfigSet := false
 
 							var discoveryAddress interface{}
 							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
 								for _, env := range container.Env {
 									if env.Name == "PROXY_CONFIG" {
+										isProxyConfigSet = true
 										var proxyConfigMap map[string]interface{}
 										err := yaml.Unmarshal([]byte(env.Value), &proxyConfigMap)
 										Expect(err).ToNot(HaveOccurred())
 										discoveryAddress, ok = proxyConfigMap["discoveryAddress"]
 										Expect(ok).To(BeTrue(), "discoveryAddress should be set in PROXY_CONFIG")
-										if discoveryAddress == expected {
-											result = true
-										}
+										Expect(discoveryAddress).To(Equal(expected), fmt.Sprintf("discovery address should be value: %v", expected))
 										break
 									}
 								}
 							}
-						})
 
-						return result
+							if !isProxyConfigSet {
+								Fail("Istio's PROXY_CONFIG and discoveryAddress were not set")
+							}
+						})
 					}
 
 					BeforeEach(func() {
@@ -2787,7 +2788,7 @@ spec:
 							},
 						})
 
-						Expect(discoveryAddressEqual(val)).To(BeTrue(), fmt.Sprintf("discoveryAddress should be custom value: %v", val))
+						checkDiscoveryAddressEqual(val)
 					})
 
 					It("istio's discoveryAddress default value set", func() {
@@ -2800,7 +2801,7 @@ spec:
 							},
 						})
 
-						Expect(discoveryAddressEqual(def)).To(BeTrue(), fmt.Sprintf("discovery address should be default value: %v", def))
+						checkDiscoveryAddressEqual(def)
 					})
 
 					It("can add extra volume mounts to the gateway-proxy container deployment", func() {
