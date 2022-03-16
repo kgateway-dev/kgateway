@@ -2077,6 +2077,37 @@ spec:
 						gatewayProxyDeployment *appsv1.Deployment
 					)
 
+					discoveryAddressEqual := func(expected string) bool {
+						result := false
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), "Deployment should be able to convert from unstructured")
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), "Deployment should be able to cast to a structured deployment")
+
+							var discoveryAddress interface{}
+							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+								for _, env := range container.Env {
+									if env.Name == "PROXY_CONFIG" {
+										var proxyConfigMap map[string]interface{}
+										err := yaml.Unmarshal([]byte(env.Value), &proxyConfigMap)
+										Expect(err).ToNot(HaveOccurred())
+										discoveryAddress, ok = proxyConfigMap["discoveryAddress"]
+										Expect(ok).To(BeTrue(), "discoveryAddress should be set in PROXY_CONFIG")
+										if discoveryAddress == expected {
+											result = true
+										}
+										break
+									}
+								}
+							}
+						})
+
+						return result
+					}
+
 					BeforeEach(func() {
 						selector = map[string]string{
 							"gloo":             "gateway-proxy",
@@ -2756,31 +2787,7 @@ spec:
 							},
 						})
 
-						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
-						}).ExpectAll(func(deployment *unstructured.Unstructured) {
-							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
-							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
-
-							var discoveryAddress interface{}
-							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
-								for _, env := range container.Env {
-									if env.Name == "PROXY_CONFIG" {
-										var proxyConfigMap map[string]interface{}
-										err := yaml.Unmarshal([]byte(env.Value), &proxyConfigMap)
-										Expect(err).ToNot(HaveOccurred())
-
-										discoveryAddress, ok = proxyConfigMap["discoveryAddress"]
-										Expect(ok).To(BeTrue(), "discoveryAddress should be set in PROXY_CONFIG")
-										break
-									}
-								}
-							}
-
-							Expect(discoveryAddress).To(Equal(val), fmt.Sprintf("discoveryAddress should be set to value: %v", val))
-						})
+						Expect(discoveryAddressEqual(val)).To(BeTrue(), fmt.Sprintf("discoveryAddress should be custom value: %v", val))
 					})
 
 					It("istio's discoveryAddress default value set", func() {
@@ -2793,31 +2800,7 @@ spec:
 							},
 						})
 
-						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
-						}).ExpectAll(func(deployment *unstructured.Unstructured) {
-							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
-							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
-
-							var discoveryAddress interface{}
-							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
-								for _, env := range container.Env {
-									if env.Name == "PROXY_CONFIG" {
-										var proxyConfigMap map[string]interface{}
-										err := yaml.Unmarshal([]byte(env.Value), &proxyConfigMap)
-										Expect(err).NotTo(HaveOccurred())
-
-										discoveryAddress, ok = proxyConfigMap["discoveryAddress"]
-										Expect(ok).To(BeTrue(), "discoveryAddress should be set in PROXY_CONFIG")
-										break
-									}
-								}
-							}
-
-							Expect(discoveryAddress).To(Equal(def), fmt.Sprintf("discoveryAddress should be default value: %v", def))
-						})
+						Expect(discoveryAddressEqual(def)).To(BeTrue(), fmt.Sprintf("discovery address should be default value: %v", def))
 					})
 
 					It("can add extra volume mounts to the gateway-proxy container deployment", func() {

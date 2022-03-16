@@ -352,5 +352,5 @@ func addIstioMetaClusterIdFlag(set *pflag.FlagSet, strptr *string) {
 }
 
 func addIstioDiscoveryAddressFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVar(strptr, "istio-discovery-address", "", "sets discoveryAddress under PROXY_CONFIG env var")
+	set.StringVar(strptr, "istio-discovery-address", "", "sets discoveryAddress field within PROXY_CONFIG env var")
 }
