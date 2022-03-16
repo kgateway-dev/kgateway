@@ -12,7 +12,7 @@ Header Manipulation is configured via the
 
 This struct can be added to {{< protobuf name="gloo.solo.io.RouteOptions" display="Route Options">}}, {{< protobuf name="gloo.solo.io.VirtualHostOptions" display="Virtual Host Options">}}, and {{< protobuf name="gloo.solo.io.WeightedDestinationOptions" display="Weighted Destination Options" >}}.
 
-The `headerManipulation` struct contains four optional fields `requestHeadersToAdd`, `requestHeadersToRemove`,  `responseHeadersToAdd`, and `responseHeadersToRemove`. The key and value for the header can be specified directly in the manifest, or in the case of `requestHeadersToAdd` it can be a reference to a secret of the type `gloo.solo.io/header`.
+The `headerManipulation` struct contains four optional fields `requestHeadersToAdd`, `requestHeadersToRemove`,  `responseHeadersToAdd`, and `responseHeadersToRemove`. The key and value for the header can be specified directly in the manifest, or in the case of `requestHeadersToAdd` it can be a reference to a secret of the type `gloo.solo.io/header` or `Opaque`.
 
 ```yaml
 headerManipulation:
@@ -34,7 +34,7 @@ headerManipulation:
   - headerSecretRef:
       name: SECRET_NAME
       namespace: SECRET_NAMESPACE
-    # The type of the secret must be gloo.solo.io/header
+    # The type of the secret must be gloo.solo.io/header or Opaque
     # Each key/value pair in the secret will be added
 
   # remove headers from request
