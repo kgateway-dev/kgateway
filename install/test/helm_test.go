@@ -2103,9 +2103,7 @@ spec:
 								}
 							}
 
-							if !isProxyConfigSet {
-								Fail("Istio's PROXY_CONFIG and discoveryAddress were not set")
-							}
+							Expect(isProxyConfigSet).To(BeTrue(), "Istio's PROXY_CONFIG and discoveryAddress were not set")
 						})
 					}
 
