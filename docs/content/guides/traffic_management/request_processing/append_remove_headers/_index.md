@@ -90,7 +90,7 @@ The secret will be created in the same namespace as the Gloo Edge installation b
 ## Example: Manipulating Headers on a Route
 
 
-{{< highlight yaml "hl_lines=22-28" >}}
+{{< highlight yaml "hl_lines=24-30" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -127,7 +127,7 @@ status: {}
 
 ## Example: Manipulating Headers on a VirtualHost
 
-{{< highlight yaml "hl_lines=23-28" >}}
+{{< highlight yaml "hl_lines=22-27" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
