@@ -327,13 +327,7 @@ func (t *HttpTranslator) computeHttpListenerVirtualHosts(params Params, parentGa
 func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, gateway *v1.Gateway, proxyName string, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
 	converter := NewRouteConverter(NewRouteTableSelector(snapshot.RouteTables), NewRouteTableIndexer())
 	t.mergeDelegatedVirtualHostOptions(vs, snapshot.VirtualHostOptions, reports)
-
-	routes, err := converter.ConvertVirtualService(vs, gateway, proxyName, snapshot, reports)
-	if err != nil {
-		// internal error, should never happen
-		return nil, err
-	}
-
+	routes := converter.ConvertVirtualService(vs, gateway, proxyName, snapshot, reports)
 	vh := &gloov1.VirtualHost{
 		Name:    VirtualHostName(vs),
 		Domains: vs.GetVirtualHost().GetDomains(),
