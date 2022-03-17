@@ -226,8 +226,10 @@ message GraphQLApi {
   // Metadata contains the object metadata for this resource
   core.solo.io.Metadata metadata = 2;
 
-  ExecutableSchema executable_schema = 6;
-  GatewaySchema gateway_schema = 7;
+  oneof schema {
+    ExecutableSchema executable_schema = 6;
+    GatewaySchema gateway_schema = 7;
+  }
 
   // The stats prefix which will be used for this route config.
   // If empty, will generate a stats prefix ${GRAPHQLAPI_REF}

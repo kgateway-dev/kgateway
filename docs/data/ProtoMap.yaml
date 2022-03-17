@@ -440,11 +440,11 @@ apis:
   envoy.config.resolver.stitching.v2.FieldNodes:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#FieldNodes
     package: envoy.config.resolver.stitching.v2
-  envoy.config.resolver.stitching.v2.In:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#In
+  envoy.config.resolver.stitching.v2.GraphQLToolsStitchingInput:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#GraphQLToolsStitchingInput
     package: envoy.config.resolver.stitching.v2
-  envoy.config.resolver.stitching.v2.InputMergeConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#InputMergeConfig
+  envoy.config.resolver.stitching.v2.GraphQlToolsStitchingOutput:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#GraphQlToolsStitchingOutput
     package: envoy.config.resolver.stitching.v2
   envoy.config.resolver.stitching.v2.MergedTypeConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#MergedTypeConfig
@@ -455,23 +455,14 @@ apis:
   envoy.config.resolver.stitching.v2.ResolverInfo:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#ResolverInfo
     package: envoy.config.resolver.stitching.v2
-  envoy.config.resolver.stitching.v2.Schema:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#Schema
-    package: envoy.config.resolver.stitching.v2
   envoy.config.resolver.stitching.v2.Schemas:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#Schemas
     package: envoy.config.resolver.stitching.v2
   envoy.config.resolver.stitching.v2.StitchingInfo:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#StitchingInfo
     package: envoy.config.resolver.stitching.v2
-  envoy.config.resolver.stitching.v2.StitchingInfoOut:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#StitchingInfoOut
-    package: envoy.config.resolver.stitching.v2
   envoy.config.resolver.stitching.v2.StitchingResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#StitchingResolver
-    package: envoy.config.resolver.stitching.v2
-  envoy.config.resolver.stitching.v2.SubschemaConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#SubschemaConfig
     package: envoy.config.resolver.stitching.v2
   envoy.config.transformer.xslt.v2.XsltTransformation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformers/xslt/xslt_transformer.proto.sk/#XsltTransformation

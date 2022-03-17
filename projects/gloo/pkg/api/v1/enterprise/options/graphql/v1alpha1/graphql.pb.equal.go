@@ -485,26 +485,6 @@ func (m *GraphQLApi) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetExecutableSchema()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetExecutableSchema()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetExecutableSchema(), target.GetExecutableSchema()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetGatewaySchema()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetGatewaySchema()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetGatewaySchema(), target.GetGatewaySchema()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetStatPrefix()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetStatPrefix()) {
 			return false
@@ -534,6 +514,45 @@ func (m *GraphQLApi) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	switch m.Schema.(type) {
+
+	case *GraphQLApi_ExecutableSchema:
+		if _, ok := target.Schema.(*GraphQLApi_ExecutableSchema); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetExecutableSchema()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetExecutableSchema()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetExecutableSchema(), target.GetExecutableSchema()) {
+				return false
+			}
+		}
+
+	case *GraphQLApi_GatewaySchema:
+		if _, ok := target.Schema.(*GraphQLApi_GatewaySchema); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGatewaySchema()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGatewaySchema()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGatewaySchema(), target.GetGatewaySchema()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Schema != target.Schema {
+			return false
+		}
 	}
 
 	return true

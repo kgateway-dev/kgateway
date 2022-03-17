@@ -13,31 +13,44 @@ import "validate/validate.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto";
 
 
-// ------------- IN -------------
-message In {
+// ------------- Graphql Tools JS Input -------------
+// This is not user-facing and is only used to pass to the graphql-tools js script
+// This is the message which the graphql-tools js script will consume
+message GraphQLToolsStitchingInput {
+  message Schema {
+    message TypeMergeConfig {
+      string selection_set = 1;
+      string field_name = 2;
+      map<string,string> args = 3;
+    }
+    // name of the subschema, arbitrary name but must be unique in a gateway schema.
+    // generally generated from the graphql schema ref
+    string name = 1;
+    // GraphQL schema SDL for the subschema
+    string schema = 2;
+    // Type merge config that the graphql-tools stitching script
+    // needs to generate stitching info for the data plane
+    map<string, TypeMergeConfig> type_merge_config = 3;
+  }
+
   repeated Schema subschemas = 1;
 }
 
-message Schema {
-  // actual sdl schema definition
-  string name = 1;
-  string schema = 2;
-  map<string, InputMergeConfig> type_merge_config = 3;
+//------------- Graphql Tools JS Out ------------------
+// This is not user-facing and is only used to pass data back from the graphql-tools js script
+// The message that is the output of the graphql tools stitching info script
+message GraphQlToolsStitchingOutput {
+  map<string, FieldNodes> field_nodes_by_type = 1;
+  map<string, FieldNodeMap> field_nodes_by_field = 2;
+  map<string, MergedTypeConfig> merged_types = 3;
+  string stitched_schema = 5;
 }
 
-// make MergeConfig proto message
-message InputMergeConfig {
-  string selection_set = 1;
-  string field_name = 2;
-  map<string,string> args = 3;
-}
-
-// ---------------- OUT ----------------
+// -------------- Stitching Data plane API ----------
+// this is the proto that the stitching data plane will consume
 
 message FieldNode {
-  //  string kind = 1;
-  string name = 2;
-  //  string selectionSet = 3;
+  string name = 1;
 }
 
 message FieldNodeMap {
@@ -84,27 +97,22 @@ message MergedTypeConfig {
   map<string, ResolverInfo> subschema_name_to_resolver_info = 8;
 }
 
+// Data plane stitching info extension message
 message StitchingInfo {
+  message SubschemaConfig {
+    envoy.config.filter.http.graphql.v2.ExecutableSchema executable_schema = 1;
+  }
+
   map<string, FieldNodes> field_nodes_by_type = 1;
   map<string, FieldNodeMap> field_nodes_by_field = 2;
   map<string, MergedTypeConfig> merged_types = 3;
-  map<string, SubschemaConfig> subschema_names_to_subschema_config = 4;
+  map<string, SubschemaConfig> subschema_name_to_subschema_config = 4;
 }
 
-message SubschemaConfig {
-  envoy.config.filter.http.graphql.v2.ExecutableSchema executable_schema = 1;
-}
-
+// Config for the stitching resolver
 message StitchingResolver {
   // Each query field comes from a specific subschema,
   // this is the name of the subschema that the query field comes from.
   string subschema_name = 1;
 }
 
-// The message received from the js stitching info program
-message StitchingInfoOut {
-  map<string, FieldNodes> field_nodes_by_type = 1;
-  map<string, FieldNodeMap> field_nodes_by_field = 2;
-  map<string, MergedTypeConfig> merged_types = 3;
-  string stitched_schema = 5;
-}

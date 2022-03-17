@@ -11,9 +11,10 @@ weight: 5
 #### Types:
 
 
-- [In](#in)
+- [GraphQLToolsStitchingInput](#graphqltoolsstitchinginput)
 - [Schema](#schema)
-- [InputMergeConfig](#inputmergeconfig)
+- [TypeMergeConfig](#typemergeconfig)
+- [GraphQlToolsStitchingOutput](#graphqltoolsstitchingoutput)
 - [FieldNode](#fieldnode)
 - [FieldNodeMap](#fieldnodemap)
 - [FieldNodes](#fieldnodes)
@@ -25,7 +26,6 @@ weight: 5
 - [StitchingInfo](#stitchinginfo)
 - [SubschemaConfig](#subschemaconfig)
 - [StitchingResolver](#stitchingresolver)
-- [StitchingInfoOut](#stitchinginfoout)
   
 
 
@@ -37,19 +37,20 @@ weight: 5
 
 
 ---
-### In
+### GraphQLToolsStitchingInput
 
  
-------------- IN -------------
+------------- Graphql Tools JS Out -------------
+This is the message which the graphql-tools js script will consume
 
 ```yaml
-"subschemas": []envoy.config.resolver.stitching.v2.Schema
+"subschemas": []envoy.config.resolver.stitching.v2.GraphQLToolsStitchingInput.Schema
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `subschemas` | [[]envoy.config.resolver.stitching.v2.Schema](../stitching.proto.sk/#schema) |  |
+| `subschemas` | [[]envoy.config.resolver.stitching.v2.GraphQLToolsStitchingInput.Schema](../stitching.proto.sk/#schema) |  |
 
 
 
@@ -62,24 +63,23 @@ weight: 5
 ```yaml
 "name": string
 "schema": string
-"typeMergeConfig": map<string, .envoy.config.resolver.stitching.v2.InputMergeConfig>
+"typeMergeConfig": map<string, .envoy.config.resolver.stitching.v2.GraphQLToolsStitchingInput.Schema.TypeMergeConfig>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `name` | `string` | actual sdl schema definition. |
-| `schema` | `string` |  |
-| `typeMergeConfig` | `map<string, .envoy.config.resolver.stitching.v2.InputMergeConfig>` |  |
+| `name` | `string` | name of the subschema, arbitrary name but must be unique in a gateway schema. generally generated from the graphql schema ref. |
+| `schema` | `string` | GraphQL schema SDL for the subschema. |
+| `typeMergeConfig` | `map<string, .envoy.config.resolver.stitching.v2.GraphQLToolsStitchingInput.Schema.TypeMergeConfig>` | Type merge config that the graphql-tools stitching script needs to generate stitching info for the data plane. |
 
 
 
 
 ---
-### InputMergeConfig
+### TypeMergeConfig
 
- 
-make MergeConfig proto message
+
 
 ```yaml
 "selectionSet": string
@@ -98,6 +98,31 @@ make MergeConfig proto message
 
 
 ---
+### GraphQlToolsStitchingOutput
+
+ 
+------------- Graphql Tools JS Out ------------------
+The message that is the output of the graphql tools stitching info script
+
+```yaml
+"fieldNodesByType": map<string, .envoy.config.resolver.stitching.v2.FieldNodes>
+"fieldNodesByField": map<string, .envoy.config.resolver.stitching.v2.FieldNodeMap>
+"mergedTypes": map<string, .envoy.config.resolver.stitching.v2.MergedTypeConfig>
+"stitchedSchema": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `fieldNodesByType` | `map<string, .envoy.config.resolver.stitching.v2.FieldNodes>` |  |
+| `fieldNodesByField` | `map<string, .envoy.config.resolver.stitching.v2.FieldNodeMap>` |  |
+| `mergedTypes` | `map<string, .envoy.config.resolver.stitching.v2.MergedTypeConfig>` |  |
+| `stitchedSchema` | `string` |  |
+
+
+
+
+---
 ### FieldNode
 
 
@@ -109,7 +134,7 @@ make MergeConfig proto message
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `name` | `string` | string kind = 1;. |
+| `name` | `string` |  |
 
 
 
@@ -252,13 +277,14 @@ make MergeConfig proto message
 ---
 ### StitchingInfo
 
-
+ 
+Data plane stitching info extension message
 
 ```yaml
 "fieldNodesByType": map<string, .envoy.config.resolver.stitching.v2.FieldNodes>
 "fieldNodesByField": map<string, .envoy.config.resolver.stitching.v2.FieldNodeMap>
 "mergedTypes": map<string, .envoy.config.resolver.stitching.v2.MergedTypeConfig>
-"subschemaNamesToSubschemaConfig": map<string, .envoy.config.resolver.stitching.v2.SubschemaConfig>
+"subschemaNameToSubschemaConfig": map<string, .envoy.config.resolver.stitching.v2.StitchingInfo.SubschemaConfig>
 
 ```
 
@@ -267,7 +293,7 @@ make MergeConfig proto message
 | `fieldNodesByType` | `map<string, .envoy.config.resolver.stitching.v2.FieldNodes>` |  |
 | `fieldNodesByField` | `map<string, .envoy.config.resolver.stitching.v2.FieldNodeMap>` |  |
 | `mergedTypes` | `map<string, .envoy.config.resolver.stitching.v2.MergedTypeConfig>` |  |
-| `subschemaNamesToSubschemaConfig` | `map<string, .envoy.config.resolver.stitching.v2.SubschemaConfig>` |  |
+| `subschemaNameToSubschemaConfig` | `map<string, .envoy.config.resolver.stitching.v2.StitchingInfo.SubschemaConfig>` |  |
 
 
 
@@ -292,7 +318,8 @@ make MergeConfig proto message
 ---
 ### StitchingResolver
 
-
+ 
+Config for the stitching resolver
 
 ```yaml
 "subschemaName": string
@@ -302,30 +329,6 @@ make MergeConfig proto message
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `subschemaName` | `string` | Each query field comes from a specific subschema, this is the name of the subschema that the query field comes from. |
-
-
-
-
----
-### StitchingInfoOut
-
- 
-The message received from the js stitching info program
-
-```yaml
-"fieldNodesByType": map<string, .envoy.config.resolver.stitching.v2.FieldNodes>
-"fieldNodesByField": map<string, .envoy.config.resolver.stitching.v2.FieldNodeMap>
-"mergedTypes": map<string, .envoy.config.resolver.stitching.v2.MergedTypeConfig>
-"stitchedSchema": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `fieldNodesByType` | `map<string, .envoy.config.resolver.stitching.v2.FieldNodes>` |  |
-| `fieldNodesByField` | `map<string, .envoy.config.resolver.stitching.v2.FieldNodeMap>` |  |
-| `mergedTypes` | `map<string, .envoy.config.resolver.stitching.v2.MergedTypeConfig>` |  |
-| `stitchedSchema` | `string` |  |
 
 
 

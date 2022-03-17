@@ -298,18 +298,6 @@ func (m *GraphQLApi) Clone() proto.Message {
 		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.Metadata)
 	}
 
-	if h, ok := interface{}(m.GetExecutableSchema()).(clone.Cloner); ok {
-		target.ExecutableSchema = h.Clone().(*ExecutableSchema)
-	} else {
-		target.ExecutableSchema = proto.Clone(m.GetExecutableSchema()).(*ExecutableSchema)
-	}
-
-	if h, ok := interface{}(m.GetGatewaySchema()).(clone.Cloner); ok {
-		target.GatewaySchema = h.Clone().(*GatewaySchema)
-	} else {
-		target.GatewaySchema = proto.Clone(m.GetGatewaySchema()).(*GatewaySchema)
-	}
-
 	if h, ok := interface{}(m.GetStatPrefix()).(clone.Cloner); ok {
 		target.StatPrefix = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	} else {
@@ -329,6 +317,34 @@ func (m *GraphQLApi) Clone() proto.Message {
 			target.AllowedQueryHashes[idx] = v
 
 		}
+	}
+
+	switch m.Schema.(type) {
+
+	case *GraphQLApi_ExecutableSchema:
+
+		if h, ok := interface{}(m.GetExecutableSchema()).(clone.Cloner); ok {
+			target.Schema = &GraphQLApi_ExecutableSchema{
+				ExecutableSchema: h.Clone().(*ExecutableSchema),
+			}
+		} else {
+			target.Schema = &GraphQLApi_ExecutableSchema{
+				ExecutableSchema: proto.Clone(m.GetExecutableSchema()).(*ExecutableSchema),
+			}
+		}
+
+	case *GraphQLApi_GatewaySchema:
+
+		if h, ok := interface{}(m.GetGatewaySchema()).(clone.Cloner); ok {
+			target.Schema = &GraphQLApi_GatewaySchema{
+				GatewaySchema: h.Clone().(*GatewaySchema),
+			}
+		} else {
+			target.Schema = &GraphQLApi_GatewaySchema{
+				GatewaySchema: proto.Clone(m.GetGatewaySchema()).(*GatewaySchema),
+			}
+		}
+
 	}
 
 	return target

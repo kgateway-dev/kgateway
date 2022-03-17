@@ -546,46 +546,6 @@ func (m *GraphQLApi) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetExecutableSchema()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ExecutableSchema")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetExecutableSchema(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("ExecutableSchema")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	if h, ok := interface{}(m.GetGatewaySchema()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("GatewaySchema")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetGatewaySchema(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("GatewaySchema")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	if h, ok := interface{}(m.GetStatPrefix()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("StatPrefix")); err != nil {
 			return 0, err
@@ -630,6 +590,54 @@ func (m *GraphQLApi) Hash(hasher hash.Hash64) (uint64, error) {
 
 		if _, err = hasher.Write([]byte(v)); err != nil {
 			return 0, err
+		}
+
+	}
+
+	switch m.Schema.(type) {
+
+	case *GraphQLApi_ExecutableSchema:
+
+		if h, ok := interface{}(m.GetExecutableSchema()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("ExecutableSchema")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetExecutableSchema(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("ExecutableSchema")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *GraphQLApi_GatewaySchema:
+
+		if h, ok := interface{}(m.GetGatewaySchema()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("GatewaySchema")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetGatewaySchema(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("GatewaySchema")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
 		}
 
 	}
