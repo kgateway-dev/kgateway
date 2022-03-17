@@ -21,17 +21,17 @@ func TransformConfigTemplatesWithApi(bootstrap *envoy_config_bootstrap.Bootstrap
 
 	interpolate := func(s *string) error { return interpolator.InterpolateString(s, api) }
 	// interpolate the ID templates:
-	err = interpolate(&bootstrap.Node.Cluster)
+	err = interpolate(&bootstrap.GetNode().Cluster)
 	if err != nil {
 		return err
 	}
 
-	err = interpolate(&bootstrap.Node.Id)
+	err = interpolate(&bootstrap.GetNode().Id)
 	if err != nil {
 		return err
 	}
 
-	if err := transformStruct(interpolate, bootstrap.Node.Metadata); err != nil {
+	if err := transformStruct(interpolate, bootstrap.GetNode().GetMetadata()); err != nil {
 		return err
 	}
 
