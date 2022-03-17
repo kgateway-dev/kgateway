@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5186
+    resolvesIssue: true
+    description: |
+      Adds support for variable interpolation in envoy bootstrap static resources.
