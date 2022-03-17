@@ -66,8 +66,9 @@ var (
 
 type RouteConverter interface {
 	// Converts a VirtualService to a set of Gloo API routes (i.e. routes on a Proxy resource).
-	// A non-nil error indicates an unexpected internal failure, all configuration errors are added to the given report object.
-	ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gatewayv1.ApiSnapshot, reports reporter.ResourceReports) ([]*gloov1.Route, error)
+	// Since virtual services and route tables are often owned by different teams, it breaks multitenancy if
+	// this function cannot return successfully; thus ALL ERRORS are added to the resource reports
+	ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gatewayv1.ApiSnapshot, reports reporter.ResourceReports) []*gloov1.Route
 }
 
 func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer) RouteConverter {
@@ -152,7 +153,9 @@ func (r *reporterHelper) addWarning(resource resources.InputResource, err error)
 	}
 }
 
-func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gatewayv1.ApiSnapshot, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
+// Since virtual services and route tables are often owned by different teams, it breaks multitenancy if
+// this function cannot return successfully; thus ALL ERRORS are added to the resource reports
+func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gatewayv1.ApiSnapshot, reports reporter.ResourceReports) []*gloov1.Route {
 	wrapper := &visitableVirtualService{VirtualService: virtualService}
 	return rv.visit(
 		wrapper,
@@ -177,7 +180,7 @@ func (rv *routeVisitor) visit(
 	parentRoute *routeInfo,
 	visitedRouteTables gatewayv1.RouteTableList,
 	reporterHelper *reporterHelper,
-) ([]*gloov1.Route, error) {
+) []*gloov1.Route {
 	var routes []*gloov1.Route
 
 	for idx, gatewayRoute := range resource.GetRoutes() {
@@ -284,7 +287,7 @@ func (rv *routeVisitor) visit(
 					visitedRtCopy := append(append([]*gatewayv1.RouteTable{}, visitedRouteTables...), routeTable)
 
 					// Recursive call
-					subRoutes, err := rv.visit(
+					subRoutes := rv.visit(
 						&visitableRouteTable{routeTable},
 						gateway,
 						proxyName,
@@ -293,7 +296,7 @@ func (rv *routeVisitor) visit(
 						reporterHelper,
 					)
 					if err != nil {
-						return nil, err
+						return nil
 					}
 
 					rtRoutesForWeight = append(rtRoutesForWeight, subRoutes...)
@@ -340,13 +343,14 @@ func (rv *routeVisitor) visit(
 
 	// Append source metadata to all the routes
 	for _, r := range routes {
-		if err := appendSource(r, resource.InputResource()); err != nil {
+		err := appendSource(r, resource.InputResource())
+		if err != nil {
 			// should never happen
-			return nil, err
+			reporterHelper.addError(resource.InputResource(), err)
 		}
 	}
 
-	return routes, nil
+	return routes
 }
 
 // Returns the name of the route and a flag that is true if either the route or the parent route are explicitly named.
