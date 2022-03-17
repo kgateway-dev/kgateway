@@ -11,10 +11,6 @@ weight: 5
 #### Types:
 
 
-- [GraphQLToolsStitchingInput](#graphqltoolsstitchinginput)
-- [Schema](#schema)
-- [TypeMergeConfig](#typemergeconfig)
-- [GraphQlToolsStitchingOutput](#graphqltoolsstitchingoutput)
 - [FieldNode](#fieldnode)
 - [FieldNodeMap](#fieldnodemap)
 - [FieldNodes](#fieldnodes)
@@ -32,94 +28,6 @@ weight: 5
 
 ##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto)
 
-
-
-
-
----
-### GraphQLToolsStitchingInput
-
- 
-------------- Graphql Tools JS Input -------------
-This is not user-facing and is only used to pass to the graphql-tools js script
-This is the message which the graphql-tools js script will consume
-
-```yaml
-"subschemas": []envoy.config.resolver.stitching.v2.GraphQLToolsStitchingInput.Schema
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `subschemas` | [[]envoy.config.resolver.stitching.v2.GraphQLToolsStitchingInput.Schema](../stitching.proto.sk/#schema) |  |
-
-
-
-
----
-### Schema
-
-
-
-```yaml
-"name": string
-"schema": string
-"typeMergeConfig": map<string, .envoy.config.resolver.stitching.v2.GraphQLToolsStitchingInput.Schema.TypeMergeConfig>
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `name` | `string` | name of the subschema, arbitrary name but must be unique in a gateway schema. generally generated from the graphql schema ref. |
-| `schema` | `string` | GraphQL schema SDL for the subschema. |
-| `typeMergeConfig` | `map<string, .envoy.config.resolver.stitching.v2.GraphQLToolsStitchingInput.Schema.TypeMergeConfig>` | Type merge config that the graphql-tools stitching script needs to generate stitching info for the data plane. |
-
-
-
-
----
-### TypeMergeConfig
-
-
-
-```yaml
-"selectionSet": string
-"fieldName": string
-"args": map<string, string>
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `selectionSet` | `string` |  |
-| `fieldName` | `string` |  |
-| `args` | `map<string, string>` |  |
-
-
-
-
----
-### GraphQlToolsStitchingOutput
-
- 
-------------- Graphql Tools JS Out ------------------
-This is not user-facing and is only used to pass data back from the graphql-tools js script
-The message that is the output of the graphql tools stitching info script
-
-```yaml
-"fieldNodesByType": map<string, .envoy.config.resolver.stitching.v2.FieldNodes>
-"fieldNodesByField": map<string, .envoy.config.resolver.stitching.v2.FieldNodeMap>
-"mergedTypes": map<string, .envoy.config.resolver.stitching.v2.MergedTypeConfig>
-"stitchedSchema": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `fieldNodesByType` | `map<string, .envoy.config.resolver.stitching.v2.FieldNodes>` |  |
-| `fieldNodesByField` | `map<string, .envoy.config.resolver.stitching.v2.FieldNodeMap>` |  |
-| `mergedTypes` | `map<string, .envoy.config.resolver.stitching.v2.MergedTypeConfig>` |  |
-| `stitchedSchema` | `string` |  |
 
 
 
@@ -268,7 +176,7 @@ The message that is the output of the graphql tools stitching info script
 | ----- | ---- | ----------- | 
 | `typeName` | `string` |  |
 | `selectionSets` | `map<string, string>` | map of subschema name to selection set string e.g. name_subschema: '{ id }'. |
-| `uniqueFieldsToSubschemaName` | `map<string, string>` | schema -> resolver map<string, ResolverConfig> resolver_config = 4; field name -> scema name. |
+| `uniqueFieldsToSubschemaName` | `map<string, string>` | field name -> scema name. |
 | `nonUniqueFieldsToSubschemaNames` | `map<string, .envoy.config.resolver.stitching.v2.Schemas>` |  |
 | `declarativeTargetSubschemas` | `map<string, .envoy.config.resolver.stitching.v2.Schemas>` | schema -> subschemas. |
 | `subschemaNameToResolverInfo` | `map<string, .envoy.config.resolver.stitching.v2.ResolverInfo>` |  |
