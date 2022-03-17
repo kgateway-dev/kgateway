@@ -7,6 +7,12 @@ This document introduces the **Dynamic Forward Proxy** HTTP filter in Gloo Edge.
 
 In a highly dynamic environment with services coming up and down and with no service registry being able to list the available endpoints, one option is to somehow "blindly" route the client requests upstream. 
 
+Another popular use case is to deploy a forward proxy for all egress traffic. This way, you can observe and control outbound traffic. A common security policy applied here is rate-limiting and, of course, gathering access logs.
+
+So there are two sorts of usage for a forward proxy:
+- routing all the traffic of your local network to an exit node to monitor and control all the egress traffic
+- or selectively apply it on certain routes, which don’t have a pre-defined destination, and dynamically build the final Host value
+
 There are a few downsides to such flexibility:
 - since there is no pre-defined {{< protobuf name="gloo.solo.io.Upstream" display="Upstream" >}} to designate the upstream service, you cannot configure failover policies or client load-balancing
 - DNS resolution is done at runtime. Typically, when a domain name is met for the first time, Envoy will pause the request and synchronously resolve this domain to get the endpoints (IP addresses). Then, these entries are put into a local cache
