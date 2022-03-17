@@ -299,7 +299,10 @@ message GraphQLApi {
   core.solo.io.Metadata metadata = 2;
 
   oneof schema {
+    // An Executable Schema represents a single upstream, which could be a locally resolved
+    // schema, or a remotely resolved schema.
     ExecutableSchema executable_schema = 6;
+    // A stitched schema represents the product of stitching multiple graphql subschemas together.
     StitchedSchema stitched_schema = 7;
   }
 

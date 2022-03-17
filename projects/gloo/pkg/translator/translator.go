@@ -113,7 +113,6 @@ func (t *translatorInstance) Translate(
 
 	// prepare reports used to aggregate Warnings/Errors encountered during translation
 	reports := make(reporter.ResourceReports)
-	params.ResourceReports = reports
 	proxyReport := validation.MakeReport(proxy)
 
 	// execute translation of listener and cluster subsystems

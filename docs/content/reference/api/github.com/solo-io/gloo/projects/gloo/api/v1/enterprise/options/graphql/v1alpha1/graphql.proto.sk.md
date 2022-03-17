@@ -280,8 +280,8 @@ configure the routes to point to these schema CRs.
 | ----- | ---- | ----------- | 
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
-| `executableSchema` | [.graphql.gloo.solo.io.ExecutableSchema](../graphql.proto.sk/#executableschema) |  Only one of `executableSchema` or `stitchedSchema` can be set. |
-| `stitchedSchema` | [.graphql.gloo.solo.io.StitchedSchema](../graphql.proto.sk/#stitchedschema) |  Only one of `stitchedSchema` or `executableSchema` can be set. |
+| `executableSchema` | [.graphql.gloo.solo.io.ExecutableSchema](../graphql.proto.sk/#executableschema) | An Executable Schema represents a single upstream, which could be a locally resolved schema, or a remotely resolved schema. Only one of `executableSchema` or `stitchedSchema` can be set. |
+| `stitchedSchema` | [.graphql.gloo.solo.io.StitchedSchema](../graphql.proto.sk/#stitchedschema) | A stitched schema represents the product of stitching multiple graphql subschemas together. Only one of `stitchedSchema` or `executableSchema` can be set. |
 | `statPrefix` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The stats prefix which will be used for this route config. If empty, will generate a stats prefix ${GRAPHQLAPI_REF}. |
 | `persistedQueryCacheConfig` | [.graphql.gloo.solo.io.PersistedQueryCacheConfig](../graphql.proto.sk/#persistedquerycacheconfig) | Configuration settings for persisted query cache. |
 | `allowedQueryHashes` | `[]string` | Safelist: only allow queries to be executed that match these sha256 hashes. The hash can be computed from the query string or provided (i.e. persisted queries). |

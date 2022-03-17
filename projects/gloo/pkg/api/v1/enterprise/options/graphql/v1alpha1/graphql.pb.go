@@ -779,10 +779,13 @@ type isGraphQLApi_Schema interface {
 }
 
 type GraphQLApi_ExecutableSchema struct {
+	// An Executable Schema represents a single upstream, which could be a locally resolved
+	// schema, or a remotely resolved schema.
 	ExecutableSchema *ExecutableSchema `protobuf:"bytes,6,opt,name=executable_schema,json=executableSchema,proto3,oneof"`
 }
 
 type GraphQLApi_StitchedSchema struct {
+	// A stitched schema represents the product of stitching multiple graphql subschemas together.
 	StitchedSchema *StitchedSchema `protobuf:"bytes,7,opt,name=stitched_schema,json=stitchedSchema,proto3,oneof"`
 }
 
