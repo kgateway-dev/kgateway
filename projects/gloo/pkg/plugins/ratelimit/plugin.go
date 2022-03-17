@@ -23,7 +23,6 @@ var (
 
 const (
 	ExtensionName      = "rate_limit"
-	EnvoyExtensionName = "envoy-rate-limit"
 	CustomDomain       = "custom"
 	requestType        = "both"
 
@@ -69,7 +68,8 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
-	in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost,
+	in *v1.VirtualHost,
+	out *envoy_config_route_v3.VirtualHost,
 ) error {
 	if newRateLimits := in.GetOptions().GetRatelimit().GetRateLimits(); len(newRateLimits) > 0 {
 		out.RateLimits = toEnvoyRateLimits(params.Ctx, newRateLimits)

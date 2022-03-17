@@ -73,6 +73,13 @@ message RateLimitVhostExtension {
   repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1;
 }
 
+// TODO (sam-heilbron) add comments
+message RateLimitStagedVhostExtension {
+  RateLimitVhostExtension before_ext_auth = 1;
+
+  RateLimitVhostExtension after_ext_auth = 2;
+}
+
 // Use this field if you want to inline the Envoy rate limits for this Route.
 // Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
 // specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
@@ -85,4 +92,11 @@ message RateLimitRouteExtension {
     // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
     // would be throttled, the entire request returns a 429 (gets throttled)
     repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 2;
+}
+
+// TODO (sam-heilbron) add comments
+message RateLimitStagedRouteExtension {
+  RateLimitRouteExtension before_ext_auth = 1;
+
+  RateLimitRouteExtension after_ext_auth = 2;
 }
