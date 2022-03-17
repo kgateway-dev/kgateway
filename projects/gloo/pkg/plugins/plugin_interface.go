@@ -6,8 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -28,9 +26,8 @@ type Plugin interface {
 }
 
 type Params struct {
-	GraphQLApiClient v1alpha1.GraphQLApiClient
-	Ctx              context.Context
-	Snapshot         *v1snap.ApiSnapshot
+	Ctx      context.Context
+	Snapshot *v1snap.ApiSnapshot
 }
 
 type VirtualHostParams struct {
