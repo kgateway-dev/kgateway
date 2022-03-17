@@ -115,7 +115,24 @@ spec:
                   schemaDefinition:
                     type: string
                 type: object
-              gatewaySchema:
+              namespacedStatuses:
+                properties:
+                  statuses:
+                    additionalProperties:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    type: object
+                type: object
+              persistedQueryCacheConfig:
+                properties:
+                  cacheSize:
+                    format: int32
+                    type: integer
+                type: object
+              statPrefix:
+                nullable: true
+                type: string
+              stitchedSchema:
                 properties:
                   subschemas:
                     items:
@@ -140,23 +157,6 @@ spec:
                       type: object
                     type: array
                 type: object
-              namespacedStatuses:
-                properties:
-                  statuses:
-                    additionalProperties:
-                      type: object
-                      x-kubernetes-preserve-unknown-fields: true
-                    type: object
-                type: object
-              persistedQueryCacheConfig:
-                properties:
-                  cacheSize:
-                    format: int32
-                    type: integer
-                type: object
-              statPrefix:
-                nullable: true
-                type: string
             type: object
           status:
             type: object

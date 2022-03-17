@@ -390,7 +390,7 @@ func (m *GrpcResolver) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *GatewaySchema) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *StitchedSchema) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -398,7 +398,7 @@ func (m *GatewaySchema) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.GatewaySchema")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.StitchedSchema")); err != nil {
 		return 0, err
 	}
 
@@ -618,20 +618,20 @@ func (m *GraphQLApi) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *GraphQLApi_GatewaySchema:
+	case *GraphQLApi_StitchedSchema:
 
-		if h, ok := interface{}(m.GetGatewaySchema()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("GatewaySchema")); err != nil {
+		if h, ok := interface{}(m.GetStitchedSchema()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("StitchedSchema")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetGatewaySchema(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetStitchedSchema(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("GatewaySchema")); err != nil {
+				if _, err = hasher.Write([]byte("StitchedSchema")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -769,7 +769,7 @@ func (m *Executor) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *GatewaySchema_SubschemaConfig) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *StitchedSchema_SubschemaConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -777,7 +777,7 @@ func (m *GatewaySchema_SubschemaConfig) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.GatewaySchema_SubschemaConfig")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.StitchedSchema_SubschemaConfig")); err != nil {
 		return 0, err
 	}
 
@@ -832,7 +832,7 @@ func (m *GatewaySchema_SubschemaConfig) Hash(hasher hash.Hash64) (uint64, error)
 }
 
 // Hash function
-func (m *GatewaySchema_SubschemaConfig_TypeMergeConfig) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *StitchedSchema_SubschemaConfig_TypeMergeConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -840,7 +840,7 @@ func (m *GatewaySchema_SubschemaConfig_TypeMergeConfig) Hash(hasher hash.Hash64)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.GatewaySchema_SubschemaConfig_TypeMergeConfig")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.StitchedSchema_SubschemaConfig_TypeMergeConfig")); err != nil {
 		return 0, err
 	}
 

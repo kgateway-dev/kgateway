@@ -18,22 +18,20 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-type (
-	translatorSyncer struct {
-		translator translator.Translator
-		sanitizer  sanitizer.XdsSanitizer
-		xdsCache   envoycache.SnapshotCache
-		xdsHasher  *xds.ProxyKeyHasher
-		reporter   reporter.StatusReporter
-		// used for debugging purposes only
-		latestSnap *v1snap.ApiSnapshot
-		extensions []TranslatorSyncerExtension
-		// used to track which envoy node IDs exist without belonging to a proxy
-		extensionKeys map[string]struct{}
-		settings      *v1.Settings
-		statusMetrics metrics.ConfigStatusMetrics
-	}
-)
+type translatorSyncer struct {
+	translator translator.Translator
+	sanitizer  sanitizer.XdsSanitizer
+	xdsCache   envoycache.SnapshotCache
+	xdsHasher  *xds.ProxyKeyHasher
+	reporter   reporter.StatusReporter
+	// used for debugging purposes only
+	latestSnap *v1snap.ApiSnapshot
+	extensions []TranslatorSyncerExtension
+	// used to track which envoy node IDs exist without belonging to a proxy
+	extensionKeys map[string]struct{}
+	settings      *v1.Settings
+	statusMetrics metrics.ConfigStatusMetrics
+}
 
 type TranslatorSyncerExtensionParams struct {
 	RateLimitServiceSettings ratelimit.ServiceSettings

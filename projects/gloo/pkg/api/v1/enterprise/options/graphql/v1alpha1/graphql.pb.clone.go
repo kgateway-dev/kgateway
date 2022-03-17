@@ -210,21 +210,21 @@ func (m *GrpcResolver) Clone() proto.Message {
 }
 
 // Clone function
-func (m *GatewaySchema) Clone() proto.Message {
-	var target *GatewaySchema
+func (m *StitchedSchema) Clone() proto.Message {
+	var target *StitchedSchema
 	if m == nil {
 		return target
 	}
-	target = &GatewaySchema{}
+	target = &StitchedSchema{}
 
 	if m.GetSubschemas() != nil {
-		target.Subschemas = make([]*GatewaySchema_SubschemaConfig, len(m.GetSubschemas()))
+		target.Subschemas = make([]*StitchedSchema_SubschemaConfig, len(m.GetSubschemas()))
 		for idx, v := range m.GetSubschemas() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Subschemas[idx] = h.Clone().(*GatewaySchema_SubschemaConfig)
+				target.Subschemas[idx] = h.Clone().(*StitchedSchema_SubschemaConfig)
 			} else {
-				target.Subschemas[idx] = proto.Clone(v).(*GatewaySchema_SubschemaConfig)
+				target.Subschemas[idx] = proto.Clone(v).(*StitchedSchema_SubschemaConfig)
 			}
 
 		}
@@ -333,15 +333,15 @@ func (m *GraphQLApi) Clone() proto.Message {
 			}
 		}
 
-	case *GraphQLApi_GatewaySchema:
+	case *GraphQLApi_StitchedSchema:
 
-		if h, ok := interface{}(m.GetGatewaySchema()).(clone.Cloner); ok {
-			target.Schema = &GraphQLApi_GatewaySchema{
-				GatewaySchema: h.Clone().(*GatewaySchema),
+		if h, ok := interface{}(m.GetStitchedSchema()).(clone.Cloner); ok {
+			target.Schema = &GraphQLApi_StitchedSchema{
+				StitchedSchema: h.Clone().(*StitchedSchema),
 			}
 		} else {
-			target.Schema = &GraphQLApi_GatewaySchema{
-				GatewaySchema: proto.Clone(m.GetGatewaySchema()).(*GatewaySchema),
+			target.Schema = &GraphQLApi_StitchedSchema{
+				StitchedSchema: proto.Clone(m.GetStitchedSchema()).(*StitchedSchema),
 			}
 		}
 
@@ -416,25 +416,25 @@ func (m *Executor) Clone() proto.Message {
 }
 
 // Clone function
-func (m *GatewaySchema_SubschemaConfig) Clone() proto.Message {
-	var target *GatewaySchema_SubschemaConfig
+func (m *StitchedSchema_SubschemaConfig) Clone() proto.Message {
+	var target *StitchedSchema_SubschemaConfig
 	if m == nil {
 		return target
 	}
-	target = &GatewaySchema_SubschemaConfig{}
+	target = &StitchedSchema_SubschemaConfig{}
 
 	target.Name = m.GetName()
 
 	target.Namespace = m.GetNamespace()
 
 	if m.GetTypeMerge() != nil {
-		target.TypeMerge = make(map[string]*GatewaySchema_SubschemaConfig_TypeMergeConfig, len(m.GetTypeMerge()))
+		target.TypeMerge = make(map[string]*StitchedSchema_SubschemaConfig_TypeMergeConfig, len(m.GetTypeMerge()))
 		for k, v := range m.GetTypeMerge() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.TypeMerge[k] = h.Clone().(*GatewaySchema_SubschemaConfig_TypeMergeConfig)
+				target.TypeMerge[k] = h.Clone().(*StitchedSchema_SubschemaConfig_TypeMergeConfig)
 			} else {
-				target.TypeMerge[k] = proto.Clone(v).(*GatewaySchema_SubschemaConfig_TypeMergeConfig)
+				target.TypeMerge[k] = proto.Clone(v).(*StitchedSchema_SubschemaConfig_TypeMergeConfig)
 			}
 
 		}
@@ -444,12 +444,12 @@ func (m *GatewaySchema_SubschemaConfig) Clone() proto.Message {
 }
 
 // Clone function
-func (m *GatewaySchema_SubschemaConfig_TypeMergeConfig) Clone() proto.Message {
-	var target *GatewaySchema_SubschemaConfig_TypeMergeConfig
+func (m *StitchedSchema_SubschemaConfig_TypeMergeConfig) Clone() proto.Message {
+	var target *StitchedSchema_SubschemaConfig_TypeMergeConfig
 	if m == nil {
 		return target
 	}
-	target = &GatewaySchema_SubschemaConfig_TypeMergeConfig{}
+	target = &StitchedSchema_SubschemaConfig_TypeMergeConfig{}
 
 	target.SelectionSet = m.GetSelectionSet()
 

@@ -3,6 +3,8 @@ package test
 import (
 	"fmt"
 
+	"github.com/onsi/gomega/format"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
@@ -11,6 +13,7 @@ import (
 )
 
 var _ = Describe("RBAC Test", func() {
+	format.MaxLength = 10000000
 	var allTests = func(testCase renderTestCase) {
 		Describe(testCase.rendererName, func() {
 			var (
@@ -275,7 +278,7 @@ var _ = Describe("RBAC Test", func() {
 							},
 							{
 								APIGroups: []string{"graphql.gloo.solo.io"},
-								Resources: []string{"graphqlapis"},
+								Resources: []string{"graphqlapis", "graphqlapis/status"},
 								Verbs:     []string{"get", "list", "watch", "update"},
 							},
 							{
@@ -340,7 +343,7 @@ var _ = Describe("RBAC Test", func() {
 						Rules: []rbacv1.PolicyRule{
 							{
 								APIGroups: []string{"graphql.gloo.solo.io"},
-								Resources: []string{"graphqlapis"},
+								Resources: []string{"graphqlapis", "graphqlapis/status"},
 								Verbs:     []string{"get", "list", "watch", "update", "create"},
 							},
 						},

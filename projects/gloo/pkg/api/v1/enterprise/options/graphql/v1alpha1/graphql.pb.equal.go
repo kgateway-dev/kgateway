@@ -331,14 +331,14 @@ func (m *GrpcResolver) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *GatewaySchema) Equal(that interface{}) bool {
+func (m *StitchedSchema) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*GatewaySchema)
+	target, ok := that.(*StitchedSchema)
 	if !ok {
-		that2, ok := that.(GatewaySchema)
+		that2, ok := that.(StitchedSchema)
 		if ok {
 			target = &that2
 		} else {
@@ -533,17 +533,17 @@ func (m *GraphQLApi) Equal(that interface{}) bool {
 			}
 		}
 
-	case *GraphQLApi_GatewaySchema:
-		if _, ok := target.Schema.(*GraphQLApi_GatewaySchema); !ok {
+	case *GraphQLApi_StitchedSchema:
+		if _, ok := target.Schema.(*GraphQLApi_StitchedSchema); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetGatewaySchema()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetGatewaySchema()) {
+		if h, ok := interface{}(m.GetStitchedSchema()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetStitchedSchema()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetGatewaySchema(), target.GetGatewaySchema()) {
+			if !proto.Equal(m.GetStitchedSchema(), target.GetStitchedSchema()) {
 				return false
 			}
 		}
@@ -683,14 +683,14 @@ func (m *Executor) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *GatewaySchema_SubschemaConfig) Equal(that interface{}) bool {
+func (m *StitchedSchema_SubschemaConfig) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*GatewaySchema_SubschemaConfig)
+	target, ok := that.(*StitchedSchema_SubschemaConfig)
 	if !ok {
-		that2, ok := that.(GatewaySchema_SubschemaConfig)
+		that2, ok := that.(StitchedSchema_SubschemaConfig)
 		if ok {
 			target = &that2
 		} else {
@@ -732,14 +732,14 @@ func (m *GatewaySchema_SubschemaConfig) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *GatewaySchema_SubschemaConfig_TypeMergeConfig) Equal(that interface{}) bool {
+func (m *StitchedSchema_SubschemaConfig_TypeMergeConfig) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*GatewaySchema_SubschemaConfig_TypeMergeConfig)
+	target, ok := that.(*StitchedSchema_SubschemaConfig_TypeMergeConfig)
 	if !ok {
-		that2, ok := that.(GatewaySchema_SubschemaConfig_TypeMergeConfig)
+		that2, ok := that.(StitchedSchema_SubschemaConfig_TypeMergeConfig)
 		if ok {
 			target = &that2
 		} else {

@@ -199,6 +199,7 @@ rules:
   - graphql.gloo.solo.io
   resources:
   - graphqlapis
+  - graphqlapis/status
   verbs:
   - get
   - list
