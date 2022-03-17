@@ -1030,6 +1030,7 @@ type StitchedSchema_SubschemaConfig struct {
 	//
 	//```yaml
 	//type_merge:
+	//User:
 	//selection_set: '{ username }'
 	//query_name: 'GetUser'
 	//args:
@@ -1105,29 +1106,8 @@ type StitchedSchema_SubschemaConfig_TypeMergeConfig struct {
 	// e.g. '{ username }'
 	SelectionSet string `protobuf:"bytes,1,opt,name=selection_set,json=selectionSet,proto3" json:"selection_set,omitempty"`
 	// specifies the root field from this subschema used to request the local type
-	QueryName string `protobuf:"bytes,2,opt,name=query_name,json=queryName,proto3" json:"query_name,omitempty"`
-	// this provides the schema stitching engine the format to turn the initial object representation
-	//to query arguments
-	//so if the GetUser query was defined as
-	//
-	//```gql
-	//input UserSearch {
-	//username: String
-	//}
-	//
-	//type Query {
-	//GetUser(user_search: UserSearch): User
-	//}
-	//```
-	//we would want to set the user query argument with the correct username from an object.
-	//we can do that by setting the args as:
-	//```yaml
-	//args:
-	//user_search.username: username
-	//```
-	//where `user_search.username` is the "setter" path that we are setting the argument input value at and
-	//`username` is the "extraction" path that we are extracting from an object, such as `{"username": "wpatel"}`.
-	Args map[string]string `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	QueryName string            `protobuf:"bytes,2,opt,name=query_name,json=queryName,proto3" json:"query_name,omitempty"`
+	Args      map[string]string `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *StitchedSchema_SubschemaConfig_TypeMergeConfig) Reset() {
