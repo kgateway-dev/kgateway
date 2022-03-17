@@ -23,7 +23,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ------------- Graphql Tools JS Out -------------
+// ------------- Graphql Tools JS Input -------------
+// This is not user-facing and is only used to pass to the graphql-tools js script
 // This is the message which the graphql-tools js script will consume
 type GraphQLToolsStitchingInput struct {
 	state         protoimpl.MessageState
@@ -73,6 +74,7 @@ func (x *GraphQLToolsStitchingInput) GetSubschemas() []*GraphQLToolsStitchingInp
 }
 
 //------------- Graphql Tools JS Out ------------------
+// This is not user-facing and is only used to pass data back from the graphql-tools js script
 // The message that is the output of the graphql tools stitching info script
 type GraphQlToolsStitchingOutput struct {
 	state         protoimpl.MessageState

@@ -40,7 +40,8 @@ weight: 5
 ### GraphQLToolsStitchingInput
 
  
-------------- Graphql Tools JS Out -------------
+------------- Graphql Tools JS Input -------------
+This is not user-facing and is only used to pass to the graphql-tools js script
 This is the message which the graphql-tools js script will consume
 
 ```yaml
@@ -102,6 +103,7 @@ This is the message which the graphql-tools js script will consume
 
  
 ------------- Graphql Tools JS Out ------------------
+This is not user-facing and is only used to pass data back from the graphql-tools js script
 The message that is the output of the graphql tools stitching info script
 
 ```yaml
