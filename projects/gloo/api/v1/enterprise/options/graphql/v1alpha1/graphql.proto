@@ -201,7 +201,7 @@ message Resolution {
 // configure the routes to point to these schema CRs.
 message GraphQLApi {
 
-  option (core.solo.io.resource).short_name = "qgl";
+  option (core.solo.io.resource).short_name = "gql";
   option (core.solo.io.resource).plural_name = "graphql_apis";
 
   // NamespacedStatuses indicates the validation status of this resource.
