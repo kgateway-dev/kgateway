@@ -18,10 +18,10 @@ glooctl istio inject [flags]
 
 ```
   -h, --help                             help for inject
-      --istio-discovery-address string   Sets discoveryAddress field within PROXY_CONFIG environment variable
-      --istio-meta-cluster-id string     Sets ISTIO_META_CLUSTER_ID environment variable
-      --istio-meta-mesh-id string        Sets ISTIO_META_MESH_ID environment variable
-      --istio-namespace string           Namespace in which Istio is installed (default "istio-system")
+      --istio-discovery-address string   sets discoveryAddress field within PROXY_CONFIG env var
+      --istio-meta-cluster-id string     sets ISTIO_META_CLUSTER_ID env var
+      --istio-meta-mesh-id string        sets ISTIO_META_MESH_ID env var
+      --istio-namespace string           namespace in which istio is installed (default "istio-system")
 ```
 
 ### Options inherited from parent commands
