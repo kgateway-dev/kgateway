@@ -16,8 +16,7 @@ func GetConfig(inputFile string) (string, error) {
 	defer inreader.Close()
 
 	var buffer bytes.Buffer
-	transformer := downward.NewTransformer()
-	err = transformer.Transform(inreader, &buffer)
+	err = downward.Transform(inreader, &buffer)
 	if err != nil {
 		return "", err
 	}
