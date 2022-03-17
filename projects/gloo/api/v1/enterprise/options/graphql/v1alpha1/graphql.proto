@@ -245,10 +245,11 @@ message StitchedSchema {
 
       ```yaml
       type_merge:
-        selection_set: '{ username }'
-        query_name: 'GetUser'
-        args:
-          username: username
+        User:
+          selection_set: '{ username }'
+          query_name: 'GetUser'
+          args:
+            username: username
       ```
       the stitched schema will now be able to provide the full user type to all types that require it. In this case,
       we can now get the first name of an author from the Review.author field even though the Reviews schema doesn't
