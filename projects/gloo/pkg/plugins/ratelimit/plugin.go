@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rotisserie/eris"
+
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -22,9 +24,9 @@ var (
 )
 
 const (
-	ExtensionName      = "rate_limit"
-	CustomDomain       = "custom"
-	requestType        = "both"
+	ExtensionName = "rate_limit"
+	CustomDomain  = "custom"
+	requestType   = "both"
 
 	CustomStage = 1
 )
@@ -38,6 +40,10 @@ var (
 	beforeAuthStage = plugins.BeforeStage(plugins.AuthNStage)
 
 	DefaultTimeout = prototime.DurationToProto(100 * time.Millisecond)
+
+	ServerNotFound = func(usRef *core.ResourceRef) error {
+		return eris.Errorf("ratelimit server upstream not found %s", usRef.String())
+	}
 )
 
 type plugin struct {
@@ -90,7 +96,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return nil
 }
 
-func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	var upstreamRef *core.ResourceRef
 	var timeout *duration.Duration
 	var denyOnFail bool
@@ -110,6 +116,12 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 
 	if upstreamRef == nil {
 		return nil, nil
+	}
+
+	// Make sure the server exists
+	_, err := params.Snapshot.Upstreams.Find(upstreamRef.GetNamespace(), upstreamRef.GetName())
+	if err != nil {
+		return nil, ServerNotFound(upstreamRef)
 	}
 
 	customConf := GenerateEnvoyConfigForFilterWith(upstreamRef, CustomDomain, CustomStage, timeout, denyOnFail)

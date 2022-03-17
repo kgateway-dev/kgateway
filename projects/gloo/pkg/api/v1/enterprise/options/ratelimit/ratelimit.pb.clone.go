@@ -143,6 +143,29 @@ func (m *RateLimitConfigRefs) Clone() proto.Message {
 }
 
 // Clone function
+func (m *RateLimitStagedConfigRefs) Clone() proto.Message {
+	var target *RateLimitStagedConfigRefs
+	if m == nil {
+		return target
+	}
+	target = &RateLimitStagedConfigRefs{}
+
+	if h, ok := interface{}(m.GetBeforeExtAuth()).(clone.Cloner); ok {
+		target.BeforeExtAuth = h.Clone().(*RateLimitConfigRefs)
+	} else {
+		target.BeforeExtAuth = proto.Clone(m.GetBeforeExtAuth()).(*RateLimitConfigRefs)
+	}
+
+	if h, ok := interface{}(m.GetAfterExtAuth()).(clone.Cloner); ok {
+		target.AfterExtAuth = h.Clone().(*RateLimitConfigRefs)
+	} else {
+		target.AfterExtAuth = proto.Clone(m.GetAfterExtAuth()).(*RateLimitConfigRefs)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *RateLimitConfigRef) Clone() proto.Message {
 	var target *RateLimitConfigRef
 	if m == nil {
@@ -182,6 +205,29 @@ func (m *RateLimitVhostExtension) Clone() proto.Message {
 }
 
 // Clone function
+func (m *RateLimitStagedVhostExtension) Clone() proto.Message {
+	var target *RateLimitStagedVhostExtension
+	if m == nil {
+		return target
+	}
+	target = &RateLimitStagedVhostExtension{}
+
+	if h, ok := interface{}(m.GetBeforeExtAuth()).(clone.Cloner); ok {
+		target.BeforeExtAuth = h.Clone().(*RateLimitVhostExtension)
+	} else {
+		target.BeforeExtAuth = proto.Clone(m.GetBeforeExtAuth()).(*RateLimitVhostExtension)
+	}
+
+	if h, ok := interface{}(m.GetAfterExtAuth()).(clone.Cloner); ok {
+		target.AfterExtAuth = h.Clone().(*RateLimitVhostExtension)
+	} else {
+		target.AfterExtAuth = proto.Clone(m.GetAfterExtAuth()).(*RateLimitVhostExtension)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *RateLimitRouteExtension) Clone() proto.Message {
 	var target *RateLimitRouteExtension
 	if m == nil {
@@ -202,6 +248,29 @@ func (m *RateLimitRouteExtension) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *RateLimitStagedRouteExtension) Clone() proto.Message {
+	var target *RateLimitStagedRouteExtension
+	if m == nil {
+		return target
+	}
+	target = &RateLimitStagedRouteExtension{}
+
+	if h, ok := interface{}(m.GetBeforeExtAuth()).(clone.Cloner); ok {
+		target.BeforeExtAuth = h.Clone().(*RateLimitRouteExtension)
+	} else {
+		target.BeforeExtAuth = proto.Clone(m.GetBeforeExtAuth()).(*RateLimitRouteExtension)
+	}
+
+	if h, ok := interface{}(m.GetAfterExtAuth()).(clone.Cloner); ok {
+		target.AfterExtAuth = h.Clone().(*RateLimitRouteExtension)
+	} else {
+		target.AfterExtAuth = proto.Clone(m.GetAfterExtAuth()).(*RateLimitRouteExtension)
 	}
 
 	return target

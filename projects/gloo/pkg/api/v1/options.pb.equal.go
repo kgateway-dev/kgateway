@@ -566,6 +566,21 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	case *VirtualHostOptions_RatelimitStaged:
+		if _, ok := target.RateLimitConfigType.(*VirtualHostOptions_RatelimitStaged); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRatelimitStaged()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRatelimitStaged()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRatelimitStaged(), target.GetRatelimitStaged()) {
+				return false
+			}
+		}
+
 	case *VirtualHostOptions_RateLimitConfigs:
 		if _, ok := target.RateLimitConfigType.(*VirtualHostOptions_RateLimitConfigs); !ok {
 			return false
@@ -577,6 +592,21 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetRateLimitConfigs(), target.GetRateLimitConfigs()) {
+				return false
+			}
+		}
+
+	case *VirtualHostOptions_RateLimitStagedConfigs:
+		if _, ok := target.RateLimitConfigType.(*VirtualHostOptions_RateLimitStagedConfigs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRateLimitStagedConfigs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRateLimitStagedConfigs()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRateLimitStagedConfigs(), target.GetRateLimitStagedConfigs()) {
 				return false
 			}
 		}
@@ -935,6 +965,21 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	case *RouteOptions_RatelimitStaged:
+		if _, ok := target.RateLimitConfigType.(*RouteOptions_RatelimitStaged); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRatelimitStaged()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRatelimitStaged()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRatelimitStaged(), target.GetRatelimitStaged()) {
+				return false
+			}
+		}
+
 	case *RouteOptions_RateLimitConfigs:
 		if _, ok := target.RateLimitConfigType.(*RouteOptions_RateLimitConfigs); !ok {
 			return false
@@ -946,6 +991,21 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetRateLimitConfigs(), target.GetRateLimitConfigs()) {
+				return false
+			}
+		}
+
+	case *RouteOptions_RateLimitStagedConfigs:
+		if _, ok := target.RateLimitConfigType.(*RouteOptions_RateLimitStagedConfigs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRateLimitStagedConfigs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRateLimitStagedConfigs()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRateLimitStagedConfigs(), target.GetRateLimitStagedConfigs()) {
 				return false
 			}
 		}

@@ -200,9 +200,14 @@ message VirtualHostOptions {
         // Only one of `ratelimit` or `rate_limit_configs` can be set.
         ratelimit.options.gloo.solo.io.RateLimitVhostExtension ratelimit = 70;
 
+        // TODO (sam-heilbron)
+        ratelimit.options.gloo.solo.io.RateLimitStagedVhostExtension ratelimit_staged = 72;
+
         // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
         // Only one of `ratelimit` or `rate_limit_configs` can be set.
         ratelimit.options.gloo.solo.io.RateLimitConfigRefs rate_limit_configs = 71;
+
+        ratelimit.options.gloo.solo.io.RateLimitStagedConfigRefs rate_limit_staged_configs = 74;
     }
 
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
@@ -316,6 +321,7 @@ message RouteOptions {
     lbhash.options.gloo.solo.io.RouteActionHashConfig lb_hash = 12;
     // Route configuration for protocol upgrade requests.
     repeated protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig upgrades = 21;
+
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
     ratelimit.options.gloo.solo.io.IngressRateLimit ratelimit_basic = 13;
 
@@ -329,9 +335,15 @@ message RouteOptions {
         // Only one of `ratelimit` or `rate_limit_configs` can be set.
         ratelimit.options.gloo.solo.io.RateLimitRouteExtension ratelimit = 140;
 
+        // TODO (sam-heilbron)
+        ratelimit.options.gloo.solo.io.RateLimitStagedRouteExtension ratelimit_staged = 142;
+
         // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
         // Only one of `ratelimit` or `rate_limit_configs` can be set.
         ratelimit.options.gloo.solo.io.RateLimitConfigRefs rate_limit_configs = 141;
+
+        // TODO (sam-heilbron)
+        ratelimit.options.gloo.solo.io.RateLimitStagedConfigRefs rate_limit_staged_configs = 143;
     }
 
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting

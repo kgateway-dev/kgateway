@@ -221,6 +221,50 @@ func (m *RateLimitConfigRefs) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *RateLimitStagedConfigRefs) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RateLimitStagedConfigRefs)
+	if !ok {
+		that2, ok := that.(RateLimitStagedConfigRefs)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetBeforeExtAuth()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetBeforeExtAuth()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetBeforeExtAuth(), target.GetBeforeExtAuth()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetAfterExtAuth()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAfterExtAuth()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAfterExtAuth(), target.GetAfterExtAuth()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *RateLimitConfigRef) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -294,6 +338,50 @@ func (m *RateLimitVhostExtension) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *RateLimitStagedVhostExtension) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RateLimitStagedVhostExtension)
+	if !ok {
+		that2, ok := that.(RateLimitStagedVhostExtension)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetBeforeExtAuth()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetBeforeExtAuth()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetBeforeExtAuth(), target.GetBeforeExtAuth()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetAfterExtAuth()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAfterExtAuth()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAfterExtAuth(), target.GetAfterExtAuth()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *RateLimitRouteExtension) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -333,6 +421,50 @@ func (m *RateLimitRouteExtension) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *RateLimitStagedRouteExtension) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RateLimitStagedRouteExtension)
+	if !ok {
+		that2, ok := that.(RateLimitStagedRouteExtension)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetBeforeExtAuth()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetBeforeExtAuth()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetBeforeExtAuth(), target.GetBeforeExtAuth()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetAfterExtAuth()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAfterExtAuth()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAfterExtAuth(), target.GetAfterExtAuth()) {
+			return false
+		}
 	}
 
 	return true
