@@ -340,17 +340,17 @@ func genGatewayProxyCluster() *envoy_config_cluster.Cluster {
 }
 
 func addIstioNamespaceFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVar(strptr, "istio-namespace", istioDefaultNS, "namespace in which istio is installed")
+	set.StringVar(strptr, "istio-namespace", istioDefaultNS, "Namespace in which Istio is installed")
 }
 
 func addIstioMetaMeshIdFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVar(strptr, "istio-meta-mesh-id", "", "sets ISTIO_META_MESH_ID env var")
+	set.StringVar(strptr, "istio-meta-mesh-id", "", "Sets ISTIO_META_MESH_ID environment variable")
 }
 
 func addIstioMetaClusterIdFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVar(strptr, "istio-meta-cluster-id", "", "sets ISTIO_META_CLUSTER_ID env var")
+	set.StringVar(strptr, "istio-meta-cluster-id", "", "Sets ISTIO_META_CLUSTER_ID environment variable")
 }
 
 func addIstioDiscoveryAddressFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVar(strptr, "istio-discovery-address", "", "sets discoveryAddress field within PROXY_CONFIG env var")
+	set.StringVar(strptr, "istio-discovery-address", "", "Sets discoveryAddress field within PROXY_CONFIG environment variable")
 }
