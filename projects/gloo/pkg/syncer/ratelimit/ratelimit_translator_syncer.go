@@ -3,7 +3,6 @@ package ratelimit
 import (
 	"context"
 	"fmt"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/rotisserie/eris"
@@ -53,6 +52,12 @@ func (s *TranslatorSyncerExtension) Sync(
 	ctx = contextutils.WithLogger(ctx, "rateLimitTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 
+	enterpriseOnlyError := func(enterpriseFeature string) (string, error) {
+		errorMsg := createErrorMsg(enterpriseFeature)
+		logger.Errorf(errorMsg)
+		return RateLimitServerRole, eris.New(errorMsg)
+	}
+
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {
 			virtualHosts := utils.GetVhostsFromListener(listener)
@@ -61,53 +66,57 @@ func (s *TranslatorSyncerExtension) Sync(
 
 				// RateLimitConfigs is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/crds/
 				if virtualHost.GetOptions().GetRateLimitConfigs() != nil {
-					errorMsg := createErrorMsg("RateLimitConfig")
-					logger.Errorf(errorMsg)
-					return RateLimitServerRole, eris.New(errorMsg)
+					return enterpriseOnlyError("RateLimitConfig")
 				}
 
 				// ratelimitBasic is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/simple/
 				if virtualHost.GetOptions().GetRatelimitBasic() != nil {
-					errorMsg := createErrorMsg("ratelimitBasic")
-					logger.Errorf(errorMsg)
-					return RateLimitServerRole, eris.New(errorMsg)
+					return enterpriseOnlyError("ratelimitBasic")
 				}
 
 				// check setActions on vhost
 				rlactionsVhost := virtualHost.GetOptions().GetRatelimit().GetRateLimits()
 				for _, rlaction := range rlactionsVhost {
 					if rlaction.GetSetActions() != nil {
-						errorMsg := createErrorMsg("setActions")
-						logger.Errorf(errorMsg)
-						return RateLimitServerRole, eris.New(errorMsg)
+						return enterpriseOnlyError("setActions")
 					}
+				}
+
+				// Staged RateLimiting is an enterprise feature
+				if virtualHost.GetOptions().GetRateLimitStagedConfigs() != nil {
+					return enterpriseOnlyError("RateLimitStagedConfig")
+				}
+
+				if virtualHost.GetOptions().GetRatelimitStaged() != nil {
+					return enterpriseOnlyError("RateLimitStaged")
 				}
 
 				for _, route := range virtualHost.GetRoutes() {
 					if route.GetOptions().GetRateLimitConfigs() != nil {
-						errorMsg := createErrorMsg("RateLimitConfig")
-						logger.Errorf(errorMsg)
-						return RateLimitServerRole, eris.New(errorMsg)
+						return enterpriseOnlyError("RateLimitConfig")
 					}
 
 					if route.GetOptions().GetRatelimitBasic() != nil {
-						errorMsg := createErrorMsg("ratelimitBasic")
-						logger.Errorf(errorMsg)
-						return RateLimitServerRole, eris.New(errorMsg)
+						return enterpriseOnlyError("ratelimitBasic")
 					}
 
 					// check setActions on route
 					rlactionsRoute := route.GetOptions().GetRatelimit().GetRateLimits()
 					for _, rlaction := range rlactionsRoute {
 						if rlaction.GetSetActions() != nil {
-							errorMsg := createErrorMsg("setActions")
-							logger.Errorf(errorMsg)
-							return RateLimitServerRole, eris.New(errorMsg)
+							return enterpriseOnlyError("setActions")
 						}
 					}
 
-				}
+					// Staged RateLimiting is an enterprise feature
+					if route.GetOptions().GetRateLimitStagedConfigs() != nil {
+						return enterpriseOnlyError("RateLimitStagedConfig")
+					}
 
+					if route.GetOptions().GetRatelimitStaged() != nil {
+						return enterpriseOnlyError("RateLimitStaged")
+					}
+				}
 			}
 		}
 	}
