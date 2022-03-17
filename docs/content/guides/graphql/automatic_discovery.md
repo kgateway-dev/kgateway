@@ -6,7 +6,7 @@ description: Explore automatic schema generation with GraphQL service discovery.
 
 <!-- **QUESTION do we need to add the behind-the-scenes info for this feature?** eg Sai has a great overview here: https://docs.google.com/presentation/d/1ArxEdVVAOowz4wYcXIYlg4Wd-psadUTrOYH9DPPWwpk/edit#slide=id.g10a8760f3dd_24_181 -->
 
-Gloo Edge can automatically discover API specifications and create GraphQL schemas. The generated `GraphQLSchema` includes the configuration for REST <!--or gRPC -->resolvers and schema definitions for the types of data to return to graphQL queries.
+Gloo Edge can automatically discover API specifications and create GraphQL schemas. The generated `GraphQLApi` includes the configuration for REST <!--or gRPC -->resolvers and schema definitions for the types of data to return to graphQL queries.
 
 Gloo Edge supports two modes of discovery: allowlist and blocklist. For more information about these discovery modes, see the [Function Discovery Service (FDS) guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#function-discovery-service-fds" %}}).
 
@@ -42,10 +42,10 @@ In blocklist mode, discovery is enabled for all supported services, unless you e
 
 You can verify that OpenAPI specification discovery is enabled by viewing the GraphQL custom resource that was automatically generated for your service.
 ```sh
-kubectl get graphqlschemas -n gloo-system
+kubectl get graphqlapis -n gloo-system
 ```
 ```sh
-kubectl get graphqlschemas <schema_name> -o yaml -n gloo-system
+kubectl get graphqlapis <api_name> -o yaml -n gloo-system
 ```
 
 For more information about the contents of the generated GraphQL schema, see the [schema configuration documentation]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/resolver_config/" %}}).

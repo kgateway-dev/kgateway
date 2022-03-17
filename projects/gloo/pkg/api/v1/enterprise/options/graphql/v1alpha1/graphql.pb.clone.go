@@ -255,12 +255,12 @@ func (m *Resolution) Clone() proto.Message {
 }
 
 // Clone function
-func (m *GraphQLSchema) Clone() proto.Message {
-	var target *GraphQLSchema
+func (m *GraphQLApi) Clone() proto.Message {
+	var target *GraphQLApi
 	if m == nil {
 		return target
 	}
-	target = &GraphQLSchema{}
+	target = &GraphQLApi{}
 
 	if h, ok := interface{}(m.GetNamespacedStatuses()).(clone.Cloner); ok {
 		target.NamespacedStatuses = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.NamespacedStatuses)
