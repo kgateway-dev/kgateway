@@ -3,6 +3,7 @@ package plugins
 import (
 	"bytes"
 	"context"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"sort"
 	"strings"
 
@@ -26,8 +27,9 @@ type Plugin interface {
 }
 
 type Params struct {
-	Ctx      context.Context
-	Snapshot *v1snap.ApiSnapshot
+	Ctx             context.Context
+	Snapshot        *v1snap.ApiSnapshot
+	ResourceReports reporter.ResourceReports
 }
 
 type VirtualHostParams struct {
