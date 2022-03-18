@@ -85,7 +85,7 @@ func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAc
 		"gloo-system.gloo",
 		namespace,
 		[]string{"graphql.gloo.solo.io"},
-		[]string{"graphqlapis"},
+		[]string{"graphqlapis", "graphqlapis/status"},
 		[]string{"get", "list", "watch", "update"})
 
 	// Discovery
@@ -111,7 +111,7 @@ func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAc
 		"gloo-system.discovery",
 		namespace,
 		[]string{"graphql.gloo.solo.io"},
-		[]string{"graphqlapis"},
+		[]string{"graphqlapis", "graphqlapis/status"},
 		[]string{"get", "list", "watch", "update", "create"})
 
 	return permissions
