@@ -17,6 +17,9 @@ weight: 5
 - [RESTResolver](#restresolver)
 - [GrpcDescriptorRegistry](#grpcdescriptorregistry)
 - [GrpcResolver](#grpcresolver)
+- [StitchedSchema](#stitchedschema)
+- [SubschemaConfig](#subschemaconfig)
+- [TypeMergeConfig](#typemergeconfig)
 - [Resolution](#resolution)
 - [GraphQLApi](#graphqlapi) **Top-Level Resource**
 - [PersistedQueryCacheConfig](#persistedquerycacheconfig)
@@ -166,6 +169,65 @@ control-plane API
 
 
 ---
+### StitchedSchema
+
+
+
+```yaml
+"subschemas": []graphql.gloo.solo.io.StitchedSchema.SubschemaConfig
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `subschemas` | [[]graphql.gloo.solo.io.StitchedSchema.SubschemaConfig](../graphql.proto.sk/#subschemaconfig) | List of GraphQLApis that compose this stitched GraphQL schema. |
+
+
+
+
+---
+### SubschemaConfig
+
+
+
+```yaml
+"name": string
+"namespace": string
+"typeMerge": map<string, .graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeConfig>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | name of the GraphQLApi subschema. |
+| `namespace` | `string` | namespace of the GraphQLApi subschema. |
+| `typeMerge` | `map<string, .graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeConfig>` | Type merge configuration for this subschema. Let's say this subschema is a Users service schema and provides the User type (with a query to fetch a user given the username) ```gql type Query { GetUser(username: String): User } type User { username: String firstName: String lastName: String } ``` and another subschema, e.g. Reviews schema, may have a partial User type: ```gql type Review { author: User } type User { username: String } ``` We want to provide the relevant information from this Users service schema, so that another API that can give us a partial User type (with the username) will then be able to have access to the full user type. With the correct type merging config under the Users subschema, e.g.: ```yaml type_merge: User: selection_set: '{ username }' query_name: 'GetUser' args: username: username ``` the stitched schema will now be able to provide the full user type to all types that require it. In this case, we can now get the first name of an author from the Review.author field even though the Reviews schema doesn't provide the full User type. |
+
+
+
+
+---
+### TypeMergeConfig
+
+
+
+```yaml
+"selectionSet": string
+"queryName": string
+"args": map<string, string>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `selectionSet` | `string` | This specifies one or more key fields required from other services to perform this query. Query planning will automatically resolve these fields from other subschemas in dependency order. This is a graphql selection set specified as a string e.g. '{ username }'. |
+| `queryName` | `string` | specifies the root field from this subschema used to request the local type. |
+| `args` | `map<string, string>` |  |
+
+
+
+
+---
 ### Resolution
 
  
@@ -207,6 +269,7 @@ configure the routes to point to these schema CRs.
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
 "metadata": .core.solo.io.Metadata
 "executableSchema": .graphql.gloo.solo.io.ExecutableSchema
+"stitchedSchema": .graphql.gloo.solo.io.StitchedSchema
 "statPrefix": .google.protobuf.StringValue
 "persistedQueryCacheConfig": .graphql.gloo.solo.io.PersistedQueryCacheConfig
 "allowedQueryHashes": []string
@@ -217,7 +280,8 @@ configure the routes to point to these schema CRs.
 | ----- | ---- | ----------- | 
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
-| `executableSchema` | [.graphql.gloo.solo.io.ExecutableSchema](../graphql.proto.sk/#executableschema) |  |
+| `executableSchema` | [.graphql.gloo.solo.io.ExecutableSchema](../graphql.proto.sk/#executableschema) | An Executable Schema represents a single upstream, which could be a locally resolved schema, or a remotely resolved schema. Only one of `executableSchema` or `stitchedSchema` can be set. |
+| `stitchedSchema` | [.graphql.gloo.solo.io.StitchedSchema](../graphql.proto.sk/#stitchedschema) | A stitched schema represents the product of stitching multiple graphql subschemas together. Only one of `stitchedSchema` or `executableSchema` can be set. |
 | `statPrefix` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The stats prefix which will be used for this route config. If empty, will generate a stats prefix ${GRAPHQLAPI_REF}. |
 | `persistedQueryCacheConfig` | [.graphql.gloo.solo.io.PersistedQueryCacheConfig](../graphql.proto.sk/#persistedquerycacheconfig) | Configuration settings for persisted query cache. |
 | `allowedQueryHashes` | `[]string` | Safelist: only allow queries to be executed that match these sha256 hashes. The hash can be computed from the query string or provided (i.e. persisted queries). |
