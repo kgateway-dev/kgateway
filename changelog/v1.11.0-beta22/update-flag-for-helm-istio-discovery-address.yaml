@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: |
+      Update the Helm chart's discovery address setup under PROXY_CONFIG for Istio versions 1.5+.
+      Allow for Istio discovery address configurability.
+    issueLink: https://github.com/solo-io/gloo/issues/5555
