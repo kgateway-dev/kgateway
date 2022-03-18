@@ -71,6 +71,7 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 	addIstioNamespaceFlag(pflags, &opts.Istio.Namespace)
 	addIstioMetaMeshIdFlag(pflags, &opts.Istio.IstioMetaMeshId)
 	addIstioMetaClusterIdFlag(pflags, &opts.Istio.IstioMetaClusterId)
+	addIstioDiscoveryAddressFlag(pflags, &opts.Istio.IstioDiscoveryAddress)
 	return cmd
 }
 
@@ -80,6 +81,7 @@ func istioInject(args []string, opts *options.Options) error {
 	istioNS := opts.Istio.Namespace
 	istioMetaMeshID := getIstioMetaMeshID(opts.Istio.IstioMetaMeshId)
 	istioMetaClusterID := getIstioMetaClusterID(opts.Istio.IstioMetaClusterId)
+	istioDiscoveryAddress := getIstioDiscoveryAddress(opts.Istio.IstioDiscoveryAddress)
 
 	client := helpers.MustKubeClient()
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, glooNS, metav1.GetOptions{})
@@ -147,7 +149,7 @@ func istioInject(args []string, opts *options.Options) error {
 			if err != nil {
 				return err
 			}
-			err = addIstioSidecar(opts.Top.Ctx, &deployment, istioNS, istioMetaMeshID, istioMetaClusterID)
+			err = addIstioSidecar(opts.Top.Ctx, &deployment, istioNS, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress)
 			if err != nil {
 				return err
 			}
@@ -178,7 +180,7 @@ func addSdsSidecar(ctx context.Context, deployment *appsv1.Deployment, glooNames
 }
 
 // addIstioSidecar adds an Istio sidecar to the given deployment's containers
-func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNamespace string, istioMetaMeshID string, istioMetaClusterID string) error {
+func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNamespace string, istioMetaMeshID string, istioMetaClusterID string, istioDiscoveryAddress string) error {
 	// Get current istio version & JWT policy from cluster
 	istioPilotContainer, err := getIstiodContainer(ctx, istioNamespace)
 	if err != nil {
@@ -194,7 +196,7 @@ func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNa
 	jwtPolicy := getJWTPolicy(istioPilotContainer)
 
 	// Get the appropriate sidecar based on Istio configuration currently deployed
-	istioSidecar, err := sidecars.GetIstioSidecar(istioVersion, jwtPolicy, istioMetaMeshID, istioMetaClusterID)
+	istioSidecar, err := sidecars.GetIstioSidecar(istioVersion, jwtPolicy, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress)
 	if err != nil {
 		return err
 	}
@@ -338,13 +340,17 @@ func genGatewayProxyCluster() *envoy_config_cluster.Cluster {
 }
 
 func addIstioNamespaceFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVar(strptr, "istio-namespace", istioDefaultNS, "namespace in which istio is installed")
+	set.StringVar(strptr, "istio-namespace", istioDefaultNS, "Namespace in which Istio is installed")
 }
 
 func addIstioMetaMeshIdFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVar(strptr, "istio-meta-mesh-id", "", "sets ISTIO_META_MESH_ID env var")
+	set.StringVar(strptr, "istio-meta-mesh-id", "", "Sets ISTIO_META_MESH_ID environment variable")
 }
 
 func addIstioMetaClusterIdFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVar(strptr, "istio-meta-cluster-id", "", "sets ISTIO_META_CLUSTER_ID env var")
+	set.StringVar(strptr, "istio-meta-cluster-id", "", "Sets ISTIO_META_CLUSTER_ID environment variable")
+}
+
+func addIstioDiscoveryAddressFlag(set *pflag.FlagSet, strptr *string) {
+	set.StringVar(strptr, "istio-discovery-address", "", "Sets discoveryAddress field within PROXY_CONFIG environment variable")
 }

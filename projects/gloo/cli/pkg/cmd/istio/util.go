@@ -92,6 +92,15 @@ func getIstioMetaClusterID(istioMetaClusterID string) string {
 	return result
 }
 
+// getIstioDiscoveryAddress returns the value set for it, or defaults to "istiod.istio-system.svc:15012" if unset
+func getIstioDiscoveryAddress(discoveryAddress string) string {
+	if discoveryAddress != "" {
+		return discoveryAddress
+	}
+
+	return "istiod.istio-system.svc:15012"
+}
+
 // getJWTPolicy gets the JWT policy from istiod
 func getJWTPolicy(pilotContainer corev1.Container) string {
 	for _, env := range pilotContainer.Env {
