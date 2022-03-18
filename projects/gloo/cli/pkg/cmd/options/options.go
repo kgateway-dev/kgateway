@@ -153,11 +153,12 @@ type Add struct {
 }
 
 type Istio struct {
-	Upstream           string // upstream for which we are changing the istio mTLS settings
-	IncludeUpstreams   bool   // whether or not to modify upstreams when uninstalling mTLS
-	Namespace          string // namespace in which istio is installed
-	IstioMetaMeshId    string // IstioMetaMeshId sets ISTIO_META_MESH_ID env var
-	IstioMetaClusterId string // IstioMetaClusterId sets ISTIO_META_CLUSTER_ID env var
+	Upstream              string // upstream for which we are changing the istio mTLS settings
+	IncludeUpstreams      bool   // whether or not to modify upstreams when uninstalling mTLS
+	Namespace             string // namespace in which istio is installed
+	IstioMetaMeshId       string // IstioMetaMeshId sets ISTIO_META_MESH_ID env var
+	IstioMetaClusterId    string // IstioMetaClusterId sets ISTIO_META_CLUSTER_ID env var
+	IstioDiscoveryAddress string // IstioDiscoveryAddress sets discoveryAddress field within PROXY_CONFIG env var
 }
 
 type InputRoute struct {
