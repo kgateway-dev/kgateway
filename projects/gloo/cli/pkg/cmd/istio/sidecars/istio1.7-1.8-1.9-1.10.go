@@ -1,12 +1,13 @@
 package sidecars
 
 import (
+	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // Sidecar for Istio 1.7.x releases, also works for Istio 1.8.x, 1.9.x and 1.10.x releases
-func generateIstio17or18or19or10Sidecar(version, jwtPolicy string, istioMetaMeshID string, istioMetaClusterID string) *corev1.Container {
+func generateIstio17or18or19or10Sidecar(version, jwtPolicy string, istioMetaMeshID string, istioMetaClusterID string, istioDiscoveryAddress string) *corev1.Container {
 	sidecar := &corev1.Container{
 		Name:  "istio-proxy",
 		Image: "docker.io/istio/proxyv2:" + version,
@@ -25,8 +26,6 @@ func generateIstio17or18or19or10Sidecar(version, jwtPolicy string, istioMetaMesh
 			"45s",
 			"--parentShutdownDuration",
 			"1m0s",
-			"--discoveryAddress",
-			"istiod.istio-system.svc:15012",
 			"--proxyLogLevel=warning",
 			"--proxyComponentLogLevel=misc:error",
 			"--connectTimeout",
@@ -57,7 +56,7 @@ func generateIstio17or18or19or10Sidecar(version, jwtPolicy string, istioMetaMesh
 			},
 			{
 				Name:  "CA_ADDR",
-				Value: "istiod.istio-system.svc:15012",
+				Value: istioDiscoveryAddress,
 			},
 			{
 				Name:  "ISTIO_META_MESH_ID",
@@ -66,6 +65,10 @@ func generateIstio17or18or19or10Sidecar(version, jwtPolicy string, istioMetaMesh
 			{
 				Name:  "ISTIO_META_CLUSTER_ID",
 				Value: istioMetaClusterID,
+			},
+			{
+				Name:  "PROXY_CONFIG",
+				Value: fmt.Sprintf("{ \"discoveryAddress\": %s }", istioDiscoveryAddress),
 			},
 			{
 				Name: "POD_NAME",

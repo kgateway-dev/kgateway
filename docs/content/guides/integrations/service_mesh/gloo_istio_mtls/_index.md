@@ -303,8 +303,6 @@ spec:
         - 45s
         - --parentShutdownDuration
         - 1m0s
-        - --discoveryAddress
-        - istiod.istio-system.svc:15012
         - --proxyLogLevel=warning
         - --proxyComponentLogLevel=misc:error
         - --connectTimeout
@@ -330,6 +328,8 @@ spec:
           value: istiod.istio-system.svc:15012
         - name: ISTIO_META_MESH_ID
           value: cluster.local
+        - name: PROXY_CONFIG
+          value: '{ "discoveryAddress": istiod.istio-system.svc:15012 }'
         - name: POD_NAME
           valueFrom:
             fieldRef:
