@@ -14,11 +14,13 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	version2 "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -927,5 +929,32 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 			continue
 		}
 		return false
+	}
+}
+
+func CheckVersionsMatch(opts *options.Options) {
+	vrs, _ := version.GetClientServerVersions(opts.Top.Ctx, version.NewKube(opts.Metadata.GetNamespace()))
+
+	clientVersionStr := vrs.GetClient().GetVersion()
+
+	glooTypeGateway := false
+	serverVersionStr := ""
+	for _, v := range vrs.GetServer() {
+		if v.Type == version2.GlooType_Gateway {
+			glooTypeGateway = true
+			for _, cvr := range v.GetKubernetes().GetContainers() {
+				if cvr.GetName() == "gateway" {
+					serverVersionStr = cvr.GetTag()
+					break
+				}
+			}
+			if serverVersionStr != "" {
+				break
+			}
+		}
+	}
+
+	if glooTypeGateway && (clientVersionStr != serverVersionStr) {
+		printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Client (v"+clientVersionStr+") and Server (v"+serverVersionStr+") versions do not match.\nConsider running `glooctl upgrade --release=v"+serverVersionStr+"` to upgrade your client to match the deployed server version."))
 	}
 }

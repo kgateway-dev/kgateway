@@ -8,7 +8,6 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
 	"github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1/types"
@@ -22,29 +21,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
-
-func CheckVersionsMatch(opts *options.Options) {
-	vrs, _ := version.GetClientServerVersions(opts.Top.Ctx, version.NewKube(opts.Metadata.GetNamespace()))
-
-	clientVersionStr := vrs.GetClient().GetVersion()
-
-	serverVersionStr := ""
-	for _, v := range vrs.GetServer() {
-		for _, cvr := range v.GetKubernetes().GetContainers() {
-			if cvr.GetName() == "gateway" {
-				serverVersionStr = cvr.GetTag()
-				break
-			}
-		}
-		if serverVersionStr != "" {
-			break
-		}
-	}
-
-	if clientVersionStr != serverVersionStr {
-		printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Client and Server versions do not match. Consider running `glooctl upgrade --release=v"+serverVersionStr+"`"))
-	}
-}
 
 func CheckMulticlusterResources(opts *options.Options) {
 	// check if the gloo fed deployment exists
