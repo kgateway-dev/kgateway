@@ -4,10 +4,6 @@ weight: 50
 description: Illustrating how to combine OpenID Connect with Open Policy Agent to achieve fine grained policy with Gloo Edge.
 ---
 
-{{% notice note %}}
-The OPA feature was introduced with **Gloo Edge Enterprise**, release 0.18.21. If you are using an earlier version, this tutorial will not work.
-{{% /notice %}}
-
 The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open source, general-purpose policy engine that can be used to define and enforce versatile policies in a uniform way across your organization. Compared to an RBAC authorization system, OPA allows you to create more fine-grained policies. For more information, see [the official docs](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
 
 Be sure to check the external auth [configuration overview]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" %}}) for detailed information about how authentication is configured on Virtual Services.
@@ -394,14 +390,13 @@ cat <<EOF > check-jwt.rego
 package test
 
 default allow = false
+[header, payload, signature] := io.jwt.decode(input.state.jwt)
 
 allow {
-    [header, payload, signature] = io.jwt.decode(input.state.jwt)
-    payload["email"] = "admin@example.com"
+    payload["email"] == "admin@example.com"
 }
 allow {
-    [header, payload, signature] = io.jwt.decode(input.state.jwt)
-    payload["email"] = "user@example.com"
+    payload["email"] == "user@example.com"
     not startswith(input.http_request.path, "/owners")
 }
 EOF
