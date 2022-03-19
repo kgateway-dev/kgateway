@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package graphql.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1";
+
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto";
+
+// ------------- Graphql Tools JS Input -------------
+// This is not user-facing and is only used to pass to the graphql-tools js script
+// This is the message which the graphql-tools js script will consume
+message GraphQLToolsStitchingInput {
+  message Schema {
+    message TypeMergeConfig {
+      string selection_set = 1;
+      string field_name = 2;
+      map<string,string> args = 3;
+    }
+    // name of the subschema, arbitrary name but must be unique in a gateway schema.
+    // generally generated from the graphql schema ref
+    string name = 1;
+    // GraphQL schema SDL for the subschema
+    string schema = 2;
+    // Type merge config that the graphql-tools stitching script
+    // needs to generate stitching info for the data plane
+    map<string, TypeMergeConfig> type_merge_config = 3;
+  }
+
+  repeated Schema subschemas = 1;
+}
+
+//------------- Graphql Tools JS Out ------------------
+// This is not user-facing and is only used to pass data back from the graphql-tools js script
+// The message that is the output of the graphql tools stitching info script
+message GraphQlToolsStitchingOutput {
+  map<string, .envoy.config.resolver.stitching.v2.FieldNodes> field_nodes_by_type = 1;
+  map<string, .envoy.config.resolver.stitching.v2.FieldNodeMap> field_nodes_by_field = 2;
+  map<string, .envoy.config.resolver.stitching.v2.MergedTypeConfig> merged_types = 3;
+  string stitched_schema = 4;
+}

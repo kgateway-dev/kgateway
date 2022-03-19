@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Adds user-facing and data plane api for stitching. This changelog is non-user-facing to avoid confusion as this is an enterprise-only feature.
+    issueLink: https://github.com/solo-io/gloo/issues/6034
+    resolvesIssue: false

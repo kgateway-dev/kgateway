@@ -428,6 +428,36 @@ apis:
   envoy.config.listener.proxy_protocol.v3.CustomProxyProtocol:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxyprotocol/proxyprotocol.proto.sk/#CustomProxyProtocol
     package: envoy.config.listener.proxy_protocol.v3
+  envoy.config.resolver.stitching.v2.ArgPath:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#ArgPath
+    package: envoy.config.resolver.stitching.v2
+  envoy.config.resolver.stitching.v2.FieldNode:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#FieldNode
+    package: envoy.config.resolver.stitching.v2
+  envoy.config.resolver.stitching.v2.FieldNodeMap:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#FieldNodeMap
+    package: envoy.config.resolver.stitching.v2
+  envoy.config.resolver.stitching.v2.FieldNodes:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#FieldNodes
+    package: envoy.config.resolver.stitching.v2
+  envoy.config.resolver.stitching.v2.MergedTypeConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#MergedTypeConfig
+    package: envoy.config.resolver.stitching.v2
+  envoy.config.resolver.stitching.v2.ResolverConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#ResolverConfig
+    package: envoy.config.resolver.stitching.v2
+  envoy.config.resolver.stitching.v2.ResolverInfo:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#ResolverInfo
+    package: envoy.config.resolver.stitching.v2
+  envoy.config.resolver.stitching.v2.Schemas:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#Schemas
+    package: envoy.config.resolver.stitching.v2
+  envoy.config.resolver.stitching.v2.StitchingInfo:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#StitchingInfo
+    package: envoy.config.resolver.stitching.v2
+  envoy.config.resolver.stitching.v2.StitchingResolver:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#StitchingResolver
+    package: envoy.config.resolver.stitching.v2
   envoy.config.transformer.xslt.v2.XsltTransformation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformers/xslt/xslt_transformer.proto.sk/#XsltTransformation
     package: envoy.config.transformer.xslt.v2
@@ -911,6 +941,12 @@ apis:
   graphql.gloo.solo.io.GraphQLApi:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GraphQLApi
     package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.GraphQLToolsStitchingInput:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/stitching_info.proto.sk/#GraphQLToolsStitchingInput
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.GraphQlToolsStitchingOutput:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/stitching_info.proto.sk/#GraphQlToolsStitchingOutput
+    package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GrpcDescriptorRegistry:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcDescriptorRegistry
     package: graphql.gloo.solo.io
@@ -934,6 +970,9 @@ apis:
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.ResponseTemplate:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#ResponseTemplate
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.StitchedSchema:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#StitchedSchema
     package: graphql.gloo.solo.io
   grpc.options.gloo.solo.io.DestinationSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto.sk/#DestinationSpec
