@@ -210,6 +210,30 @@ func (m *GrpcResolver) Clone() proto.Message {
 }
 
 // Clone function
+func (m *StitchedSchema) Clone() proto.Message {
+	var target *StitchedSchema
+	if m == nil {
+		return target
+	}
+	target = &StitchedSchema{}
+
+	if m.GetSubschemas() != nil {
+		target.Subschemas = make([]*StitchedSchema_SubschemaConfig, len(m.GetSubschemas()))
+		for idx, v := range m.GetSubschemas() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Subschemas[idx] = h.Clone().(*StitchedSchema_SubschemaConfig)
+			} else {
+				target.Subschemas[idx] = proto.Clone(v).(*StitchedSchema_SubschemaConfig)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *Resolution) Clone() proto.Message {
 	var target *Resolution
 	if m == nil {
@@ -274,12 +298,6 @@ func (m *GraphQLApi) Clone() proto.Message {
 		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.Metadata)
 	}
 
-	if h, ok := interface{}(m.GetExecutableSchema()).(clone.Cloner); ok {
-		target.ExecutableSchema = h.Clone().(*ExecutableSchema)
-	} else {
-		target.ExecutableSchema = proto.Clone(m.GetExecutableSchema()).(*ExecutableSchema)
-	}
-
 	if h, ok := interface{}(m.GetStatPrefix()).(clone.Cloner); ok {
 		target.StatPrefix = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	} else {
@@ -299,6 +317,34 @@ func (m *GraphQLApi) Clone() proto.Message {
 			target.AllowedQueryHashes[idx] = v
 
 		}
+	}
+
+	switch m.Schema.(type) {
+
+	case *GraphQLApi_ExecutableSchema:
+
+		if h, ok := interface{}(m.GetExecutableSchema()).(clone.Cloner); ok {
+			target.Schema = &GraphQLApi_ExecutableSchema{
+				ExecutableSchema: h.Clone().(*ExecutableSchema),
+			}
+		} else {
+			target.Schema = &GraphQLApi_ExecutableSchema{
+				ExecutableSchema: proto.Clone(m.GetExecutableSchema()).(*ExecutableSchema),
+			}
+		}
+
+	case *GraphQLApi_StitchedSchema:
+
+		if h, ok := interface{}(m.GetStitchedSchema()).(clone.Cloner); ok {
+			target.Schema = &GraphQLApi_StitchedSchema{
+				StitchedSchema: h.Clone().(*StitchedSchema),
+			}
+		} else {
+			target.Schema = &GraphQLApi_StitchedSchema{
+				StitchedSchema: proto.Clone(m.GetStitchedSchema()).(*StitchedSchema),
+			}
+		}
+
 	}
 
 	return target
@@ -364,6 +410,58 @@ func (m *Executor) Clone() proto.Message {
 			}
 		}
 
+	}
+
+	return target
+}
+
+// Clone function
+func (m *StitchedSchema_SubschemaConfig) Clone() proto.Message {
+	var target *StitchedSchema_SubschemaConfig
+	if m == nil {
+		return target
+	}
+	target = &StitchedSchema_SubschemaConfig{}
+
+	target.Name = m.GetName()
+
+	target.Namespace = m.GetNamespace()
+
+	if m.GetTypeMerge() != nil {
+		target.TypeMerge = make(map[string]*StitchedSchema_SubschemaConfig_TypeMergeConfig, len(m.GetTypeMerge()))
+		for k, v := range m.GetTypeMerge() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.TypeMerge[k] = h.Clone().(*StitchedSchema_SubschemaConfig_TypeMergeConfig)
+			} else {
+				target.TypeMerge[k] = proto.Clone(v).(*StitchedSchema_SubschemaConfig_TypeMergeConfig)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *StitchedSchema_SubschemaConfig_TypeMergeConfig) Clone() proto.Message {
+	var target *StitchedSchema_SubschemaConfig_TypeMergeConfig
+	if m == nil {
+		return target
+	}
+	target = &StitchedSchema_SubschemaConfig_TypeMergeConfig{}
+
+	target.SelectionSet = m.GetSelectionSet()
+
+	target.QueryName = m.GetQueryName()
+
+	if m.GetArgs() != nil {
+		target.Args = make(map[string]string, len(m.GetArgs()))
+		for k, v := range m.GetArgs() {
+
+			target.Args[k] = v
+
+		}
 	}
 
 	return target
