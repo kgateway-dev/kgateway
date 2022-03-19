@@ -30,7 +30,7 @@ func CheckVersionsMatch(opts *options.Options) {
 
 	serverVersionStr := ""
 	for _, v := range vrs.GetServer() {
-		for _, cvr := range v.GetKubernetes().Containers {
+		for _, cvr := range v.GetKubernetes().GetContainers() {
 			if cvr.GetName() == "gateway" {
 				serverVersionStr = cvr.GetTag()
 				break
