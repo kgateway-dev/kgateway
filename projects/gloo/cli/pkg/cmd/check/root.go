@@ -77,6 +77,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 			CheckMulticlusterResources(opts)
 
+			CheckVersionsMatch(opts)
+
 			if opts.Top.Output.IsJSON() {
 				printer.PrintChecks(new(bytes.Buffer))
 			}
