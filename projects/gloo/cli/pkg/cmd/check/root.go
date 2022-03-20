@@ -955,6 +955,6 @@ func CheckVersionsMatch(opts *options.Options) {
 	}
 
 	if glooTypeGateway && (clientVersionStr != serverVersionStr) {
-		printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Client (v"+clientVersionStr+") and Server (v"+serverVersionStr+") versions do not match.\nConsider running `glooctl upgrade --release=v"+serverVersionStr+"` to upgrade your client to match the deployed server version."))
+		printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Client (v"+clientVersionStr+") and Server (v"+serverVersionStr+") versions do not match.\nConsider running `glooctl upgrade --release=v"+serverVersionStr+"` to update your client to match the deployed server version."))
 	}
 }
