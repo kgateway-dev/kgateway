@@ -940,7 +940,7 @@ func CheckVersionsMatch(opts *options.Options) {
 	glooTypeGateway := false
 	serverVersionStr := ""
 	for _, v := range vrs.GetServer() {
-		if v.Type == version2.GlooType_Gateway {
+		if v.GetType() == version2.GlooType_Gateway {
 			glooTypeGateway = true
 			for _, cvr := range v.GetKubernetes().GetContainers() {
 				if cvr.GetName() == "gateway" {
