@@ -946,7 +946,7 @@ func CheckVersionsMatch(opts *options.Options) {
 			for _, cvr := range v.GetKubernetes().GetContainers() {
 				if cvr.GetName() == "gateway" {
 					if clientVersionStr != cvr.GetTag() {
-						printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Version mismatch - Client (v"+clientVersionStr+") and Server (v"+cvr.GetTag()+") in namespace " + v.GetKubernetes().GetNamespace() + " do not match."))
+						printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Version mismatch - Client (v"+clientVersionStr+") and Server (v"+cvr.GetTag()+") in namespace "+v.GetKubernetes().GetNamespace()+" do not match."))
 					}
 				}
 			}
