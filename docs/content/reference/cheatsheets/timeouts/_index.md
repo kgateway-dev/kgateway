@@ -12,7 +12,7 @@ This page compiles a non-exhaustive list of timeout settings available in Gloo E
 - {{< protobuf name="gateway.solo.io.Gateway" display="Gateway" >}}
   - `httpGateway`
     - `options`
-      - `httpConnectionManagerSettings` (see also [Envoy HCM](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-msg-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager))
+      - `httpConnectionManagerSettings` (see also [Envoy HCM](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-msg-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager) and the {{< protobuf name="hcm.options.gloo.solo.io.HttpConnectionManagerSettings" display="Gloo HCM" >}})
         - `idleTimeout` defaults to **1 hour** (see also [Envoy HttpProtocolOptions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions))
         - `streamIdleTimeout` defaults to **5 minutes**
         - `requestTimeout` (downstream) disabled by default, **unlimited**
@@ -20,6 +20,14 @@ This page compiles a non-exhaustive list of timeout settings available in Gloo E
         - `delayedCloseTimeout` defaults to **1 second**
         - `maxConnectionDuration` disabled by default, **unlimited** (see also [Envoy HttpProtocolOptions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions))
         - `maxStreamDuration` disabled by default, **unlimited** (see also [Envoy HttpProtocolOptions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions))
+      - `dynamicForwardProxy` (see also {{< protobuf name="dfp.options.gloo.solo.io.FilterConfig" display="DynamicForwardProxy" >}})
+        - `dnsCacheConfig`
+          - `dnsRefreshRate` defaults to **60 seconds** for unresolved DNS hosts, or DNS TTL for resolved hosts
+          - `hostTtl` defaults to **5 minutes**
+          - `dnsFailureRefreshRate` 
+            - `baseInterval` no default value
+            - `maxInterval` defaults to **10 times the `baseInterval`**
+          - `dnsQueryTimeout` defaults to to the underlying DNS implementation, or **5 seconds** max
   - `tcpGateway`
     - `options`
       - `tcpProxySettings`
