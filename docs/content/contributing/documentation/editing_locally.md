@@ -65,10 +65,10 @@ export GITHUB_TOKEN=foo
 SKIP_CHANGELOG_GENERATION=true SKIP_SECURITY_SCAN=true SKIP_ENTERPRISE_DOCS_GENERATION=true make serve-site -b
 ```
 
-That command will download any Go dependencies and render the site using Hugo.
+Those commands download any Go dependencies and render the site using Hugo.
 - the `SKIP_CHANGELOG_GENERATION` part tells the program to avoid pulling changelog documentation from git
 - the `SKIP_SECURITY_SCAN` skips the Trivy security scan
-- the `SKIP_ENTERPRISE_DOCS_GENERATION` skip fetching some documentation from a private Solo.io GH repository.
+- the `SKIP_ENTERPRISE_DOCS_GENERATION` skips fetching some documentation from a private Solo.io GitHub repository.
 
 Now, to start the local Hugo server on port 1313, you need to run the following command:
 
