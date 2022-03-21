@@ -97,6 +97,7 @@ type validator struct {
 }
 
 type ValidatorConfig struct {
+	ctx                          context.Context
 	translator                   translator.Translator
 	validationClient             validation.GlooValidationServiceClient
 	writeNamespace               string
@@ -104,8 +105,9 @@ type ValidatorConfig struct {
 	allowWarnings                bool
 }
 
-func NewValidatorConfig(translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool) ValidatorConfig {
+func NewValidatorConfig(ctx context.Context, translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool) ValidatorConfig {
 	return ValidatorConfig{
+		ctx:                          ctx,
 		translator:                   translator,
 		validationClient:             validationClient,
 		writeNamespace:               writeNamespace,
@@ -115,13 +117,16 @@ func NewValidatorConfig(translator translator.Translator, validationClient valid
 }
 
 func NewValidator(cfg ValidatorConfig) *validator {
-	return &validator{
+	v := &validator{
 		translator:                   cfg.translator,
 		validationClient:             cfg.validationClient,
 		writeNamespace:               cfg.writeNamespace,
 		ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure,
 		allowWarnings:                cfg.allowWarnings,
 	}
+	// Initialize validation_gateway_solo_io_valid_config to 1 (valid)
+	utils2.Measure(cfg.ctx, mValidConfig, 1)
+	return v
 }
 
 func (v *validator) ready() bool {

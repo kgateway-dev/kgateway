@@ -38,13 +38,20 @@ var _ = Describe("Validator", func() {
 		t = translator.NewDefaultTranslator(translator.Opts{})
 		vc = &mockValidationClient{}
 		ns = "my-namespace"
-		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))
+		v = NewValidator(NewValidatorConfig(context.TODO(), t, vc, ns, false, false))
 	})
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil, false)
 		Expect(err).To(testutils.HaveInErrorChain(NotReadyErr))
 		err = v.Sync(context.Background(), &gatewayv1.ApiSnapshot{})
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("initializes valid config to 1", func() {
+		rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(rows).NotTo(BeEmpty())
+		Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
 	})
 
 	Context("validating gloo resources", func() {
@@ -299,7 +306,7 @@ var _ = Describe("Validator", func() {
 
 			Context("allowWarnings=false", func() {
 				BeforeEach(func() {
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
+					v = NewValidator(NewValidatorConfig(context.TODO(), t, vc, ns, true, false))
 				})
 				It("rejects a vs with missing route table ref", func() {
 					vc.validate = warnProxy
@@ -340,7 +347,7 @@ var _ = Describe("Validator", func() {
 			Context("ignoreProxyValidation=true", func() {
 				It("accepts the rt", func() {
 					vc.validate = communicationErr
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
+					v = NewValidator(NewValidatorConfig(context.TODO(), t, vc, ns, true, false))
 					us := samples.SimpleUpstream()
 					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 					err := v.Sync(context.TODO(), snap)
@@ -352,7 +359,7 @@ var _ = Describe("Validator", func() {
 			})
 			Context("allowWarnings=true", func() {
 				BeforeEach(func() {
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, true))
+					v = NewValidator(NewValidatorConfig(context.TODO(), t, vc, ns, true, true))
 				})
 				It("accepts a vs with missing route table ref", func() {
 					vc.validate = communicationErr
