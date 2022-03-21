@@ -933,28 +933,23 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 }
 
 func CheckVersionsMatch(opts *options.Options) {
-	vrs, _ := version.GetClientServerVersions(opts.Top.Ctx, version.NewKube(opts.Metadata.GetNamespace()))
+	vrs, err := version.GetClientServerVersions(opts.Top.Ctx, version.NewKube(opts.Metadata.GetNamespace()))
+
+	if err != nil {
+		return
+	}
 
 	clientVersionStr := vrs.GetClient().GetVersion()
 
-	glooTypeGateway := false
-	serverVersionStr := ""
 	for _, v := range vrs.GetServer() {
 		if v.GetType() == version2.GlooType_Gateway {
-			glooTypeGateway = true
 			for _, cvr := range v.GetKubernetes().GetContainers() {
 				if cvr.GetName() == "gateway" {
-					serverVersionStr = cvr.GetTag()
-					break
+					if clientVersionStr != cvr.GetTag() {
+						printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Version mismatch - Client (v"+clientVersionStr+") and Server (v"+cvr.GetTag()+") in namespace " + v.GetKubernetes().GetNamespace() + " do not match."))
+					}
 				}
 			}
-			if serverVersionStr != "" {
-				break
-			}
 		}
-	}
-
-	if glooTypeGateway && (clientVersionStr != serverVersionStr) {
-		printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Client (v"+clientVersionStr+") and Server (v"+serverVersionStr+") versions do not match.\nConsider running `glooctl upgrade --release=v"+serverVersionStr+"` to update your client to match the deployed server version."))
 	}
 }
