@@ -16,26 +16,28 @@ Gloo Edge is a high-performance, plugin-extendable, platform-agnostic API Gatewa
 
 
 ### API Resources:
-- Gateway
-  - Gateway: {{< protobuf name="gateway.solo.io.Gateway" >}}
-  - HTTP Gateway: {{< protobuf name="gateway.solo.io.HttpGateway" >}}
-  - TCP Gateway: {{< protobuf name="gateway.solo.io.TcpGateway" >}}
+Gateway
+- Gateway: {{< protobuf name="gateway.solo.io.Gateway" >}}
+- HTTP Gateway: {{< protobuf name="gateway.solo.io.HttpGateway" >}}
+- TCP Gateway: {{< protobuf name="gateway.solo.io.TcpGateway" >}}
 
-- Settings
-  - Settings: {{< protobuf name="gloo.solo.io.Settings" >}}
+Settings
+- Settings: {{< protobuf name="gloo.solo.io.Settings" >}}
 
-- Routing
-  - VirtualService: {{< protobuf name="gateway.solo.io.VirtualService" >}} - Options: {{< protobuf name="gloo.solo.io.VirtualHostOptions" >}}
-  - RouteTable: {{< protobuf name="gateway.solo.io.RouteTable" >}}
-  - Routes: {{< protobuf name="gateway.solo.io.Route" >}} - Options: {{< protobuf name="gloo.solo.io.RouteOptions" >}}
-  - Upstream: {{< protobuf name="gloo.solo.io.Upstream" >}}
+Routing
+- VirtualService: {{< protobuf name="gateway.solo.io.VirtualService" >}}
+  - Options: {{< protobuf name="gloo.solo.io.VirtualHostOptions" >}}
+- RouteTable: {{< protobuf name="gateway.solo.io.RouteTable" >}}
+- Routes: {{< protobuf name="gateway.solo.io.Route" >}} 
+  - Options: {{< protobuf name="gloo.solo.io.RouteOptions" >}}
+- Upstream: {{< protobuf name="gloo.solo.io.Upstream" >}}
 
-- ExtAuth
-  - AuthConfig: {{< protobuf name="enterprise.gloo.solo.io.AuthConfig" >}}
-  - Global ExtAuth Settings: {{< protobuf name="enterprise.gloo.solo.io.Settings" >}}
+ExtAuth
+- AuthConfig: {{< protobuf name="enterprise.gloo.solo.io.AuthConfig" >}}
+- Global ExtAuth Settings: {{< protobuf name="enterprise.gloo.solo.io.Settings" >}}
   
-- RateLimit
-  - RateLimitConfig: {{< protobuf name="ratelimit.api.solo.io.RateLimitConfig" >}}
+RateLimit
+- RateLimitConfig: {{< protobuf name="ratelimit.api.solo.io.RateLimitConfig" >}}
 
 <!-- Start of HubSpot Embed Code -->
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
