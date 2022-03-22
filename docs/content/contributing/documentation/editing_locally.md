@@ -60,12 +60,28 @@ In the previous sections you installed the necessary tools and downloaded the co
 Navigate to the `docs` folder from the Gloo Edge repo root and run `make` to start up the site.
 
 ```bash
-SKIP_CHANGELOG_GENERATION=true make serve-site -b
+cd docs
+export GITHUB_TOKEN=foo
+SKIP_CHANGELOG_GENERATION=true SKIP_SECURITY_SCAN=true SKIP_ENTERPRISE_DOCS_GENERATION=true make serve-site -b
 ```
 
-That command will download any Go dependencies and render the site using Hugo, then launch a local version of the site running on port 1313. The `SKIP_CHANGELOG_GENERATION` part tells the program to avoid pulling changelog documentation from git. Once the command completes, you should see output similar to this:
+Those commands download any Go dependencies and render the site using Hugo.
+- the `SKIP_CHANGELOG_GENERATION` part tells the program to avoid pulling changelog documentation from git
+- the `SKIP_SECURITY_SCAN` skips the Trivy security scan
+- the `SKIP_ENTERPRISE_DOCS_GENERATION` skips fetching some documentation from a private Solo.io GitHub repository.
+
+Now, to start the local Hugo server on port 1313, you need to run the following command:
+
+```bash
+HUGO_PARAMS_noSecurityScan=true hugo --config docs.toml --themesDir themes server -D
+```
+
+The `HUGO_PARAMS_noSecurityScan` environment variable tells Hugo to not render security scan reports (requires a corporate Solo.io GH account).
+
+Once the command completes, you should see output similar to this:
 
 ```console
+...
 Environment: "development"
 Serving pages from memory
 Running in Fast Render Mode. For full rebuilds on change: hugo server --disableFastRender
