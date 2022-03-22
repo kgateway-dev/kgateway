@@ -45,9 +45,9 @@ Review this page for a list of commonly used timeout settings in Gloo Edge, orga
     - `requestTimeout` defaults to **100ms**
   - `extauth`
     - `requestTimeout` defaults to **200ms**
-  - `gloo` (see also [GlooOptions]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#gloooptions" >}}))
+  - `gloo` (see also {{< protobuf name="gloo.solo.io.GlooOptions" display="GlooOptions" >}})
     - `endpointsWarmingTimeout` defaults to **5 minutes**
-    - `awsOptions` (see also [AwsOptions]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#awsoptions" >}}))
+    - `awsOptions` (see also {{< protobuf name="gloo.solo.io.Settings" display="AwsOptions" >}} )
       - `credentialRefreshDelay` defaults to **not refreshing** on time period. Suggested is 15 minutes.
 
 
@@ -56,19 +56,19 @@ Review this page for a list of commonly used timeout settings in Gloo Edge, orga
 - {{< protobuf name="enterprise.gloo.solo.io.AuthConfig" display="AuthConfig" >}}
   - `configs`
     - `oauth2`
-      - `oidcAuthorizationCode` (see also [OidcAuthorizationCode]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#oidcauthorizationcode" >}}))
+      - `oidcAuthorizationCode` (see also {{< protobuf name="enterprise.gloo.solo.io.OidcAuthorizationCode" display="OidcAuthorizationCode" >}})
         - `discoveryPollInterval` defaults to **30 minutes**
         - `session`
           - `cookieOptions`
             - `maxAge` defaults to **30 days**
           - `redis`
             - `preExpiryBuffer` defaults to **2 seconds**
-      - `accessTokenValidation` (see also [AccessTokenValidation]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#accesstokenvalidation" >}}))
+      - `accessTokenValidation` (see also {{< protobuf name="enterprise.gloo.solo.io.AccessTokenValidation" display="AccessTokenValidation" >}})
         - `jwt`
           - `remoteJwks`
             - `refreshInterval` defaults to **5 minutes**
         - `cacheTimeout` defaults to **10 minutes**
-    - `passThroughAuth` (see also [PassThroughAuth]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#passthroughauth" >}}))
+    - `passThroughAuth` (see also {{< protobuf name="enterprise.gloo.solo.io.PassThroughAuth" display="PassThroughAuth" >}})
       - `grpc`
         - `connectionTimeout` defaults to **5 seconds**
       - `http`
@@ -81,7 +81,7 @@ Review this page for a list of commonly used timeout settings in Gloo Edge, orga
   - `sslConfig`
     - `transportSocketConnectTimeout` disabled by default, **unlimited** (or limited by connection/idle timeout). Suggested is 10 seconds.
   - `virtualHost`
-    - `options` (see also [VirtualHostOptions]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#virtualhostoptions" >}}))
+    - `options` (see also {{< protobuf name="gloo.solo.io.VirtualHostOptions" display="VirtualHostOptions" >}} )
       - `retries`
         - `perTryTimeout` defaults to **15 seconds** (Route timeout)
       - `jwtStaged`
@@ -91,7 +91,7 @@ Review this page for a list of commonly used timeout settings in Gloo Edge, orga
               - `remote`
                 - `cacheDuration` defaults to **5 minutes**
     - `routes`
-      - `options` (see also [RouteOptions]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#routeoptions" >}}))
+      - `options` (see also {{< protobuf name="gloo.solo.io.RouteOptions" display="RouteOptions" >}})
         - `timeout` defaults to **15 seconds**
         - `retries`
           - `perTryTimeout` defaults to **15 seconds** (Route timeout)
