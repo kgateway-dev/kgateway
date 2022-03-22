@@ -430,6 +430,76 @@ func (m *StitchedSchema) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+func (m *MockResolver) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.MockResolver")); err != nil {
+		return 0, err
+	}
+
+	switch m.Response.(type) {
+
+	case *MockResolver_SyncResponse:
+
+		if h, ok := interface{}(m.GetSyncResponse()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("SyncResponse")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetSyncResponse(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("SyncResponse")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *MockResolver_AsyncResponse_:
+
+		if h, ok := interface{}(m.GetAsyncResponse()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("AsyncResponse")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetAsyncResponse(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("AsyncResponse")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *MockResolver_ErrorResponse:
+
+		if _, err = hasher.Write([]byte(m.GetErrorResponse())); err != nil {
+			return 0, err
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *Resolution) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -500,6 +570,28 @@ func (m *Resolution) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("GrpcResolver")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *Resolution_MockResolver:
+
+		if h, ok := interface{}(m.GetMockResolver()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("MockResolver")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetMockResolver(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("MockResolver")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -873,6 +965,62 @@ func (m *StitchedSchema_SubschemaConfig_TypeMergeConfig) Hash(hasher hash.Hash64
 			return 0, err
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *MockResolver_AsyncResponse) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.MockResolver_AsyncResponse")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetResponse()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Response")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetResponse(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Response")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetDelay()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Delay")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetDelay(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Delay")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil

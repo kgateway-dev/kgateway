@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
+	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+
 	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
 
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
@@ -234,6 +236,51 @@ func (m *StitchedSchema) Clone() proto.Message {
 }
 
 // Clone function
+func (m *MockResolver) Clone() proto.Message {
+	var target *MockResolver
+	if m == nil {
+		return target
+	}
+	target = &MockResolver{}
+
+	switch m.Response.(type) {
+
+	case *MockResolver_SyncResponse:
+
+		if h, ok := interface{}(m.GetSyncResponse()).(clone.Cloner); ok {
+			target.Response = &MockResolver_SyncResponse{
+				SyncResponse: h.Clone().(*github_com_golang_protobuf_ptypes_struct.Value),
+			}
+		} else {
+			target.Response = &MockResolver_SyncResponse{
+				SyncResponse: proto.Clone(m.GetSyncResponse()).(*github_com_golang_protobuf_ptypes_struct.Value),
+			}
+		}
+
+	case *MockResolver_AsyncResponse_:
+
+		if h, ok := interface{}(m.GetAsyncResponse()).(clone.Cloner); ok {
+			target.Response = &MockResolver_AsyncResponse_{
+				AsyncResponse: h.Clone().(*MockResolver_AsyncResponse),
+			}
+		} else {
+			target.Response = &MockResolver_AsyncResponse_{
+				AsyncResponse: proto.Clone(m.GetAsyncResponse()).(*MockResolver_AsyncResponse),
+			}
+		}
+
+	case *MockResolver_ErrorResponse:
+
+		target.Response = &MockResolver_ErrorResponse{
+			ErrorResponse: m.GetErrorResponse(),
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
 func (m *Resolution) Clone() proto.Message {
 	var target *Resolution
 	if m == nil {
@@ -270,6 +317,18 @@ func (m *Resolution) Clone() proto.Message {
 		} else {
 			target.Resolver = &Resolution_GrpcResolver{
 				GrpcResolver: proto.Clone(m.GetGrpcResolver()).(*GrpcResolver),
+			}
+		}
+
+	case *Resolution_MockResolver:
+
+		if h, ok := interface{}(m.GetMockResolver()).(clone.Cloner); ok {
+			target.Resolver = &Resolution_MockResolver{
+				MockResolver: h.Clone().(*MockResolver),
+			}
+		} else {
+			target.Resolver = &Resolution_MockResolver{
+				MockResolver: proto.Clone(m.GetMockResolver()).(*MockResolver),
 			}
 		}
 
@@ -462,6 +521,29 @@ func (m *StitchedSchema_SubschemaConfig_TypeMergeConfig) Clone() proto.Message {
 			target.Args[k] = v
 
 		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *MockResolver_AsyncResponse) Clone() proto.Message {
+	var target *MockResolver_AsyncResponse
+	if m == nil {
+		return target
+	}
+	target = &MockResolver_AsyncResponse{}
+
+	if h, ok := interface{}(m.GetResponse()).(clone.Cloner); ok {
+		target.Response = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Value)
+	} else {
+		target.Response = proto.Clone(m.GetResponse()).(*github_com_golang_protobuf_ptypes_struct.Value)
+	}
+
+	if h, ok := interface{}(m.GetDelay()).(clone.Cloner); ok {
+		target.Delay = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.Delay = proto.Clone(m.GetDelay()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
 	return target

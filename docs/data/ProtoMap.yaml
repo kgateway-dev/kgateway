@@ -956,6 +956,9 @@ apis:
   graphql.gloo.solo.io.GrpcResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcResolver
     package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.MockResolver:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#MockResolver
+    package: graphql.gloo.solo.io
   graphql.gloo.solo.io.PersistedQueryCacheConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#PersistedQueryCacheConfig
     package: graphql.gloo.solo.io

@@ -312,7 +312,7 @@ message StaticResolver {
     // Responds asynchronously after delay_ms
     AsyncResponse async_response = 2;
 
-    //todo - include error_response as needed for testing errors
+    string error_response = 3;
   }
 }
 
