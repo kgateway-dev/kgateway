@@ -63,6 +63,20 @@ spec:
                                           type: string
                                       type: object
                                   type: object
+                                mockResolver:
+                                  properties:
+                                    asyncResponse:
+                                      properties:
+                                        delay:
+                                          type: string
+                                        response:
+                                          x-kubernetes-preserve-unknown-fields: true
+                                      type: object
+                                    errorResponse:
+                                      type: string
+                                    syncResponse:
+                                      x-kubernetes-preserve-unknown-fields: true
+                                  type: object
                                 restResolver:
                                   properties:
                                     request:
