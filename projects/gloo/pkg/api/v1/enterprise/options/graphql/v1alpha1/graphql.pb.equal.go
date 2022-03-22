@@ -372,6 +372,78 @@ func (m *StitchedSchema) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *MockResolver) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*MockResolver)
+	if !ok {
+		that2, ok := that.(MockResolver)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Response.(type) {
+
+	case *MockResolver_SyncResponse:
+		if _, ok := target.Response.(*MockResolver_SyncResponse); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetSyncResponse()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSyncResponse()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetSyncResponse(), target.GetSyncResponse()) {
+				return false
+			}
+		}
+
+	case *MockResolver_AsyncResponse_:
+		if _, ok := target.Response.(*MockResolver_AsyncResponse_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAsyncResponse()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAsyncResponse()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAsyncResponse(), target.GetAsyncResponse()) {
+				return false
+			}
+		}
+
+	case *MockResolver_ErrorResponse:
+		if _, ok := target.Response.(*MockResolver_ErrorResponse); !ok {
+			return false
+		}
+
+		if strings.Compare(m.GetErrorResponse(), target.GetErrorResponse()) != 0 {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Response != target.Response {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Resolution) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -430,6 +502,21 @@ func (m *Resolution) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetGrpcResolver(), target.GetGrpcResolver()) {
+				return false
+			}
+		}
+
+	case *Resolution_MockResolver:
+		if _, ok := target.Resolver.(*Resolution_MockResolver); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetMockResolver()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMockResolver()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetMockResolver(), target.GetMockResolver()) {
 				return false
 			}
 		}
@@ -769,6 +856,50 @@ func (m *StitchedSchema_SubschemaConfig_TypeMergeConfig) Equal(that interface{})
 			return false
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *MockResolver_AsyncResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*MockResolver_AsyncResponse)
+	if !ok {
+		that2, ok := that.(MockResolver_AsyncResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetResponse()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetResponse()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetResponse(), target.GetResponse()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetDelay()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDelay()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDelay(), target.GetDelay()) {
+			return false
+		}
 	}
 
 	return true
