@@ -97,7 +97,6 @@ type validator struct {
 }
 
 type ValidatorConfig struct {
-	ctx                          context.Context
 	translator                   translator.Translator
 	validationClient             validation.GlooValidationServiceClient
 	writeNamespace               string
@@ -105,9 +104,8 @@ type ValidatorConfig struct {
 	allowWarnings                bool
 }
 
-func NewValidatorConfig(ctx context.Context, translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool) ValidatorConfig {
+func NewValidatorConfig(translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool) ValidatorConfig {
 	return ValidatorConfig{
-		ctx:                          ctx,
 		translator:                   translator,
 		validationClient:             validationClient,
 		writeNamespace:               writeNamespace,
@@ -117,16 +115,13 @@ func NewValidatorConfig(ctx context.Context, translator translator.Translator, v
 }
 
 func NewValidator(cfg ValidatorConfig) *validator {
-	v := &validator{
+	return &validator{
 		translator:                   cfg.translator,
 		validationClient:             cfg.validationClient,
 		writeNamespace:               cfg.writeNamespace,
 		ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure,
 		allowWarnings:                cfg.allowWarnings,
 	}
-	// Initialize validation_gateway_solo_io_valid_config to 1 (valid)
-	utils2.Measure(cfg.ctx, mValidConfig, 1)
-	return v
 }
 
 func (v *validator) ready() bool {
@@ -150,6 +145,18 @@ func (v *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 
 	v.lock.Lock()
 	defer v.lock.Unlock()
+
+	// When the pod is first starting (aka the first snapshot is received),
+	// set the value of mValidConfig with respect to the translation loop above.
+	// Without this, mValidConfig will not be exported on /metrics until a new
+	// resource is applied (https://github.com/solo-io/gloo/issues/5949).
+	if v.latestSnapshot == nil {
+		if errs == nil {
+			utils2.MeasureOne(ctx, mValidConfig)
+		} else {
+			utils2.MeasureZero(ctx, mValidConfig)
+		}
+	}
 
 	v.latestSnapshotErr = errs
 	v.latestSnapshot = &snapCopy
