@@ -80,7 +80,7 @@ func Run(ctx context.Context, opts Options) error {
 				zap.String("secretNamespace", secretConfig.SecretNamespace))
 		}
 	}
-	if !existAndValid{
+	if !existAndValid {
 		if err := kube.CreateTlsSecret(ctx, kubeClient, secretConfig); err != nil {
 			return eris.Wrapf(err, "failed creating secret")
 		}
