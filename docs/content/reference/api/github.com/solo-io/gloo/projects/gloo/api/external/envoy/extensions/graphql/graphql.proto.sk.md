@@ -444,13 +444,15 @@ Only meant for integration testing
 ```yaml
 "syncResponse": string
 "asyncResponse": .envoy.config.filter.http.graphql.v2.StaticResolver.AsyncResponse
+"errorResponse": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `syncResponse` | `string` | Responds synchronously (on the same dispatch loop as the resolve call). Only one of `syncResponse` or `asyncResponse` can be set. |
-| `asyncResponse` | [.envoy.config.filter.http.graphql.v2.StaticResolver.AsyncResponse](../graphql.proto.sk/#asyncresponse) | Responds asynchronously after delay_ms. Only one of `asyncResponse` or `syncResponse` can be set. |
+| `syncResponse` | `string` | Responds synchronously (on the same dispatch loop as the resolve call). Only one of `syncResponse`, `asyncResponse`, or `errorResponse` can be set. |
+| `asyncResponse` | [.envoy.config.filter.http.graphql.v2.StaticResolver.AsyncResponse](../graphql.proto.sk/#asyncresponse) | Responds asynchronously after delay_ms. Only one of `asyncResponse`, `syncResponse`, or `errorResponse` can be set. |
+| `errorResponse` | `string` |  Only one of `errorResponse`, `syncResponse`, or `asyncResponse` can be set. |
 
 
 
