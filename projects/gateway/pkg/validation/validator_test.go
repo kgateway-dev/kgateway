@@ -34,6 +34,7 @@ var _ = Describe("Validator", func() {
 		ns string
 		v  *validator
 	)
+
 	BeforeEach(func() {
 		t = translator.NewDefaultTranslator(translator.Opts{})
 		vc = &mockValidationClient{}
@@ -41,20 +42,12 @@ var _ = Describe("Validator", func() {
 		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))
 		mValidConfig = utils.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
 	})
+
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil, false)
 		Expect(err).To(testutils.HaveInErrorChain(NotReadyErr))
 		err = v.Sync(context.Background(), &gatewayv1.ApiSnapshot{})
 		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("does not have data for mValidConfig until Sync is called", func() {
-		// Swap in a new gauge, since other tests will pollute the original
-		mValidConfig = utils.MakeGauge("validation.gateway.solo.io/valid_config2", "A boolean indicating whether gloo config is valid")
-
-		rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config2")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(rows).To(BeEmpty())
 	})
 
 	It("has mValidConfig=1 after Sync is called with valid snapshot", func() {
