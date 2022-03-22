@@ -50,5 +50,5 @@ That's it! Now, you can try the [Hello World example]({{% versioned_link_path fr
 
 Configure your first cloud-native application with the Gloo Edge API gateway by working your way through the following Instruqt sandbox environment. 
 
-<iframe width="1140" height="640" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" src="TODO" style="border: 0;"></iframe>
+<iframe width="1140" height="640" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" src="https://play.instruqt.com/embed/soloio/tracks/zero-to-gloo-edge?token=em_pweesjcvxxsdfzdy" style="border: 0;"></iframe>
 
