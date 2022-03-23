@@ -178,6 +178,12 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 		target.NormalizePath = proto.Clone(m.GetNormalizePath()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetUuidRequestIdConfig()).(clone.Cloner); ok {
+		target.UuidRequestIdConfig = h.Clone().(*HttpConnectionManagerSettings_UuidRequestIdConfigSettings)
+	} else {
+		target.UuidRequestIdConfig = proto.Clone(m.GetUuidRequestIdConfig()).(*HttpConnectionManagerSettings_UuidRequestIdConfigSettings)
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
@@ -218,6 +224,29 @@ func (m *HttpConnectionManagerSettings_SetCurrentClientCertDetails) Clone() prot
 	target.Dns = m.GetDns()
 
 	target.Uri = m.GetUri()
+
+	return target
+}
+
+// Clone function
+func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) Clone() proto.Message {
+	var target *HttpConnectionManagerSettings_UuidRequestIdConfigSettings
+	if m == nil {
+		return target
+	}
+	target = &HttpConnectionManagerSettings_UuidRequestIdConfigSettings{}
+
+	if h, ok := interface{}(m.GetPackTraceReason()).(clone.Cloner); ok {
+		target.PackTraceReason = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.PackTraceReason = proto.Clone(m.GetPackTraceReason()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if h, ok := interface{}(m.GetUseRequestIdForTraceSampling()).(clone.Cloner); ok {
+		target.UseRequestIdForTraceSampling = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.UseRequestIdForTraceSampling = proto.Clone(m.GetUseRequestIdForTraceSampling()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	return target
 }

@@ -6,6 +6,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hc
 
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/any.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
 
@@ -188,4 +189,21 @@ message HttpConnectionManagerSettings {
     // Should paths be normalized according to RFC 3986 before any processing of requests by HTTP filters or routing?
     // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto
     google.protobuf.BoolValue normalize_path = 30;
+
+    // Contains setup for Envoy's UuidRequestIdConfig
+    message UuidRequestIdConfigSettings {
+        // Whether the implementation alters the UUID to contain the trace sampling decision as per the
+        // `UuidRequestIdConfig` message documentation. This defaults to true. If disabled no
+        // modification to the UUID will be performed. It is important to note that if disabled,
+        // stable sampling of traces, access logs, etc. will no longer work and only random sampling will
+        // be possible.
+        google.protobuf.BoolValue pack_trace_reason = 1;
+
+        // Set whether to use :ref:`x-request-id<config_http_conn_man_headers_x-request-id>` for sampling or not.
+        // This defaults to true. See the :ref:`context propagation <arch_overview_tracing_context_propagation>`
+        // overview for more information.
+        google.protobuf.BoolValue use_request_id_for_trace_sampling = 2;
+    }
+
+    UuidRequestIdConfigSettings uuid_request_id_config = 37;
 }
