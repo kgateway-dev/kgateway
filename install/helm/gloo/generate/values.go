@@ -32,7 +32,7 @@ type Global struct {
 	IstioIntegration  IstioIntegration `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
 	ExtraSpecs        *bool            `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
 	ExtauthCustomYaml *bool            `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
-	Console           *ConsoleOptions  `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
+	Console           interface{}      `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
 }
 
 type Namespace struct {
@@ -601,9 +601,4 @@ type IstioIntegration struct {
 	LabelInstallNamespace *bool `json:"labelInstallNamespace,omitempty" desc:"If creating a namespace for Gloo, include the 'istio-injection: enabled' label to allow Istio sidecar injection for Gloo pods. Be aware that Istio's default injection behavior will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio's configs or using gloo's global.istioIntegration.disableAutoinjection flag is recommended."`
 	WhitelistDiscovery    *bool `json:"whitelistDiscovery,omitempty" desc:"Annotate the discovery pod for Istio sidecar injection to ensure that it gets a sidecar even when namespace-wide auto-injection is disabled. Generally only needed for FDS is enabled."`
 	DisableAutoinjection  *bool `json:"disableAutoinjection,omitempty" desc:"Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true if Gloo's namespace is marked for Istio discovery, as some pods do not immediately work with an Istio sidecar without extra manual configuration."`
-}
-
-type ConsoleOptions struct {
-	WriteEnabled       *bool `json:"writeEnabled,omitempty" desc:"Whether custom resources can be created, updated, and deleted via the UI (default false)."`
-	ApiExplorerEnabled *bool `json:"apiExplorerEnabled,omitempty" desc:"Whether the GraphQL API Explorer is enabled (default true)."`
 }
