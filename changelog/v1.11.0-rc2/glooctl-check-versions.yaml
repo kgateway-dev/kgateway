@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/6112
+  description: > 
+    Glooctl check will now check to make sure that the client and server versions match.
+    If they do not match, it will display a WARN and suggest you update your client.
