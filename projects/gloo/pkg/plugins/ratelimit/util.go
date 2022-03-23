@@ -12,7 +12,7 @@ import (
 func GenerateEnvoyConfigForFilterWith(
 	upstreamRef *core.ResourceRef,
 	domain string,
-	currentState uint32,
+	stage uint32,
 	timeout *duration.Duration,
 	denyOnFail bool,
 ) *envoyratelimit.RateLimit {
@@ -29,7 +29,7 @@ func GenerateEnvoyConfigForFilterWith(
 	}
 	envoyrl := envoyratelimit.RateLimit{
 		Domain:          domain,
-		Stage:           currentState,
+		Stage:           stage,
 		RequestType:     requestType,
 		Timeout:         curtimeout,
 		FailureModeDeny: denyOnFail,

@@ -57,7 +57,8 @@ message RateLimitConfigRefs {
   repeated RateLimitConfigRef refs = 1;
 }
 
-// TODO (sam-heilbron)
+// A list of references to `RateLimitConfig` resources.
+// Each resource represents a rate limit policy that will be independently enforced.
 message RateLimitStagedConfigRefs {
   RateLimitConfigRefs before_ext_auth = 1;
   RateLimitConfigRefs after_ext_auth = 2;
@@ -68,8 +69,6 @@ message RateLimitConfigRef {
   string name = 1;
   string namespace = 2;
 }
-
-
 
 // Use this field if you want to inline the Envoy rate limits for this VirtualHost.
 // Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
@@ -82,7 +81,10 @@ message RateLimitVhostExtension {
   repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1;
 }
 
-// TODO (sam-heilbron) add comments
+// Use this field if you want to inline the Envoy rate limits for this VirtualHost.
+// Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
+// specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
+// running a custom rate limit server you need to configure it yourself.
 message RateLimitStagedVhostExtension {
   RateLimitVhostExtension before_ext_auth = 1;
 
@@ -103,7 +105,10 @@ message RateLimitRouteExtension {
     repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 2;
 }
 
-// TODO (sam-heilbron) add comments
+// Use this field if you want to inline the Envoy rate limits for this Route.
+// Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
+// specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
+// running a custom rate limit server you need to configure it yourself.
 message RateLimitStagedRouteExtension {
   RateLimitRouteExtension before_ext_auth = 1;
 

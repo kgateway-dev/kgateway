@@ -275,7 +275,8 @@ func (x *RateLimitConfigRefs) GetRefs() []*RateLimitConfigRef {
 	return nil
 }
 
-// TODO (sam-heilbron)
+// A list of references to `RateLimitConfig` resources.
+// Each resource represents a rate limit policy that will be independently enforced.
 type RateLimitStagedConfigRefs struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -440,7 +441,10 @@ func (x *RateLimitVhostExtension) GetRateLimits() []*v1alpha1.RateLimitActions {
 	return nil
 }
 
-// TODO (sam-heilbron) add comments
+// Use this field if you want to inline the Envoy rate limits for this VirtualHost.
+// Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
+// specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
+// running a custom rate limit server you need to configure it yourself.
 type RateLimitStagedVhostExtension struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -558,7 +562,10 @@ func (x *RateLimitRouteExtension) GetRateLimits() []*v1alpha1.RateLimitActions {
 	return nil
 }
 
-// TODO (sam-heilbron) add comments
+// Use this field if you want to inline the Envoy rate limits for this Route.
+// Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
+// specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
+// running a custom rate limit server you need to configure it yourself.
 type RateLimitStagedRouteExtension struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

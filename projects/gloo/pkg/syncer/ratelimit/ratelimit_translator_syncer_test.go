@@ -17,7 +17,7 @@ import (
 )
 
 var _ = Describe("RatelimitTranslatorSyncer", func() {
-	
+
 	var (
 		ctx         context.Context
 		cancel      context.CancelFunc
@@ -243,7 +243,6 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 							},
 						},
 					}
-
 
 					proxy = &gloov1.Proxy{
 						Metadata: &skcore.Metadata{
