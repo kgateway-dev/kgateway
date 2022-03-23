@@ -14,11 +14,13 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	version2 "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -76,6 +78,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			}
 
 			CheckMulticlusterResources(opts)
+
+			CheckVersionsMatch(opts)
 
 			if opts.Top.Output.IsJSON() {
 				printer.PrintChecks(new(bytes.Buffer))
@@ -925,5 +929,27 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 			continue
 		}
 		return false
+	}
+}
+
+func CheckVersionsMatch(opts *options.Options) {
+	vrs, err := version.GetClientServerVersions(opts.Top.Ctx, version.NewKube(opts.Metadata.GetNamespace()))
+
+	if err != nil {
+		return
+	}
+
+	clientVersionStr := vrs.GetClient().GetVersion()
+
+	for _, v := range vrs.GetServer() {
+		if v.GetType() == version2.GlooType_Gateway {
+			for _, cvr := range v.GetKubernetes().GetContainers() {
+				if cvr.GetName() == "gateway" {
+					if clientVersionStr != cvr.GetTag() {
+						printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Version mismatch - Client (v"+clientVersionStr+") and Server (v"+cvr.GetTag()+") in namespace "+v.GetKubernetes().GetNamespace()+" do not match."))
+					}
+				}
+			}
+		}
 	}
 }
