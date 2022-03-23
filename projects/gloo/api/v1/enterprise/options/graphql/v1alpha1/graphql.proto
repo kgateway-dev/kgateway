@@ -20,6 +20,7 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 import "validate/validate.proto";
 
+import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
@@ -262,6 +263,25 @@ message StitchedSchema {
   repeated SubschemaConfig subschemas = 1;
 }
 
+message MockResolver {
+  message AsyncResponse {
+    // The response from the resolver as a JSON.
+    google.protobuf.Value response = 1;
+    // The delay time before this response is sent back to the graphql server
+    google.protobuf.Duration delay = 2;
+  }
+  oneof response {
+    // The JSON response from the resolver that will be "responded" immediately.
+    google.protobuf.Value sync_response = 1;
+
+    // Used to create a asynchronous JSON response from the Mock resolver.
+    AsyncResponse async_response = 2;
+
+    // Responds as an error with the given message. This can be any string message.
+    string error_response = 3;
+  }
+}
+
 // Define a named resolver which can be then matched to a field using the `resolve` directive.
 // if a field does not have resolver, the default resolver will be used.
 // the default resolver takes the field with the same name from the parent, and uses that value
@@ -270,8 +290,17 @@ message StitchedSchema {
 message Resolution {
   // The resolver to use.
   oneof resolver {
+    // REST resolver used to translate and send graphql requests
+    // to a REST upstream.
     RESTResolver rest_resolver = 1;
+    // gRPC resolver used to translate and send graphql requests
+    // to a gRPC upstream.
     GrpcResolver grpc_resolver = 2;
+    // Resolver used to mock responses from an upstream.
+    // This resolver doesn't make a call out to an upstream, but can mock responses
+    // either synchronously or with a delay.
+    // Additionally, can be used to mock errors from an upstream.
+    MockResolver mock_resolver = 4;
   }
 
   // The stats prefix which will be used for this resolver.
