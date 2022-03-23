@@ -458,10 +458,10 @@ func (m *ConsoleOptions) Clone() proto.Message {
 	}
 	target = &ConsoleOptions{}
 
-	if h, ok := interface{}(m.GetWriteEnabled()).(clone.Cloner); ok {
-		target.WriteEnabled = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	if h, ok := interface{}(m.GetReadOnly()).(clone.Cloner); ok {
+		target.ReadOnly = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
-		target.WriteEnabled = proto.Clone(m.GetWriteEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.ReadOnly = proto.Clone(m.GetReadOnly()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetApiExplorerEnabled()).(clone.Cloner); ok {

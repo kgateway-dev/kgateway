@@ -1045,18 +1045,18 @@ func (m *ConsoleOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetWriteEnabled()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("WriteEnabled")); err != nil {
+	if h, ok := interface{}(m.GetReadOnly()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ReadOnly")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetWriteEnabled(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetReadOnly(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("WriteEnabled")); err != nil {
+			if _, err = hasher.Write([]byte("ReadOnly")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

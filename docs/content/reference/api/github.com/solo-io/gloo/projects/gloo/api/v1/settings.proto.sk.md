@@ -706,15 +706,15 @@ options for configuring admission control / validation
 Settings used by the Enterprise Console (UI)
 
 ```yaml
-"writeEnabled": .google.protobuf.BoolValue
+"readOnly": .google.protobuf.BoolValue
 "apiExplorerEnabled": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `writeEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, then custom resources can be created, updated, and deleted via the UI. If false, then resources can only be viewed in read-only mode. Defaults to false. |
-| `apiExplorerEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether to enable the GraphQL API Explorer. Defaults to true. |
+| `readOnly` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, then custom resources can only be viewed in read-only mode in the UI. If false, then resources can be created, updated, and deleted via the UI. Currently, create/update/delete operations are only supported for GraphQL resources. This feature requires a Gloo Edge Enterprise license with GraphQL enabled. Defaults to true. |
+| `apiExplorerEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether to enable the GraphQL API Explorer. This feature requires a Gloo Edge Enterprise license with GraphQL enabled. Defaults to true. |
 
 
 

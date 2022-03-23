@@ -29,7 +29,7 @@ spec:
                   apiExplorerEnabled:
                     nullable: true
                     type: boolean
-                  writeEnabled:
+                  readOnly:
                     nullable: true
                     type: boolean
                 type: object

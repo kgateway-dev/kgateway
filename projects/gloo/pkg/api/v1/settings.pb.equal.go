@@ -720,12 +720,12 @@ func (m *ConsoleOptions) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetWriteEnabled()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetWriteEnabled()) {
+	if h, ok := interface{}(m.GetReadOnly()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReadOnly()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetWriteEnabled(), target.GetWriteEnabled()) {
+		if !proto.Equal(m.GetReadOnly(), target.GetReadOnly()) {
 			return false
 		}
 	}

@@ -645,12 +645,14 @@ message GatewayOptions {
 
 // Settings used by the Enterprise Console (UI)
 message ConsoleOptions {
-    // If true, then custom resources can be created, updated, and deleted via the UI.
-    // If false, then resources can only be viewed in read-only mode.
-    // Defaults to false.
-    google.protobuf.BoolValue write_enabled = 1;
+    // If true, then custom resources can only be viewed in read-only mode in the UI.
+    // If false, then resources can be created, updated, and deleted via the UI.
+    // Currently, create/update/delete operations are only supported for GraphQL resources.
+    // This feature requires a Gloo Edge Enterprise license with GraphQL enabled.
+    // Defaults to true.
+    google.protobuf.BoolValue read_only = 1;
 
-    // Whether to enable the GraphQL API Explorer.
+    // Whether to enable the GraphQL API Explorer. This feature requires a Gloo Edge Enterprise license with GraphQL enabled.
     // Defaults to true.
     google.protobuf.BoolValue api_explorer_enabled = 2;
 }
