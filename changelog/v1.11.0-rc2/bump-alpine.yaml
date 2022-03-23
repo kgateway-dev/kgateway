@@ -1,3 +1,4 @@
+changelog:
 - type: DEPENDENCY_BUMP
   dependencyOwner: linux
   dependencyRepo: alpine
