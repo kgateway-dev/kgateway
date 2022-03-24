@@ -331,6 +331,119 @@ func (m *GrpcResolver) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *StitchedSchema) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*StitchedSchema)
+	if !ok {
+		that2, ok := that.(StitchedSchema)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSubschemas()) != len(target.GetSubschemas()) {
+		return false
+	}
+	for idx, v := range m.GetSubschemas() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSubschemas()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSubschemas()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *MockResolver) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*MockResolver)
+	if !ok {
+		that2, ok := that.(MockResolver)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Response.(type) {
+
+	case *MockResolver_SyncResponse:
+		if _, ok := target.Response.(*MockResolver_SyncResponse); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetSyncResponse()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSyncResponse()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetSyncResponse(), target.GetSyncResponse()) {
+				return false
+			}
+		}
+
+	case *MockResolver_AsyncResponse_:
+		if _, ok := target.Response.(*MockResolver_AsyncResponse_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAsyncResponse()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAsyncResponse()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAsyncResponse(), target.GetAsyncResponse()) {
+				return false
+			}
+		}
+
+	case *MockResolver_ErrorResponse:
+		if _, ok := target.Response.(*MockResolver_ErrorResponse); !ok {
+			return false
+		}
+
+		if strings.Compare(m.GetErrorResponse(), target.GetErrorResponse()) != 0 {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Response != target.Response {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Resolution) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -393,6 +506,21 @@ func (m *Resolution) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Resolution_MockResolver:
+		if _, ok := target.Resolver.(*Resolution_MockResolver); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetMockResolver()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMockResolver()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetMockResolver(), target.GetMockResolver()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.Resolver != target.Resolver {
@@ -444,16 +572,6 @@ func (m *GraphQLApi) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetExecutableSchema()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetExecutableSchema()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetExecutableSchema(), target.GetExecutableSchema()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetStatPrefix()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetStatPrefix()) {
 			return false
@@ -483,6 +601,45 @@ func (m *GraphQLApi) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	switch m.Schema.(type) {
+
+	case *GraphQLApi_ExecutableSchema:
+		if _, ok := target.Schema.(*GraphQLApi_ExecutableSchema); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetExecutableSchema()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetExecutableSchema()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetExecutableSchema(), target.GetExecutableSchema()) {
+				return false
+			}
+		}
+
+	case *GraphQLApi_StitchedSchema:
+		if _, ok := target.Schema.(*GraphQLApi_StitchedSchema); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetStitchedSchema()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetStitchedSchema()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetStitchedSchema(), target.GetStitchedSchema()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Schema != target.Schema {
+			return false
+		}
 	}
 
 	return true
@@ -605,6 +762,142 @@ func (m *Executor) Equal(that interface{}) bool {
 	default:
 		// m is nil but target is not nil
 		if m.Executor != target.Executor {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *StitchedSchema_SubschemaConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*StitchedSchema_SubschemaConfig)
+	if !ok {
+		that2, ok := that.(StitchedSchema_SubschemaConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetNamespace(), target.GetNamespace()) != 0 {
+		return false
+	}
+
+	if len(m.GetTypeMerge()) != len(target.GetTypeMerge()) {
+		return false
+	}
+	for k, v := range m.GetTypeMerge() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTypeMerge()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetTypeMerge()[k]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *StitchedSchema_SubschemaConfig_TypeMergeConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*StitchedSchema_SubschemaConfig_TypeMergeConfig)
+	if !ok {
+		that2, ok := that.(StitchedSchema_SubschemaConfig_TypeMergeConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetSelectionSet(), target.GetSelectionSet()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetQueryName(), target.GetQueryName()) != 0 {
+		return false
+	}
+
+	if len(m.GetArgs()) != len(target.GetArgs()) {
+		return false
+	}
+	for k, v := range m.GetArgs() {
+
+		if strings.Compare(v, target.GetArgs()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *MockResolver_AsyncResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*MockResolver_AsyncResponse)
+	if !ok {
+		that2, ok := that.(MockResolver_AsyncResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetResponse()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetResponse()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetResponse(), target.GetResponse()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetDelay()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDelay()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDelay(), target.GetDelay()) {
 			return false
 		}
 	}

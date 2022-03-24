@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: "[Enterprise only] Adds mock resolver to the resolver options. This can be used for local testing as well as end to end testing."

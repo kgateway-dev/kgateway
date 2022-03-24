@@ -12,8 +12,8 @@ spec:
     listKind: GraphQLApiList
     plural: graphqlapis
     shortNames:
-    - qgl
-    - gqgl
+    - gql
+    - ggql
     singular: graphqlapi
   scope: Namespaced
   versions:
@@ -62,6 +62,20 @@ spec:
                                         namespace:
                                           type: string
                                       type: object
+                                  type: object
+                                mockResolver:
+                                  properties:
+                                    asyncResponse:
+                                      properties:
+                                        delay:
+                                          type: string
+                                        response:
+                                          x-kubernetes-preserve-unknown-fields: true
+                                      type: object
+                                    errorResponse:
+                                      type: string
+                                    syncResponse:
+                                      x-kubernetes-preserve-unknown-fields: true
                                   type: object
                                 restResolver:
                                   properties:
@@ -132,6 +146,31 @@ spec:
               statPrefix:
                 nullable: true
                 type: string
+              stitchedSchema:
+                properties:
+                  subschemas:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        typeMerge:
+                          additionalProperties:
+                            properties:
+                              args:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                              queryName:
+                                type: string
+                              selectionSet:
+                                type: string
+                            type: object
+                          type: object
+                      type: object
+                    type: array
+                type: object
             type: object
           status:
             type: object

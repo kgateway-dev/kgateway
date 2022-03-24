@@ -37,6 +37,7 @@ weight: 5
 - [VirtualServiceOptions](#virtualserviceoptions)
 - [GatewayOptions](#gatewayoptions)
 - [ValidationOptions](#validationoptions)
+- [ConsoleOptions](#consoleoptions)
   
 
 
@@ -85,6 +86,7 @@ Represents global settings for all the Gloo components.
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
 "observabilityOptions": .gloo.solo.io.Settings.ObservabilityOptions
 "upstreamOptions": .gloo.solo.io.UpstreamOptions
+"consoleOptions": .gloo.solo.io.ConsoleOptions
 
 ```
 
@@ -121,6 +123,7 @@ Represents global settings for all the Gloo components.
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `observabilityOptions` | [.gloo.solo.io.Settings.ObservabilityOptions](../settings.proto.sk/#observabilityoptions) | Provides settings related to the observability deployment (enterprise only). |
 | `upstreamOptions` | [.gloo.solo.io.UpstreamOptions](../settings.proto.sk/#upstreamoptions) | Default configuration to use for upstreams, when not provided by specific upstream When these properties are defined on an upstream, this configuration will be ignored. |
+| `consoleOptions` | [.gloo.solo.io.ConsoleOptions](../settings.proto.sk/#consoleoptions) | Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI). |
 
 
 
@@ -692,6 +695,26 @@ options for configuring admission control / validation
 | `warnRouteShortCircuiting` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo will start assigning warnings to resources that would result in route short-circuiting within a virtual host, for example: - prefix routes that make later routes unreachable - regex routes that make later routes unreachable - duplicate matchers. |
 | `disableTransformationValidation` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default gloo will attempt to validate transformations by calling out to a local envoy binary in `validate` mode. Calling this local envoy binary can become slow when done many times during a single validation. Setting this to true will stop gloo from calling out to envoy to validate the transformations, which may speed up the validation time considerably, but may also cause the transformation config to fail after being sent to envoy. When disabling this, ensure that your transformations are valid prior to applying them. |
 | `validationServerGrpcMaxSizeBytes` | [.google.protobuf.Int32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/int-32-value) | By default, gRPC validation messages between gateway and gloo pods have a max message size of 4 MB. Setting this value sets the gRPC max message size in bytes for the gloo validation server. This should only be changed if necessary. If not included, the gRPC max message size will be the default of 4 MB. |
+
+
+
+
+---
+### ConsoleOptions
+
+ 
+Settings used by the Enterprise Console (UI)
+
+```yaml
+"readOnly": .google.protobuf.BoolValue
+"apiExplorerEnabled": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `readOnly` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, then custom resources can only be viewed in read-only mode in the UI. If false, then resources can be created, updated, and deleted via the UI. Currently, create/update/delete operations are only supported for GraphQL resources. This feature requires a Gloo Edge Enterprise license with GraphQL enabled. Defaults to true. |
+| `apiExplorerEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether to enable the GraphQL API Explorer. This feature requires a Gloo Edge Enterprise license with GraphQL enabled. Defaults to true. |
 
 
 
