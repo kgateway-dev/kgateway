@@ -40,16 +40,21 @@ var _ = Describe("Plugin", func() {
 			}
 			var nilOptions *envoy_config_core_v3.Http2ProtocolOptions = nil
 
+			err := p.ProcessUpstream(params, falseVal, out)
+			Expect(err).NotTo(HaveOccurred())
 			test, err := utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.upstreams.http.http_protocol_options"])
 			Expect(err).NotTo(HaveOccurred())
 			explicitHttpConfig, ok := test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig)
 			Expect(ok).To(BeTrue())
-
-			err = p.ProcessUpstream(params, falseVal, out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(explicitHttpConfig.GetHttp2ProtocolOptions()).To(Equal(nilOptions))
 
 			err = p.ProcessUpstream(params, nilVal, out)
+			Expect(err).NotTo(HaveOccurred())
+			test, err = utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.upstreams.http.http_protocol_options"])
+			Expect(err).NotTo(HaveOccurred())
+			explicitHttpConfig, ok = test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig)
+			Expect(ok).To(BeTrue())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(explicitHttpConfig.GetHttp2ProtocolOptions()).To(Equal(nilOptions))
 		})
