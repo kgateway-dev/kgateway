@@ -4291,10 +4291,17 @@ metadata:
 				Describe("gateway proxy -- readConfigMulticluster config", func() {
 					It("has a service for the gateway proxy config dump port", func() {
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gatewayProxies.gatewayProxy.readConfig=true",
-								"gatewayProxies.gatewayProxy.readConfigMulticluster=true"},
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.readConfig=true",
+								"gatewayProxies.gatewayProxy.readConfigMulticluster=true",
+							},
 						})
 						serviceLabels := map[string]string{
+							"app":              "gloo",
+							"gloo":             "gateway-proxy",
+							"gateway-proxy-id": "gateway-proxy",
+						}
+						serviceSelector := map[string]string{
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
 						}
@@ -4305,7 +4312,7 @@ metadata:
 							Labels:    serviceLabels,
 						}
 						gatewayProxyConfigDumpService := rb.GetService()
-						gatewayProxyConfigDumpService.Spec.Selector = serviceLabels
+						gatewayProxyConfigDumpService.Spec.Selector = serviceSelector
 						gatewayProxyConfigDumpService.Spec.Ports = []v1.ServicePort{
 							{
 								Protocol: "TCP",
