@@ -28,6 +28,7 @@ weight: 5
 - [ExecutableSchema](#executableschema)
 - [Executor](#executor)
 - [Local](#local)
+- [LocalExecutorOptions](#localexecutoroptions)
   
 
 
@@ -405,6 +406,23 @@ Execute schema using resolvers.
 | ----- | ---- | ----------- | 
 | `resolutions` | `map<string, .graphql.gloo.solo.io.Resolution>` | Mapping of resolver name to resolver definition. The names are used to reference the resolver in the graphql schema. For example, a resolver with name "authorResolver" can be defined as ```yaml authorResolver: restResolver: upstreamRef: ... request: ... response: ... ``` and referenced in the graphql schema as ```gql type Query { author: String @resolve(name: "authorResolver") } ```. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
+
+
+
+
+---
+### LocalExecutorOptions
+
+
+
+```yaml
+"maxDepth": int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `maxDepth` | `int` | Max GraphQL operation (query/mutation/subscription) depth. This sets a limitation on the max nesting on a query that runs against this schema. any GraphQL operation that runs past the `max_depth` will add an error message to the response and will return as `null`. As as simple example, if the schema is ```gql type Query { employee: Employee } type Employee { manager: Employee name: String } ``` and we set a `max_depth` of `3` and we run a query ```gql query { # query depth : 0 employee { # query depth : 1 manager { # query depth : 2 name # query depth : 3 manager { # query depth : 3 name # query depth : 4 } } } } ``` the graphql server will respond with a response: ```json { "data" : { "employee" : { "manager" : { "name" : "Manager 1", "manager" : { "name" : null }}}}, "errors": [ {"message": "field 'name' exceeds the max operation depth of 3 for this schema"} ] }. |
 
 
 

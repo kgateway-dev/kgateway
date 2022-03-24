@@ -574,3 +574,16 @@ func (m *Executor_Local) Clone() proto.Message {
 
 	return target
 }
+
+// Clone function
+func (m *Executor_Local_LocalExecutorOptions) Clone() proto.Message {
+	var target *Executor_Local_LocalExecutorOptions
+	if m == nil {
+		return target
+	}
+	target = &Executor_Local_LocalExecutorOptions{}
+
+	target.MaxDepth = m.GetMaxDepth()
+
+	return target
+}
