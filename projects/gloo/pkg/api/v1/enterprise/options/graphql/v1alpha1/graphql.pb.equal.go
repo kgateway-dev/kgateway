@@ -947,6 +947,16 @@ func (m *Executor_Local) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
+			return false
+		}
+	}
+
 	return true
 }
 

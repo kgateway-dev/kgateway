@@ -399,6 +399,7 @@ Execute schema using resolvers.
 ```yaml
 "resolutions": map<string, .graphql.gloo.solo.io.Resolution>
 "enableIntrospection": bool
+"options": .graphql.gloo.solo.io.Executor.Local.LocalExecutorOptions
 
 ```
 
@@ -406,6 +407,7 @@ Execute schema using resolvers.
 | ----- | ---- | ----------- | 
 | `resolutions` | `map<string, .graphql.gloo.solo.io.Resolution>` | Mapping of resolver name to resolver definition. The names are used to reference the resolver in the graphql schema. For example, a resolver with name "authorResolver" can be defined as ```yaml authorResolver: restResolver: upstreamRef: ... request: ... response: ... ``` and referenced in the graphql schema as ```gql type Query { author: String @resolve(name: "authorResolver") } ```. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
+| `options` | [.graphql.gloo.solo.io.Executor.Local.LocalExecutorOptions](../graphql.proto.sk/#localexecutoroptions) | Options that apply to this local executable schema. |
 
 
 

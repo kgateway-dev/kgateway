@@ -572,6 +572,12 @@ func (m *Executor_Local) Clone() proto.Message {
 
 	target.EnableIntrospection = m.GetEnableIntrospection()
 
+	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
+		target.Options = h.Clone().(*Executor_Local_LocalExecutorOptions)
+	} else {
+		target.Options = proto.Clone(m.GetOptions()).(*Executor_Local_LocalExecutorOptions)
+	}
+
 	return target
 }
 

@@ -35,6 +35,12 @@ spec:
                         properties:
                           enableIntrospection:
                             type: boolean
+                          options:
+                            properties:
+                              maxDepth:
+                                format: int32
+                                type: integer
+                            type: object
                           resolutions:
                             additionalProperties:
                               properties:
