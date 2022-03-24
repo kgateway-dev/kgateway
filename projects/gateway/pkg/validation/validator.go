@@ -146,6 +146,18 @@ func (v *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	v.lock.Lock()
 	defer v.lock.Unlock()
 
+	// When the pod is first starting (aka the first snapshot is received),
+	// set the value of mValidConfig with respect to the translation loop above.
+	// Without this, mValidConfig will not be exported on /metrics until a new
+	// resource is applied (https://github.com/solo-io/gloo/issues/5949).
+	if v.latestSnapshot == nil {
+		if errs == nil {
+			utils2.MeasureOne(ctx, mValidConfig)
+		} else {
+			utils2.MeasureZero(ctx, mValidConfig)
+		}
+	}
+
 	v.latestSnapshotErr = errs
 	v.latestSnapshot = &snapCopy
 
