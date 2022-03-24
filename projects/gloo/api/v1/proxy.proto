@@ -466,7 +466,7 @@ message RedirectAction {
         // * The pattern ``(?i)/xxx/`` paired with a substitution string of ``/yyy/``
         //   would do a case-insensitive match and transform path ``/aaa/XxX/bbb`` to
         //   ``/aaa/yyy/bbb``.
-        solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute regex_rewrite = 32;
+        .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute regex_rewrite = 32;
     }
 
     enum RedirectResponseCode {

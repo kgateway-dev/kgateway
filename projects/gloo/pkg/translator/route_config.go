@@ -313,6 +313,10 @@ func (h *httpRouteConfigurationTranslator) setAction(
 			out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_PrefixRewrite{
 				PrefixRewrite: pathRewrite.PrefixRewrite,
 			}
+		case *v1.RedirectAction_RegexRewrite:
+			out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_RegexRewrite{
+				RegexRewrite: regexutils.ConvertRegexMatchAndSubstitute(params, pathRewrite.RegexRewrite),
+			}
 		}
 	}
 }
