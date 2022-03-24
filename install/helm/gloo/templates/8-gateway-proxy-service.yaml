@@ -107,6 +107,7 @@ metadata:
   name: {{ $name | kebabcase }}-config-dump-service
   namespace: {{ .Release.Namespace }}
   labels:
+    app: gloo
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
 spec:
@@ -128,6 +129,7 @@ metadata:
   name: {{ $name | kebabcase }}-monitoring-service
   namespace: {{ .Release.Namespace }}
   labels:
+    app: gloo
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
 spec:

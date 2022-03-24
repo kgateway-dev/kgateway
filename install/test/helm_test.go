@@ -466,6 +466,7 @@ var _ = Describe("Helm Test", func() {
 						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Service %+v should be able to convert from unstructured", service))
 						structuredService, ok := serviceObject.(*v1.Service)
 						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Service %+v should be able to cast to a structured service", service))
+						ExpectWithOffset(1, structuredService.Labels["app"]).To(Equal("gloo"), "Service has app=gloo label")
 
 						if serviceContainsMonitoringPort(structuredService) {
 							actualServicesWithHttpMonitoring = append(actualServicesWithHttpMonitoring, structuredService.GetName())
@@ -504,6 +505,7 @@ var _ = Describe("Helm Test", func() {
 						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+						ExpectWithOffset(1, structuredDeployment.Labels["app"]).To(Equal("gloo"), "Deployment has app=gloo label")
 
 						if deploymentContainsMonitoringPort(structuredDeployment) {
 							actualDeploymentsWithHttpMonitoring = append(actualDeploymentsWithHttpMonitoring, structuredDeployment.GetName())
@@ -4429,10 +4431,17 @@ metadata:
 				Describe("gateway proxy -- readConfigMulticluster config", func() {
 					It("has a service for the gateway proxy config dump port", func() {
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gatewayProxies.gatewayProxy.readConfig=true",
-								"gatewayProxies.gatewayProxy.readConfigMulticluster=true"},
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.readConfig=true",
+								"gatewayProxies.gatewayProxy.readConfigMulticluster=true",
+							},
 						})
 						serviceLabels := map[string]string{
+							"app":              "gloo",
+							"gloo":             "gateway-proxy",
+							"gateway-proxy-id": "gateway-proxy",
+						}
+						serviceSelector := map[string]string{
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
 						}
@@ -4443,7 +4452,7 @@ metadata:
 							Labels:    serviceLabels,
 						}
 						gatewayProxyConfigDumpService := rb.GetService()
-						gatewayProxyConfigDumpService.Spec.Selector = serviceLabels
+						gatewayProxyConfigDumpService.Spec.Selector = serviceSelector
 						gatewayProxyConfigDumpService.Spec.Ports = []v1.ServicePort{
 							{
 								Protocol: "TCP",
