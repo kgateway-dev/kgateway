@@ -34,17 +34,57 @@ var _ = Describe("Validator", func() {
 		ns string
 		v  *validator
 	)
+
 	BeforeEach(func() {
 		t = translator.NewDefaultTranslator(translator.Opts{})
 		vc = &mockValidationClient{}
 		ns = "my-namespace"
 		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))
+		mValidConfig = utils.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
 	})
+
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil, false)
 		Expect(err).To(testutils.HaveInErrorChain(NotReadyErr))
 		err = v.Sync(context.Background(), &gatewayv1.ApiSnapshot{})
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("has mValidConfig=1 after Sync is called with valid snapshot", func() {
+		err := v.Sync(context.TODO(), &gatewayv1.ApiSnapshot{})
+		Expect(err).NotTo(HaveOccurred())
+
+		rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(rows).NotTo(BeEmpty())
+		Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
+	})
+
+	It("has mValidConfig=0 after Sync is called with invalid snapshot", func() {
+		us := samples.SimpleUpstream()
+		snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+		snap.Gateways.Each(func(element *gatewayv1.Gateway) {
+			http, ok := element.GatewayType.(*gatewayv1.Gateway_HttpGateway)
+			if !ok {
+				return
+			}
+			http.HttpGateway.VirtualServiceExpressions = &gatewayv1.VirtualServiceSelectorExpressions{
+				Expressions: []*gatewayv1.VirtualServiceSelectorExpressions_Expression{
+					{
+						Key:      "a",
+						Operator: gatewayv1.VirtualServiceSelectorExpressions_Expression_Equals,
+						Values:   []string{"b", "c"},
+					},
+				},
+			}
+		})
+		err := v.Sync(context.TODO(), snap)
+		Expect(err).To(HaveOccurred())
+
+		rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(rows).NotTo(BeEmpty())
+		Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(0))
 	})
 
 	Context("validating gloo resources", func() {
@@ -693,14 +733,21 @@ var _ = Describe("Validator", func() {
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], true)
-				Expect(err).To(HaveOccurred())
-
-				// there should be no metric value written, since dryRun was true
+				// Metric should be valid after successful Sync
 				rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(rows).NotTo(BeEmpty())
-				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(-1))
+				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
+
+				// Run a failed validation
+				_, err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], true)
+				Expect(err).To(HaveOccurred())
+
+				// The metric should still be valid, since dryRun was true
+				rows, err = view.RetrieveData("validation.gateway.solo.io/valid_config")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rows).NotTo(BeEmpty())
+				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
 			})
 		})
 		Context("dry-run", func() {
