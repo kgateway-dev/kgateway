@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/solo-projects/issues/3116
+  description: Add Enterprise console options to Settings.
+  resolvesIssue: false
