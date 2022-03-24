@@ -709,7 +709,7 @@ Execute schema using resolvers.
 ```yaml
 "resolutions": []envoy.config.filter.http.graphql.v2.Resolution
 "enableIntrospection": bool
-"maxDepth": int
+"maxDepth": .google.protobuf.UInt32Value
 
 ```
 
@@ -717,7 +717,7 @@ Execute schema using resolvers.
 | ----- | ---- | ----------- | 
 | `resolutions` | [[]envoy.config.filter.http.graphql.v2.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
-| `maxDepth` | `int` | The max amount of nesting a query can be executed against this schema. e.g. the following query has these depths: query { # Depth: 0 me { # Depth: 1 friends { # Depth: 2 friends # Depth: 3 } } } If the max_depth is set to 2, then the query at depth 3 will recieve an error as a response. By default max_depth is 0, which is unbounded query depth. |
+| `maxDepth` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The max amount of nesting a query can be executed against this schema. e.g. the following query has these depths: query { # Depth: 0 me { # Depth: 1 friends { # Depth: 2 friends # Depth: 3 } } } If the max_depth is set to 2, then the query at depth 3 will receive an error as a response. An unset max_depth value (default) or 0 for the max_depth will be unbounded query depth. |
 
 
 
