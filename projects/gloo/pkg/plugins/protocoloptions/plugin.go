@@ -17,10 +17,11 @@ var (
 )
 
 const (
-	ExtensionName = "protocol_options"
-	MinWindowSize = 65535
-	MaxWindowSize = 2147483647
-	MaxUInt32     = 4294967295
+	ExtensionName        = "protocol_options"
+	MinWindowSize        = 65535
+	MaxWindowSize        = 2147483647
+	MinConcurrentStreams = 1
+	MaxConcurrentStreams = 2147483647
 )
 
 type plugin struct{}
@@ -39,10 +40,6 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
-	if in.GetUseHttp2() == nil || !in.GetUseHttp2().GetValue() {
-		return nil
-	}
-
 	// Both these values default to 268435456 if unset.
 	sws := in.GetInitialStreamWindowSize()
 	if sws != nil && !validateWindowSize(sws.GetValue()) {
@@ -59,10 +56,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	mcs := in.GetMaxConcurrentStreams()
-	if mcs != nil {
+	if mcs != nil && validateConcurrentStreams(mcs.GetValue()) {
 		mcs = &wrappers.UInt32Value{Value: mcs.GetValue()}
 	} else {
-		mcs = &wrappers.UInt32Value{Value: MaxUInt32}
+		mcs = &wrappers.UInt32Value{Value: MaxConcurrentStreams}
 	}
 
 	protobuf := &envoy_extensions_upstreams_http_v3.HttpProtocolOptions{
@@ -78,16 +75,25 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			},
 		},
 	}
-
-	err := pluginutils.SetExtensionProtocolOptions(out, "envoy.upstreams.http.http_protocol_options", protobuf)
-	if err != nil {
-		return errors.Wrapf(err, "converting protocol options to struct")
+	if in.GetUseHttp2() != nil && in.GetUseHttp2().GetValue() {
+		err := pluginutils.SetExtensionProtocolOptions(out, "envoy.upstreams.http.http_protocol_options", protobuf)
+		if err != nil {
+			return errors.Wrapf(err, "converting protocol options to struct")
+		}
 	}
+
 	return nil
 }
 
 func validateWindowSize(size uint32) bool {
 	if size < MinWindowSize || size > MaxWindowSize {
+		return false
+	}
+	return true
+}
+
+func validateConcurrentStreams(size uint32) bool {
+	if size < MinConcurrentStreams || size > MaxConcurrentStreams {
 		return false
 	}
 	return true

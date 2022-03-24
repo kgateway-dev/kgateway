@@ -43,20 +43,18 @@ var _ = Describe("Plugin", func() {
 			err := p.ProcessUpstream(params, falseVal, out)
 			Expect(err).NotTo(HaveOccurred())
 			test, err := utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.upstreams.http.http_protocol_options"])
-			Expect(err).NotTo(HaveOccurred())
-			explicitHttpConfig, ok := test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig)
-			Expect(ok).To(BeTrue())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(explicitHttpConfig.GetHttp2ProtocolOptions()).To(Equal(nilOptions))
+			Expect(err).To(HaveOccurred())
+			explicitHttpConfig, ok := test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions)
+			Expect(ok).To(BeFalse())
+			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions()).To(Equal(nilOptions))
 
 			err = p.ProcessUpstream(params, nilVal, out)
 			Expect(err).NotTo(HaveOccurred())
 			test, err = utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.upstreams.http.http_protocol_options"])
-			Expect(err).NotTo(HaveOccurred())
-			explicitHttpConfig, ok = test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig)
-			Expect(ok).To(BeTrue())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(explicitHttpConfig.GetHttp2ProtocolOptions()).To(Equal(nilOptions))
+			Expect(err).To(HaveOccurred())
+			explicitHttpConfig, ok = test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions)
+			Expect(ok).To(BeFalse())
+			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions()).To(Equal(nilOptions))
 		})
 
 		It("should not accept connection streams that are too small", func() {
@@ -88,18 +86,16 @@ var _ = Describe("Plugin", func() {
 
 			err := p.ProcessUpstream(params, validUpstream, out)
 			Expect(err).NotTo(HaveOccurred())
-
-			test, err := utils.
-				AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.upstreams.http.http_protocol_options"])
+			test, err := utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.upstreams.http.http_protocol_options"])
 			Expect(err).NotTo(HaveOccurred())
-			explicitHttpConfig, ok := test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig)
+			explicitHttpConfig, ok := test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions)
 			Expect(ok).To(BeTrue())
-			Expect(explicitHttpConfig.GetHttp2ProtocolOptions()).NotTo(BeNil())
-			Expect(explicitHttpConfig.GetHttp2ProtocolOptions().GetMaxConcurrentStreams()).
+			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions()).NotTo(BeNil())
+			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions().GetMaxConcurrentStreams()).
 				To(Equal(&wrappers.UInt32Value{Value: 1234}))
-			Expect(explicitHttpConfig.GetHttp2ProtocolOptions().GetInitialStreamWindowSize()).
+			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions().GetInitialStreamWindowSize()).
 				To(Equal(&wrappers.UInt32Value{Value: 268435457}))
-			Expect(explicitHttpConfig.GetHttp2ProtocolOptions().GetInitialConnectionWindowSize()).
+			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions().GetInitialConnectionWindowSize()).
 				To(Equal(&wrappers.UInt32Value{Value: 65535}))
 		})
 	})
