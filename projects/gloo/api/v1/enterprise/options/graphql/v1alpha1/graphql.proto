@@ -455,6 +455,9 @@ message Executor {
     // Do we enable introspection for the schema? general recommendation is to
     // disable this for production and hence it defaults to false.
     bool enable_introspection = 2;
+
+    // Options that apply to this local executable schema
+    LocalExecutorOptions options = 3;
   }
 
   oneof executor {

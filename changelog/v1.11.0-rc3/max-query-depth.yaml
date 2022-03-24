@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: "[Enterprise only] Adds max_depth to local executable schema options."
