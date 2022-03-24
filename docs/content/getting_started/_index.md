@@ -11,36 +11,36 @@ After you have a cluster, you can install Gloo Edge through the command line wit
 
 {{< tabs >}}
 {{% tab name="glooctl"%}}
-First, install `glooctl`. The steps vary on your operating system.
-* Linux or macOS
-  ```shell
-  curl -sL https://run.solo.io/gloo/install | sh
-  export PATH=$HOME/.gloo/bin:$PATH
-  ```
-* Windows
-  ```shell
-  (New-Object System.Net.WebClient).DownloadString("https://run.solo.io/gloo/windows/install") | iex
-  $env:Path += ";$env:userprofile/.gloo/bin/"
-  ``` 
-Then, install Gloo Edge.
-```shell
-glooctl install gateway
-````
+1. Install `glooctl`. The steps vary on your operating system.
+   * Linux or macOS
+     ```shell
+     curl -sL https://run.solo.io/gloo/install | sh
+     export PATH=$HOME/.gloo/bin:$PATH
+     ```
+   * Windows
+     ```shell
+     (New-Object System.Net.WebClient).DownloadString("https://run.solo.io/gloo/windows/install") | iex
+     $env:Path += ";$env:userprofile/.gloo/bin/"
+     ``` 
+2. Install Gloo Edge.
+   ```shell
+   glooctl install gateway
+   ````
 {{% /tab %}}
 {{% tab name="Helm"%}}
-First, add the Helm repository for Gloo Edge.
-```shell
-helm repo add gloo https://storage.googleapis.com/solo-public-helm
-helm repo update
-```
-Next, create the namespace for the Gloo Edge components.
-```shell
-kubectl create namespace gloo-system
-```
-Finally, install the Helm chart.
-```shell
-helm install gloo gloo/gloo --namespace gloo-system
-```
+1. Add the Helm repository for Gloo Edge.
+   ```shell
+   helm repo add gloo https://storage.googleapis.com/solo-public-helm
+   helm repo update
+   ```
+2. Create the namespace for the Gloo Edge components.
+   ```shell
+   kubectl create namespace gloo-system
+   ```
+3. Install the Helm chart.
+   ```shell
+   helm install gloo gloo/gloo --namespace gloo-system
+   ```
 {{% /tab %}}
 {{< /tabs >}}
 
