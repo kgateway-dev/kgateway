@@ -61,7 +61,8 @@ type Plugin struct {
 	TranslateTransformation    TranslateTransformationFn
 	settings                   *v1.Settings
 
-	// validationLruCache is a map of: (transformation hash) -> (error state)
+	// validationLruCache is a map of: (transformation hash) -> error state
+	// this is usually a typed error but may be an untyped nil interface
 	validationLruCache *lru.Cache
 }
 
