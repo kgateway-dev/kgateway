@@ -86,6 +86,7 @@ func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL
 	}
 
 	defer closeConn()
+	defer refClient.Reset()
 
 	_, err = refClient.ListServices()
 	if err != nil {
@@ -105,7 +106,6 @@ func (f *UpstreamFunctionDiscovery) DetectFunctions(ctx context.Context, url *ur
 	err := contextutils.NewExponentioalBackoff(contextutils.ExponentioalBackoff{}).Backoff(ctx, func(ctx context.Context) error {
 		return f.DetectFunctionsOnce(ctx, url, updatecb)
 	})
-
 	if err != nil {
 		if ctx.Err() != nil {
 			return multierror.Append(err, ctx.Err())
@@ -136,6 +136,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 		return err
 	}
 	defer closeConn()
+	defer refClient.Reset()
 
 	services, err := refClient.ListServices()
 	if err != nil {
