@@ -379,7 +379,7 @@ message CacheControl {
   // - root fields (i.e. Query, Mutation, Subscription) default to 0s
   // - non-root, non-scalar fields (i.e. object, interface, or union; or a list of those types) default to 0s
   // - all other fields inherit the max_age from their parent.
-  uint32 max_age = 1;
+  google.protobuf.UInt32Value max_age = 1;
   enum CacheControlScope {
     UNSET = 0;
     // Responses for requests with Authorization header fields must not be stored in a shared cache.
@@ -474,7 +474,7 @@ message Executor {
     // }
     // If the max_depth is set to 2, then the query at depth 3 will receive an error as a response.
     // An unset max_depth value (default) or 0 for the max_depth will be unbounded query depth.
-    google.protobuf.UInt32Value max_depth = 3;
+    uint32 max_depth = 3;
   }
 
   // NOT IMPLEMENTED YET!

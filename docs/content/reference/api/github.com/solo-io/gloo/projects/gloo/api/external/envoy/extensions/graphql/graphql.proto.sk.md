@@ -570,7 +570,7 @@ TODO: Talk with product -- apollo does not do this, but we could factor in upstr
 response into our inheritance model.
 
 ```yaml
-"maxAge": int
+"maxAge": .google.protobuf.UInt32Value
 "scope": .envoy.config.filter.http.graphql.v2.CacheControl.CacheControlScope
 "inheritMaxAge": bool
 
@@ -578,7 +578,7 @@ response into our inheritance model.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `maxAge` | `int` | number of seconds to cache result for. the max_age used for a single graphql request is the minimum of all fields requested. default max_age rules work as follows: - root fields (i.e. Query, Mutation, Subscription) default to 0s - non-root, non-scalar fields (i.e. object, interface, or union; or a list of those types) default to 0s - all other fields inherit the max_age from their parent. |
+| `maxAge` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | number of seconds to cache result for. the max_age used for a single graphql request is the minimum of all fields requested. default max_age rules work as follows: - root fields (i.e. Query, Mutation, Subscription) default to 0s - non-root, non-scalar fields (i.e. object, interface, or union; or a list of those types) default to 0s - all other fields inherit the max_age from their parent. |
 | `scope` | [.envoy.config.filter.http.graphql.v2.CacheControl.CacheControlScope](../graphql.proto.sk/#cachecontrolscope) | provide controls to which users can access cached content. |
 | `inheritMaxAge` | `bool` | whether or not to inherit the caching configuration of any parent fields. |
 
@@ -709,7 +709,7 @@ Execute schema using resolvers.
 ```yaml
 "resolutions": []envoy.config.filter.http.graphql.v2.Resolution
 "enableIntrospection": bool
-"maxDepth": .google.protobuf.UInt32Value
+"maxDepth": int
 
 ```
 
@@ -717,7 +717,7 @@ Execute schema using resolvers.
 | ----- | ---- | ----------- | 
 | `resolutions` | [[]envoy.config.filter.http.graphql.v2.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
-| `maxDepth` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The max amount of nesting a query can be executed against this schema. e.g. the following query has these depths: query { # Depth: 0 me { # Depth: 1 friends { # Depth: 2 friends # Depth: 3 } } } If the max_depth is set to 2, then the query at depth 3 will receive an error as a response. An unset max_depth value (default) or 0 for the max_depth will be unbounded query depth. |
+| `maxDepth` | `int` | The max amount of nesting a query can be executed against this schema. e.g. the following query has these depths: query { # Depth: 0 me { # Depth: 1 friends { # Depth: 2 friends # Depth: 3 } } } If the max_depth is set to 2, then the query at depth 3 will receive an error as a response. An unset max_depth value (default) or 0 for the max_depth will be unbounded query depth. |
 
 
 
