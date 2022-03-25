@@ -314,7 +314,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				PrefixRewrite: pathRewrite.PrefixRewrite,
 			}
 		case *v1.RedirectAction_RegexRewrite:
-			regex, err := regexutils.ConvertRegexMatchAndSubstitute(params, pathRewrite.RegexRewrite)
+			regex, err := regexutils.ConvertRegexMatchAndSubstitute(params.Ctx, pathRewrite.RegexRewrite)
 			if err != nil {
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_InvalidMatcherError,
