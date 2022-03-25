@@ -600,8 +600,8 @@ var _ = Describe("Translator", func() {
 						PathRewriteSpecifier: &v1.RedirectAction_RegexRewrite{
 							RegexRewrite: &v31.RegexMatchAndSubstitute{
 								Pattern: &v31.RegexMatcher{
-									//EngineType: nil,
-									Regex: "/redirect",
+									EngineType: &v31.RegexMatcher_GoogleRe2{},
+									Regex:      "/redirect",
 								},
 								Substitution: "/target",
 							},

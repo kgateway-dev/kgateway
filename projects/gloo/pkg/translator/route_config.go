@@ -314,8 +314,17 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				PrefixRewrite: pathRewrite.PrefixRewrite,
 			}
 		case *v1.RedirectAction_RegexRewrite:
-			out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_RegexRewrite{
-				RegexRewrite: regexutils.ConvertRegexMatchAndSubstitute(params, pathRewrite.RegexRewrite),
+			regex, err := regexutils.ConvertRegexMatchAndSubstitute(params, pathRewrite.RegexRewrite)
+			if err != nil {
+				validation.AppendRouteError(routeReport,
+					validationapi.RouteReport_Error_InvalidMatcherError,
+					err.Error(),
+					in.GetName(),
+				)
+			} else {
+				out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_RegexRewrite{
+					RegexRewrite: regex,
+				}
 			}
 		}
 	}

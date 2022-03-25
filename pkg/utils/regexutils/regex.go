@@ -2,6 +2,7 @@ package regexutils
 
 import (
 	"context"
+	"github.com/solo-io/solo-kit/pkg/errors"
 
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -44,9 +45,9 @@ func NewRegexWithProgramSize(regex string, programsize *uint32) *envoy_type_matc
 	}
 }
 
-func ConvertRegexMatchAndSubstitute(params plugins.RouteParams, in *v32.RegexMatchAndSubstitute) *envoy_type_matcher_v3.RegexMatchAndSubstitute {
+func ConvertRegexMatchAndSubstitute(params plugins.RouteParams, in *v32.RegexMatchAndSubstitute) (*envoy_type_matcher_v3.RegexMatchAndSubstitute, error) {
 	if in == nil {
-		return nil
+		return nil, nil
 	}
 
 	out := &envoy_type_matcher_v3.RegexMatchAndSubstitute{
@@ -59,7 +60,9 @@ func ConvertRegexMatchAndSubstitute(params plugins.RouteParams, in *v32.RegexMat
 		if inET.GoogleRe2.GetMaxProgramSize() != nil && (outET.GoogleRe2.GetMaxProgramSize() == nil || inET.GoogleRe2.GetMaxProgramSize().GetValue() < outET.GoogleRe2.GetMaxProgramSize().GetValue()) {
 			out.Pattern = NewRegexWithProgramSize(in.GetPattern().GetRegex(), &inET.GoogleRe2.GetMaxProgramSize().Value)
 		}
+	default:
+		return nil, errors.Errorf("Invalid regex EngineType: %v", in.GetPattern().GetEngineType())
 	}
 
-	return out
+	return out, nil
 }
