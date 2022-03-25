@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/5101
+  description: This fix should update the CA bundle field in the validating webhook resource in case the secret is exist but the validating webhook does not contain the secret reference.
