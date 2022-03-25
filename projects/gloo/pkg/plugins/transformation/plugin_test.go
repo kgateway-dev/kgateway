@@ -54,7 +54,7 @@ var _ = Describe("Plugin", func() {
 			Expect(output).To(Equal(expectedOutput))
 		})
 
-		It("translates transformation template", func() {
+		It("translates transformation template repeatedly", func() {
 			transformationTemplate := &envoytransformation.TransformationTemplate{
 				HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{
 					{
@@ -80,6 +80,18 @@ var _ = Describe("Plugin", func() {
 			output, err := TranslateTransformation(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
+
+			// check that caching didnt break us
+			output, err = TranslateTransformation(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(Equal(expectedOutput))
+			output, err = TranslateTransformation(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(Equal(expectedOutput))
+			output, err = TranslateTransformation(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(Equal(expectedOutput))
+
 		})
 
 		It("throws error on unsupported transformation type", func() {
