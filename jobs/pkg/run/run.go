@@ -67,9 +67,9 @@ func Run(ctx context.Context, opts Options) error {
 		Cert:               caCert,
 		CaBundle:           certs.CaCertificate,
 	}
-
+	existAndValid := false
 	if !opts.ForceRotation {
-		existAndValid, err := kube.SecretExistsAndIsValidTlsSecret(ctx, kubeClient, secretConfig)
+		existAndValid, err = kube.SecretExistsAndIsValidTlsSecret(ctx, kubeClient, secretConfig)
 		if err != nil {
 			return eris.Wrapf(err, "failed validating existing secret")
 		}
@@ -78,12 +78,12 @@ func Run(ctx context.Context, opts Options) error {
 			contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, skipping update to TLS secret and ValidatingWebhookConfiguration since the old TLS secret is still existAndValid",
 				zap.String("secretName", secretConfig.SecretName),
 				zap.String("secretNamespace", secretConfig.SecretNamespace))
-			return nil
 		}
 	}
-
-	if err := kube.CreateTlsSecret(ctx, kubeClient, secretConfig); err != nil {
-		return eris.Wrapf(err, "failed creating secret")
+	if !existAndValid {
+		if err := kube.CreateTlsSecret(ctx, kubeClient, secretConfig); err != nil {
+			return eris.Wrapf(err, "failed creating secret")
+		}
 	}
 
 	vwcName := opts.ValidatingWebhookConfigurationName
