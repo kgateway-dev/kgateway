@@ -379,7 +379,7 @@ message CacheControl {
   // - root fields (i.e. Query, Mutation, Subscription) default to 0s
   // - non-root, non-scalar fields (i.e. object, interface, or union; or a list of those types) default to 0s
   // - all other fields inherit the max_age from their parent.
-  google.protobuf.UInt32Value max_age = 1;
+  uint32 max_age = 1;
   enum CacheControlScope {
     UNSET = 0;
     // Responses for requests with Authorization header fields must not be stored in a shared cache.

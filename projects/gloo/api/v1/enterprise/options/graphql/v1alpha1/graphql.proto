@@ -429,7 +429,8 @@ message Executor {
       //      {"message": "field 'name' exceeds the max operation depth of 3 for this schema"}
       //    ]
       // }
-      uint32 max_depth = 1;
+      // If not configured, or the value is 0, the query depth will be unbounded.
+      google.protobuf.UInt32Value max_depth = 1;
     }
 
     /* Mapping of resolver name to resolver definition.

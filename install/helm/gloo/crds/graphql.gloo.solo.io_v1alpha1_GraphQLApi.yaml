@@ -38,7 +38,9 @@ spec:
                           options:
                             properties:
                               maxDepth:
-                                format: int32
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
                                 type: integer
                             type: object
                           resolutions:

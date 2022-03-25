@@ -981,8 +981,14 @@ func (m *Executor_Local_LocalExecutorOptions) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetMaxDepth() != target.GetMaxDepth() {
-		return false
+	if h, ok := interface{}(m.GetMaxDepth()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxDepth()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxDepth(), target.GetMaxDepth()) {
+			return false
+		}
 	}
 
 	return true

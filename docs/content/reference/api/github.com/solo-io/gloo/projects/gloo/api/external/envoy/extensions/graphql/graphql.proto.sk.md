@@ -570,7 +570,7 @@ TODO: Talk with product -- apollo does not do this, but we could factor in upstr
 response into our inheritance model.
 
 ```yaml
-"maxAge": .google.protobuf.UInt32Value
+"maxAge": int
 "scope": .envoy.config.filter.http.graphql.v2.CacheControl.CacheControlScope
 "inheritMaxAge": bool
 
@@ -578,7 +578,7 @@ response into our inheritance model.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `maxAge` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | number of seconds to cache result for. the max_age used for a single graphql request is the minimum of all fields requested. default max_age rules work as follows: - root fields (i.e. Query, Mutation, Subscription) default to 0s - non-root, non-scalar fields (i.e. object, interface, or union; or a list of those types) default to 0s - all other fields inherit the max_age from their parent. |
+| `maxAge` | `int` | number of seconds to cache result for. the max_age used for a single graphql request is the minimum of all fields requested. default max_age rules work as follows: - root fields (i.e. Query, Mutation, Subscription) default to 0s - non-root, non-scalar fields (i.e. object, interface, or union; or a list of those types) default to 0s - all other fields inherit the max_age from their parent. |
 | `scope` | [.envoy.config.filter.http.graphql.v2.CacheControl.CacheControlScope](../graphql.proto.sk/#cachecontrolscope) | provide controls to which users can access cached content. |
 | `inheritMaxAge` | `bool` | whether or not to inherit the caching configuration of any parent fields. |
 

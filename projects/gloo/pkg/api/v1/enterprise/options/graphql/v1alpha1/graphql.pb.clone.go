@@ -589,7 +589,11 @@ func (m *Executor_Local_LocalExecutorOptions) Clone() proto.Message {
 	}
 	target = &Executor_Local_LocalExecutorOptions{}
 
-	target.MaxDepth = m.GetMaxDepth()
+	if h, ok := interface{}(m.GetMaxDepth()).(clone.Cloner); ok {
+		target.MaxDepth = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.MaxDepth = proto.Clone(m.GetMaxDepth()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
 
 	return target
 }
