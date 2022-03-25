@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6021
+    resolvesIssue: true
+    description: When providing _only_ a `rootCa` file, no longer fail by validating nonexistent `certChain` and `privateKey`
