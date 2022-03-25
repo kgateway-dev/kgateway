@@ -268,7 +268,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		}
 	} else if sslSecrets := cs.GetSslFiles(); sslSecrets != nil {
 		certChain, privateKey, rootCa = sslSecrets.GetTlsCert(), sslSecrets.GetTlsKey(), sslSecrets.GetRootCa()
-		err := isValidSslKeyPair(certChain, privateKey)
+		err := isValidSslKeyPair(certChain, privateKey, rootCa)
 		if err != nil {
 			return nil, InvalidTlsSecretError(nil, err)
 		}
@@ -361,7 +361,7 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 	privateKey := sslSecret.Tls.GetPrivateKey()
 	rootCa := sslSecret.Tls.GetRootCa()
 
-	err = isValidSslKeyPair(certChain, privateKey)
+	err = isValidSslKeyPair(certChain, privateKey, rootCa)
 	if err != nil {
 		return "", "", "", InvalidTlsSecretError(secret.GetMetadata().Ref(), err)
 	}
@@ -369,7 +369,12 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 	return certChain, privateKey, rootCa, nil
 }
 
-func isValidSslKeyPair(certChain, privateKey string) error {
+func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
+	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
+	if (certChain == "") && (privateKey == "") && (rootCa != "") {
+		return nil
+	}
+
 	_, err := tls.X509KeyPair([]byte(certChain), []byte(privateKey))
 	return err
 }
