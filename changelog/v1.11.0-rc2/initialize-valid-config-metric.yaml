@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5949
+    description: Initialize the validation_gateway_solo_io_valid_config metric after the first snapshot Translation.
