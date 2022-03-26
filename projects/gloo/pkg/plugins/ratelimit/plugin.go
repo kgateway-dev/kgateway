@@ -28,7 +28,7 @@ var (
 const (
 	ExtensionName = "rate_limit"
 	CustomDomain  = "custom"
-	requestType   = "both"
+	RequestType   = "both"
 
 	CustomStage           = uint32(1)
 	CustomStageBeforeAuth = uint32(3)

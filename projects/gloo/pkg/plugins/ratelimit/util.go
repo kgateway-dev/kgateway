@@ -30,7 +30,7 @@ func GenerateEnvoyConfigForFilterWith(
 	envoyrl := envoyratelimit.RateLimit{
 		Domain:          domain,
 		Stage:           stage,
-		RequestType:     requestType,
+		RequestType:     RequestType,
 		Timeout:         curtimeout,
 		FailureModeDeny: denyOnFail,
 
