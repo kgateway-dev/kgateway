@@ -30,10 +30,10 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
    * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
 3. Review the version-specific upgrade docs.
-   * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.10.0/" >}})
-   * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.9.0/" >}})
-   * [1.8.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.8.0/" >}})
-   * [1.7.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.7.0/" >}})
+   * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
+   * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
+   * [1.8.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.8/" >}})
+   * [1.7.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.7/" >}})
 4. If you still aren't sure about the version upgrade impact, scan our [Frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}). Also, feel free to post in the `#gloo` or `#gloo-enterprise` channels of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
 ### Enterprise-only: Understand the open source dependencies.
@@ -161,10 +161,10 @@ If you are upgrading across minor versions, such as to version {{< readfile file
 
 Newer versions can add CRDs that Helm upgrades cannot handle seamlessly. Instead, review the version-specific upgrading docs.
 
-   * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.10.0/" >}})
-   * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.9.0/" >}})
-   * [1.8.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.8.0/" >}})
-   * [1.7.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.7.0/" >}})
+   * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
+   * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
+   * [1.8.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.8/" >}})
+   * [1.7.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.7/" >}})
 
 ### Example Helm upgrade commands
 
