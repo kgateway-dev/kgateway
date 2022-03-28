@@ -1369,6 +1369,21 @@ func (m *RedirectAction) Equal(that interface{}) bool {
 			return false
 		}
 
+	case *RedirectAction_RegexRewrite:
+		if _, ok := target.PathRewriteSpecifier.(*RedirectAction_RegexRewrite); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRegexRewrite()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRegexRewrite()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRegexRewrite(), target.GetRegexRewrite()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.PathRewriteSpecifier != target.PathRewriteSpecifier {
