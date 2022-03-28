@@ -35,6 +35,14 @@ spec:
                         properties:
                           enableIntrospection:
                             type: boolean
+                          options:
+                            properties:
+                              maxDepth:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                            type: object
                           resolutions:
                             additionalProperties:
                               properties:
