@@ -1635,6 +1635,24 @@ spec:
                           type: string
                         prefixRewrite:
                           type: string
+                        regexRewrite:
+                          properties:
+                            pattern:
+                              properties:
+                                googleRe2:
+                                  properties:
+                                    maxProgramSize:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
+                                      type: integer
+                                  type: object
+                                regex:
+                                  type: string
+                              type: object
+                            substitution:
+                              type: string
+                          type: object
                         responseCode:
                           type: string
                           x-kubernetes-int-or-string: true
