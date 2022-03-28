@@ -6,14 +6,6 @@ weight: 5
 We know you want to jump right in and start hacking away with Gloo Edge. That's awesome! The easiest way to do that is with your own Kubernetes cluster, either on your local workstation or in a cloud environment. First, you'll need to install Gloo Edge using either the `glooctl` utility or Helm.
 
 {{< tabs >}}
-{{< tab name="glooctl" codelang="shell">}}
-# Install glooctl
-
-## Linux/MacOS
-curl -sL https://run.solo.io/gloo/install | sh
-export PATH=$HOME/.gloo/bin:$PATH
-
-{{< tabs >}}
 {{% tab name="glooctl"%}}
 1. Install `glooctl`. The steps vary on your operating system.
    * Linux or macOS
