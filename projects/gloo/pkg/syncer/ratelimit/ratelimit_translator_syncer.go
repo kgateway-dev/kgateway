@@ -24,8 +24,8 @@ var (
 )
 
 const (
-	Name                = "rate-limit"
-	RateLimitServerRole = "ratelimit"
+	Name       = "rate-limit"
+	ServerRole = "ratelimit"
 )
 
 type TranslatorSyncerExtension struct {
@@ -56,7 +56,7 @@ func (s *TranslatorSyncerExtension) Sync(
 	enterpriseOnlyError := func(enterpriseFeature string) (string, error) {
 		errorMsg := createErrorMsg(enterpriseFeature)
 		logger.Errorf(errorMsg)
-		return RateLimitServerRole, eris.New(errorMsg)
+		return ServerRole, eris.New(errorMsg)
 	}
 
 	for _, proxy := range snap.Proxies {
@@ -122,7 +122,7 @@ func (s *TranslatorSyncerExtension) Sync(
 		}
 	}
 
-	return RateLimitServerRole, nil
+	return ServerRole, nil
 }
 
 func createErrorMsg(feature string) string {

@@ -763,22 +763,29 @@ type VirtualHostOptions_Ratelimit struct {
 	// Configure rate-limit *actions* here, which define how request characteristics get translated into
 	// descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
 	// their associated limits on the Gloo settings.
-	// Only one of `ratelimit` or `rate_limit_configs` can be set.
+	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
 	Ratelimit *ratelimit.RateLimitVhostExtension `protobuf:"bytes,70,opt,name=ratelimit,proto3,oneof"`
 }
 
 type VirtualHostOptions_RatelimitStaged struct {
-	// TODO (sam-heilbron)
+	// Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
+	// supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+	// Configure rate-limit *actions* here, which define how request characteristics get translated into
+	// descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
+	// their associated limits on the Gloo settings.
+	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
 	RatelimitStaged *ratelimit.RateLimitStagedVhostExtension `protobuf:"bytes,72,opt,name=ratelimit_staged,json=ratelimitStaged,proto3,oneof"`
 }
 
 type VirtualHostOptions_RateLimitConfigs struct {
 	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
-	// Only one of `ratelimit` or `rate_limit_configs` can be set.
+	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
 	RateLimitConfigs *ratelimit.RateLimitConfigRefs `protobuf:"bytes,71,opt,name=rate_limit_configs,json=rateLimitConfigs,proto3,oneof"`
 }
 
 type VirtualHostOptions_RateLimitStagedConfigs struct {
+	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
 	RateLimitStagedConfigs *ratelimit.RateLimitStagedConfigRefs `protobuf:"bytes,74,opt,name=rate_limit_staged_configs,json=rateLimitStagedConfigs,proto3,oneof"`
 }
 

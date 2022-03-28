@@ -87,7 +87,6 @@ message RateLimitVhostExtension {
 // running a custom rate limit server you need to configure it yourself.
 message RateLimitStagedVhostExtension {
   RateLimitVhostExtension before_ext_auth = 1;
-
   RateLimitVhostExtension after_ext_auth = 2;
 }
 
@@ -111,6 +110,5 @@ message RateLimitRouteExtension {
 // running a custom rate limit server you need to configure it yourself.
 message RateLimitStagedRouteExtension {
   RateLimitRouteExtension before_ext_auth = 1;
-
   RateLimitRouteExtension after_ext_auth = 2;
 }
