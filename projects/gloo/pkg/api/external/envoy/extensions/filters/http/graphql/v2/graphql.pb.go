@@ -2238,7 +2238,7 @@ type Executor_Local struct {
 	//   }
 	// }
 	// If the max_depth is set to 2, then the query at depth 3 will receive an error as a response.
-	// An unset max_depth value (default) or 0 for the max_depth will be unbounded query depth.
+	// The max_depth value of 0 (set by default) will allow an unbounded query depth.
 	MaxDepth uint32 `protobuf:"varint,3,opt,name=max_depth,json=maxDepth,proto3" json:"max_depth,omitempty"`
 }
 
