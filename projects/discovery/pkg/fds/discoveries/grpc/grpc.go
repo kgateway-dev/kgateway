@@ -86,7 +86,6 @@ func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL
 	}
 
 	defer closeConn()
-	defer refClient.Reset()
 
 	_, err = refClient.ListServices()
 	if err != nil {
@@ -136,7 +135,6 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 		return err
 	}
 	defer closeConn()
-	defer refClient.Reset()
 
 	services, err := refClient.ListServices()
 	if err != nil {
@@ -212,7 +210,11 @@ func getClient(ctx context.Context, url *url.URL) (*grpcreflect.Client, func() e
 		return nil, nil, errors.Wrapf(err, "dialing grpc on %v", url.Host)
 	}
 	refClient := grpcreflect.NewClient(ctx, reflectpb.NewServerReflectionClient(cc))
-	return refClient, cc.Close, nil
+	closeConn := func() error {
+		refClient.Reset()
+		return cc.Close()
+	}
+	return refClient, closeConn, nil
 }
 
 func getDepTree(root *desc.FileDescriptor) []*descriptor.FileDescriptorProto {
