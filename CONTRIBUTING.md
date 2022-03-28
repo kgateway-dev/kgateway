@@ -43,6 +43,7 @@ Useful make commands:
 | make build-test-chart                                     | Makes the .tgz helm file that locally-built instances of glooctl require to install gloo |
 | make docker TAGGED_VERSION=(version)                      | Builds the docker images needed for the helm charts and tests |
 | make clean build-test-assets -B TAGGED_VERSION=v(version) | Builds a zipped helm chart for gloo that is configured to use the specified gloo version. This version must be a valid image in quay. This can include non-standard versions used for testing. |
+| make install-go-tools                                     | Updates the go dependencies |
 
 ### Small bug fixes
 
