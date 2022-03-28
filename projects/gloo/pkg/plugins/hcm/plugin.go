@@ -160,6 +160,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		}
 
 		var err error
+		// No errors should occur when marshaling
 		if out.GetRequestIdExtension().TypedConfig, err = anypb.New(in.GetUuidRequestIdConfig()); err != nil {
 			return err
 		}
