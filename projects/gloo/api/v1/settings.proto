@@ -413,6 +413,8 @@ message Settings {
     // When these properties are defined on an upstream, this configuration will be ignored
     UpstreamOptions upstreamOptions = 32;
 
+    // Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI)
+    ConsoleOptions console_options = 35;
 }
 
 // Default configuration to use for upstreams, when not provided by a specific upstream
@@ -639,4 +641,18 @@ message GatewayOptions {
     // Default configuration to use for VirtualServices, when not provided by a specific virtual service
     // When these properties are defined on a specific VirtualService, this configuration will be ignored
     VirtualServiceOptions virtual_service_options = 7;
+}
+
+// Settings used by the Enterprise Console (UI)
+message ConsoleOptions {
+    // If true, then custom resources can only be viewed in read-only mode in the UI.
+    // If false, then resources can be created, updated, and deleted via the UI.
+    // Currently, create/update/delete operations are only supported for GraphQL resources.
+    // This feature requires a Gloo Edge Enterprise license with GraphQL enabled.
+    // Defaults to true.
+    google.protobuf.BoolValue read_only = 1;
+
+    // Whether to enable the GraphQL API Explorer. This feature requires a Gloo Edge Enterprise license with GraphQL enabled.
+    // Defaults to true.
+    google.protobuf.BoolValue api_explorer_enabled = 2;
 }

@@ -35,6 +35,14 @@ spec:
                         properties:
                           enableIntrospection:
                             type: boolean
+                          options:
+                            properties:
+                              maxDepth:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                            type: object
                           resolutions:
                             additionalProperties:
                               properties:
@@ -62,6 +70,20 @@ spec:
                                         namespace:
                                           type: string
                                       type: object
+                                  type: object
+                                mockResolver:
+                                  properties:
+                                    asyncResponse:
+                                      properties:
+                                        delay:
+                                          type: string
+                                        response:
+                                          x-kubernetes-preserve-unknown-fields: true
+                                      type: object
+                                    errorResponse:
+                                      type: string
+                                    syncResponse:
+                                      x-kubernetes-preserve-unknown-fields: true
                                   type: object
                                 restResolver:
                                   properties:

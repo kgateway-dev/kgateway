@@ -20,12 +20,15 @@ weight: 5
 - [StitchedSchema](#stitchedschema)
 - [SubschemaConfig](#subschemaconfig)
 - [TypeMergeConfig](#typemergeconfig)
+- [MockResolver](#mockresolver)
+- [AsyncResponse](#asyncresponse)
 - [Resolution](#resolution)
 - [GraphQLApi](#graphqlapi) **Top-Level Resource**
 - [PersistedQueryCacheConfig](#persistedquerycacheconfig)
 - [ExecutableSchema](#executableschema)
 - [Executor](#executor)
 - [Local](#local)
+- [LocalExecutorOptions](#localexecutoroptions)
   
 
 
@@ -228,6 +231,46 @@ control-plane API
 
 
 ---
+### MockResolver
+
+
+
+```yaml
+"syncResponse": .google.protobuf.Value
+"asyncResponse": .graphql.gloo.solo.io.MockResolver.AsyncResponse
+"errorResponse": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `syncResponse` | [.google.protobuf.Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/value) | The JSON response from the resolver that will be "responded" immediately. Only one of `syncResponse`, `asyncResponse`, or `errorResponse` can be set. |
+| `asyncResponse` | [.graphql.gloo.solo.io.MockResolver.AsyncResponse](../graphql.proto.sk/#asyncresponse) | Used to create a asynchronous JSON response from the Mock resolver. Only one of `asyncResponse`, `syncResponse`, or `errorResponse` can be set. |
+| `errorResponse` | `string` | Responds as an error with the given message. This can be any string message. Only one of `errorResponse`, `syncResponse`, or `asyncResponse` can be set. |
+
+
+
+
+---
+### AsyncResponse
+
+
+
+```yaml
+"response": .google.protobuf.Value
+"delay": .google.protobuf.Duration
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `response` | [.google.protobuf.Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/value) | The response from the resolver as a JSON. |
+| `delay` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The delay time before this response is sent back to the graphql server. |
+
+
+
+
+---
 ### Resolution
 
  
@@ -240,14 +283,16 @@ If a field with the same name does not exist in the parent, null will be used.
 ```yaml
 "restResolver": .graphql.gloo.solo.io.RESTResolver
 "grpcResolver": .graphql.gloo.solo.io.GrpcResolver
+"mockResolver": .graphql.gloo.solo.io.MockResolver
 "statPrefix": .google.protobuf.StringValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `restResolver` | [.graphql.gloo.solo.io.RESTResolver](../graphql.proto.sk/#restresolver) |  Only one of `restResolver` or `grpcResolver` can be set. |
-| `grpcResolver` | [.graphql.gloo.solo.io.GrpcResolver](../graphql.proto.sk/#grpcresolver) |  Only one of `grpcResolver` or `restResolver` can be set. |
+| `restResolver` | [.graphql.gloo.solo.io.RESTResolver](../graphql.proto.sk/#restresolver) | REST resolver used to translate and send graphql requests to a REST upstream. Only one of `restResolver`, `grpcResolver`, or `mockResolver` can be set. |
+| `grpcResolver` | [.graphql.gloo.solo.io.GrpcResolver](../graphql.proto.sk/#grpcresolver) | gRPC resolver used to translate and send graphql requests to a gRPC upstream. Only one of `grpcResolver`, `restResolver`, or `mockResolver` can be set. |
+| `mockResolver` | [.graphql.gloo.solo.io.MockResolver](../graphql.proto.sk/#mockresolver) | Resolver used to mock responses from an upstream. This resolver doesn't make a call out to an upstream, but can mock responses either synchronously or with a delay. Additionally, can be used to mock errors from an upstream. Only one of `mockResolver`, `restResolver`, or `grpcResolver` can be set. |
 | `statPrefix` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The stats prefix which will be used for this resolver. If empty, will generate a stats prefix ${RESOLVER_NAME}. |
 
 
@@ -354,6 +399,7 @@ Execute schema using resolvers.
 ```yaml
 "resolutions": map<string, .graphql.gloo.solo.io.Resolution>
 "enableIntrospection": bool
+"options": .graphql.gloo.solo.io.Executor.Local.LocalExecutorOptions
 
 ```
 
@@ -361,6 +407,24 @@ Execute schema using resolvers.
 | ----- | ---- | ----------- | 
 | `resolutions` | `map<string, .graphql.gloo.solo.io.Resolution>` | Mapping of resolver name to resolver definition. The names are used to reference the resolver in the graphql schema. For example, a resolver with name "authorResolver" can be defined as ```yaml authorResolver: restResolver: upstreamRef: ... request: ... response: ... ``` and referenced in the graphql schema as ```gql type Query { author: String @resolve(name: "authorResolver") } ```. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
+| `options` | [.graphql.gloo.solo.io.Executor.Local.LocalExecutorOptions](../graphql.proto.sk/#localexecutoroptions) | Options that apply to this local executable schema. |
+
+
+
+
+---
+### LocalExecutorOptions
+
+
+
+```yaml
+"maxDepth": .google.protobuf.UInt32Value
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `maxDepth` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Max GraphQL operation (query/mutation/subscription) depth. This sets a limitation on the max nesting on a query that runs against this schema. any GraphQL operation that runs past the `max_depth` will add an error message to the response and will return as `null`. As as simple example, if the schema is ```gql type Query { employee: Employee } type Employee { manager: Employee name: String } ``` and we set a `max_depth` of `3` and we run a query ```gql query { # query depth : 0 employee { # query depth : 1 manager { # query depth : 2 name # query depth : 3 manager { # query depth : 3 name # query depth : 4 } } } } ``` the graphql server will respond with a response: ```json { "data" : { "employee" : { "manager" : { "name" : "Manager 1", "manager" : { "name" : null }}}}, "errors": [ {"message": "field 'name' exceeds the max operation depth of 3 for this schema"} ] } If not configured, or the value is 0, the query depth will be unbounded. |
 
 
 

@@ -444,13 +444,15 @@ Only meant for integration testing
 ```yaml
 "syncResponse": string
 "asyncResponse": .envoy.config.filter.http.graphql.v2.StaticResolver.AsyncResponse
+"errorResponse": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `syncResponse` | `string` | Responds synchronously (on the same dispatch loop as the resolve call). Only one of `syncResponse` or `asyncResponse` can be set. |
-| `asyncResponse` | [.envoy.config.filter.http.graphql.v2.StaticResolver.AsyncResponse](../graphql.proto.sk/#asyncresponse) | Responds asynchronously after delay_ms. Only one of `asyncResponse` or `syncResponse` can be set. |
+| `syncResponse` | `string` | Responds synchronously (on the same dispatch loop as the resolve call). Only one of `syncResponse`, `asyncResponse`, or `errorResponse` can be set. |
+| `asyncResponse` | [.envoy.config.filter.http.graphql.v2.StaticResolver.AsyncResponse](../graphql.proto.sk/#asyncresponse) | Responds asynchronously after delay_ms. Only one of `asyncResponse`, `syncResponse`, or `errorResponse` can be set. |
+| `errorResponse` | `string` |  Only one of `errorResponse`, `syncResponse`, or `asyncResponse` can be set. |
 
 
 
@@ -707,6 +709,7 @@ Execute schema using resolvers.
 ```yaml
 "resolutions": []envoy.config.filter.http.graphql.v2.Resolution
 "enableIntrospection": bool
+"maxDepth": int
 
 ```
 
@@ -714,6 +717,7 @@ Execute schema using resolvers.
 | ----- | ---- | ----------- | 
 | `resolutions` | [[]envoy.config.filter.http.graphql.v2.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
+| `maxDepth` | `int` | The max amount of nesting a query can be executed against this schema. e.g. the following query has these depths: query { # Depth: 0 me { # Depth: 1 friends { # Depth: 2 friends # Depth: 3 } } } If the max_depth is set to 2, then the query at depth 3 will receive an error as a response. The max_depth value of 0 (set by default) will allow an unbounded query depth. |
 
 
 

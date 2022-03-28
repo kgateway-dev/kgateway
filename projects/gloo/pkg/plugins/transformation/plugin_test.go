@@ -54,7 +54,7 @@ var _ = Describe("Plugin", func() {
 			Expect(output).To(Equal(expectedOutput))
 		})
 
-		It("translates transformation template", func() {
+		It("translates transformation template repeatedly", func() {
 			transformationTemplate := &envoytransformation.TransformationTemplate{
 				HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{
 					{
@@ -80,6 +80,7 @@ var _ = Describe("Plugin", func() {
 			output, err := TranslateTransformation(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
+
 		})
 
 		It("throws error on unsupported transformation type", func() {
@@ -138,7 +139,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 		})
-		It("sets transformation config for virtual hosts", func() {
+		It("repeatedly sets transformation config for virtual hosts", func() {
 			out := &envoy_config_route_v3.VirtualHost{}
 			err := p.(plugins.VirtualHostPlugin).ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
@@ -147,6 +148,15 @@ var _ = Describe("Plugin", func() {
 			}, out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
+
+			out2 := &envoy_config_route_v3.VirtualHost{}
+			err2 := p.(plugins.VirtualHostPlugin).ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+				Options: &v1.VirtualHostOptions{
+					Transformations: inputTransform,
+				},
+			}, out2)
+			Expect(err2).NotTo(HaveOccurred())
+			Expect(out2.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 		})
 		It("sets transformation config for routes", func() {
 			out := &envoy_config_route_v3.Route{}
