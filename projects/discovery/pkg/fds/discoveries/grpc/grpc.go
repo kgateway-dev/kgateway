@@ -105,7 +105,6 @@ func (f *UpstreamFunctionDiscovery) DetectFunctions(ctx context.Context, url *ur
 	err := contextutils.NewExponentioalBackoff(contextutils.ExponentioalBackoff{}).Backoff(ctx, func(ctx context.Context) error {
 		return f.DetectFunctionsOnce(ctx, url, updatecb)
 	})
-
 	if err != nil {
 		if ctx.Err() != nil {
 			return multierror.Append(err, ctx.Err())
@@ -211,7 +210,11 @@ func getClient(ctx context.Context, url *url.URL) (*grpcreflect.Client, func() e
 		return nil, nil, errors.Wrapf(err, "dialing grpc on %v", url.Host)
 	}
 	refClient := grpcreflect.NewClient(ctx, reflectpb.NewServerReflectionClient(cc))
-	return refClient, cc.Close, nil
+	closeConn := func() error {
+		refClient.Reset()
+		return cc.Close()
+	}
+	return refClient, closeConn, nil
 }
 
 func getDepTree(root *desc.FileDescriptor) []*descriptor.FileDescriptorProto {
