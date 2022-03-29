@@ -42,7 +42,7 @@ var _ = Describe("Plugin", func() {
 
 			err := p.ProcessUpstream(params, falseVal, out)
 			Expect(err).NotTo(HaveOccurred())
-			test, err := utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.upstreams.http.http_protocol_options"])
+			test, err := utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"])
 			Expect(err).To(HaveOccurred())
 			explicitHttpConfig, ok := test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions)
 			Expect(ok).To(BeFalse())
@@ -50,7 +50,7 @@ var _ = Describe("Plugin", func() {
 
 			err = p.ProcessUpstream(params, nilVal, out)
 			Expect(err).NotTo(HaveOccurred())
-			test, err = utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.upstreams.http.http_protocol_options"])
+			test, err = utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"])
 			Expect(err).To(HaveOccurred())
 			explicitHttpConfig, ok = test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions)
 			Expect(ok).To(BeFalse())
@@ -86,7 +86,7 @@ var _ = Describe("Plugin", func() {
 
 			err := p.ProcessUpstream(params, validUpstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			test, err := utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.upstreams.http.http_protocol_options"])
+			test, err := utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"])
 			Expect(err).NotTo(HaveOccurred())
 			explicitHttpConfig, ok := test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions)
 			Expect(ok).To(BeTrue())

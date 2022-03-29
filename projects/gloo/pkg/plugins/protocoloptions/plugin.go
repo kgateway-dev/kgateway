@@ -43,20 +43,26 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	// Both these values default to 268435456 if unset.
 	sws := in.GetInitialStreamWindowSize()
 	if sws != nil && !validateWindowSize(sws.GetValue()) {
+		return errors.Errorf("Invalid Initial Steam Window Size: %d", sws.GetValue())
+	} else if sws != nil && validateWindowSize(sws.GetValue()) {
 		sws = &wrappers.UInt32Value{Value: sws.GetValue()}
 	} else {
 		sws = &wrappers.UInt32Value{Value: MaxWindowSize}
 	}
 
 	cws := in.GetInitialConnectionWindowSize()
-	if cws != nil && validateWindowSize(cws.GetValue()) {
+	if cws != nil && !validateWindowSize(cws.GetValue()) {
+		return errors.Errorf("Invalid Initial Connection Window Size: %d", cws.GetValue())
+	} else if cws != nil && validateWindowSize(cws.GetValue()) {
 		cws = &wrappers.UInt32Value{Value: cws.GetValue()}
 	} else {
 		cws = &wrappers.UInt32Value{Value: MaxWindowSize}
 	}
 
 	mcs := in.GetMaxConcurrentStreams()
-	if mcs != nil && validateConcurrentStreams(mcs.GetValue()) {
+	if mcs != nil && !validateConcurrentStreams(mcs.GetValue()) {
+		return errors.Errorf("Invalid Max Concurrent Streams Size: %d", mcs.GetValue())
+	} else if mcs != nil && validateConcurrentStreams(mcs.GetValue()) {
 		mcs = &wrappers.UInt32Value{Value: mcs.GetValue()}
 	} else {
 		mcs = &wrappers.UInt32Value{Value: MaxConcurrentStreams}
