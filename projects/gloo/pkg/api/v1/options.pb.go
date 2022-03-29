@@ -786,7 +786,7 @@ type VirtualHostOptions_RateLimitConfigs struct {
 type VirtualHostOptions_RateLimitStagedConfigs struct {
 	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
 	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
-	RateLimitStagedConfigs *ratelimit.RateLimitStagedConfigRefs `protobuf:"bytes,74,opt,name=rate_limit_staged_configs,json=rateLimitStagedConfigs,proto3,oneof"`
+	RateLimitStagedConfigs *ratelimit.RateLimitStagedConfigRefs `protobuf:"bytes,73,opt,name=rate_limit_staged_configs,json=rateLimitStagedConfigs,proto3,oneof"`
 }
 
 func (*VirtualHostOptions_Ratelimit) isVirtualHostOptions_RateLimitConfigType() {}
@@ -1225,23 +1225,29 @@ type RouteOptions_Ratelimit struct {
 	// Configure rate-limit *actions* here, which define how request characteristics get translated into
 	// descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
 	// their associated limits on the Gloo settings.
-	// Only one of `ratelimit` or `rate_limit_configs` can be set.
+	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
 	Ratelimit *ratelimit.RateLimitRouteExtension `protobuf:"bytes,140,opt,name=ratelimit,proto3,oneof"`
 }
 
 type RouteOptions_RatelimitStaged struct {
-	// TODO (sam-heilbron)
+	// Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
+	// supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+	// Configure rate-limit *actions* here, which define how request characteristics get translated into
+	// descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
+	// their associated limits on the Gloo settings.
+	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
 	RatelimitStaged *ratelimit.RateLimitStagedRouteExtension `protobuf:"bytes,142,opt,name=ratelimit_staged,json=ratelimitStaged,proto3,oneof"`
 }
 
 type RouteOptions_RateLimitConfigs struct {
 	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
-	// Only one of `ratelimit` or `rate_limit_configs` can be set.
+	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
 	RateLimitConfigs *ratelimit.RateLimitConfigRefs `protobuf:"bytes,141,opt,name=rate_limit_configs,json=rateLimitConfigs,proto3,oneof"`
 }
 
 type RouteOptions_RateLimitStagedConfigs struct {
-	// TODO (sam-heilbron)
+	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
 	RateLimitStagedConfigs *ratelimit.RateLimitStagedConfigRefs `protobuf:"bytes,143,opt,name=rate_limit_staged_configs,json=rateLimitStagedConfigs,proto3,oneof"`
 }
 
@@ -1901,7 +1907,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDesc = []
 	0x73, 0x48, 0x00, 0x52, 0x10, 0x72, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43, 0x6f,
 	0x6e, 0x66, 0x69, 0x67, 0x73, 0x12, 0x76, 0x0a, 0x19, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69,
 	0x6d, 0x69, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x64, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69,
-	0x67, 0x73, 0x18, 0x4a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c,
+	0x67, 0x73, 0x18, 0x49, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c,
 	0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f,
 	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69,
 	0x6d, 0x69, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52,

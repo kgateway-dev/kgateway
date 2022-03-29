@@ -214,7 +214,7 @@ message VirtualHostOptions {
 
         // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
         // Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
-        ratelimit.options.gloo.solo.io.RateLimitStagedConfigRefs rate_limit_staged_configs = 74;
+        ratelimit.options.gloo.solo.io.RateLimitStagedConfigRefs rate_limit_staged_configs = 73;
     }
 
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
@@ -339,17 +339,23 @@ message RouteOptions {
         // Configure rate-limit *actions* here, which define how request characteristics get translated into
         // descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
         // their associated limits on the Gloo settings.
-        // Only one of `ratelimit` or `rate_limit_configs` can be set.
+        // Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
         ratelimit.options.gloo.solo.io.RateLimitRouteExtension ratelimit = 140;
 
-        // TODO (sam-heilbron)
+        // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
+        // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+        // Configure rate-limit *actions* here, which define how request characteristics get translated into
+        // descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
+        // their associated limits on the Gloo settings.
+        // Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
         ratelimit.options.gloo.solo.io.RateLimitStagedRouteExtension ratelimit_staged = 142;
 
         // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
-        // Only one of `ratelimit` or `rate_limit_configs` can be set.
+        // Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
         ratelimit.options.gloo.solo.io.RateLimitConfigRefs rate_limit_configs = 141;
 
-        // TODO (sam-heilbron)
+        // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+        // Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
         ratelimit.options.gloo.solo.io.RateLimitStagedConfigRefs rate_limit_staged_configs = 143;
     }
 
