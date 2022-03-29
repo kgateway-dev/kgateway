@@ -288,6 +288,9 @@ spec:
                                     path:
                                       nullable: true
                                       type: string
+                                    sameSite:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
                                   type: object
                                 failOnFetchFailure:
                                   type: boolean
