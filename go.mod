@@ -67,7 +67,6 @@ require (
 	github.com/onsi/gomega v1.10.5
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
-	github.com/opencontainers/runc v1.0.0-rc92 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/prometheus/client_golang v1.9.0
@@ -135,7 +134,7 @@ replace (
 	// using the pseudo version of github.com/form3tech-oss/jwt-go@v3.2.3 instead of the version directly,
 	// to avoid error about it being used for two different module paths
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
-	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
+	github.com/docker/docker => github.com/moby/moby v20.10.14+incompatible
 	github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
 	// skv2 uses a newer version than the imported solo-kit version which causes issues. Replaces the version with the solo-kit version
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
