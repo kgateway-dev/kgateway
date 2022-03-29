@@ -206,7 +206,7 @@ var _ = FDescribe("Kube2e: gateway", func() {
 	})
 
 	Context("tests with orphaned gateways", func() {
-		FIt("correctly sets a status to a single gateway", func() {
+		It("correctly sets a status to a single gateway", func() {
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
 			Eventually(func() (*gatewayv1.Gateway, error) {
