@@ -709,6 +709,7 @@ Execute schema using resolvers.
 ```yaml
 "resolutions": []envoy.config.filter.http.graphql.v2.Resolution
 "enableIntrospection": bool
+"maxDepth": int
 
 ```
 
@@ -716,6 +717,7 @@ Execute schema using resolvers.
 | ----- | ---- | ----------- | 
 | `resolutions` | [[]envoy.config.filter.http.graphql.v2.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
+| `maxDepth` | `int` | The max amount of nesting a query can be executed against this schema. e.g. the following query has these depths: query { # Depth: 0 me { # Depth: 1 friends { # Depth: 2 friends # Depth: 3 } } } If the max_depth is set to 2, then the query at depth 3 will receive an error as a response. The max_depth value of 0 (set by default) will allow an unbounded query depth. |
 
 
 
