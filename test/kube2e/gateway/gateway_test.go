@@ -65,7 +65,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var _ = Describe("Kube2e: gateway", func() {
+var _ = FDescribe("Kube2e: gateway", func() {
 
 	const (
 		gatewayProxy = defaults.GatewayProxyName
@@ -206,7 +206,7 @@ var _ = Describe("Kube2e: gateway", func() {
 	})
 
 	Context("tests with orphaned gateways", func() {
-		It("correctly sets a status to a single gateway", func() {
+		FIt("correctly sets a status to a single gateway", func() {
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
 			Eventually(func() (*gatewayv1.Gateway, error) {

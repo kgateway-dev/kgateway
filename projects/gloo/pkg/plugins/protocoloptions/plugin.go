@@ -43,16 +43,16 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	// Both these values default to 268435456 if unset.
 	sws := in.GetInitialStreamWindowSize()
 	if sws != nil && !validateWindowSize(sws.GetValue()) {
-		return errors.Errorf("Invalid Initial Steam Window Size: %d", sws.GetValue())
-	} else {
 		sws = &wrappers.UInt32Value{Value: sws.GetValue()}
+	} else {
+		sws = &wrappers.UInt32Value{Value: MaxWindowSize}
 	}
 
 	cws := in.GetInitialConnectionWindowSize()
-	if cws != nil && !validateWindowSize(cws.GetValue()) {
-		return errors.Errorf("Invalid Initial Connection Window Size: %d", cws.GetValue())
-	} else {
+	if cws != nil && validateWindowSize(cws.GetValue()) {
 		cws = &wrappers.UInt32Value{Value: cws.GetValue()}
+	} else {
+		cws = &wrappers.UInt32Value{Value: MaxWindowSize}
 	}
 
 	mcs := in.GetMaxConcurrentStreams()
@@ -76,7 +76,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		},
 	}
 	if in.GetUseHttp2() != nil && in.GetUseHttp2().GetValue() {
-		err := pluginutils.SetExtensionProtocolOptions(out, "envoy.upstreams.http.http_protocol_options", protobuf)
+		err := pluginutils.SetExtensionProtocolOptions(out, "envoy.extensions.upstreams.http.v3.HttpProtocolOptions", protobuf)
 		if err != nil {
 			return errors.Wrapf(err, "converting protocol options to struct")
 		}
@@ -86,14 +86,14 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 
 func validateWindowSize(size uint32) bool {
-	if size < MinWindowSize || size > MaxWindowSize {
+	if size <= MinWindowSize || size >= MaxWindowSize {
 		return false
 	}
 	return true
 }
 
 func validateConcurrentStreams(size uint32) bool {
-	if size < MinConcurrentStreams || size > MaxConcurrentStreams {
+	if size <= MinConcurrentStreams || size >= MaxConcurrentStreams {
 		return false
 	}
 	return true
