@@ -86,14 +86,14 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 
 func validateWindowSize(size uint32) bool {
-	if size <= MinWindowSize || size >= MaxWindowSize {
+	if size < MinWindowSize || size > MaxWindowSize {
 		return false
 	}
 	return true
 }
 
 func validateConcurrentStreams(size uint32) bool {
-	if size <= MinConcurrentStreams || size >= MaxConcurrentStreams {
+	if size < MinConcurrentStreams || size > MaxConcurrentStreams {
 		return false
 	}
 	return true
