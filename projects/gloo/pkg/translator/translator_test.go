@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -589,6 +590,62 @@ var _ = Describe("Translator", func() {
 			fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
 			Expect(fooRoute.Match.GetPrefix()).To(Equal("/foo"))
 			Expect(fooRoute.Match.CaseSensitive).To(Equal(&wrappers.BoolValue{Value: false}))
+		})
+
+		It("should translate path matcher with regex rewrite on redirectAction", func() {
+
+			glooRoute := &v1.Route{
+				Action: &v1.Route_RedirectAction{
+					RedirectAction: &v1.RedirectAction{
+						PathRewriteSpecifier: &v1.RedirectAction_RegexRewrite{
+							RegexRewrite: &v31.RegexMatchAndSubstitute{
+								Pattern: &v31.RegexMatcher{
+									EngineType: &v31.RegexMatcher_GoogleRe2{},
+									Regex:      "/redirect",
+								},
+								Substitution: "/target",
+							},
+						},
+						ResponseCode: 400,
+					},
+				},
+				Matchers: []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/matchprefix",
+						},
+						CaseSensitive: &wrappers.BoolValue{Value: false},
+					},
+				},
+			}
+			routes[0] = glooRoute
+
+			expectedRedirectAction := &envoy_config_route_v3.Route_Redirect{
+
+				Redirect: &envoy_config_route_v3.RedirectAction{
+					PathRewriteSpecifier: &envoy_config_route_v3.RedirectAction_RegexRewrite{
+						RegexRewrite: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+							Pattern: &envoy_type_matcher_v3.RegexMatcher{
+								Regex: "/redirect",
+							},
+							Substitution: "/target",
+						},
+					},
+
+					//PathRewriteSpecifier: envoy_config_route_v3.RedirectAction_RegexRewrite{},
+					ResponseCode: 301,
+					StripQuery:   false,
+				},
+			}
+
+			translate()
+			envoyRoute := routeConfiguration.VirtualHosts[0].Routes[0]
+			Expect(envoyRoute.Match.GetPrefix()).To(Equal("/matchprefix"))
+			Expect(envoyRoute.Action).To(BeAssignableToTypeOf(expectedRedirectAction))
+			actualRegexRedirect := envoyRoute.Action.(*envoy_config_route_v3.Route_Redirect).Redirect.GetRegexRewrite()
+			Expect(actualRegexRedirect.Pattern.Regex).To(Equal(expectedRedirectAction.Redirect.GetRegexRewrite().Pattern.Regex))
+			Expect(actualRegexRedirect.Substitution).To(Equal(expectedRedirectAction.Redirect.GetRegexRewrite().Substitution))
+			Expect(envoyRoute.Match.CaseSensitive).To(Equal(&wrappers.BoolValue{Value: false}))
 		})
 	})
 

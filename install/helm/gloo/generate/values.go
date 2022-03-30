@@ -32,6 +32,7 @@ type Global struct {
 	IstioIntegration  IstioIntegration `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
 	ExtraSpecs        *bool            `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
 	ExtauthCustomYaml *bool            `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
+	Console           interface{}      `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
 }
 
 type Namespace struct {

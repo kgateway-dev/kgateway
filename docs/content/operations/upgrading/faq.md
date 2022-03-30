@@ -13,10 +13,10 @@ Use `glooctl uninstall --all` followed by the normal installation procedure for 
 - **What is the recommended way to upgrade if I'm running Gloo Edge in a production environment, where downtime is unacceptable?**
 
 In Gloo Edge 1.2 and newer, we recommend `helm upgrade` with the proper readiness probes and healthchecks configured (see
-the [1.3.0+ upgrade guide]({{< versioned_link_path fromRoot="/operations/upgrading/1.3.0" >}})). For versions prior
+the [1.3.0+ upgrade guide]({{< versioned_link_path fromRoot="/operations/upgrading/v1.3" >}})). For versions prior
 to Gloo Edge 1.2, enterprise customers have found success performing a blue/green deployment using two simultaneous deployments
 of Gloo Edge. For a brief example, see the
-[1.0.0 example upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/1.0.0#example-upgrade-process" >}}).
+[1.0.0 example upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/v1.0#example-upgrade-process" >}}).
 
 If you have concerns not addressed in the docs here, reach out to us on our [public Slack](https://slack.solo.io/).
 

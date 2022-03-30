@@ -15,7 +15,7 @@ Name|Version|License
 [go-openapi/spec](https://github.com/go-openapi/spec)|v0.19.6|Apache License 2.0
 [go-openapi/swag](https://github.com/go-openapi/swag)|v0.19.15|Apache License 2.0
 [go-swagger/go-swagger](https://github.com/go-swagger/go-swagger)|v0.21.0|Apache License 2.0
-[gogo/googleapis](https://github.com/gogo/googleapis)|v1.3.2|Apache License 2.0
+[gogo/googleapis](https://github.com/gogo/googleapis)|v1.4.0|Apache License 2.0
 [gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.2|BSD 3-clause "New" or "Revised" License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.2|BSD 3-clause "New" or "Revised" License
 [google/go-github](https://github.com/google/go-github)|v17.0.0+incompatible|BSD 3-clause "New" or "Revised" License

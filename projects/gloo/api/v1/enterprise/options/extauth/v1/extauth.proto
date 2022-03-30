@@ -349,6 +349,20 @@ message UserSession {
         // Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a
         // path.
         google.protobuf.StringValue path = 3;
+        // The SameSite options. The default value is LaxMode.
+        enum SameSite {
+            // Cookies are not sent on normal cross-site subrequests, but are sent when 
+            // navigating to the origin site.
+            LaxMode = 0;
+            // Only be sent in a first-party context and not be sent along with requests
+            // initiated by third party websites.
+            StrictMode = 1;
+            // Cookies are sent in all contexts. Cookie NotSecure must be unset.
+            NoneMode = 2;
+        }
+        // Whether the cookie should be restricted to a first-party or same-site context.
+        // The default mode is LaxMode.
+        SameSite same_site = 6;
         // Cookie domain
         string domain = 4;
     }

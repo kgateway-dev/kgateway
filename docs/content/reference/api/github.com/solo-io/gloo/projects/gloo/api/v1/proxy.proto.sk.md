@@ -506,6 +506,7 @@ Notice: RedirectAction is copied directly from https://github.com/envoyproxy/env
 "hostRedirect": string
 "pathRedirect": string
 "prefixRewrite": string
+"regexRewrite": .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
 "responseCode": .gloo.solo.io.RedirectAction.RedirectResponseCode
 "httpsRedirect": bool
 "stripQuery": bool
@@ -515,8 +516,9 @@ Notice: RedirectAction is copied directly from https://github.com/envoyproxy/env
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `hostRedirect` | `string` | The host portion of the URL will be swapped with this value. |
-| `pathRedirect` | `string` | The path portion of the URL will be swapped with this value. Only one of `pathRedirect` or `prefixRewrite` can be set. |
-| `prefixRewrite` | `string` | Indicates that during redirection, the matched prefix (or path) should be swapped with this value. This option allows redirect URLs be dynamically created based on the request. Pay attention to the use of trailing slashes as mentioned in `RouteAction`'s `prefix_rewrite`. Only one of `prefixRewrite` or `pathRedirect` can be set. |
+| `pathRedirect` | `string` | The path portion of the URL will be swapped with this value. Only one of `pathRedirect`, `prefixRewrite`, or `regexRewrite` can be set. |
+| `prefixRewrite` | `string` | Indicates that during redirection, the matched prefix (or path) should be swapped with this value. This option allows redirect URLs be dynamically created based on the request. Pay attention to the use of trailing slashes as mentioned in `RouteAction`'s `prefix_rewrite`. Only one of `prefixRewrite`, `pathRedirect`, or `regexRewrite` can be set. |
+| `regexRewrite` | [.solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute](../../external/envoy/type/matcher/v3/regex.proto.sk/#regexmatchandsubstitute) | Indicates that during forwarding, portions of the path that match the pattern should be rewritten, even allowing the substitution of capture groups from the pattern into the new path as specified by the rewrite substitution string. This is useful to allow application paths to be rewritten in a way that is aware of segments with variable content like identifiers. The router filter will place the original path as it was before the rewrite into the :ref:`x-envoy-original-path <config_http_filters_router_x-envoy-original-path>` header. Only one of :ref:`prefix_rewrite <envoy_api_field_config.route.v3.RouteAction.prefix_rewrite>` or *regex_rewrite* may be specified. Examples using Google's `RE2 <https://github.com/google/re2>`_ engine: * The path pattern ``^/service/([^/]+)(/.*)$`` paired with a substitution string of ``\2/instance/\1`` would transform ``/service/foo/v1/api`` into ``/v1/api/instance/foo``. * The pattern ``one`` paired with a substitution string of ``two`` would transform ``/xxx/one/yyy/one/zzz`` into ``/xxx/two/yyy/two/zzz``. * The pattern ``^(.*?)one(.*)$`` paired with a substitution string of ``\1two\2`` would replace only the first occurrence of ``one``, transforming path ``/xxx/one/yyy/one/zzz`` into ``/xxx/two/yyy/one/zzz``. * The pattern ``(?i)/xxx/`` paired with a substitution string of ``/yyy/`` would do a case-insensitive match and transform path ``/aaa/XxX/bbb`` to ``/aaa/yyy/bbb``. Only one of `regexRewrite`, `pathRedirect`, or `prefixRewrite` can be set. |
 | `responseCode` | [.gloo.solo.io.RedirectAction.RedirectResponseCode](../proxy.proto.sk/#redirectresponsecode) | The HTTP status code to use in the redirect response. The default response code is MOVED_PERMANENTLY (301). |
 | `httpsRedirect` | `bool` | The scheme portion of the URL will be swapped with "https". |
 | `stripQuery` | `bool` | Indicates that during redirection, the query portion of the URL will be removed. Default value is false. |

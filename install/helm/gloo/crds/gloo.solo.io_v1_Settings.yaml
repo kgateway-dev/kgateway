@@ -24,6 +24,15 @@ spec:
         properties:
           spec:
             properties:
+              consoleOptions:
+                properties:
+                  apiExplorerEnabled:
+                    nullable: true
+                    type: boolean
+                  readOnly:
+                    nullable: true
+                    type: boolean
+                type: object
               consul:
                 properties:
                   address:

@@ -61,7 +61,8 @@ type Plugin struct {
 	TranslateTransformation    TranslateTransformationFn
 	settings                   *v1.Settings
 
-	// validationLruCache is a map of: (transformation hash) -> (error state)
+	// validationLruCache is a map of: (transformation hash) -> error state
+	// this is usually a typed error but may be an untyped nil interface
 	validationLruCache *lru.Cache
 }
 
@@ -306,7 +307,9 @@ func (p *Plugin) validateTransformation(
 	// This transformation has already been validated, return the result
 	if err, ok := p.validationLruCache.Get(transformHash); ok {
 		// Error may be nil here since it's just the cached result
-		return err.(error)
+		// so return it as a nil err after cast worst case.
+		errCasted, _ := err.(error)
+		return errCasted
 	}
 
 	err = bootstrap.ValidateBootstrap(ctx, p.settings, FilterName, transformations)

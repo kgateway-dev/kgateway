@@ -40,10 +40,10 @@ Useful make commands:
 | ---                                                       |   ---      |
 | make install-go-tools generated-code -B                   | Makes all generated code which is required to get past CI. |
 | make glooctl                                              | Makes glooctl binary and places it in _output/glooctl |
-| make build-kind-chart                                     | Makes the .tgz helm file that locally built instances of glooctl require to install gloo |
+| make build-test-chart                                     | Makes the .tgz helm file that locally-built instances of glooctl require to install gloo |
 | make docker TAGGED_VERSION=(version)                      | Builds the docker images needed for the helm charts and tests |
 | make clean build-test-assets -B TAGGED_VERSION=v(version) | Builds a zipped helm chart for gloo that is configured to use the specified gloo version. This version must be a valid image in quay. This can include non-standard versions used for testing. |
-| make update-deps                                          | Updates the go dependencies |
+| make install-go-tools                                     | Updates the go dependencies |
 
 ### Small bug fixes
 
@@ -62,7 +62,7 @@ For significant changes to the repository, it’s important to settle on a desig
 1. **Open an issue.** Open an issue about your bug in this repo.
 2. **Message us on Slack.** Reach out to us to discuss your proposed changes.
 3. **Agree on implementation plan.** Write a plan for how this feature or bug fix should be implemented. Should this be one pull request or multiple incremental improvements? Who is going to do each part?
-4. **Submit a work-in-progress PR** It's important to get feedback as early as possible to ensure that any big improvements end up being merged. Submit a pull request and label it `wip` to start getting feedback.
+4. **Submit a work-in-progress PR** It's important to get feedback as early as possible to ensure that any big improvements end up being merged. Submit a pull request and label it `work in progress` to start getting feedback.
 5. **Review.** At least one Solo team member should sign off on the change before it’s merged. Look at the “code review” section below to learn about what we're looking for.
 6. **A Solo team member will merge and release!**
 

@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Renames doc files that have patch versions to remove the patch version.
+    issueLink: https://github.com/solo-io/gloo/issues/6152
+    resolvesIssue: true

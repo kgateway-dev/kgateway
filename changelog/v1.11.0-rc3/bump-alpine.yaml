@@ -1,0 +1,8 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: linux
+  dependencyRepo: alpine
+  dependencyTag: 3.13.8
+  description: Fix for CVE-2022-0778, CVE-2022-23308, CVE-2021-30560 (https://alpinelinux.org/posts/Alpine-3.12.10-3.13.8-3.14.4-released.html)
+  issueLink: https://github.com/solo-io/solo-projects/issues/3259
+  resolvesIssue: false

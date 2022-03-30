@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Expose Envoy's UuidRequestID configurations in hcm.proto
+    issueLink: https://github.com/solo-io/gloo/issues/5405
+    resolvesIssue: true
