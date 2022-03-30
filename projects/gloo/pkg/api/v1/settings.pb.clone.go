@@ -177,6 +177,12 @@ func (m *Settings) Clone() proto.Message {
 		target.UpstreamOptions = proto.Clone(m.GetUpstreamOptions()).(*UpstreamOptions)
 	}
 
+	if h, ok := interface{}(m.GetConsoleOptions()).(clone.Cloner); ok {
+		target.ConsoleOptions = h.Clone().(*ConsoleOptions)
+	} else {
+		target.ConsoleOptions = proto.Clone(m.GetConsoleOptions()).(*ConsoleOptions)
+	}
+
 	switch m.ConfigSource.(type) {
 
 	case *Settings_KubernetesConfigSource:
@@ -439,6 +445,29 @@ func (m *GatewayOptions) Clone() proto.Message {
 		target.VirtualServiceOptions = h.Clone().(*VirtualServiceOptions)
 	} else {
 		target.VirtualServiceOptions = proto.Clone(m.GetVirtualServiceOptions()).(*VirtualServiceOptions)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ConsoleOptions) Clone() proto.Message {
+	var target *ConsoleOptions
+	if m == nil {
+		return target
+	}
+	target = &ConsoleOptions{}
+
+	if h, ok := interface{}(m.GetReadOnly()).(clone.Cloner); ok {
+		target.ReadOnly = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.ReadOnly = proto.Clone(m.GetReadOnly()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if h, ok := interface{}(m.GetApiExplorerEnabled()).(clone.Cloner); ok {
+		target.ApiExplorerEnabled = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.ApiExplorerEnabled = proto.Clone(m.GetApiExplorerEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
 	return target

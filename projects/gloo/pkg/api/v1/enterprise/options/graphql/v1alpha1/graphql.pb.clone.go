@@ -378,6 +378,12 @@ func (m *GraphQLApi) Clone() proto.Message {
 		}
 	}
 
+	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
+		target.Options = h.Clone().(*GraphQLApi_GraphQLApiOptions)
+	} else {
+		target.Options = proto.Clone(m.GetOptions()).(*GraphQLApi_GraphQLApiOptions)
+	}
+
 	switch m.Schema.(type) {
 
 	case *GraphQLApi_ExecutableSchema:
@@ -550,6 +556,19 @@ func (m *MockResolver_AsyncResponse) Clone() proto.Message {
 }
 
 // Clone function
+func (m *GraphQLApi_GraphQLApiOptions) Clone() proto.Message {
+	var target *GraphQLApi_GraphQLApiOptions
+	if m == nil {
+		return target
+	}
+	target = &GraphQLApi_GraphQLApiOptions{}
+
+	target.LogSensitiveInfo = m.GetLogSensitiveInfo()
+
+	return target
+}
+
+// Clone function
 func (m *Executor_Local) Clone() proto.Message {
 	var target *Executor_Local
 	if m == nil {
@@ -571,6 +590,29 @@ func (m *Executor_Local) Clone() proto.Message {
 	}
 
 	target.EnableIntrospection = m.GetEnableIntrospection()
+
+	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
+		target.Options = h.Clone().(*Executor_Local_LocalExecutorOptions)
+	} else {
+		target.Options = proto.Clone(m.GetOptions()).(*Executor_Local_LocalExecutorOptions)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Executor_Local_LocalExecutorOptions) Clone() proto.Message {
+	var target *Executor_Local_LocalExecutorOptions
+	if m == nil {
+		return target
+	}
+	target = &Executor_Local_LocalExecutorOptions{}
+
+	if h, ok := interface{}(m.GetMaxDepth()).(clone.Cloner); ok {
+		target.MaxDepth = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.MaxDepth = proto.Clone(m.GetMaxDepth()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
 
 	return target
 }

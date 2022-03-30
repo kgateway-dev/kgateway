@@ -557,6 +557,9 @@ apis:
   gloo.solo.io.ConnectionConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto.sk/#ConnectionConfig
     package: gloo.solo.io
+  gloo.solo.io.ConsoleOptions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#ConsoleOptions
+    package: gloo.solo.io
   gloo.solo.io.ConsulServiceDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#ConsulServiceDestination
     package: gloo.solo.io

@@ -115,6 +115,10 @@ var _ = Describe("Plugin", func() {
 			AllowChunkedLength:           true,
 			EnableTrailers:               true,
 			StripAnyHostPort:             true,
+			UuidRequestIdConfig: &hcm.HttpConnectionManagerSettings_UuidRequestIdConfigSettings{
+				UseRequestIdForTraceSampling: &wrappers.BoolValue{Value: true},
+				PackTraceReason:              &wrappers.BoolValue{Value: true},
+			},
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
@@ -157,6 +161,12 @@ var _ = Describe("Plugin", func() {
 
 		// Confirm that MockTracingPlugin return the proper value
 		Expect(cfg.Tracing).To(BeNil())
+
+		// Expect the UUID request ID config to be set through request_id_extension
+		typedConfigOutput := &hcm.HttpConnectionManagerSettings_UuidRequestIdConfigSettings{}
+		err = cfg.RequestIdExtension.GetTypedConfig().UnmarshalTo(typedConfigOutput)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(typedConfigOutput).To(MatchProto(settings.UuidRequestIdConfig))
 
 		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
 		Expect(cfg.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))

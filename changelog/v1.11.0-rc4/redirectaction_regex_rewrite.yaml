@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5448
+    resolvesIssue: true
+    description: Expose regex_rewrite in RedirectAction.
