@@ -57,13 +57,6 @@ message RateLimitConfigRefs {
   repeated RateLimitConfigRef refs = 1;
 }
 
-// A list of references to `RateLimitConfig` resources.
-// Each resource represents a rate limit policy that will be independently enforced.
-message RateLimitStagedConfigRefs {
-  RateLimitConfigRefs before_ext_auth = 1;
-  RateLimitConfigRefs after_ext_auth = 2;
-}
-
 // A reference to a `RateLimitConfig` resource.
 message RateLimitConfigRef {
   string name = 1;
@@ -81,15 +74,6 @@ message RateLimitVhostExtension {
   repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1;
 }
 
-// Use this field if you want to inline the Envoy rate limits for this VirtualHost.
-// Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
-// specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
-// running a custom rate limit server you need to configure it yourself.
-message RateLimitStagedVhostExtension {
-  RateLimitVhostExtension before_ext_auth = 1;
-  RateLimitVhostExtension after_ext_auth = 2;
-}
-
 // Use this field if you want to inline the Envoy rate limits for this Route.
 // Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
 // specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
@@ -102,13 +86,4 @@ message RateLimitRouteExtension {
     // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
     // would be throttled, the entire request returns a 429 (gets throttled)
     repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 2;
-}
-
-// Use this field if you want to inline the Envoy rate limits for this Route.
-// Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
-// specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
-// running a custom rate limit server you need to configure it yourself.
-message RateLimitStagedRouteExtension {
-  RateLimitRouteExtension before_ext_auth = 1;
-  RateLimitRouteExtension after_ext_auth = 2;
 }

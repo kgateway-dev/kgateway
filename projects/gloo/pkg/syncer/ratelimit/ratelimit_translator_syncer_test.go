@@ -225,20 +225,18 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 
 		Context("Staged Rate Limiting", func() {
 
-			When("RateLimitStagedConfigs is set on VirtualHost", func() {
+			When("RateLimitEarlyConfigs is set on VirtualHost", func() {
 
 				BeforeEach(func() {
 					virtualHost := &gloov1.VirtualHost{
 						Name: "gloo-system.default",
 						Options: &gloov1.VirtualHostOptions{
-							RateLimitConfigType: &gloov1.VirtualHostOptions_RateLimitStagedConfigs{
-								RateLimitStagedConfigs: &ratelimit.RateLimitStagedConfigRefs{
-									BeforeExtAuth: &ratelimit.RateLimitConfigRefs{
-										Refs: []*ratelimit.RateLimitConfigRef{{
-											Name:      "foo",
-											Namespace: "gloo-system",
-										}},
-									},
+							RateLimitEarlyConfigType: &gloov1.VirtualHostOptions_RateLimitEarlyConfigs{
+								RateLimitEarlyConfigs: &ratelimit.RateLimitConfigRefs{
+									Refs: []*ratelimit.RateLimitConfigRef{{
+										Name:      "foo",
+										Namespace: "gloo-system",
+									}},
 								},
 							},
 						},
@@ -269,19 +267,17 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 			})
 
-			When("RateLimitStaged is set on VirtualHost", func() {
+			When("RateLimitEarly is set on VirtualHost", func() {
 
 				BeforeEach(func() {
 					virtualHost := &gloov1.VirtualHost{
 						Name: "gloo-system.default",
 						Options: &gloov1.VirtualHostOptions{
-							RateLimitConfigType: &gloov1.VirtualHostOptions_RatelimitStaged{
-								RatelimitStaged: &ratelimit.RateLimitStagedVhostExtension{
-									BeforeExtAuth: &ratelimit.RateLimitVhostExtension{
-										RateLimits: []*v1alpha1.RateLimitActions{
-											{
-												SetActions: []*v1alpha1.Action{},
-											},
+							RateLimitEarlyConfigType: &gloov1.VirtualHostOptions_RatelimitEarly{
+								RatelimitEarly: &ratelimit.RateLimitVhostExtension{
+									RateLimits: []*v1alpha1.RateLimitActions{
+										{
+											SetActions: []*v1alpha1.Action{},
 										},
 									},
 								},
@@ -314,19 +310,17 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 			})
 
-			When("RateLimitStagedConfigs is set on Route", func() {
+			When("RateLimitEarlyConfigs is set on Route", func() {
 
 				BeforeEach(func() {
 					route := &gloov1.Route{
 						Options: &gloov1.RouteOptions{
-							RateLimitConfigType: &gloov1.RouteOptions_RateLimitStagedConfigs{
-								RateLimitStagedConfigs: &ratelimit.RateLimitStagedConfigRefs{
-									BeforeExtAuth: &ratelimit.RateLimitConfigRefs{
-										Refs: []*ratelimit.RateLimitConfigRef{{
-											Name:      "foo",
-											Namespace: "gloo-system",
-										}},
-									},
+							RateLimitEarlyConfigType: &gloov1.RouteOptions_RateLimitEarlyConfigs{
+								RateLimitEarlyConfigs: &ratelimit.RateLimitConfigRefs{
+									Refs: []*ratelimit.RateLimitConfigRef{{
+										Name:      "foo",
+										Namespace: "gloo-system",
+									}},
 								},
 							},
 						},
@@ -359,18 +353,16 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 			})
 
-			When("RateLimitStaged is set on Route", func() {
+			When("RateLimitEarly is set on Route", func() {
 
 				BeforeEach(func() {
 					route := &gloov1.Route{
 						Options: &gloov1.RouteOptions{
-							RateLimitConfigType: &gloov1.RouteOptions_RatelimitStaged{
-								RatelimitStaged: &ratelimit.RateLimitStagedRouteExtension{
-									BeforeExtAuth: &ratelimit.RateLimitRouteExtension{
-										RateLimits: []*v1alpha1.RateLimitActions{
-											{
-												SetActions: []*v1alpha1.Action{},
-											},
+							RateLimitEarlyConfigType: &gloov1.RouteOptions_RatelimitEarly{
+								RatelimitEarly: &ratelimit.RateLimitRouteExtension{
+									RateLimits: []*v1alpha1.RateLimitActions{
+										{
+											SetActions: []*v1alpha1.Action{},
 										},
 									},
 								},

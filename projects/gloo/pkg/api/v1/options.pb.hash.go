@@ -906,6 +906,54 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	switch m.RateLimitEarlyConfigType.(type) {
+
+	case *VirtualHostOptions_RatelimitEarly:
+
+		if h, ok := interface{}(m.GetRatelimitEarly()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("RatelimitEarly")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetRatelimitEarly(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("RatelimitEarly")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *VirtualHostOptions_RateLimitEarlyConfigs:
+
+		if h, ok := interface{}(m.GetRateLimitEarlyConfigs()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("RateLimitEarlyConfigs")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetRateLimitEarlyConfigs(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("RateLimitEarlyConfigs")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	switch m.RateLimitConfigType.(type) {
 
 	case *VirtualHostOptions_Ratelimit:
@@ -930,28 +978,6 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *VirtualHostOptions_RatelimitStaged:
-
-		if h, ok := interface{}(m.GetRatelimitStaged()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("RatelimitStaged")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRatelimitStaged(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("RatelimitStaged")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
 	case *VirtualHostOptions_RateLimitConfigs:
 
 		if h, ok := interface{}(m.GetRateLimitConfigs()).(safe_hasher.SafeHasher); ok {
@@ -966,28 +992,6 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("RateLimitConfigs")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	case *VirtualHostOptions_RateLimitStagedConfigs:
-
-		if h, ok := interface{}(m.GetRateLimitStagedConfigs()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("RateLimitStagedConfigs")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRateLimitStagedConfigs(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("RateLimitStagedConfigs")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -1557,6 +1561,54 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	switch m.RateLimitEarlyConfigType.(type) {
+
+	case *RouteOptions_RatelimitEarly:
+
+		if h, ok := interface{}(m.GetRatelimitEarly()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("RatelimitEarly")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetRatelimitEarly(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("RatelimitEarly")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *RouteOptions_RateLimitEarlyConfigs:
+
+		if h, ok := interface{}(m.GetRateLimitEarlyConfigs()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("RateLimitEarlyConfigs")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetRateLimitEarlyConfigs(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("RateLimitEarlyConfigs")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	switch m.RateLimitConfigType.(type) {
 
 	case *RouteOptions_Ratelimit:
@@ -1581,28 +1633,6 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *RouteOptions_RatelimitStaged:
-
-		if h, ok := interface{}(m.GetRatelimitStaged()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("RatelimitStaged")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRatelimitStaged(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("RatelimitStaged")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
 	case *RouteOptions_RateLimitConfigs:
 
 		if h, ok := interface{}(m.GetRateLimitConfigs()).(safe_hasher.SafeHasher); ok {
@@ -1617,28 +1647,6 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("RateLimitConfigs")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	case *RouteOptions_RateLimitStagedConfigs:
-
-		if h, ok := interface{}(m.GetRateLimitStagedConfigs()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("RateLimitStagedConfigs")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRateLimitStagedConfigs(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("RateLimitStagedConfigs")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

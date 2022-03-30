@@ -502,11 +502,13 @@ type VirtualHostOptions struct {
 	Transformations *transformation.Transformations `protobuf:"bytes,4,opt,name=transformations,proto3" json:"transformations,omitempty"`
 	// Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
 	RatelimitBasic *ratelimit.IngressRateLimit `protobuf:"bytes,6,opt,name=ratelimit_basic,json=ratelimitBasic,proto3" json:"ratelimit_basic,omitempty"`
+	// Types that are assignable to RateLimitEarlyConfigType:
+	//	*VirtualHostOptions_RatelimitEarly
+	//	*VirtualHostOptions_RateLimitEarlyConfigs
+	RateLimitEarlyConfigType isVirtualHostOptions_RateLimitEarlyConfigType `protobuf_oneof:"rate_limit_early_config_type"`
 	// Types that are assignable to RateLimitConfigType:
 	//	*VirtualHostOptions_Ratelimit
-	//	*VirtualHostOptions_RatelimitStaged
 	//	*VirtualHostOptions_RateLimitConfigs
-	//	*VirtualHostOptions_RateLimitStagedConfigs
 	RateLimitConfigType isVirtualHostOptions_RateLimitConfigType `protobuf_oneof:"rate_limit_config_type"`
 	// Enterprise-only: Config for Web Application Firewall (WAF), supporting
 	// the popular ModSecurity 3.0 ruleset
@@ -633,6 +635,27 @@ func (x *VirtualHostOptions) GetRatelimitBasic() *ratelimit.IngressRateLimit {
 	return nil
 }
 
+func (m *VirtualHostOptions) GetRateLimitEarlyConfigType() isVirtualHostOptions_RateLimitEarlyConfigType {
+	if m != nil {
+		return m.RateLimitEarlyConfigType
+	}
+	return nil
+}
+
+func (x *VirtualHostOptions) GetRatelimitEarly() *ratelimit.RateLimitVhostExtension {
+	if x, ok := x.GetRateLimitEarlyConfigType().(*VirtualHostOptions_RatelimitEarly); ok {
+		return x.RatelimitEarly
+	}
+	return nil
+}
+
+func (x *VirtualHostOptions) GetRateLimitEarlyConfigs() *ratelimit.RateLimitConfigRefs {
+	if x, ok := x.GetRateLimitEarlyConfigType().(*VirtualHostOptions_RateLimitEarlyConfigs); ok {
+		return x.RateLimitEarlyConfigs
+	}
+	return nil
+}
+
 func (m *VirtualHostOptions) GetRateLimitConfigType() isVirtualHostOptions_RateLimitConfigType {
 	if m != nil {
 		return m.RateLimitConfigType
@@ -647,23 +670,9 @@ func (x *VirtualHostOptions) GetRatelimit() *ratelimit.RateLimitVhostExtension {
 	return nil
 }
 
-func (x *VirtualHostOptions) GetRatelimitStaged() *ratelimit.RateLimitStagedVhostExtension {
-	if x, ok := x.GetRateLimitConfigType().(*VirtualHostOptions_RatelimitStaged); ok {
-		return x.RatelimitStaged
-	}
-	return nil
-}
-
 func (x *VirtualHostOptions) GetRateLimitConfigs() *ratelimit.RateLimitConfigRefs {
 	if x, ok := x.GetRateLimitConfigType().(*VirtualHostOptions_RateLimitConfigs); ok {
 		return x.RateLimitConfigs
-	}
-	return nil
-}
-
-func (x *VirtualHostOptions) GetRateLimitStagedConfigs() *ratelimit.RateLimitStagedConfigRefs {
-	if x, ok := x.GetRateLimitConfigType().(*VirtualHostOptions_RateLimitStagedConfigs); ok {
-		return x.RateLimitStagedConfigs
 	}
 	return nil
 }
@@ -753,6 +762,30 @@ func (x *VirtualHostOptions) GetStagedTransformations() *transformation.Transfor
 	return nil
 }
 
+type isVirtualHostOptions_RateLimitEarlyConfigType interface {
+	isVirtualHostOptions_RateLimitEarlyConfigType()
+}
+
+type VirtualHostOptions_RatelimitEarly struct {
+	// Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
+	// supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+	// Configure rate-limit *actions* here, which define how request characteristics get translated into
+	// descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
+	// their associated limits on the Gloo settings.
+	// Only one of `ratelimit_early` or `rate_limit_early_configs` can be set.
+	RatelimitEarly *ratelimit.RateLimitVhostExtension `protobuf:"bytes,72,opt,name=ratelimit_early,json=ratelimitEarly,proto3,oneof"`
+}
+
+type VirtualHostOptions_RateLimitEarlyConfigs struct {
+	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+	// Only one of `ratelimit_early` or `rate_limit_early_configs` can be set.
+	RateLimitEarlyConfigs *ratelimit.RateLimitConfigRefs `protobuf:"bytes,73,opt,name=rate_limit_early_configs,json=rateLimitEarlyConfigs,proto3,oneof"`
+}
+
+func (*VirtualHostOptions_RatelimitEarly) isVirtualHostOptions_RateLimitEarlyConfigType() {}
+
+func (*VirtualHostOptions_RateLimitEarlyConfigs) isVirtualHostOptions_RateLimitEarlyConfigType() {}
+
 type isVirtualHostOptions_RateLimitConfigType interface {
 	isVirtualHostOptions_RateLimitConfigType()
 }
@@ -763,39 +796,19 @@ type VirtualHostOptions_Ratelimit struct {
 	// Configure rate-limit *actions* here, which define how request characteristics get translated into
 	// descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
 	// their associated limits on the Gloo settings.
-	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
+	// Only one of `ratelimit` or `rate_limit_configs` can be set.
 	Ratelimit *ratelimit.RateLimitVhostExtension `protobuf:"bytes,70,opt,name=ratelimit,proto3,oneof"`
-}
-
-type VirtualHostOptions_RatelimitStaged struct {
-	// Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
-	// supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
-	// Configure rate-limit *actions* here, which define how request characteristics get translated into
-	// descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
-	// their associated limits on the Gloo settings.
-	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
-	RatelimitStaged *ratelimit.RateLimitStagedVhostExtension `protobuf:"bytes,72,opt,name=ratelimit_staged,json=ratelimitStaged,proto3,oneof"`
 }
 
 type VirtualHostOptions_RateLimitConfigs struct {
 	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
-	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
+	// Only one of `ratelimit` or `rate_limit_configs` can be set.
 	RateLimitConfigs *ratelimit.RateLimitConfigRefs `protobuf:"bytes,71,opt,name=rate_limit_configs,json=rateLimitConfigs,proto3,oneof"`
-}
-
-type VirtualHostOptions_RateLimitStagedConfigs struct {
-	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
-	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
-	RateLimitStagedConfigs *ratelimit.RateLimitStagedConfigRefs `protobuf:"bytes,73,opt,name=rate_limit_staged_configs,json=rateLimitStagedConfigs,proto3,oneof"`
 }
 
 func (*VirtualHostOptions_Ratelimit) isVirtualHostOptions_RateLimitConfigType() {}
 
-func (*VirtualHostOptions_RatelimitStaged) isVirtualHostOptions_RateLimitConfigType() {}
-
 func (*VirtualHostOptions_RateLimitConfigs) isVirtualHostOptions_RateLimitConfigType() {}
-
-func (*VirtualHostOptions_RateLimitStagedConfigs) isVirtualHostOptions_RateLimitConfigType() {}
 
 type isVirtualHostOptions_JwtConfig interface {
 	isVirtualHostOptions_JwtConfig()
@@ -882,11 +895,13 @@ type RouteOptions struct {
 	Upgrades []*protocol_upgrade.ProtocolUpgradeConfig `protobuf:"bytes,21,rep,name=upgrades,proto3" json:"upgrades,omitempty"`
 	// Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
 	RatelimitBasic *ratelimit.IngressRateLimit `protobuf:"bytes,13,opt,name=ratelimit_basic,json=ratelimitBasic,proto3" json:"ratelimit_basic,omitempty"`
+	// Types that are assignable to RateLimitEarlyConfigType:
+	//	*RouteOptions_RatelimitEarly
+	//	*RouteOptions_RateLimitEarlyConfigs
+	RateLimitEarlyConfigType isRouteOptions_RateLimitEarlyConfigType `protobuf_oneof:"rate_limit_early_config_type"`
 	// Types that are assignable to RateLimitConfigType:
 	//	*RouteOptions_Ratelimit
-	//	*RouteOptions_RatelimitStaged
 	//	*RouteOptions_RateLimitConfigs
-	//	*RouteOptions_RateLimitStagedConfigs
 	RateLimitConfigType isRouteOptions_RateLimitConfigType `protobuf_oneof:"rate_limit_config_type"`
 	// Enterprise-only: Config for Web Application Firewall (WAF), supporting
 	// the popular ModSecurity 3.0 ruleset
@@ -1074,6 +1089,27 @@ func (x *RouteOptions) GetRatelimitBasic() *ratelimit.IngressRateLimit {
 	return nil
 }
 
+func (m *RouteOptions) GetRateLimitEarlyConfigType() isRouteOptions_RateLimitEarlyConfigType {
+	if m != nil {
+		return m.RateLimitEarlyConfigType
+	}
+	return nil
+}
+
+func (x *RouteOptions) GetRatelimitEarly() *ratelimit.RateLimitRouteExtension {
+	if x, ok := x.GetRateLimitEarlyConfigType().(*RouteOptions_RatelimitEarly); ok {
+		return x.RatelimitEarly
+	}
+	return nil
+}
+
+func (x *RouteOptions) GetRateLimitEarlyConfigs() *ratelimit.RateLimitConfigRefs {
+	if x, ok := x.GetRateLimitEarlyConfigType().(*RouteOptions_RateLimitEarlyConfigs); ok {
+		return x.RateLimitEarlyConfigs
+	}
+	return nil
+}
+
 func (m *RouteOptions) GetRateLimitConfigType() isRouteOptions_RateLimitConfigType {
 	if m != nil {
 		return m.RateLimitConfigType
@@ -1088,23 +1124,9 @@ func (x *RouteOptions) GetRatelimit() *ratelimit.RateLimitRouteExtension {
 	return nil
 }
 
-func (x *RouteOptions) GetRatelimitStaged() *ratelimit.RateLimitStagedRouteExtension {
-	if x, ok := x.GetRateLimitConfigType().(*RouteOptions_RatelimitStaged); ok {
-		return x.RatelimitStaged
-	}
-	return nil
-}
-
 func (x *RouteOptions) GetRateLimitConfigs() *ratelimit.RateLimitConfigRefs {
 	if x, ok := x.GetRateLimitConfigType().(*RouteOptions_RateLimitConfigs); ok {
 		return x.RateLimitConfigs
-	}
-	return nil
-}
-
-func (x *RouteOptions) GetRateLimitStagedConfigs() *ratelimit.RateLimitStagedConfigRefs {
-	if x, ok := x.GetRateLimitConfigType().(*RouteOptions_RateLimitStagedConfigs); ok {
-		return x.RateLimitStagedConfigs
 	}
 	return nil
 }
@@ -1215,6 +1237,30 @@ func (*RouteOptions_HostRewrite) isRouteOptions_HostRewriteType() {}
 
 func (*RouteOptions_AutoHostRewrite) isRouteOptions_HostRewriteType() {}
 
+type isRouteOptions_RateLimitEarlyConfigType interface {
+	isRouteOptions_RateLimitEarlyConfigType()
+}
+
+type RouteOptions_RatelimitEarly struct {
+	// Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
+	// supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+	// Configure rate-limit *actions* here, which define how request characteristics get translated into
+	// descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
+	// their associated limits on the Gloo settings.
+	// Only one of `ratelimit_early` or `rate_limit_early_configs` can be set.
+	RatelimitEarly *ratelimit.RateLimitRouteExtension `protobuf:"bytes,142,opt,name=ratelimit_early,json=ratelimitEarly,proto3,oneof"`
+}
+
+type RouteOptions_RateLimitEarlyConfigs struct {
+	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+	// Only one of `ratelimit_early` or `rate_limit_early_configs` can be set.
+	RateLimitEarlyConfigs *ratelimit.RateLimitConfigRefs `protobuf:"bytes,143,opt,name=rate_limit_early_configs,json=rateLimitEarlyConfigs,proto3,oneof"`
+}
+
+func (*RouteOptions_RatelimitEarly) isRouteOptions_RateLimitEarlyConfigType() {}
+
+func (*RouteOptions_RateLimitEarlyConfigs) isRouteOptions_RateLimitEarlyConfigType() {}
+
 type isRouteOptions_RateLimitConfigType interface {
 	isRouteOptions_RateLimitConfigType()
 }
@@ -1225,39 +1271,19 @@ type RouteOptions_Ratelimit struct {
 	// Configure rate-limit *actions* here, which define how request characteristics get translated into
 	// descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
 	// their associated limits on the Gloo settings.
-	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
+	// Only one of `ratelimit` or `rate_limit_configs` can be set.
 	Ratelimit *ratelimit.RateLimitRouteExtension `protobuf:"bytes,140,opt,name=ratelimit,proto3,oneof"`
-}
-
-type RouteOptions_RatelimitStaged struct {
-	// Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
-	// supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
-	// Configure rate-limit *actions* here, which define how request characteristics get translated into
-	// descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
-	// their associated limits on the Gloo settings.
-	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
-	RatelimitStaged *ratelimit.RateLimitStagedRouteExtension `protobuf:"bytes,142,opt,name=ratelimit_staged,json=ratelimitStaged,proto3,oneof"`
 }
 
 type RouteOptions_RateLimitConfigs struct {
 	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
-	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
+	// Only one of `ratelimit` or `rate_limit_configs` can be set.
 	RateLimitConfigs *ratelimit.RateLimitConfigRefs `protobuf:"bytes,141,opt,name=rate_limit_configs,json=rateLimitConfigs,proto3,oneof"`
-}
-
-type RouteOptions_RateLimitStagedConfigs struct {
-	// References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
-	// Only one of `ratelimit`, `ratelimit_staged`, `rate_limit_configs` or `rate_limit_staged_configs` can be set.
-	RateLimitStagedConfigs *ratelimit.RateLimitStagedConfigRefs `protobuf:"bytes,143,opt,name=rate_limit_staged_configs,json=rateLimitStagedConfigs,proto3,oneof"`
 }
 
 func (*RouteOptions_Ratelimit) isRouteOptions_RateLimitConfigType() {}
 
-func (*RouteOptions_RatelimitStaged) isRouteOptions_RateLimitConfigType() {}
-
 func (*RouteOptions_RateLimitConfigs) isRouteOptions_RateLimitConfigType() {}
-
-func (*RouteOptions_RateLimitStagedConfigs) isRouteOptions_RateLimitConfigType() {}
 
 type isRouteOptions_JwtConfig interface {
 	isRouteOptions_JwtConfig()
@@ -1852,7 +1878,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDesc = []
 	0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x54, 0x63, 0x70,
 	0x50, 0x72, 0x6f, 0x78, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x10, 0x74,
 	0x63, 0x70, 0x50, 0x72, 0x6f, 0x78, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x22,
-	0xeb, 0x0e, 0x0a, 0x12, 0x56, 0x69, 0x72, 0x74, 0x75, 0x61, 0x6c, 0x48, 0x6f, 0x73, 0x74, 0x4f,
+	0xfb, 0x0e, 0x0a, 0x12, 0x56, 0x69, 0x72, 0x74, 0x75, 0x61, 0x6c, 0x48, 0x6f, 0x73, 0x74, 0x4f,
 	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x38, 0x0a, 0x0a, 0x65, 0x78, 0x74, 0x65, 0x6e, 0x73,
 	0x69, 0x6f, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x67, 0x6c, 0x6f,
 	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73,
@@ -1886,45 +1912,44 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDesc = []
 	0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c,
 	0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x49, 0x6e, 0x67, 0x72, 0x65,
 	0x73, 0x73, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x52, 0x0e, 0x72, 0x61, 0x74,
-	0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x42, 0x61, 0x73, 0x69, 0x63, 0x12, 0x57, 0x0a, 0x09, 0x72,
-	0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x46, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x37,
-	0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f,
-	0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e,
-	0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x56, 0x68, 0x6f, 0x73, 0x74, 0x45, 0x78,
-	0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x00, 0x52, 0x09, 0x72, 0x61, 0x74, 0x65, 0x6c,
-	0x69, 0x6d, 0x69, 0x74, 0x12, 0x6a, 0x0a, 0x10, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69,
-	0x74, 0x5f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x64, 0x18, 0x48, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3d,
-	0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f,
-	0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e,
-	0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x56,
+	0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x42, 0x61, 0x73, 0x69, 0x63, 0x12, 0x62, 0x0a, 0x0f, 0x72,
+	0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x65, 0x61, 0x72, 0x6c, 0x79, 0x18, 0x48,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x37, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74,
+	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
+	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x56,
 	0x68, 0x6f, 0x73, 0x74, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x00, 0x52,
-	0x0f, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64,
-	0x12, 0x63, 0x0a, 0x12, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x63,
-	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x18, 0x47, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x72,
-	0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
-	0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61,
-	0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x66,
-	0x73, 0x48, 0x00, 0x52, 0x10, 0x72, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43, 0x6f,
-	0x6e, 0x66, 0x69, 0x67, 0x73, 0x12, 0x76, 0x0a, 0x19, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69,
-	0x6d, 0x69, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x64, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69,
-	0x67, 0x73, 0x18, 0x49, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c,
-	0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f,
-	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69,
-	0x6d, 0x69, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52,
-	0x65, 0x66, 0x73, 0x48, 0x00, 0x52, 0x16, 0x72, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74,
-	0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x12, 0x34, 0x0a,
+	0x0e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x45, 0x61, 0x72, 0x6c, 0x79, 0x12,
+	0x6e, 0x0a, 0x18, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x65, 0x61,
+	0x72, 0x6c, 0x79, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x18, 0x49, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x33, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e,
+	0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43, 0x6f, 0x6e, 0x66,
+	0x69, 0x67, 0x52, 0x65, 0x66, 0x73, 0x48, 0x00, 0x52, 0x15, 0x72, 0x61, 0x74, 0x65, 0x4c, 0x69,
+	0x6d, 0x69, 0x74, 0x45, 0x61, 0x72, 0x6c, 0x79, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x12,
+	0x57, 0x0a, 0x09, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x46, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x37, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f,
+	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f,
+	0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x56, 0x68, 0x6f,
+	0x73, 0x74, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x01, 0x52, 0x09, 0x72,
+	0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x12, 0x63, 0x0a, 0x12, 0x72, 0x61, 0x74, 0x65,
+	0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x18, 0x47,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74,
+	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
+	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x66, 0x73, 0x48, 0x01, 0x52, 0x10, 0x72, 0x61, 0x74,
+	0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x12, 0x34, 0x0a,
 	0x03, 0x77, 0x61, 0x66, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x77, 0x61, 0x66,
 	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
 	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x03,
 	0x77, 0x61, 0x66, 0x12, 0x40, 0x0a, 0x03, 0x6a, 0x77, 0x74, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x28, 0x2e, 0x6a, 0x77, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67,
 	0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x56, 0x68, 0x6f, 0x73,
-	0x74, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x42, 0x02, 0x18, 0x01, 0x48, 0x01,
+	0x74, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x42, 0x02, 0x18, 0x01, 0x48, 0x02,
 	0x52, 0x03, 0x6a, 0x77, 0x74, 0x12, 0x52, 0x0a, 0x0a, 0x6a, 0x77, 0x74, 0x5f, 0x73, 0x74, 0x61,
 	0x67, 0x65, 0x64, 0x18, 0x13, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x31, 0x2e, 0x6a, 0x77, 0x74, 0x2e,
 	0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c,
 	0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4a, 0x77, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x56, 0x68,
-	0x6f, 0x73, 0x74, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x01, 0x52, 0x09,
+	0x6f, 0x73, 0x74, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x02, 0x52, 0x09,
 	0x6a, 0x77, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x12, 0x40, 0x0a, 0x04, 0x72, 0x62, 0x61,
 	0x63, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2c, 0x2e, 0x72, 0x62, 0x61, 0x63, 0x2e, 0x6f,
 	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f,
@@ -1968,9 +1993,11 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDesc = []
 	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66,
 	0x6f, 0x72, 0x6d, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x67, 0x65, 0x73, 0x52, 0x15,
 	0x73, 0x74, 0x61, 0x67, 0x65, 0x64, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x6f, 0x72, 0x6d, 0x61,
-	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x18, 0x0a, 0x16, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x1e, 0x0a, 0x1c, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69,
+	0x6d, 0x69, 0x74, 0x5f, 0x65, 0x61, 0x72, 0x6c, 0x79, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x5f, 0x74, 0x79, 0x70, 0x65, 0x42, 0x18, 0x0a, 0x16, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69,
 	0x6d, 0x69, 0x74, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x42,
-	0x0c, 0x0a, 0x0a, 0x6a, 0x77, 0x74, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0xfb, 0x13,
+	0x0c, 0x0a, 0x0a, 0x6a, 0x77, 0x74, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x8b, 0x14,
 	0x0a, 0x0c, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x62,
 	0x0a, 0x0f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x69, 0x6f, 0x6e,
 	0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x34, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x66,
@@ -2040,45 +2067,44 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDesc = []
 	0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73,
 	0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x49, 0x6e, 0x67, 0x72, 0x65, 0x73, 0x73, 0x52, 0x61,
 	0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x52, 0x0e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d,
-	0x69, 0x74, 0x42, 0x61, 0x73, 0x69, 0x63, 0x12, 0x58, 0x0a, 0x09, 0x72, 0x61, 0x74, 0x65, 0x6c,
-	0x69, 0x6d, 0x69, 0x74, 0x18, 0x8c, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x37, 0x2e, 0x72, 0x61,
-	0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e,
-	0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74,
-	0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x45, 0x78, 0x74, 0x65, 0x6e,
-	0x73, 0x69, 0x6f, 0x6e, 0x48, 0x01, 0x52, 0x09, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69,
-	0x74, 0x12, 0x6b, 0x0a, 0x10, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x73,
-	0x74, 0x61, 0x67, 0x65, 0x64, 0x18, 0x8e, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3d, 0x2e, 0x72,
-	0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
-	0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61,
-	0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x52, 0x6f, 0x75,
-	0x74, 0x65, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x01, 0x52, 0x0f, 0x72,
-	0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x12, 0x64,
-	0x0a, 0x12, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x63, 0x6f, 0x6e,
-	0x66, 0x69, 0x67, 0x73, 0x18, 0x8d, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x72, 0x61,
-	0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e,
-	0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74,
-	0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x66, 0x73,
-	0x48, 0x01, 0x52, 0x10, 0x72, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43, 0x6f, 0x6e,
-	0x66, 0x69, 0x67, 0x73, 0x12, 0x77, 0x0a, 0x19, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69, 0x6d,
-	0x69, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x64, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67,
-	0x73, 0x18, 0x8f, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c,
-	0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f,
-	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69,
-	0x6d, 0x69, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52,
-	0x65, 0x66, 0x73, 0x48, 0x01, 0x52, 0x16, 0x72, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74,
-	0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x12, 0x34, 0x0a,
+	0x69, 0x74, 0x42, 0x61, 0x73, 0x69, 0x63, 0x12, 0x63, 0x0a, 0x0f, 0x72, 0x61, 0x74, 0x65, 0x6c,
+	0x69, 0x6d, 0x69, 0x74, 0x5f, 0x65, 0x61, 0x72, 0x6c, 0x79, 0x18, 0x8e, 0x01, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x37, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e,
+	0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x52, 0x6f, 0x75, 0x74,
+	0x65, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x01, 0x52, 0x0e, 0x72, 0x61,
+	0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x45, 0x61, 0x72, 0x6c, 0x79, 0x12, 0x6f, 0x0a, 0x18,
+	0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x65, 0x61, 0x72, 0x6c, 0x79,
+	0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x18, 0x8f, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x33, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f,
+	0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x52, 0x65, 0x66, 0x73, 0x48, 0x01, 0x52, 0x15, 0x72, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69,
+	0x74, 0x45, 0x61, 0x72, 0x6c, 0x79, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x12, 0x58, 0x0a,
+	0x09, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x8c, 0x01, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x37, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e,
+	0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x52, 0x6f, 0x75, 0x74,
+	0x65, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x02, 0x52, 0x09, 0x72, 0x61,
+	0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x12, 0x64, 0x0a, 0x12, 0x72, 0x61, 0x74, 0x65, 0x5f,
+	0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x18, 0x8d, 0x01,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x72, 0x61, 0x74, 0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74,
+	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
+	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x61, 0x74, 0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x66, 0x73, 0x48, 0x02, 0x52, 0x10, 0x72, 0x61, 0x74,
+	0x65, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x12, 0x34, 0x0a,
 	0x03, 0x77, 0x61, 0x66, 0x18, 0x0f, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x77, 0x61, 0x66,
 	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
 	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x03,
 	0x77, 0x61, 0x66, 0x12, 0x40, 0x0a, 0x03, 0x6a, 0x77, 0x74, 0x18, 0x10, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x28, 0x2e, 0x6a, 0x77, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67,
 	0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x6f, 0x75, 0x74,
-	0x65, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x42, 0x02, 0x18, 0x01, 0x48, 0x02,
+	0x65, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x42, 0x02, 0x18, 0x01, 0x48, 0x03,
 	0x52, 0x03, 0x6a, 0x77, 0x74, 0x12, 0x52, 0x0a, 0x0a, 0x6a, 0x77, 0x74, 0x5f, 0x73, 0x74, 0x61,
 	0x67, 0x65, 0x64, 0x18, 0x19, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x31, 0x2e, 0x6a, 0x77, 0x74, 0x2e,
 	0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c,
 	0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4a, 0x77, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x52, 0x6f,
-	0x75, 0x74, 0x65, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x02, 0x52, 0x09,
+	0x75, 0x74, 0x65, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x03, 0x52, 0x09,
 	0x6a, 0x77, 0x74, 0x53, 0x74, 0x61, 0x67, 0x65, 0x64, 0x12, 0x40, 0x0a, 0x04, 0x72, 0x62, 0x61,
 	0x63, 0x18, 0x11, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2c, 0x2e, 0x72, 0x62, 0x61, 0x63, 0x2e, 0x6f,
 	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f,
@@ -2128,6 +2154,8 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDesc = []
 	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72,
 	0x75, 0x63, 0x74, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x42, 0x13,
 	0x0a, 0x11, 0x68, 0x6f, 0x73, 0x74, 0x5f, 0x72, 0x65, 0x77, 0x72, 0x69, 0x74, 0x65, 0x5f, 0x74,
+	0x79, 0x70, 0x65, 0x42, 0x1e, 0x0a, 0x1c, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69, 0x6d, 0x69,
+	0x74, 0x5f, 0x65, 0x61, 0x72, 0x6c, 0x79, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x74,
 	0x79, 0x70, 0x65, 0x42, 0x18, 0x0a, 0x16, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69, 0x6d, 0x69,
 	0x74, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x42, 0x0c, 0x0a,
 	0x0a, 0x6a, 0x77, 0x74, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0xad, 0x02, 0x0a, 0x0f,
@@ -2212,70 +2240,67 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDescGZIP
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_goTypes = []interface{}{
-	(*ListenerOptions)(nil),                         // 0: gloo.solo.io.ListenerOptions
-	(*RouteConfigurationOptions)(nil),               // 1: gloo.solo.io.RouteConfigurationOptions
-	(*HttpListenerOptions)(nil),                     // 2: gloo.solo.io.HttpListenerOptions
-	(*TcpListenerOptions)(nil),                      // 3: gloo.solo.io.TcpListenerOptions
-	(*VirtualHostOptions)(nil),                      // 4: gloo.solo.io.VirtualHostOptions
-	(*RouteOptions)(nil),                            // 5: gloo.solo.io.RouteOptions
-	(*DestinationSpec)(nil),                         // 6: gloo.solo.io.DestinationSpec
-	(*WeightedDestinationOptions)(nil),              // 7: gloo.solo.io.WeightedDestinationOptions
-	nil,                                             // 8: gloo.solo.io.RouteOptions.EnvoyMetadataEntry
-	(*als.AccessLoggingService)(nil),                // 9: als.options.gloo.solo.io.AccessLoggingService
-	(*Extensions)(nil),                              // 10: gloo.solo.io.Extensions
-	(*wrappers.UInt32Value)(nil),                    // 11: google.protobuf.UInt32Value
-	(*core.SocketOption)(nil),                       // 12: solo.io.envoy.api.v2.core.SocketOption
-	(*proxy_protocol.ProxyProtocol)(nil),            // 13: proxy_protocol.options.gloo.solo.io.ProxyProtocol
-	(*grpc_web.GrpcWeb)(nil),                        // 14: grpc_web.options.gloo.solo.io.GrpcWeb
-	(*hcm.HttpConnectionManagerSettings)(nil),       // 15: hcm.options.gloo.solo.io.HttpConnectionManagerSettings
-	(*healthcheck.HealthCheck)(nil),                 // 16: healthcheck.options.gloo.solo.io.HealthCheck
-	(*waf.Settings)(nil),                            // 17: waf.options.gloo.solo.io.Settings
-	(*dlp.FilterConfig)(nil),                        // 18: dlp.options.gloo.solo.io.FilterConfig
-	(*wasm.PluginSource)(nil),                       // 19: wasm.options.gloo.solo.io.PluginSource
-	(*v1.Settings)(nil),                             // 20: enterprise.gloo.solo.io.Settings
-	(*ratelimit.Settings)(nil),                      // 21: ratelimit.options.gloo.solo.io.Settings
-	(*v2.Gzip)(nil),                                 // 22: solo.io.envoy.config.filter.http.gzip.v2.Gzip
-	(*proxylatency.ProxyLatency)(nil),               // 23: envoy.config.filter.http.proxylatency.v2.ProxyLatency
-	(*v3.Buffer)(nil),                               // 24: solo.io.envoy.extensions.filters.http.buffer.v3.Buffer
-	(*v31.CsrfPolicy)(nil),                          // 25: solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
-	(*grpc_json.GrpcJsonTranscoder)(nil),            // 26: grpc_json.options.gloo.solo.io.GrpcJsonTranscoder
-	(*wrappers.BoolValue)(nil),                      // 27: google.protobuf.BoolValue
-	(*dynamic_forward_proxy.FilterConfig)(nil),      // 28: dfp.options.gloo.solo.io.FilterConfig
-	(*tcp.TcpProxySettings)(nil),                    // 29: tcp.options.gloo.solo.io.TcpProxySettings
-	(*retries.RetryPolicy)(nil),                     // 30: retries.options.gloo.solo.io.RetryPolicy
-	(*stats.Stats)(nil),                             // 31: stats.options.gloo.solo.io.Stats
-	(*headers.HeaderManipulation)(nil),              // 32: headers.options.gloo.solo.io.HeaderManipulation
-	(*cors.CorsPolicy)(nil),                         // 33: cors.options.gloo.solo.io.CorsPolicy
-	(*transformation.Transformations)(nil),          // 34: transformation.options.gloo.solo.io.Transformations
-	(*ratelimit.IngressRateLimit)(nil),              // 35: ratelimit.options.gloo.solo.io.IngressRateLimit
-	(*ratelimit.RateLimitVhostExtension)(nil),       // 36: ratelimit.options.gloo.solo.io.RateLimitVhostExtension
-	(*ratelimit.RateLimitStagedVhostExtension)(nil), // 37: ratelimit.options.gloo.solo.io.RateLimitStagedVhostExtension
-	(*ratelimit.RateLimitConfigRefs)(nil),           // 38: ratelimit.options.gloo.solo.io.RateLimitConfigRefs
-	(*ratelimit.RateLimitStagedConfigRefs)(nil),     // 39: ratelimit.options.gloo.solo.io.RateLimitStagedConfigRefs
-	(*jwt.VhostExtension)(nil),                      // 40: jwt.options.gloo.solo.io.VhostExtension
-	(*jwt.JwtStagedVhostExtension)(nil),             // 41: jwt.options.gloo.solo.io.JwtStagedVhostExtension
-	(*rbac.ExtensionSettings)(nil),                  // 42: rbac.options.gloo.solo.io.ExtensionSettings
-	(*v1.ExtAuthExtension)(nil),                     // 43: enterprise.gloo.solo.io.ExtAuthExtension
-	(*dlp.Config)(nil),                              // 44: dlp.options.gloo.solo.io.Config
-	(*v3.BufferPerRoute)(nil),                       // 45: solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
-	(*transformation.TransformationStages)(nil),     // 46: transformation.options.gloo.solo.io.TransformationStages
-	(*faultinjection.RouteFaults)(nil),              // 47: fault.options.gloo.solo.io.RouteFaults
-	(*wrappers.StringValue)(nil),                    // 48: google.protobuf.StringValue
-	(*duration.Duration)(nil),                       // 49: google.protobuf.Duration
-	(*tracing.RouteTracingSettings)(nil),            // 50: tracing.options.gloo.solo.io.RouteTracingSettings
-	(*shadowing.RouteShadowing)(nil),                // 51: shadowing.options.gloo.solo.io.RouteShadowing
-	(*lbhash.RouteActionHashConfig)(nil),            // 52: lbhash.options.gloo.solo.io.RouteActionHashConfig
-	(*protocol_upgrade.ProtocolUpgradeConfig)(nil),  // 53: protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
-	(*ratelimit.RateLimitRouteExtension)(nil),       // 54: ratelimit.options.gloo.solo.io.RateLimitRouteExtension
-	(*ratelimit.RateLimitStagedRouteExtension)(nil), // 55: ratelimit.options.gloo.solo.io.RateLimitStagedRouteExtension
-	(*jwt.RouteExtension)(nil),                      // 56: jwt.options.gloo.solo.io.RouteExtension
-	(*jwt.JwtStagedRouteExtension)(nil),             // 57: jwt.options.gloo.solo.io.JwtStagedRouteExtension
-	(*v32.RegexMatchAndSubstitute)(nil),             // 58: solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
-	(*aws.DestinationSpec)(nil),                     // 59: aws.options.gloo.solo.io.DestinationSpec
-	(*azure.DestinationSpec)(nil),                   // 60: azure.options.gloo.solo.io.DestinationSpec
-	(*rest.DestinationSpec)(nil),                    // 61: rest.options.gloo.solo.io.DestinationSpec
-	(*grpc.DestinationSpec)(nil),                    // 62: grpc.options.gloo.solo.io.DestinationSpec
-	(*_struct.Struct)(nil),                          // 63: google.protobuf.Struct
+	(*ListenerOptions)(nil),                        // 0: gloo.solo.io.ListenerOptions
+	(*RouteConfigurationOptions)(nil),              // 1: gloo.solo.io.RouteConfigurationOptions
+	(*HttpListenerOptions)(nil),                    // 2: gloo.solo.io.HttpListenerOptions
+	(*TcpListenerOptions)(nil),                     // 3: gloo.solo.io.TcpListenerOptions
+	(*VirtualHostOptions)(nil),                     // 4: gloo.solo.io.VirtualHostOptions
+	(*RouteOptions)(nil),                           // 5: gloo.solo.io.RouteOptions
+	(*DestinationSpec)(nil),                        // 6: gloo.solo.io.DestinationSpec
+	(*WeightedDestinationOptions)(nil),             // 7: gloo.solo.io.WeightedDestinationOptions
+	nil,                                            // 8: gloo.solo.io.RouteOptions.EnvoyMetadataEntry
+	(*als.AccessLoggingService)(nil),               // 9: als.options.gloo.solo.io.AccessLoggingService
+	(*Extensions)(nil),                             // 10: gloo.solo.io.Extensions
+	(*wrappers.UInt32Value)(nil),                   // 11: google.protobuf.UInt32Value
+	(*core.SocketOption)(nil),                      // 12: solo.io.envoy.api.v2.core.SocketOption
+	(*proxy_protocol.ProxyProtocol)(nil),           // 13: proxy_protocol.options.gloo.solo.io.ProxyProtocol
+	(*grpc_web.GrpcWeb)(nil),                       // 14: grpc_web.options.gloo.solo.io.GrpcWeb
+	(*hcm.HttpConnectionManagerSettings)(nil),      // 15: hcm.options.gloo.solo.io.HttpConnectionManagerSettings
+	(*healthcheck.HealthCheck)(nil),                // 16: healthcheck.options.gloo.solo.io.HealthCheck
+	(*waf.Settings)(nil),                           // 17: waf.options.gloo.solo.io.Settings
+	(*dlp.FilterConfig)(nil),                       // 18: dlp.options.gloo.solo.io.FilterConfig
+	(*wasm.PluginSource)(nil),                      // 19: wasm.options.gloo.solo.io.PluginSource
+	(*v1.Settings)(nil),                            // 20: enterprise.gloo.solo.io.Settings
+	(*ratelimit.Settings)(nil),                     // 21: ratelimit.options.gloo.solo.io.Settings
+	(*v2.Gzip)(nil),                                // 22: solo.io.envoy.config.filter.http.gzip.v2.Gzip
+	(*proxylatency.ProxyLatency)(nil),              // 23: envoy.config.filter.http.proxylatency.v2.ProxyLatency
+	(*v3.Buffer)(nil),                              // 24: solo.io.envoy.extensions.filters.http.buffer.v3.Buffer
+	(*v31.CsrfPolicy)(nil),                         // 25: solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
+	(*grpc_json.GrpcJsonTranscoder)(nil),           // 26: grpc_json.options.gloo.solo.io.GrpcJsonTranscoder
+	(*wrappers.BoolValue)(nil),                     // 27: google.protobuf.BoolValue
+	(*dynamic_forward_proxy.FilterConfig)(nil),     // 28: dfp.options.gloo.solo.io.FilterConfig
+	(*tcp.TcpProxySettings)(nil),                   // 29: tcp.options.gloo.solo.io.TcpProxySettings
+	(*retries.RetryPolicy)(nil),                    // 30: retries.options.gloo.solo.io.RetryPolicy
+	(*stats.Stats)(nil),                            // 31: stats.options.gloo.solo.io.Stats
+	(*headers.HeaderManipulation)(nil),             // 32: headers.options.gloo.solo.io.HeaderManipulation
+	(*cors.CorsPolicy)(nil),                        // 33: cors.options.gloo.solo.io.CorsPolicy
+	(*transformation.Transformations)(nil),         // 34: transformation.options.gloo.solo.io.Transformations
+	(*ratelimit.IngressRateLimit)(nil),             // 35: ratelimit.options.gloo.solo.io.IngressRateLimit
+	(*ratelimit.RateLimitVhostExtension)(nil),      // 36: ratelimit.options.gloo.solo.io.RateLimitVhostExtension
+	(*ratelimit.RateLimitConfigRefs)(nil),          // 37: ratelimit.options.gloo.solo.io.RateLimitConfigRefs
+	(*jwt.VhostExtension)(nil),                     // 38: jwt.options.gloo.solo.io.VhostExtension
+	(*jwt.JwtStagedVhostExtension)(nil),            // 39: jwt.options.gloo.solo.io.JwtStagedVhostExtension
+	(*rbac.ExtensionSettings)(nil),                 // 40: rbac.options.gloo.solo.io.ExtensionSettings
+	(*v1.ExtAuthExtension)(nil),                    // 41: enterprise.gloo.solo.io.ExtAuthExtension
+	(*dlp.Config)(nil),                             // 42: dlp.options.gloo.solo.io.Config
+	(*v3.BufferPerRoute)(nil),                      // 43: solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
+	(*transformation.TransformationStages)(nil),    // 44: transformation.options.gloo.solo.io.TransformationStages
+	(*faultinjection.RouteFaults)(nil),             // 45: fault.options.gloo.solo.io.RouteFaults
+	(*wrappers.StringValue)(nil),                   // 46: google.protobuf.StringValue
+	(*duration.Duration)(nil),                      // 47: google.protobuf.Duration
+	(*tracing.RouteTracingSettings)(nil),           // 48: tracing.options.gloo.solo.io.RouteTracingSettings
+	(*shadowing.RouteShadowing)(nil),               // 49: shadowing.options.gloo.solo.io.RouteShadowing
+	(*lbhash.RouteActionHashConfig)(nil),           // 50: lbhash.options.gloo.solo.io.RouteActionHashConfig
+	(*protocol_upgrade.ProtocolUpgradeConfig)(nil), // 51: protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
+	(*ratelimit.RateLimitRouteExtension)(nil),      // 52: ratelimit.options.gloo.solo.io.RateLimitRouteExtension
+	(*jwt.RouteExtension)(nil),                     // 53: jwt.options.gloo.solo.io.RouteExtension
+	(*jwt.JwtStagedRouteExtension)(nil),            // 54: jwt.options.gloo.solo.io.JwtStagedRouteExtension
+	(*v32.RegexMatchAndSubstitute)(nil),            // 55: solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
+	(*aws.DestinationSpec)(nil),                    // 56: aws.options.gloo.solo.io.DestinationSpec
+	(*azure.DestinationSpec)(nil),                  // 57: azure.options.gloo.solo.io.DestinationSpec
+	(*rest.DestinationSpec)(nil),                   // 58: rest.options.gloo.solo.io.DestinationSpec
+	(*grpc.DestinationSpec)(nil),                   // 59: grpc.options.gloo.solo.io.DestinationSpec
+	(*_struct.Struct)(nil),                         // 60: google.protobuf.Struct
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_depIdxs = []int32{
 	9,  // 0: gloo.solo.io.ListenerOptions.access_logging_service:type_name -> als.options.gloo.solo.io.AccessLoggingService
@@ -2309,62 +2334,62 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_depIdxs = []
 	33, // 28: gloo.solo.io.VirtualHostOptions.cors:type_name -> cors.options.gloo.solo.io.CorsPolicy
 	34, // 29: gloo.solo.io.VirtualHostOptions.transformations:type_name -> transformation.options.gloo.solo.io.Transformations
 	35, // 30: gloo.solo.io.VirtualHostOptions.ratelimit_basic:type_name -> ratelimit.options.gloo.solo.io.IngressRateLimit
-	36, // 31: gloo.solo.io.VirtualHostOptions.ratelimit:type_name -> ratelimit.options.gloo.solo.io.RateLimitVhostExtension
-	37, // 32: gloo.solo.io.VirtualHostOptions.ratelimit_staged:type_name -> ratelimit.options.gloo.solo.io.RateLimitStagedVhostExtension
-	38, // 33: gloo.solo.io.VirtualHostOptions.rate_limit_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
-	39, // 34: gloo.solo.io.VirtualHostOptions.rate_limit_staged_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitStagedConfigRefs
+	36, // 31: gloo.solo.io.VirtualHostOptions.ratelimit_early:type_name -> ratelimit.options.gloo.solo.io.RateLimitVhostExtension
+	37, // 32: gloo.solo.io.VirtualHostOptions.rate_limit_early_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
+	36, // 33: gloo.solo.io.VirtualHostOptions.ratelimit:type_name -> ratelimit.options.gloo.solo.io.RateLimitVhostExtension
+	37, // 34: gloo.solo.io.VirtualHostOptions.rate_limit_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
 	17, // 35: gloo.solo.io.VirtualHostOptions.waf:type_name -> waf.options.gloo.solo.io.Settings
-	40, // 36: gloo.solo.io.VirtualHostOptions.jwt:type_name -> jwt.options.gloo.solo.io.VhostExtension
-	41, // 37: gloo.solo.io.VirtualHostOptions.jwt_staged:type_name -> jwt.options.gloo.solo.io.JwtStagedVhostExtension
-	42, // 38: gloo.solo.io.VirtualHostOptions.rbac:type_name -> rbac.options.gloo.solo.io.ExtensionSettings
-	43, // 39: gloo.solo.io.VirtualHostOptions.extauth:type_name -> enterprise.gloo.solo.io.ExtAuthExtension
-	44, // 40: gloo.solo.io.VirtualHostOptions.dlp:type_name -> dlp.options.gloo.solo.io.Config
-	45, // 41: gloo.solo.io.VirtualHostOptions.buffer_per_route:type_name -> solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
+	38, // 36: gloo.solo.io.VirtualHostOptions.jwt:type_name -> jwt.options.gloo.solo.io.VhostExtension
+	39, // 37: gloo.solo.io.VirtualHostOptions.jwt_staged:type_name -> jwt.options.gloo.solo.io.JwtStagedVhostExtension
+	40, // 38: gloo.solo.io.VirtualHostOptions.rbac:type_name -> rbac.options.gloo.solo.io.ExtensionSettings
+	41, // 39: gloo.solo.io.VirtualHostOptions.extauth:type_name -> enterprise.gloo.solo.io.ExtAuthExtension
+	42, // 40: gloo.solo.io.VirtualHostOptions.dlp:type_name -> dlp.options.gloo.solo.io.Config
+	43, // 41: gloo.solo.io.VirtualHostOptions.buffer_per_route:type_name -> solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
 	25, // 42: gloo.solo.io.VirtualHostOptions.csrf:type_name -> solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
 	27, // 43: gloo.solo.io.VirtualHostOptions.include_request_attempt_count:type_name -> google.protobuf.BoolValue
 	27, // 44: gloo.solo.io.VirtualHostOptions.include_attempt_count_in_response:type_name -> google.protobuf.BoolValue
-	46, // 45: gloo.solo.io.VirtualHostOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
+	44, // 45: gloo.solo.io.VirtualHostOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
 	34, // 46: gloo.solo.io.RouteOptions.transformations:type_name -> transformation.options.gloo.solo.io.Transformations
-	47, // 47: gloo.solo.io.RouteOptions.faults:type_name -> fault.options.gloo.solo.io.RouteFaults
-	48, // 48: gloo.solo.io.RouteOptions.prefix_rewrite:type_name -> google.protobuf.StringValue
-	49, // 49: gloo.solo.io.RouteOptions.timeout:type_name -> google.protobuf.Duration
+	45, // 47: gloo.solo.io.RouteOptions.faults:type_name -> fault.options.gloo.solo.io.RouteFaults
+	46, // 48: gloo.solo.io.RouteOptions.prefix_rewrite:type_name -> google.protobuf.StringValue
+	47, // 49: gloo.solo.io.RouteOptions.timeout:type_name -> google.protobuf.Duration
 	30, // 50: gloo.solo.io.RouteOptions.retries:type_name -> retries.options.gloo.solo.io.RetryPolicy
 	10, // 51: gloo.solo.io.RouteOptions.extensions:type_name -> gloo.solo.io.Extensions
-	50, // 52: gloo.solo.io.RouteOptions.tracing:type_name -> tracing.options.gloo.solo.io.RouteTracingSettings
-	51, // 53: gloo.solo.io.RouteOptions.shadowing:type_name -> shadowing.options.gloo.solo.io.RouteShadowing
+	48, // 52: gloo.solo.io.RouteOptions.tracing:type_name -> tracing.options.gloo.solo.io.RouteTracingSettings
+	49, // 53: gloo.solo.io.RouteOptions.shadowing:type_name -> shadowing.options.gloo.solo.io.RouteShadowing
 	32, // 54: gloo.solo.io.RouteOptions.header_manipulation:type_name -> headers.options.gloo.solo.io.HeaderManipulation
 	27, // 55: gloo.solo.io.RouteOptions.auto_host_rewrite:type_name -> google.protobuf.BoolValue
 	33, // 56: gloo.solo.io.RouteOptions.cors:type_name -> cors.options.gloo.solo.io.CorsPolicy
-	52, // 57: gloo.solo.io.RouteOptions.lb_hash:type_name -> lbhash.options.gloo.solo.io.RouteActionHashConfig
-	53, // 58: gloo.solo.io.RouteOptions.upgrades:type_name -> protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
+	50, // 57: gloo.solo.io.RouteOptions.lb_hash:type_name -> lbhash.options.gloo.solo.io.RouteActionHashConfig
+	51, // 58: gloo.solo.io.RouteOptions.upgrades:type_name -> protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
 	35, // 59: gloo.solo.io.RouteOptions.ratelimit_basic:type_name -> ratelimit.options.gloo.solo.io.IngressRateLimit
-	54, // 60: gloo.solo.io.RouteOptions.ratelimit:type_name -> ratelimit.options.gloo.solo.io.RateLimitRouteExtension
-	55, // 61: gloo.solo.io.RouteOptions.ratelimit_staged:type_name -> ratelimit.options.gloo.solo.io.RateLimitStagedRouteExtension
-	38, // 62: gloo.solo.io.RouteOptions.rate_limit_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
-	39, // 63: gloo.solo.io.RouteOptions.rate_limit_staged_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitStagedConfigRefs
+	52, // 60: gloo.solo.io.RouteOptions.ratelimit_early:type_name -> ratelimit.options.gloo.solo.io.RateLimitRouteExtension
+	37, // 61: gloo.solo.io.RouteOptions.rate_limit_early_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
+	52, // 62: gloo.solo.io.RouteOptions.ratelimit:type_name -> ratelimit.options.gloo.solo.io.RateLimitRouteExtension
+	37, // 63: gloo.solo.io.RouteOptions.rate_limit_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
 	17, // 64: gloo.solo.io.RouteOptions.waf:type_name -> waf.options.gloo.solo.io.Settings
-	56, // 65: gloo.solo.io.RouteOptions.jwt:type_name -> jwt.options.gloo.solo.io.RouteExtension
-	57, // 66: gloo.solo.io.RouteOptions.jwt_staged:type_name -> jwt.options.gloo.solo.io.JwtStagedRouteExtension
-	42, // 67: gloo.solo.io.RouteOptions.rbac:type_name -> rbac.options.gloo.solo.io.ExtensionSettings
-	43, // 68: gloo.solo.io.RouteOptions.extauth:type_name -> enterprise.gloo.solo.io.ExtAuthExtension
-	44, // 69: gloo.solo.io.RouteOptions.dlp:type_name -> dlp.options.gloo.solo.io.Config
-	45, // 70: gloo.solo.io.RouteOptions.buffer_per_route:type_name -> solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
+	53, // 65: gloo.solo.io.RouteOptions.jwt:type_name -> jwt.options.gloo.solo.io.RouteExtension
+	54, // 66: gloo.solo.io.RouteOptions.jwt_staged:type_name -> jwt.options.gloo.solo.io.JwtStagedRouteExtension
+	40, // 67: gloo.solo.io.RouteOptions.rbac:type_name -> rbac.options.gloo.solo.io.ExtensionSettings
+	41, // 68: gloo.solo.io.RouteOptions.extauth:type_name -> enterprise.gloo.solo.io.ExtAuthExtension
+	42, // 69: gloo.solo.io.RouteOptions.dlp:type_name -> dlp.options.gloo.solo.io.Config
+	43, // 70: gloo.solo.io.RouteOptions.buffer_per_route:type_name -> solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
 	25, // 71: gloo.solo.io.RouteOptions.csrf:type_name -> solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
-	46, // 72: gloo.solo.io.RouteOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
+	44, // 72: gloo.solo.io.RouteOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
 	8,  // 73: gloo.solo.io.RouteOptions.envoy_metadata:type_name -> gloo.solo.io.RouteOptions.EnvoyMetadataEntry
-	58, // 74: gloo.solo.io.RouteOptions.regex_rewrite:type_name -> solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
-	59, // 75: gloo.solo.io.DestinationSpec.aws:type_name -> aws.options.gloo.solo.io.DestinationSpec
-	60, // 76: gloo.solo.io.DestinationSpec.azure:type_name -> azure.options.gloo.solo.io.DestinationSpec
-	61, // 77: gloo.solo.io.DestinationSpec.rest:type_name -> rest.options.gloo.solo.io.DestinationSpec
-	62, // 78: gloo.solo.io.DestinationSpec.grpc:type_name -> grpc.options.gloo.solo.io.DestinationSpec
+	55, // 74: gloo.solo.io.RouteOptions.regex_rewrite:type_name -> solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
+	56, // 75: gloo.solo.io.DestinationSpec.aws:type_name -> aws.options.gloo.solo.io.DestinationSpec
+	57, // 76: gloo.solo.io.DestinationSpec.azure:type_name -> azure.options.gloo.solo.io.DestinationSpec
+	58, // 77: gloo.solo.io.DestinationSpec.rest:type_name -> rest.options.gloo.solo.io.DestinationSpec
+	59, // 78: gloo.solo.io.DestinationSpec.grpc:type_name -> grpc.options.gloo.solo.io.DestinationSpec
 	32, // 79: gloo.solo.io.WeightedDestinationOptions.header_manipulation:type_name -> headers.options.gloo.solo.io.HeaderManipulation
 	34, // 80: gloo.solo.io.WeightedDestinationOptions.transformations:type_name -> transformation.options.gloo.solo.io.Transformations
 	10, // 81: gloo.solo.io.WeightedDestinationOptions.extensions:type_name -> gloo.solo.io.Extensions
-	43, // 82: gloo.solo.io.WeightedDestinationOptions.extauth:type_name -> enterprise.gloo.solo.io.ExtAuthExtension
-	45, // 83: gloo.solo.io.WeightedDestinationOptions.buffer_per_route:type_name -> solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
+	41, // 82: gloo.solo.io.WeightedDestinationOptions.extauth:type_name -> enterprise.gloo.solo.io.ExtAuthExtension
+	43, // 83: gloo.solo.io.WeightedDestinationOptions.buffer_per_route:type_name -> solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
 	25, // 84: gloo.solo.io.WeightedDestinationOptions.csrf:type_name -> solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
-	46, // 85: gloo.solo.io.WeightedDestinationOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
-	63, // 86: gloo.solo.io.RouteOptions.EnvoyMetadataEntry.value:type_name -> google.protobuf.Struct
+	44, // 85: gloo.solo.io.WeightedDestinationOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
+	60, // 86: gloo.solo.io.RouteOptions.EnvoyMetadataEntry.value:type_name -> google.protobuf.Struct
 	87, // [87:87] is the sub-list for method output_type
 	87, // [87:87] is the sub-list for method input_type
 	87, // [87:87] is the sub-list for extension type_name
@@ -2477,20 +2502,20 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_init() {
 		}
 	}
 	file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_msgTypes[4].OneofWrappers = []interface{}{
+		(*VirtualHostOptions_RatelimitEarly)(nil),
+		(*VirtualHostOptions_RateLimitEarlyConfigs)(nil),
 		(*VirtualHostOptions_Ratelimit)(nil),
-		(*VirtualHostOptions_RatelimitStaged)(nil),
 		(*VirtualHostOptions_RateLimitConfigs)(nil),
-		(*VirtualHostOptions_RateLimitStagedConfigs)(nil),
 		(*VirtualHostOptions_Jwt)(nil),
 		(*VirtualHostOptions_JwtStaged)(nil),
 	}
 	file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_msgTypes[5].OneofWrappers = []interface{}{
 		(*RouteOptions_HostRewrite)(nil),
 		(*RouteOptions_AutoHostRewrite)(nil),
+		(*RouteOptions_RatelimitEarly)(nil),
+		(*RouteOptions_RateLimitEarlyConfigs)(nil),
 		(*RouteOptions_Ratelimit)(nil),
-		(*RouteOptions_RatelimitStaged)(nil),
 		(*RouteOptions_RateLimitConfigs)(nil),
-		(*RouteOptions_RateLimitStagedConfigs)(nil),
 		(*RouteOptions_Jwt)(nil),
 		(*RouteOptions_JwtStaged)(nil),
 	}

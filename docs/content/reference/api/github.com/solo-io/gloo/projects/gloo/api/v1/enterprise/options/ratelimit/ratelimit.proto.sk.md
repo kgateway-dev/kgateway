@@ -15,12 +15,9 @@ weight: 5
 - [Settings](#settings)
 - [ServiceSettings](#servicesettings)
 - [RateLimitConfigRefs](#ratelimitconfigrefs)
-- [RateLimitStagedConfigRefs](#ratelimitstagedconfigrefs)
 - [RateLimitConfigRef](#ratelimitconfigref)
 - [RateLimitVhostExtension](#ratelimitvhostextension)
-- [RateLimitStagedVhostExtension](#ratelimitstagedvhostextension)
 - [RateLimitRouteExtension](#ratelimitrouteextension)
-- [RateLimitStagedRouteExtension](#ratelimitstagedrouteextension)
   
 
 
@@ -129,27 +126,6 @@ Each resource represents a rate limit policy that will be independently enforced
 
 
 ---
-### RateLimitStagedConfigRefs
-
- 
-A list of references to `RateLimitConfig` resources.
-Each resource represents a rate limit policy that will be independently enforced.
-
-```yaml
-"beforeExtAuth": .ratelimit.options.gloo.solo.io.RateLimitConfigRefs
-"afterExtAuth": .ratelimit.options.gloo.solo.io.RateLimitConfigRefs
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `beforeExtAuth` | [.ratelimit.options.gloo.solo.io.RateLimitConfigRefs](../ratelimit.proto.sk/#ratelimitconfigrefs) |  |
-| `afterExtAuth` | [.ratelimit.options.gloo.solo.io.RateLimitConfigRefs](../ratelimit.proto.sk/#ratelimitconfigrefs) |  |
-
-
-
-
----
 ### RateLimitConfigRef
 
  
@@ -191,29 +167,6 @@ running a custom rate limit server you need to configure it yourself.
 
 
 ---
-### RateLimitStagedVhostExtension
-
- 
-Use this field if you want to inline the Envoy rate limits for this VirtualHost.
-Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
-specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
-running a custom rate limit server you need to configure it yourself.
-
-```yaml
-"beforeExtAuth": .ratelimit.options.gloo.solo.io.RateLimitVhostExtension
-"afterExtAuth": .ratelimit.options.gloo.solo.io.RateLimitVhostExtension
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `beforeExtAuth` | [.ratelimit.options.gloo.solo.io.RateLimitVhostExtension](../ratelimit.proto.sk/#ratelimitvhostextension) |  |
-| `afterExtAuth` | [.ratelimit.options.gloo.solo.io.RateLimitVhostExtension](../ratelimit.proto.sk/#ratelimitvhostextension) |  |
-
-
-
-
----
 ### RateLimitRouteExtension
 
  
@@ -232,29 +185,6 @@ running a custom rate limit server you need to configure it yourself.
 | ----- | ---- | ----------- | 
 | `includeVhRateLimits` | `bool` | Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route. |
 | `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |
-
-
-
-
----
-### RateLimitStagedRouteExtension
-
- 
-Use this field if you want to inline the Envoy rate limits for this Route.
-Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
-specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
-running a custom rate limit server you need to configure it yourself.
-
-```yaml
-"beforeExtAuth": .ratelimit.options.gloo.solo.io.RateLimitRouteExtension
-"afterExtAuth": .ratelimit.options.gloo.solo.io.RateLimitRouteExtension
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `beforeExtAuth` | [.ratelimit.options.gloo.solo.io.RateLimitRouteExtension](../ratelimit.proto.sk/#ratelimitrouteextension) |  |
-| `afterExtAuth` | [.ratelimit.options.gloo.solo.io.RateLimitRouteExtension](../ratelimit.proto.sk/#ratelimitrouteextension) |  |
 
 
 

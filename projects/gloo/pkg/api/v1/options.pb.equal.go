@@ -549,6 +549,45 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	switch m.RateLimitEarlyConfigType.(type) {
+
+	case *VirtualHostOptions_RatelimitEarly:
+		if _, ok := target.RateLimitEarlyConfigType.(*VirtualHostOptions_RatelimitEarly); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRatelimitEarly()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRatelimitEarly()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRatelimitEarly(), target.GetRatelimitEarly()) {
+				return false
+			}
+		}
+
+	case *VirtualHostOptions_RateLimitEarlyConfigs:
+		if _, ok := target.RateLimitEarlyConfigType.(*VirtualHostOptions_RateLimitEarlyConfigs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRateLimitEarlyConfigs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRateLimitEarlyConfigs()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRateLimitEarlyConfigs(), target.GetRateLimitEarlyConfigs()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.RateLimitEarlyConfigType != target.RateLimitEarlyConfigType {
+			return false
+		}
+	}
+
 	switch m.RateLimitConfigType.(type) {
 
 	case *VirtualHostOptions_Ratelimit:
@@ -566,21 +605,6 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 			}
 		}
 
-	case *VirtualHostOptions_RatelimitStaged:
-		if _, ok := target.RateLimitConfigType.(*VirtualHostOptions_RatelimitStaged); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetRatelimitStaged()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetRatelimitStaged()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetRatelimitStaged(), target.GetRatelimitStaged()) {
-				return false
-			}
-		}
-
 	case *VirtualHostOptions_RateLimitConfigs:
 		if _, ok := target.RateLimitConfigType.(*VirtualHostOptions_RateLimitConfigs); !ok {
 			return false
@@ -592,21 +616,6 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetRateLimitConfigs(), target.GetRateLimitConfigs()) {
-				return false
-			}
-		}
-
-	case *VirtualHostOptions_RateLimitStagedConfigs:
-		if _, ok := target.RateLimitConfigType.(*VirtualHostOptions_RateLimitStagedConfigs); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetRateLimitStagedConfigs()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetRateLimitStagedConfigs()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetRateLimitStagedConfigs(), target.GetRateLimitStagedConfigs()) {
 				return false
 			}
 		}
@@ -948,6 +957,45 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	switch m.RateLimitEarlyConfigType.(type) {
+
+	case *RouteOptions_RatelimitEarly:
+		if _, ok := target.RateLimitEarlyConfigType.(*RouteOptions_RatelimitEarly); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRatelimitEarly()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRatelimitEarly()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRatelimitEarly(), target.GetRatelimitEarly()) {
+				return false
+			}
+		}
+
+	case *RouteOptions_RateLimitEarlyConfigs:
+		if _, ok := target.RateLimitEarlyConfigType.(*RouteOptions_RateLimitEarlyConfigs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRateLimitEarlyConfigs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRateLimitEarlyConfigs()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRateLimitEarlyConfigs(), target.GetRateLimitEarlyConfigs()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.RateLimitEarlyConfigType != target.RateLimitEarlyConfigType {
+			return false
+		}
+	}
+
 	switch m.RateLimitConfigType.(type) {
 
 	case *RouteOptions_Ratelimit:
@@ -965,21 +1013,6 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		}
 
-	case *RouteOptions_RatelimitStaged:
-		if _, ok := target.RateLimitConfigType.(*RouteOptions_RatelimitStaged); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetRatelimitStaged()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetRatelimitStaged()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetRatelimitStaged(), target.GetRatelimitStaged()) {
-				return false
-			}
-		}
-
 	case *RouteOptions_RateLimitConfigs:
 		if _, ok := target.RateLimitConfigType.(*RouteOptions_RateLimitConfigs); !ok {
 			return false
@@ -991,21 +1024,6 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetRateLimitConfigs(), target.GetRateLimitConfigs()) {
-				return false
-			}
-		}
-
-	case *RouteOptions_RateLimitStagedConfigs:
-		if _, ok := target.RateLimitConfigType.(*RouteOptions_RateLimitStagedConfigs); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetRateLimitStagedConfigs()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetRateLimitStagedConfigs()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetRateLimitStagedConfigs(), target.GetRateLimitStagedConfigs()) {
 				return false
 			}
 		}

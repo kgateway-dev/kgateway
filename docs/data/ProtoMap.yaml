@@ -1181,15 +1181,6 @@ apis:
   ratelimit.options.gloo.solo.io.RateLimitRouteExtension:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#RateLimitRouteExtension
     package: ratelimit.options.gloo.solo.io
-  ratelimit.options.gloo.solo.io.RateLimitStagedConfigRefs:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#RateLimitStagedConfigRefs
-    package: ratelimit.options.gloo.solo.io
-  ratelimit.options.gloo.solo.io.RateLimitStagedRouteExtension:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#RateLimitStagedRouteExtension
-    package: ratelimit.options.gloo.solo.io
-  ratelimit.options.gloo.solo.io.RateLimitStagedVhostExtension:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#RateLimitStagedVhostExtension
-    package: ratelimit.options.gloo.solo.io
   ratelimit.options.gloo.solo.io.RateLimitVhostExtension:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#RateLimitVhostExtension
     package: ratelimit.options.gloo.solo.io
