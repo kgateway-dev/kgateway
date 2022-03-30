@@ -13,6 +13,7 @@ weight: 5
 
 - [HttpConnectionManagerSettings](#httpconnectionmanagersettings)
 - [SetCurrentClientCertDetails](#setcurrentclientcertdetails)
+- [UuidRequestIdConfigSettings](#uuidrequestidconfigsettings)
 - [ForwardClientCertDetails](#forwardclientcertdetails)
 - [ServerHeaderTransformation](#serverheadertransformation)
 - [HeadersWithUnderscoreAction](#headerswithunderscoreaction)
@@ -71,6 +72,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "codecType": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType
 "mergeSlashes": bool
 "normalizePath": .google.protobuf.BoolValue
+"uuidRequestIdConfig": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings
 
 ```
 
@@ -111,6 +113,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `codecType` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType](../hcm.proto.sk/#codectype) | Supplies the type of codec that the connection manager should use. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#extensions-filters-network-http-connection-manager-v3-httpconnectionmanager. |
 | `mergeSlashes` | `bool` | Determines if adjacent slashes in the path are merged into one before any processing of requests by HTTP filters or routing. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto. |
 | `normalizePath` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should paths be normalized according to RFC 3986 before any processing of requests by HTTP filters or routing? See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto. |
+| `uuidRequestIdConfig` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings](../hcm.proto.sk/#uuidrequestidconfigsettings) |  |
 
 
 
@@ -136,6 +139,26 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `chain` | `bool` |  |
 | `dns` | `bool` |  |
 | `uri` | `bool` |  |
+
+
+
+
+---
+### UuidRequestIdConfigSettings
+
+ 
+Contains setup for Envoy's UuidRequestIdConfig
+
+```yaml
+"packTraceReason": .google.protobuf.BoolValue
+"useRequestIdForTraceSampling": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `packTraceReason` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether the implementation alters the UUID to contain the trace sampling decision as per the `UuidRequestIdConfig` message documentation. This defaults to true. If disabled no modification to the UUID will be performed. It is important to note that if disabled, stable sampling of traces, access logs, etc. will no longer work and only random sampling will be possible. |
+| `useRequestIdForTraceSampling` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set whether to use :ref:`x-request-id<config_http_conn_man_headers_x-request-id>` for sampling or not. This defaults to true. See the :ref:`context propagation <arch_overview_tracing_context_propagation>` overview for more information. |
 
 
 
