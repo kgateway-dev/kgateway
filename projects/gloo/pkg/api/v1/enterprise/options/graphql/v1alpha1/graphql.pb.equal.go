@@ -916,14 +916,14 @@ func (m *MockResolver_AsyncResponse) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *GraphQLApi_GraphqlApiOptions) Equal(that interface{}) bool {
+func (m *GraphQLApi_GraphQLApiOptions) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*GraphQLApi_GraphqlApiOptions)
+	target, ok := that.(*GraphQLApi_GraphQLApiOptions)
 	if !ok {
-		that2, ok := that.(GraphQLApi_GraphqlApiOptions)
+		that2, ok := that.(GraphQLApi_GraphQLApiOptions)
 		if ok {
 			target = &that2
 		} else {

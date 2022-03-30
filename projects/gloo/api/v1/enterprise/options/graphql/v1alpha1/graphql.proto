@@ -346,7 +346,7 @@ message GraphQLApi {
   // The hash can be computed from the query string or provided (i.e. persisted queries).
   repeated string allowed_query_hashes = 5;
 
-  message GraphqlApiOptions {
+  message GraphQLApiOptions {
     // If true, includes information about request and response in the gateway-proxy debug and trace logs.
     // This is useful when debugging but is not recommended for security and performance reasons in
     // production scenarios.
@@ -355,7 +355,7 @@ message GraphQLApi {
   }
 
   // Options that apply to this GraphQLApi.
-  GraphqlApiOptions options = 8;
+  GraphQLApiOptions options = 8;
 }
 
 // This message specifies Persisted Query Cache configuration.

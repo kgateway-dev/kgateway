@@ -24,7 +24,7 @@ weight: 5
 - [AsyncResponse](#asyncresponse)
 - [Resolution](#resolution)
 - [GraphQLApi](#graphqlapi) **Top-Level Resource**
-- [GraphqlApiOptions](#graphqlapioptions)
+- [GraphQLApiOptions](#graphqlapioptions)
 - [PersistedQueryCacheConfig](#persistedquerycacheconfig)
 - [ExecutableSchema](#executableschema)
 - [Executor](#executor)
@@ -319,7 +319,7 @@ configure the routes to point to these schema CRs.
 "statPrefix": .google.protobuf.StringValue
 "persistedQueryCacheConfig": .graphql.gloo.solo.io.PersistedQueryCacheConfig
 "allowedQueryHashes": []string
-"options": .graphql.gloo.solo.io.GraphQLApi.GraphqlApiOptions
+"options": .graphql.gloo.solo.io.GraphQLApi.GraphQLApiOptions
 
 ```
 
@@ -332,13 +332,13 @@ configure the routes to point to these schema CRs.
 | `statPrefix` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The stats prefix which will be used for this route config. If empty, will generate a stats prefix ${GRAPHQLAPI_REF}. |
 | `persistedQueryCacheConfig` | [.graphql.gloo.solo.io.PersistedQueryCacheConfig](../graphql.proto.sk/#persistedquerycacheconfig) | Configuration settings for persisted query cache. |
 | `allowedQueryHashes` | `[]string` | Safelist: only allow queries to be executed that match these sha256 hashes. The hash can be computed from the query string or provided (i.e. persisted queries). |
-| `options` | [.graphql.gloo.solo.io.GraphQLApi.GraphqlApiOptions](../graphql.proto.sk/#graphqlapioptions) | Options that apply to this GraphQLApi. |
+| `options` | [.graphql.gloo.solo.io.GraphQLApi.GraphQLApiOptions](../graphql.proto.sk/#graphqlapioptions) | Options that apply to this GraphQLApi. |
 
 
 
 
 ---
-### GraphqlApiOptions
+### GraphQLApiOptions
 
 
 

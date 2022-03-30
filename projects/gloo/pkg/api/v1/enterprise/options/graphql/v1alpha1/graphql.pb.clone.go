@@ -379,9 +379,9 @@ func (m *GraphQLApi) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
-		target.Options = h.Clone().(*GraphQLApi_GraphqlApiOptions)
+		target.Options = h.Clone().(*GraphQLApi_GraphQLApiOptions)
 	} else {
-		target.Options = proto.Clone(m.GetOptions()).(*GraphQLApi_GraphqlApiOptions)
+		target.Options = proto.Clone(m.GetOptions()).(*GraphQLApi_GraphQLApiOptions)
 	}
 
 	switch m.Schema.(type) {
@@ -556,12 +556,12 @@ func (m *MockResolver_AsyncResponse) Clone() proto.Message {
 }
 
 // Clone function
-func (m *GraphQLApi_GraphqlApiOptions) Clone() proto.Message {
-	var target *GraphQLApi_GraphqlApiOptions
+func (m *GraphQLApi_GraphQLApiOptions) Clone() proto.Message {
+	var target *GraphQLApi_GraphQLApiOptions
 	if m == nil {
 		return target
 	}
-	target = &GraphQLApi_GraphqlApiOptions{}
+	target = &GraphQLApi_GraphQLApiOptions{}
 
 	target.LogSensitiveInfo = m.GetLogSensitiveInfo()
 

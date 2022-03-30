@@ -805,7 +805,7 @@ type GraphQLApi struct {
 	// The hash can be computed from the query string or provided (i.e. persisted queries).
 	AllowedQueryHashes []string `protobuf:"bytes,5,rep,name=allowed_query_hashes,json=allowedQueryHashes,proto3" json:"allowed_query_hashes,omitempty"`
 	// Options that apply to this GraphQLApi.
-	Options *GraphQLApi_GraphqlApiOptions `protobuf:"bytes,8,opt,name=options,proto3" json:"options,omitempty"`
+	Options *GraphQLApi_GraphQLApiOptions `protobuf:"bytes,8,opt,name=options,proto3" json:"options,omitempty"`
 }
 
 func (x *GraphQLApi) Reset() {
@@ -896,7 +896,7 @@ func (x *GraphQLApi) GetAllowedQueryHashes() []string {
 	return nil
 }
 
-func (x *GraphQLApi) GetOptions() *GraphQLApi_GraphqlApiOptions {
+func (x *GraphQLApi) GetOptions() *GraphQLApi_GraphQLApiOptions {
 	if x != nil {
 		return x.Options
 	}
@@ -1352,7 +1352,7 @@ func (x *MockResolver_AsyncResponse) GetDelay() *duration.Duration {
 	return nil
 }
 
-type GraphQLApi_GraphqlApiOptions struct {
+type GraphQLApi_GraphQLApiOptions struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -1364,8 +1364,8 @@ type GraphQLApi_GraphqlApiOptions struct {
 	LogSensitiveInfo bool `protobuf:"varint,1,opt,name=log_sensitive_info,json=logSensitiveInfo,proto3" json:"log_sensitive_info,omitempty"`
 }
 
-func (x *GraphQLApi_GraphqlApiOptions) Reset() {
-	*x = GraphQLApi_GraphqlApiOptions{}
+func (x *GraphQLApi_GraphQLApiOptions) Reset() {
+	*x = GraphQLApi_GraphQLApiOptions{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1373,13 +1373,13 @@ func (x *GraphQLApi_GraphqlApiOptions) Reset() {
 	}
 }
 
-func (x *GraphQLApi_GraphqlApiOptions) String() string {
+func (x *GraphQLApi_GraphQLApiOptions) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GraphQLApi_GraphqlApiOptions) ProtoMessage() {}
+func (*GraphQLApi_GraphQLApiOptions) ProtoMessage() {}
 
-func (x *GraphQLApi_GraphqlApiOptions) ProtoReflect() protoreflect.Message {
+func (x *GraphQLApi_GraphQLApiOptions) ProtoReflect() protoreflect.Message {
 	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1391,12 +1391,12 @@ func (x *GraphQLApi_GraphqlApiOptions) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GraphQLApi_GraphqlApiOptions.ProtoReflect.Descriptor instead.
-func (*GraphQLApi_GraphqlApiOptions) Descriptor() ([]byte, []int) {
+// Deprecated: Use GraphQLApi_GraphQLApiOptions.ProtoReflect.Descriptor instead.
+func (*GraphQLApi_GraphQLApiOptions) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_rawDescGZIP(), []int{9, 0}
 }
 
-func (x *GraphQLApi_GraphqlApiOptions) GetLogSensitiveInfo() bool {
+func (x *GraphQLApi_GraphQLApiOptions) GetLogSensitiveInfo() bool {
 	if x != nil {
 		return x.LogSensitiveInfo
 	}
@@ -1820,9 +1820,9 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 	0x07, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x32,
 	0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
 	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x47, 0x72, 0x61, 0x70, 0x68, 0x51, 0x4c, 0x41, 0x70, 0x69,
-	0x2e, 0x47, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x41, 0x70, 0x69, 0x4f, 0x70, 0x74, 0x69, 0x6f,
+	0x2e, 0x47, 0x72, 0x61, 0x70, 0x68, 0x51, 0x4c, 0x41, 0x70, 0x69, 0x4f, 0x70, 0x74, 0x69, 0x6f,
 	0x6e, 0x73, 0x52, 0x07, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x1a, 0x41, 0x0a, 0x11, 0x47,
-	0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x41, 0x70, 0x69, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x72, 0x61, 0x70, 0x68, 0x51, 0x4c, 0x41, 0x70, 0x69, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
 	0x12, 0x2c, 0x0a, 0x12, 0x6c, 0x6f, 0x67, 0x5f, 0x73, 0x65, 0x6e, 0x73, 0x69, 0x74, 0x69, 0x76,
 	0x65, 0x5f, 0x69, 0x6e, 0x66, 0x6f, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x10, 0x6c, 0x6f,
 	0x67, 0x53, 0x65, 0x6e, 0x73, 0x69, 0x74, 0x69, 0x76, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x3a, 0x1b,
@@ -1928,7 +1928,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 	nil,                                  // 19: graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeEntry
 	nil,                                  // 20: graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeConfig.ArgsEntry
 	(*MockResolver_AsyncResponse)(nil),   // 21: graphql.gloo.solo.io.MockResolver.AsyncResponse
-	(*GraphQLApi_GraphqlApiOptions)(nil), // 22: graphql.gloo.solo.io.GraphQLApi.GraphqlApiOptions
+	(*GraphQLApi_GraphQLApiOptions)(nil), // 22: graphql.gloo.solo.io.GraphQLApi.GraphQLApiOptions
 	(*Executor_Local)(nil),               // 23: graphql.gloo.solo.io.Executor.Local
 	(*Executor_Local_LocalExecutorOptions)(nil), // 24: graphql.gloo.solo.io.Executor.Local.LocalExecutorOptions
 	nil,                             // 25: graphql.gloo.solo.io.Executor.Local.ResolutionsEntry
@@ -1965,7 +1965,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 	6,  // 21: graphql.gloo.solo.io.GraphQLApi.stitched_schema:type_name -> graphql.gloo.solo.io.StitchedSchema
 	28, // 22: graphql.gloo.solo.io.GraphQLApi.stat_prefix:type_name -> google.protobuf.StringValue
 	10, // 23: graphql.gloo.solo.io.GraphQLApi.persisted_query_cache_config:type_name -> graphql.gloo.solo.io.PersistedQueryCacheConfig
-	22, // 24: graphql.gloo.solo.io.GraphQLApi.options:type_name -> graphql.gloo.solo.io.GraphQLApi.GraphqlApiOptions
+	22, // 24: graphql.gloo.solo.io.GraphQLApi.options:type_name -> graphql.gloo.solo.io.GraphQLApi.GraphQLApiOptions
 	12, // 25: graphql.gloo.solo.io.ExecutableSchema.executor:type_name -> graphql.gloo.solo.io.Executor
 	4,  // 26: graphql.gloo.solo.io.ExecutableSchema.grpc_descriptor_registry:type_name -> graphql.gloo.solo.io.GrpcDescriptorRegistry
 	23, // 27: graphql.gloo.solo.io.Executor.local:type_name -> graphql.gloo.solo.io.Executor.Local
@@ -2186,7 +2186,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_graphql_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GraphQLApi_GraphqlApiOptions); i {
+			switch v := v.(*GraphQLApi_GraphQLApiOptions); i {
 			case 0:
 				return &v.state
 			case 1:
