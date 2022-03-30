@@ -452,6 +452,10 @@ message ExecutableSchema {
 
   // Schema extensions
   map<string, google.protobuf.Any> extensions = 3;
+
+  // Logs request / response sensitive information
+  // By default, this is false so no request or response sensitive information is logged.
+  bool log_request_response_info = 4;
 }
 
 message Executor {

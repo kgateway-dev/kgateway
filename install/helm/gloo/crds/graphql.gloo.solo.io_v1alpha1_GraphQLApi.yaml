@@ -145,6 +145,11 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
                     type: object
                 type: object
+              options:
+                properties:
+                  logSensitiveInfo:
+                    type: boolean
+                type: object
               persistedQueryCacheConfig:
                 properties:
                   cacheSize:
