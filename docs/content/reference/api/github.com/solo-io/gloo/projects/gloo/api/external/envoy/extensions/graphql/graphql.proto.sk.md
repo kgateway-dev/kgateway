@@ -669,6 +669,7 @@ This message specifies Persisted Query Cache configuration.
 "schemaDefinition": .solo.io.envoy.config.core.v3.DataSource
 "executor": .envoy.config.filter.http.graphql.v2.Executor
 "extensions": map<string, .google.protobuf.Any>
+"logRequestResponseInfo": bool
 
 ```
 
@@ -677,6 +678,7 @@ This message specifies Persisted Query Cache configuration.
 | `schemaDefinition` | [.solo.io.envoy.config.core.v3.DataSource](../../../config/core/v3/base.proto.sk/#datasource) | Schema to use in string format. |
 | `executor` | [.envoy.config.filter.http.graphql.v2.Executor](../graphql.proto.sk/#executor) | how to execute the schema. |
 | `extensions` | `map<string, .google.protobuf.Any>` | Schema extensions. |
+| `logRequestResponseInfo` | `bool` | Logs request / response sensitive information By default, this is false so no request or response sensitive information is logged. |
 
 
 
