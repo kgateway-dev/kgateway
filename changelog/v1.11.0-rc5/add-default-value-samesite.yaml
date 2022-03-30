@@ -1,5 +1,5 @@
 changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/5123
-    description: Add same_site to CookieOptions.
+    description: Add DefaultMode to SameSite for CookieOptions.
     resolvesIssue: false
