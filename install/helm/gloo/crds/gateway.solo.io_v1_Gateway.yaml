@@ -624,6 +624,15 @@ spec:
                           useRemoteAddress:
                             nullable: true
                             type: boolean
+                          uuidRequestIdConfig:
+                            properties:
+                              packTraceReason:
+                                nullable: true
+                                type: boolean
+                              useRequestIdForTraceSampling:
+                                nullable: true
+                                type: boolean
+                            type: object
                           via:
                             type: string
                           xffNumTrustedHops:
@@ -1415,6 +1424,15 @@ spec:
                                     useRemoteAddress:
                                       nullable: true
                                       type: boolean
+                                    uuidRequestIdConfig:
+                                      properties:
+                                        packTraceReason:
+                                          nullable: true
+                                          type: boolean
+                                        useRequestIdForTraceSampling:
+                                          nullable: true
+                                          type: boolean
+                                      type: object
                                     via:
                                       type: string
                                     xffNumTrustedHops:

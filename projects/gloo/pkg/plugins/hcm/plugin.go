@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
@@ -149,6 +150,19 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 			out.StripPortMode = &envoyhttp.HttpConnectionManager_StripAnyHostPort{
 				StripAnyHostPort: true,
 			}
+		}
+	}
+
+	if in.GetUuidRequestIdConfig() != nil {
+		// Create a new empty request id extension if none present
+		if out.GetRequestIdExtension() == nil {
+			out.RequestIdExtension = &envoyhttp.RequestIDExtension{}
+		}
+
+		var err error
+		// No errors should occur when marshaling
+		if out.GetRequestIdExtension().TypedConfig, err = anypb.New(in.GetUuidRequestIdConfig()); err != nil {
+			return err
 		}
 	}
 
