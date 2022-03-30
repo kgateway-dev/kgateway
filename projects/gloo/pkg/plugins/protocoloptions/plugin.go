@@ -40,6 +40,9 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
+	if in.GetUseHttp2() == nil || !in.GetUseHttp2().GetValue() {
+		return nil
+	}
 	// Both these values default to 268435456 if unset.
 	sws := in.GetInitialStreamWindowSize()
 	if sws != nil {
@@ -81,11 +84,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			},
 		},
 	}
-	if in.GetUseHttp2() != nil && in.GetUseHttp2().GetValue() {
-		err := pluginutils.SetExtensionProtocolOptions(out, "envoy.extensions.upstreams.http.v3.HttpProtocolOptions", protobuf)
-		if err != nil {
-			return errors.Wrapf(err, "converting protocol options to struct")
-		}
+
+	err := pluginutils.SetExtensionProtocolOptions(out, "envoy.extensions.upstreams.http.v3.HttpProtocolOptions", protobuf)
+	if err != nil {
+		return errors.Wrapf(err, "converting protocol options to struct")
 	}
 
 	return nil
