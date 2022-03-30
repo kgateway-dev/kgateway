@@ -294,3 +294,5 @@ Curl will return the following JSON payload from the Pet Store application.
 Congratulations! You've successfully deployed Gloo Edge to Nomad and created your first route. Now let's delve deeper into the world of [Traffic Management with Gloo Edge]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}).
 
 Most of the existing tutorials for Gloo Edge use Kubernetes as the underlying resource, but they can also use Nomad. Remember that all `glooctl` commands should be used with the `--use-consul` flag, and deployments will need to be orchestrated through Nomad instead of Kubernetes.
+
+{{< readfile file="static/content/upgrade-crd.md" markdown="true">}}

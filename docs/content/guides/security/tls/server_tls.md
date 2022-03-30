@@ -289,6 +289,10 @@ curl --cert mtls.crt --key mtls.key -k $(glooctl proxy url --port https)/sample-
 
 Let's say we had another Virtual Service that serves a different certificate for a different virtual host. Gloo Edge allows you to serve multiple virtual hosts from a single HTTPS port and use [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication) to determine which certificate to present to which virtual host. In the previous example, we create a certificate for the `petstore.example.com` domain. Let's create a new self-signed certificate for a different domain, `animalstore.example.com` and see how Gloo Edge can serve multiple virtual hosts on a single port/listener.
 
+{{% notice note %}}
+When you define SNI domains It is a requirement for a default route without a sni domain defined to be created.
+{{% /notice %}}
+
 First we'll create the self-signed certificate for the domain `animalstore.example.com`.
 
 ```bash

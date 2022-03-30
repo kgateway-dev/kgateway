@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Adds the upgrade notice for Gloo Edge 1.11.x.
+    issueLink: https://github.com/solo-io/gloo/issues/6109
+  - type: NON_USER_FACING
+    description: Adds more info about installing CRDs before upgrading and upgrading glooctl.
+    issueLink: https://github.com/solo-io/gloo/issues/6111

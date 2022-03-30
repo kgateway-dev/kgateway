@@ -1,0 +1,1 @@
+As you continue to use Gloo Edge, remember to periodically check the [upgrade guide](https://docs.solo.io/gloo-edge/master/operations/upgrading/) for notices about new features and steps for how to install new CRDs before you upgrade Gloo Edge.
