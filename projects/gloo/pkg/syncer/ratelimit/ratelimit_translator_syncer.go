@@ -107,7 +107,7 @@ func (s *TranslatorSyncerExtension) Sync(
 
 					// Staged RateLimiting is an enterprise feature
 					if route.GetOptions().GetRateLimitEarlyConfigType() != nil {
-						return enterpriseOnlyError("RatelimitEarly")
+						return enterpriseOnlyError("RateLimitEarly")
 					}
 				}
 			}
