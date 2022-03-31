@@ -17,7 +17,7 @@ spec:
     singular: graphqlapi
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - name: v1beta
     schema:
       openAPIV3Schema:
         properties:
