@@ -9,7 +9,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 
-	v1alpha12 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+	v1beta "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
@@ -168,7 +168,7 @@ var _ = Describe("SetupSyncer", func() {
 					gatewayv1.GatewayCrd,
 					extauthv1.AuthConfigCrd,
 					v1alpha1.RateLimitConfigCrd,
-					v1alpha12.GraphQLApiCrd,
+					v1beta.GraphQLApiCrd,
 					gatewayv1.VirtualServiceCrd,
 					gatewayv1.RouteOptionCrd,
 					gatewayv1.VirtualHostOptionCrd,

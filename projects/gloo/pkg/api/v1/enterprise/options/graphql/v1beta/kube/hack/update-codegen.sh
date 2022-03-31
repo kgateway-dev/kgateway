@@ -6,7 +6,7 @@ set -o nounset
 set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-ROOT_PKG=github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1
+ROOT_PKG=github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta
 CLIENT_PKG=${ROOT_PKG}/kube/client
 APIS_PKG=${ROOT_PKG}/kube/apis
 
@@ -36,7 +36,7 @@ chmod +x ${CODEGEN_PKG}/generate-groups.sh
 ${CODEGEN_PKG}/generate-groups.sh all \
     ${CLIENT_PKG} \
     ${APIS_PKG} \
-    graphql.gloo.solo.io:v1alpha1 \
+    graphql.gloo.solo.io:v1beta \
     --output-base "${TEMP_DIR}" --go-header-file "${CODEGEN_PKG}/hack/boilerplate.go.txt"
 # Copy everything back.
 cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/.."

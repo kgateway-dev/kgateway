@@ -8,6 +8,6 @@
 
 */
 
-// Package v1alpha1 is the v1alpha1 version of the API.
-// +groupName=enterprise.gloo.solo.io
-package v1alpha1
+// Package v1beta is the v1beta version of the API.
+// +groupName=graphql.gloo.solo.io
+package v1beta

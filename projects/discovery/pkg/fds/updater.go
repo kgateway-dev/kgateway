@@ -7,7 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/go-utils/contextutils"
@@ -43,7 +43,7 @@ type Updater struct {
 	logger            *zap.SugaredLogger
 
 	upstreamWriter UpstreamWriterClient
-	graphqlClient  v1alpha1.GraphQLApiClient
+	graphqlClient  v1beta.GraphQLApiClient
 
 	maxInParallelSemaphore chan struct{}
 
@@ -64,7 +64,7 @@ func getConcurrencyChan(maxOnCurrency uint) chan struct{} {
 
 }
 
-func NewUpdater(ctx context.Context, resolver Resolver, graphqlClient v1alpha1.GraphQLApiClient, upstreamclient UpstreamWriterClient, maxconncurrency uint, functionalPlugins []FunctionDiscoveryFactory) *Updater {
+func NewUpdater(ctx context.Context, resolver Resolver, graphqlClient v1beta.GraphQLApiClient, upstreamclient UpstreamWriterClient, maxconncurrency uint, functionalPlugins []FunctionDiscoveryFactory) *Updater {
 	ctx = contextutils.WithLogger(ctx, "function-discovery-updater")
 	return &Updater{
 		logger:                 contextutils.LoggerFrom(ctx),
