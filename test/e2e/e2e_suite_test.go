@@ -21,7 +21,7 @@ var (
 	envoyFactory  *services.EnvoyFactory
 	consulFactory *services.ConsulFactory
 
-	namespace = "e2e-test-ns"
+	namespace = defaults.GlooSystem
 )
 
 var _ = BeforeSuite(func() {
@@ -33,7 +33,6 @@ var _ = BeforeSuite(func() {
 
 	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
-
 })
 
 var _ = AfterSuite(func() {

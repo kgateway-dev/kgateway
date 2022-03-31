@@ -181,9 +181,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	}
 
 	AfterEach(func() {
-		if envoyInstance != nil {
-			_ = envoyInstance.Clean()
-		}
+		envoyInstance.Clean()
 		cancel()
 	})
 
