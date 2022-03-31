@@ -351,14 +351,16 @@ message UserSession {
         google.protobuf.StringValue path = 3;
         // The SameSite options. The default value is LaxMode.
         enum SameSite {
+            // Default Mode is the same as LaxMode but will not show up in the Cookie Header. This value is ignored.
+            DefaultMode = 0;
             // Cookies are not sent on normal cross-site subrequests, but are sent when 
             // navigating to the origin site.
-            LaxMode = 0;
+            LaxMode = 1;
             // Only be sent in a first-party context and not be sent along with requests
             // initiated by third party websites.
-            StrictMode = 1;
+            StrictMode = 2;
             // Cookies are sent in all contexts. Cookie NotSecure must be unset.
-            NoneMode = 2;
+            NoneMode = 3;
         }
         // Whether the cookie should be restricted to a first-party or same-site context.
         // The default mode is LaxMode.
