@@ -30,7 +30,7 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
 2. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure. For Gloo Edge Enterprise, you might also review the open source changelogs because most of the proto definitions are open source. For more information, see the following enterprise-only section on understanding the open source dependencies.
    * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
-3. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} from 1.9.x or older, you must upgrade incrementally. For example, you must first upgrade from 1.9.x to {{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}, and then upgrade from {{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}} to {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}.
+3. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version 1.11 from 1.9 or older, you must upgrade incrementally. For example, you must first upgrade from 1.9 to 1.10, and then upgrade from 1.10 to 1.11.
 4. Review the version-specific upgrade docs.
    * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
    * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
@@ -86,6 +86,11 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
 1. Review the client and server versions of `glooctl`. 
    ```bash
    glooctl version
+   ```
+   Example output: Notice that the the client version is the same as the server components.
+   ```bash
+   Client: {"version":"{{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}"}
+   Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"{{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
    ```
 
 2. Upgrade your version of `glooctl`.
