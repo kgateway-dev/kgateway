@@ -584,6 +584,7 @@ The SameSite options. The default value is LaxMode.
 
 | Name | Description |
 | ----- | ----------- | 
+| `DefaultMode` | Default Mode is the same as LaxMode but will not show up in the Cookie Header. This value is ignored. |
 | `LaxMode` | Cookies are not sent on normal cross-site subrequests, but are sent when navigating to the origin site. |
 | `StrictMode` | Only be sent in a first-party context and not be sent along with requests initiated by third party websites. |
 | `NoneMode` | Cookies are sent in all contexts. Cookie NotSecure must be unset. |
