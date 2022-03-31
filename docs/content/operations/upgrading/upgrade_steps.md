@@ -129,7 +129,7 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
 
 ## Step 3: Apply minor version-specific changes
 
-Each minor version might add CRDs that Helm upgrades cannot handle seamlessly. Review the minor version-specific upgrading docs, which might include steps for installing new CRDs and removing outdated CRDs.
+Each minor version might add custom resource definitions (CRDs) that Helm upgrades cannot handle seamlessly. Review the minor version-specific upgrading docs, which might include steps for installing new CRDs and removing outdated CRDs.
    * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
    * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
    * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
