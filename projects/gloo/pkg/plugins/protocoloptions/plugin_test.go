@@ -51,9 +51,9 @@ var _ = Describe("Plugin", func() {
 			err = p.ProcessUpstream(params, nilVal, out)
 			Expect(err).NotTo(HaveOccurred())
 			test, err = utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"])
-			Expect(err).To(HaveOccurred())
+			Expect(err).To(HaveOccurred()) //If Http2 not true, TypedExtensionProtocolOptionsprotobuf is never set so AnyToMessage on should fail
 			explicitHttpConfig, ok = test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions)
-			Expect(ok).To(BeFalse())
+			Expect(ok).To(BeFalse()) //TypedExtensionProtocolOptions is never set so trying to access it directly will fail as well
 			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions()).To(Equal(nilOptions))
 		})
 
