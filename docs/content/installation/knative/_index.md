@@ -185,5 +185,3 @@ glooctl uninstall -n my-namespace
 ## Next Steps
 
 To begin using Gloo Edge with Knative, check out the [Knative Getting Started Guide]({{< versioned_link_path fromRoot="/guides/integrations/knative/getting_started/" >}}).
-
-{{< readfile file="static/content/upgrade-crd.md" markdown="true">}}
