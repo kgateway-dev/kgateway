@@ -135,3 +135,5 @@ glooctl uninstall --all
 ## Next Steps
 
 As a next step, we recommend [registering the Kubernetes clusters]({{% versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" %}}) running Gloo Edge instances with Gloo Edge Federation. Then you can move onto creating [federated configurations]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}) or [service failover]({{% versioned_link_path fromRoot="/guides/gloo_federation/service_failover/" %}}). You can also read more about Gloo Edge Federation in the [concepts area]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) of the docs.
+
+{{< readfile file="static/content/upgrade-crd.md" markdown="true">}}
