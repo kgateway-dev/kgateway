@@ -30,7 +30,7 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
 2. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure. For Gloo Edge Enterprise, you might also review the open source changelogs because most of the proto definitions are open source. For more information, see the following enterprise-only section on understanding the open source dependencies.
    * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
-3. If you plan to upgrade more than one minor version, such as to version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} from 1.9.x or older, you must upgrade incrementally. For example, you must first upgrade from 1.9.x to {{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}, and then upgrade to  {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}.
+3. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} from 1.9.x or older, you must upgrade incrementally. For example, you must first upgrade from 1.9.x to {{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}, and then upgrade from {{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}} to {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}.
 4. Review the version-specific upgrade docs.
    * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
    * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
@@ -129,7 +129,7 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
 
 ## Step 3: Apply minor version-specific changes
 
-Newer versions can add CRDs that Helm upgrades cannot handle seamlessly. Instead, review the version-specific upgrading docs. The minor versions steps might include installing new CRDs and removing outdated CRDs.
+Each minor version might add CRDs that Helm upgrades cannot handle seamlessly. Review the minor version-specific upgrading docs, which might include steps for installing new CRDs and removing outdated CRDs.
    * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
    * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
    * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
@@ -145,11 +145,11 @@ Using Helm 2 is not supported in Gloo Edge v1.8.0 and later.
 {{% /notice %}}
 
 {{% notice note %}}
-We create a Kubernetes Job named `gateway-certgen` to generate a cert for the validation webhook. We attempt to put a
-`ttlSecondsAfterFinished` value on the job so that it gets cleaned up automatically, but as this setting is still in
-Alpha, your cluster may ignore this value. If that is the case, you may run into an issue while upgrading where the
-upgrade attempts to change the `gateway-certgen` job, but the update fails because the job is immutable. If you run
-into this, simply delete the job, which should have completed long before, and re-apply the upgrade.
+During the upgrade, a Kubernetes Job named `gateway-certgen` is created to generate a certificate for the validation webhook. A
+`ttlSecondsAfterFinished` value is set on the job so that it is cleaned up automatically, but because this setting is still in
+Alpha, your cluster might ignore this value. In this case, you might have an issue while upgrading in which the
+upgrade attempts to change the `gateway-certgen` job, but the update fails because the job is immutable. To fix this issue,
+you can delete the job, which already completed, and re-apply the upgrade.
 {{% /notice %}}
 
 ### Helm upgrades for Gloo Edge Enterprise
