@@ -145,10 +145,10 @@ Using Helm 2 is not supported in Gloo Edge v1.8.0 and later.
 {{% /notice %}}
 
 {{% notice note %}}
-During the upgrade, a Kubernetes Job named `gateway-certgen` is created to generate a certificate for the validation webhook. A
-`ttlSecondsAfterFinished` value is set on the job so that it is cleaned up automatically, but because this setting is still in
+The upgrade creates a Kubernetes Job named `gateway-certgen` to generate a certificate for the validation webhook. The job
+contains the `ttlSecondsAfterFinished` value so that the cluster cleans up the job automatically, but because this setting is still in
 Alpha, your cluster might ignore this value. In this case, you might have an issue while upgrading in which the
-upgrade attempts to change the `gateway-certgen` job, but the update fails because the job is immutable. To fix this issue,
+upgrade attempts to change the `gateway-certgen` job, but the change fails because the job is immutable. To fix this issue,
 you can delete the job, which already completed, and re-apply the upgrade.
 {{% /notice %}}
 

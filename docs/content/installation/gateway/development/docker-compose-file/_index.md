@@ -94,37 +94,37 @@ The updated `data` directory structure should look like this:
 
 ```console
 ├── artifact
-│   └── artifacts
-│       └── gloo-system
+│   └── artifacts
+│       └── gloo-system
 ├── config
-│   ├── authconfigs
-│   │   └── gloo-system
-│   ├── gateways
-│   │   └── gloo-system
-│   │       └── gateway-proxy.yaml
-│   ├── graphqlapis
-│   │   └── gloo-system
-│   ├── proxies
-│   │   └── gloo-system
-│   ├── ratelimitconfigs
-│   │   └── gloo-system
-│   ├── routeoptions
-│   │   └── gloo-system
-│   ├── routetables
-│   │   └── gloo-system
-│   ├── upstreamgroups
-│   │   └── gloo-system
-│   ├── upstreams
-│   │   └── gloo-system
-│   │       └── petstore.yaml
-│   └── virtualhostoptions
-│   │   └── gloo-system
-│   └── virtualservices
-│       └── gloo-system
-│           └── default.yaml
+│   ├── authconfigs
+│   │   └── gloo-system
+│   ├── gateways
+│   │   └── gloo-system
+│   │       └── gateway-proxy.yaml
+│   ├── graphqlapis
+│   │   └── gloo-system
+│   ├── proxies
+│   │   └── gloo-system
+│   ├── ratelimitconfigs
+│   │   └── gloo-system
+│   ├── routeoptions
+│   │   └── gloo-system
+│   ├── routetables
+│   │   └── gloo-system
+│   ├── upstreamgroups
+│   │   └── gloo-system
+│   ├── upstreams
+│   │   └── gloo-system
+│   │       └── petstore.yaml
+│   └── virtualhostoptions
+│   │   └── gloo-system
+│   └── virtualservices
+│       └── gloo-system
+│           └── default.yaml
 ├── envoy-config.yaml
 ├── gloo-system
-│   ├── default.yaml
+│   ├── default.yaml
 └── secret
     └── secrets
         ├── default
