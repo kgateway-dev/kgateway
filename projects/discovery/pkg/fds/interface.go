@@ -7,7 +7,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 )
 
