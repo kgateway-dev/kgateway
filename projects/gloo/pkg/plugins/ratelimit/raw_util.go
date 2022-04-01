@@ -19,12 +19,13 @@ const SetDescriptorValue = "solo.setDescriptor.uniqueValue"
 func toEnvoyRateLimits(
 	ctx context.Context,
 	actions []*solo_rl.RateLimitActions,
+	stage uint32,
 ) []*envoy_config_route_v3.RateLimit {
 	var ret []*envoy_config_route_v3.RateLimit
 	for _, action := range actions {
 		if len(action.GetActions()) != 0 {
 			rl := &envoy_config_route_v3.RateLimit{
-				Stage: &wrappers.UInt32Value{Value: CustomStage},
+				Stage: &wrappers.UInt32Value{Value: stage},
 			}
 			rl.Actions = ConvertActions(ctx, action.GetActions())
 			ret = append(ret, rl)

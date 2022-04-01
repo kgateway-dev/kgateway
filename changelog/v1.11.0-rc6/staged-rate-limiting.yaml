@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5926
+    resolvesIssue: false
+    description: |
+      Support defining a rate limit at two different stages during request processing,
+      one before authentication, and one after. This is an Enterprise only feature.
