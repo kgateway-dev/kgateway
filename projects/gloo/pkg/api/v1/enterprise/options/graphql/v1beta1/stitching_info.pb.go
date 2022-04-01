@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.27.1
 // 	protoc        v3.6.1
-// source: github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/stitching_info.proto
+// source: github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/stitching_info.proto
 
-package v1alpha1
+package v1beta1
 
 import (
 	reflect "reflect"
