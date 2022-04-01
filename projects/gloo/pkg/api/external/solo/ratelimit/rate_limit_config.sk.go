@@ -143,7 +143,7 @@ func (list RateLimitConfigList) AsInterfaces() []interface{} {
 
 var (
 	RateLimitConfigGVK = schema.GroupVersionKind{
-		Version: "v1alpha1",
+		Version: "v1beta1",
 		Group:   "ratelimit.solo.io",
 		Kind:    "RateLimitConfig",
 	}

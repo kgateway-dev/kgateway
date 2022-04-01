@@ -1095,13 +1095,13 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#QueryParameterMatcher
     package: matchers.core.gloo.solo.io
   multicluster.solo.io.KubernetesClusterSpec:
-    relativepath: reference/api/github.com/solo-io/skv2/api/multicluster/v1alpha1/cluster.proto.sk/#KubernetesClusterSpec
+    relativepath: reference/api/github.com/solo-io/skv2/api/multicluster/v1beta1/cluster.proto.sk/#KubernetesClusterSpec
     package: multicluster.solo.io
   multicluster.solo.io.KubernetesClusterStatus:
-    relativepath: reference/api/github.com/solo-io/skv2/api/multicluster/v1alpha1/cluster.proto.sk/#KubernetesClusterStatus
+    relativepath: reference/api/github.com/solo-io/skv2/api/multicluster/v1beta1/cluster.proto.sk/#KubernetesClusterStatus
     package: multicluster.solo.io
   multicluster.solo.io.PolicyRule:
-    relativepath: reference/api/github.com/solo-io/skv2/api/multicluster/v1alpha1/cluster.proto.sk/#PolicyRule
+    relativepath: reference/api/github.com/solo-io/skv2/api/multicluster/v1beta1/cluster.proto.sk/#PolicyRule
     package: multicluster.solo.io
   opencensus.proto.trace.AttributeValue:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/trace.proto.sk/#AttributeValue
@@ -1143,31 +1143,31 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/proxy_protocol/proxy_protocol.proto.sk/#ProxyProtocol
     package: proxy_protocol.options.gloo.solo.io
   ratelimit.api.solo.io.Action:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#Action
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1beta1/ratelimit.proto.sk/#Action
     package: ratelimit.api.solo.io
   ratelimit.api.solo.io.Descriptor:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#Descriptor
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1beta1/ratelimit.proto.sk/#Descriptor
     package: ratelimit.api.solo.io
   ratelimit.api.solo.io.RateLimit:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimit
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1beta1/ratelimit.proto.sk/#RateLimit
     package: ratelimit.api.solo.io
   ratelimit.api.solo.io.RateLimitActions:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitActions
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1beta1/ratelimit.proto.sk/#RateLimitActions
     package: ratelimit.api.solo.io
   ratelimit.api.solo.io.RateLimitConfigNamespacedStatuses:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigNamespacedStatuses
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1beta1/ratelimit.proto.sk/#RateLimitConfigNamespacedStatuses
     package: ratelimit.api.solo.io
   ratelimit.api.solo.io.RateLimitConfigSpec:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigSpec
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1beta1/ratelimit.proto.sk/#RateLimitConfigSpec
     package: ratelimit.api.solo.io
   ratelimit.api.solo.io.RateLimitConfigStatus:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigStatus
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1beta1/ratelimit.proto.sk/#RateLimitConfigStatus
     package: ratelimit.api.solo.io
   ratelimit.api.solo.io.SetDescriptor:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#SetDescriptor
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1beta1/ratelimit.proto.sk/#SetDescriptor
     package: ratelimit.api.solo.io
   ratelimit.api.solo.io.SimpleDescriptor:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#SimpleDescriptor
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1beta1/ratelimit.proto.sk/#SimpleDescriptor
     package: ratelimit.api.solo.io
   ratelimit.options.gloo.solo.io.IngressRateLimit:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#IngressRateLimit

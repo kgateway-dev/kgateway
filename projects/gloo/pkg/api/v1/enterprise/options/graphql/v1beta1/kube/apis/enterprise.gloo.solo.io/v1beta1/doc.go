@@ -9,5 +9,5 @@
 */
 
 // Package v1beta1 is the v1beta1 version of the API.
-// +groupName=graphql.gloo.solo.io
+// +groupName=enterprise.gloo.solo.io
 package v1beta1

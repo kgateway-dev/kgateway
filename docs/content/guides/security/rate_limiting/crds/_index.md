@@ -42,7 +42,7 @@ Gloo Edge guarantees that rate limit rules defined on different `RateLimitConfig
 Here is a simple example of a `RateLimitConfig` resource:
 
 ```yaml
-apiVersion: ratelimit.solo.io/v1alpha1
+apiVersion: ratelimit.solo.io/v1beta1
 kind: RateLimitConfig
 metadata:
   name: my-rate-limit-policy
@@ -230,7 +230,7 @@ Now let's create two `RateLimitConfig` resources.
 
 ```yaml
 kubectl apply -f - << EOF
-apiVersion: ratelimit.solo.io/v1alpha1
+apiVersion: ratelimit.solo.io/v1beta1
 kind: RateLimitConfig
 metadata:
   name: global-limit
@@ -248,7 +248,7 @@ spec:
       - genericKey:
           descriptorValue: count
 ---
-apiVersion: ratelimit.solo.io/v1alpha1
+apiVersion: ratelimit.solo.io/v1beta1
 kind: RateLimitConfig
 metadata:
   name: per-upstream-counter

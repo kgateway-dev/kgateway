@@ -41,7 +41,7 @@ run `glooctl proxy url --name knative-external-proxy`
      `kubectl`
   
     ```yaml
-    apiVersion: serving.knative.dev/v1alpha1
+    apiVersion: serving.knative.dev/v1beta1
     kind: Service
     metadata:
       name: helloworld-go

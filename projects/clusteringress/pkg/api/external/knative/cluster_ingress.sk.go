@@ -143,7 +143,7 @@ func (list ClusterIngressList) AsInterfaces() []interface{} {
 
 var (
 	ClusterIngressGVK = schema.GroupVersionKind{
-		Version: "v1alpha1",
+		Version: "v1beta1",
 		Group:   "networking.internal.knative.dev",
 		Kind:    "ClusterIngress",
 	}

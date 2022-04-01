@@ -143,7 +143,7 @@ func (list IngressList) AsInterfaces() []interface{} {
 
 var (
 	IngressGVK = schema.GroupVersionKind{
-		Version: "v1alpha1",
+		Version: "v1beta1",
 		Group:   "networking.internal.knative.dev",
 		Kind:    "Ingress",
 	}

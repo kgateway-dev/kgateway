@@ -176,7 +176,7 @@ Great! That is what we should expect and shows that Multicluster RBAC is doing i
 
 ```yaml
 kubectl apply -f - <<EOF
-apiVersion: multicluster.solo.io/v1alpha1
+apiVersion: multicluster.solo.io/v1beta1
 kind: MultiClusterRoleBinding
 metadata:
   name: kind-admin
@@ -203,7 +203,7 @@ We may want to restrict an account to perform specific actions on a specific clu
 
 ```yaml
 kubectl apply -f - <<EOF
-apiVersion: multicluster.solo.io/v1alpha1
+apiVersion: multicluster.solo.io/v1beta1
 kind: MultiClusterRole
 metadata:
   name: remote-admin
@@ -260,7 +260,7 @@ Now we will create the binding between the MultiClusterRole and the service acco
 
 ```yaml
 kubectl apply -f - <<EOF
-apiVersion: multicluster.solo.io/v1alpha1
+apiVersion: multicluster.solo.io/v1beta1
 kind: MultiClusterRoleBinding
 metadata:
   name: remote-admin

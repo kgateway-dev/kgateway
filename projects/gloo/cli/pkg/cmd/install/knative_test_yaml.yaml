@@ -324,7 +324,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
-  version: v1alpha1
+  version: v1beta1
 
 ---
 
@@ -365,7 +365,7 @@ spec:
   subresources:
     status: {}
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
   - name: v1beta1
@@ -397,7 +397,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
-  version: v1alpha1
+  version: v1beta1
 
 ---
 
@@ -430,7 +430,7 @@ spec:
   subresources:
     status: {}
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -462,7 +462,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
-  version: v1alpha1
+  version: v1beta1
 
 ---
 
@@ -502,7 +502,7 @@ spec:
   subresources:
     status: {}
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -547,7 +547,7 @@ spec:
   subresources:
     status: {}
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
   - name: v1beta1
@@ -593,7 +593,7 @@ spec:
   subresources:
     status: {}
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
   - name: v1beta1
@@ -646,7 +646,7 @@ spec:
   subresources:
     status: {}
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
   - name: v1beta1
@@ -696,7 +696,7 @@ spec:
   subresources:
     status: {}
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -805,7 +805,7 @@ webhooks:
 
 ---
 
-apiVersion: caching.internal.knative.dev/v1alpha1
+apiVersion: caching.internal.knative.dev/v1beta1
 kind: Image
 metadata:
   labels:
@@ -2726,7 +2726,7 @@ spec:
               type: string
           type: object
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -2786,7 +2786,7 @@ spec:
               - kind
               type: object
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -2888,7 +2888,7 @@ spec:
                   type: array
               type: object
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -3013,7 +3013,7 @@ spec:
               type: string
           type: object
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -3154,7 +3154,7 @@ spec:
               type: string
           type: object
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -3225,7 +3225,7 @@ spec:
           - source
           - broker
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -3446,7 +3446,7 @@ spec:
           required:
           - branches
           - channelTemplate
-  version: v1alpha1
+  version: v1beta1
 
 ---
 
@@ -3587,7 +3587,7 @@ spec:
           - steps
           - channelTemplate
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -3685,7 +3685,7 @@ spec:
           required:
           - channel
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -3778,7 +3778,7 @@ spec:
           required:
           - subscriber
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
@@ -4415,7 +4415,7 @@ spec:
                   type: array
               type: object
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     served: true
     storage: true
 
