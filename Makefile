@@ -50,7 +50,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.20.0-patch6
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.21.1-patch1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
