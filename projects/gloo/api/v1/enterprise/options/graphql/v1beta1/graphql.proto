@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package graphql.gloo.solo.io;
 
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1";
 
 option java_package = "io.envoyproxy.envoy.config.filter.http.graphql.v2";
 option java_outer_classname = "GraphQLFilterProto";
