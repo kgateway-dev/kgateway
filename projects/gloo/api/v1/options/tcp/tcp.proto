@@ -30,4 +30,27 @@ message TcpProxySettings {
     // payloads over a shared HTTP tunnel. If this message is absent, the payload
     // will be proxied upstream as per usual.
     TunnelingConfig tunneling_config = 12;
+
+    repeated HeaderValueOption header_values = 13;
+}
+
+// Header name/value pair plus option to control append behavior.
+message HeaderValueOption {
+    // Header name/value pair that this option applies to.
+    HeaderValue header = 1 [(validate.rules).message = {required: true}];
+    // Should the value be appended? If true (default), the value is appended to
+    // existing values.
+    google.protobuf.BoolValue append = 2;
+}
+
+// Header name/value pair.
+message HeaderValue {
+    // Header name.
+    string key = 1;
+    // Header value.
+    //
+    // The same :ref:`format specifier <config_access_log_format>` as used for
+    // :ref:`HTTP access logging <config_access_log>` applies here, however
+    // unknown header values are replaced with the empty string instead of `-`.
+    string value = 2;
 }
