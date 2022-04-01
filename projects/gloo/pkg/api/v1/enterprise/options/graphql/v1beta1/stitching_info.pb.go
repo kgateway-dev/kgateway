@@ -36,7 +36,7 @@ type GraphQLToolsStitchingInput struct {
 func (x *GraphQLToolsStitchingInput) Reset() {
 	*x = GraphQLToolsStitchingInput{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[0]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -49,7 +49,7 @@ func (x *GraphQLToolsStitchingInput) String() string {
 func (*GraphQLToolsStitchingInput) ProtoMessage() {}
 
 func (x *GraphQLToolsStitchingInput) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[0]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +62,7 @@ func (x *GraphQLToolsStitchingInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphQLToolsStitchingInput.ProtoReflect.Descriptor instead.
 func (*GraphQLToolsStitchingInput) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescGZIP(), []int{0}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GraphQLToolsStitchingInput) GetSubschemas() []*GraphQLToolsStitchingInput_Schema {
@@ -89,7 +89,7 @@ type GraphQlToolsStitchingOutput struct {
 func (x *GraphQlToolsStitchingOutput) Reset() {
 	*x = GraphQlToolsStitchingOutput{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[1]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -102,7 +102,7 @@ func (x *GraphQlToolsStitchingOutput) String() string {
 func (*GraphQlToolsStitchingOutput) ProtoMessage() {}
 
 func (x *GraphQlToolsStitchingOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[1]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -115,7 +115,7 @@ func (x *GraphQlToolsStitchingOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphQlToolsStitchingOutput.ProtoReflect.Descriptor instead.
 func (*GraphQlToolsStitchingOutput) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescGZIP(), []int{1}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GraphQlToolsStitchingOutput) GetFieldNodesByType() map[string]*v2.FieldNodes {
@@ -164,7 +164,7 @@ type GraphQLToolsStitchingInput_Schema struct {
 func (x *GraphQLToolsStitchingInput_Schema) Reset() {
 	*x = GraphQLToolsStitchingInput_Schema{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[2]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -177,7 +177,7 @@ func (x *GraphQLToolsStitchingInput_Schema) String() string {
 func (*GraphQLToolsStitchingInput_Schema) ProtoMessage() {}
 
 func (x *GraphQLToolsStitchingInput_Schema) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[2]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -190,7 +190,7 @@ func (x *GraphQLToolsStitchingInput_Schema) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use GraphQLToolsStitchingInput_Schema.ProtoReflect.Descriptor instead.
 func (*GraphQLToolsStitchingInput_Schema) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescGZIP(), []int{0, 0}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescGZIP(), []int{0, 0}
 }
 
 func (x *GraphQLToolsStitchingInput_Schema) GetName() string {
@@ -227,7 +227,7 @@ type GraphQLToolsStitchingInput_Schema_TypeMergeConfig struct {
 func (x *GraphQLToolsStitchingInput_Schema_TypeMergeConfig) Reset() {
 	*x = GraphQLToolsStitchingInput_Schema_TypeMergeConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[3]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -240,7 +240,7 @@ func (x *GraphQLToolsStitchingInput_Schema_TypeMergeConfig) String() string {
 func (*GraphQLToolsStitchingInput_Schema_TypeMergeConfig) ProtoMessage() {}
 
 func (x *GraphQLToolsStitchingInput_Schema_TypeMergeConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[3]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -253,7 +253,7 @@ func (x *GraphQLToolsStitchingInput_Schema_TypeMergeConfig) ProtoReflect() proto
 
 // Deprecated: Use GraphQLToolsStitchingInput_Schema_TypeMergeConfig.ProtoReflect.Descriptor instead.
 func (*GraphQLToolsStitchingInput_Schema_TypeMergeConfig) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescGZIP(), []int{0, 0, 0}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
 func (x *GraphQLToolsStitchingInput_Schema_TypeMergeConfig) GetSelectionSet() string {
@@ -277,9 +277,9 @@ func (x *GraphQLToolsStitchingInput_Schema_TypeMergeConfig) GetArgs() map[string
 	return nil
 }
 
-var File_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto protoreflect.FileDescriptor
+var File_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto protoreflect.FileDescriptor
 
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDesc = []byte{
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDesc = []byte{
 	0x0a, 0x65, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c,
 	0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63,
 	0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x65,
@@ -394,19 +394,19 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 }
 
 var (
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescOnce sync.Once
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescData = file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDesc
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescOnce sync.Once
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescData = file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDesc
 )
 
-func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescGZIP() []byte {
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescOnce.Do(func() {
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescData = protoimpl.X.CompressGZIP(file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescData)
+func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescGZIP() []byte {
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescOnce.Do(func() {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescData = protoimpl.X.CompressGZIP(file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescData)
 	})
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDescData
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDescData
 }
 
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_goTypes = []interface{}{
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_goTypes = []interface{}{
 	(*GraphQLToolsStitchingInput)(nil),                        // 0: graphql.gloo.solo.io.GraphQLToolsStitchingInput
 	(*GraphQlToolsStitchingOutput)(nil),                       // 1: graphql.gloo.solo.io.GraphQlToolsStitchingOutput
 	(*GraphQLToolsStitchingInput_Schema)(nil),                 // 2: graphql.gloo.solo.io.GraphQLToolsStitchingInput.Schema
@@ -420,7 +420,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 	(*v2.FieldNodeMap)(nil),     // 10: envoy.config.resolver.stitching.v2.FieldNodeMap
 	(*v2.MergedTypeConfig)(nil), // 11: envoy.config.resolver.stitching.v2.MergedTypeConfig
 }
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_depIdxs = []int32{
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_depIdxs = []int32{
 	2,  // 0: graphql.gloo.solo.io.GraphQLToolsStitchingInput.subschemas:type_name -> graphql.gloo.solo.io.GraphQLToolsStitchingInput.Schema
 	6,  // 1: graphql.gloo.solo.io.GraphQlToolsStitchingOutput.field_nodes_by_type:type_name -> graphql.gloo.solo.io.GraphQlToolsStitchingOutput.FieldNodesByTypeEntry
 	7,  // 2: graphql.gloo.solo.io.GraphQlToolsStitchingOutput.field_nodes_by_field:type_name -> graphql.gloo.solo.io.GraphQlToolsStitchingOutput.FieldNodesByFieldEntry
@@ -439,14 +439,14 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 }
 
 func init() {
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_init()
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_init()
 }
-func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_init() {
-	if File_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto != nil {
+func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_init() {
+	if File_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GraphQLToolsStitchingInput); i {
 			case 0:
 				return &v.state
@@ -458,7 +458,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GraphQlToolsStitchingOutput); i {
 			case 0:
 				return &v.state
@@ -470,7 +470,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GraphQLToolsStitchingInput_Schema); i {
 			case 0:
 				return &v.state
@@ -482,7 +482,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GraphQLToolsStitchingInput_Schema_TypeMergeConfig); i {
 			case 0:
 				return &v.state
@@ -499,18 +499,18 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDesc,
+			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_goTypes,
-		DependencyIndexes: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_depIdxs,
-		MessageInfos:      file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_msgTypes,
+		GoTypes:           file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_goTypes,
+		DependencyIndexes: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_depIdxs,
+		MessageInfos:      file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_msgTypes,
 	}.Build()
-	File_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto = out.File
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_rawDesc = nil
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_goTypes = nil
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1alpha1_stitching_info_proto_depIdxs = nil
+	File_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto = out.File
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_rawDesc = nil
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_goTypes = nil
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_stitching_info_proto_depIdxs = nil
 }
