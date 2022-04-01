@@ -10766,6 +10766,21 @@ spec:
                                             type: integer
                                           tunnelingConfig:
                                             properties:
+                                              headerToAdd:
+                                                items:
+                                                  properties:
+                                                    append:
+                                                      nullable: true
+                                                      type: boolean
+                                                    header:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        value:
+                                                          type: string
+                                                      type: object
+                                                  type: object
+                                                type: array
                                               hostname:
                                                 type: string
                                             type: object
@@ -12415,6 +12430,21 @@ spec:
                                   type: integer
                                 tunnelingConfig:
                                   properties:
+                                    headerToAdd:
+                                      items:
+                                        properties:
+                                          append:
+                                            nullable: true
+                                            type: boolean
+                                          header:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      type: array
                                     hostname:
                                       type: string
                                   type: object

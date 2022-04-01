@@ -1646,6 +1646,12 @@ apis:
   stats.options.gloo.solo.io.VirtualCluster:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/stats/stats.proto.sk/#VirtualCluster
     package: stats.options.gloo.solo.io
+  tcp.options.gloo.solo.io.HeaderValue:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#HeaderValue
+    package: tcp.options.gloo.solo.io
+  tcp.options.gloo.solo.io.HeaderValueOption:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#HeaderValueOption
+    package: tcp.options.gloo.solo.io
   tcp.options.gloo.solo.io.TcpProxySettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#TcpProxySettings
     package: tcp.options.gloo.solo.io
