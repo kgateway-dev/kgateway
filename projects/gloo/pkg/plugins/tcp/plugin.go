@@ -251,7 +251,23 @@ func convertToEnvoyTunnelingConfig(config *tcp.TcpProxySettings_TunnelingConfig)
 	if config == nil {
 		return nil
 	}
+
 	return &envoytcp.TcpProxy_TunnelingConfig{
-		Hostname: config.GetHostname(),
+		Hostname:     config.GetHostname(),
+		HeadersToAdd: convertToEnvoyHeaderValueOption(config.HeadersToAdd),
 	}
+}
+
+func convertToEnvoyHeaderValueOption(hvos []*tcp.HeaderValueOption) []*envoy_config_core_v3.HeaderValueOption {
+	headersToAdd := make([]*envoy_config_core_v3.HeaderValueOption, len(hvos))
+	for i, hv := range hvos {
+		ehvo := envoy_config_core_v3.HeaderValueOption{}
+		ehvo.Append = hv.Append
+		ehvo.Header = &envoy_config_core_v3.HeaderValue{
+			Key:   hv.Header.Key,
+			Value: hv.Header.Value,
+		}
+		headersToAdd[i] = &ehvo
+	}
+	return headersToAdd
 }

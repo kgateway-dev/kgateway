@@ -10766,7 +10766,7 @@ spec:
                                             type: integer
                                           tunnelingConfig:
                                             properties:
-                                              headerToAdd:
+                                              headersToAdd:
                                                 items:
                                                   properties:
                                                     append:
@@ -12430,7 +12430,7 @@ spec:
                                   type: integer
                                 tunnelingConfig:
                                   properties:
-                                    headerToAdd:
+                                    headersToAdd:
                                       items:
                                         properties:
                                           append:

@@ -56,14 +56,14 @@ Configuration for tunneling TCP over other transports or application layers.
 
 ```yaml
 "hostname": string
-"headerToAdd": []tcp.options.gloo.solo.io.HeaderValueOption
+"headersToAdd": []tcp.options.gloo.solo.io.HeaderValueOption
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `hostname` | `string` | The hostname to send in the synthesized CONNECT headers to the upstream proxy. |
-| `headerToAdd` | [[]tcp.options.gloo.solo.io.HeaderValueOption](../tcp.proto.sk/#headervalueoption) | Additional request headers to be sent to upstream proxy. Mainly used to trigger upstream to convert POST request back to CONNECT requests. |
+| `headersToAdd` | [[]tcp.options.gloo.solo.io.HeaderValueOption](../tcp.proto.sk/#headervalueoption) | Additional request headers to be sent to upstream proxy. Mainly used to trigger upstream to convert POST request back to CONNECT requests. |
 
 
 
