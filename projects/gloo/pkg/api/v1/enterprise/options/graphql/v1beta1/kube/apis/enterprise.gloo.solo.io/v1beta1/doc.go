@@ -8,6 +8,6 @@
 
 */
 
-// Package v1alpha1 is the v1alpha1 version of the API.
+// Package v1beta1 is the v1beta1 version of the API.
 // +groupName=enterprise.gloo.solo.io
-package v1alpha1
+package v1beta1
