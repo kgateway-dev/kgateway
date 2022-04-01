@@ -18,6 +18,7 @@ The presence of `xds-relay` intermediary pods serve two purposes. First, it sepa
    helm repo add xds-relay https://storage.googleapis.com/xds-relay-helm
    helm repo upgrade
    helm install xdsrelay xds-relay/xds-relay
+   ```
 
 2. Optional: Modify the default values for the `xds-relay` chart, such as to add resource requests and limits.
 ```yaml
