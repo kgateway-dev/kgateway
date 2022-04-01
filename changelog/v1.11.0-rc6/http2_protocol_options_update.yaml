@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5472
+    description: Removed references to deprecated envoy.config.cluster.v3.Cluster.http2_protocol_options in gloo/projects/gloo/pkg/plugins/protocoloptions/plugin.go. These references have been replaced with envoy.config.cluster.v3.Cluster.typed_extension_protocol_options.
