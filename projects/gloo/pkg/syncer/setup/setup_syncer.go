@@ -810,7 +810,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
-	graphqlApiFactory, err := bootstrap.ConfigFactoryForSettings(params, v1alpha1.GraphQLApiCrd)
+	graphqlApiFactory, err := bootstrap.ConfigFactoryForSettings(params, v1beta1.GraphQLApiCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
