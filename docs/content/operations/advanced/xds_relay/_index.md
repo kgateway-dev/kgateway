@@ -54,7 +54,7 @@ bootstrap:
 #  k: v
 ```
 
-3. [Install Gloo Edge]({{< versioned_link_path fromRoot="/installation/enterprise/ >}}) with the following Helm values to point each Envoy proxy (envoy) to `xds-relay`.
+3. [Install Gloo Edge]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}) with the following Helm values to point each Envoy proxy (envoy) to `xds-relay`.
 ```yaml
 gatewayProxies:
   gatewayProxy: # do the following for each gateway proxy
