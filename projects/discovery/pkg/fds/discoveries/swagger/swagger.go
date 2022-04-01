@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
+
 	"github.com/go-openapi/loads"
 	openapi "github.com/go-openapi/spec"
 	"github.com/go-openapi/swag"
@@ -19,7 +21,6 @@ import (
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	rest_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 )
@@ -46,7 +47,7 @@ type SwaggerFunctionDiscoveryFactory struct {
 	DetectionTimeout time.Duration
 	FunctionPollTime time.Duration
 	SwaggerUrisToTry []string
-	GraphqlClient    v1alpha1.GraphQLApiClient
+	GraphqlClient    v1beta1.GraphQLApiClient
 }
 
 func (f *SwaggerFunctionDiscoveryFactory) NewFunctionDiscovery(u *v1.Upstream, _ fds.AdditionalClients) fds.UpstreamFunctionDiscovery {
