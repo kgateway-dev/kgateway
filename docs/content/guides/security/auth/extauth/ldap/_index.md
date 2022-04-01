@@ -280,7 +280,7 @@ request that needs to be authenticated with LDAP:
    [special characters](https://ldapwiki.com/wiki/DN%20Escape%20Values) will be removed from the username before performing 
    the bind operation; this is done to prevent injection attacks.
 4. If the operation fails, it means that the user is unknown or their credentials are incorrect; return a `401` response
-5. Issue a search operation for the user entry (with a [`base` scope](https://ldapwiki.com/wiki/BaseObject)) and look 
+5. Issue a search operation using the `searchFilter` filter for the user entry (with a [`base` scope](https://ldapwiki.com/wiki/BaseObject)) and look 
    for an attribute with a name equal to `membershipAttributeName` on the user entry.
 6. Check if one of the values for the attribute matches one of the `allowedGroups`; if so, allow the request, otherwise return a `403` response.
 

@@ -1638,7 +1638,7 @@ func (m *Ldap) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetPresenceFilter(), target.GetPresenceFilter()) != 0 {
+	if strings.Compare(m.GetSearchFilter(), target.GetSearchFilter()) != 0 {
 		return false
 	}
 

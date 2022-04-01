@@ -99,7 +99,7 @@ spec:
                               nullable: true
                               type: integer
                           type: object
-                        presenceFilter:
+                        searchFilter:
                           type: string
                         userDnTemplate:
                           type: string
