@@ -549,6 +549,45 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	switch m.RateLimitEarlyConfigType.(type) {
+
+	case *VirtualHostOptions_RatelimitEarly:
+		if _, ok := target.RateLimitEarlyConfigType.(*VirtualHostOptions_RatelimitEarly); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRatelimitEarly()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRatelimitEarly()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRatelimitEarly(), target.GetRatelimitEarly()) {
+				return false
+			}
+		}
+
+	case *VirtualHostOptions_RateLimitEarlyConfigs:
+		if _, ok := target.RateLimitEarlyConfigType.(*VirtualHostOptions_RateLimitEarlyConfigs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRateLimitEarlyConfigs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRateLimitEarlyConfigs()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRateLimitEarlyConfigs(), target.GetRateLimitEarlyConfigs()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.RateLimitEarlyConfigType != target.RateLimitEarlyConfigType {
+			return false
+		}
+	}
+
 	switch m.RateLimitConfigType.(type) {
 
 	case *VirtualHostOptions_Ratelimit:
@@ -914,6 +953,45 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 	default:
 		// m is nil but target is not nil
 		if m.HostRewriteType != target.HostRewriteType {
+			return false
+		}
+	}
+
+	switch m.RateLimitEarlyConfigType.(type) {
+
+	case *RouteOptions_RatelimitEarly:
+		if _, ok := target.RateLimitEarlyConfigType.(*RouteOptions_RatelimitEarly); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRatelimitEarly()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRatelimitEarly()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRatelimitEarly(), target.GetRatelimitEarly()) {
+				return false
+			}
+		}
+
+	case *RouteOptions_RateLimitEarlyConfigs:
+		if _, ok := target.RateLimitEarlyConfigType.(*RouteOptions_RateLimitEarlyConfigs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRateLimitEarlyConfigs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRateLimitEarlyConfigs()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRateLimitEarlyConfigs(), target.GetRateLimitEarlyConfigs()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.RateLimitEarlyConfigType != target.RateLimitEarlyConfigType {
 			return false
 		}
 	}

@@ -345,6 +345,17 @@ message GraphQLApi {
   // Safelist: only allow queries to be executed that match these sha256 hashes.
   // The hash can be computed from the query string or provided (i.e. persisted queries).
   repeated string allowed_query_hashes = 5;
+
+  message GraphQLApiOptions {
+    // If true, includes information about request and response in the gateway-proxy debug and trace logs.
+    // This is useful when debugging but is not recommended for security and performance reasons in
+    // production scenarios.
+    // Defaults to false.
+    bool log_sensitive_info = 1;
+  }
+
+  // Options that apply to this GraphQLApi.
+  GraphQLApiOptions options = 8;
 }
 
 // This message specifies Persisted Query Cache configuration.
@@ -389,6 +400,50 @@ message ExecutableSchema {
 message Executor {
   // Execute schema using resolvers.
   message Local {
+    message LocalExecutorOptions {
+      // Max GraphQL operation (query/mutation/subscription) depth. This sets a limitation on the max nesting on a query that runs against this schema.
+      // any GraphQL operation that runs past the `max_depth` will add an error message to the response and will return as `null`.
+      // As as simple example, if the schema is
+      // ```gql
+      // type Query {
+      //   employee: Employee
+      // }
+      //
+      // type Employee {
+      //   manager: Employee
+      //   name: String
+      // }
+      // ```
+      // and we set a `max_depth` of `3` and we run a query
+      // ```gql
+      // query {             # query depth : 0
+      //   employee {        # query depth : 1
+      //     manager {       # query depth : 2
+      //       name          # query depth : 3
+      //       manager {     # query depth : 3
+      //         name        # query depth : 4
+      //       }
+      //     }
+      //   }
+      // }
+      // ```
+      // the graphql server will respond with a response:
+      // ```json
+      // { "data" : {
+      //     "employee" : {
+      //       "manager" : {
+      //         "name" : "Manager 1",
+      //         "manager"  : {
+      //           "name" : null
+      //   }}}},
+      //   "errors": [
+      //      {"message": "field 'name' exceeds the max operation depth of 3 for this schema"}
+      //    ]
+      // }
+      // If not configured, or the value is 0, the query depth will be unbounded.
+      google.protobuf.UInt32Value max_depth = 1;
+    }
+
     /* Mapping of resolver name to resolver definition.
      The names are used to reference the resolver in the graphql schema.
      For example, a resolver with name "authorResolver" can be defined as
@@ -412,6 +467,9 @@ message Executor {
     // Do we enable introspection for the schema? general recommendation is to
     // disable this for production and hence it defaults to false.
     bool enable_introspection = 2;
+
+    // Options that apply to this local executable schema
+    LocalExecutorOptions options = 3;
   }
 
   oneof executor {

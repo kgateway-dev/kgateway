@@ -281,6 +281,16 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetUuidRequestIdConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUuidRequestIdConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUuidRequestIdConfig(), target.GetUuidRequestIdConfig()) {
+			return false
+		}
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
@@ -356,6 +366,50 @@ func (m *HttpConnectionManagerSettings_SetCurrentClientCertDetails) Equal(that i
 
 	if m.GetUri() != target.GetUri() {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HttpConnectionManagerSettings_UuidRequestIdConfigSettings)
+	if !ok {
+		that2, ok := that.(HttpConnectionManagerSettings_UuidRequestIdConfigSettings)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetPackTraceReason()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPackTraceReason()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPackTraceReason(), target.GetPackTraceReason()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetUseRequestIdForTraceSampling()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUseRequestIdForTraceSampling()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUseRequestIdForTraceSampling(), target.GetUseRequestIdForTraceSampling()) {
+			return false
+		}
 	}
 
 	return true

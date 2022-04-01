@@ -41,68 +41,6 @@ gloo:
       alwaysAcceptResources: false # reject invalid resources
       warnRouteShortCircuiting: true
 ```
-<!--Commenting out as it’s still an experimental feature and should not be used/recommended in the docs for production until the fetaure is GA. See https://solo-io-corp.slack.com/archives/CHJV572TG/p1645032058593229 
-
-### xDS Relay
-
-{{% notice warning %}}
-This feature is not supported for the following non-default installation modes of Gloo Edge: REST Endpoint Discovery (EDS), Gloo Edge mTLS mode, Gloo Edge with Istio mTLS mode
-{{% /notice %}}
-
-To protect against control plane downtime, you can install Gloo Edge alongside the `xds-relay` Helm chart. This Helm chart installs a deployment of `xds-relay` pods that serve as intermediaries between Envoy proxies and the xDS server of Gloo Edge.
-
-The presence of `xds-relay` intermediary pods serve two purposes. First, it separates the lifecycle of Gloo Edge from the xDS cache proxies. For example, a failure during a Helm upgrade will not cause the loss of the last valid xDS state. Second, it allows you to scale `xds-relay` to as many replicas as needed, since Gloo Edge uses only one replica. Without `xds-relay`, a failure of the single Gloo Edge replica causes any new Envoy proxies to be created without a valid configuration.
-
-
-To enable:
-
-Install the xds-relay Helm chart, which supports version 2 and 3 of the Envoy API:
-  - `helm repo add xds-relay https://storage.googleapis.com/xds-relay-helm`
-  - `helm install xdsrelay xds-relay/xds-relay`
-
-If needed, change the default values for the xds-relay chart:
-```yaml
-deployment:
-  replicas: 3
-  image:
-    pullPolicy: IfNotPresent
-    registry: gcr.io/gloo-edge
-    repository: xds-relay
-    tag: %version%
-# might want to set resources for prod deploy, e.g.:
-#  resources:
-#    requests:
-#      cpu: 125m
-#      memory: 256Mi
-service:
-  port: 9991
-bootstrap:
-  cache:
-    # zero means no limit
-    ttl: 0s
-    # zero means no limit
-    maxEntries: 0
-  originServer:
-    address: gloo.gloo-system.svc.cluster.local
-    port: 9977
-    streamTimeout: 5s
-  logging:
-    level: INFO
-# might want to add extra, non-default identifiers
-#extraLabels:
-#  k: v
-#extraTemplateAnnotations:
-#  k: v
-```
-
-- Install Gloo Edge with the following helm values for each proxy (envoy) to point them towards xds-relay:
-```yaml
-gatewayProxies:
-  gatewayProxy: # do the following for each gateway proxy
-    xdsServiceAddress: xds-relay.default.svc.cluster.local
-    xdsServicePort: 9991
-```
--->
 
 ## Performance tips
 
@@ -165,7 +103,7 @@ You can also patch the `default` *Settings* CR with this value and delete the `d
 Optionally, you may choose to enable Envoy's gzip filter through Gloo Edge. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
 
 ### Set up an EDS warming timeout
-Set up the endpoints warming timeout to a non-zero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/1.3.0/#recommended-settings" %}}).
+Set up the endpoints warming timeout to a non-zero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/v1.3/#recommended-settings" %}}).
 
 
 ## Access Logging

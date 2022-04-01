@@ -82,6 +82,14 @@ var _ = Describe("Ssl", func() {
 				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
 				Expect(vctx.MatchSubjectAltNames).To(Equal(verifySanListToMatchSanList(upstreamCfg.VerifySubjectAltName)))
 			})
+
+			It("should _not_ error with only a rootca", func() {
+				// rootca, tlscert, and tlskey are set in a beforeEach.  Explicitly UNsetting cert+key:
+				upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.TlsCert = ""
+				upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.TlsKey = ""
+				_, err := resolveCommonSslConfig(upstreamCfg, nil)
+				Expect(err).NotTo(HaveOccurred())
+			})
 		})
 	})
 	Context("secret", func() {

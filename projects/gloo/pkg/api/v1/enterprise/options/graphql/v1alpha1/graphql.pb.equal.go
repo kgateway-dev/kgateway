@@ -603,6 +603,16 @@ func (m *GraphQLApi) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
+			return false
+		}
+	}
+
 	switch m.Schema.(type) {
 
 	case *GraphQLApi_ExecutableSchema:
@@ -906,6 +916,34 @@ func (m *MockResolver_AsyncResponse) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *GraphQLApi_GraphQLApiOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GraphQLApi_GraphQLApiOptions)
+	if !ok {
+		that2, ok := that.(GraphQLApi_GraphQLApiOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetLogSensitiveInfo() != target.GetLogSensitiveInfo() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Executor_Local) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -945,6 +983,50 @@ func (m *Executor_Local) Equal(that interface{}) bool {
 
 	if m.GetEnableIntrospection() != target.GetEnableIntrospection() {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Executor_Local_LocalExecutorOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Executor_Local_LocalExecutorOptions)
+	if !ok {
+		that2, ok := that.(Executor_Local_LocalExecutorOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetMaxDepth()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxDepth()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxDepth(), target.GetMaxDepth()) {
+			return false
+		}
 	}
 
 	return true

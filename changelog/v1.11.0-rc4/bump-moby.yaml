@@ -1,0 +1,8 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: moby
+    dependencyRepo: moby
+    dependencyTag: v20.10.14
+    description: Fix for CVE-2014-9356 (https://avd.aquasec.com/nvd/2014/cve-2014-9356/)
+    issueLink: https://github.com/solo-io/solo-projects/issues/3259
+    resolvesIssue: false

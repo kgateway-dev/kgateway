@@ -2375,6 +2375,10 @@ func (m *UserSession_CookieOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetSameSite() != target.GetSameSite() {
+		return false
+	}
+
 	if strings.Compare(m.GetDomain(), target.GetDomain()) != 0 {
 		return false
 	}

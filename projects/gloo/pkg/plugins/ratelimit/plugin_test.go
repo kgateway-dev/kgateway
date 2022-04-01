@@ -3,6 +3,8 @@ package ratelimit_test
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
@@ -25,29 +27,55 @@ import (
 )
 
 var _ = Describe("RateLimit Plugin", func() {
+
 	var (
-		rlSettings *ratelimitpb.Settings
-		initParams plugins.InitParams
-		params     plugins.Params
-		rlPlugin   plugins.HttpFilterPlugin
-		ref        *core.ResourceRef
+		rlSettings       *ratelimitpb.Settings
+		initParams       plugins.InitParams
+		params           plugins.Params
+		rlPlugin         plugins.HttpFilterPlugin
+		rlServerRef      *core.ResourceRef
+		extAuthServerRef *core.ResourceRef
 	)
 
 	BeforeEach(func() {
 		rlPlugin = NewPlugin()
-		ref = &core.ResourceRef{
-			Name:      "test",
-			Namespace: "test",
+		rlServerUpstream := &gloov1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "rl-upstream",
+				Namespace: "ns",
+			},
+			UpstreamType: &gloov1.Upstream_Static{
+				Static: &static.UpstreamSpec{
+					Hosts: []*static.Host{{
+						Addr: "ratelimit-default",
+						Port: 1234,
+					}},
+				},
+			},
 		}
 
+		rlServerRef = rlServerUpstream.GetMetadata().Ref()
 		rlSettings = &ratelimitpb.Settings{
-			RatelimitServerRef:  ref,
+			RatelimitServerRef:  rlServerRef,
 			RateLimitBeforeAuth: true,
 		}
 		initParams = plugins.InitParams{
 			Settings: &gloov1.Settings{},
 		}
-		params.Snapshot = &gloov1snap.ApiSnapshot{}
+
+		extAuthServerUpstream := &gloov1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "extauth-upstream",
+				Namespace: "ns",
+			},
+		}
+		extAuthServerRef = extAuthServerUpstream.GetMetadata().Ref()
+		params.Snapshot = &gloov1snap.ApiSnapshot{
+			Upstreams: []*gloov1.Upstream{
+				rlServerUpstream,
+				extAuthServerUpstream,
+			},
+		}
 	})
 
 	JustBeforeEach(func() {
@@ -57,14 +85,6 @@ var _ = Describe("RateLimit Plugin", func() {
 	})
 
 	It("should get rate limit server settings first from the listener, then from the global settings", func() {
-		params.Snapshot.Upstreams = []*gloov1.Upstream{
-			{
-				Metadata: &core.Metadata{
-					Name:      "extauth-upstream",
-					Namespace: "ns",
-				},
-			},
-		}
 		initParams.Settings = &gloov1.Settings{}
 		err := rlPlugin.Init(initParams)
 		Expect(err).NotTo(HaveOccurred())
@@ -83,7 +103,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		Expect(filters[0].HttpFilter.Name).To(Equal(wellknown.HTTPRateLimit))
 	})
 
-	It("should fave fail mode deny off by default", func() {
+	It("should have fail mode deny off by default", func() {
 
 		filters, err := rlPlugin.HttpFilters(params, nil)
 		Expect(err).NotTo(HaveOccurred())
@@ -96,16 +116,16 @@ var _ = Describe("RateLimit Plugin", func() {
 
 		hundredms := DefaultTimeout
 		expectedConfig := &envoyratelimit.RateLimit{
-			Domain:          "custom",
+			Domain:          CustomDomain,
 			FailureModeDeny: false,
-			Stage:           1,
+			Stage:           3,
 			Timeout:         hundredms,
 			RequestType:     "both",
 			RateLimitService: &rlconfig.RateLimitServiceConfig{
 				TransportApiVersion: envoycore.ApiVersion_V3,
 				GrpcService: &envoycore.GrpcService{TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
 					EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-						ClusterName: translator.UpstreamToClusterName(ref),
+						ClusterName: translator.UpstreamToClusterName(rlServerRef),
 					},
 				}},
 			},
@@ -127,25 +147,15 @@ var _ = Describe("RateLimit Plugin", func() {
 	})
 
 	Context("rate limit ordering", func() {
+
 		JustBeforeEach(func() {
 			timeout := prototime.DurationToProto(time.Second)
-			params.Snapshot.Upstreams = []*gloov1.Upstream{
-				{
-					Metadata: &core.Metadata{
-						Name:      "extauth-upstream",
-						Namespace: "ns",
-					},
-				},
-			}
 			rlSettings.RateLimitBeforeAuth = true
 			initParams.Settings = &gloov1.Settings{
 				RatelimitServer: rlSettings,
 				Extauth: &extauthv1.Settings{
-					ExtauthzServerRef: &core.ResourceRef{
-						Name:      "extauth-upstream",
-						Namespace: "ns",
-					},
-					RequestTimeout: timeout,
+					ExtauthzServerRef: extAuthServerRef,
+					RequestTimeout:    timeout,
 				},
 			}
 			err := rlPlugin.Init(initParams)
@@ -177,7 +187,7 @@ var _ = Describe("RateLimit Plugin", func() {
 			rlSettings.DenyOnFail = true
 		})
 
-		It("should fave fail mode deny on", func() {
+		It("should have fail mode deny on", func() {
 			filters, err := rlPlugin.HttpFilters(params, nil)
 			Expect(err).NotTo(HaveOccurred())
 
