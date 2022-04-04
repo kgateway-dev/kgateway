@@ -57,7 +57,7 @@ Define a new GraphQL API by using the UI.
 
 1. From the **APIs** overview page, click **Create API**.
    1. Enter a name for the API.
-   2. Select an excecutable API, such as for REST or gRPC services, or a stitched API, TODO
+   2. Select an excecutable API, such as for REST or gRPC services, or a stitched API, [TODO]
    3. Click **Upload Schema** to add a `.gql` configuration file.
 2. Click **Create API**. The details page for the API opens.
 3. If no resolvers are defined, you might see a warning. To define a resolver:
