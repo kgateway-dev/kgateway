@@ -259,6 +259,9 @@ func convertToEnvoyTunnelingConfig(config *tcp.TcpProxySettings_TunnelingConfig)
 }
 
 func convertToEnvoyHeaderValueOption(hvos []*tcp.HeaderValueOption) []*envoy_config_core_v3.HeaderValueOption {
+	if len(hvos) == 0 {
+		return nil
+	}
 	headersToAdd := make([]*envoy_config_core_v3.HeaderValueOption, len(hvos))
 	for i, hv := range hvos {
 		ehvo := envoy_config_core_v3.HeaderValueOption{}

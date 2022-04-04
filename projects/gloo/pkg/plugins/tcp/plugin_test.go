@@ -160,11 +160,14 @@ var _ = Describe("Plugin", func() {
 			Expect(cfg.IdleTimeout).To(matchers.MatchProto(tcps.IdleTimeout))
 			Expect(cfg.MaxConnectAttempts).To(matchers.MatchProto(tcps.MaxConnectAttempts))
 			Expect(cfg.TunnelingConfig.GetHostname()).To(Equal(tcps.TunnelingConfig.GetHostname()))
+
 			hta := cfg.TunnelingConfig.HeadersToAdd
 			Expect(len(hta)).To(Equal(1))
-			Expect(hta[0].Header.Key).To(Equal(tcps.TunnelingConfig.HeadersToAdd[0].Header.Key))
-			Expect(hta[0].Header.Value).To(Equal(tcps.TunnelingConfig.HeadersToAdd[0].Header.Value))
-			Expect(hta[0].Append.Value).To(Equal(tcps.TunnelingConfig.HeadersToAdd[0].Append.Value))
+
+			tcpHeaders := tcps.TunnelingConfig.HeadersToAdd[0]
+			Expect(hta[0].Header.Key).To(Equal(tcpHeaders.Header.Key))
+			Expect(hta[0].Header.Value).To(Equal(tcpHeaders.Header.Value))
+			Expect(hta[0].Append.Value).To(Equal(tcpHeaders.Append.Value))
 		})
 
 		It("can transform a single destination", func() {
