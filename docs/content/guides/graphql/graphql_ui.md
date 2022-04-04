@@ -21,11 +21,12 @@ The Gloo Edge UI is served from the `gloo-fed-console` service on port 8090. For
      ```
 2. Open your browser and connect to [http://localhost:8090](http://localhost:8090).
 3. Optional: If authentication is enabled, sign in.
-4. In the navigation bar, click **APIs**. The GraphQL API schemas in your Gloo Edge environment are listed.
-5. Review the overview details for each API, such as the namespace it is deployed in, the number of resolvers defined in the API, and the current status of the API.
-6. In the **Actions** column, you can optionally download the configuration files for the API, or delete the API configuration from your environment.
+4. In the navigation bar, click **APIs**. The GraphQL, REST, and gRPC APIs in your Gloo Edge environment are listed.
+5. Under _API Type_, select the GraphQL filter.
+6. Review the overview details for each API, such as the namespace it is deployed in, the number of resolvers defined in the API, and the current status of the API.
+7. In the **Actions** column, you can optionally download the configuration files for the API<!--, or delete the API configuration from your environment-->.
 
-![GraphQL APIs overview screenshot]({{% versioned_link_path fromRoot="/img/screenshots/TODO.png" %}})
+![GraphQL APIs overview screenshot]({{% versioned_link_path fromRoot="/img/screenshots/graphql_ov.png" %}})
 
 ## Review GraphQL API details
 
@@ -37,7 +38,7 @@ Review the details of a GraphQL API, including its configuration, the resolvers 
    * _Schema_: To review the defined fields and values, click to expand each section. For example, you can expand a "Query" section to review the field names that are defined in the GraphQL query, the type of data returned by each field, and the resolver that processes the request and returns the data. Additionally, you can filter the displayed fields by using the search bar.
    * _Upstreams_: To review the upstream services that the GraphQL server exposes, click the name of one of the listed services. The **Upstreams** page for the service opens. For more information about the upstream services page, see [Exploring Virtual Services and Upstreams]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/#exploring-virtual-services-and-upstreams" >}}).
 
-![GraphQL APIs details screenshot]({{% versioned_link_path fromRoot="/img/screenshots/TODO.png" %}})
+![GraphQL APIs details screenshot]({{% versioned_link_path fromRoot="/img/screenshots/graphql_details.png" %}})
 
 ## Test GraphQL API functionality
 
@@ -45,11 +46,9 @@ Explore the functionality of an API by sending sample queries.
 
 1. From the **APIs** overview page, click the name of a GraphQL API schema.
 2. Click the **Explore** tab.
-3. In the query panel, you can specify example requests to send to the GraphQL API. The GraphiQL interface includes autocomplete based on the fields defined in your API configuration. For example, you might select one of your defined queries, and the fields within the query that you want data for.
-4. Click the **Run** button, which sends the request, and returns the response in the middle panel.
-5. You can also explore the documentation for the API by using the Documentation Explorer panel.
-
-![GraphQL APIs explore screenshot]({{% versioned_link_path fromRoot="/img/screenshots/TODO.png" %}})
+3. In the GraphiQL panel, you can specify example requests to send to the GraphQL API. The GraphiQL interface includes autocomplete based on the fields defined in your API configuration. For example, you might select one of your defined queries, and the fields within the query that you want data for.
+4. Click the play button, which sends the request, and returns the response in the middle panel.
+5. You can also explore the documentation for the API by clicking the **< Docs** buton to expand the Documentation Explorer panel.
 
 ## Create a GraphQL API
 
@@ -57,7 +56,7 @@ Define a new GraphQL API by using the UI.
 
 1. From the **APIs** overview page, click **Create API**.
    1. Enter a name for the API.
-   2. Select an excecutable API, such as for REST or gRPC services, or a stitched API, [TODO]
+   <!--2. Select an excecutable API, such as for REST or gRPC services, or a stitched API, [TODO]-->
    3. Click **Upload Schema** to add a `.gql` configuration file.
 2. Click **Create API**. The details page for the API opens.
 3. If no resolvers are defined, you might see a warning. To define a resolver:
@@ -69,6 +68,6 @@ Define a new GraphQL API by using the UI.
    6. Click **Submit**.
    7. You can optonally click the **View Raw Config** button to verify that the resolver was added to your configuration.
    8. Repeat these steps to define a resolver for each configuration field.
-4. To apply changes to your API configuration, toggle **Schema Introspection**, and click **Update**.
+<!--4. To apply changes to your API configuration, toggle **Schema Introspection**, and click **Update**.-->
 
-![GraphQL API creation screenshot]({{% versioned_link_path fromRoot="/img/screenshots/TODO.png" %}})
+![GraphQL API resolver configuration screenshot]({{% versioned_link_path fromRoot="/img/screenshots/graphql_resolver.png" %}})
