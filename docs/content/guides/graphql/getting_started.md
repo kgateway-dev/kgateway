@@ -10,13 +10,9 @@ Set up API gateway and GraphQL server functionality for your apps in the same pr
 This feature is available only in Gloo Edge Enterprise version 1.10.0 and later.
 {{% /notice %}}
 
-{{% notice warning %}}
-This is an alpha feature. Do not use this feature in a production environment.
-{{% /notice %}}
-
 ## Step 1: Install GraphQL
 
-GraphQL resolution is an alpha feature included in Gloo Edge Enterprise version 1.10.0 and later.
+GraphQL resolution is included in Gloo Edge Enterprise version 1.10.0 and later.
 
 1. [Contact your account representative](https://www.solo.io/company/talk-to-an-expert/) to request a Gloo Edge Enterprise license that specifically enables the GraphQL capability.
 
@@ -155,7 +151,7 @@ In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backe
    kubectl get upstream -n gloo-system
    ```
 
-3. Check out the contents of the following Gloo Edge GraphQL API CRD. Specifically, take a look at the `restResolver` and `schema_definition` sections.
+3. Check out the contents of the following Gloo Edge GraphQL API CRD. Specifically, take a look at the `restResolver` and `schemaDefinition` sections.
    ```sh
    curl https://raw.githubusercontent.com/solo-io/graphql-bookinfo/main/kubernetes/bookinfo-gql.yaml
    ```
@@ -172,9 +168,9 @@ In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backe
              name: default-productpage-9080
              namespace: gloo-system
      ```
-   * `schema_definition`: A schema definition determines what kind of data can be returned to a client that makes a GraphQL query to your endpoint. The schema specifies the data that a particular `type`, or service, returns in response to a GraphQL query. In this example, fields are defined for the three Bookinfo services, Product, Review, and Rating. Additionally, the schema definition indicates which services reference the resolvers. In this example, the Product service references the `Query|productForHome` resolver. 
+   * `schemaDefinition`: A schema definition determines what kind of data can be returned to a client that makes a GraphQL query to your endpoint. The schema specifies the data that a particular `type`, or service, returns in response to a GraphQL query. In this example, fields are defined for the three Bookinfo services, Product, Review, and Rating. Additionally, the schema definition indicates which services reference the resolvers. In this example, the Product service references the `Query|productForHome` resolver. 
      ```yaml
-     schema_definition: |
+     schemaDefinition: |
        type Query {
          productsForHome: [Product] @resolve(name: "Query|productsForHome")
        }

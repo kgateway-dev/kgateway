@@ -1,0 +1,56 @@
+---
+title: GraphQL UI
+weight: 20
+description: Visualize your GraphQL API and services in the GraphQL UI.
+---
+
+## List GraphQL APIs in the Gloo Edge UI
+
+The Gloo Edge UI is served from the `gloo-fed-console` service on port 8090. For more information about how to use the UI, see [Read-only Console]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/" >}}).
+
+1. Open the Gloo Mesh UI.
+   * `glooctl`: For more information, see the [CLI documentation]({{< versioned_link_path fromRoot="/reference/cli/glooctl_dashboard/" >}}).
+     ```shell
+     glooctl dashboard
+     ```
+   * `kubectl`: Port-forward the `gloo-mesh-ui` service on 8090.
+     ```shell
+     kubectl port-forward svc/gloo-fed-console -n gloo-system 8090:8090
+     ```
+2. Open your browser and connect to [http://localhost:8090](http://localhost:8090).
+3. Optional: If authentication is enabled, sign in.
+4. In the navigation bar, click **APIs**. The GraphQL API schemas in your Gloo Edge environment are listed.
+5. Review the overview details for each API, such as the namespace it is deployed in, the number of resolvers defined in the API, and the current status of the API.
+6. In the **Actions** column, you can optionally download the configuration files for the API, or delete the API configuration from your environment.
+
+![GraphQL APIs overview screenshot]({{% versioned_link_path fromRoot="/img/screenshots/TODO.png" %}})
+
+## Review GraphQL API details
+
+Review the details of a GraphQL API, including its configuration, the resolvers for each query, and more.
+
+1. From the list of GraphQL APIs, click the name of a GraphQL API schema.
+2. In the **API Details** tab, you can view the _Configuration_ and the _Upstreams_ for the API.
+   * _Configuration_: To review the defined fields and values, click to expand each section. For example, you can expand a "Query" section to review the field names that are defined in the GraphQL query, the type of data returned by each field, and the resolver that processes the request and returns the data. You can also click the **View Raw Config** button to view the raw configuration in the UI, and the **<file-name>.yaml** button to download the configuration YAML file.
+   * _Upstreams_: To review the upstream services that the GraphQL server exposes, click the name of one of the listed services. The **Upstreams** page for the service opens. For more information about the upstream services page, see [Exploring Virtual Services and Upstreams]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/#exploring-virtual-services-and-upstreams" >}}).
+
+## Explore GraphQL API functionality
+
+Explorer - invoking an API (similar to Try It Now in Portal)
+
+## Create a GraphQL API
+
+Define a new GraphQL API by using the UI.
+
+1. From the **APIs** overview page, click **Create API**.
+2. Enter a name for the API, and click **Upload Schema** to add a `.gql` configuration file.
+3. Click **Create API**. The details page for the API opens.
+4. If no resolvers are defined, you might see a warning. To define a resolver:
+   1. In the **API Details** tab, expand a configuration section.
+   2. In the **Resolver** column, click **Define Resolver**.
+   3. For the Resolver Type, choose a REST or gRPC resolver. 
+   4. For the Upstream, choose a service for the upstream reference. The drop-down list is populated by the upstream services that are currently defined in your Gloo Edge environment.
+   5. For the Resolver Config, fill out values for the provided fields. Note that you might not require all provided fields, and you can validate the syntax at any time by clicking **Validate**. For more information about how to configure each type of resolver, see [Manual schema configuration]({{< versioned_link_path fromRoot="/guides/graphql/resolver_config/" >}}).
+   6. Click **Submit**.
+   7. Repeat these steps to define a resolver for each configuration field.
+5. To apply changes to your API configuration, toggle **Schema Introspection**, and click **Update**.

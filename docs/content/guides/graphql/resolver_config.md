@@ -80,7 +80,7 @@ A schema definition determines what kind of data can be returned to a client tha
 In this example, fields are defined for the three Bookinfo services, Product, Review, and Rating. Additionally, the schema definition indicates which services reference the resolvers. In this example, the Product service references the `Query|productForHome` REST resolver.
 
 ```yaml
-schema_definition: |
+schemaDefinition: |
   type Query {
     productsForHome: [Product] @resolve(name: "Query|productsForHome")
   }
