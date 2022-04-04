@@ -1,4 +1,4 @@
-package setup_test
+package gloo_test
 
 import (
 	"context"
