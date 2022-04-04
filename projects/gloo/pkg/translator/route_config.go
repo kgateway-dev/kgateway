@@ -21,7 +21,6 @@ import (
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -266,10 +265,6 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		// DirectResponseAction supports header manipulation, so we want to process the corresponding plugin.
 		// See here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-directresponseaction
 		for _, plug := range h.pluginRegistry.GetRoutePlugins() {
-			if plug.Name() != headers.ExtensionName {
-				continue
-			}
-
 			if err := plug.ProcessRoute(params, in, out); err != nil {
 				if isWarningErr(err) {
 					continue
@@ -325,6 +320,19 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_RegexRewrite{
 					RegexRewrite: regex,
 				}
+			}
+		}
+
+		for _, plug := range h.pluginRegistry.GetRoutePlugins() {
+			if err := plug.ProcessRoute(params, in, out); err != nil {
+				if isWarningErr(err) {
+					continue
+				}
+				validation.AppendRouteError(routeReport,
+					validationapi.RouteReport_Error_ProcessingError,
+					fmt.Sprintf("%T: %v", plug, err.Error()),
+					out.GetName(),
+				)
 			}
 		}
 	}
