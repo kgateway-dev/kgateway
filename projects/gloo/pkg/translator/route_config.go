@@ -252,7 +252,6 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				)
 			}
 		}
-		h.runRoutePlugins(params, routeReport, in, out)
 
 	case *v1.Route_DirectResponseAction:
 		out.Action = &envoy_config_route_v3.Route_DirectResponse{
@@ -260,21 +259,6 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				Status: action.DirectResponseAction.GetStatus(),
 				Body:   DataSourceFromString(action.DirectResponseAction.GetBody()),
 			},
-		}
-
-		// DirectResponseAction supports header manipulation, so we want to process the corresponding plugin.
-		// See here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-directresponseaction
-		for _, plug := range h.pluginRegistry.GetRoutePlugins() {
-			if err := plug.ProcessRoute(params, in, out); err != nil {
-				if isWarningErr(err) {
-					continue
-				}
-				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v", plug, err.Error()),
-					out.GetName(),
-				)
-			}
 		}
 
 	case *v1.Route_GraphqlApiRef:
@@ -287,7 +271,6 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				},
 			},
 		}
-		h.runRoutePlugins(params, routeReport, in, out)
 
 	case *v1.Route_RedirectAction:
 		out.Action = &envoy_config_route_v3.Route_Redirect{
@@ -322,20 +305,8 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				}
 			}
 		}
-
-		for _, plug := range h.pluginRegistry.GetRoutePlugins() {
-			if err := plug.ProcessRoute(params, in, out); err != nil {
-				if isWarningErr(err) {
-					continue
-				}
-				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v", plug, err.Error()),
-					out.GetName(),
-				)
-			}
-		}
 	}
+	h.runRoutePlugins(params, routeReport, in, out)
 }
 
 func (h *httpRouteConfigurationTranslator) runRoutePlugins(
