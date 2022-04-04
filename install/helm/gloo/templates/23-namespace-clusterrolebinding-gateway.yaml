@@ -148,6 +148,8 @@ subjects:
   - kind: ServiceAccount
     name: discovery
     namespace: {{ .Release.Namespace }}
+{{- else }}
+  []
 {{- end}}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
