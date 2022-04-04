@@ -190,8 +190,21 @@ message VirtualHostOptions {
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
     ratelimit.options.gloo.solo.io.IngressRateLimit ratelimit_basic = 6;
 
-    oneof rate_limit_config_type {
+    oneof rate_limit_early_config_type {
+        // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
+        // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+        // Configure rate-limit *actions* here, which define how request characteristics get translated into
+        // descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
+        // their associated limits on the Gloo settings.
+        // Only one of `ratelimit_early` or `rate_limit_early_configs` can be set.
+        ratelimit.options.gloo.solo.io.RateLimitVhostExtension ratelimit_early = 72;
 
+        // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+        // Only one of `ratelimit_early` or `rate_limit_early_configs` can be set.
+        ratelimit.options.gloo.solo.io.RateLimitConfigRefs rate_limit_early_configs = 73;
+    }
+
+    oneof rate_limit_config_type {
         // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
         // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
         // Configure rate-limit *actions* here, which define how request characteristics get translated into
@@ -316,11 +329,25 @@ message RouteOptions {
     lbhash.options.gloo.solo.io.RouteActionHashConfig lb_hash = 12;
     // Route configuration for protocol upgrade requests.
     repeated protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig upgrades = 21;
+
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
     ratelimit.options.gloo.solo.io.IngressRateLimit ratelimit_basic = 13;
 
-    oneof rate_limit_config_type {
+    oneof rate_limit_early_config_type {
+        // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
+        // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+        // Configure rate-limit *actions* here, which define how request characteristics get translated into
+        // descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
+        // their associated limits on the Gloo settings.
+        // Only one of `ratelimit_early` or `rate_limit_early_configs` can be set.
+        ratelimit.options.gloo.solo.io.RateLimitRouteExtension ratelimit_early = 142;
 
+        // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+        // Only one of `ratelimit_early` or `rate_limit_early_configs` can be set.
+        ratelimit.options.gloo.solo.io.RateLimitConfigRefs rate_limit_early_configs = 143;
+    }
+
+    oneof rate_limit_config_type {
         // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
         // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
         // Configure rate-limit *actions* here, which define how request characteristics get translated into

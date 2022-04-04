@@ -49,7 +49,7 @@ spec:
     spec:
       containers:
         - name: http-extauth
-          image: quay.io/solo-io/passthrough-http-service-example
+          image: gcr.io/solo-public/passthrough-http-service-example
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9001
