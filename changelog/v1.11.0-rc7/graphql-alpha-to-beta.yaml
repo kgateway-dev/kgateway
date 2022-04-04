@@ -1,4 +1,4 @@
 changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/solo-projects/issues/3315
-    description: Moves graphql api from alpha to beta
+    description: Moving GraphQLApi custom resource from gloo apiVersion `v1alpha1` to `v1beta1`
