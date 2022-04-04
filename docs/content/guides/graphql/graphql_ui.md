@@ -36,6 +36,8 @@ Review the details of a GraphQL API, including its configuration, the resolvers 
    * _Configuration_: To review the defined fields and values, click to expand each section. For example, you can expand a "Query" section to review the field names that are defined in the GraphQL query, the type of data returned by each field, and the resolver that processes the request and returns the data. You can also click the **View Raw Config** button to view the raw configuration in the UI, and the **<file-name>.yaml** button to download the configuration YAML file.
    * _Upstreams_: To review the upstream services that the GraphQL server exposes, click the name of one of the listed services. The **Upstreams** page for the service opens. For more information about the upstream services page, see [Exploring Virtual Services and Upstreams]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/#exploring-virtual-services-and-upstreams" >}}).
 
+![GraphQL APIs details screenshot]({{% versioned_link_path fromRoot="/img/screenshots/TODO.png" %}})
+
 ## Test GraphQL API functionality
 
 Explore the functionality of an API by sending sample queries.
@@ -44,6 +46,8 @@ Explore the functionality of an API by sending sample queries.
 2. Click the **Explore** tab.
 3. In the query panel, you can specify example requests to send to the GraphQL API. The GraphiQL interface includes autocomplete based on the fields defined in your API configuration. For example, you might select one of your defined queries, and the fields within the query that you want data for.
 4. Click the play button, which sends the request, and returns the response in the middle panel.
+
+![GraphQL APIs explore screenshot]({{% versioned_link_path fromRoot="/img/screenshots/TODO.png" %}})
 
 ## Create a GraphQL API
 
@@ -61,3 +65,5 @@ Define a new GraphQL API by using the UI.
    6. Click **Submit**.
    7. Repeat these steps to define a resolver for each configuration field.
 5. To apply changes to your API configuration, toggle **Schema Introspection**, and click **Update**.
+
+![GraphQL API creation screenshot]({{% versioned_link_path fromRoot="/img/screenshots/TODO.png" %}})

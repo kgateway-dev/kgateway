@@ -18,7 +18,7 @@ For example, you can use the following commands to access the Envoy pod logs in 
   curl http://localhost:19000/stats/prometheus
   ```
 * Grafana:
-  ```
+  ```sh
   kubectl -n gloo-system port-forward deployment/glooe-grafana 3000
 
   open http://localhost:3000/
