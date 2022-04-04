@@ -55,7 +55,7 @@ resolutions:
 <!--
 ## gRPC resolvers
 
-**QUESTION need the actual fields for a grpcResolver** Relevant section in the Proto: https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto#L171
+**QUESTION need the actual fields for a grpcResolver** Relevant section in the Proto: https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto#L171
 
 ```yaml
 resolutions:
@@ -140,4 +140,4 @@ EOF
 
 ## Reference
 
-For more information, see the [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/" %}}).
+For more information, see the [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}}).
