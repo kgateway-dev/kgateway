@@ -26,7 +26,8 @@ The Gloo Edge UI is served from the `gloo-fed-console` service on port 8090. For
 6. Review the overview details for each API, such as the namespace it is deployed in, the number of resolvers defined in the API, and the current status of the API.
 7. In the **Actions** column, you can optionally download the configuration files for the API<!--, or delete the API configuration from your environment-->.
 
-![GraphQL APIs overview screenshot]({{% versioned_link_path fromRoot="/img/screenshots/graphql_ov.png" %}})
+<figure><img src="{{% versioned_link_path fromRoot="/img/screenshots/graphql_ov.png" %}}">
+<figcaption style="text-align:center;font-style:italic">Figure: GraphQL APIs overview</figcaption></figure>
 
 ## Review GraphQL API details
 
@@ -38,7 +39,8 @@ Review the details of a GraphQL API, including its configuration, the resolvers 
    * _Schema_: To review the defined fields and values, click to expand each section. For example, you can expand a "Query" section to review the field names that are defined in the GraphQL query, the type of data returned by each field, and the resolver that processes the request and returns the data. Additionally, you can filter the displayed fields by using the search bar.
    * _Upstreams_: To review the upstream services that the GraphQL server exposes, click the name of one of the listed services. The **Upstreams** page for the service opens. For more information about the upstream services page, see [Exploring Virtual Services and Upstreams]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/#exploring-virtual-services-and-upstreams" >}}).
 
-![GraphQL APIs details screenshot]({{% versioned_link_path fromRoot="/img/screenshots/graphql_details.png" %}})
+<figure><img src="{{% versioned_link_path fromRoot="/img/screenshots/graphql_details.png" %}}">
+<figcaption style="text-align:center;font-style:italic">Figure: GraphQL API details page</figcaption></figure>
 
 ## Test GraphQL API functionality
 
@@ -70,4 +72,5 @@ Define a new GraphQL API by using the UI.
    8. Repeat these steps to define a resolver for each configuration field.
 <!--4. To apply changes to your API configuration, toggle **Schema Introspection**, and click **Update**.-->
 
-![GraphQL API resolver configuration screenshot]({{% versioned_link_path fromRoot="/img/screenshots/graphql_resolver.png" %}})
+<figure><img src="{{% versioned_link_path fromRoot="/img/screenshots/graphql_resolver.png" %}}">
+<figcaption style="text-align:center;font-style:italic">Figure: GraphQL API resolver configuration</figcaption></figure>
