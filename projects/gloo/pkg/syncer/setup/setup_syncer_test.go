@@ -9,7 +9,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 
-	v1beta1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
