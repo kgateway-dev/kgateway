@@ -4,11 +4,13 @@ weight: 20
 description: Visualize your GraphQL API and services in the GraphQL UI.
 ---
 
+Use the Gloo Edge UI to review the health and configuration of your GraphQL APIs, test out your GraphQL API functionality, and create new GraphQL APIs.
+
 ## List GraphQL APIs in the Gloo Edge UI
 
-The Gloo Edge UI is served from the `gloo-fed-console` service on port 8090. For more information about how to use the UI, see [Read-only Console]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/" >}}).
+The Gloo Edge UI is served from the `gloo-fed-console` service on port 8090. For more information about how to use the UI, see the [UI documentation]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/" >}}).
 
-1. Open the Gloo Mesh UI.
+1. Open the Gloo Edge UI.
    * `glooctl`: For more information, see the [CLI documentation]({{< versioned_link_path fromRoot="/reference/cli/glooctl_dashboard/" >}}).
      ```shell
      glooctl dashboard
@@ -34,9 +36,14 @@ Review the details of a GraphQL API, including its configuration, the resolvers 
    * _Configuration_: To review the defined fields and values, click to expand each section. For example, you can expand a "Query" section to review the field names that are defined in the GraphQL query, the type of data returned by each field, and the resolver that processes the request and returns the data. You can also click the **View Raw Config** button to view the raw configuration in the UI, and the **<file-name>.yaml** button to download the configuration YAML file.
    * _Upstreams_: To review the upstream services that the GraphQL server exposes, click the name of one of the listed services. The **Upstreams** page for the service opens. For more information about the upstream services page, see [Exploring Virtual Services and Upstreams]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/#exploring-virtual-services-and-upstreams" >}}).
 
-## Explore GraphQL API functionality
+## Test GraphQL API functionality
 
-Explorer - invoking an API (similar to Try It Now in Portal)
+Explore the functionality of an API by sending sample queries.
+
+1. From the **APIs** overview page, click the name of a GraphQL API schema.
+2. Click the **Explore** tab.
+3. In the query panel, you can specify example requests to send to the GraphQL API. The GraphiQL interface includes autocomplete based on the fields defined in your API configuration. For example, you might select one of your defined queries, and the fields within the query that you want data for.
+4. Click the play button, which sends the request, and returns the response in the middle panel.
 
 ## Create a GraphQL API
 
