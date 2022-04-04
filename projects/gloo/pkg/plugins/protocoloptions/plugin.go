@@ -47,7 +47,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	sws := in.GetInitialStreamWindowSize()
 	if sws != nil {
 		if !validateWindowSize(sws.GetValue()) {
-			return errors.Errorf("Invalid Initial Steam Window Size: %d", sws.GetValue())
+			return errors.Errorf("Invalid Initial Stream Window Size: %d", sws.GetValue())
 		} else {
 			sws = &wrappers.UInt32Value{Value: sws.GetValue()}
 		}
