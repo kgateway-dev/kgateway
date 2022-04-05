@@ -263,7 +263,6 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
-{{- end}}
 {{- if $spec.extraProxyVolumeMounts }}
 {{ toYaml $spec.extraProxyVolumeMounts | indent 8 }}
 {{- end }}
