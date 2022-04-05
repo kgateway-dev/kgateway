@@ -409,13 +409,23 @@ spec:
         readinessProbe:
           failureThreshold: 30
           httpGet:
-            path: /healthz/ready
+            path: /readyz
             port: 15021
             scheme: HTTP
           initialDelaySeconds: 1
           periodSeconds: 2
           successThreshold: 1
           timeoutSeconds: 1
+        livenessProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /readyz
+              port: 15021
+              scheme: HTTP
+            initialDelaySeconds: 1
+            periodSeconds: 2
+            successThreshold: 1
+            timeoutSeconds: 1
         volumeMounts:
         - mountPath: /var/run/secrets/istio
           name: istiod-ca-cert
