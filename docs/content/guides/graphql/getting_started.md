@@ -243,57 +243,57 @@ Protect the GraphQL API that you created in the previous sections by using an AP
    --apikey-labels team=gloo
    ```
 
-2. Verify that the secret was successfully created and contains an API key.
+2. Verify that the secret was successfully created and contains an API key. If you had Gloo Edge generate the API key, set the value as an environment variable, `export API_KEY=<api-key-value>`.
    ```sh
    kubectl get secret my-apikey -n gloo-system -o yaml
    ```
 
 3. Create an AuthConfig CR that uses the API key secret.
-```sh
-kubectl apply -f - <<EOF
-apiVersion: enterprise.gloo.solo.io/v1
-kind: AuthConfig
-metadata:
-  name: apikey-auth
-  namespace: gloo-system
-spec:
-  configs:
-  - apiKeyAuth:
-      headerName: api-key
-      labelSelector:
-        team: gloo
-EOF
-```
+   ```sh
+   kubectl apply -f - <<EOF
+   apiVersion: enterprise.gloo.solo.io/v1
+   kind: AuthConfig
+   metadata:
+     name: apikey-auth
+     namespace: gloo-system
+   spec:
+     configs:
+     - apiKeyAuth:
+         headerName: api-key
+         labelSelector:
+           team: gloo
+   EOF
+   ```
 
 4. Update the `default` virtual service that you previously created to reference the `apikey-auth` AuthConfig. 
-{{< highlight yaml "hl_lines=17-21" >}}
-cat << EOF | kubectl apply -f -
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: 'default'
-  namespace: 'gloo-system'
-spec:
-  virtualHost:
-    domains:
-    - '*'
-    routes:
-    - graphqlApiRef:
-        name: bookinfo-graphql
-        namespace: gloo-system
-      matchers:
-      - prefix: /graphql
-      options:
-        extauth:
-          configRef:
-            name: apikey-auth
-            namespace: gloo-system
-EOF
-{{< /highlight >}}
+   {{< highlight yaml "hl_lines=17-21" >}}
+   cat << EOF | kubectl apply -f -
+   apiVersion: gateway.solo.io/v1
+   kind: VirtualService
+   metadata:
+     name: 'default'
+     namespace: 'gloo-system'
+   spec:
+     virtualHost:
+       domains:
+       - '*'
+       routes:
+       - graphqlApiRef:
+           name: bookinfo-graphql
+           namespace: gloo-system
+         matchers:
+         - prefix: /graphql
+         options:
+           extauth:
+             configRef:
+               name: apikey-auth
+               namespace: gloo-system
+   EOF
+   {{< /highlight >}}
 
-5. Send a request to the GraphQL endpoint. Note that because you enforced API key authorization, the unauthorized request fails.
+5. Send a request to the GraphQL endpoint. Note that because you enforced API key authorization, the unauthorized request fails, and you get a `401 Unauthorized` response.
    ```sh
-   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}'
+   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}' -v
    ```
 
 6. Add the API key to your request in the `-H 'api-key: $API_KEY'` header, and curl the endpoint again.
