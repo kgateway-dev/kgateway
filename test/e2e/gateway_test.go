@@ -99,9 +99,23 @@ var _ = Describe("Gateway", func() {
 
 		Context("http gateway", func() {
 
+			var defaultGateways []*gatewayv1.Gateway
+
 			BeforeEach(func() {
-				err := gloohelpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
-				Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+				defaultGateway := gatewaydefaults.DefaultGateway(writeNamespace)
+				defaultSslGateway := gatewaydefaults.DefaultSslGateway(writeNamespace)
+
+				defaultGateways = []*gatewayv1.Gateway{
+					defaultGateway,
+					defaultSslGateway,
+				}
+			})
+
+			JustBeforeEach(func() {
+				for _, gw := range defaultGateways {
+					_, err := testClients.GatewayClient.Write(gw, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+				}
 
 				// wait for the two gateways to be created.
 				Eventually(func() (gatewayv1.GatewayList, error) {
@@ -109,8 +123,14 @@ var _ = Describe("Gateway", func() {
 				}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
 			})
 
-			It("should disable grpc web filter", func() {
+			AfterEach(func() {
+				for _, gw := range defaultGateways {
+					err := testClients.GatewayClient.Delete(gw.GetMetadata().GetNamespace(), gw.GetMetadata().GetName(), clients.DeleteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+				}
+			})
 
+			It("should disable grpc web filter", func() {
 				gatewayClient := testClients.GatewayClient
 				gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -158,7 +178,7 @@ var _ = Describe("Gateway", func() {
 
 			})
 
-			It("should create 2 gateways", func() {
+			It("should create 2 gateways (1 ssl)", func() {
 				gatewaycli := testClients.GatewayClient
 				gw, err := gatewaycli.List(writeNamespace, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -174,7 +194,6 @@ var _ = Describe("Gateway", func() {
 			})
 
 			It("correctly configures gateway for a virtual service which contains a route to a service", func() {
-
 				// Create a service so gloo can generate "fake" upstreams for it
 				svc := kubernetes.NewService("default", "my-service")
 				svc.Spec = corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 1234}}}
@@ -182,7 +201,7 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Create a virtual service with a route pointing to the above service
-				vs := getTrivialVirtualServiceForService("gloo-system", kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
+				vs := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -212,6 +231,11 @@ var _ = Describe("Gateway", func() {
 				Expect(service.Ref.Namespace).To(Equal(svc.Namespace))
 				Expect(service.Ref.Name).To(Equal(svc.Name))
 				Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
+
+				// clean up the virtual service that we created
+				err = testClients.VirtualServiceClient.Delete(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.DeleteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
 			})
 
 			It("won't allow a bad authconfig in a virtualservice to block updates to a gateway", func() {
@@ -357,9 +381,17 @@ var _ = Describe("Gateway", func() {
 
 					tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
-					_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
-					Expect(err).NotTo(HaveOccurred())
 					err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				JustBeforeEach(func() {
+					_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				JustAfterEach(func() {
+					err := testClients.UpstreamClient.Delete(tu.Upstream.GetMetadata().GetNamespace(), tu.Upstream.GetMetadata().GetName(), clients.DeleteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -490,7 +522,7 @@ var _ = Describe("Gateway", func() {
 					us := tu.Upstream
 					upstreamName := translator.UpstreamToClusterName(us.Metadata.Ref())
 
-					vs := getTrivialVirtualService("gloo-system")
+					vs := getTrivialVirtualService(writeNamespace)
 					// Create route that uses cluster header destination
 					vs.GetVirtualHost().Routes = []*gatewayv1.Route{{
 						Action: &gatewayv1.Route_RouteAction{
@@ -573,34 +605,51 @@ var _ = Describe("Gateway", func() {
 		Context("tcp gateway", func() {
 
 			var (
+				defaultGateways []*gatewayv1.Gateway
 				envoyInstance *services.EnvoyInstance
 				tu            *v1helpers.TestUpstream
 			)
 
 			BeforeEach(func() {
+				var err error
 				// Use tcp gateway instead of default
 				defaultGateway := gatewaydefaults.DefaultTcpGateway(writeNamespace)
 				defaultSslGateway := gatewaydefaults.DefaultTcpSslGateway(writeNamespace)
 
-				_, err := testClients.GatewayClient.Write(defaultGateway, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-				_, err = testClients.GatewayClient.Write(defaultSslGateway, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred(), "Should be able to write default ssl gateways")
-
-				// wait for the two gateways to be created.
-				Eventually(func() (gatewayv1.GatewayList, error) {
-					return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
-				}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
+				defaultGateways = []*gatewayv1.Gateway{
+					defaultGateway,
+					defaultSslGateway,
+				}
 
 				envoyInstance, err = envoyFactory.NewEnvoyInstance()
 				Expect(err).NotTo(HaveOccurred())
 
 				tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
-				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
 				err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 				Expect(err).NotTo(HaveOccurred())
+			})
+
+			JustBeforeEach(func() {
+				for _, gw := range defaultGateways {
+					_, err := testClients.GatewayClient.Write(gw, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+				}
+
+				_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// wait for the two gateways to be created.
+				Eventually(func() (gatewayv1.GatewayList, error) {
+					return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
+				}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
+			})
+
+			JustAfterEach(func() {
+				for _, gw := range defaultGateways {
+					err := testClients.GatewayClient.Delete(gw.GetMetadata().GetNamespace(), gw.GetMetadata().GetName(), clients.DeleteOpts{})
+					Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+				}
 			})
 
 			AfterEach(func() {
@@ -681,7 +730,7 @@ var _ = Describe("Gateway", func() {
 
 		// These tests are meant to test the hybrid-specific functionality
 		// The underlying Http and Tcp logic is tested independently
-		Context("hybrid gateway", func() {
+		FContext("hybrid gateway", func() {
 
 			var (
 				envoyInstance *services.EnvoyInstance
@@ -728,22 +777,21 @@ var _ = Describe("Gateway", func() {
 			JustAfterEach(func() {
 				var err error
 
-				err = testClients.UpstreamClient.Delete(writeNamespace, testUpstream.Upstream.GetMetadata().GetName(), clients.DeleteOpts{IgnoreNotExist: true})
+				err = testClients.UpstreamClient.Delete(testUpstream.Upstream.GetMetadata().GetNamespace(), testUpstream.Upstream.GetMetadata().GetName(), clients.DeleteOpts{})
 				Expect(err).NotTo(HaveOccurred(), "Should be able to delete upstream")
 
-				err = testClients.VirtualServiceClient.Delete(writeNamespace, virtualService.GetMetadata().GetName(), clients.DeleteOpts{IgnoreNotExist: true})
+				err = testClients.VirtualServiceClient.Delete(virtualService.GetMetadata().GetNamespace(), virtualService.GetMetadata().GetName(), clients.DeleteOpts{})
 				Expect(err).NotTo(HaveOccurred(), "Should be able to delete virtual service")
 
-				err = testClients.GatewayClient.Delete(writeNamespace, hybridGateway.GetMetadata().GetName(), clients.DeleteOpts{IgnoreNotExist: true})
+				err = testClients.GatewayClient.Delete(hybridGateway.GetMetadata().GetNamespace(), hybridGateway.GetMetadata().GetName(), clients.DeleteOpts{})
 				Expect(err).NotTo(HaveOccurred(), "Should be able to write hybrid gateway")
-
 			})
 
 			AfterEach(func() {
 				envoyInstance.Clean()
 			})
 
-			It("should create a hybrid listener with http and tcp matched listeners", func() {
+			FIt("should create a hybrid listener with http and tcp matched listeners", func() {
 				modifiedHybridGateway, err := testClients.GatewayClient.Read(writeNamespace, hybridGateway.GetMetadata().GetName(), clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -815,36 +863,35 @@ var _ = Describe("Gateway", func() {
 				})
 			})
 
-			It("correctly configures gateway for a virtual service which contains a route to a service", func() {
+			FIt("correctly configures gateway for a virtual service which contains a route to a service", func() {
 				// Create a service so gloo can generate "fake" upstreams for it
 				svc := kubernetes.NewService("default", "my-service")
 				svc.Spec = corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 1234}}}
 				svc, err := testClients.ServiceClient.Write(svc, clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
-				// Create a virtual service with a route pointing to the above service
-				vs := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
+				// Update the existing virtual service with a route pointing to the above service
+				vs := getTrivialVirtualServiceForService(writeNamespace, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
 				// Wait for proxy to be accepted
 				var proxy *gloov1.Proxy
-				Eventually(
-					func() (bool, error) {
-						proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-						if err != nil {
-							return false, err
-						}
-						for _, l := range proxy.Listeners {
-							if hl := l.GetHybridListener(); hl != nil {
-								if len(hl.MatchedListeners) != 1 {
-									continue
-								}
-								return true, nil
+				Eventually(func() (bool, error) {
+					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+					if err != nil {
+						return false, err
+					}
+					for _, l := range proxy.Listeners {
+						if hl := l.GetHybridListener(); hl != nil {
+							if len(hl.MatchedListeners) != 1 {
+								continue
 							}
+							return true, nil
 						}
-						return false, nil
-					}, "5s", "0.1s").Should(BeTrue())
+					}
+					return false, nil
+				}, "5s", "0.1s").Should(BeTrue())
 
 				// Verify that the proxy has the expected route
 				Expect(proxy.Listeners).To(HaveLen(1))
@@ -857,8 +904,8 @@ var _ = Describe("Gateway", func() {
 				Expect(httpListener.VirtualHosts[0].Routes[0].GetRouteAction()).NotTo(BeNil())
 				Expect(httpListener.VirtualHosts[0].Routes[0].GetRouteAction().GetSingle()).NotTo(BeNil())
 				service := httpListener.VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetKube()
-				Expect(service.Ref.Namespace).To(Equal(svc.Namespace))
-				Expect(service.Ref.Name).To(Equal(svc.Name))
+				Expect(service.GetRef().GetNamespace()).To(Equal(svc.Namespace))
+				Expect(service.GetRef().GetName()).To(Equal(svc.Name))
 				Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
 			})
 
@@ -1202,6 +1249,7 @@ func getTrivialVirtualServiceForUpstream(ns string, upstream *core.ResourceRef) 
 	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Upstream{
 		Upstream: upstream,
 	}
+	vs.Metadata.Name = fmt.Sprintf("%s-%s", vs.Metadata.Name, upstream.GetName())
 	return vs
 }
 
@@ -1213,6 +1261,7 @@ func getTrivialVirtualServiceForService(ns string, service *core.ResourceRef, po
 			Port: port,
 		},
 	}
+	vs.Metadata.Name = fmt.Sprintf("%s-%s", vs.Metadata.Name, service.GetName())
 	return vs
 }
 

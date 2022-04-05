@@ -1137,30 +1137,32 @@ var _ = Describe("Kube2e: gateway", func() {
 				return err
 			}, "5s", "0.1s").ShouldNot(HaveOccurred())
 
-			var proxy *gloov1.Proxy
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				proxy, err = proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-				return proxy, err
-			}, "15s", ".5s")
+				proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				if err != nil {
+					return nil, err
+				}
 
-			var found bool
-			for _, l := range proxy.Listeners {
-				httpListener := l.GetHttpListener()
-				if httpListener == nil {
-					continue
+				var found bool
+				for _, l := range proxy.Listeners {
+					httpListener := l.GetHttpListener()
+					if httpListener == nil {
+						continue
+					}
+					for _, vhost := range httpListener.GetVirtualHosts() {
+						found = true
+						opts := vhost.GetOptions()
+						// option config on VirtualHost overrides all delegated options
+						testutils.ExpectEqualProtoMessages(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetOptions().GetHeaderManipulation())
+						// since rt1 is delegated to first, it overrides rt2, which was delegated later
+						testutils.ExpectEqualProtoMessages(opts.GetCors(), vh1.GetOptions().GetCors())
+						// options that weren't already set in previously delegated options are set from rt2
+						testutils.ExpectEqualProtoMessages(opts.GetTransformations(), vh2.GetOptions().GetTransformations())
+					}
 				}
-				for _, vhost := range httpListener.GetVirtualHosts() {
-					found = true
-					opts := vhost.GetOptions()
-					// option config on VirtualHost overrides all delegated options
-					testutils.ExpectEqualProtoMessages(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetOptions().GetHeaderManipulation())
-					// since rt1 is delegated to first, it overrides rt2, which was delegated later
-					testutils.ExpectEqualProtoMessages(opts.GetCors(), vh1.GetOptions().GetCors())
-					// options that weren't already set in previously delegated options are set from rt2
-					testutils.ExpectEqualProtoMessages(opts.GetTransformations(), vh2.GetOptions().GetTransformations())
-				}
-			}
-			Expect(found).To(BeTrue())
+				Expect(found).To(BeTrue())
+				return proxy, nil
+			}, "15s", ".5s")
 		})
 	})
 
@@ -1279,38 +1281,40 @@ var _ = Describe("Kube2e: gateway", func() {
 			_, err = routeOptionClient.Write(rt2, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// give settings a chance to propogate
+			// give route options a chance to propogate
 			Eventually(func() error {
 				_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 				return err
 			}, "5s", "0.1s").ShouldNot(HaveOccurred())
 
-			var proxy *gloov1.Proxy
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				proxy, err = proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-				return proxy, err
-			}, "15s", ".5s")
-
-			var found bool
-			for _, l := range proxy.Listeners {
-				httpListener := l.GetHttpListener()
-				if httpListener == nil {
-					continue
+				proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				if err != nil {
+					return nil, err
 				}
-				for _, vhost := range httpListener.GetVirtualHosts() {
-					for _, route := range vhost.GetRoutes() {
-						found = true
-						opts := route.GetOptions()
-						// option config on VirtualHost overrides all delegated options
-						testutils.ExpectEqualProtoMessages(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetRoutes()[0].GetOptions().GetHeaderManipulation())
-						// since rt1 is delegated to first, it overrides rt2, which was delegated later
-						testutils.ExpectEqualProtoMessages(opts.GetCors(), rt1.GetOptions().GetCors())
-						// options that weren't already set in previously delegated options are set from rt2
-						testutils.ExpectEqualProtoMessages(opts.GetTransformations(), rt2.GetOptions().GetTransformations())
+
+				var found bool
+				for _, l := range proxy.Listeners {
+					httpListener := l.GetHttpListener()
+					if httpListener == nil {
+						continue
+					}
+					for _, vhost := range httpListener.GetVirtualHosts() {
+						for _, route := range vhost.GetRoutes() {
+							found = true
+							opts := route.GetOptions()
+							// option config on VirtualHost overrides all delegated options
+							testutils.ExpectEqualProtoMessages(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetRoutes()[0].GetOptions().GetHeaderManipulation())
+							// since rt1 is delegated to first, it overrides rt2, which was delegated later
+							testutils.ExpectEqualProtoMessages(opts.GetCors(), rt1.GetOptions().GetCors())
+							// options that weren't already set in previously delegated options are set from rt2
+							testutils.ExpectEqualProtoMessages(opts.GetTransformations(), rt2.GetOptions().GetTransformations())
+						}
 					}
 				}
-			}
-			Expect(found).To(BeTrue())
+				Expect(found).To(BeTrue())
+				return proxy, nil
+			}, "15s", ".5s")
 		})
 	})
 
