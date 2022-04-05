@@ -1,0 +1,7 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.21.1-patch1
+    description: >-
+      Upgrade envoy-gloo to 1.21

@@ -7,20 +7,20 @@ description: Get started with GraphQL in Gloo Edge.
 Set up API gateway and GraphQL server functionality for your apps in the same process by using Gloo Edge.
 
 {{% notice note %}}
-This feature is available only in Gloo Edge Enterprise version 1.10.0 and later.
+This feature is available only in Gloo Edge Enterprise version 1.11.0 and later.
 {{% /notice %}}
 
 {{% notice warning %}}
-This is an alpha feature. Do not use this feature in a production environment.
+This is a beta feature. Do not use this feature in a production environment.
 {{% /notice %}}
 
 ## Step 1: Install GraphQL
 
-GraphQL resolution is an alpha feature included in Gloo Edge Enterprise version 1.10.0 and later.
+GraphQL resolution is a beta feature included in Gloo Edge Enterprise version 1.11.0 and later.
 
 1. [Contact your account representative](https://www.solo.io/company/talk-to-an-expert/) to request a Gloo Edge Enterprise license that specifically enables the GraphQL capability.
 
-2. To try out GraphQL, install Gloo Edge in a development environment. Note that you currently cannot update an existing installation to use GraphQL. Be sure to specify version 1.10.0 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
+2. To try out GraphQL, install Gloo Edge in a development environment. Note that you currently cannot update an existing installation to use GraphQL. Be sure to specify version 1.11.0 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
 ```sh
 glooctl install gateway enterprise --version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}} --license-key=<GRAPHQL_ENABLED_LICENSE_LEY>
 ```
@@ -316,4 +316,4 @@ Now that you've tried out GraphQL with Gloo Edge, check out the following pages 
 * [Explore automatic schema generation with GraphQL service discovery]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/automatic_discovery/" %}})
 * [Manually configure resolvers and schema for your GraphQL API]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/resolver_config/" %}})
 <!--* [Monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/observability/" %}})-->
-* [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/" %}})
+* [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}})
