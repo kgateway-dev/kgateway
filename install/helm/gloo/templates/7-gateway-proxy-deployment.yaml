@@ -235,6 +235,9 @@ spec:
         readinessProbe:
 {{- if $spec.podTemplate.customReadinessProbe }}
 {{ toYaml $spec.podTemplate.customReadinessProbe | indent 10}}
+        livenessProbe:
+{{- if $spec.podTemplate.customLivenessProbe }}
+{{ toYaml $spec.podTemplate.customLivenessProbe | indent 10}}
 {{- else }}
           exec:
             command:
