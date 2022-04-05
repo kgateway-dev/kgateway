@@ -10,10 +10,20 @@ Stitching is a beta feature. Do not use this feature in a production environment
 
 When you use GraphQL in Gloo Edge, you can stitch multiple schemas together to expose one unified GraphQL server to your clients.
 
-For example, consider a cluster to which the `user` and `product` services are deployed. These services are either native GraphQL servers, or have been converted to GraphQL via automatic schema discovery. However, both of these services contribute to a unified data model, which clients must typically stitch together in the frontend. With Gloo Edge, you can instead stitch the GraphQL schemas for these services together in the backend, and expose a unified GraphQL server to your clients. This frees your clients to consider only what data that they want to fetch, not how to fetch the data.
+Consider a cluster that has two different services, `user` and `product`. These services are either native GraphQL servers, or have been converted to GraphQL via automatic schema discovery. Each service has similar information that you might want to provide as part of a unified data model. 
 
-To understand how stitching occurs, consider both of the services, starting with the user service. The user service provides a partial type definition for the `User` type, and a query for how to get the full name of a user given the username.
-```yaml
+Typically, clients must stitch together the services in the frontend. With Gloo Edge, you can instead stitch the GraphQL schemas for these services together in the backend, and expose a unified GraphQL server to your clients. This frees your clients to consider only what data that they want to fetch, not how to fetch the data.
+
+Follow along with the user and product service example.
+
+## Reviewing each service's configuration
+
+To understand how stitching occurs, consider the data model and example queries for both services, starting with the user service. 
+
+**User service**: The user service provides a partial type definition for the `User` type, and a query for how to get the full name of a user given the username.
+
+{{< tabs >}}
+{{< tab name="User type definition" codelang="yaml" >}}
 type User {
   username: String!
   fullName: String
@@ -22,26 +32,25 @@ type User {
 type Query {
   getUserWithFullName(username: String!): User
 }
-```
-
-Example query to the user service:
-```yaml
+{{< /tab >}}
+{{< tab name="Query" codelang="yaml">}}
 query {
   getUserWithFullName(username: "akeith") {
     fullName
   }
 }
-```
-
-Example response from the user service:
-```json
+{{< /tab >}}
+{{< tab name="Response" codelang="json">}}
 {
   "getUserWithFullName": "Abigail Keith"
 }
-```
+{{< /tab >}}
+{{< /tabs >}}
 
-The product service also provides a partial type definition for the `User` type, and a query for how to get the product name and the seller's username given the product ID.
-```yaml
+**Product service**: The product service also provides a partial type definition for the `User` type, and a query for how to get the product name and the seller's username given the product ID.
+
+{{< tabs >}}
+{{< tab name="Product type definition" codelang="yaml" >}}
 type User {
   username: String!
 }
@@ -56,10 +65,8 @@ type Product{
 type Query {
   getProductById(id: ID!): Product!
 }
-```
-
-Example query to the product service:
-```yaml
+{{< /tab >}}
+{{< tab name="Query" codelang="yaml">}}
 query {
   getProductById(id: 125) {
     name
@@ -68,10 +75,8 @@ query {
     }
   }
 }
-```
-
-Example response from the product service:
-```json
+{{< /tab >}}
+{{< tab name="Response" codelang="json">}}
 {
   "getProductById": {
     "name": "Narnia",
@@ -80,12 +85,17 @@ Example response from the product service:
     }
   }
 }
-```
+{{< /tab >}}
+{{< /tabs >}}
 
-But consider a client that wants the full name of the seller for a given product, instead the username of the seller. Given the product ID, the client cannot get the seller's full name from the product service. However, the full name of any user _is_ provided by the user service. 
+What if a client wants the full name of the seller for a product, instead of the username? Given the product ID, the client cannot get the seller's full name from the product service. However, the full name of any user _is_ provided by the user service. 
 
-To solve this problem, you can specify a configuration file to merge the types between the services. In the `merge_config` section for a `user-service` configuration file, you can specify which fields are unique to the `User` type, and how to get these fields. If a client provides the username for a user and wants the full name, Gloo Edge can use the `getUserWithFullName` query to provide the full name from the user service.
-**QUESTION is the user providing this merging config somewhere? Sounds like in **
+## Stitching together the services
+
+When you have different services with data that you want clients to be able to request, you can stitch the services together. Create a configuration file for each service that specifies how to merge the types between the services. 
+
+**User service**: In the `merge_config` section for a `user-service` configuration file, you can specify which fields are unique to the `User` type, and how to get these fields. If a client provides the username for a user and wants the full name, Gloo Edge can use the `getUserWithFullName` query to provide the full name from the user service.
+
 ```yaml
 name: user-service
 namespace: products-app
@@ -96,7 +106,7 @@ merge_config:
 ...
 ```
 
-Similarly, in the `merge_config` section for a `product-service` configuration file, you can specify which fields are unique to the `User` type, and how to get these fields. If a client provides the product ID and wants the product name, Gloo Edge can use the `getProductByID` query to provide the product ID from the product service.
+**Product service**: Similarly, in the `merge_config` section for a `product-service` configuration file, you can specify which fields are unique to the `User` type, and how to get these fields. If a client provides the product ID and wants the product name, Gloo Edge can use the `getProductByID` query to provide the product ID from the product service.
 ```yaml
 name: product-service
 namespace: products-app
@@ -126,8 +136,14 @@ type Query {
 }
 ```
 
-Based on this stitched service information, the following schema definition is generated, which incorporates all the types and queries from each of the respective services. In the background, Gloo Edge uses this schema to create the requests to the stitched service, and then stitches the responses back together into one response to the client.
-```yaml
+## Querying the stitched service
+
+Based on the stitched service, Gloo Edge generates the following schema definition, which incorporates all the types and queries from each of the respective services. 
+
+Clients can query the stitched service. In the background, Gloo Edge uses this schema to create the requests to the stitched service, and then stitches the responses back together into one response to the client.
+
+{{< tabs >}}
+{{< tab name="Schema definition" codelang="yaml" >}}
 schemaDefinition: |
   type Query {
     getUserWithFullName(username: String!): User
@@ -144,10 +160,8 @@ schemaDefinition: |
     name: String!
     seller: User!
   }
-```
-
-Example query to the stitched service:
-```yaml
+{{< /tab >}}
+{{< tab name="Query" codelang="yaml">}}
 query {
   getProductById(id: 125) {
     name
@@ -157,10 +171,8 @@ query {
     }
   }
 }
-```
-
-Example response from the stitched service:
-```json
+{{< /tab >}}
+{{< tab name="Response" codelang="json">}}
 {
   "getProductById": {
     "name": "Narnia",
@@ -170,4 +182,5 @@ Example response from the stitched service:
     }
   }
 }
-```
+{{< /tab >}}
+{{< /tabs >}}
