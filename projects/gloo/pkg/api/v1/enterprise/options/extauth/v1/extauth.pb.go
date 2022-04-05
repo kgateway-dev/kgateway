@@ -2519,7 +2519,6 @@ type Ldap struct {
 	// Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
 	Pool *Ldap_ConnectionPool `protobuf:"bytes,5,opt,name=pool,proto3" json:"pool,omitempty"`
 	// Use to set a custom filter when searching a member. Defaults to "(uid=*)".
-	// Recommend using "(objectClass=*)"
 	SearchFilter string `protobuf:"bytes,6,opt,name=searchFilter,proto3" json:"searchFilter,omitempty"`
 }
 

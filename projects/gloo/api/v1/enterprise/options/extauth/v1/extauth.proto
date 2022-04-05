@@ -778,7 +778,6 @@ message Ldap {
     ConnectionPool pool = 5;
 
     // Use to set a custom filter when searching a member. Defaults to "(uid=*)".
-    // Recommend using "(objectClass=*)"
     string searchFilter = 6;
 }
 
