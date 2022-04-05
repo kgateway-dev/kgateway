@@ -235,6 +235,16 @@ spec:
         readinessProbe:
 {{- if $spec.podTemplate.customReadinessProbe }}
 {{ toYaml $spec.podTemplate.customReadinessProbe | indent 10}}
+{{- else }}
+          exec:
+            command:
+            - wget
+            - -O
+            - /dev/null
+            - {{ $spec.loopBackAddress }}:19000/ready
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          failureThreshold: 10
         livenessProbe:
 {{- if $spec.podTemplate.customLivenessProbe }}
 {{ toYaml $spec.podTemplate.customLivenessProbe | indent 10}}
@@ -244,7 +254,7 @@ spec:
             - wget
             - -O
             - /dev/null
-            - {{ $spec.loopBackAddress }}:19000/ready
+            - {{ $spec.loopBackAddress }}:19000/live
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10
