@@ -245,6 +245,7 @@ spec:
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10
+{{- end }}
         livenessProbe:
 {{- if $spec.podTemplate.customLivenessProbe }}
 {{ toYaml $spec.podTemplate.customLivenessProbe | indent 10}}
@@ -261,6 +262,7 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- end }}
 {{- if $spec.extraProxyVolumeMounts }}
 {{ toYaml $spec.extraProxyVolumeMounts | indent 8 }}
 {{- end }}
