@@ -59,6 +59,44 @@ func (m *TcpProxySettings) Clone() proto.Message {
 }
 
 // Clone function
+func (m *HeaderValueOption) Clone() proto.Message {
+	var target *HeaderValueOption
+	if m == nil {
+		return target
+	}
+	target = &HeaderValueOption{}
+
+	if h, ok := interface{}(m.GetHeader()).(clone.Cloner); ok {
+		target.Header = h.Clone().(*HeaderValue)
+	} else {
+		target.Header = proto.Clone(m.GetHeader()).(*HeaderValue)
+	}
+
+	if h, ok := interface{}(m.GetAppend()).(clone.Cloner); ok {
+		target.Append = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.Append = proto.Clone(m.GetAppend()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *HeaderValue) Clone() proto.Message {
+	var target *HeaderValue
+	if m == nil {
+		return target
+	}
+	target = &HeaderValue{}
+
+	target.Key = m.GetKey()
+
+	target.Value = m.GetValue()
+
+	return target
+}
+
+// Clone function
 func (m *TcpProxySettings_TunnelingConfig) Clone() proto.Message {
 	var target *TcpProxySettings_TunnelingConfig
 	if m == nil {
@@ -67,6 +105,19 @@ func (m *TcpProxySettings_TunnelingConfig) Clone() proto.Message {
 	target = &TcpProxySettings_TunnelingConfig{}
 
 	target.Hostname = m.GetHostname()
+
+	if m.GetHeadersToAdd() != nil {
+		target.HeadersToAdd = make([]*HeaderValueOption, len(m.GetHeadersToAdd()))
+		for idx, v := range m.GetHeadersToAdd() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HeadersToAdd[idx] = h.Clone().(*HeaderValueOption)
+			} else {
+				target.HeadersToAdd[idx] = proto.Clone(v).(*HeaderValueOption)
+			}
+
+		}
+	}
 
 	return target
 }
