@@ -1,0 +1,8 @@
+changelog:
+ - type: DEPENDENCY_BUMP
+   issueLink: https://github.com/solo-io/solo-projects/issues/3457
+   resolvesIssue: false
+   description: Bump the cotainerd version to get a CVE patch.
+   dependencyOwner: containerd
+   dependencyRepo: containerd
+   dependencyTag: v1.4.13

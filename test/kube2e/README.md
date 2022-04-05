@@ -20,7 +20,7 @@ It accepts a number of environment variables, to control the creation of a kind 
 | CLUSTER_NAME          | kind       | The name of the cluster that will be generated |
 | CLUSTER_NODE_VERSION  | v1.22.4    | The version of the [Node Docker image](https://hub.docker.com/r/kindest/node/) to use for booting the cluster |
 | VERSION               | 0.0.0-kind | The version used to tag Gloo images that are deployed to the cluster |
-| KUBE2E_TESTS          | gateway    | Name of the test suite to be run. Options: `'gateway', 'ingress', 'helm', 'gloomtls', 'glooctl'` |
+| KUBE2E_TESTS          | gateway    | Name of the test suite to be run. Options: `'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl'` |
 
 Example:
 ```bash
@@ -77,7 +77,7 @@ The below table contains the environment variables that can be used to configure
 
 | Name              | Default   | Description |
 | ---               |   ---     |    ---      |
-| KUBE2E_TESTS      | gateway   | Name of the test suite to be run. Options: `'gateway', 'ingress', 'helm', 'gloomtls', 'glooctl'` |
+| KUBE2E_TESTS      | gateway   | Name of the test suite to be run. Options: `'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl'` |
 | DEBUG             | 0         | Set to 1 for debug log output |
 | WAIT_ON_FAIL      | 0         | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output.
 | TEAR_DOWN         | false     | Set to true to uninstall Gloo after the test suite completes |
