@@ -65,7 +65,7 @@ require (
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/solo-io/go-list-licenses v0.1.0
 	github.com/solo-io/go-utils v0.21.24
-	github.com/solo-io/k8s-utils v0.0.12
+	github.com/solo-io/k8s-utils v0.1.0
 	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/protoc-gen-openapi v0.0.4
 	github.com/solo-io/skv2 v0.21.6
@@ -107,7 +107,7 @@ replace (
 	github.com/apache/thrift => github.com/apache/thrift v0.14.0
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect
 	// required for ci
-	github.com/containerd/containerd => github.com/containerd/containerd v1.4.11
+	github.com/containerd/containerd => github.com/containerd/containerd v1.4.13
 
 	// pin to the jwt-go fork to fix CVE.
 	// using the pseudo version of github.com/form3tech-oss/jwt-go@v3.2.3 instead of the version directly,

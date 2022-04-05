@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add a README.md to .github/workflows with guides for manually administering the push-solo-apis workflow.
