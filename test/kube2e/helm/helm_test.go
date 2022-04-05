@@ -61,7 +61,7 @@ var _ = Describe("Kube2e: helm", func() {
 		crdsToManuallyApply := []crd{
 			{
 				name: "graphqlapis.graphql.gloo.solo.io",
-				file: filepath.Join(crdDir, "graphql.gloo.solo.io_v1alpha1_GraphQLApi.yaml"),
+				file: filepath.Join(crdDir, "graphql.gloo.solo.io_v1beta1_GraphQLApi.yaml"),
 			},
 			{
 				name: "httpgateways.gateway.solo.io",
