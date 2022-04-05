@@ -104,6 +104,7 @@ var _ = Describe("regex rewrite", func() {
 					Substitution: "/foo",
 				},
 			},
+			Action: &v1.Route_RouteAction{},
 		}, out)
 
 		rmas := &envoy_type_matcher_v3.RegexMatchAndSubstitute{
@@ -159,6 +160,7 @@ var _ = Describe("regex rewrite", func() {
 					Substitution: "/foo",
 				},
 			},
+			Action: &v1.Route_RouteAction{},
 		}, out)
 
 		rmas := &envoy_type_matcher_v3.RegexMatchAndSubstitute{
@@ -216,6 +218,7 @@ var _ = Describe("regex rewrite", func() {
 					Substitution: "/foo",
 				},
 			},
+			Action: &v1.Route_RouteAction{},
 		}, out)
 
 		rmas := &envoy_type_matcher_v3.RegexMatchAndSubstitute{
