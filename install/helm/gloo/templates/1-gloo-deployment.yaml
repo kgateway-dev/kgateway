@@ -90,7 +90,7 @@ spec:
           failureThreshold: 10
         livenessProbe:
           tcpSocket:
-            port: { { .Values.gloo.deployment.xdsPort } }
+            port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
           periodSeconds: 2
           failureThreshold: 10
