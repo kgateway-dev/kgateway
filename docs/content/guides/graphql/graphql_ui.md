@@ -35,8 +35,8 @@ Review the details of a GraphQL API, including its configuration, the resolvers 
 
 1. From the list of GraphQL APIs, click the name of a GraphQL API schema.
 2. In the **API Details** tab, you can view the raw configuration files, or explore the details of the _Schema_ and _Upstreams_ for the API.
-   * Configuration files: Click the **View Raw Config** button to view the raw configuration in the UI, and the **<file-name>.yaml** button to download the configuration YAML file.
-   * _Schema_: To review the defined fields and values, click to expand each section. For example, you can expand a "Query" section to review the field names that are defined in the GraphQL query, the type of data returned by each field, and the resolver that processes the request and returns the data. Additionally, you can filter the displayed fields by using the search bar.
+   * Configuration files: Click the **View Raw Config** button to view the raw configuration in the UI, and the **&lt;file-name&gt;.yaml** button to download the configuration YAML file.
+   * _Schema_: To review the defined fields and values, click to expand each section. For example, you can expand **Query** section to review the field names that are defined in the GraphQL query, the type of data returned by each field, and the resolver that processes the request and returns the data. Additionally, you can filter the displayed fields by using the search bar.
    * _Upstreams_: To review the upstream services that the GraphQL server exposes, click the name of one of the listed services. The **Upstreams** page for the service opens. For more information about the upstream services page, see [Exploring Virtual Services and Upstreams]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/#exploring-virtual-services-and-upstreams" >}}).
 
 <figure><img src="{{% versioned_link_path fromRoot="/img/screenshots/graphql_details.png" %}}">
@@ -50,15 +50,14 @@ Explore the functionality of an API by sending sample queries.
 2. Click the **Explore** tab.
 3. In the GraphiQL panel, you can specify example requests to send to the GraphQL API. The GraphiQL interface includes autocomplete based on the fields defined in your API configuration. For example, you might select one of your defined queries, and the fields within the query that you want data for.
 4. Click the play button, which sends the request, and returns the response in the middle panel.
-5. You can also explore the documentation for the API by clicking the **< Docs** buton to expand the Documentation Explorer panel.
+5. You can also explore the documentation for the API by clicking the **< Docs** button to expand the Documentation Explorer panel.
 
 ## Create a GraphQL API
 
 Define a new GraphQL API by using the UI.
 
 1. From the **APIs** overview page, click **Create API**.
-   1. Enter a name for the API.
-   <!--2. Select an excecutable API, such as for REST or gRPC services, or a stitched API, [TODO]-->
+   1. Enter a name for the API.<!--2. Select an excecutable API, such as for REST or gRPC services, or a stitched API, [TODO]-->
    3. Click **Upload Schema** to add a `.gql` configuration file.
 2. Click **Create API**. The details page for the API opens.
 3. If no resolvers are defined, you might see a warning. To define a resolver:
