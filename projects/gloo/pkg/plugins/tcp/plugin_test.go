@@ -23,6 +23,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/solo-kit/test/matchers"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 var _ = Describe("Plugin", func() {
@@ -103,8 +104,19 @@ var _ = Describe("Plugin", func() {
 				MaxConnectAttempts: &wrappers.UInt32Value{
 					Value: 5,
 				},
-				IdleTimeout:     prototime.DurationToProto(5 * time.Second),
-				TunnelingConfig: &tcp.TcpProxySettings_TunnelingConfig{Hostname: "proxyhostname"},
+				IdleTimeout: prototime.DurationToProto(5 * time.Second),
+				TunnelingConfig: &tcp.TcpProxySettings_TunnelingConfig{
+					Hostname: "proxyhostname",
+					HeadersToAdd: []*tcp.HeaderValueOption{
+						{
+							Header: &tcp.HeaderValue{
+								Key:   "key",
+								Value: "value",
+							},
+							Append: &wrapperspb.BoolValue{Value: true},
+						},
+					},
+				},
 			}
 			listener = &v1.Listener{}
 			tcpListener = &v1.TcpListener{
@@ -148,6 +160,14 @@ var _ = Describe("Plugin", func() {
 			Expect(cfg.IdleTimeout).To(matchers.MatchProto(tcps.IdleTimeout))
 			Expect(cfg.MaxConnectAttempts).To(matchers.MatchProto(tcps.MaxConnectAttempts))
 			Expect(cfg.TunnelingConfig.GetHostname()).To(Equal(tcps.TunnelingConfig.GetHostname()))
+
+			hta := cfg.TunnelingConfig.HeadersToAdd
+			Expect(len(hta)).To(Equal(1))
+
+			tcpHeaders := tcps.TunnelingConfig.HeadersToAdd[0]
+			Expect(hta[0].Header.Key).To(Equal(tcpHeaders.Header.Key))
+			Expect(hta[0].Header.Value).To(Equal(tcpHeaders.Header.Value))
+			Expect(hta[0].Append.Value).To(Equal(tcpHeaders.Append.Value))
 		})
 
 		It("can transform a single destination", func() {
