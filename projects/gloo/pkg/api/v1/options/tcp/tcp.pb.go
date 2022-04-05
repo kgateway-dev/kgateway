@@ -93,6 +93,122 @@ func (x *TcpProxySettings) GetTunnelingConfig() *TcpProxySettings_TunnelingConfi
 	return nil
 }
 
+// Header name/value pair plus option to control append behavior.
+type HeaderValueOption struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Header name/value pair that this option applies to.
+	Header *HeaderValue `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	// If true (default), the value is appended to existing values.
+	Append *wrappers.BoolValue `protobuf:"bytes,2,opt,name=append,proto3" json:"append,omitempty"`
+}
+
+func (x *HeaderValueOption) Reset() {
+	*x = HeaderValueOption{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *HeaderValueOption) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HeaderValueOption) ProtoMessage() {}
+
+func (x *HeaderValueOption) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HeaderValueOption.ProtoReflect.Descriptor instead.
+func (*HeaderValueOption) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *HeaderValueOption) GetHeader() *HeaderValue {
+	if x != nil {
+		return x.Header
+	}
+	return nil
+}
+
+func (x *HeaderValueOption) GetAppend() *wrappers.BoolValue {
+	if x != nil {
+		return x.Append
+	}
+	return nil
+}
+
+// Header name/value pair.
+type HeaderValue struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Header name.
+	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	// Header value.
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *HeaderValue) Reset() {
+	*x = HeaderValue{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *HeaderValue) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HeaderValue) ProtoMessage() {}
+
+func (x *HeaderValue) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HeaderValue.ProtoReflect.Descriptor instead.
+func (*HeaderValue) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *HeaderValue) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *HeaderValue) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
 // Configuration for tunneling TCP over other transports or application layers.
 type TcpProxySettings_TunnelingConfig struct {
 	state         protoimpl.MessageState
@@ -101,12 +217,15 @@ type TcpProxySettings_TunnelingConfig struct {
 
 	// The hostname to send in the synthesized CONNECT headers to the upstream proxy.
 	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	// Additional request headers to be sent to upstream proxy. Mainly used to
+	// trigger upstream to convert POST request back to CONNECT requests.
+	HeadersToAdd []*HeaderValueOption `protobuf:"bytes,13,rep,name=headers_to_add,json=headersToAdd,proto3" json:"headers_to_add,omitempty"`
 }
 
 func (x *TcpProxySettings_TunnelingConfig) Reset() {
 	*x = TcpProxySettings_TunnelingConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[1]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -119,7 +238,7 @@ func (x *TcpProxySettings_TunnelingConfig) String() string {
 func (*TcpProxySettings_TunnelingConfig) ProtoMessage() {}
 
 func (x *TcpProxySettings_TunnelingConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[1]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -142,6 +261,13 @@ func (x *TcpProxySettings_TunnelingConfig) GetHostname() string {
 	return ""
 }
 
+func (x *TcpProxySettings_TunnelingConfig) GetHeadersToAdd() []*HeaderValueOption {
+	if x != nil {
+		return x.HeadersToAdd
+	}
+	return nil
+}
+
 var File_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto protoreflect.FileDescriptor
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_rawDesc = []byte{
@@ -160,7 +286,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_rawD
 	0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2f, 0x61,
 	0x70, 0x69, 0x2f, 0x76, 0x32, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x62, 0x61, 0x73, 0x65, 0x2e,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x12, 0x65, 0x78, 0x74, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f,
-	0x65, 0x78, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xb6, 0x02, 0x0a, 0x10, 0x54, 0x63,
+	0x65, 0x78, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x8a, 0x03, 0x0a, 0x10, 0x54, 0x63,
 	0x70, 0x50, 0x72, 0x6f, 0x78, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x4e,
 	0x0a, 0x14, 0x6d, 0x61, 0x78, 0x5f, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x5f, 0x61, 0x74,
 	0x74, 0x65, 0x6d, 0x70, 0x74, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x67,
@@ -177,15 +303,32 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_rawD
 	0x6f, 0x2e, 0x54, 0x63, 0x70, 0x50, 0x72, 0x6f, 0x78, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e,
 	0x67, 0x73, 0x2e, 0x54, 0x75, 0x6e, 0x6e, 0x65, 0x6c, 0x69, 0x6e, 0x67, 0x43, 0x6f, 0x6e, 0x66,
 	0x69, 0x67, 0x52, 0x0f, 0x74, 0x75, 0x6e, 0x6e, 0x65, 0x6c, 0x69, 0x6e, 0x67, 0x43, 0x6f, 0x6e,
-	0x66, 0x69, 0x67, 0x1a, 0x2d, 0x0a, 0x0f, 0x54, 0x75, 0x6e, 0x6e, 0x65, 0x6c, 0x69, 0x6e, 0x67,
-	0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x1a, 0x0a, 0x08, 0x68, 0x6f, 0x73, 0x74, 0x6e, 0x61,
-	0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x68, 0x6f, 0x73, 0x74, 0x6e, 0x61,
-	0x6d, 0x65, 0x42, 0x4a, 0x5a, 0x3c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
-	0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x6b, 0x67, 0x2f,
-	0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x74,
-	0x63, 0x70, 0xc0, 0xf5, 0x04, 0x01, 0xb8, 0xf5, 0x04, 0x01, 0xd0, 0xf5, 0x04, 0x01, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x66, 0x69, 0x67, 0x1a, 0x80, 0x01, 0x0a, 0x0f, 0x54, 0x75, 0x6e, 0x6e, 0x65, 0x6c, 0x69, 0x6e,
+	0x67, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x1a, 0x0a, 0x08, 0x68, 0x6f, 0x73, 0x74, 0x6e,
+	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x68, 0x6f, 0x73, 0x74, 0x6e,
+	0x61, 0x6d, 0x65, 0x12, 0x51, 0x0a, 0x0e, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x5f, 0x74,
+	0x6f, 0x5f, 0x61, 0x64, 0x64, 0x18, 0x0d, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2b, 0x2e, 0x74, 0x63,
+	0x70, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73,
+	0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x56, 0x61, 0x6c,
+	0x75, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0c, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72,
+	0x73, 0x54, 0x6f, 0x41, 0x64, 0x64, 0x22, 0x86, 0x01, 0x0a, 0x11, 0x48, 0x65, 0x61, 0x64, 0x65,
+	0x72, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x3d, 0x0a, 0x06,
+	0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x25, 0x2e, 0x74,
+	0x63, 0x70, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e,
+	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x56, 0x61,
+	0x6c, 0x75, 0x65, 0x52, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x32, 0x0a, 0x06, 0x61,
+	0x70, 0x70, 0x65, 0x6e, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f,
+	0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x06, 0x61, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x22,
+	0x35, 0x0a, 0x0b, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x10,
+	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
+	0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x42, 0x4a, 0x5a, 0x3c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f,
+	0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f,
+	0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x2f, 0x74, 0x63, 0x70, 0xc0, 0xf5, 0x04, 0x01, 0xb8, 0xf5, 0x04, 0x01, 0xd0, 0xf5,
+	0x04, 0x01, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -200,22 +343,28 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_raw
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_rawDescData
 }
 
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_goTypes = []interface{}{
 	(*TcpProxySettings)(nil),                 // 0: tcp.options.gloo.solo.io.TcpProxySettings
-	(*TcpProxySettings_TunnelingConfig)(nil), // 1: tcp.options.gloo.solo.io.TcpProxySettings.TunnelingConfig
-	(*wrappers.UInt32Value)(nil),             // 2: google.protobuf.UInt32Value
-	(*duration.Duration)(nil),                // 3: google.protobuf.Duration
+	(*HeaderValueOption)(nil),                // 1: tcp.options.gloo.solo.io.HeaderValueOption
+	(*HeaderValue)(nil),                      // 2: tcp.options.gloo.solo.io.HeaderValue
+	(*TcpProxySettings_TunnelingConfig)(nil), // 3: tcp.options.gloo.solo.io.TcpProxySettings.TunnelingConfig
+	(*wrappers.UInt32Value)(nil),             // 4: google.protobuf.UInt32Value
+	(*duration.Duration)(nil),                // 5: google.protobuf.Duration
+	(*wrappers.BoolValue)(nil),               // 6: google.protobuf.BoolValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_depIdxs = []int32{
-	2, // 0: tcp.options.gloo.solo.io.TcpProxySettings.max_connect_attempts:type_name -> google.protobuf.UInt32Value
-	3, // 1: tcp.options.gloo.solo.io.TcpProxySettings.idle_timeout:type_name -> google.protobuf.Duration
-	1, // 2: tcp.options.gloo.solo.io.TcpProxySettings.tunneling_config:type_name -> tcp.options.gloo.solo.io.TcpProxySettings.TunnelingConfig
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	4, // 0: tcp.options.gloo.solo.io.TcpProxySettings.max_connect_attempts:type_name -> google.protobuf.UInt32Value
+	5, // 1: tcp.options.gloo.solo.io.TcpProxySettings.idle_timeout:type_name -> google.protobuf.Duration
+	3, // 2: tcp.options.gloo.solo.io.TcpProxySettings.tunneling_config:type_name -> tcp.options.gloo.solo.io.TcpProxySettings.TunnelingConfig
+	2, // 3: tcp.options.gloo.solo.io.HeaderValueOption.header:type_name -> tcp.options.gloo.solo.io.HeaderValue
+	6, // 4: tcp.options.gloo.solo.io.HeaderValueOption.append:type_name -> google.protobuf.BoolValue
+	1, // 5: tcp.options.gloo.solo.io.TcpProxySettings.TunnelingConfig.headers_to_add:type_name -> tcp.options.gloo.solo.io.HeaderValueOption
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_init() }
@@ -237,6 +386,30 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_ini
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*HeaderValueOption); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*HeaderValue); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TcpProxySettings_TunnelingConfig); i {
 			case 0:
 				return &v.state
@@ -255,7 +428,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_ini
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
