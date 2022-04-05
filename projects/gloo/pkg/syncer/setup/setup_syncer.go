@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -407,7 +407,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		return err
 	}
 
-	graphqlApiClient, err := v1alpha1.NewGraphQLApiClient(watchOpts.Ctx, opts.GraphQLApis)
+	graphqlApiClient, err := v1beta1.NewGraphQLApiClient(watchOpts.Ctx, opts.GraphQLApis)
 	if err != nil {
 		return err
 	}
@@ -810,7 +810,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
-	graphqlApiFactory, err := bootstrap.ConfigFactoryForSettings(params, v1alpha1.GraphQLApiCrd)
+	graphqlApiFactory, err := bootstrap.ConfigFactoryForSettings(params, v1beta1.GraphQLApiCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
