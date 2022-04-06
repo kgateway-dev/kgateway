@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fixes docs for various user requests, hides GraphQL stitching, and updates issue template.
+    issueLink: https://github.com/solo-io/gloo/issues/6234
