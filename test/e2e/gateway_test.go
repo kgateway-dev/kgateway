@@ -124,7 +124,7 @@ var _ = Describe("Gateway", func() {
 				}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
 			})
 
-			AfterEach(func() {
+			JustAfterEach(func() {
 				for _, gw := range defaultGateways {
 					err := testClients.GatewayClient.Delete(gw.GetMetadata().GetNamespace(), gw.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
 					Expect(err).NotTo(HaveOccurred())
