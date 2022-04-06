@@ -112,7 +112,7 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 	}
 	u := &gloov1.Upstream{
 		Metadata: &core.Metadata{
-			Name:      fmt.Sprintf("local-%d", id),
+			Name:      fmt.Sprintf("local-test-upstream-%d", id),
 			Namespace: "default",
 		},
 		UpstreamType: &gloov1.Upstream_Static{
