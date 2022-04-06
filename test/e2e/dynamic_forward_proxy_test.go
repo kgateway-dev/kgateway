@@ -106,9 +106,7 @@ var _ = Describe("dynamic forward proxy", func() {
 	})
 
 	AfterEach(func() {
-		if envoyInstance != nil {
-			_ = envoyInstance.Clean()
-		}
+		envoyInstance.Clean()
 		cancel()
 	})
 
