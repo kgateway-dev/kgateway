@@ -69,9 +69,7 @@ var _ = Describe("Health Checks", func() {
 	})
 
 	AfterEach(func() {
-		if envoyInstance != nil {
-			_ = envoyInstance.Clean()
-		}
+		envoyInstance.Clean()
 		cancel()
 	})
 
