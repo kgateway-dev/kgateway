@@ -776,6 +776,9 @@ message Ldap {
 
     // Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
     ConnectionPool pool = 5;
+
+    // Use to set a custom filter when searching a member. Defaults to "(uid=*)".
+    string searchFilter = 6;
 }
 
 // Authorizes requests by querying a custom extauth server.
