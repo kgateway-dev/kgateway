@@ -47,9 +47,7 @@ var _ = Describe("Zipkin config loading", func() {
 	})
 
 	AfterEach(func() {
-		if envoyInstance != nil {
-			_ = envoyInstance.Clean()
-		}
+		envoyInstance.Clean()
 		cancel()
 	})
 
