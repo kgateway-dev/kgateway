@@ -3671,6 +3671,16 @@ metadata:
 							PeriodSeconds:       2,
 							FailureThreshold:    10,
 						}
+						deploy.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
+							Handler: v1.Handler{
+								TCPSocket: &v1.TCPSocketAction{
+									Port: intstr.FromInt(9977),
+								},
+							},
+							InitialDelaySeconds: 1,
+							PeriodSeconds:       2,
+							FailureThreshold:    10,
+						}
 						deploy.Spec.Template.Spec.ServiceAccountName = "gloo"
 						glooDeployment = deploy
 					})
@@ -3893,7 +3903,16 @@ metadata:
 							PeriodSeconds:       2,
 							FailureThreshold:    10,
 						}
-
+						deploy.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
+							Handler: v1.Handler{
+								TCPSocket: &v1.TCPSocketAction{
+									Port: intstr.FromInt(8443),
+								},
+							},
+							InitialDelaySeconds: 1,
+							PeriodSeconds:       2,
+							FailureThreshold:    10,
+						}
 						gatewayDeployment = deploy
 					})
 
@@ -4681,6 +4700,16 @@ metadata:
 												AllowPrivilegeEscalation: pointer.BoolPtr(false),
 											},
 											ReadinessProbe: &v1.Probe{
+												Handler: v1.Handler{
+													TCPSocket: &v1.TCPSocketAction{
+														Port: intstr.FromInt(9977),
+													},
+												},
+												InitialDelaySeconds: 1,
+												PeriodSeconds:       2,
+												FailureThreshold:    10,
+											},
+											LivenessProbe: &v1.Probe{
 												Handler: v1.Handler{
 													TCPSocket: &v1.TCPSocketAction{
 														Port: intstr.FromInt(9977),
