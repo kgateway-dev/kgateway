@@ -3,10 +3,11 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"net"
 	"sync/atomic"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
