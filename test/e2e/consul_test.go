@@ -116,11 +116,7 @@ var _ = Describe("Consul e2e", func() {
 			err = consulInstance.Clean()
 			Expect(err).NotTo(HaveOccurred())
 		}
-		if envoyInstance != nil {
-			err = envoyInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
-
+		envoyInstance.Clean()
 		cancel()
 	})
 

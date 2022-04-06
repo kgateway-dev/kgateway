@@ -75,9 +75,7 @@ var _ = Describe("CORS", func() {
 		})
 
 		AfterEach(func() {
-			if td.per.envoyInstance != nil {
-				td.per.envoyInstance.Clean()
-			}
+			td.per.envoyInstance.Clean()
 		})
 
 		It("should run with cors", func() {
