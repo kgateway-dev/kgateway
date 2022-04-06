@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5866
+    description: Correct syntax of empty Subjects array in helm when discovery is disabled
+    resolvesIssue: false
