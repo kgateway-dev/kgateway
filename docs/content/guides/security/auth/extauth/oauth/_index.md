@@ -81,7 +81,7 @@ glooctl create secret oauth --namespace gloo-system --name oidc --client-secret 
 {{< /tab >}}
 {{< tab name="kubectl" codelang="shell">}}
 kubectl create secret generic oidc --from-literal=client-secret=<client_secret>
-kubectl annotate secret oidc resource_kind='*v1.Secret' # Important since gloo-edge don't watch for opaque secrets without this
+kubectl annotate secret oidc resource_kind='*v1.Secret' # Important, since gloo-edge does not watch for opaque secrets without this setting
 {{< /tab >}}
 {{< /tabs >}} 
 - `scopes`: scopes to request in addition to the `openid` scope.
