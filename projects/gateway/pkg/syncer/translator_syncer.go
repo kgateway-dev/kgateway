@@ -51,6 +51,7 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient, statusMetrics),
 		managedProxyLabels: map[string]string{
 			"created_by": "gateway",
+			"managed_by": "solo.io",
 		},
 	}
 
