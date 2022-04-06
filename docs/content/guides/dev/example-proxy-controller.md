@@ -865,7 +865,9 @@ Now that we have a proxy called `my-cool-proxy`, Gloo Edge will be serving xDS c
 However, we don't actually have an Envoy instance deployed that will receive this config. In the next section, 
 we'll walk through the steps to deploy an Envoy pod wired to receive config from Gloo Edge, identifying itself as 
 `my-cool-proxy`.  
-
+### Note on CRD metadata
+Proxies that are managed by Gloo use a label named `created-by` with values that begin with `gloo`. Do not copy these 
+labels to your proxies or they may be overwritten or deleted by Gloo processes. 
 
 ## Deploying Envoy to Kubernetes
 
