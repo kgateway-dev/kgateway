@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add ability to configure LDAP's search filter.
+    issueLink: https://github.com/solo-io/gloo/issues/6075
