@@ -386,12 +386,12 @@ var _ = Describe("Gateway", func() {
 				})
 
 				JustBeforeEach(func() {
-					_, err := testClients.UpstreamClient.Write(testUpstream.Upstream, clients.WriteOpts{})
+					_, err := testClients.UpstreamClient.Write(testUpstream.Upstream, clients.WriteOpts{Ctx: ctx})
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				JustAfterEach(func() {
-					err := testClients.UpstreamClient.Delete(testUpstream.Upstream.GetMetadata().GetNamespace(), testUpstream.Upstream.GetMetadata().GetName(), clients.DeleteOpts{})
+					err := testClients.UpstreamClient.Delete(testUpstream.Upstream.GetMetadata().GetNamespace(), testUpstream.Upstream.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -638,18 +638,18 @@ var _ = Describe("Gateway", func() {
 
 			JustBeforeEach(func() {
 				for _, gw := range defaultGateways {
-					_, err := testClients.GatewayClient.Write(gw, clients.WriteOpts{})
+					_, err := testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx})
 					Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 				}
 
-				_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
+				_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			JustAfterEach(func() {
 				for _, gw := range defaultGateways {
-					err := testClients.GatewayClient.Delete(gw.GetMetadata().GetNamespace(), gw.GetMetadata().GetName(), clients.DeleteOpts{})
-					Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+					err := testClients.GatewayClient.Delete(gw.GetMetadata().GetNamespace(), gw.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
+					Expect(err).NotTo(HaveOccurred(), "Should be able to delete default gateways")
 				}
 			})
 
@@ -785,10 +785,10 @@ var _ = Describe("Gateway", func() {
 				// Each test configures a VirtualService to ensure that a Proxy exists. Perform the cleanup of that VirtualService here
 				// as opposed to in each test
 				err = testClients.VirtualServiceClient.Delete(virtualService.GetMetadata().GetNamespace(), virtualService.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-				Expect(err).NotTo(HaveOccurred(), "Should be able to write virtual service")
+				Expect(err).NotTo(HaveOccurred(), "Should be able to delete virtual service")
 
 				err = testClients.GatewayClient.Delete(hybridGateway.GetMetadata().GetNamespace(), hybridGateway.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
-				Expect(err).NotTo(HaveOccurred(), "Should be able to write hybrid gateway")
+				Expect(err).NotTo(HaveOccurred(), "Should be able to delete hybrid gateway")
 			})
 
 			AfterEach(func() {
