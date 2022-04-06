@@ -267,7 +267,7 @@ name="enterprise.gloo.solo.io.Ldap"
 - `membershipAttributeName`: case-insensitive name of the attribute that contains the names of the groups an entry is 
    member of. Defaults to `memberOf` if not provided.
 - `allowedGroups`: DNs of the user groups that are allowed to access the secured upstream.
-- `searchFilter`: The filter to use when searching for a member to, then, authorize.
+- `searchFilter`: The filter to use when searching for the user entry that you want to authorize.
 
 To better understand how this configuration is used, let's go over the steps that Gloo Edge performs when it detects a 
 request that needs to be authenticated with LDAP:
