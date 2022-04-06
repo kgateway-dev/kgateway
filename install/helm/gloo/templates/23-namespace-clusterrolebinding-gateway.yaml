@@ -36,10 +36,12 @@ metadata:
     app: gloo
     gloo: rbac
 subjects:
-  {{- if .Values.discovery.enabled }}
+{{- if .Values.discovery.enabled }}
 - kind: ServiceAccount
   name: discovery
   namespace: {{ .Release.Namespace }}
+{{- else }}
+  []
 {{- end}}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
@@ -148,6 +150,8 @@ subjects:
   - kind: ServiceAccount
     name: discovery
     namespace: {{ .Release.Namespace }}
+{{- else }}
+  []
 {{- end}}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
