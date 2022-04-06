@@ -10,20 +10,16 @@ Set up API gateway and GraphQL server functionality for your apps in the same pr
 This feature is available only in Gloo Edge Enterprise version 1.11.0 and later.
 {{% /notice %}}
 
-{{% notice warning %}}
-This is a beta feature. Do not use this feature in a production environment.
-{{% /notice %}}
-
 ## Step 1: Install GraphQL
 
-GraphQL resolution is a beta feature included in Gloo Edge Enterprise version 1.11.0 and later.
+GraphQL resolution is included in Gloo Edge Enterprise version 1.11.0 and later.
 
 1. [Contact your account representative](https://www.solo.io/company/talk-to-an-expert/) to request a Gloo Edge Enterprise license that specifically enables the GraphQL capability.
 
 2. To try out GraphQL, install Gloo Edge in a development environment. Note that you currently cannot update an existing installation to use GraphQL. Be sure to specify version 1.11.0 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
-```sh
-glooctl install gateway enterprise --version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}} --license-key=<GRAPHQL_ENABLED_LICENSE_LEY>
-```
+   ```sh
+   glooctl install gateway enterprise --version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}} --license-key=<GRAPHQL_ENABLED_LICENSE_LEY>
+   ```
 
 ## Step 2: GraphQL service discovery with Pet Store {#pet-store}
 
@@ -155,7 +151,7 @@ In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backe
    kubectl get upstream -n gloo-system
    ```
 
-3. Check out the contents of the following Gloo Edge GraphQL API CRD. Specifically, take a look at the `restResolver` and `schema_definition` sections.
+3. Check out the contents of the following Gloo Edge GraphQL API CRD. Specifically, take a look at the `restResolver` and `schemaDefinition` sections.
    ```sh
    curl https://raw.githubusercontent.com/solo-io/graphql-bookinfo/main/kubernetes/bookinfo-gql.yaml
    ```
@@ -172,9 +168,9 @@ In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backe
              name: default-productpage-9080
              namespace: gloo-system
      ```
-   * `schema_definition`: A schema definition determines what kind of data can be returned to a client that makes a GraphQL query to your endpoint. The schema specifies the data that a particular `type`, or service, returns in response to a GraphQL query. In this example, fields are defined for the three Bookinfo services, Product, Review, and Rating. Additionally, the schema definition indicates which services reference the resolvers. In this example, the Product service references the `Query|productForHome` resolver. 
+   * `schemaDefinition`: A schema definition determines what kind of data can be returned to a client that makes a GraphQL query to your endpoint. The schema specifies the data that a particular `type`, or service, returns in response to a GraphQL query. In this example, fields are defined for the three Bookinfo services, Product, Review, and Rating. Additionally, the schema definition indicates which services reference the resolvers. In this example, the Product service references the `Query|productForHome` resolver. 
      ```yaml
-     schema_definition: |
+     schemaDefinition: |
        type Query {
          productsForHome: [Product] @resolve(name: "Query|productsForHome")
        }
@@ -247,57 +243,57 @@ Protect the GraphQL API that you created in the previous sections by using an AP
    --apikey-labels team=gloo
    ```
 
-2. Verify that the secret was successfully created and contains an API key.
+2. Verify that the secret was successfully created and contains an API key. If you had Gloo Edge generate the API key, set the value as an environment variable, `export API_KEY=<api-key-value>`.
    ```sh
    kubectl get secret my-apikey -n gloo-system -o yaml
    ```
 
 3. Create an AuthConfig CR that uses the API key secret.
-```sh
-kubectl apply -f - <<EOF
-apiVersion: enterprise.gloo.solo.io/v1
-kind: AuthConfig
-metadata:
-  name: apikey-auth
-  namespace: gloo-system
-spec:
-  configs:
-  - apiKeyAuth:
-      headerName: api-key
-      labelSelector:
-        team: gloo
-EOF
-```
+   ```sh
+   kubectl apply -f - <<EOF
+   apiVersion: enterprise.gloo.solo.io/v1
+   kind: AuthConfig
+   metadata:
+     name: apikey-auth
+     namespace: gloo-system
+   spec:
+     configs:
+     - apiKeyAuth:
+         headerName: api-key
+         labelSelector:
+           team: gloo
+   EOF
+   ```
 
 4. Update the `default` virtual service that you previously created to reference the `apikey-auth` AuthConfig. 
-{{< highlight yaml "hl_lines=17-21" >}}
-cat << EOF | kubectl apply -f -
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: 'default'
-  namespace: 'gloo-system'
-spec:
-  virtualHost:
-    domains:
-    - '*'
-    routes:
-    - graphqlApiRef:
-        name: bookinfo-graphql
-        namespace: gloo-system
-      matchers:
-      - prefix: /graphql
-      options:
-        extauth:
-          configRef:
-            name: apikey-auth
-            namespace: gloo-system
-EOF
-{{< /highlight >}}
+   {{< highlight yaml "hl_lines=17-21" >}}
+   cat << EOF | kubectl apply -f -
+   apiVersion: gateway.solo.io/v1
+   kind: VirtualService
+   metadata:
+     name: 'default'
+     namespace: 'gloo-system'
+   spec:
+     virtualHost:
+       domains:
+       - '*'
+       routes:
+       - graphqlApiRef:
+           name: bookinfo-graphql
+           namespace: gloo-system
+         matchers:
+         - prefix: /graphql
+         options:
+           extauth:
+             configRef:
+               name: apikey-auth
+               namespace: gloo-system
+   EOF
+   {{< /highlight >}}
 
-5. Send a request to the GraphQL endpoint. Note that because you enforced API key authorization, the unauthorized request fails.
+5. Send a request to the GraphQL endpoint. Note that because you enforced API key authorization, the unauthorized request fails, and you get a `401 Unauthorized` response.
    ```sh
-   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}'
+   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}' -v
    ```
 
 6. Add the API key to your request in the `-H 'api-key: $API_KEY'` header, and curl the endpoint again.
@@ -312,8 +308,8 @@ EOF
 ## Next steps
 
 Now that you've tried out GraphQL with Gloo Edge, check out the following pages to configure your own services for GraphQL integration.
-<!--* [Visualize your GraphQL services in the UI]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/graphql_ui/" %}})-->
+* [Visualize your GraphQL services in the UI]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/graphql_ui/" %}})
 * [Explore automatic schema generation with GraphQL service discovery]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/automatic_discovery/" %}})
 * [Manually configure resolvers and schema for your GraphQL API]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/resolver_config/" %}})
-<!--* [Monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/observability/" %}})-->
-* [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}})
+* [Monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/observability/" %}})
+* [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/" %}})
