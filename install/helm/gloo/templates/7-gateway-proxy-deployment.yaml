@@ -254,7 +254,7 @@ spec:
             command:
             - wget
             - -O
-              - /dev/null
+            - /dev/null
             - {{ $spec.loopBackAddress }}:19000/live
           initialDelaySeconds: 1
           periodSeconds: 10
