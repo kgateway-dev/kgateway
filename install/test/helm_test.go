@@ -2452,7 +2452,7 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					It("supports custom readiness probe", func() {
+					It("supports custom readiness and liveness probe", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
@@ -2462,9 +2462,14 @@ spec:
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/gloo/health",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=8080",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=5",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold=3",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.periodSeconds=10",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.path=/gloo/health",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.port=8080",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.scheme=HTTP",
 							},
 						})
-
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 							Handler: v1.Handler{
 								HTTPGet: &v1.HTTPGetAction{
@@ -2479,17 +2484,16 @@ spec:
 						}
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
 							Handler: v1.Handler{
-								Exec: &v1.ExecAction{
-									Command: []string{
-										"wget", "-O", "/dev/null", "127.0.0.1:19000/server_info",
-									},
+								HTTPGet: &v1.HTTPGetAction{
+									Path:   "/gloo/health",
+									Port:   intstr.FromInt(8080),
+									Scheme: "HTTP",
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 5,
 							PeriodSeconds:       10,
-							FailureThreshold:    10,
+							FailureThreshold:    3,
 						}
-
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
@@ -3406,6 +3410,12 @@ spec:
           - mountPath: /etc/gateway/validation-certs
             name: validation-certs
         readinessProbe:
+          tcpSocket:
+            port: 8443
+          initialDelaySeconds: 1
+          periodSeconds: 2
+          failureThreshold: 10
+        livenessProbe:
           tcpSocket:
             port: 8443
           initialDelaySeconds: 1
