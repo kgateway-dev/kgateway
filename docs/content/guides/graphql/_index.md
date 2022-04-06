@@ -10,10 +10,6 @@ Set up API gateway and GraphQL server functionality for your apps in the same pr
 This feature is available only in Gloo Edge Enterprise version 1.10.0 and later.
 {{% /notice %}}
 
-{{% notice warning %}}
-This is an alpha feature. Do not use this feature in a production environment.
-{{% /notice %}}
-
 ## Why GraphQL?
 
 GraphQL is a server-side query language and runtime you can use to expose your APIs as an alternative to REST APIs. GraphQL allows you to request only the data you want and handle any subsequent requests on the server side, saving numerous expensive origin-to-client requests by instead handling requests in your internal network.

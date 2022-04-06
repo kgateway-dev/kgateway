@@ -6,7 +6,7 @@ description: Explore automatic schema generation with GraphQL service discovery.
 
 <!-- **QUESTION do we need to add the behind-the-scenes info for this feature?** eg Sai has a great overview here: https://docs.google.com/presentation/d/1ArxEdVVAOowz4wYcXIYlg4Wd-psadUTrOYH9DPPWwpk/edit#slide=id.g10a8760f3dd_24_181 -->
 
-Gloo Edge can automatically discover API specifications and create GraphQL schemas. The generated `GraphQLApi` includes the configuration for REST <!--or gRPC -->resolvers and schema definitions for the types of data to return to graphQL queries.
+Gloo Edge can automatically discover API specifications and create GraphQL schemas. The generated `GraphQLApi` includes the configuration for REST or gRPC resolvers and schema definitions for the types of data to return to graphQL queries.
 
 Gloo Edge supports two modes of discovery: allowlist and blocklist. For more information about these discovery modes, see the [Function Discovery Service (FDS) guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#function-discovery-service-fds" %}}).
 
