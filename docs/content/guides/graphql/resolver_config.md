@@ -4,9 +4,11 @@ weight: 40
 description: Manually configure resolvers and schema for your GraphQL API.
 ---
 
-You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure GraphQL resolvers, you create a Gloo Edge GraphQL API CRD. The following sections describe the configuration for REST <!--or gRPC -->resolvers, schema definitions for the types of data to return to graphQL queries, and an in-depth example.
+You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure GraphQL resolvers, you create a Gloo Edge GraphQL API CRD. The following sections describe the configuration for REST or gRPC resolvers, schema definitions for the types of data to return to graphQL queries, and an in-depth example.
 
 ## REST resolvers
+
+Configure a REST resolver as a section within your `GraphQLApi` YAML file.
 
 ```yaml
 resolutions:
@@ -41,6 +43,7 @@ resolutions:
 
 This example REST resolver, `Query|productsForHome`, specifies the path and the method that are needed to request the data.
 ```yaml
+...
 resolutions:
   Query|productsForHome:
     restResolver:
@@ -51,19 +54,27 @@ resolutions:
       upstreamRef:
         name: default-productpage-9080
         namespace: gloo-system
+...
 ```
-<!--
+
 ## gRPC resolvers
 
-**QUESTION need the actual fields for a grpcResolver** Relevant section in the Proto: https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto#L171
+Configure a REST resolver as a section within your `GraphQLApi` YAML file.
 
 ```yaml
 resolutions:
   # Resolver name
   Query|nameOfResolver:
     grpcResolver:
-      requestTransform: <need fields>
-      spanName: <need fields>
+      # Configuration for generating outgoing requests to a gRPC API
+      requestTransform:
+        # JSON representation of outgoing gRPC message to be sent to JSON service
+        outgoingMessageJson:
+          <key>: <value>
+        # The full name of the JSON service
+        serviceName:
+        # Method on the gRPC service defined in serviceName to make request to 
+        methodName:
       upstreamRef:
         # Name of the upstream resource associated with the REST API  
         name:
@@ -71,8 +82,23 @@ resolutions:
         namespace:
 ```
 
-**QUESTION need example grpcResolver**
--->
+This example gRPC resolver, `Query|UserService.GetUser`, specifies the `GetUser` method on the `user.UserService`, and the `default-users-8080` upstream service.
+```yaml
+...
+resolutions:
+  Query|UserService.GetUser:
+    grpcResolver:
+      requestTransform:
+        methodName: GetUser
+        outgoingMessageJson:
+          username: '{$args.UserSearch.username}'
+        serviceName: user.UserService
+      upstreamRef:
+        name: default-users-8080
+        namespace: gloo-system
+...
+```
+
 ## Schema definitions
 
 A schema definition determines what kind of data can be returned to a client that makes a GraphQL query to your endpoint. The schema specifies the data that a particular `type`, or service, returns in response to a GraphQL query.
@@ -80,7 +106,7 @@ A schema definition determines what kind of data can be returned to a client tha
 In this example, fields are defined for the three Bookinfo services, Product, Review, and Rating. Additionally, the schema definition indicates which services reference the resolvers. In this example, the Product service references the `Query|productForHome` REST resolver.
 
 ```yaml
-schema_definition: |
+schemaDefinition: |
   type Query {
     productsForHome: [Product] @resolve(name: "Query|productsForHome")
   }

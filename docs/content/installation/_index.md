@@ -50,7 +50,7 @@ Gloo Edge Enterprise has a single installation workflow:
       <a href="{{% versioned_link_path fromRoot="/installation/enterprise/" %}}"><img src='{{% versioned_link_path fromRoot="/img/gloo-ee.png" %}}' width="60"/></a>
     </td>
     <td>
-    Gloo Edge Enterprise is based on open-source Gloo Edge with additional (closed source) UI and plugins. See <a href="https://solo.io/glooe">the Gloo Edge Enterprise documentation</a> for more details on the additional features of the Enterprise version of Gloo Edge.
+    Gloo Edge Enterprise is based on open-source Gloo Edge with additional (closed source) UI and plugins. See <a href="{{% versioned_link_path fromRoot="/installation/enterprise/" %}}">the Gloo Edge Enterprise documentation</a> for more details on the additional features of the Enterprise version of Gloo Edge.
     </td>
   </tr>
 </table>
