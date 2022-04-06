@@ -1207,6 +1207,23 @@ var _ = Describe("Gateway", func() {
 						hybridGateway := g.GetHybridGateway()
 						if hybridGateway != nil {
 							hybridGateway.MatchedGateways = []*gatewayv1.MatchedGateway{
+								// Even though this test does not operate on HttpGateways, we intentionally include
+								// the configuration to ensure that it does not affect TcpGateway translation
+								{
+									Matcher: &gatewayv1.Matcher{
+										SourcePrefixRanges: []*v3.CidrRange{
+											{
+												AddressPrefix: "1.2.3.4",
+												PrefixLen: &wrappers.UInt32Value{
+													Value: 32,
+												},
+											},
+										},
+									},
+									GatewayType: &gatewayv1.MatchedGateway_HttpGateway{
+										HttpGateway: &gatewayv1.HttpGateway{},
+									},
+								},
 								{
 									Matcher: &gatewayv1.Matcher{},
 									GatewayType: &gatewayv1.MatchedGateway_TcpGateway{
