@@ -1,3 +1,7 @@
+<!--
+
+Hiding doc until it can be revised for latest version. 
+
 ---
 title: Schema stitching
 weight: 50
@@ -184,3 +188,5 @@ query {
 }
 {{< /tab >}}
 {{< /tabs >}}
+
+-->
