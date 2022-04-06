@@ -249,16 +249,17 @@ spec:
         livenessProbe:
 {{- if $spec.podTemplate.customLivenessProbe }}
 {{ toYaml $spec.podTemplate.customLivenessProbe | indent 10}}
-{{- else}}
+{{- else }}
           exec:
             command:
             - wget
             - -O
-            - /dev/null
+              - /dev/null
             - {{ $spec.loopBackAddress }}:19000/live
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10
+{{- end}}
 {{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
