@@ -102,9 +102,7 @@ var _ = Describe("Access Log", func() {
 			})
 
 			AfterEach(func() {
-				if envoyInstance != nil {
-					_ = envoyInstance.Clean()
-				}
+				envoyInstance.Clean()
 			})
 
 			Context("Grpc", func() {
