@@ -2438,7 +2438,7 @@ spec:
 							Handler: v1.Handler{
 								Exec: &v1.ExecAction{
 									Command: []string{
-										"wget", "-O", "/dev/null", "127.0.0.1:19000/server_info",
+										"wget", "-O", "/dev/null", "127.0.0.1:19000/live",
 									},
 								},
 							},
