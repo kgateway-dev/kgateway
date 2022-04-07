@@ -121,11 +121,11 @@ var _ = Describe("Kube2e: helm", func() {
 
 	It("uses helm to update the validationServerGrpcMaxSizeBytes without errors", func() {
 
-		By("should start with the gateway.validation.validationServerGrpcMaxSizeBytes=4000000 (4MB)")
+		By("should start with the gateway.validation.validationServerGrpcMaxSizeBytes=104857600 (100MiB)")
 		client := helpers.MustSettingsClient(ctx)
 		settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 		Expect(err).To(BeNil())
-		Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
+		Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(104857600)))
 
 		// following logic handles chartUri for focused test
 		// update the settings with `helm upgrade` (without updating the gloo version)
