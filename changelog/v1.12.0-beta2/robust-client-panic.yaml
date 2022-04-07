@@ -2,4 +2,4 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/6237
     resolvesIssue: true
-    description: Ensure that the validation client is nevel nil, even after the connection has been refreshed.
+    description: Ensure that the validation client is never nil, even after the connection has been refreshed. 
