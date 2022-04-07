@@ -49,7 +49,6 @@ import (
 	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	v1kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
@@ -848,13 +847,6 @@ var _ = Describe("Translator", func() {
 				Options: options,
 			}
 			routes = []*v1.Route{redirectRoute, directResponseRoute}
-		})
-
-		JustBeforeEach(func() {
-			// we need to set this in order for tracing settings to be processedRegexMatcher_GoogleRe2
-			proxy.GetListeners()[0].GetHttpListener().Options = &v1.HttpListenerOptions{
-				HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
-			}
 		})
 
 		It("can process routeOptions properly", func() {
