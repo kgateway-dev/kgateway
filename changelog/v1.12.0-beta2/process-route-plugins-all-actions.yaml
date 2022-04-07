@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5917
+    description: >
+      Amends translation for routes which specify direct response and redirect actions,
+      so that provided config is always processed for all route plugins.
