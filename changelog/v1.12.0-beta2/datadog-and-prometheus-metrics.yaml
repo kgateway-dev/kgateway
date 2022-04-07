@@ -1,0 +1,7 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/6272
+    description: >-
+      Adds a new parameter on the helm chart that it will allow to enable/disable the datadog metrics endpoint, without disabling the Prometheus endpoint, this way will be possible to manage exposing both endpoints using the helm chart.
+
+
