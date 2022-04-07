@@ -81,7 +81,7 @@ global:
         readinessProbe:
           failureThreshold: 30
           httpGet:
-            path: /readyz
+            path: /healthz/ready
             port: 15021
             scheme: HTTP
           initialDelaySeconds: 1
@@ -91,7 +91,7 @@ global:
         livenessProbe:
             failureThreshold: 30
             httpGet:
-              path: /livez
+              path: /healthz/live
               port: 15021
               scheme: HTTP
             initialDelaySeconds: 1
