@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6255
+    description: Fix issue where glooctl upgrade on windows would not find the release assets
+    resolvesIssue: false
