@@ -255,7 +255,7 @@ spec:
             - wget
             - -O
             - /dev/null
-            - {{ $spec.loopBackAddress }}:19000/live
+            - {{ $spec.loopBackAddress }}:19000/server_info
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10
@@ -423,7 +423,7 @@ spec:
         livenessProbe:
             failureThreshold: 30
             httpGet:
-              path: /readyz
+              path: /livez
               port: 15021
               scheme: HTTP
             initialDelaySeconds: 1
