@@ -13,7 +13,7 @@ import (
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	protocol_upgrade "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
-	v1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
+	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -900,14 +900,8 @@ var _ = Describe("Translator", func() {
 					RequestsPerUnit: 1,
 				},
 			}
-
 			invalidOptions.RateLimitEarlyConfigType = &v1.RouteOptions_RatelimitEarly{
 				RatelimitEarly: &ratelimit.RateLimitRouteExtension{
-					IncludeVhRateLimits: true,
-				},
-			}
-			invalidOptions.RateLimitConfigType = &v1.RouteOptions_Ratelimit{
-				Ratelimit: &ratelimit.RateLimitRouteExtension{
 					IncludeVhRateLimits: true,
 				},
 			}
