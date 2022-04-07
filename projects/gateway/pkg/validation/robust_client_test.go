@@ -141,7 +141,7 @@ var _ = Describe("RobustClient", func() {
 		robustClient.lock.RUnlock()
 	})
 
-	FIt("does not swap out the client when new client returns a connection error", func() {
+	It("does not swap out the client when new client returns a connection error", func() {
 		original := &mockWrappedValidationClient{name: "original"}
 		robustClient, _ := NewConnectionRefreshingValidationClient(func() (client validation.GlooValidationServiceClient, e error) {
 			return original, nil
