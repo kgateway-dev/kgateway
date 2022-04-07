@@ -136,6 +136,11 @@ func convertProto(encodedBytes []byte) (*descriptor.FileDescriptorSet, error) {
 // gloo creates these descriptors automatically (if gRPC reflection is enabled),
 // uses its transformation filter to provide the context for the json-grpc translation.
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+	// This plugin is only available for routeActions. return early if a different action is specified.
+	if _, ok := in.GetAction().(*v1.Route_RouteAction); !ok {
+		return nil
+	}
+
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
 			// check if it's grpc destination
