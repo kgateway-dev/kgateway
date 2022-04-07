@@ -48,11 +48,6 @@ func (p *plugin) ProcessVirtualHost(
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	// This plugin is only available for routeActions. return early if a different action is specified.
-	if _, ok := in.GetAction().(*v1.Route_RouteAction); !ok {
-		return nil
-	}
-
 	if in.GetOptions() == nil {
 		return nil
 	}
