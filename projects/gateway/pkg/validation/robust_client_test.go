@@ -3,9 +3,10 @@ package validation
 import (
 	"context"
 	"fmt"
-	"github.com/rotisserie/eris"
 	"net"
 	"time"
+
+	"github.com/rotisserie/eris"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
