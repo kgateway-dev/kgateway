@@ -3,6 +3,7 @@ package consul
 import (
 	"context"
 	"net"
+	"sync"
 
 	"github.com/rotisserie/eris"
 )
@@ -13,6 +14,22 @@ import (
 
 type DnsResolver interface {
 	Resolve(ctx context.Context, address string) ([]net.IPAddr, error)
+}
+
+var (
+	_ DnsResolver = new(ConsulDnsResolver)
+	_ DnsResolver = new(DnsResolverWithFallback)
+)
+
+func NewConsulDnsResolver(address string) DnsResolver {
+	basicResolver := &ConsulDnsResolver{
+		DnsAddress: address,
+	}
+
+	return &DnsResolverWithFallback{
+		resolver:            basicResolver,
+		previousResolutions: make(map[string][]net.IPAddr),
+	}
 }
 
 type ConsulDnsResolver struct {
@@ -37,4 +54,32 @@ func (c *ConsulDnsResolver) Resolve(ctx context.Context, address string) ([]net.
 			"resolved as a hostname at %s but the DNS server returned no results", address, c.DnsAddress)
 	}
 	return ipAddrs, nil
+}
+
+type DnsResolverWithFallback struct {
+	resolver DnsResolver
+
+	mutex               sync.RWMutex
+	previousResolutions map[string][]net.IPAddr
+}
+
+func (d *DnsResolverWithFallback) Resolve(ctx context.Context, address string) ([]net.IPAddr, error) {
+	ipAddrs, err := d.resolver.Resolve(ctx, address)
+
+	// If we successfully resolved the addresses, update our last known state and return
+	if err == nil {
+		d.mutex.Lock()
+		defer d.mutex.Unlock()
+		d.previousResolutions[address] = ipAddrs
+		return ipAddrs, nil
+	}
+
+	// If we did not successfully resolve the addresses, attempt to use the last known state
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	lastKnownIdAddrs, resolvedPreviously := d.previousResolutions[address]
+	if !resolvedPreviously {
+		return nil, err
+	}
+	return lastKnownIdAddrs, nil
 }
