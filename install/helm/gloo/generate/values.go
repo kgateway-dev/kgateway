@@ -570,12 +570,12 @@ type K8s struct {
 }
 
 type Stats struct {
-	Enabled               *bool   `json:"enabled,omitempty" desc:"Controls whether or not envoy stats are enabled"`
-	RoutePrefixRewrite    *string `json:"routePrefixRewrite,omitempty" desc:"The envoy stats endpoint to which the metrics are written"`
-	enableAddDatadogRoute    *bool `json:"enableAddDatadogRoute,omitempty" desc:"Enables datadog (without disabling Prometheus) envoy stats endpoint to which the metrics are written|"`
+	Enabled               	*bool   `json:"enabled,omitempty" desc:"Controls whether or not envoy stats are enabled"`
+	RoutePrefixRewrite    	*string `json:"routePrefixRewrite,omitempty" desc:"The envoy stats endpoint to which the metrics are written"`
+	enableAddDatadogRoute   *bool `json:"enableAddDatadogRoute,omitempty" desc:"Enables datadog (without disabling Prometheus) envoy stats endpoint to which the metrics are written|"`
 	datadogPrefixRewrite    *string `json:"datadogPrefixRewrite,omitempty" desc:"The envoy stats endpoint to which the datadog metrics are written"`
-	ServiceMonitorEnabled *bool   `json:"serviceMonitorEnabled,omitempty" desc:"Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true"`
-	PodMonitorEnabled     *bool   `json:"podMonitorEnabled,omitempty" desc:"Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true"`
+	ServiceMonitorEnabled 	*bool   `json:"serviceMonitorEnabled,omitempty" desc:"Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true"`
+	PodMonitorEnabled     	*bool   `json:"podMonitorEnabled,omitempty" desc:"Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true"`
 }
 
 type Mtls struct {
