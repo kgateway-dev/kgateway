@@ -46,15 +46,16 @@ configuration options are inconsistent/invalid).
 The webhook can be configured to reject invalid resources via the 
 {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
 
-If using Helm to manage settings, set the following value:
+If using Helm to manage settings, set the following values:
 
 ```bash
 --set gateway.validation.alwaysAcceptResources=false
+--set gateway.validation.enabled=true
 ```
 
 If writing Settings directly to Kubernetes, add the following to the `spec.gateway` block:
 
-{{< highlight yaml "hl_lines=10-12" >}}
+{{< highlight yaml "hl_lines=12-15" >}}
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
@@ -64,11 +65,12 @@ metadata:
   namespace: gloo-system
 spec:
   discoveryNamespace: gloo-system
-  gateway:
-    validation:
-      alwaysAccept: false
   gloo:
     xdsBindAddr: 0.0.0.0:9977
+    gateway:
+      validation:
+        enabled: true
+        alwaysAcceptResources: false
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}

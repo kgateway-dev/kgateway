@@ -74,23 +74,14 @@ The callback path must have a matching route in the VirtualService associated wi
 - `client_id`: This is the **client id** that you obtained when you registered your application with the identity provider.
 - `client_secret_ref`: This is a reference to a Kubernetes secret containing the **client secret** that you obtained 
 when you registered your application with the identity provider. The easiest way to create the Kubernetes secret in the 
-expected format is to use `glooctl`, but you can also provide it by `kubectl apply`ing YAML to your cluster:
+expected format is to use `glooctl`. If you use `kubectl`, be sure to annotate the secret with `*v1.Secret` so that Gloo Edge detects the secret.
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell">}}
-glooctl create secret oauth --namespace gloo-system --name oidc --client-secret secretvalue
+glooctl create secret oauth --namespace gloo-system --name oidc --client-secret <client_secret_value>
 {{< /tab >}}
-{{< tab name="kubectl" codelang="yaml">}}
-apiVersion: v1
-kind: Secret
-type: extauth.solo.io/oauth
-metadata:
-  name: oidc
-  namespace: gloo-system
-data:
-  # The value is a base64 encoding of the following YAML:
-  # client_secret: secretvalue
-  # Gloo Edge expects OAuth client secrets in this format.
-  client-secret: Y2xpZW50U2VjcmV0OiBzZWNyZXR2YWx1ZQo=
+{{< tab name="kubectl" codelang="shell">}}
+kubectl create secret generic oidc --from-literal=client-secret=<client_secret>
+kubectl annotate secret oidc resource_kind='*v1.Secret' # Important, since gloo-edge does not watch for opaque secrets without this setting
 {{< /tab >}}
 {{< /tabs >}} 
 - `scopes`: scopes to request in addition to the `openid` scope.
