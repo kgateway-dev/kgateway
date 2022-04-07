@@ -9,10 +9,10 @@ body:
       description: Which version of the Gloo Edge docs does this affect?
       options:
         - master
-        - 1.10.x (latest)
+        - 1.11.x (latest)
+        - 1.10.x
         - 1.9.x 
         - 1.8.x
-        - 1.7.x
     validations:
       required: true
   - type: textarea
