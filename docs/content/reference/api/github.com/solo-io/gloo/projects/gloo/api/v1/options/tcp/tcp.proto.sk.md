@@ -13,6 +13,8 @@ weight: 5
 
 - [TcpProxySettings](#tcpproxysettings)
 - [TunnelingConfig](#tunnelingconfig)
+- [HeaderValueOption](#headervalueoption)
+- [HeaderValue](#headervalue)
   
 
 
@@ -54,12 +56,54 @@ Configuration for tunneling TCP over other transports or application layers.
 
 ```yaml
 "hostname": string
+"headersToAdd": []tcp.options.gloo.solo.io.HeaderValueOption
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `hostname` | `string` | The hostname to send in the synthesized CONNECT headers to the upstream proxy. |
+| `headersToAdd` | [[]tcp.options.gloo.solo.io.HeaderValueOption](../tcp.proto.sk/#headervalueoption) | Additional request headers to be sent to upstream proxy. Mainly used to trigger upstream to convert POST request back to CONNECT requests. |
+
+
+
+
+---
+### HeaderValueOption
+
+ 
+Header name/value pair plus option to control append behavior.
+
+```yaml
+"header": .tcp.options.gloo.solo.io.HeaderValue
+"append": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `header` | [.tcp.options.gloo.solo.io.HeaderValue](../tcp.proto.sk/#headervalue) | Header name/value pair that this option applies to. |
+| `append` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true (default), the value is appended to existing values. |
+
+
+
+
+---
+### HeaderValue
+
+ 
+Header name/value pair.
+
+```yaml
+"key": string
+"value": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | Header name. |
+| `value` | `string` | Header value. |
 
 
 

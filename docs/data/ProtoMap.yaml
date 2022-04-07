@@ -936,49 +936,49 @@ apis:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/rpc/status.proto.sk/#Status
     package: google.rpc
   graphql.gloo.solo.io.ExecutableSchema:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#ExecutableSchema
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#ExecutableSchema
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.Executor:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#Executor
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#Executor
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GraphQLApi:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GraphQLApi
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#GraphQLApi
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GraphQLToolsStitchingInput:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/stitching_info.proto.sk/#GraphQLToolsStitchingInput
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/stitching_info.proto.sk/#GraphQLToolsStitchingInput
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GraphQlToolsStitchingOutput:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/stitching_info.proto.sk/#GraphQlToolsStitchingOutput
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/stitching_info.proto.sk/#GraphQlToolsStitchingOutput
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GrpcDescriptorRegistry:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcDescriptorRegistry
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#GrpcDescriptorRegistry
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GrpcRequestTemplate:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcRequestTemplate
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#GrpcRequestTemplate
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GrpcResolver:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GrpcResolver
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#GrpcResolver
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.MockResolver:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#MockResolver
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#MockResolver
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.PersistedQueryCacheConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#PersistedQueryCacheConfig
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#PersistedQueryCacheConfig
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.RESTResolver:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#RESTResolver
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#RESTResolver
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.RequestTemplate:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#RequestTemplate
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#RequestTemplate
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.Resolution:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#Resolution
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#Resolution
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.ResponseTemplate:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#ResponseTemplate
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#ResponseTemplate
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.StitchedSchema:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#StitchedSchema
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#StitchedSchema
     package: graphql.gloo.solo.io
   grpc.options.gloo.solo.io.DestinationSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto.sk/#DestinationSpec
@@ -1646,6 +1646,12 @@ apis:
   stats.options.gloo.solo.io.VirtualCluster:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/stats/stats.proto.sk/#VirtualCluster
     package: stats.options.gloo.solo.io
+  tcp.options.gloo.solo.io.HeaderValue:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#HeaderValue
+    package: tcp.options.gloo.solo.io
+  tcp.options.gloo.solo.io.HeaderValueOption:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#HeaderValueOption
+    package: tcp.options.gloo.solo.io
   tcp.options.gloo.solo.io.TcpProxySettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#TcpProxySettings
     package: tcp.options.gloo.solo.io

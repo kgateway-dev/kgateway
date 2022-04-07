@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -115,6 +117,15 @@ func EventuallyReachesConsistentState(installNamespace string) {
 		currentSnapOut := getSnapOut(metricsPort)
 		return currentSnapOut
 	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(lastSnapOut))
+}
+
+// Copied from: https://github.com/solo-io/go-utils/blob/176c4c008b4d7cde836269c7a817f657b6981236/testutils/assertions.go#L20
+func ExpectEqualProtoMessages(g Gomega, a, b proto.Message, optionalDescription ...interface{}) {
+	if proto.Equal(a, b) {
+		return
+	}
+
+	g.Expect(a.String()).To(Equal(b.String()), optionalDescription...)
 }
 
 // needs a port-forward of the metrics port before a call to this will work

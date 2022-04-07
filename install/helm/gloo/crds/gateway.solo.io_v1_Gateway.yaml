@@ -624,6 +624,15 @@ spec:
                           useRemoteAddress:
                             nullable: true
                             type: boolean
+                          uuidRequestIdConfig:
+                            properties:
+                              packTraceReason:
+                                nullable: true
+                                type: boolean
+                              useRequestIdForTraceSampling:
+                                nullable: true
+                                type: boolean
+                            type: object
                           via:
                             type: string
                           xffNumTrustedHops:
@@ -1415,6 +1424,15 @@ spec:
                                     useRemoteAddress:
                                       nullable: true
                                       type: boolean
+                                    uuidRequestIdConfig:
+                                      properties:
+                                        packTraceReason:
+                                          nullable: true
+                                          type: boolean
+                                        useRequestIdForTraceSampling:
+                                          nullable: true
+                                          type: boolean
+                                      type: object
                                     via:
                                       type: string
                                     xffNumTrustedHops:
@@ -1677,6 +1695,21 @@ spec:
                                       type: integer
                                     tunnelingConfig:
                                       properties:
+                                        headersToAdd:
+                                          items:
+                                            properties:
+                                              append:
+                                                nullable: true
+                                                type: boolean
+                                              header:
+                                                properties:
+                                                  key:
+                                                    type: string
+                                                  value:
+                                                    type: string
+                                                type: object
+                                            type: object
+                                          type: array
                                         hostname:
                                           type: string
                                       type: object
@@ -3233,6 +3266,21 @@ spec:
                             type: integer
                           tunnelingConfig:
                             properties:
+                              headersToAdd:
+                                items:
+                                  properties:
+                                    append:
+                                      nullable: true
+                                      type: boolean
+                                    header:
+                                      properties:
+                                        key:
+                                          type: string
+                                        value:
+                                          type: string
+                                      type: object
+                                  type: object
+                                type: array
                               hostname:
                                 type: string
                             type: object

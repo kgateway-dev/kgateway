@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5859
+    description: Add HTTP Headers to TCP Config to support Proxy-Authorization Header.

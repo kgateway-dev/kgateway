@@ -22,8 +22,8 @@ var (
 )
 
 const (
-	Name              = "extauth"
-	ExtAuthServerRole = "extauth"
+	Name       = "extauth"
+	ServerRole = "extauth"
 )
 
 var (
@@ -59,7 +59,7 @@ func (s *TranslatorSyncerExtension) Sync(
 
 	getEnterpriseOnlyErr := func() (string, error) {
 		logger.Error(ErrEnterpriseOnly.Error())
-		return ExtAuthServerRole, ErrEnterpriseOnly
+		return ServerRole, ErrEnterpriseOnly
 	}
 
 	if settings.GetNamedExtauth() != nil {
@@ -103,5 +103,5 @@ func (s *TranslatorSyncerExtension) Sync(
 		}
 	}
 
-	return ExtAuthServerRole, nil
+	return ServerRole, nil
 }

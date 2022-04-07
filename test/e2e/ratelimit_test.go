@@ -204,10 +204,7 @@ var _ = Describe("Rate Limit", func() {
 		})
 
 		AfterEach(func() {
-			if envoyInstance != nil {
-				err := envoyInstance.Clean()
-				Expect(err).NotTo(HaveOccurred())
-			}
+			envoyInstance.Clean()
 			srv.GracefulStop()
 			if cancel != nil {
 				cancel()

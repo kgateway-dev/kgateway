@@ -33,6 +33,7 @@ weight: 5
 - [InternalSession](#internalsession)
 - [RedisSession](#redissession)
 - [CookieOptions](#cookieoptions)
+- [SameSite](#samesite)
 - [HeaderConfiguration](#headerconfiguration)
 - [DiscoveryOverride](#discoveryoverride)
 - [JwksOnDemandCacheRefreshPolicy](#jwksondemandcacherefreshpolicy)
@@ -558,6 +559,7 @@ Deprecated: Prefer OAuth2
 "notSecure": bool
 "httpOnly": .google.protobuf.BoolValue
 "path": .google.protobuf.StringValue
+"sameSite": .enterprise.gloo.solo.io.UserSession.CookieOptions.SameSite
 "domain": string
 
 ```
@@ -568,7 +570,24 @@ Deprecated: Prefer OAuth2
 | `notSecure` | `bool` | Use a non-secure cookie. Note - this should only be used for testing and in trusted environments. |
 | `httpOnly` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set the cookie to be HttpOnly. defaults to true. Set explicity to false to disable. |
 | `path` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a path. |
+| `sameSite` | [.enterprise.gloo.solo.io.UserSession.CookieOptions.SameSite](../extauth.proto.sk/#samesite) | Whether the cookie should be restricted to a first-party or same-site context. The default mode is LaxMode. |
 | `domain` | `string` | Cookie domain. |
+
+
+
+
+---
+### SameSite
+
+ 
+The SameSite options. The default value is LaxMode.
+
+| Name | Description |
+| ----- | ----------- | 
+| `DefaultMode` | Default Mode is the same as LaxMode but will not show up in the Cookie Header. This value is ignored. |
+| `LaxMode` | Cookies are not sent on normal cross-site subrequests, but are sent when navigating to the origin site. |
+| `StrictMode` | Only be sent in a first-party context and not be sent along with requests initiated by third party websites. |
+| `NoneMode` | Cookies are sent in all contexts. Cookie NotSecure must be unset. |
 
 
 
@@ -992,6 +1011,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 "membershipAttributeName": string
 "allowedGroups": []string
 "pool": .enterprise.gloo.solo.io.Ldap.ConnectionPool
+"searchFilter": string
 
 ```
 
@@ -1002,6 +1022,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 | `membershipAttributeName` | `string` | Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided. |
 | `allowedGroups` | `[]string` | In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }. |
 | `pool` | [.enterprise.gloo.solo.io.Ldap.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |
+| `searchFilter` | `string` | Use to set a custom filter when searching a member. Defaults to "(uid=*)". |
 
 
 

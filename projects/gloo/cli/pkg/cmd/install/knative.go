@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/avast/retry-go"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/setup"
@@ -250,18 +252,30 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 }
 
 func getManifestForInstallation(url string) (string, error) {
-	resp, err := http.Get(url)
+	var (
+		err      error
+		response *http.Response
+	)
+
+	err = retry.Do(func() error {
+		response, err = http.Get(url)
+		if err != nil {
+			return err
+		}
+		if response.StatusCode != 200 {
+			return eris.Errorf("returned non-200 status code: %v %v", response.StatusCode, response.Status)
+		}
+		return nil
+	})
 	if err != nil {
 		return "", err
 	}
-	if resp.StatusCode != 200 {
-		return "", eris.Errorf("returned non-200 status code: %v %v", resp.StatusCode, resp.Status)
-	}
-	raw, err := ioutil.ReadAll(resp.Body)
+
+	raw, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
 	return removeIstioResources(string(raw))
 }
