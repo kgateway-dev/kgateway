@@ -252,6 +252,8 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				)
 			}
 		}
+		h.runRoutePlugins(params, routeReport, in, out)
+		h.runRouteActionPlugins(params, routeReport, in, out)
 
 	case *v1.Route_DirectResponseAction:
 		out.Action = &envoy_config_route_v3.Route_DirectResponse{
@@ -260,6 +262,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				Body:   DataSourceFromString(action.DirectResponseAction.GetBody()),
 			},
 		}
+		h.runRoutePlugins(params, routeReport, in, out)
 
 	case *v1.Route_GraphqlApiRef:
 		// Envoy needs the route to have an action, so we use a dummy cluster here
@@ -271,6 +274,8 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				},
 			},
 		}
+		h.runRoutePlugins(params, routeReport, in, out)
+		h.runRouteActionPlugins(params, routeReport, in, out)
 
 	case *v1.Route_RedirectAction:
 		out.Action = &envoy_config_route_v3.Route_Redirect{
@@ -305,8 +310,9 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				}
 			}
 		}
+		h.runRoutePlugins(params, routeReport, in, out)
 	}
-	h.runRoutePlugins(params, routeReport, in, out)
+
 }
 
 func (h *httpRouteConfigurationTranslator) runRoutePlugins(
@@ -330,7 +336,13 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			)
 		}
 	}
+}
 
+func (h *httpRouteConfigurationTranslator) runRouteActionPlugins(
+	params plugins.RouteParams,
+	routeReport *validationapi.RouteReport,
+	in *v1.Route,
+	out *envoy_config_route_v3.Route) {
 	if in.GetRouteAction() == nil || out.GetRoute() == nil {
 		return
 	}
