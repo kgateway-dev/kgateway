@@ -163,9 +163,8 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 	reports reporter.ResourceReports,
 ) (envoycache.Snapshot, error) {
 	if !s.enabled {
-		// if if the route sanitizer is not enabled, enforce strict validation of routes (warnings are treated as errors)
-		// this is necessary because the translator only uses Validate() which ignores warnings
-		return xdsSnapshot, reports.ValidateStrict()
+		// TODO(kdorosh) better comment to explain the old bug here
+		return xdsSnapshot, nil
 	}
 
 	ctx = contextutils.WithLogger(ctx, "invalid-route-replacer")
