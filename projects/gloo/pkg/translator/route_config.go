@@ -18,7 +18,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -260,50 +259,8 @@ func (t *translatorInstance) setAction(
 				)
 			}
 		}
-
-		// run the plugins for RoutePlugin
-		for _, plug := range t.plugins {
-			routePlugin, ok := plug.(plugins.RoutePlugin)
-			if !ok {
-				continue
-			}
-			if err := routePlugin.ProcessRoute(params, in, out); err != nil {
-				// plugins can return errors on missing upstream/upstream group
-				// we only want to report errors that are plugin-specific
-				// missing upstream(group) should produce a warning above
-				if isWarningErr(err) {
-					continue
-				}
-				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
-					out.GetName(),
-				)
-			}
-		}
-
-		// run the plugins for RouteActionPlugin
-		for _, plug := range t.plugins {
-			routeActionPlugin, ok := plug.(plugins.RouteActionPlugin)
-			if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
-				continue
-			}
-			raParams := plugins.RouteActionParams{
-				RouteParams: params,
-				Route:       in,
-			}
-			if err := routeActionPlugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
-				// same as above
-				if isWarningErr(err) {
-					continue
-				}
-				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_ProcessingError,
-					err.Error(),
-					out.GetName(),
-				)
-			}
-		}
+		t.runRoutePlugins(params, routeReport, in, out)
+		t.runRouteActionPlugins(params, routeReport, in, out)
 
 	case *v1.Route_DirectResponseAction:
 		out.Action = &envoy_config_route_v3.Route_DirectResponse{
@@ -312,25 +269,7 @@ func (t *translatorInstance) setAction(
 				Body:   DataSourceFromString(action.DirectResponseAction.GetBody()),
 			},
 		}
-
-		// DirectResponseAction supports header manipulation, so we want to process the corresponding plugin.
-		// See here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-directresponseaction
-		for _, plug := range t.plugins {
-			routePlugin, ok := plug.(*headers.Plugin)
-			if !ok {
-				continue
-			}
-			if err := routePlugin.ProcessRoute(params, in, out); err != nil {
-				if isWarningErr(err) {
-					continue
-				}
-				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
-					out.GetName(),
-				)
-			}
-		}
+		t.runRoutePlugins(params, routeReport, in, out)
 
 	case *v1.Route_RedirectAction:
 		out.Action = &envoy_config_route_v3.Route_Redirect{
@@ -351,6 +290,64 @@ func (t *translatorInstance) setAction(
 			out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_PrefixRewrite{
 				PrefixRewrite: pathRewrite.PrefixRewrite,
 			}
+		}
+		t.runRoutePlugins(params, routeReport, in, out)
+	}
+
+}
+
+func (t *translatorInstance) runRoutePlugins(
+	params plugins.RouteParams,
+	routeReport *validationapi.RouteReport,
+	in *v1.Route,
+	out *envoy_config_route_v3.Route) {
+	// run the plugins for RoutePlugin
+	for _, plug := range t.plugins {
+		routePlugin, ok := plug.(plugins.RoutePlugin)
+		if !ok {
+			continue
+		}
+		if err := routePlugin.ProcessRoute(params, in, out); err != nil {
+			// plugins can return errors on missing upstream/upstream group
+			// we only want to report errors that are plugin-specific
+			// missing upstream(group) should produce a warning above
+			if isWarningErr(err) {
+				continue
+			}
+			validation.AppendRouteError(routeReport,
+				validationapi.RouteReport_Error_ProcessingError,
+				fmt.Sprintf("%T: %v", routePlugin, err.Error()),
+				out.GetName(),
+			)
+		}
+	}
+}
+
+func (t *translatorInstance) runRouteActionPlugins(
+	params plugins.RouteParams,
+	routeReport *validationapi.RouteReport,
+	in *v1.Route,
+	out *envoy_config_route_v3.Route) {
+	// run the plugins for RouteActionPlugin
+	for _, plug := range t.plugins {
+		routeActionPlugin, ok := plug.(plugins.RouteActionPlugin)
+		if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
+			continue
+		}
+		raParams := plugins.RouteActionParams{
+			RouteParams: params,
+			Route:       in,
+		}
+		if err := routeActionPlugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
+			// same as above
+			if isWarningErr(err) {
+				continue
+			}
+			validation.AppendRouteError(routeReport,
+				validationapi.RouteReport_Error_ProcessingError,
+				err.Error(),
+				out.GetName(),
+			)
 		}
 	}
 }
