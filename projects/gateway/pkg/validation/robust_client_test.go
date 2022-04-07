@@ -6,6 +6,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/rotisserie/eris"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -92,6 +94,7 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 		Expect(resp).To(Equal(res))
 
 	})
+
 })
 
 type mockWrappedValidationClient struct {
@@ -108,6 +111,7 @@ func (c *mockWrappedValidationClient) Validate(ctx context.Context, in *validati
 }
 
 var _ = Describe("RobustClient", func() {
+
 	It("swaps out the client when it returns a connection error", func() {
 		original := &mockWrappedValidationClient{name: "original"}
 		robustClient, _ := NewConnectionRefreshingValidationClient(func() (client validation.GlooValidationServiceClient, e error) {
@@ -135,6 +139,35 @@ var _ = Describe("RobustClient", func() {
 
 		robustClient.lock.RLock()
 		Expect(robustClient.validationClient).To(Equal(replacement))
+		robustClient.lock.RUnlock()
+	})
+
+	It("does not swap out the client when new client returns a connection error", func() {
+		original := &mockWrappedValidationClient{name: "original"}
+		robustClient, _ := NewConnectionRefreshingValidationClient(func() (client validation.GlooValidationServiceClient, e error) {
+			return original, nil
+		})
+
+		rootCtx := context.Background()
+
+		resp, err := robustClient.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp).To(Equal(res))
+
+		// make the original client return an error
+		original.err = status.Error(codes.Unavailable, "oh no, an error")
+		// update the constructor func with a new client, that also returns an error
+		robustClient.constructValidationClient = func() (client validation.GlooValidationServiceClient, e error) {
+			return nil, eris.New("intentionally failed to connect")
+		}
+
+		// robust client should not replace with the replacement client since it could not be constructed
+		resp, err = robustClient.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(ContainElement(original.err))
+
+		robustClient.lock.RLock()
+		Expect(robustClient.validationClient).To(Equal(original))
 		robustClient.lock.RUnlock()
 	})
 })
