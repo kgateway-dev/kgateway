@@ -99,8 +99,15 @@ func (c *connectionRefreshingValidationClient) retryWithNewClient(ctx context.Co
 		c.lock.Lock()
 		defer c.lock.Unlock()
 		// if someone already changed my client, do not replace it
-		if validationClient == c.validationClient {
-			c.validationClient, reinstantiateClientErr = c.constructValidationClient()
+		if validationClient != c.validationClient {
+			return
+		}
+
+		// if someone has not already changed my client, replace it if successful
+		var newValidationClient validation.GlooValidationServiceClient
+		newValidationClient, reinstantiateClientErr = c.constructValidationClient()
+		if newValidationClient != nil {
+			c.validationClient = newValidationClient
 		}
 	}))
 }
