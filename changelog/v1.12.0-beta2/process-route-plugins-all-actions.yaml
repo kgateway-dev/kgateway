@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Amends translation for routes which specify direct response and redirect actions,
+      so that provided config is always processed for all route plugins.
