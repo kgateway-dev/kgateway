@@ -56,7 +56,14 @@ func upgradeGlooCtl(ctx context.Context, upgrade options.Upgrade) error {
 		Timeout: time.Duration(timeoutSeconds) * time.Second,
 	}
 
-	glooctlBinaryName := fmt.Sprintf("glooctl-%v-%v", runtime.GOOS, runtime.GOARCH)
+	glooctlBinaryName := ""
+	if runtime.GOOS != "windows" {
+		glooctlBinaryName = fmt.Sprintf("glooctl-%v-%v", runtime.GOOS, runtime.GOARCH)
+	} else {
+		//Windows binaries have .exe in asset name
+		glooctlBinaryName = fmt.Sprintf("glooctl-%v-%v%s", runtime.GOOS, runtime.GOARCH, ".exe")
+	}
+
 	release, err := getReleaseWithAsset(ctx, httpClient, upgrade.ReleaseTag, glooctlBinaryName)
 	if err != nil {
 		return errors.Wrapf(err, "getting release '%v' from solo-io/gloo repository", upgrade.ReleaseTag)
