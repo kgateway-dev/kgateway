@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5436
+    description: Increase default value for gateway.validation.validationServerGrpcMaxSizeBytes to 100 MB.
+    resolvesIssue: true
