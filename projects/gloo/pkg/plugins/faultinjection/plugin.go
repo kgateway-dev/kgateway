@@ -39,6 +39,11 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+	// This plugin is only available for routeActions. return early if a different action is specified.
+	if _, ok := in.GetAction().(*v1.Route_RouteAction); !ok {
+		return nil
+	}
+
 	markFilterConfigFunc := func(spec *v1.Destination) (proto.Message, error) {
 		if in.GetOptions() == nil {
 			return nil, nil

@@ -704,11 +704,6 @@ var _ = Describe("Translator", func() {
 					RequestsPerUnit: 1,
 				},
 			}
-			invalidOptions.RateLimitEarlyConfigType = &v1.RouteOptions_RatelimitEarly{
-				RatelimitEarly: &ratelimit.RateLimitRouteExtension{
-					IncludeVhRateLimits: true,
-				},
-			}
 			invalidOptions.RegexRewrite = &v32.RegexMatchAndSubstitute{
 				Pattern: &v32.RegexMatcher{
 					Regex: "Test",
