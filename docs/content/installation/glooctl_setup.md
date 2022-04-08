@@ -45,6 +45,6 @@ glooctl version
 In the output, the **Client** is your local version. The **Server** is the version that runs in your cluster, and is `undefined` if you did not install Gloo Edge yet!
 
 ```shell
-Client: {"version":"1.10.0"}
+Client: {"version":"1.11.0"}
 Server: version undefined, could not find any version of gloo running
 ```
