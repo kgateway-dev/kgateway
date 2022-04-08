@@ -113,6 +113,12 @@ message Settings {
         // this can be used to run multiple instances of Gloo against the same Consul cluster
         // defaults to `gloo`
         string root_key = 9;
+
+        // pathPrefix, if set, represents the name of a Vault Secrets Engine
+        // https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines
+        // The path prefix tells Vault which Secrets Engine to which it should route traffic
+        // defaults to 'secret'
+        string path_prefix = 10;
     }
 
     // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
