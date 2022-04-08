@@ -85,8 +85,8 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 1
-          periodSeconds: 2
+          initialDelaySeconds: 3
+          periodSeconds: 3
           failureThreshold: 20
         volumeMounts:
         - mountPath: /etc/envoy

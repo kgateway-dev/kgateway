@@ -284,8 +284,8 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 8234
-          initialDelaySeconds: 1
-          periodSeconds: 2
+          initialDelaySeconds: 3
+          periodSeconds: 3
           failureThreshold: 20
 {{- if $global.glooMtls.sdsResources }}
         resources:
