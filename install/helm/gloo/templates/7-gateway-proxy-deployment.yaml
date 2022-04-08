@@ -258,7 +258,7 @@ spec:
             - {{ $spec.loopBackAddress }}:19000/server_info
           initialDelaySeconds: 1
           periodSeconds: 10
-          failureThreshold: 10
+          failureThreshold: 3
 {{- end}}
 {{- end}}
         volumeMounts:
