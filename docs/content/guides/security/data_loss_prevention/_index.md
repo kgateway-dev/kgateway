@@ -4,12 +4,6 @@ weight: 50
 description: Data Loss Prevention (DLP) is a method of ensuring that sensitive data isn't logged or leaked.
 ---
 
-{{% notice note %}}
-DLP is a feature of **Gloo Edge Enterprise v1.0.0+**. Gloo Edge Enterprise release candidate v1.0.0-rc1 was the first version to
-support this feature. v1.0.0-rc2 contained some minor fixes to the Gloo Edge provided regular expressions.
-This guide is written for v1.0.0-rc4+.
-{{% /notice %}}
-
 ### Understanding DLP
 
 Data Loss Prevention (DLP) is a method of ensuring that sensitive data isn't logged or leaked. This is done by doing
@@ -45,7 +39,7 @@ DLP is one of the first filters run by Envoy. Gloo Edge's current filter order f
 
 ### DLP for access logs
 
-By default, DLP will only run regex replaces on the response body. If 
+By default, DLP will only run regex replacements on the response body. If 
 [access logging]({{% versioned_link_path fromRoot="/guides/security/access_logging/" %}}) is configured, the DLP actions
 can also be applied to the headers and dynamic metadata that is logged by the configured access loggers. To do so, the `enabledFor`
 DLP configuration option must be set to `ACCESS_LOGS` or `ALL` (to mask access logs AND the response bodies).
@@ -63,7 +57,9 @@ First let's begin by configuring a simple static upstream to an echo site.
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
+kubectl apply -f - <<EOF
 {{< readfile file="guides/security/data_loss_prevention/us-echo-test.yaml">}}
+EOF
 {{< /tab >}}
 {{< tab name="glooctl" codelang="shell script">}}
 glooctl create upstream static --static-hosts echo.jsontest.com:80 --name json-upstream
@@ -90,7 +86,8 @@ The `curl` should return:
 
 Now let's mask the SSN and credit card, apply the following virtual service:
 
-{{< highlight yaml "hl_lines=18-22" >}}
+{{< highlight yaml "hl_lines=19-23" >}}
+kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -113,6 +110,7 @@ spec:
         actions:
         - actionType: SSN
         - actionType: ALL_CREDIT_CARDS
+EOF
 {{< /highlight >}}
 
 Run the same `curl` as before:
@@ -154,6 +152,7 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/p
 Apply the following virtual service to route to the Gloo Edge discovered petstore upstream:
 
 ```yaml
+kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -169,6 +168,7 @@ spec:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
+EOF
 ```
 
 Query the petstore microservice for a list of pets:
@@ -186,7 +186,8 @@ You should obtain the following response:
 Names are often used as personally identifying information, or **PII**. Let's write our own regex to mask the
 names returned by the petstore service:
 
-{{< highlight yaml "hl_lines=16-26" >}}
+{{< highlight yaml "hl_lines=17-27" >}}
+kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -212,6 +213,7 @@ spec:
               value: 60  # % of regex match to mask
             regex:
             - '(?!"name":"[\s]*)[^"]+(?=",)'
+EOF
 {{< /highlight >}}
 
 Query for pets again:

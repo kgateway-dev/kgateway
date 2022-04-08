@@ -2377,10 +2377,10 @@ type GatewayOptions_ValidationOptions struct {
 	// validation time considerably, but may also cause the transformation config to fail after being sent to envoy.
 	// When disabling this, ensure that your transformations are valid prior to applying them.
 	DisableTransformationValidation *wrappers.BoolValue `protobuf:"bytes,9,opt,name=disable_transformation_validation,json=disableTransformationValidation,proto3" json:"disable_transformation_validation,omitempty"`
-	// By default, gRPC validation messages between gateway and gloo pods have a max message size of 4 MB.
+	// By default, gRPC validation messages between gateway and gloo pods have a max message size of 100 MB.
 	// Setting this value sets the gRPC max message size in bytes for the gloo validation server. This should
 	// only be changed if necessary.
-	// If not included, the gRPC max message size will be the default of 4 MB.
+	// If not included, the gRPC max message size will be the default of 100 MB.
 	ValidationServerGrpcMaxSizeBytes *wrappers.Int32Value `protobuf:"bytes,11,opt,name=validation_server_grpc_max_size_bytes,json=validationServerGrpcMaxSizeBytes,proto3" json:"validation_server_grpc_max_size_bytes,omitempty"`
 }
 
