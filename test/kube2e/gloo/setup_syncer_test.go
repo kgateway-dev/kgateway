@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/setuputils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
@@ -41,10 +43,11 @@ import (
 var _ = Describe("SetupSyncer", func() {
 
 	var (
-		settings *v1.Settings
-		ctx      context.Context
-		cancel   context.CancelFunc
-		memcache memory.InMemoryResourceCache
+		settings  *v1.Settings
+		ctx       context.Context
+		cancel    context.CancelFunc
+		memcache  memory.InMemoryResourceCache
+		setupLock sync.RWMutex
 	)
 
 	newContext := func() {
@@ -53,6 +56,25 @@ var _ = Describe("SetupSyncer", func() {
 		}
 		ctx, cancel = context.WithCancel(context.Background())
 		ctx = settingsutil.WithSettings(ctx, settings)
+	}
+
+	// SetupFunc is used to configure Gloo with appropriate configuration
+	// It is assumed to run once at construction time, and therefore it executes directives that
+	// are also assumed to only run at construction time.
+	// One of those, is the construction of schemes: https://github.com/kubernetes/kubernetes/pull/89019#issuecomment-600278461
+	// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
+	// we ensure that only 1 SetupFunc is ever called at a time
+	newSynchronizedSetupFunc := func() setuputils.SetupFunc {
+		setupFunc := NewSetupFunc()
+
+		var synchronizedSetupFunc setuputils.SetupFunc
+		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+			setupLock.Lock()
+			defer setupLock.Unlock()
+			return setupFunc(ctx, kubeCache, inMemoryCache, settings)
+		}
+
+		return synchronizedSetupFunc
 	}
 
 	BeforeEach(func() {
@@ -102,7 +124,7 @@ var _ = Describe("SetupSyncer", func() {
 		Context("XDS tests", func() {
 
 			It("setup can be called twice", func() {
-				setup := NewSetupFunc()
+				setup := newSynchronizedSetupFunc()
 
 				err := setup(ctx, nil, memcache, settings)
 				Expect(err).NotTo(HaveOccurred())
@@ -205,27 +227,27 @@ var _ = Describe("SetupSyncer", func() {
 			})
 
 			It("can be called with core cache", func() {
-				setup := NewSetupFunc()
+				setup := newSynchronizedSetupFunc()
 				err := setup(ctx, kubeCoreCache, memcache, settings)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("can be called with core cache warming endpoints", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(time.Minute)
-				setup := NewSetupFunc()
+				setup := newSynchronizedSetupFunc()
 				err := setup(ctx, kubeCoreCache, memcache, settings)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("panics when endpoints don't arrive in a timely manner", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(1 * time.Nanosecond)
-				setup := NewSetupFunc()
+				setup := newSynchronizedSetupFunc()
 				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).To(Panic())
 			})
 
 			It("doesn't panic when endpoints don't arrive in a timely manner if set to zero", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(0)
-				setup := NewSetupFunc()
+				setup := newSynchronizedSetupFunc()
 				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).NotTo(Panic())
 			})
 
