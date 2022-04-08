@@ -4,7 +4,18 @@ import (
 	"github.com/hashicorp/vault/api"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 )
+
+const DefaultPathPrefix = "secret"
+
+func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string) factory.ResourceClientFactory {
+	return &factory.VaultSecretClientFactory{
+		Vault:   client,
+		RootKey: rootKey,
+		// TODO (fabian) - inject pathPrefix
+	}
+}
 
 func VaultClientForSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Client, error) {
 	cfg := api.DefaultConfig()

@@ -191,10 +191,11 @@ func SecretFactoryForSettings(ctx context.Context,
 		if rootKey == "" {
 			rootKey = DefaultRootKey
 		}
-		return &factory.VaultSecretClientFactory{
-			Vault:   vaultClient,
-			RootKey: rootKey,
-		}, nil
+		pathPrefix := source.VaultSecretSource.GetPathPrefix()
+		if pathPrefix == "" {
+			pathPrefix = DefaultPathPrefix
+		}
+		return NewVaultSecretClientFactory(vaultClient, pathPrefix, rootKey), nil
 	case *v1.Settings_DirectorySecretSource:
 		return &factory.FileResourceClientFactory{
 			RootDir: filepath.Join(source.DirectorySecretSource.GetDirectory(), pluralName),
