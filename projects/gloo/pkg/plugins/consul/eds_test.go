@@ -583,9 +583,7 @@ var _ = Describe("Consul EDS", func() {
 			}
 
 			// make sure the we have a correct number of generated endpoints:
-
-			previousResolutions := make(map[string][]string)
-			endpoints := buildEndpointsFromSpecs(context.TODO(), writeNamespace, mockDnsResolver, svcs, trackedServiceToUpstreams, previousResolutions)
+			endpoints := buildEndpointsFromSpecs(context.TODO(), writeNamespace, mockDnsResolver, svcs, trackedServiceToUpstreams)
 			endpontNames := map[string]bool{}
 			for _, endpoint := range endpoints {
 				fmt.Fprintf(GinkgoWriter, "%s%v\n", "endpoint: ", endpoint)
@@ -637,8 +635,7 @@ var _ = Describe("Consul EDS", func() {
 			// add another upstream so to test that tag2 is in the labels.
 			upstream2 := createTestFilteredUpstream("my-svc-2", "my-svc", []string{"tag-2"}, []string{"serf"}, []string{"dc-1", "dc-2"})
 
-			previousResolutions := make(map[string][]string)
-			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream, upstream2}, previousResolutions)
+			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream, upstream2})
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
@@ -678,8 +675,8 @@ var _ = Describe("Consul EDS", func() {
 			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context, string) {
 				fmt.Fprint(GinkgoWriter, "Initial resolve called.")
 			}).Return(initialIps, nil).Times(1) // once for each consul service
-			previousResolutions := make(map[string][]string)
-			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, mockDnsResolver, consulService, v1.UpstreamList{upstream}, previousResolutions)
+
+			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, mockDnsResolver, consulService, v1.UpstreamList{upstream})
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
@@ -715,15 +712,15 @@ var _ = Describe("Consul EDS", func() {
 
 			initialIps := []net.IPAddr{{IP: net.IPv4(127, 0, 0, 1)}}
 			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
+			mockDnsResolverWithFallback := NewDnsResolverWithFallback(mockDnsResolver)
 			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context, string) {
 				fmt.Fprint(GinkgoWriter, "Initial resolve called.")
 			}).Return(initialIps, nil).Times(1)
 
 			upstream := createTestFilteredUpstream("my-svc", "my-svc", []string{"tag-1"}, []string{"http"}, []string{"dc-1", "dc-2"})
 
-			previousResolutions := make(map[string][]string)
 			// Initial call should be successfull
-			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, mockDnsResolver, consulService, v1.UpstreamList{upstream}, previousResolutions)
+			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, mockDnsResolverWithFallback, consulService, v1.UpstreamList{upstream})
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
@@ -750,7 +747,7 @@ var _ = Describe("Consul EDS", func() {
 			}).Return(nil, failErr).Times(1)
 
 			// Following call should also be successfull despite the error
-			endpoints, err = buildEndpoints(context.TODO(), writeNamespace, mockDnsResolver, consulService, v1.UpstreamList{upstream}, previousResolutions)
+			endpoints, err = buildEndpoints(context.TODO(), writeNamespace, mockDnsResolverWithFallback, consulService, v1.UpstreamList{upstream})
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{

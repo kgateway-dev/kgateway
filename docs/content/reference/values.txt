@@ -240,7 +240,7 @@
 |gateway.validation.webhook.disableHelmHook|bool|false|do not create the webhook as helm hook (default false)|
 |gateway.validation.webhook.extraAnnotations.NAME|string||extra annotations to add to the webhook|
 |gateway.validation.webhook.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gateway.validation.validationServerGrpcMaxSizeBytes|int|4000000|gRPC max message size in bytes for the gloo validation server|
+|gateway.validation.validationServerGrpcMaxSizeBytes|int|104857600|gRPC max message size in bytes for the gloo validation server|
 |gateway.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gateway.deployment.image.repository|string|gateway|image name (repository) for the container.|
 |gateway.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|

@@ -131,7 +131,7 @@ Matchers currently support two types of requests:
 
 - **Request Matchers** match on properties of HTTP requests. This includes the request path (`:path` header in HTTP 2.0), method (`:method` in HTTP 2.0) headers (their keys and optionally their values), and query parameters.
 
-- **Event Matchers** match properties of HTTP events, as per the [CloudEvents specification](https://github.com/cloudevents/spec/blob/master/spec.md). The only property **Event Matcher** currently matches on is the *event-type* of an event (specified by the `x-event-type` request header).
+- **Event Matchers** match properties of HTTP events, as per the [CloudEvents specification](https://github.com/cloudevents/spec/blob/main/cloudevents/spec.md). The only property **Event Matcher** currently matches on is the *event-type* of an event (specified by the `x-event-type` request header).
 
 ### Destinations
 

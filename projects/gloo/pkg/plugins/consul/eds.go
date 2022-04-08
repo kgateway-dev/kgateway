@@ -95,7 +95,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				// Here is where the specs are produced; each resulting spec is a grouping of serviceInstances (aka endpoints)
 				// associated with a single consul service on one datacenter.
 				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan)
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams, p.previousDnsResolutions)
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
@@ -106,7 +106,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 			case <-timer.C:
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams, p.previousDnsResolutions)
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
 
 				currentHash := hashutils.MustHash(endpoints)
 				if previousHash == currentHash {
@@ -190,12 +190,11 @@ func buildEndpointsFromSpecs(
 	resolver DnsResolver,
 	specs []*consulapi.CatalogService,
 	trackedServiceToUpstreams map[string][]*v1.Upstream,
-	previousResolutions map[string][]string,
 ) v1.EndpointList {
 	var endpoints v1.EndpointList
 	for _, spec := range specs {
 		if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
-			if eps, err := buildEndpoints(ctx, writeNamespace, resolver, spec, upstreams, previousResolutions); err != nil {
+			if eps, err := buildEndpoints(ctx, writeNamespace, resolver, spec, upstreams); err != nil {
 				contextutils.LoggerFrom(ctx).Warnf("consul eds plugin encountered error resolving DNS for consul service %v", spec, err)
 			} else {
 				endpoints = append(endpoints, eps...)
@@ -273,7 +272,6 @@ func buildEndpoints(
 	resolver DnsResolver,
 	service *consulapi.CatalogService,
 	upstreams []*v1.Upstream,
-	previousResolutions map[string][]string,
 ) ([]*v1.Endpoint, error) {
 
 	// Address is the IP address of the Consul node on which the service is registered.
@@ -285,13 +283,7 @@ func buildEndpoints(
 
 	ipAddresses, err := getIpAddresses(ctx, address, resolver)
 	if err != nil {
-		addresses, resolvedPreviously := previousResolutions[address]
-		if !resolvedPreviously {
-			return nil, err
-		}
-		ipAddresses = addresses
-	} else {
-		previousResolutions[address] = ipAddresses
+		return nil, err
 	}
 
 	var endpoints []*v1.Endpoint
