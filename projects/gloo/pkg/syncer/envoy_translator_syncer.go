@@ -135,21 +135,27 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		key := xds.SnapshotKey(proxy)
 
-		sanitizedSnapshot, err := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reports)
-		if err != nil {
-			logger.Errorf("proxy %v was rejected due to invalid config: %v\n"+
-				"Attempting to update only EDS information", proxy.GetMetadata().Ref().Key(), err)
+		sanitizedSnapshot := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reports)
+		//if err != nil {
+		//	logger.Errorf("proxy %v was rejected due to invalid config: %v\n"+
+		//		"Attempting to update only EDS information", proxy.GetMetadata().Ref().Key(), err)
+		//
+		//	// If the snapshot is invalid, attempt at least to update the EDS information. This is important because
+		//	// endpoints are relatively ephemeral entities and the previous snapshot Envoy got might be stale by now.
+		//	sanitizedSnapshot, err = s.updateEndpointsOnly(key, xdsSnapshot)
+		//	if err != nil {
+		//		logger.Errorf("endpoint update failed. xDS snapshot for proxy %v will not be updated. "+
+		//			"Error is: %s", proxy.GetMetadata().Ref().Key(), err)
+		//		continue
+		//	}
+		//	logger.Infof("successfully updated EDS information for proxy %v", proxy.GetMetadata().Ref().Key())
+		//}
 
-			// If the snapshot is invalid, attempt at least to update the EDS information. This is important because
-			// endpoints are relatively ephemeral entities and the previous snapshot Envoy got might be stale by now.
-			sanitizedSnapshot, err = s.updateEndpointsOnly(key, xdsSnapshot)
-			if err != nil {
-				logger.Errorf("endpoint update failed. xDS snapshot for proxy %v will not be updated. "+
-					"Error is: %s", proxy.GetMetadata().Ref().Key(), err)
-				continue
-			}
-			logger.Infof("successfully updated EDS information for proxy %v", proxy.GetMetadata().Ref().Key())
-		}
+		// If the snapshot is not consistent, error
+		// TODO(kdorosh) call new interface to ensure we make it consistent by adding placeholders
+		//if err := xdsSnapshot.Consistent(); err != nil {
+		//	return xdsSnapshot, err
+		//}
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		allReports.Merge(reports)
