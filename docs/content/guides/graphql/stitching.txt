@@ -16,7 +16,7 @@ When you use GraphQL in Gloo Edge, you can stitch multiple schemas together to e
 
 Consider a cluster that has two different services, `user` and `product`. These services are either native GraphQL servers, or have been converted to GraphQL via automatic schema discovery. Each service has similar information that you might want to provide as part of a unified data model. 
 
-Typically, clients must stitch together the services in the frontend. With Gloo Edge, you can instead stitch the GraphQL schemas for these services together in the backend, and expose a unified GraphQL server to your clients. This frees your clients to consider only what data that they want to fetch, not how to fetch the data.
+Typically, clients must stitch together the services in the frontend. With Gloo Edge, you can instead stitch the GraphQL schemas for these services together in the backend, and expose a unified GraphQL server to your clients. This allows your clients to consider only what data that they want to fetch, not how to fetch the data.
 
 Follow along with the user and product service example.
 
@@ -121,7 +121,7 @@ mergeConfig:
 ...
 ```
 
-As a result, Gloo Edge generates a **stitched service**. From this one stitched service, a client can provide the product ID, and recieve the product name, the full name of the seller, and the username of the seller.
+As a result, Gloo Edge generates a **stitched service**. From this one stitched service, a client can provide the product ID, and receive the product name, the full name of the seller, and the username of the seller.
 ```yaml
 type User {
   username: String!
