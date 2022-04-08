@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/5557
-    description: Added readiness probes to SDS pods in the gloo deploymeny and gateway proxy.
