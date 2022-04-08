@@ -421,7 +421,7 @@ spec:
           successThreshold: 1
           timeoutSeconds: 1
         livenessProbe:
-            failureThreshold: 30
+            failureThreshold: 3
             httpGet:
               path: /healthz/live
               port: 15021

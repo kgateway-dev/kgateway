@@ -93,7 +93,7 @@ spec:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
           periodSeconds: 2
-          failureThreshold: 10
+          failureThreshold: 3
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-sidecar-config
@@ -211,7 +211,7 @@ spec:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
           periodSeconds: 2
-          failureThreshold: 10
+          failureThreshold: 3
 {{- end }}
 {{- end }} {{/* define "gloo.deploymentSpec "*/}}
 
