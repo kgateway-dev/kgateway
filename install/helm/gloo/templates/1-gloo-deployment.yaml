@@ -112,9 +112,9 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 1
-          periodSeconds: 2
-          failureThreshold: 10
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          failureThreshold: 20
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
