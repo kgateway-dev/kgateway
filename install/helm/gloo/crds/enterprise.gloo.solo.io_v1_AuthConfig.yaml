@@ -99,6 +99,8 @@ spec:
                               nullable: true
                               type: integer
                           type: object
+                        searchFilter:
+                          type: string
                         userDnTemplate:
                           type: string
                       type: object

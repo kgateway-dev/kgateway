@@ -4,12 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/onsi/ginkgo/extensions/table"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	envoy_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
+	csrf_v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	protocol_upgrade "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
+	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
@@ -38,13 +43,18 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	v1kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -791,13 +801,42 @@ var _ = Describe("Translator", func() {
 	})
 
 	Context("non route_routeaction routes", func() {
+		var options *v1.RouteOptions
 		BeforeEach(func() {
+			// specify routeOptions which can be processed on non route_routeaction routes
+			options = &v1.RouteOptions{
+				Transformations:    &transformation.Transformations{ClearRouteCache: true},
+				Tracing:            &tracing.RouteTracingSettings{},
+				HeaderManipulation: &headers.HeaderManipulation{RequestHeadersToRemove: []string{"test-header"}},
+				BufferPerRoute: &envoy_v3.BufferPerRoute{
+					Override: &envoy_v3.BufferPerRoute_Disabled{
+						Disabled: true,
+					},
+				},
+				Csrf: &csrf_v31.CsrfPolicy{
+					FilterEnabled: &v3.RuntimeFractionalPercent{
+						RuntimeKey: "test-key",
+					},
+				},
+				EnvoyMetadata: map[string]*_struct.Struct{
+					"test-struct": {
+						Fields: map[string]*_struct.Value{
+							"test-field": {
+								Kind: &_struct.Value_NumberValue{
+									NumberValue: 123,
+								},
+							},
+						},
+					},
+				},
+			}
 			redirectRoute := &v1.Route{
 				Action: &v1.Route_RedirectAction{
 					RedirectAction: &v1.RedirectAction{
 						ResponseCode: 400,
 					},
 				},
+				Options: options,
 			}
 			directResponseRoute := &v1.Route{
 				Action: &v1.Route_DirectResponseAction{
@@ -805,12 +844,81 @@ var _ = Describe("Translator", func() {
 						Status: 400,
 					},
 				},
+				Options: options,
 			}
 			routes = []*v1.Route{redirectRoute, directResponseRoute}
 		})
 
-		It("reports no errors with a redirect route or direct response route", func() {
+		It("can process routeOptions properly", func() {
 			translate()
+			for _, route := range routeConfiguration.VirtualHosts[0].Routes {
+				Expect(route.TypedPerFilterConfig).NotTo(BeNil())
+				Expect(route.TypedPerFilterConfig).To(HaveKey("io.solo.transformation"))
+				Expect(route.TypedPerFilterConfig).To(HaveKey("envoy.filters.http.buffer"))
+				Expect(route.TypedPerFilterConfig).To(HaveKey("envoy.filters.http.csrf"))
+				Expect(route.Tracing).NotTo(BeNil())
+				Expect(route.RequestHeadersToRemove).To(HaveLen(1))
+				Expect(route.Metadata).NotTo(BeNil())
+			}
+		})
+
+		It("does not affect envoy config when options only processed on routeActions are specified", func() {
+			// translate the config specified in the BeforeEach block and store the routeConfig
+			translate()
+			oldRouteConfig := routeConfiguration.VirtualHosts[0].Routes
+
+			// append unprocessed settings to the routeConfig
+			invalidOptions := options
+			invalidOptions.Faults = &faultinjection.RouteFaults{
+				Abort: &faultinjection.RouteAbort{Percentage: 50, HttpStatus: 401},
+			}
+			invalidOptions.PrefixRewrite = &wrappers.StringValue{Value: "test"}
+			invalidOptions.Timeout = &duration.Duration{Seconds: 1}
+			invalidOptions.Retries = &retries.RetryPolicy{RetryOn: "test"}
+			invalidOptions.HostRewriteType = &v1.RouteOptions_HostRewrite{HostRewrite: "test"}
+			invalidOptions.Extensions = &v1.Extensions{Configs: map[string]*_struct.Struct{
+				"test-struct": {
+					Fields: map[string]*_struct.Value{
+						"test-field": {
+							Kind: &_struct.Value_NumberValue{
+								NumberValue: 123,
+							},
+						},
+					},
+				},
+			}}
+			invalidOptions.Upgrades = []*protocol_upgrade.ProtocolUpgradeConfig{
+				{UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+					Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+						Enabled: &wrapperspb.BoolValue{Value: true},
+					},
+				}},
+			}
+			invalidOptions.RatelimitBasic = &ratelimit.IngressRateLimit{
+				AuthorizedLimits: &v1alpha1.RateLimit{
+					Unit:            v1alpha1.RateLimit_SECOND,
+					RequestsPerUnit: 1,
+				},
+			}
+			invalidOptions.RateLimitEarlyConfigType = &v1.RouteOptions_RatelimitEarly{
+				RatelimitEarly: &ratelimit.RateLimitRouteExtension{
+					IncludeVhRateLimits: true,
+				},
+			}
+			invalidOptions.RegexRewrite = &v32.RegexMatchAndSubstitute{
+				Pattern: &v32.RegexMatcher{
+					Regex: "Test",
+				},
+			}
+
+			for _, route := range proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes() {
+				route.Options = invalidOptions
+			}
+
+			// re-run translation and confirm that the new settings do not affect envoy config
+			translate()
+			newRouteConfig := routeConfiguration.VirtualHosts[0].Routes
+			Expect(oldRouteConfig).To(BeEquivalentTo(newRouteConfig))
 		})
 	})
 
