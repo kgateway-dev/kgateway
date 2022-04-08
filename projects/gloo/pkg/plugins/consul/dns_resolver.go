@@ -17,26 +17,22 @@ type DnsResolver interface {
 }
 
 var (
-	_ DnsResolver = new(ConsulDnsResolver)
-	_ DnsResolver = new(DnsResolverWithFallback)
+	_ DnsResolver = new(dnsResolver)
+	_ DnsResolver = new(dnsResolverWithFallback)
 )
 
 func NewConsulDnsResolver(address string) DnsResolver {
-	basicResolver := &ConsulDnsResolver{
+	basicResolver := &dnsResolver{
 		DnsAddress: address,
 	}
-
-	return &DnsResolverWithFallback{
-		resolver:            basicResolver,
-		previousResolutions: make(map[string][]net.IPAddr),
-	}
+	return NewDnsResolverWithFallback(basicResolver)
 }
 
-type ConsulDnsResolver struct {
+type dnsResolver struct {
 	DnsAddress string
 }
 
-func (c *ConsulDnsResolver) Resolve(ctx context.Context, address string) ([]net.IPAddr, error) {
+func (c *dnsResolver) Resolve(ctx context.Context, address string) ([]net.IPAddr, error) {
 	res := net.Resolver{
 		PreferGo: true, // otherwise we may use cgo which doesn't resolve on my mac in testing
 		Dial: func(ctx context.Context, network, address string) (conn net.Conn, err error) {
@@ -56,27 +52,34 @@ func (c *ConsulDnsResolver) Resolve(ctx context.Context, address string) ([]net.
 	return ipAddrs, nil
 }
 
-type DnsResolverWithFallback struct {
+type dnsResolverWithFallback struct {
 	resolver DnsResolver
 
-	mutex               sync.RWMutex
+	sync.RWMutex
 	previousResolutions map[string][]net.IPAddr
 }
 
-func (d *DnsResolverWithFallback) Resolve(ctx context.Context, address string) ([]net.IPAddr, error) {
+func NewDnsResolverWithFallback(resolver DnsResolver) *dnsResolverWithFallback {
+	return &dnsResolverWithFallback{
+		resolver:            resolver,
+		previousResolutions: make(map[string][]net.IPAddr),
+	}
+}
+
+func (d *dnsResolverWithFallback) Resolve(ctx context.Context, address string) ([]net.IPAddr, error) {
 	ipAddrs, err := d.resolver.Resolve(ctx, address)
+
+	// Synchronize access to previous resolutions
+	d.Lock()
+	defer d.Unlock()
 
 	// If we successfully resolved the addresses, update our last known state and return
 	if err == nil {
-		d.mutex.Lock()
-		defer d.mutex.Unlock()
 		d.previousResolutions[address] = ipAddrs
 		return ipAddrs, nil
 	}
 
 	// If we did not successfully resolve the addresses, attempt to use the last known state
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
 	lastKnownIdAddrs, resolvedPreviously := d.previousResolutions[address]
 	if !resolvedPreviously {
 		return nil, err
