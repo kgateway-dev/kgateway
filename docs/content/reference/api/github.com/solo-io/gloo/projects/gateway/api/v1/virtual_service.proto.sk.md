@@ -154,7 +154,7 @@ An HTTP request is first matched to a virtual host based on its host header, the
 
 If a request is not matched to any virtual host or a route therein, the target proxy will reply with a 404.
 
-Unlike the [Gloo Virtual Host]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk.md" >}}/#virtualhost),
+Unlike the [Gloo Virtual Host]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#virtualhost" >}}),
 _Gateway_ Virtual Hosts can delegate their routes to `RouteTables`.
 
 ```yaml
