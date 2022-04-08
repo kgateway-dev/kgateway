@@ -48,7 +48,7 @@ Explore the functionality of an API by sending sample queries.
 
 1. From the **APIs** overview page, click the name of a GraphQL API schema.
 2. Click the **Explore** tab.
-3. In the GraphiQL panel, you can specify example requests to send to the GraphQL API. The GraphiQL interface includes autocomplete based on the fields defined in your API configuration. For example, you might select one of your defined queries, and the fields within the query that you want data for.
+3. In the GraphiQL panel, you can specify example requests to send to the GraphQL API. The GraphiQL interface includes an autocomplete feature that helps populates sample GraphQL queries based on the fields that are defined in the API configuration. For example, you might select one of your defined queries, and the fields within the query that you want data for.
 4. Click **Run**, which sends the request, and returns the response in the middle panel.
 5. You can also explore the documentation for the API by clicking the **< Docs** button to expand the Documentation Explorer panel.
 
