@@ -50,7 +50,7 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 		translator:      translator,
 		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient, statusMetrics),
 		managedProxyLabels: map[string]string{
-			"created_by": "gateway",
+			"created_by": "gloo-gateway-translator",
 		},
 	}
 

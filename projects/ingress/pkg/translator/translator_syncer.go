@@ -63,7 +63,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	proxy := translateProxy(ctx, s.writeNamespace, snap, s.requireIngressClass, s.customIngressClass)
 
 	labels := map[string]string{
-		"created_by": "ingress",
+		"created_by": "gloo-ingress",
 	}
 
 	var desiredResources gloov1.ProxyList
