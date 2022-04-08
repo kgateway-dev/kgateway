@@ -23,6 +23,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 )
 
+var (
+	// Compile-time assertion
+	_ cache.Snapshot = new(EnvoySnapshot)
+)
+
 // Snapshot is an internally consistent snapshot of xDS resources.
 // Consistently is important for the convergence as different resource types
 // from the snapshot may be delivered to the proxy in arbitrary order.
