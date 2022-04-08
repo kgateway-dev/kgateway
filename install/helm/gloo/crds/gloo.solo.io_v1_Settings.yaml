@@ -571,6 +571,8 @@ spec:
                   insecure:
                     nullable: true
                     type: boolean
+                  pathPrefix:
+                    type: string
                   rootKey:
                     type: string
                   tlsServerName:
