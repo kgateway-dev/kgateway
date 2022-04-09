@@ -67,6 +67,10 @@ func measureResource(ctx context.Context, resource string, len int) {
 	}
 }
 
+// TODO(kdorosh) in follow up PR, update this interface so it can never error
+// It is logically invalid for us to return an error here (translation of resources always needs to
+// result in a xds snapshot, so we are resilient to pod restarts); instead we should just return the
+// xds snapshot unmodified.
 func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) error {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
@@ -121,6 +125,9 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		}
 
 		// TODO(kdorosh) in follow up PR, update this interface so it can never error
+		// It is logically invalid for us to return an error here (translation of resources always needs to
+		// result in a xds snapshot, so we are resilient to pod restarts); instead we should just return the
+		// xds snapshot unmodified.
 		xdsSnapshot, reports, _, err := s.translator.Translate(params, proxy)
 		if err != nil {
 			err := eris.Wrapf(err, "translation loop failed")
@@ -136,9 +143,8 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		// if the snapshot is not consistent, make it so
 		xdsSnapshot.MakeConsistent()
 
-		// Snapshot is consistent, so check if we have errors not related to the upstreams
-		if resourcesErr := reports.Validate(); resourcesErr != nil {
-			logger.Warnf("found errors on gloo resources after translation: %v", resourcesErr)
+		if validateErr := reports.ValidateStrict(); validateErr != nil {
+			logger.Warnw("Proxy had invalid config after xds sanitization", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		}
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
