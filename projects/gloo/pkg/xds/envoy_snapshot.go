@@ -18,6 +18,9 @@ import (
 	"errors"
 	"fmt"
 
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
 	"github.com/golang/protobuf/proto"
@@ -105,7 +108,7 @@ func (s *EnvoySnapshot) Consistent() error {
 	if len(endpoints) != len(s.Endpoints.Items) {
 		return fmt.Errorf("mismatched endpoint reference and resource lengths: length of %v does not equal length of %v", endpoints, s.Endpoints.Items)
 	}
-	if err := cache.Superset(endpoints, s.Endpoints.Items); err != nil {
+	if err := cache.SupersetWithResource(endpoints, s.Endpoints.Items); err != nil {
 		return err
 	}
 
@@ -113,7 +116,7 @@ func (s *EnvoySnapshot) Consistent() error {
 	if len(routes) != len(s.Routes.Items) {
 		return fmt.Errorf("mismatched route reference and resource lengths: length of %v does not equal length of %v", routes, s.Routes.Items)
 	}
-	return cache.Superset(routes, s.Routes.Items)
+	return cache.SupersetWithResource(routes, s.Routes.Items)
 }
 
 func (s *EnvoySnapshot) MakeConsistent() {
@@ -138,21 +141,51 @@ func (s *EnvoySnapshot) MakeConsistent() {
 	}
 	endpoints := resource.GetResourceReferences(s.Clusters.Items)
 	for resourceName := range s.Endpoints.Items {
-		if _, exists := endpoints[resourceName]; !exists {
+		if cluster, exists := endpoints[resourceName]; !exists {
+			// add placeholder
 			s.Endpoints.Items[resourceName] = resource.NewEnvoyResource(
 				&envoy_config_endpoint_v3.ClusterLoadAssignment{
-					ClusterName: "",
+					ClusterName: cluster.Self().Name,
 					Endpoints:   []*envoy_config_endpoint_v3.LocalityLbEndpoints{},
 				},
 			)
-			// add placeholder
 		}
 	}
 	routes := resource.GetResourceReferences(s.Listeners.Items)
 	for resourceName := range s.Listeners.Items {
-		if _, exists := routes[resourceName]; !exists {
-			s.Routes.Items[resourceName] = nil
+		if listener, exists := routes[resourceName]; !exists {
 			// add placeholder
+			s.Routes.Items[resourceName] = resource.NewEnvoyResource(
+				&envoy_config_route_v3.RouteConfiguration{
+					Name: fmt.Sprintf("%s-%s", listener.Self().Name, "routes-for-invalid-envoy"),
+					VirtualHosts: []*envoy_config_route_v3.VirtualHost{
+						{
+							Name:    "invalid-envoy-config-vhost",
+							Domains: []string{"*"},
+							Routes: []*envoy_config_route_v3.Route{
+								{
+									Match: &envoy_config_route_v3.RouteMatch{
+										PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{
+											Prefix: "/",
+										},
+									},
+									Action: &envoy_config_route_v3.Route_DirectResponse{
+										DirectResponse: &envoy_config_route_v3.DirectResponseAction{
+											Status: 500,
+											Body: &envoy_config_core_v3.DataSource{
+												Specifier: &envoy_config_core_v3.DataSource_InlineString{
+													InlineString: "Invalid Envoy Configuration. " +
+														"This placeholder was generated to localize pain to the misconfigured route",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			)
 		}
 	}
 }
