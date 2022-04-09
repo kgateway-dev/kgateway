@@ -18,6 +18,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
@@ -153,9 +155,10 @@ func (s *EnvoySnapshot) MakeConsistent() {
 	}
 	routes := resource.GetResourceReferences(s.Listeners.Items)
 	for resourceName := range s.Listeners.Items {
-		if listener, exists := routes[resourceName]; !exists {
+		// TODO(kdorosh) dedup this code in solokit and add listener to route config name translation
+		if listener, exists := routes[utils.RouteConfigNameForListenerName(resourceName)]; !exists {
 			// add placeholder
-			s.Routes.Items[resourceName] = resource.NewEnvoyResource(
+			s.Routes.Items[utils.RouteConfigNameForListenerName(resourceName)] = resource.NewEnvoyResource(
 				&envoy_config_route_v3.RouteConfiguration{
 					Name: fmt.Sprintf("%s-%s", listener.Self().Name, "routes-for-invalid-envoy"),
 					VirtualHosts: []*envoy_config_route_v3.VirtualHost{

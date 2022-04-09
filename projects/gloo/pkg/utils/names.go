@@ -7,7 +7,11 @@ import (
 )
 
 func RouteConfigName(listener *v1.Listener) string {
-	return listener.GetName() + "-routes"
+	return RouteConfigNameForListenerName(listener.GetName())
+}
+
+func RouteConfigNameForListenerName(listenerName string) string {
+	return listenerName + "-routes"
 }
 
 func MatchedRouteConfigName(listener *v1.Listener, matcher *v1.Matcher) string {
