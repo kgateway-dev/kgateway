@@ -104,9 +104,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
 		for key, valid := range allKeys {
 			if !valid {
-				if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
-					return err
-				}
+				s.xdsCache.SetSnapshot(key, emptySnapshot)
 			}
 		}
 	}
@@ -146,11 +144,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		allReports.Merge(reports)
 		key := xds.SnapshotKey(proxy)
-		if err := s.xdsCache.SetSnapshot(key, sanitizedSnapshot); err != nil {
-			err := eris.Wrapf(err, "failed while updating xDS snapshot cache")
-			logger.DPanicw("", zap.Error(err))
-			return err
-		}
+		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
 
 		// Record some metrics
 		clustersLen := len(xdsSnapshot.GetResources(resource.ClusterTypeV3).Items)

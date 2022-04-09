@@ -42,10 +42,9 @@ func (c *MockXdsCache) GetStatusKeys() []string {
 	return []string{}
 }
 
-func (c *MockXdsCache) SetSnapshot(node string, snapshot envoycache.Snapshot) error {
+func (c *MockXdsCache) SetSnapshot(node string, snapshot envoycache.Snapshot) {
 	c.Called = true
 	c.SetSnap = snapshot
-	return nil
 }
 
 func (c *MockXdsCache) GetSnapshot(node string) (envoycache.Snapshot, error) {
