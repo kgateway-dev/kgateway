@@ -138,6 +138,11 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		// if the snapshot is not consistent, make it so
 		xdsSnapshot.MakeConsistent()
 
+		// Snapshot is consistent, so check if we have errors not related to the upstreams
+		if resourcesErr := reports.Validate(); resourcesErr != nil {
+			logger.Warnf("found errors on gloo resources after translation: %v", resourcesErr)
+		}
+
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		allReports.Merge(reports)
 		key := xds.SnapshotKey(proxy)

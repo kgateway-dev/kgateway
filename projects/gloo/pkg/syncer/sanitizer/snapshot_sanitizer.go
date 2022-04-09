@@ -38,10 +38,5 @@ func (s XdsSanitizers) SanitizeSnapshot(
 	for _, sanitizer := range s {
 		xdsSnapshot = sanitizer.SanitizeSnapshot(ctx, glooSnapshot, xdsSnapshot, reports)
 	}
-	// Snapshot is consistent, so check if we have errors not related to the upstreams
-	//if resourcesErr := reports.Validate(); resourcesErr != nil {
-	//	return nil, resourcesErr
-	//}
-
 	return xdsSnapshot
 }
