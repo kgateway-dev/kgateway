@@ -172,8 +172,9 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 
 	contextutils.LoggerFrom(ctx).Debug("replacing routes which point to missing or errored upstreams with a direct response action")
 
-	routeConfigs := getRoutes(xdsSnapshot)
+	routeConfigs := getRoutes(ctx, xdsSnapshot)
 	if len(routeConfigs) == 0 {
+		contextutils.LoggerFrom(ctx).Debug("xds snapshot had no routes for route sanitizer to replace")
 		return xdsSnapshot
 	}
 
@@ -203,7 +204,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 	return newXdsSnapshot
 }
 
-func getRoutes(snap envoycache.Snapshot) []*envoy_config_route_v3.RouteConfiguration {
+func getRoutes(ctx context.Context, snap envoycache.Snapshot) []*envoy_config_route_v3.RouteConfiguration {
 	routeConfigProtos := snap.GetResources(resource.RouteTypeV3)
 	var routeConfigs []*envoy_config_route_v3.RouteConfiguration
 
@@ -211,6 +212,8 @@ func getRoutes(snap envoycache.Snapshot) []*envoy_config_route_v3.RouteConfigura
 		routeConfig, ok := routeConfigProto.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
 		if !ok {
 			// should never happen
+			contextutils.LoggerFrom(ctx).DPanicf("error: xds snapshot resources of type RouteTypeV3 were not "+
+				"converted to *envoy_config_route_v3.RouteConfiguration, instead found %T", routeConfigProto.ResourceProto())
 			return nil
 		}
 		routeConfigs = append(routeConfigs, routeConfig)
