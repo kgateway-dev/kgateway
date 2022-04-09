@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >-
+      Update internal gloo sanitizer interfaces to never error, which helps make gloo more resilient to process
+      restarts as translation cannot fail due to internal xds sanitizer errors.
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/gloo/issues/6114
