@@ -18,6 +18,8 @@ import (
 	"errors"
 	"fmt"
 
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
@@ -44,8 +46,6 @@ type EnvoySnapshot struct {
 	// Listeners are items in the LDS response payload.
 	Listeners cache.Resources
 }
-
-var _ cache.Snapshot = &EnvoySnapshot{}
 
 // NewSnapshot creates a snapshot from response types and a version.
 func NewSnapshot(
@@ -114,6 +114,47 @@ func (s *EnvoySnapshot) Consistent() error {
 		return fmt.Errorf("mismatched route reference and resource lengths: length of %v does not equal length of %v", routes, s.Routes.Items)
 	}
 	return cache.Superset(routes, s.Routes.Items)
+}
+
+func (s *EnvoySnapshot) MakeConsistent() {
+	if s == nil {
+		s.Listeners = cache.Resources{
+			Version: "empty",
+			Items:   map[string]cache.Resource{},
+		}
+		s.Routes = cache.Resources{
+			Version: "empty",
+			Items:   map[string]cache.Resource{},
+		}
+		s.Clusters = cache.Resources{
+			Version: "empty",
+			Items:   map[string]cache.Resource{},
+		}
+		s.Endpoints = cache.Resources{
+			Version: "empty",
+			Items:   map[string]cache.Resource{},
+		}
+		return
+	}
+	endpoints := resource.GetResourceReferences(s.Clusters.Items)
+	for resourceName := range s.Endpoints.Items {
+		if _, exists := endpoints[resourceName]; !exists {
+			s.Endpoints.Items[resourceName] = resource.NewEnvoyResource(
+				&envoy_config_endpoint_v3.ClusterLoadAssignment{
+					ClusterName: "",
+					Endpoints:   []*envoy_config_endpoint_v3.LocalityLbEndpoints{},
+				},
+			)
+			// add placeholder
+		}
+	}
+	routes := resource.GetResourceReferences(s.Listeners.Items)
+	for resourceName := range s.Listeners.Items {
+		if _, exists := routes[resourceName]; !exists {
+			s.Routes.Items[resourceName] = nil
+			// add placeholder
+		}
+	}
 }
 
 // GetResources selects snapshot resources by type.
