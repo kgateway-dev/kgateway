@@ -14,6 +14,8 @@ import (
 var (
 	// Compile-time assertion
 	_ sanitizer.XdsSanitizer = new(MockXdsSanitizer)
+	// Compile-time assertion
+	_ envoycache.SnapshotCache = new(MockXdsCache)
 )
 
 type MockXdsCache struct {
