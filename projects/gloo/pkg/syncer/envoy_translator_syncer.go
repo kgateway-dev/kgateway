@@ -141,7 +141,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		sanitizedSnapshot := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reports)
 		// if the snapshot is not consistent, make it so
-		xdsSnapshot.MakeConsistent()
+		//xdsSnapshot.MakeConsistent()
 
 		if validateErr := reports.ValidateStrict(); validateErr != nil {
 			logger.Warnw("Proxy had invalid config after xds sanitization", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
