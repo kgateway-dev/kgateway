@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -139,30 +139,37 @@ func (s *EnvoySnapshot) MakeConsistent() {
 		}
 		return
 	}
-	//endpoints := resource.GetResourceReferences(s.Clusters.Items)
-	// TODO(kdorosh) check length equal / loop both ways and remove resources with empty parents??
-	//counter := 0
-	//for clusterName := range s.Clusters.Items {
-	//	if _, exists := endpoints[clusterName]; !exists {
-	//		// add placeholder
-	//		endpointName := fmt.Sprintf("%s-%s", clusterName, counter++)
-	//		s.Endpoints.Items[] = resource.NewEnvoyResource(
-	//			&envoy_config_endpoint_v3.ClusterLoadAssignment{
-	//				ClusterName: endpointName,
-	//				Endpoints:   []*envoy_config_endpoint_v3.LocalityLbEndpoints{},
-	//			},
-	//		)
-	//	}
-	//}
-	routes := resource.GetResourceReferences(s.Listeners.Items)
-	for listenerName := range s.Listeners.Items {
-		// TODO(kdorosh) dedup this code in solokit and add listener to route config name translation
-		// TODO(kdorosh) we can undo the bool / non bool function changes too
-		if _, exists := routes[utils.RouteConfigNameForListenerName(listenerName)]; !exists {
+
+	// for each cluster persisted, add placeholder endpoint if referenced endpoint does not exist
+	childEndpoints := resource.GetResourceReferences(s.Clusters.Items)
+	persistedEndpointNameSet := map[string]bool{}
+	for _, endpoint := range s.Endpoints.Items {
+		persistedEndpointNameSet[endpoint.Self().Name] = true
+	}
+	for childEndpointName, cluster := range childEndpoints {
+		if found, exists := persistedEndpointNameSet[childEndpointName]; !found || !exists {
 			// add placeholder
-			s.Routes.Items[utils.RouteConfigNameForListenerName(listenerName)] = resource.NewEnvoyResource(
+			s.Endpoints.Items[childEndpointName] = resource.NewEnvoyResource(
+				&envoy_config_endpoint_v3.ClusterLoadAssignment{
+					ClusterName: cluster.Self().Name,
+					Endpoints:   []*envoy_config_endpoint_v3.LocalityLbEndpoints{},
+				},
+			)
+		}
+	}
+
+	// for each listener persisted, add placeholder route if referenced route does not exist
+	childRoutes := resource.GetResourceReferences(s.Listeners.Items)
+	persistedRouteNameSet := map[string]bool{}
+	for _, route := range s.Routes.Items {
+		persistedRouteNameSet[route.Self().Name] = true
+	}
+	for childRouteName, listener := range childRoutes {
+		if found, exists := persistedRouteNameSet[childRouteName]; !found || !exists {
+			// add placeholder
+			s.Routes.Items[childRouteName] = resource.NewEnvoyResource(
 				&envoy_config_route_v3.RouteConfiguration{
-					Name: fmt.Sprintf("%s-%s", listenerName, "routes-for-invalid-envoy"),
+					Name: fmt.Sprintf("%s-%s", listener.Self().Name, "routes-for-invalid-envoy"),
 					VirtualHosts: []*envoy_config_route_v3.VirtualHost{
 						{
 							Name:    "invalid-envoy-config-vhost",
