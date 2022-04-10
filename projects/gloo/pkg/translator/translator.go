@@ -29,8 +29,7 @@ import (
 type Translator interface {
 	// TODO(kdorosh) in follow up PR, update this interface so it can never error
 	// It is logically invalid for us to return an error here (translation of resources always needs to
-	// result in a xds snapshot, so we are resilient to pod restarts); instead we should just return the
-	// xds snapshot unmodified.
+	// result in a xds snapshot, so we are resilient to pod restarts)
 	Translate(
 		params plugins.Params,
 		proxy *v1.Proxy,

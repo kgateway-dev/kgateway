@@ -69,8 +69,7 @@ func measureResource(ctx context.Context, resource string, len int) {
 
 // TODO(kdorosh) in follow up PR, update this interface so it can never error
 // It is logically invalid for us to return an error here (translation of resources always needs to
-// result in a xds snapshot, so we are resilient to pod restarts); instead we should just return the
-// xds snapshot unmodified.
+// result in a xds snapshot, so we are resilient to pod restarts)
 func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) error {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
@@ -126,8 +125,10 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		// TODO(kdorosh) in follow up PR, update this interface so it can never error
 		// It is logically invalid for us to return an error here (translation of resources always needs to
-		// result in a xds snapshot, so we are resilient to pod restarts); instead we should just return the
-		// xds snapshot unmodified.
+		// result in a xds snapshot, so we are resilient to pod restarts)
+		//
+		// for now this can only really fail on plugin initialization e.g. https://github.com/solo-io/gloo/blob/4f133dd2be0875463754fecc84c1eced7d4202fd/projects/gloo/pkg/plugins/consul/plugin.go#L134
+		// we are not in a very bad place today but should update this interface ASAP so we don't introduce new regressions
 		xdsSnapshot, reports, _, err := s.translator.Translate(params, proxy)
 		if err != nil {
 			err := eris.Wrapf(err, "translation loop failed")
