@@ -6,12 +6,10 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
+// RouteConfigName cannot always be relied on to get the route config name for any listener because
+// the pattern is different for hybrid listeners (see MatchedRouteConfigName below)
 func RouteConfigName(listener *v1.Listener) string {
-	return RouteConfigNameForListenerName(listener.GetName())
-}
-
-func RouteConfigNameForListenerName(listenerName string) string {
-	return listenerName + "-routes"
+	return listener.GetName() + "-routes"
 }
 
 func MatchedRouteConfigName(listener *v1.Listener, matcher *v1.Matcher) string {
