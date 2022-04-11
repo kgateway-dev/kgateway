@@ -8,16 +8,23 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-// an XdsSanitizer modifies an xds snapshot before it is stored in the xds cache
-// the if the sanitizer returns an error, Gloo will not update the xds cache with the snapshot
-// else Gloo will assume the snapshot is valid to send to Envoy
+var (
+	// Compile-time assertion
+	_ XdsSanitizer = new(XdsSanitizers)
+)
+
+// XdsSanitizer modifies a provided xds snapshot before it is stored in the xds cache,
+// with the goal of cleaning up a potentially invalid xds snapshot before being stored and served.
+// It is logically invalid for us to return an error here (translation of resources always needs to
+// result in a xds snapshot, so we are resilient to pod restarts); instead we should just return the
+// xds snapshot unmodified.
 type XdsSanitizer interface {
 	SanitizeSnapshot(
 		ctx context.Context,
 		glooSnapshot *v1snap.ApiSnapshot,
 		xdsSnapshot envoycache.Snapshot,
 		reports reporter.ResourceReports,
-	) (envoycache.Snapshot, error)
+	) envoycache.Snapshot
 }
 
 type XdsSanitizers []XdsSanitizer
@@ -27,18 +34,9 @@ func (s XdsSanitizers) SanitizeSnapshot(
 	glooSnapshot *v1snap.ApiSnapshot,
 	xdsSnapshot envoycache.Snapshot,
 	reports reporter.ResourceReports,
-) (envoycache.Snapshot, error) {
+) envoycache.Snapshot {
 	for _, sanitizer := range s {
-		var err error
-		xdsSnapshot, err = sanitizer.SanitizeSnapshot(ctx, glooSnapshot, xdsSnapshot, reports)
-		if err != nil {
-			return nil, err
-		}
+		xdsSnapshot = sanitizer.SanitizeSnapshot(ctx, glooSnapshot, xdsSnapshot, reports)
 	}
-	// Snapshot is consistent, so check if we have errors not related to the upstreams
-	if resourcesErr := reports.Validate(); resourcesErr != nil {
-		return nil, resourcesErr
-	}
-
-	return xdsSnapshot, nil
+	return xdsSnapshot
 }
