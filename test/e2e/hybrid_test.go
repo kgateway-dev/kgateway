@@ -117,10 +117,9 @@ var _ = Describe("Hybrid", func() {
 		})
 
 		AfterEach(func() {
-			cancel()
 			envoyInstance.Clean()
-
 			srv.GracefulStop()
+			cancel()
 		})
 
 		It("http request works as expected", func() {

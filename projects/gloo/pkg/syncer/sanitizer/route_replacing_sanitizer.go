@@ -41,8 +41,10 @@ const (
 
 var (
 	routeConfigKey, _ = tag.NewKey("route_config_name")
+	mRoutesReplaced   = utils.MakeLastValueCounter("gloo.solo.io/sanitizer/routes_replaced", "The number routes replaced in the sanitized xds snapshot", stats.ProxyNameKey, routeConfigKey)
 
-	mRoutesReplaced = utils.MakeLastValueCounter("gloo.solo.io/sanitizer/routes_replaced", "The number routes replaced in the sanitized xds snapshot", stats.ProxyNameKey, routeConfigKey)
+	// Compile-time assertion
+	_ XdsSanitizer = new(RouteReplacingSanitizer)
 )
 
 type RouteReplacingSanitizer struct {
@@ -161,20 +163,19 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 	glooSnapshot *v1snap.ApiSnapshot,
 	xdsSnapshot envoycache.Snapshot,
 	reports reporter.ResourceReports,
-) (envoycache.Snapshot, error) {
+) envoycache.Snapshot {
 	if !s.enabled {
-		// if if the route sanitizer is not enabled, enforce strict validation of routes (warnings are treated as errors)
-		// this is necessary because the translator only uses Validate() which ignores warnings
-		return xdsSnapshot, reports.ValidateStrict()
+		return xdsSnapshot
 	}
 
 	ctx = contextutils.WithLogger(ctx, "invalid-route-replacer")
 
 	contextutils.LoggerFrom(ctx).Debug("replacing routes which point to missing or errored upstreams with a direct response action")
 
-	routeConfigs, err := getRoutes(xdsSnapshot)
-	if err != nil {
-		return nil, err
+	routeConfigs := getRoutes(ctx, xdsSnapshot)
+	if len(routeConfigs) == 0 {
+		contextutils.LoggerFrom(ctx).Debug("xds snapshot had no routes for route sanitizer to replace")
+		return xdsSnapshot
 	}
 
 	// mark all valid destination clusters
@@ -193,29 +194,27 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 		s.insertFallbackCluster(&clusters)
 	}
 
-	xdsSnapshot = xds.NewSnapshotFromResources(
+	newXdsSnapshot := xds.NewSnapshotFromResources(
 		xdsSnapshot.GetResources(resource.EndpointTypeV3),
 		clusters,
 		translator.MakeRdsResources(replacedRouteConfigs),
 		listeners,
 	)
 
-	// If the snapshot is not consistent, error
-	if err := xdsSnapshot.Consistent(); err != nil {
-		return xdsSnapshot, err
-	}
-
-	return xdsSnapshot, nil
+	return newXdsSnapshot
 }
 
-func getRoutes(snap envoycache.Snapshot) ([]*envoy_config_route_v3.RouteConfiguration, error) {
+func getRoutes(ctx context.Context, snap envoycache.Snapshot) []*envoy_config_route_v3.RouteConfiguration {
 	routeConfigProtos := snap.GetResources(resource.RouteTypeV3)
 	var routeConfigs []*envoy_config_route_v3.RouteConfiguration
 
 	for _, routeConfigProto := range routeConfigProtos.Items {
 		routeConfig, ok := routeConfigProto.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
 		if !ok {
-			return nil, eris.Errorf("invalid type, expected *envoyapi.RouteConfiguration, found %T", routeConfigProto)
+			// should never happen
+			contextutils.LoggerFrom(ctx).DPanicf("error: xds snapshot resources of type RouteTypeV3 were not "+
+				"converted to *envoy_config_route_v3.RouteConfiguration, instead found %T", routeConfigProto.ResourceProto())
+			return nil
 		}
 		routeConfigs = append(routeConfigs, routeConfig)
 	}
@@ -224,7 +223,7 @@ func getRoutes(snap envoycache.Snapshot) ([]*envoy_config_route_v3.RouteConfigur
 		return routeConfigs[i].GetName() < routeConfigs[j].GetName()
 	})
 
-	return routeConfigs, nil
+	return routeConfigs
 }
 
 func getClusters(glooSnapshot *v1snap.ApiSnapshot, xdsSnapshot envoycache.Snapshot) map[string]struct{} {

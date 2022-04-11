@@ -17,6 +17,9 @@ import (
 
 var (
 	mUpstreamsRemoved = utils.MakeLastValueCounter("gloo.solo.io/sanitizer/upstreams_removed", "The number upstreams removed from the sanitized xds snapshot", stats.ProxyNameKey)
+
+	// Compile-time assertion
+	_ XdsSanitizer = new(UpstreamRemovingSanitizer)
 )
 
 type UpstreamRemovingSanitizer struct{}
@@ -34,12 +37,11 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 	glooSnapshot *v1snap.ApiSnapshot,
 	xdsSnapshot envoycache.Snapshot,
 	reports reporter.ResourceReports,
-) (envoycache.Snapshot, error) {
+) envoycache.Snapshot {
 	ctx = contextutils.WithLogger(ctx, "invalid-upstream-remover")
 
-	resourcesErr := reports.Validate()
-	if resourcesErr == nil {
-		return xdsSnapshot, nil
+	if reports.Validate() == nil {
+		return xdsSnapshot
 	}
 
 	contextutils.LoggerFrom(ctx).Debug("removing errored upstreams and checking consistency")
@@ -80,17 +82,12 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 	// TODO(marco): the function accepts and return a Snapshot interface, but then swaps in its own implementation.
 	//  This breaks the abstraction and mocking the snapshot becomes impossible. We should have a generic way of
 	//  creating snapshots.
-	xdsSnapshot = xds.NewSnapshotFromResources(
+	newXdsSnapshot := xds.NewSnapshotFromResources(
 		endpoints,
 		clusters,
 		xdsSnapshot.GetResources(resource.RouteTypeV3),
 		xdsSnapshot.GetResources(resource.ListenerTypeV3),
 	)
-
-	// If the snapshot is not consistent,
-	if xdsSnapshot.Consistent() != nil {
-		return xdsSnapshot, resourcesErr
-	}
 
 	// Convert errors related to upstreams to warnings
 	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
@@ -101,5 +98,5 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 		}
 	}
 
-	return xdsSnapshot, nil
+	return newXdsSnapshot
 }
