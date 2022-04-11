@@ -283,7 +283,7 @@ spec:
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
         readinessProbe:
           tcpSocket:
-            port: {{ $spec.xdsServicePort }}
+            port: 8234
           initialDelaySeconds: 1
           periodSeconds: 2
           failureThreshold: 10
