@@ -67,9 +67,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 	})
 
 	AfterEach(func() {
-		if envoyInstance != nil {
-			_ = envoyInstance.Clean()
-		}
+		envoyInstance.Clean()
 		cancel()
 	})
 
