@@ -2459,7 +2459,7 @@ spec:
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=5",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/server_info",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/ready",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=19000",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=5",
@@ -2473,7 +2473,7 @@ spec:
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 							Handler: v1.Handler{
 								HTTPGet: &v1.HTTPGetAction{
-									Path:   "/server_info",
+									Path:   "/ready",
 									Port:   intstr.FromInt(19000),
 									Scheme: "HTTP",
 								},
