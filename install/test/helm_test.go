@@ -2459,22 +2459,22 @@ spec:
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=5",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/gloo/health",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=8080",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/server_info",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=19000",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=5",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.periodSeconds=10",
-								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.path=/gloo/health",
-								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.port=8080",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.path=/server_info",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.port=19000",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.scheme=HTTP",
 							},
 						})
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 							Handler: v1.Handler{
 								HTTPGet: &v1.HTTPGetAction{
-									Path:   "/gloo/health",
-									Port:   intstr.FromInt(8080),
+									Path:   "/server_info",
+									Port:   intstr.FromInt(19000),
 									Scheme: "HTTP",
 								},
 							},
@@ -2485,8 +2485,8 @@ spec:
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
 							Handler: v1.Handler{
 								HTTPGet: &v1.HTTPGetAction{
-									Path:   "/gloo/health",
-									Port:   intstr.FromInt(8080),
+									Path:   "/server_info",
+									Port:   intstr.FromInt(19000),
 									Scheme: "HTTP",
 								},
 							},
