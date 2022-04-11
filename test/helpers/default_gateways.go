@@ -18,10 +18,3 @@ func WriteDefaultGateways(writeNamespace string, gatewayClient v1.GatewayClient)
 
 	return err
 }
-
-func WriteDefaultHybridGateway(writeNamespace string, gatewayClient v1.GatewayClient) error {
-	defaultHybridGateway := defaults.DefaultHybridGateway(writeNamespace)
-
-	_, err := gatewayClient.Write(defaultHybridGateway, clients.WriteOpts{})
-	return err
-}

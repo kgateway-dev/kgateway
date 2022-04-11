@@ -118,10 +118,7 @@ var _ = Describe("Hybrid", func() {
 
 		AfterEach(func() {
 			cancel()
-
-			if envoyInstance != nil {
-				_ = envoyInstance.Clean()
-			}
+			envoyInstance.Clean()
 
 			srv.GracefulStop()
 		})
@@ -173,11 +170,8 @@ var _ = Describe("Hybrid", func() {
 		})
 
 		AfterEach(func() {
+			envoyInstance.Clean()
 			cancel()
-
-			if envoyInstance != nil {
-				_ = envoyInstance.Clean()
-			}
 
 			srv.GracefulStop()
 		})
@@ -223,11 +217,8 @@ var _ = Describe("Hybrid", func() {
 		})
 
 		AfterEach(func() {
+			envoyInstance.Clean()
 			cancel()
-
-			if envoyInstance != nil {
-				_ = envoyInstance.Clean()
-			}
 
 			srv.GracefulStop()
 		})
