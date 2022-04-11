@@ -16065,7 +16065,7 @@ spec:
         image: prom/prometheus:v2.2.1
         imagePullPolicy: IfNotPresent
         livenessProbe:
-          failureThreshold: 10
+          failureThreshold: 3
           httpGet:
             path: /-/healthy
             port: web

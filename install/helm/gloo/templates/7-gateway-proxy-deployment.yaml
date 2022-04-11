@@ -247,6 +247,9 @@ spec:
           failureThreshold: 10
 {{- end}}
         livenessProbe:
+{{- if $spec.podTemplate.customLivenessProbe }}
+{{ toYaml $spec.podTemplate.customLivenessProbe | indent 10}}
+{{- else }}
           exec:
             command:
             - wget
@@ -255,7 +258,8 @@ spec:
             - {{ $spec.loopBackAddress }}:19000/server_info
           initialDelaySeconds: 1
           periodSeconds: 10
-          failureThreshold: 10
+          failureThreshold: 3
+{{- end}}
 {{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
@@ -422,6 +426,16 @@ spec:
           periodSeconds: 2
           successThreshold: 1
           timeoutSeconds: 1
+        livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz/live
+              port: 15021
+              scheme: HTTP
+            initialDelaySeconds: 1
+            periodSeconds: 2
+            successThreshold: 1
+            timeoutSeconds: 1
         volumeMounts:
         - mountPath: /var/run/secrets/istio
           name: istiod-ca-cert

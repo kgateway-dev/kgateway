@@ -123,6 +123,7 @@ gatewayProxies:
         enabled: false
         sleepTimeSeconds: 25
       customReadinessProbe: {}
+      customLivenessProbe: {}
     service:
       customPorts: []
       type: LoadBalancer
