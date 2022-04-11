@@ -7,11 +7,7 @@ description: Enable GraphQL resolution.
 Set up API gateway and GraphQL server functionality for your apps in the same process by using Gloo Edge.
 
 {{% notice note %}}
-This feature is available only in Gloo Edge Enterprise version 1.10.0 and later.
-{{% /notice %}}
-
-{{% notice warning %}}
-This is an alpha feature. Do not use this feature in a production environment.
+This feature is available only in Gloo Edge Enterprise version 1.11.0 and later.
 {{% /notice %}}
 
 ## Why GraphQL?

@@ -515,9 +515,7 @@ var _ = Describe("AWS Lambda", func() {
 	}
 
 	AfterEach(func() {
-		if envoyInstance != nil {
-			_ = envoyInstance.Clean()
-		}
+		envoyInstance.Clean()
 		cancel()
 	})
 

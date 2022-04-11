@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4782
+    resolvesIssue: false
+    description: Fix a data race that occurs when resolving IP addresses from consul services.

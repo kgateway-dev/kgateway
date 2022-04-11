@@ -294,8 +294,8 @@ func (x *VirtualService) GetMetadata() *core.Metadata {
 //
 //If a request is not matched to any virtual host or a route therein, the target proxy will reply with a 404.
 //
-//Unlike the [Gloo Virtual Host]({{< ref "/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk.md" >}}/#virtualhost),
-//Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
+//Unlike the [Gloo Virtual Host]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#virtualhost" >}}),
+//_Gateway_ Virtual Hosts can delegate their routes to `RouteTables`.
 //
 type VirtualHost struct {
 	state         protoimpl.MessageState
@@ -413,7 +413,7 @@ func (*VirtualHost_OptionsConfigRefs) isVirtualHost_ExternalOptionsConfig() {}
 // - *Route* the request to a destination
 // - Reply with a *Direct Response*
 // - Send a *Redirect* response to the client
-// - *Delegate* the action for the request to one or more top-level [`RouteTable`]({{< ref "/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resources
+// - *Delegate* the action for the request to one or more top-level [`RouteTable`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resources
 // DelegateActions can be used to delegate the behavior for a set out routes with a given *prefix* to
 // top-level `RouteTable` resources.
 type Route struct {
