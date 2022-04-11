@@ -11,9 +11,9 @@ const DefaultPathPrefix = "secret"
 
 func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string) factory.ResourceClientFactory {
 	return &factory.VaultSecretClientFactory{
-		Vault:   client,
-		RootKey: rootKey,
-		// TODO (fabian) - inject pathPrefix
+		Vault:      client,
+		RootKey:    rootKey,
+		PathPrefix: pathPrefix,
 	}
 }
 
