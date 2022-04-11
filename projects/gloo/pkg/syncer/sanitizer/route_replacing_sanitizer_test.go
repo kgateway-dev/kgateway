@@ -248,8 +248,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			Upstreams: v1.UpstreamList{us},
 		}
 
-		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
-		Expect(err).NotTo(HaveOccurred())
+		snap := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 
 		routeCfgs := snap.GetResources(resource.RouteTypeV3)
 		listeners := snap.GetResources(resource.ListenerTypeV3)
@@ -316,8 +315,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			Upstreams: v1.UpstreamList{us},
 		}
 
-		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
-		Expect(err).NotTo(HaveOccurred())
+		snap := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 
 		routeCfgs := snap.GetResources(resource.RouteTypeV3)
 		listeners := snap.GetResources(resource.ListenerTypeV3)
