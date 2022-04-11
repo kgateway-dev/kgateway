@@ -15,10 +15,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
-	"github.com/solo-io/go-utils/testutils"
-
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -35,7 +31,9 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	gloorest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 	glootransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -1131,36 +1129,45 @@ var _ = Describe("Kube2e: gateway", func() {
 			_, err = virtualHostOptionClient.Write(vh2, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// give vhost options a chance to propogate
+			// give vhost options a chance to propagate
 			Eventually(func() error {
 				_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 				return err
 			}, "5s", "0.1s").ShouldNot(HaveOccurred())
 
-			var proxy *gloov1.Proxy
-			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				proxy, err = proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-				return proxy, err
-			}, "15s", ".5s")
+			Eventually(func(g Gomega) {
+				// https://onsi.github.io/gomega/#category-3-making-assertions-eminem-the-function-passed-into-codeeventuallycode
+				getProxy := func() (resources.InputResource, error) {
+					return proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				}
 
-			var found bool
-			for _, l := range proxy.Listeners {
-				httpListener := l.GetHttpListener()
-				if httpListener == nil {
-					continue
+				proxyInputResource, err := getProxy()
+				g.Expect(err).NotTo(HaveOccurred())
+				proxy := proxyInputResource.(*gloov1.Proxy)
+
+				for _, l := range proxy.Listeners {
+					httpListener := l.GetHttpListener()
+					if httpListener == nil {
+						continue
+					}
+					for _, vhost := range httpListener.GetVirtualHosts() {
+						opts := vhost.GetOptions()
+
+						// option config on VirtualHost overrides all delegated options
+						kube2e.ExpectEqualProtoMessages(g, opts.GetHeaderManipulation(), vs.GetVirtualHost().GetOptions().GetHeaderManipulation())
+						// since rt1 is delegated to first, it overrides rt2, which was delegated later
+						kube2e.ExpectEqualProtoMessages(g, opts.GetCors(), vh1.GetOptions().GetCors())
+						// options that weren't already set in previously delegated options are set from rt2
+						kube2e.ExpectEqualProtoMessages(g, opts.GetTransformations(), vh2.GetOptions().GetTransformations())
+					}
 				}
-				for _, vhost := range httpListener.GetVirtualHosts() {
-					found = true
-					opts := vhost.GetOptions()
-					// option config on VirtualHost overrides all delegated options
-					testutils.ExpectEqualProtoMessages(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetOptions().GetHeaderManipulation())
-					// since rt1 is delegated to first, it overrides rt2, which was delegated later
-					testutils.ExpectEqualProtoMessages(opts.GetCors(), vh1.GetOptions().GetCors())
-					// options that weren't already set in previously delegated options are set from rt2
-					testutils.ExpectEqualProtoMessages(opts.GetTransformations(), vh2.GetOptions().GetTransformations())
-				}
-			}
-			Expect(found).To(BeTrue())
+
+				// Confirm that the Resource is accepted as well
+				// If the Proxy has the necessary values, but the resource has been rejected, this test is not behaving
+				// properly and should fail
+				helpers.EventuallyResourceAccepted(getProxy)
+
+			})
 		})
 	})
 
@@ -1279,38 +1286,46 @@ var _ = Describe("Kube2e: gateway", func() {
 			_, err = routeOptionClient.Write(rt2, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// give settings a chance to propogate
+			// give route options a chance to propagate
 			Eventually(func() error {
 				_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 				return err
 			}, "5s", "0.1s").ShouldNot(HaveOccurred())
 
-			var proxy *gloov1.Proxy
-			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				proxy, err = proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-				return proxy, err
-			}, "15s", ".5s")
-
-			var found bool
-			for _, l := range proxy.Listeners {
-				httpListener := l.GetHttpListener()
-				if httpListener == nil {
-					continue
+			Eventually(func(g Gomega) {
+				// https://onsi.github.io/gomega/#category-3-making-assertions-eminem-the-function-passed-into-codeeventuallycode
+				getProxy := func() (resources.InputResource, error) {
+					return proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 				}
-				for _, vhost := range httpListener.GetVirtualHosts() {
-					for _, route := range vhost.GetRoutes() {
-						found = true
-						opts := route.GetOptions()
-						// option config on VirtualHost overrides all delegated options
-						testutils.ExpectEqualProtoMessages(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetRoutes()[0].GetOptions().GetHeaderManipulation())
-						// since rt1 is delegated to first, it overrides rt2, which was delegated later
-						testutils.ExpectEqualProtoMessages(opts.GetCors(), rt1.GetOptions().GetCors())
-						// options that weren't already set in previously delegated options are set from rt2
-						testutils.ExpectEqualProtoMessages(opts.GetTransformations(), rt2.GetOptions().GetTransformations())
+
+				proxyInputResource, err := getProxy()
+				g.Expect(err).NotTo(HaveOccurred())
+				proxy := proxyInputResource.(*gloov1.Proxy)
+
+				for _, l := range proxy.Listeners {
+					httpListener := l.GetHttpListener()
+					if httpListener == nil {
+						continue
+					}
+					for _, vhost := range httpListener.GetVirtualHosts() {
+						for _, route := range vhost.GetRoutes() {
+							opts := route.GetOptions()
+
+							// option config on VirtualHost overrides all delegated options
+							kube2e.ExpectEqualProtoMessages(g, opts.GetHeaderManipulation(), vs.GetVirtualHost().GetRoutes()[0].GetOptions().GetHeaderManipulation())
+							// since rt1 is delegated to first, it overrides rt2, which was delegated later
+							kube2e.ExpectEqualProtoMessages(g, opts.GetCors(), rt1.GetOptions().GetCors())
+							// options that weren't already set in previously delegated options are set from rt2
+							kube2e.ExpectEqualProtoMessages(g, opts.GetTransformations(), rt2.GetOptions().GetTransformations())
+						}
 					}
 				}
-			}
-			Expect(found).To(BeTrue())
+
+				// Confirm that the Resource is accepted as well
+				// If the Proxy has the necessary values, but the resource has been rejected, this test is not behaving
+				// properly and should fail
+				helpers.EventuallyResourceAccepted(getProxy)
+			})
 		})
 	})
 
