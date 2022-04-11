@@ -9,7 +9,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
