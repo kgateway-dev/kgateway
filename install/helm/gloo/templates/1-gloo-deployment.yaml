@@ -109,6 +109,12 @@ spec:
           {{- if not .Values.gloo.deployment.floatingUserId }}
           runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
           {{- end }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.gloo.deployment.xdsPort }}
+          initialDelaySeconds: 1
+          periodSeconds: 2
+          failureThreshold: 10
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
