@@ -2,7 +2,7 @@ accessLogger:
   enabled: false
   image:
     repository: access-logger
-    tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+    tag: 1.12.0-beta2-16-gcb77dc902-dirty
   port: 8083
   replicas: 1
   runAsUser: 10101
@@ -15,7 +15,7 @@ discovery:
     fsGroup: 10101
     image:
       repository: discovery
-      tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+      tag: 1.12.0-beta2-16-gcb77dc902-dirty
     replicas: 1
     runAsUser: 10101
     stats: {}
@@ -31,7 +31,7 @@ gateway:
     enabled: true
     image:
       repository: certgen
-      tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+      tag: 1.12.0-beta2-16-gcb77dc902-dirty
     restartPolicy: OnFailure
     runAsUser: 10101
     runOnUpdate: false
@@ -40,7 +40,7 @@ gateway:
   deployment:
     image:
       repository: gateway
-      tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+      tag: 1.12.0-beta2-16-gcb77dc902-dirty
     replicas: 1
     runAsUser: 10101
   enabled: true
@@ -77,7 +77,6 @@ gatewayProxies:
         replicas: 1
     loopBackAddress: 127.0.0.1
     podTemplate:
-      customLivenessProbe: {}
       customReadinessProbe: {}
       disableNetBind: true
       enablePodSecurityContext: true
@@ -89,15 +88,15 @@ gatewayProxies:
       httpsPort: 8443
       image:
         repository: gloo-envoy-wrapper
-        tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+        tag: 1.12.0-beta2-16-gcb77dc902-dirty
       probes: false
       runAsUser: 10101
       runUnprivileged: true
+    XdsServicePort: 8234
     service:
       httpPort: 80
       httpsPort: 443
       type: LoadBalancer
-    XdsServicePort: 8234
 global:
   extauthCustomYaml: true
   glooMtls:
@@ -105,11 +104,11 @@ global:
     envoy:
       image:
         repository: gloo-envoy-wrapper
-        tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+        tag: 1.12.0-beta2-16-gcb77dc902-dirty
     sds:
       image:
         repository: sds
-        tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+        tag: 1.12.0-beta2-16-gcb77dc902-dirty
   glooRbac:
     create: true
     namespaced: false
@@ -130,7 +129,7 @@ gloo:
   deployment:
     image:
       repository: gloo
-      tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+      tag: 1.12.0-beta2-16-gcb77dc902-dirty
     replicas: 1
     restXdsPort: 9976
     runAsUser: 10101
@@ -141,7 +140,7 @@ ingress:
   deployment:
     image:
       repository: ingress
-      tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+      tag: 1.12.0-beta2-16-gcb77dc902-dirty
     replicas: 1
     runAsUser: 10101
   enabled: false
@@ -152,7 +151,7 @@ ingressProxy:
     httpsPort: 8443
     image:
       repository: gloo-envoy-wrapper
-      tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+      tag: 1.12.0-beta2-16-gcb77dc902-dirty
     replicas: 1
   label: ingress-proxy
   loopBackAddress: 127.0.0.1
@@ -178,7 +177,7 @@ settings:
         httpsPort: 8443
         image:
           repository: gloo-envoy-wrapper
-          tag: 1.12.0-beta2-65-g8cf5e23d0-dirty
+          tag: 1.12.0-beta2-16-gcb77dc902-dirty
         loopBackAddress: 127.0.0.1
         replicas: 1
         service:
