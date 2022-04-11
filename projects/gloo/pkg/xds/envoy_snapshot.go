@@ -158,6 +158,14 @@ func (s *EnvoySnapshot) MakeConsistent() {
 		}
 	}
 
+	// remove each endpoint not referenced by a cluster
+	// it is safe to delete from a map you are iterating over, example in effective go https://go.dev/doc/effective_go#for
+	for name, _ := range s.Endpoints.Items {
+		if _, exists := childEndpoints[name]; !exists {
+			delete(s.Endpoints.Items, name)
+		}
+	}
+
 	// for each listener persisted, add placeholder route if referenced route does not exist
 	childRoutes := resource.GetResourceReferences(s.Listeners.Items)
 	persistedRouteNameSet := map[string]bool{}
@@ -198,6 +206,14 @@ func (s *EnvoySnapshot) MakeConsistent() {
 					},
 				},
 			)
+		}
+	}
+
+	// remove each route not referenced by a listener
+	// it is safe to delete from a map you are iterating over, example in effective go https://go.dev/doc/effective_go#for
+	for name, _ := range s.Routes.Items {
+		if _, exists := childRoutes[name]; !exists {
+			delete(s.Routes.Items, name)
 		}
 	}
 }
