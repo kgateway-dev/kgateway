@@ -585,7 +585,8 @@ type Mtls struct {
 }
 
 type SdsContainer struct {
-	Image *Image `json:"image,omitempty"`
+	Image                *Image        `json:"image,omitempty"`
+	CustomReadinessProbe *appsv1.Probe `json:"customReadinessProbe,omitempty"`
 }
 
 type EnvoySidecarContainer struct {
