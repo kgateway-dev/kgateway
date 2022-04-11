@@ -92,6 +92,5 @@ func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyC
 	envoy_service_listener_v3.RegisterListenerDiscoveryServiceServer(grpcServer, envoyServer)
 	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, envoyServer)
 
-	_ = envoyCache.SetSnapshot(FallbackNodeKey, fallbackSnapshot(fallbackBindAddr, fallbackBindPort, fallbackStatusCode))
-
+	envoyCache.SetSnapshot(FallbackNodeKey, fallbackSnapshot(fallbackBindAddr, fallbackBindPort, fallbackStatusCode))
 }

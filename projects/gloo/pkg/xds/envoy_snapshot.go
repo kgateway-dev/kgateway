@@ -18,9 +18,19 @@ import (
 	"errors"
 	"fmt"
 
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+)
+
+var (
+	// Compile-time assertion
+	_ cache.Snapshot = new(EnvoySnapshot)
 )
 
 // Snapshot is an internally consistent snapshot of xDS resources.
@@ -39,8 +49,6 @@ type EnvoySnapshot struct {
 	// Listeners are items in the LDS response payload.
 	Listeners cache.Resources
 }
-
-var _ cache.Snapshot = &EnvoySnapshot{}
 
 // NewSnapshot creates a snapshot from response types and a version.
 func NewSnapshot(
@@ -100,7 +108,7 @@ func (s *EnvoySnapshot) Consistent() error {
 	if len(endpoints) != len(s.Endpoints.Items) {
 		return fmt.Errorf("mismatched endpoint reference and resource lengths: length of %v does not equal length of %v", endpoints, s.Endpoints.Items)
 	}
-	if err := cache.Superset(endpoints, s.Endpoints.Items); err != nil {
+	if err := cache.SupersetWithResource(endpoints, s.Endpoints.Items); err != nil {
 		return err
 	}
 
@@ -108,7 +116,108 @@ func (s *EnvoySnapshot) Consistent() error {
 	if len(routes) != len(s.Routes.Items) {
 		return fmt.Errorf("mismatched route reference and resource lengths: length of %v does not equal length of %v", routes, s.Routes.Items)
 	}
-	return cache.Superset(routes, s.Routes.Items)
+	return cache.SupersetWithResource(routes, s.Routes.Items)
+}
+
+// MakeConsistent removes any items that fail to link to parent resources in the snapshot.
+// It will also add placeholder routes for listeners referencing non-existent routes.
+func (s *EnvoySnapshot) MakeConsistent() {
+	if s == nil {
+		s.Listeners = cache.Resources{
+			Version: "empty",
+			Items:   map[string]cache.Resource{},
+		}
+		s.Routes = cache.Resources{
+			Version: "empty",
+			Items:   map[string]cache.Resource{},
+		}
+		s.Clusters = cache.Resources{
+			Version: "empty",
+			Items:   map[string]cache.Resource{},
+		}
+		s.Endpoints = cache.Resources{
+			Version: "empty",
+			Items:   map[string]cache.Resource{},
+		}
+		return
+	}
+
+	// for each cluster persisted, add placeholder endpoint if referenced endpoint does not exist
+	childEndpoints := resource.GetResourceReferences(s.Clusters.Items)
+	persistedEndpointNameSet := map[string]struct{}{}
+	for _, endpoint := range s.Endpoints.Items {
+		persistedEndpointNameSet[endpoint.Self().Name] = struct{}{}
+	}
+	for childEndpointName, cluster := range childEndpoints {
+		if _, exists := persistedEndpointNameSet[childEndpointName]; exists {
+			continue
+		}
+		// add placeholder
+		s.Endpoints.Items[childEndpointName] = resource.NewEnvoyResource(
+			&envoy_config_endpoint_v3.ClusterLoadAssignment{
+				ClusterName: cluster.Self().Name,
+				Endpoints:   []*envoy_config_endpoint_v3.LocalityLbEndpoints{},
+			})
+	}
+
+	// remove each endpoint not referenced by a cluster
+	// it is safe to delete from a map you are iterating over, example in effective go https://go.dev/doc/effective_go#for
+	for name, _ := range s.Endpoints.Items {
+		if _, exists := childEndpoints[name]; !exists {
+			delete(s.Endpoints.Items, name)
+		}
+	}
+
+	// for each listener persisted, add placeholder route if referenced route does not exist
+	childRoutes := resource.GetResourceReferences(s.Listeners.Items)
+	persistedRouteNameSet := map[string]struct{}{}
+	for _, route := range s.Routes.Items {
+		persistedRouteNameSet[route.Self().Name] = struct{}{}
+	}
+	for childRouteName, listener := range childRoutes {
+		if _, exists := persistedRouteNameSet[childRouteName]; exists {
+			continue
+		}
+		// add placeholder
+		s.Routes.Items[childRouteName] = resource.NewEnvoyResource(
+			&envoy_config_route_v3.RouteConfiguration{
+				Name: fmt.Sprintf("%s-%s", listener.Self().Name, "routes-for-invalid-envoy"),
+				VirtualHosts: []*envoy_config_route_v3.VirtualHost{
+					{
+						Name:    "invalid-envoy-config-vhost",
+						Domains: []string{"*"},
+						Routes: []*envoy_config_route_v3.Route{
+							{
+								Match: &envoy_config_route_v3.RouteMatch{
+									PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{
+										Prefix: "/",
+									},
+								},
+								Action: &envoy_config_route_v3.Route_DirectResponse{
+									DirectResponse: &envoy_config_route_v3.DirectResponseAction{
+										Status: 500,
+										Body: &envoy_config_core_v3.DataSource{
+											Specifier: &envoy_config_core_v3.DataSource_InlineString{
+												InlineString: "Invalid Envoy Configuration. " +
+													"This placeholder was generated to localize pain to the misconfigured route",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+	}
+
+	// remove each route not referenced by a listener
+	// it is safe to delete from a map you are iterating over, example in effective go https://go.dev/doc/effective_go#for
+	for name, _ := range s.Routes.Items {
+		if _, exists := childRoutes[name]; !exists {
+			delete(s.Routes.Items, name)
+		}
+	}
 }
 
 // GetResources selects snapshot resources by type.
