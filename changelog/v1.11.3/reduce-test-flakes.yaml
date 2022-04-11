@@ -1,0 +1,21 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6108
+    resolvesIssue: false
+    description: Resolve a flaking gateway e2e test that would cause build-bot to fail.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5202
+    resolvesIssue: false
+    description: Resolve a flaking regression test that would cause our GitHub action to fail.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5860
+    resolvesIssue: false
+    description: Fix a data race that occurs during our setup syncer tests
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6237
+    resolvesIssue: false
+    description: Ensure that the validation client is never nil, even after the connection has been refreshed.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4782
+    resolvesIssue: false
+    description: Fix a data race that occurs when resolving IP addresses from consul services.
