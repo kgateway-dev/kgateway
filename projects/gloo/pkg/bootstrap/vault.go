@@ -8,7 +8,7 @@ import (
 )
 
 const DefaultPathPrefix = "secret"
-
+// NewVaultSecretClientFactory consumes a vault client along with a set of basic configurations for retrieving info with the client
 func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string) factory.ResourceClientFactory {
 	return &factory.VaultSecretClientFactory{
 		Vault:      client,
