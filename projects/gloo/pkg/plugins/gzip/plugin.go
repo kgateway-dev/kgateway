@@ -26,7 +26,7 @@ const (
 )
 
 // filter should be called after routing decision has been made
-var pluginStage = plugins.DuringStage(plugins.RouteStage)
+var pluginStage = plugins.DuringStage(plugins.FaultStage)
 
 type plugin struct{}
 
