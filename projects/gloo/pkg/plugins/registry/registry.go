@@ -99,6 +99,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 	if opts.Consul.ConsulWatcher != nil {
 		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.Consul.ConsulWatcher, consul.NewConsulDnsResolver(opts.Consul.DnsServer), opts.Consul.DnsPollingInterval))
 	}
+	hcmPlugin.RegisterHcmPlugins(reg.plugins)
 
 	return reg
 }
