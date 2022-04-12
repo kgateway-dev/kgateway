@@ -410,56 +410,49 @@ var _ = Describe("Robustness tests", func() {
 			}
 
 			It("works, even with deleted services", func() {
-				// Ensure we can route to the service
+				// Ensure we can route to the first service
 				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 90*time.Second, 1*time.Second)
-
-				// Ensure we can route to the service
+				// Ensure we can route to the second service
 				testHelper.CurlEventuallyShouldRespond(secondRouteCurlOpts(), expectedResponse(appName2), 1, 90*time.Second, 1*time.Second)
 
+				// Delete the k8s service behind the second echo app
 				err = kubeClient.CoreV1().Services(appService2.Namespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
-				// Ensure we can route to the service
+				// Ensure we can route to the first service
 				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 90*time.Second, 1*time.Second)
-
 				Consistently(func() (string, error) {
 					return testHelper.Curl(firstRouteCurlOpts())
 				}, "5s", "1s").Should(ContainSubstring(expectedResponse(appName)))
 
-				// can no longer route to appName2 once service is removed
+				// can no longer route to appName2 since its k8s service has been removed
 				Eventually(func() (string, error) {
 					return testHelper.Curl(secondRouteCurlOpts())
 				}, "30s", "1s").Should(BeEmpty())
-
 				Consistently(func() (string, error) {
 					return testHelper.Curl(secondRouteCurlOpts())
 				}, "5s", "1s").Should(BeEmpty())
 
 				// roll pods to ensure we are resilient to pod restarts
-				By("bounce gloo")
+				By("bounce gloo and envoy")
 				scaleDeploymentTo(kubeClient, glooDeployment, 0)
-				scaleDeploymentTo(kubeClient, glooDeployment, 1)
-
-				By("bounce envoy")
 				scaleDeploymentTo(kubeClient, envoyDeployment, 0)
+				scaleDeploymentTo(kubeClient, glooDeployment, 1)
 				scaleDeploymentTo(kubeClient, envoyDeployment, 1)
 
-				// Ensure we can route to the service
+				// Ensure we can still route to the first service
 				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 90*time.Second, 1*time.Second)
-
 				Consistently(func() (string, error) {
 					return testHelper.Curl(firstRouteCurlOpts())
 				}, "5s", "1s").Should(ContainSubstring(expectedResponse(appName)))
 
-				// can no longer route to appName2 once service is removed
+				// can no longer route to appName2 since its k8s service has been removed
 				Eventually(func() (string, error) {
 					return testHelper.Curl(secondRouteCurlOpts())
 				}, "30s", "1s").Should(BeEmpty())
-
 				Consistently(func() (string, error) {
 					return testHelper.Curl(secondRouteCurlOpts())
 				}, "5s", "1s").Should(BeEmpty())
-
 			})
 
 		})
