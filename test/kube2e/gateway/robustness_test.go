@@ -49,7 +49,7 @@ import (
 
 var _ = Describe("Robustness tests", func() {
 
-	// These tests are used to validate our Endpoint Disovery Service (EDS) functionality
+	// These tests are used to validate our Endpoint Discovery Service (EDS) functionality
 	// Historically, we had an EDS Test Suite (https://github.com/solo-io/gloo/tree/197272444efae0e6649c798997d6efa94bb7a8d9/test/kube2e/eds)
 	// however, those tests often flaked, and the purpose of those tests was to validate what these
 	// tests already do: that endpoints are updated and sent to Envoy successfully.
@@ -78,6 +78,43 @@ var _ = Describe("Robustness tests", func() {
 		virtualService *gatewayv1.VirtualService
 
 		err error
+
+		envoyDeployment = &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "gloo-system",
+				Name:      "gateway-proxy",
+				Labels:    map[string]string{"gloo": "gateway-proxy"},
+			},
+			Spec: appsv1.DeploymentSpec{
+				Replicas: pointerToInt32(1),
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{"gloo": "gateway-proxy"},
+				},
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"gloo": "gateway-proxy"},
+					},
+				},
+			},
+		}
+		glooDeployment = &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "gloo-system",
+				Name:      "gloo",
+				Labels:    map[string]string{"gloo": "gloo"},
+			},
+			Spec: appsv1.DeploymentSpec{
+				Replicas: pointerToInt32(1),
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{"gloo": "gloo"},
+				},
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"gloo": "gloo"},
+					},
+				},
+			},
+		}
 	)
 
 	BeforeEach(func() {
@@ -292,6 +329,141 @@ var _ = Describe("Robustness tests", func() {
 			}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
 		})
 
+		Context("works, even with deleted services", func() {
+
+			var (
+				appName2       = "echo-app-for-robustness-test2"
+				appDeployment2 *appsv1.Deployment
+				appService2    *corev1.Service
+			)
+
+			BeforeEach(func() {
+				appDeployment2, appService2, err = createEchoDeploymentAndService(kubeClient, testHelper.InstallNamespace, appName2)
+				Expect(err).NotTo(HaveOccurred())
+
+				virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/2",
+						},
+					}},
+					Action: &gatewayv1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_Single{
+								Single: &gloov1.Destination{
+									DestinationType: &gloov1.Destination_Kube{
+										Kube: &gloov1.KubernetesServiceDestination{
+											Ref: &core.ResourceRef{
+												Namespace: appService2.Namespace,
+												Name:      appService2.Name,
+											},
+											Port: 5678,
+										},
+									},
+								},
+							},
+						},
+					},
+				})
+			})
+
+			AfterEach(func() {
+				_ = kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).Delete(ctx, appDeployment2.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+				Eventually(func() bool {
+					deployments, err := kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName2}).String()})
+					Expect(err).NotTo(HaveOccurred())
+					return len(deployments.Items) == 0
+				}, "15s", "0.5s").Should(BeTrue())
+
+				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+				Eventually(func() bool {
+					services, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName2}).String()})
+					Expect(err).NotTo(HaveOccurred())
+					return len(services.Items) == 0
+				}, "15s", "0.5s").Should(BeTrue())
+			})
+
+			firstRouteCurlOpts := func() helper.CurlOpts {
+				return helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/1",
+					Method:            "GET",
+					Host:              gatewayProxy,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1,
+					WithoutStats:      true,
+				}
+			}
+
+			secondRouteCurlOpts := func() helper.CurlOpts {
+				return helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/2",
+					Method:            "GET",
+					Host:              gatewayProxy,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1,
+					WithoutStats:      true,
+				}
+			}
+
+			It("works, even with deleted services", func() {
+				// Ensure we can route to the service
+				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 90*time.Second, 1*time.Second)
+
+				// Ensure we can route to the service
+				testHelper.CurlEventuallyShouldRespond(secondRouteCurlOpts(), expectedResponse(appName2), 1, 90*time.Second, 1*time.Second)
+
+				err = kubeClient.CoreV1().Services(appService2.Namespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Ensure we can route to the service
+				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 90*time.Second, 1*time.Second)
+
+				Consistently(func() (string, error) {
+					return testHelper.Curl(firstRouteCurlOpts())
+				}, "5s", "1s").Should(ContainSubstring(expectedResponse(appName)))
+
+				// can no longer route to appName2 once service is removed
+				Eventually(func() (string, error) {
+					return testHelper.Curl(secondRouteCurlOpts())
+				}, "30s", "1s").Should(BeEmpty())
+
+				Consistently(func() (string, error) {
+					return testHelper.Curl(secondRouteCurlOpts())
+				}, "5s", "1s").Should(BeEmpty())
+
+				// roll pods to ensure we are resilient to pod restarts
+				By("bounce gloo")
+				scaleDeploymentTo(kubeClient, glooDeployment, 0)
+				scaleDeploymentTo(kubeClient, glooDeployment, 1)
+
+				By("bounce envoy")
+				scaleDeploymentTo(kubeClient, envoyDeployment, 0)
+				scaleDeploymentTo(kubeClient, envoyDeployment, 1)
+
+				// Ensure we can route to the service
+				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 90*time.Second, 1*time.Second)
+
+				Consistently(func() (string, error) {
+					return testHelper.Curl(firstRouteCurlOpts())
+				}, "5s", "1s").Should(ContainSubstring(expectedResponse(appName)))
+
+				// can no longer route to appName2 once service is removed
+				Eventually(func() (string, error) {
+					return testHelper.Curl(secondRouteCurlOpts())
+				}, "30s", "1s").Should(BeEmpty())
+
+				Consistently(func() (string, error) {
+					return testHelper.Curl(secondRouteCurlOpts())
+				}, "5s", "1s").Should(BeEmpty())
+
+			})
+
+		})
+
 		It("works, even when snapshot cache is reset", func() {
 			By("force proxy into warning state")
 			forceProxyIntoWarningState(virtualService)
@@ -379,42 +551,6 @@ var _ = Describe("Robustness tests", func() {
 						Template: corev1.PodTemplateSpec{
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{"app": "xds-relay"},
-							},
-						},
-					},
-				}
-				envoyDeployment = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "gloo-system",
-						Name:      "gateway-proxy",
-						Labels:    map[string]string{"gloo": "gateway-proxy"},
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: pointerToInt32(1),
-						Selector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{"gloo": "gateway-proxy"},
-						},
-						Template: corev1.PodTemplateSpec{
-							ObjectMeta: metav1.ObjectMeta{
-								Labels: map[string]string{"gloo": "gateway-proxy"},
-							},
-						},
-					},
-				}
-				glooDeployment = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "gloo-system",
-						Name:      "gloo",
-						Labels:    map[string]string{"gloo": "gloo"},
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: pointerToInt32(1),
-						Selector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{"gloo": "gloo"},
-						},
-						Template: corev1.PodTemplateSpec{
-							ObjectMeta: metav1.ObjectMeta{
-								Labels: map[string]string{"gloo": "gloo"},
 							},
 						},
 					},

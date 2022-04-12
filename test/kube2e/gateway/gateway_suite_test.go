@@ -94,7 +94,7 @@ func StartTestHelper() {
 
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
-	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+	//kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 }
 
 func installXdsRelay() error {
