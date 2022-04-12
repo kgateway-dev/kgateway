@@ -1,0 +1,11 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/6272
+    description: >-
+      Adds a new parameters to the helm charts that can expose an additional stats endpoint
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/6272
+    description: >-
+      Adds a new parameters to the helm charts that will set annotations needed by datadog
+
+
