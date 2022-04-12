@@ -85,14 +85,14 @@ data:
                               route:
                                 prefix_rewrite: {{ $statsConfig.routePrefixRewrite }}
                                 cluster: admin_port_cluster
-                            {{ if .Values.global.glooStats.enableAddDatadogRoute }}
+                            {{ if .Values.global.glooStats.enableAdditionalStatsRoute}}
                             - match:
                                 prefix: "/stats"
                                 headers:
                                 - name: ":method"
                                   exact_match: GET
                               route:
-                                prefix_rewrite: {{ .Values.global.glooStats.datadogPrefixRewrite }}
+                                prefix_rewrite: {{ .Values.global.glooStats.additionalStatsPrefixRewrite }}
                                 cluster: admin_port_cluster
                             {{ end }}
                     http_filters:

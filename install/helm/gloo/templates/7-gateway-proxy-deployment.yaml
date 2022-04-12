@@ -58,13 +58,13 @@ spec:
         {{- end }}
         {{- end }}
 {{ $annotationExist := false}}
-{{- if or ($spec.podTemplate.extraAnnotations) (.Values.global.glooStats.enableAddDatadogRoute) }}
+{{- if or ($spec.podTemplate.extraAnnotations) (.Values.global.glooStats.setDatadogAnnotations) }}
 {{ $annotationExist = true}}
       annotations:
       {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
       {{- end }}
-      {{- if .Values.global.glooStats.enableAddDatadogRoute }}
+      {{- if .Values.global.glooStats.setDatadogAnnotations }}
         ad.datadoghq.com/gateway-proxy.check_names: '["envoy"]'
         ad.datadoghq.com/gateway-proxy.init_configs: '[{}]'
         ad.datadoghq.com/gateway-proxy.instances: '[{"stats_url": "http://%%host%%:8081/stats"}]'

@@ -188,8 +188,9 @@ global:
   glooStats:
     enabled: true
     routePrefixRewrite: /stats/prometheus
-    enableAddDatadogRoute: false
-    datadogPrefixRewrite: /stats
+    setDatadogAnnotations: false
+    enableAdditionalStatsRoute: false
+    additionalStatsPrefixRewrite: /stats
   glooMtls:
     enabled: false
     sds:
