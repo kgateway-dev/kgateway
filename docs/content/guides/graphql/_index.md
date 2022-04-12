@@ -20,6 +20,8 @@ API gateways expose microservices with different implementations from a single l
 
 Gloo Edge extends API gateway and GraphQL capabilities with route-level control. Usually, API gateways apply edge networking logic at the route level. For example, the gateway might rate limit, authorize, and authenticate requests. Most GraphQL servers are a separate endpoint behind the API gateway. Therefore, you cannot add route-level customizations. In contrast, Gloo Edge embeds route-level customization logic into the API gateway.
 
+For more information, check out the [GraphQL blog post](https://www.solo.io/blog/announcing-gloo-graphql/).
+
 ## Get started
 
 Check out the following pages to set up GraphQL in your Gloo Edge environment.
