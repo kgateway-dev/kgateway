@@ -18,7 +18,7 @@ GraphQL resolution is included in Gloo Edge Enterprise version 1.11.0 and later.
 
 2. To try out GraphQL, install Gloo Edge in a development environment. Note that you currently cannot update an existing installation to use GraphQL. Be sure to specify version 1.11.0 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
    ```sh
-   glooctl install gateway enterprise --version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}} --license-key=<GRAPHQL_ENABLED_LICENSE_LEY>
+   glooctl install gateway enterprise --version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}} --license-key=<GRAPHQL_ENABLED_LICENSE_KEY>
    ```
 
 ## Step 2: GraphQL service discovery with Pet Store {#pet-store}
