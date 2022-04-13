@@ -25,8 +25,11 @@ const (
 	GzipLibrary          = "envoy.compression.gzip.compressor"
 )
 
-// filter should be called after routing decision has been made
-var pluginStage = plugins.DuringStage(plugins.RouteStage)
+// filter should be called during the final stage on the response path, to ensure
+// compression happens after any transformations. this means that we need to put it
+// in the first stage of the request path (since filters are executed in the reverse
+// order on the response path)
+var pluginStage = plugins.DuringStage(plugins.FaultStage)
 
 type plugin struct{}
 
