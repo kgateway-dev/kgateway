@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Add e2e test for https://github.com/solo-io/gloo/pull/6289 (sanitizers cannot error)
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/gloo/issues/6114
