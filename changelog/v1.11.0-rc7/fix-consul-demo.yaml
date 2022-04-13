@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5811
+    description: fix gloo-envoy-wrapper container doesn't start with the Docker consul example
