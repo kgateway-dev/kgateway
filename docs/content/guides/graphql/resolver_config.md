@@ -4,7 +4,7 @@ weight: 40
 description: Manually configure resolvers and schema for your GraphQL API.
 ---
 
-You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure GraphQL resolvers, you create a Gloo Edge GraphQL API CRD. The following sections describe the configuration for REST or gRPC resolvers, schema definitions for the types of data to return to graphQL queries, and an in-depth example.
+You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure GraphQL resolvers, you create a Gloo Edge GraphQL API CRD. The following sections describe the configuration for REST or gRPC resolvers, schema definitions for the types of data to return to GraphQL queries, and an in-depth example.
 
 ## REST resolvers
 
