@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/5557
-    description: Added a readiness probe to sds service in gloo deployment and gateway proxy
