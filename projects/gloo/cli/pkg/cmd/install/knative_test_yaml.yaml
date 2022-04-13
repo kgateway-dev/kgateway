@@ -16078,7 +16078,7 @@ spec:
           name: web
           protocol: TCP
         readinessProbe:
-          failureThreshold: 10
+          failureThreshold: 3
           httpGet:
             path: /-/ready
             port: web

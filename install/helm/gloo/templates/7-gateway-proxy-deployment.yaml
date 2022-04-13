@@ -244,7 +244,7 @@ spec:
             - {{ $spec.loopBackAddress }}:19000/ready
           initialDelaySeconds: 1
           periodSeconds: 10
-          failureThreshold: 10
+          failureThreshold: 3
 {{- end}}
 {{- if $spec.podTemplate.livenessProbeEnabled }}
         livenessProbe:
@@ -413,7 +413,7 @@ spec:
                 fieldPath: metadata.namespace
         imagePullPolicy: IfNotPresent
         readinessProbe:
-          failureThreshold: 30
+          failureThreshold: 3
           httpGet:
             path: /healthz/ready
             port: 15021

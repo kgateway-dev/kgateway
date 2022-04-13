@@ -3418,7 +3418,7 @@ spec:
             port: 8443
           initialDelaySeconds: 1
           periodSeconds: 2
-          failureThreshold: 10
+          failureThreshold: 3
         livenessProbe:
           tcpSocket:
             port: 8443
