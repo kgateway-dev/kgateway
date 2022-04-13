@@ -24,6 +24,7 @@ dynamic_resources:
     api_type: GRPC
     grpc_services:
     - envoy_grpc: {cluster_name: xds_cluster}
+    transport_api_version: V3
   cds_config:
     ads: {}
   lds_config:
