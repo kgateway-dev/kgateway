@@ -103,7 +103,7 @@ data:
                               route:
                                 prefix_rewrite: {{ .Values.global.glooStats.routePrefixRewrite }}
                                 cluster: admin_port_cluster
-                            {{ if .Values.global.glooStats.enableAdditionalStatsRoute}}
+                            {{- if .Values.global.glooStats.enableAdditionalStatsRoute}}
                             - match:
                                 prefix: "/stats"
                                 headers:
@@ -112,7 +112,7 @@ data:
                               route:
                                 prefix_rewrite: {{ .Values.global.glooStats.additionalStatsPrefixRewrite }}
                                 cluster: admin_port_cluster
-                            {{ end }}
+                            {{- end }}
                     http_filters:
                       - name: envoy.filters.http.router
 {{- if .Values.settings.integrations.knative.proxy.tracing }}
