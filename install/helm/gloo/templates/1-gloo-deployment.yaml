@@ -112,7 +112,7 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 1
+          initialDelaySeconds: 10
           periodSeconds: 2
           failureThreshold: 10
         volumeMounts:

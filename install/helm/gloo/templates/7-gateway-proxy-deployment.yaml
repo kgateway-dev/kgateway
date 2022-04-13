@@ -281,15 +281,15 @@ spec:
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
-        readinessProbe:
-          tcpSocket:
-            port: 8234
-          initialDelaySeconds: 1
-          periodSeconds: 2
-          failureThreshold: 20
 {{- if $global.glooMtls.sdsResources }}
         resources:
 {{ toYaml $global.glooMtls.sdsResources | indent 10}}
+        readinessProbe:
+          tcpSocket:
+            port: {{ $spec.podTemplate.httpPort }}p
+          initialDelaySeconds: 10
+          periodSeconds: 2
+          failureThreshold: 10
 {{- end}}
         env:
           - name: POD_NAME
