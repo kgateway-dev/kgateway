@@ -329,8 +329,9 @@ func writeSettings(settingsDir string, glooPort, validationPort, restXdsPort int
 		},
 		SecretSource: &gloov1.Settings_VaultSecretSource{
 			VaultSecretSource: &gloov1.Settings_VaultSecrets{
-				Address: "http://127.0.0.1:8200",
-				Token:   "root",
+				Address:    "http://127.0.0.1:8200",
+				Token:      "root",
+				PathPrefix: services.TestPathPrefix,
 			},
 		},
 		ArtifactSource: &gloov1.Settings_DirectoryArtifactSource{

@@ -170,7 +170,7 @@ func (i *VaultInstance) SetupCustomPathPrefixOnServer() error {
 	enableCmd := exec.Command(i.vaultpath,
 		"secrets",
 		"enable",
-		"-address=http://0.0.0.0:8200",
+		"-address=http://127.0.0.1:8200",
 		fmt.Sprintf("-path=%s", i.pathprefix),
 		"kv")
 
