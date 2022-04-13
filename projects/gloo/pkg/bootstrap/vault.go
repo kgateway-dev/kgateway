@@ -6,8 +6,10 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 )
-// The DefaultPathPrefix may be overridden to allow for non-standard vault mount paths 
+
+// The DefaultPathPrefix may be overridden to allow for non-standard vault mount paths
 const DefaultPathPrefix = "secret"
+
 // NewVaultSecretClientFactory consumes a vault client along with a set of basic configurations for retrieving info with the client
 func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string) factory.ResourceClientFactory {
 	return &factory.VaultSecretClientFactory{
