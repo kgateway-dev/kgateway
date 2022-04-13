@@ -107,8 +107,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
-		// TODO (fabian) - lets inject non-default values here
-		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, bootstrap.DefaultPathPrefix, bootstrap.DefaultRootKey)
+		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, "test-secrets", bootstrap.DefaultRootKey)
 
 		// set flag for gloo to use settings dir
 		err = flag.Set("dir", settingsDir)
