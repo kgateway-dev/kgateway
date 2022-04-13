@@ -53,7 +53,7 @@ var _ = Describe("Plugin", func() {
 						TypedConfig: utils.MustMessageToAny(compressorConfig),
 					},
 				},
-				Stage: plugins.DuringStage(plugins.RouteStage),
+				Stage: plugins.DuringStage(plugins.FaultStage),
 			},
 		}))
 
@@ -83,7 +83,7 @@ var _ = Describe("Plugin", func() {
 						TypedConfig: utils.MustMessageToAny(compressorConfig),
 					},
 				},
-				Stage: plugins.DuringStage(plugins.RouteStage),
+				Stage: plugins.DuringStage(plugins.FaultStage),
 			},
 		}))
 	})
@@ -123,7 +123,7 @@ var _ = Describe("Plugin", func() {
 						TypedConfig: utils.MustMessageToAny(compressorConfig),
 					},
 				},
-				Stage: plugins.DuringStage(plugins.RouteStage),
+				Stage: plugins.DuringStage(plugins.FaultStage),
 			},
 		}))
 
@@ -153,7 +153,7 @@ var _ = Describe("Plugin", func() {
 						TypedConfig: utils.MustMessageToAny(compressorConfig),
 					},
 				},
-				Stage: plugins.DuringStage(plugins.RouteStage),
+				Stage: plugins.DuringStage(plugins.FaultStage),
 			},
 		}))
 	})
