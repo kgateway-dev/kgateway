@@ -175,17 +175,11 @@ func (i *VaultInstance) SetupCustomPathPrefixOnServer() error {
 		"kv")
 
 	enableCmd.Env = append(enableCmd.Env, fmt.Sprintf("VAULT_TOKEN=%s", i.Token()))
-	enableCmd.Dir = i.tmpdir
-	enableCmd.Stdout = ginkgo.GinkgoWriter
-	enableCmd.Stderr = ginkgo.GinkgoWriter
-	session, err := gexec.Start(enableCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
-	if err != nil {
-		return err
-	}
-	time.Sleep(time.Millisecond * 1500)
-	i.cmd = enableCmd
-	i.session = session
 
+	enableCmdOut, err := enableCmd.CombinedOutput()
+	if err != nil {
+		return errors.Wrapf(err, "enabling kv storage failed: %s", enableCmdOut)
+	}
 	return nil
 }
 
