@@ -286,7 +286,7 @@ spec:
 {{ toYaml $global.glooMtls.sdsResources | indent 10}}
         readinessProbe:
           tcpSocket:
-            port: {{ $spec.podTemplate.httpPort }}p
+            port: {{ $spec.podTemplate.httpPort }}
           initialDelaySeconds: 10
           periodSeconds: 2
           failureThreshold: 10
