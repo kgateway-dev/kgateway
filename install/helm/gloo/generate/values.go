@@ -286,6 +286,7 @@ type GatewayValidation struct {
 	FailurePolicy                    *string  `json:"failurePolicy,omitempty" desc:"failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore "`
 	Webhook                          *Webhook `json:"webhook,omitempty" desc:"webhook specific configuration"`
 	ValidationServerGrpcMaxSizeBytes *int     `json:"validationServerGrpcMaxSizeBytes,omitempty" desc:"gRPC max message size in bytes for the gloo validation server"`
+	LivenessProbeEnabled             *bool    `json:"livenessProbeEnabled,omitempty" desc:"Is liveness probe enabled on gateway (default false)"`
 }
 
 type Webhook struct {

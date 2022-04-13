@@ -3427,7 +3427,11 @@ spec:
             defaultMode: 420
             secretName: gateway-validation-certs
 `)
-						prepareMakefile(namespace, helmValues{})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.validation.livenessProbeEnabled=true",
+							},
+						})
 						testManifest.ExpectUnstructured(gwDeployment.GetKind(), gwDeployment.GetNamespace(), gwDeployment.GetName()).To(BeEquivalentTo(gwDeployment))
 					})
 
@@ -3893,16 +3897,6 @@ metadata:
 							InitialDelaySeconds: 1,
 							PeriodSeconds:       2,
 							FailureThreshold:    10,
-						}
-						deploy.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
-							Handler: v1.Handler{
-								TCPSocket: &v1.TCPSocketAction{
-									Port: intstr.FromInt(8443),
-								},
-							},
-							InitialDelaySeconds: 1,
-							PeriodSeconds:       2,
-							FailureThreshold:    3,
 						}
 						gatewayDeployment = deploy
 					})
