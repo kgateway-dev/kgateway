@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Run the gzip compression filter after the transformation filter on responses.
+    issueLink: https://github.com/solo-io/gloo/issues/6206
+    resolvesIssue: false
