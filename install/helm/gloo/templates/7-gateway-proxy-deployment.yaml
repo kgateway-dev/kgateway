@@ -246,6 +246,7 @@ spec:
           periodSeconds: 10
           failureThreshold: 10
 {{- end}}
+{{- if $spec.podTemplate.livenessProbeEnabled }}
         livenessProbe:
 {{- if $spec.podTemplate.customLivenessProbe }}
 {{ toYaml $spec.podTemplate.customLivenessProbe | indent 10}}
@@ -259,6 +260,7 @@ spec:
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 3
+{{- end}}
 {{- end}}
 {{- end}}
         volumeMounts:

@@ -2447,7 +2447,10 @@ spec:
 							FailureThreshold:    3,
 						}
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.probes=true"},
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
+								"gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled=true",
+							},
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
@@ -2456,6 +2459,7 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
+								"gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled=true",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=5",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",

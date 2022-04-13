@@ -387,7 +387,8 @@
 |gatewayProxies.NAME.podTemplate.tolerations[].value|string|||
 |gatewayProxies.NAME.podTemplate.tolerations[].effect|string|||
 |gatewayProxies.NAME.podTemplate.tolerations[].tolerationSeconds|int64|||
-|gatewayProxies.NAME.podTemplate.probes|bool||enable liveness and readiness probes|
+|gatewayProxies.NAME.podTemplate.probes|bool||enable readiness probe and allow liveness probe to be enabled|
+|gatewayProxies.NAME.podTemplate.livenessProbeEnabled|bool||enable liveness probe, Default is false|
 |gatewayProxies.NAME.podTemplate.resources.limits.memory|string||amount of memory|
 |gatewayProxies.NAME.podTemplate.resources.limits.cpu|string||amount of CPUs|
 |gatewayProxies.NAME.podTemplate.resources.requests.memory|string||amount of memory|
@@ -572,7 +573,8 @@
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].value|string|||
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].effect|string|||
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].tolerationSeconds|int64|||
-|gatewayProxies.gatewayProxy.podTemplate.probes|bool|false|enable liveness and readiness probes|
+|gatewayProxies.gatewayProxy.podTemplate.probes|bool|false|enable readiness probe and allow liveness probe to be enabled|
+|gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled|bool||enable liveness probe, Default is false|
 |gatewayProxies.gatewayProxy.podTemplate.resources.limits.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu|string||amount of CPUs|
 |gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory|string||amount of memory|
