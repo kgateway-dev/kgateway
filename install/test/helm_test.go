@@ -2422,6 +2422,12 @@ spec:
 					})
 
 					It("enables probes", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
+								"gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled=true",
+							},
+						})
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 							Handler: v1.Handler{
 								Exec: &v1.ExecAction{
@@ -2443,15 +2449,9 @@ spec:
 								},
 							},
 							InitialDelaySeconds: 1,
-							PeriodSeconds:       10,
-							FailureThreshold:    3,
+							PeriodSeconds:       3,
+							FailureThreshold:    10,
 						}
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
-								"gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled=true",
-							},
-						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
@@ -2466,9 +2466,9 @@ spec:
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/ready",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=19000",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
-								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=5",
-								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold=3",
-								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.periodSeconds=10",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=1",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold=10",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.periodSeconds=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.path=/server_info",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.port=19000",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.scheme=HTTP",
@@ -2494,9 +2494,9 @@ spec:
 									Scheme: "HTTP",
 								},
 							},
-							InitialDelaySeconds: 5,
-							PeriodSeconds:       10,
-							FailureThreshold:    3,
+							InitialDelaySeconds: 1,
+							PeriodSeconds:       3,
+							FailureThreshold:    10,
 						}
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
@@ -3423,8 +3423,8 @@ spec:
           tcpSocket:
             port: 8443
           initialDelaySeconds: 1
-          periodSeconds: 2
-          failureThreshold: 3
+          periodSeconds: 3
+          failureThreshold: 10
       volumes:
         - name: validation-certs
           secret:

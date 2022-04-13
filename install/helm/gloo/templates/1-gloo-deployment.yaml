@@ -213,7 +213,7 @@ spec:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
-          periodSeconds: 2
+          periodSeconds: 3
           failureThreshold: 10
 {{- end }}
 {{- end }}
