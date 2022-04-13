@@ -2438,7 +2438,7 @@ spec:
 							},
 							InitialDelaySeconds: 1,
 							PeriodSeconds:       10,
-							FailureThreshold:    10,
+							FailureThreshold:    3,
 						}
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
 							Handler: v1.Handler{
@@ -3678,7 +3678,7 @@ metadata:
 							},
 							InitialDelaySeconds: 1,
 							PeriodSeconds:       2,
-							FailureThreshold:    10,
+							FailureThreshold:    3,
 						}
 						deploy.Spec.Template.Spec.ServiceAccountName = "gloo"
 						glooDeployment = deploy
@@ -3900,7 +3900,7 @@ metadata:
 							},
 							InitialDelaySeconds: 1,
 							PeriodSeconds:       2,
-							FailureThreshold:    10,
+							FailureThreshold:    3,
 						}
 						gatewayDeployment = deploy
 					})
@@ -4696,7 +4696,7 @@ metadata:
 												},
 												InitialDelaySeconds: 1,
 												PeriodSeconds:       2,
-												FailureThreshold:    10,
+												FailureThreshold:    3,
 											},
 										},
 									},
