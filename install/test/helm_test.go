@@ -926,9 +926,6 @@ var _ = Describe("Helm Test", func() {
 						// Ensure that the discovery pod has a true annotation, gateway-proxy has a false annotation (default), and nothing else has any annoation.
 						// todo if we ever decide to add more pods to the list of 'allow istio injection' pods, then change this to a whitelist check
 						deploymentName := structuredDeployment.GetName()
-
-						fmt.Println("logging deployment namee: ", deploymentName)
-
 						if deploymentName == "discovery" {
 							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
