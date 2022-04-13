@@ -93,8 +93,8 @@ spec:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
-          periodSeconds: 2
-          failureThreshold: 3
+          periodSeconds: 3
+          failureThreshold: 10
 {{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
@@ -214,7 +214,7 @@ spec:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
           periodSeconds: 2
-          failureThreshold: 3
+          failureThreshold: 10
 {{- end }}
 {{- end }}
 {{- end }} {{/* define "gloo.deploymentSpec "*/}}

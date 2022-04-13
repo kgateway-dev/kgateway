@@ -113,7 +113,7 @@ spec:
             port: 8443
           initialDelaySeconds: 1
           periodSeconds: 2
-          failureThreshold: 3
+          failureThreshold: 10
 {{- end }}
       volumes:
         - name: validation-certs

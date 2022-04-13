@@ -258,8 +258,8 @@ spec:
             - /dev/null
             - {{ $spec.loopBackAddress }}:19000/server_info
           initialDelaySeconds: 1
-          periodSeconds: 10
-          failureThreshold: 3
+          periodSeconds: 3
+          failureThreshold: 10
 {{- end}}
 {{- end}}
 {{- end}}
