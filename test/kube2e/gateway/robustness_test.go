@@ -247,7 +247,7 @@ var _ = Describe("Robustness tests", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 1,
 				WithoutStats:      true,
-			}, expectedResponse(appName), 1, 90*time.Second, 1*time.Second)
+			}, expectedResponse(appName), 1, 45*time.Second, 1*time.Second)
 		})
 
 		AfterEach(func() {
@@ -409,18 +409,18 @@ var _ = Describe("Robustness tests", func() {
 				}
 			}
 
-			It("works, even with deleted services", func() {
+			assertCanRouteSvc1AndSvc2 := func() {
+				By("assert we can route to svc1 and to svc2")
 				// Ensure we can route to the first service
-				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 90*time.Second, 1*time.Second)
+				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 45*time.Second, 1*time.Second)
 				// Ensure we can route to the second service
-				testHelper.CurlEventuallyShouldRespond(secondRouteCurlOpts(), expectedResponse(appName2), 1, 90*time.Second, 1*time.Second)
+				testHelper.CurlEventuallyShouldRespond(secondRouteCurlOpts(), expectedResponse(appName2), 1, 45*time.Second, 1*time.Second)
+			}
 
-				// Delete the k8s service behind the second echo app
-				err = kubeClient.CoreV1().Services(appService2.Namespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{})
-				Expect(err).NotTo(HaveOccurred())
-
+			assertCanRouteSvc1NotSvc2 := func() {
+				By("assert we can route to svc1 and not to svc2")
 				// Ensure we can route to the first service
-				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 90*time.Second, 1*time.Second)
+				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 45*time.Second, 1*time.Second)
 				Consistently(func() (string, error) {
 					return testHelper.Curl(firstRouteCurlOpts())
 				}, "5s", "1s").Should(ContainSubstring(expectedResponse(appName)))
@@ -432,6 +432,24 @@ var _ = Describe("Robustness tests", func() {
 				Consistently(func() (string, error) {
 					return testHelper.Curl(secondRouteCurlOpts())
 				}, "5s", "1s").Should(BeEmpty())
+			}
+
+			It("works", func() {
+				assertCanRouteSvc1AndSvc2()
+
+				// Delete the k8s service behind the second echo app
+				err = kubeClient.CoreV1().Services(appService2.Namespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				assertCanRouteSvc1NotSvc2()
+			})
+
+			It("works, even with deleted services", func() {
+				// Delete the k8s service behind the second echo app
+				err = kubeClient.CoreV1().Services(appService2.Namespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				assertCanRouteSvc1NotSvc2()
 
 				// roll pods to ensure we are resilient to pod restarts
 				By("bounce gloo and envoy")
@@ -440,19 +458,7 @@ var _ = Describe("Robustness tests", func() {
 				scaleDeploymentTo(kubeClient, glooDeployment, 1)
 				scaleDeploymentTo(kubeClient, envoyDeployment, 1)
 
-				// Ensure we can still route to the first service
-				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 90*time.Second, 1*time.Second)
-				Consistently(func() (string, error) {
-					return testHelper.Curl(firstRouteCurlOpts())
-				}, "5s", "1s").Should(ContainSubstring(expectedResponse(appName)))
-
-				// can no longer route to appName2 since its k8s service has been removed
-				Eventually(func() (string, error) {
-					return testHelper.Curl(secondRouteCurlOpts())
-				}, "30s", "1s").Should(BeEmpty())
-				Consistently(func() (string, error) {
-					return testHelper.Curl(secondRouteCurlOpts())
-				}, "5s", "1s").Should(BeEmpty())
+				assertCanRouteSvc1NotSvc2()
 			})
 
 		})
@@ -462,23 +468,8 @@ var _ = Describe("Robustness tests", func() {
 			forceProxyIntoWarningState(virtualService)
 
 			By("delete gloo pod, ensuring the snapshot cache is reset")
-			pods, err := kubeClient.CoreV1().Pods(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"gloo": "gloo"}).String()})
-			Expect(err).ToNot(HaveOccurred())
-			Expect(len(pods.Items)).To(Equal(1))
-			oldGlooPod := pods.Items[0]
-
-			err = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(ctx, oldGlooPod.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
-			Expect(err).ToNot(HaveOccurred())
-
-			Eventually(func() bool {
-				pods, err := kubeClient.CoreV1().Pods(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"gloo": "gloo"}).String()})
-				Expect(err).ToNot(HaveOccurred())
-				if len(pods.Items) > 0 {
-					// new pod name will not match old gloo pod
-					return pods.Items[0].Name == oldGlooPod.Name
-				}
-				return true
-			}, 80*time.Second, 2*time.Second).Should(BeFalse())
+			scaleDeploymentTo(kubeClient, glooDeployment, 0)
+			scaleDeploymentTo(kubeClient, glooDeployment, 1)
 
 			By("force an update of the service endpoints")
 			var initialEndpointIPs, newEndpointIPs []string
