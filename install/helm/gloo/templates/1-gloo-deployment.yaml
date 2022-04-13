@@ -88,12 +88,14 @@ spec:
           initialDelaySeconds: 1
           periodSeconds: 2
           failureThreshold: 10
+{{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
           periodSeconds: 2
           failureThreshold: 3
+{{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-sidecar-config
@@ -206,12 +208,14 @@ spec:
           initialDelaySeconds: 1
           periodSeconds: 2
           failureThreshold: 10
+{{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
           periodSeconds: 2
           failureThreshold: 3
+{{- end }}
 {{- end }}
 {{- end }} {{/* define "gloo.deploymentSpec "*/}}
 

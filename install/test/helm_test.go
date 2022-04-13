@@ -3661,6 +3661,7 @@ metadata:
 								v1.ResourceCPU:    resource.MustParse("500m"),
 							},
 						}
+
 						deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 							Handler: v1.Handler{
 								TCPSocket: &v1.TCPSocketAction{
@@ -3670,16 +3671,6 @@ metadata:
 							InitialDelaySeconds: 1,
 							PeriodSeconds:       2,
 							FailureThreshold:    10,
-						}
-						deploy.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
-							Handler: v1.Handler{
-								TCPSocket: &v1.TCPSocketAction{
-									Port: intstr.FromInt(9977),
-								},
-							},
-							InitialDelaySeconds: 1,
-							PeriodSeconds:       2,
-							FailureThreshold:    3,
 						}
 						deploy.Spec.Template.Spec.ServiceAccountName = "gloo"
 						glooDeployment = deploy
@@ -4708,16 +4699,6 @@ metadata:
 												InitialDelaySeconds: 1,
 												PeriodSeconds:       2,
 												FailureThreshold:    10,
-											},
-											LivenessProbe: &v1.Probe{
-												Handler: v1.Handler{
-													TCPSocket: &v1.TCPSocketAction{
-														Port: intstr.FromInt(9977),
-													},
-												},
-												InitialDelaySeconds: 1,
-												PeriodSeconds:       2,
-												FailureThreshold:    3,
 											},
 										},
 									},
