@@ -59,6 +59,12 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
+        {{- if $global.istioIntegration.disableAutoinjection }}
+        sidecar.istio.io/inject: "false" # this deployment has custom logic related to istio sidecars, and shouldn't be blanket-injected ever
+        {{- else if $global.istioIntegration.enableIstioSidecarOnGateway }} # annotation not label?
+        sidecar.istio.io/inject: "true"
+        traffic.sidecar.istio.io/excludeInboundPorts: {{ join "," $ports }}
+        {{- end }}
 {{ $annotationExist := false}}
 {{- if or ($spec.podTemplate.extraAnnotations) (.Values.global.glooStats.setDatadogAnnotations) }}
 {{ $annotationExist = true}}
@@ -81,12 +87,6 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "8081"
         prometheus.io/scrape: "true"
-        {{- if $global.istioIntegration.disableAutoinjection }}
-        sidecar.istio.io/inject: "false" # this deployment has custom logic related to istio sidecars, and shouldn't be blanket-injected ever
-        {{- else if $global.istioIntegration.enableIstioSidecarOnGateway }} # annotation not label?
-        sidecar.istio.io/inject: "true"
-        traffic.sidecar.istio.io/excludeInboundPorts: {{ join "," $ports }}
-        {{- end }}
 {{- end}}
 {{- if $spec.readConfig }}
 {{- if not $annotationExist }}
@@ -96,12 +96,6 @@ spec:
         readconfig-ready: /ready
         readconfig-config_dump: /config_dump
         readconfig-port: "8082"
-        {{- if $global.istioIntegration.disableAutoinjection }}
-        sidecar.istio.io/inject: "false"
-        {{- else if $global.istioIntegration.enableIstioSidecarOnGateway }}
-        sidecar.istio.io/inject: "true"
-        traffic.sidecar.istio.io/excludeInboundPorts: {{ join "," $ports }}
-        {{- end }}
 {{- end}}
     spec:
 
