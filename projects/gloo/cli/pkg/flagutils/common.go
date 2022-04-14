@@ -70,7 +70,8 @@ func AddVaultSecretFlags(set *pflag.FlagSet, vault *options.Vault) {
 
 	set.BoolVar(&vault.UseVault, "use-vault", false, "use Vault Key-Value storage as the "+
 		"backend for reading and writing secrets")
-	set.StringVar(&vault.RootKey, "vault-root-key", bootstrap.DefaultRootKey, "key prefix for for Vault key-value storage.")
+	set.StringVar(&vault.PathPrefix, "vault-path-prefix", bootstrap.DefaultPathPrefix, "The Secrets Engine to which Vault should route traffic.")
+	set.StringVar(&vault.RootKey, "vault-root-key", bootstrap.DefaultRootKey, "key prefix for Vault key-value storage inside a storage engine.")
 
 	set.StringVar(&config.Address, "vault-address", config.Address, "address of the Vault server. This should be a complete  URL such as \"http://vault.example.com\". "+
 		"Use with --use-vault")

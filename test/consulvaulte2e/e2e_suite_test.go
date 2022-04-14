@@ -26,7 +26,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	consulFactory, err = services.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
-	vaultFactory, err = services.NewVaultFactory()
+	vaultFactory, err = services.NewVaultFactory(&services.VaultFactoryConfig{PathPrefix: services.TestPathPrefix})
 	Expect(err).NotTo(HaveOccurred())
 })
 
