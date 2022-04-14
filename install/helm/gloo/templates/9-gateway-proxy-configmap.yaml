@@ -85,6 +85,16 @@ data:
                               route:
                                 prefix_rewrite: {{ $statsConfig.routePrefixRewrite }}
                                 cluster: admin_port_cluster
+                            {{- if .Values.global.glooStats.enableStatsRoute}}
+                            - match:
+                                prefix: "/stats"
+                                headers:
+                                - name: ":method"
+                                  exact_match: GET
+                              route:
+                                prefix_rewrite: {{ .Values.global.glooStats.statsPrefixRewrite }}
+                                cluster: admin_port_cluster
+                            {{- end }}
                     http_filters:
                       - name: envoy.filters.http.router
 {{- end}} {{- /* if $statsConfig.enabled */}}
