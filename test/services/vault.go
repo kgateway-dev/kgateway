@@ -21,18 +21,25 @@ import (
 )
 
 const defaultVaultDockerImage = "vault:1.1.3"
+const TestPathPrefix = "test-org"
 
 type VaultFactory struct {
-	vaultPath string
-	tmpdir    string
+	vaultPath  string
+	pathprefix string
+	tmpdir     string
 }
 
-func NewVaultFactory() (*VaultFactory, error) {
+type VaultFactoryConfig struct {
+	PathPrefix string
+}
+
+func NewVaultFactory(config *VaultFactoryConfig) (*VaultFactory, error) {
 	path := os.Getenv("VAULT_BINARY")
 
 	if path != "" {
 		return &VaultFactory{
-			vaultPath: path,
+			vaultPath:  path,
+			pathprefix: config.PathPrefix,
 		}, nil
 	}
 
@@ -40,7 +47,8 @@ func NewVaultFactory() (*VaultFactory, error) {
 	if err == nil {
 		log.Printf("Using vault from PATH: %s", vaultPath)
 		return &VaultFactory{
-			vaultPath: vaultPath,
+			vaultPath:  vaultPath,
+			pathprefix: config.PathPrefix,
 		}, nil
 	}
 
@@ -74,8 +82,9 @@ docker rm -f $CID
 	}
 
 	return &VaultFactory{
-		vaultPath: filepath.Join(tmpdir, "vault"),
-		tmpdir:    tmpdir,
+		vaultPath:  filepath.Join(tmpdir, "vault"),
+		pathprefix: config.PathPrefix,
+		tmpdir:     tmpdir,
 	}, nil
 }
 
@@ -91,11 +100,12 @@ func (ef *VaultFactory) Clean() error {
 }
 
 type VaultInstance struct {
-	vaultpath string
-	tmpdir    string
-	cmd       *exec.Cmd
-	token     string
-	session   *gexec.Session
+	vaultpath  string
+	tmpdir     string
+	pathprefix string
+	cmd        *exec.Cmd
+	token      string
+	session    *gexec.Session
 }
 
 func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -106,8 +116,9 @@ func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	}
 
 	return &VaultInstance{
-		vaultpath: ef.vaultPath,
-		tmpdir:    tmpdir,
+		vaultpath:  ef.vaultPath,
+		pathprefix: ef.pathprefix,
+		tmpdir:     tmpdir,
 	}, nil
 
 }
@@ -147,6 +158,28 @@ func (i *VaultInstance) RunWithPort() error {
 
 	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
 
+	// We'll need to create a new (secrets engine) path if we're testing the non-default "secret" path
+	if i.pathprefix != "" && i.pathprefix != "secret" {
+		return i.SetupCustomPathPrefixOnServer()
+	}
+
+	return nil
+}
+
+func (i *VaultInstance) SetupCustomPathPrefixOnServer() error {
+	enableCmd := exec.Command(i.vaultpath,
+		"secrets",
+		"enable",
+		"-address=http://127.0.0.1:8200",
+		fmt.Sprintf("-path=%s", i.pathprefix),
+		"kv")
+
+	enableCmd.Env = append(enableCmd.Env, fmt.Sprintf("VAULT_TOKEN=%s", i.Token()))
+
+	enableCmdOut, err := enableCmd.CombinedOutput()
+	if err != nil {
+		return errors.Wrapf(err, "enabling kv storage failed: %s", enableCmdOut)
+	}
 	return nil
 }
 

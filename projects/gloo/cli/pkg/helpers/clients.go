@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+
 	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
@@ -38,7 +40,7 @@ var (
 	fakeKubeClientset *fake.Clientset
 	memResourceClient *factory.MemoryResourceClientFactory
 	consulClient      *factory.ConsulResourceClientFactory
-	vaultClient       *factory.VaultSecretClientFactory
+	vaultClient       factory.ResourceClientFactory
 
 	lock sync.Mutex
 )
@@ -103,13 +105,10 @@ func UseConsulClients(client *api.Client, rootKey string) {
 }
 
 // only applies to secret clients
-func UseVaultClients(client *vaultapi.Client, rootKey string) {
+func UseVaultClients(client *vaultapi.Client, pathPrefix, rootKey string) {
 	lock.Lock()
 	defer lock.Unlock()
-	vaultClient = &factory.VaultSecretClientFactory{
-		Vault:   client,
-		RootKey: rootKey,
-	}
+	vaultClient = bootstrap.NewVaultSecretClientFactory(client, pathPrefix, rootKey)
 }
 
 func MustKubeClient() kubernetes.Interface {
