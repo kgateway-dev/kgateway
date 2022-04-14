@@ -24,7 +24,7 @@ func EnableVaultClients(vault options.Vault) error {
 		if err != nil {
 			return eris.Wrapf(err, "creating Vault client")
 		}
-		helpers.UseVaultClients(client, vault.RootKey)
+		helpers.UseVaultClients(client, vault.PathPrefix, vault.RootKey)
 	}
 	return nil
 }

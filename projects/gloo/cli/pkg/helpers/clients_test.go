@@ -75,7 +75,7 @@ var _ = Describe("Clients", func() {
 	})
 	Describe("UseVaultClients", func() {
 		BeforeEach(func() {
-			UseVaultClients(&api2.Client{}, "")
+			UseVaultClients(&api2.Client{}, "", "")
 		})
 		AfterEach(func() {
 			UseDefaultClients()

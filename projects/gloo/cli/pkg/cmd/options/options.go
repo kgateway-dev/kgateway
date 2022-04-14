@@ -123,9 +123,19 @@ type Consul struct {
 }
 
 type Vault struct {
-	UseVault bool // enable vault secret clients
-	RootKey  string
-	Client   func() (*vaultapi.Client, error)
+	// enable vault secret clients
+	UseVault bool
+
+	// https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines
+	// PathPrefix tells Vault which secrets engine to which it should route traffic.
+	PathPrefix string
+
+	// Secrets are persisted using a resource client constructed in solo-kit
+	// https://github.com/solo-io/solo-kit/blob/1d799ae290c2f516f01fc4ad20272d7d2d5db1e7/pkg/api/v1/clients/vault/resource_client.go#L311
+	// The RootKey is used to configure the path for the particular Gloo installation
+	// This ensures that you can run multiple instances of Gloo against the same Consul cluster
+	RootKey string
+	Client  func() (*vaultapi.Client, error)
 }
 
 type Create struct {
