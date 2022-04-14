@@ -107,7 +107,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
-		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, services.TestPathPrefix, bootstrap.DefaultRootKey)
+		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, bootstrap.DefaultPathPrefix, bootstrap.DefaultRootKey)
 
 		// set flag for gloo to use settings dir
 		err = flag.Set("dir", settingsDir)
@@ -329,9 +329,8 @@ func writeSettings(settingsDir string, glooPort, validationPort, restXdsPort int
 		},
 		SecretSource: &gloov1.Settings_VaultSecretSource{
 			VaultSecretSource: &gloov1.Settings_VaultSecrets{
-				Address:    "http://127.0.0.1:8200",
-				Token:      "root",
-				PathPrefix: services.TestPathPrefix,
+				Address: "http://127.0.0.1:8200",
+				Token:   "root",
 			},
 		},
 		ArtifactSource: &gloov1.Settings_DirectoryArtifactSource{
