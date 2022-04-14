@@ -707,7 +707,7 @@ var _ = Describe("Helm Test", func() {
 
 			Context("gloo with istio sds settings", func() {
 				var (
-					istioAnnotation              = "sidecar.istio.io/inject"
+					IstioInjectionLabel          = "sidecar.istio.io/inject"
 					istioExcludedPortsAnnotation = "traffic.sidecar.istio.io/excludeInboundPorts"
 
 					istioCertsVolume = v1.Volume{
@@ -868,7 +868,7 @@ var _ = Describe("Helm Test", func() {
 						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						// ensure every deployment has a istio annotation set to false
-						val, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
+						val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
 						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
 						Expect(val).To(Equal("false"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'false'", deployment.GetName()))
 					})
@@ -891,11 +891,11 @@ var _ = Describe("Helm Test", func() {
 						// Ensure that the discovery pod has a true annotation, gateway-proxy has a false annotation (default), and nothing else has any annoation.
 						// todo if we ever decide to add more pods to the list of 'allow istio injection' pods, then change this to a whitelist check
 						if structuredDeployment.GetName() == "discovery" {
-							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
+							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
 							Expect(val).To(Equal("true"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'true'", deployment.GetName()))
 						} else {
-							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
+							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
 							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should not contain an istio injection annotation", deployment.GetName()))
 						}
 					})
@@ -927,17 +927,17 @@ var _ = Describe("Helm Test", func() {
 						// todo if we ever decide to add more pods to the list of 'allow istio injection' pods, then change this to a whitelist check
 						deploymentName := structuredDeployment.GetName()
 						if deploymentName == "discovery" {
-							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
+							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
 							Expect(val).To(Equal("true"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'true'", deployment.GetName()))
 						} else if deploymentName == "gateway-proxy" {
-							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
+							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deploymentName))
 							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
 							Expect(ok).To(BeTrue())
 							Expect(excludedPortString).To(Equal(fmt.Sprintf("%d,%d", httpPort, httpsPort)), fmt.Sprintf("Deployment %s should exclude specified ports", deploymentName))
 						} else if deploymentName == "second-gateway-proxy" {
-							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
+							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deploymentName))
 							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
 							Expect(ok).To(BeTrue())
