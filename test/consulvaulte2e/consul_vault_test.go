@@ -61,6 +61,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 	)
 
 	const writeNamespace = defaults.GlooSystem
+	const customSecretEngine = "custom-secret-engine"
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -83,18 +84,22 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
+		err = vaultInstance.EnableSecretEngine(customSecretEngine)
+		Expect(err).NotTo(HaveOccurred())
+
+		vaultSecretSource := getVaultSecretSource(vaultInstance, customSecretEngine)
 
 		// write settings telling Gloo to use consul/vault
 		settingsDir, err = ioutil.TempDir("", "")
 		Expect(err).NotTo(HaveOccurred())
 
-		settings, err := writeSettings(settingsDir, glooPort, validationPort, restXdsPort, writeNamespace)
+		settings, err := writeSettings(settingsDir, glooPort, validationPort, restXdsPort, writeNamespace, vaultSecretSource)
 		Expect(err).NotTo(HaveOccurred())
 
 		consulClient, err = bootstrap.ConsulClientForSettings(ctx, settings)
 		Expect(err).NotTo(HaveOccurred())
 
-		vaultClient, err = bootstrap.VaultClientForSettings(settings.GetVaultSecretSource())
+		vaultClient, err = bootstrap.VaultClientForSettings(vaultSecretSource)
 		Expect(err).NotTo(HaveOccurred())
 
 		consulResources = &factory.ConsulResourceClientFactory{
@@ -107,7 +112,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
-		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, bootstrap.DefaultPathPrefix, bootstrap.DefaultRootKey)
+		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, customSecretEngine, bootstrap.DefaultRootKey)
 
 		// set flag for gloo to use settings dir
 		err = flag.Set("dir", settingsDir)
@@ -201,7 +206,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		secretClient, err := gloov1.NewSecretClient(ctx, vaultResources)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = secretClient.Write(secret, clients.WriteOpts{})
+		_, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		vsClient, err := v1.NewVirtualServiceClient(ctx, consulResources)
@@ -322,16 +327,27 @@ func makeFunctionRoutingVirtualService(vsNamespace string, upstream *core.Resour
 	}
 }
 
-func writeSettings(settingsDir string, glooPort, validationPort, restXdsPort int, writeNamespace string) (*gloov1.Settings, error) {
+func getVaultSecretSource(vaultInstance *services.VaultInstance, secretEngine string) *gloov1.Settings_VaultSecrets {
+	return &gloov1.Settings_VaultSecrets{
+		Address:    vaultInstance.Address(),
+		Token:      vaultInstance.Token(),
+		PathPrefix: secretEngine,
+		RootKey:    bootstrap.DefaultRootKey,
+	}
+}
+
+func writeSettings(
+	settingsDir string,
+	glooPort, validationPort, restXdsPort int,
+	writeNamespace string,
+	vaultSecretSource *gloov1.Settings_VaultSecrets,
+) (*gloov1.Settings, error) {
 	settings := &gloov1.Settings{
 		ConfigSource: &gloov1.Settings_ConsulKvSource{
 			ConsulKvSource: &gloov1.Settings_ConsulKv{},
 		},
 		SecretSource: &gloov1.Settings_VaultSecretSource{
-			VaultSecretSource: &gloov1.Settings_VaultSecrets{
-				Address: "http://127.0.0.1:8200",
-				Token:   "root",
-			},
+			VaultSecretSource: vaultSecretSource,
 		},
 		ArtifactSource: &gloov1.Settings_DirectoryArtifactSource{
 			DirectoryArtifactSource: &gloov1.Settings_Directory{

@@ -21,25 +21,23 @@ import (
 )
 
 const defaultVaultDockerImage = "vault:1.1.3"
-const TestPathPrefix = "test-org"
+const defaultAddress = "127.0.0.1:8200"
 
 type VaultFactory struct {
-	vaultPath  string
-	pathprefix string
-	tmpdir     string
+	vaultPath string
+	tmpdir    string
 }
 
 type VaultFactoryConfig struct {
 	PathPrefix string
 }
 
-func NewVaultFactory(config *VaultFactoryConfig) (*VaultFactory, error) {
+func NewVaultFactory() (*VaultFactory, error) {
 	path := os.Getenv("VAULT_BINARY")
 
 	if path != "" {
 		return &VaultFactory{
-			vaultPath:  path,
-			pathprefix: config.PathPrefix,
+			vaultPath: path,
 		}, nil
 	}
 
@@ -47,8 +45,7 @@ func NewVaultFactory(config *VaultFactoryConfig) (*VaultFactory, error) {
 	if err == nil {
 		log.Printf("Using vault from PATH: %s", vaultPath)
 		return &VaultFactory{
-			vaultPath:  vaultPath,
-			pathprefix: config.PathPrefix,
+			vaultPath: vaultPath,
 		}, nil
 	}
 
@@ -82,9 +79,8 @@ docker rm -f $CID
 	}
 
 	return &VaultFactory{
-		vaultPath:  filepath.Join(tmpdir, "vault"),
-		pathprefix: config.PathPrefix,
-		tmpdir:     tmpdir,
+		vaultPath: filepath.Join(tmpdir, "vault"),
+		tmpdir:    tmpdir,
 	}, nil
 }
 
@@ -100,12 +96,12 @@ func (ef *VaultFactory) Clean() error {
 }
 
 type VaultInstance struct {
-	vaultpath  string
-	tmpdir     string
-	pathprefix string
-	cmd        *exec.Cmd
-	token      string
-	session    *gexec.Session
+	vaultpath string
+	tmpdir    string
+	cmd       *exec.Cmd
+	session   *gexec.Session
+	token     string
+	address   string
 }
 
 func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -116,27 +112,26 @@ func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	}
 
 	return &VaultInstance{
-		vaultpath:  ef.vaultPath,
-		pathprefix: ef.pathprefix,
-		tmpdir:     tmpdir,
+		vaultpath: ef.vaultPath,
+		tmpdir:    tmpdir,
 	}, nil
 
 }
 
 func (i *VaultInstance) Run() error {
-	return i.RunWithPort()
+	return i.RunWithAddress(defaultAddress)
 }
 
-func (i *VaultInstance) Token() string {
-	return i.token
-}
+func (i *VaultInstance) RunWithAddress(address string) error {
+	i.token = "root"
+	i.address = address
 
-func (i *VaultInstance) RunWithPort() error {
 	cmd := exec.Command(i.vaultpath,
 		"server",
+		// https://www.vaultproject.io/docs/concepts/dev-server
 		"-dev",
-		"-dev-root-token-id=root",
-		"-dev-listen-address=0.0.0.0:8200",
+		fmt.Sprintf("-dev-root-token-id=%s", i.token),
+		fmt.Sprintf("-dev-listen-address=%s", i.address),
 	)
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = ginkgo.GinkgoWriter
@@ -156,31 +151,23 @@ func (i *VaultInstance) RunWithPort() error {
 		return errors.Errorf("%s did not contain root token", out)
 	}
 
+	i.address = address
 	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
-
-	// We'll need to create a new (secrets engine) path if we're testing the non-default "secret" path
-	if i.pathprefix != "" && i.pathprefix != "secret" {
-		return i.SetupCustomPathPrefixOnServer()
-	}
 
 	return nil
 }
 
-func (i *VaultInstance) SetupCustomPathPrefixOnServer() error {
-	enableCmd := exec.Command(i.vaultpath,
-		"secrets",
-		"enable",
-		"-address=http://127.0.0.1:8200",
-		fmt.Sprintf("-path=%s", i.pathprefix),
-		"kv")
+func (i *VaultInstance) Token() string {
+	return i.token
+}
 
-	enableCmd.Env = append(enableCmd.Env, fmt.Sprintf("VAULT_TOKEN=%s", i.Token()))
+func (i *VaultInstance) Address() string {
+	return fmt.Sprintf("http://%s", i.address)
+}
 
-	enableCmdOut, err := enableCmd.CombinedOutput()
-	if err != nil {
-		return errors.Wrapf(err, "enabling kv storage failed: %s", enableCmdOut)
-	}
-	return nil
+func (i *VaultInstance) EnableSecretEngine(secretEngine string) error {
+	_, err := i.Exec("secrets", "enable", "-version=2", fmt.Sprintf("-path=%s", secretEngine), "kv")
+	return err
 }
 
 func (i *VaultInstance) Binary() string {
@@ -202,14 +189,20 @@ func (i *VaultInstance) Clean() error {
 
 func (i *VaultInstance) Exec(args ...string) (string, error) {
 	cmd := exec.Command(i.vaultpath, args...)
+	cmd.Dir = i.tmpdir
 	cmd.Env = os.Environ()
 	// disable DEBUG=1 from getting through to nomad
-	for i, pair := range cmd.Env {
+	for e, pair := range cmd.Env {
 		if strings.HasPrefix(pair, "DEBUG") {
-			cmd.Env = append(cmd.Env[:i], cmd.Env[i+1:]...)
+			cmd.Env = append(cmd.Env[:e], cmd.Env[e+1:]...)
 			break
 		}
 	}
+	cmd.Env = append(
+		cmd.Env,
+		fmt.Sprintf("VAULT_TOKEN=%s", i.Token()),
+		fmt.Sprintf("VAULT_ADDR=%s", i.Address()))
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		err = fmt.Errorf("%s (%v)", out, err)
