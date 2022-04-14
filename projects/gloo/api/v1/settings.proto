@@ -114,10 +114,9 @@ message Settings {
         // defaults to `gloo`
         string root_key = 9;
 
-        // pathPrefix, if set, represents the name of a Vault Secrets Engine
-        // https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines
-        // The path prefix tells Vault which Secrets Engine to which it should route traffic
-        // defaults to 'secret'
+        // Optional: The name of a Vault Secrets Engine to which Vault should route traffic.
+        // For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines.
+        // Defaults to 'secret'
         string path_prefix = 10;
     }
 

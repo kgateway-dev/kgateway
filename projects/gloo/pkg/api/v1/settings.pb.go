@@ -1097,10 +1097,9 @@ type Settings_VaultSecrets struct {
 	// this can be used to run multiple instances of Gloo against the same Consul cluster
 	// defaults to `gloo`
 	RootKey string `protobuf:"bytes,9,opt,name=root_key,json=rootKey,proto3" json:"root_key,omitempty"`
-	// pathPrefix, if set, represents the name of a Vault Secrets Engine
-	// https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines
-	// The path prefix tells Vault which Secrets Engine to which it should route traffic
-	// defaults to 'secret'
+	// Optional: The name of a Vault Secrets Engine to which Vault should route traffic.
+	// For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines.
+	// Defaults to 'secret'
 	PathPrefix string `protobuf:"bytes,10,opt,name=path_prefix,json=pathPrefix,proto3" json:"path_prefix,omitempty"`
 }
 
