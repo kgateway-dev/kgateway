@@ -296,13 +296,13 @@ spec:
 {{- if $global.glooMtls.sdsResources }}
         resources:
 {{ toYaml $global.glooMtls.sdsResources | indent 10}}
+{{- end}}
         readinessProbe:
           tcpSocket:
-            port: {{ $spec.podTemplate.httpPort }}p
+            port: {{ $spec.podTemplate.httpPort }}
           initialDelaySeconds: 10
           periodSeconds: 2
           failureThreshold: 10
-{{- end}}
         env:
           - name: POD_NAME
             valueFrom:
