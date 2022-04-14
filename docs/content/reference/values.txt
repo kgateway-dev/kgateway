@@ -120,6 +120,9 @@
 |gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
 |gloo.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gloo.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
+|gloo.deployment.stats.setDatadogAnnotations|bool||Sets the default datadog annotations|
+|gloo.deployment.stats.enableStatsRoute|bool||Enables an additional route to the stats cluster defaulting to /stats|
+|gloo.deployment.stats.statsPrefixRewrite|string||The envoy stats endpoint with general metrics for the additional stats route|
 |gloo.deployment.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |gloo.deployment.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |gloo.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
@@ -177,6 +180,9 @@
 |discovery.deployment.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |discovery.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |discovery.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
+|discovery.deployment.stats.setDatadogAnnotations|bool||Sets the default datadog annotations|
+|discovery.deployment.stats.enableStatsRoute|bool||Enables an additional route to the stats cluster defaulting to /stats|
+|discovery.deployment.stats.statsPrefixRewrite|string||The envoy stats endpoint with general metrics for the additional stats route|
 |discovery.deployment.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |discovery.deployment.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |discovery.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
@@ -250,6 +256,9 @@
 |gateway.deployment.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |gateway.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gateway.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
+|gateway.deployment.stats.setDatadogAnnotations|bool||Sets the default datadog annotations|
+|gateway.deployment.stats.enableStatsRoute|bool||Enables an additional route to the stats cluster defaulting to /stats|
+|gateway.deployment.stats.statsPrefixRewrite|string||The envoy stats endpoint with general metrics for the additional stats route|
 |gateway.deployment.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |gateway.deployment.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |gateway.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
@@ -467,6 +476,9 @@
 |gatewayProxies.NAME.extraListenersHelper|string|||
 |gatewayProxies.NAME.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gatewayProxies.NAME.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
+|gatewayProxies.NAME.stats.setDatadogAnnotations|bool||Sets the default datadog annotations|
+|gatewayProxies.NAME.stats.enableStatsRoute|bool||Enables an additional route to the stats cluster defaulting to /stats|
+|gatewayProxies.NAME.stats.statsPrefixRewrite|string||The envoy stats endpoint with general metrics for the additional stats route|
 |gatewayProxies.NAME.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |gatewayProxies.NAME.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
@@ -633,6 +645,9 @@
 |gatewayProxies.gatewayProxy.extraListenersHelper|string|||
 |gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gatewayProxies.gatewayProxy.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
+|gatewayProxies.gatewayProxy.stats.setDatadogAnnotations|bool||Sets the default datadog annotations|
+|gatewayProxies.gatewayProxy.stats.enableStatsRoute|bool||Enables an additional route to the stats cluster defaulting to /stats|
+|gatewayProxies.gatewayProxy.stats.statsPrefixRewrite|string||The envoy stats endpoint with general metrics for the additional stats route|
 |gatewayProxies.gatewayProxy.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |gatewayProxies.gatewayProxy.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |gatewayProxies.gatewayProxy.readConfig|bool||expose a read-only subset of the envoy admin api|
@@ -790,6 +805,9 @@
 |accessLogger.enabled|bool|false||
 |accessLogger.stats.enabled|bool|true|Controls whether or not envoy stats are enabled|
 |accessLogger.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
+|accessLogger.stats.setDatadogAnnotations|bool||Sets the default datadog annotations|
+|accessLogger.stats.enableStatsRoute|bool||Enables an additional route to the stats cluster defaulting to /stats|
+|accessLogger.stats.statsPrefixRewrite|string||The envoy stats endpoint with general metrics for the additional stats route|
 |accessLogger.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |accessLogger.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |accessLogger.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
@@ -846,6 +864,9 @@
 |global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo Edge RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
 |global.glooStats.enabled|bool|true|Controls whether or not envoy stats are enabled|
 |global.glooStats.routePrefixRewrite|string|/stats/prometheus|The envoy stats endpoint to which the metrics are written|
+|global.glooStats.setDatadogAnnotations|bool|false|Sets the default datadog annotations|
+|global.glooStats.enableStatsRoute|bool|false|Enables an additional route to the stats cluster defaulting to /stats|
+|global.glooStats.statsPrefixRewrite|string|/stats|The envoy stats endpoint with general metrics for the additional stats route|
 |global.glooStats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |global.glooStats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
 |global.glooMtls.enabled|bool|false|Enables internal mtls authentication|
