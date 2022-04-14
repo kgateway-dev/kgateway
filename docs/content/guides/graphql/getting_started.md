@@ -308,8 +308,8 @@ Protect the GraphQL API that you created in the previous sections by using an AP
 ## Next steps
 
 Now that you've tried out GraphQL with Gloo Edge, check out the following pages to configure your own services for GraphQL integration.
-* [Visualize your GraphQL services in the UI]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/graphql_ui/" %}})
-* [Explore automatic schema generation with GraphQL service discovery]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/automatic_discovery/" %}})
-* [Manually configure resolvers and schema for your GraphQL API]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/resolver_config/" %}})
-* [Monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/observability/" %}})
+* [Visualize your GraphQL services in the UI]({{% versioned_link_path fromRoot="/guides/graphql/graphql_ui/" %}})
+* [Explore automatic schema generation with GraphQL service discovery]({{% versioned_link_path fromRoot="/guides/graphql/automatic_discovery/" %}})
+* [Manually configure resolvers and schema for your GraphQL API]({{% versioned_link_path fromRoot="/guides/graphql/resolver_config/" %}})
+* [Monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/graphql/observability/" %}})
 * [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/" %}})
