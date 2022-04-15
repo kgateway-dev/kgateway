@@ -79,7 +79,7 @@ global:
                 fieldPath: metadata.namespace
         imagePullPolicy: IfNotPresent
         readinessProbe:
-          failureThreshold: 3
+          failureThreshold: 30
           httpGet:
             path: /healthz/ready
             port: 15021
