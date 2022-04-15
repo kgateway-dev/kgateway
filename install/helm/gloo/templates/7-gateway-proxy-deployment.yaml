@@ -255,7 +255,7 @@ spec:
             - -O
             - /dev/null
             - {{ $spec.loopBackAddress }}:19000/ready
-          initialDelaySeconds: 10
+          initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 3
 {{- end}}
@@ -340,7 +340,7 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 8234
-          initialDelaySeconds: 10
+          initialDelaySeconds: 1
           periodSeconds: 2
           failureThreshold: 3
 {{- end }} {{- /* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
@@ -437,7 +437,7 @@ spec:
             path: /healthz/ready
             port: 15021
             scheme: HTTP
-          initialDelaySeconds: 10
+          initialDelaySeconds: 1
           periodSeconds: 2
           successThreshold: 1
           timeoutSeconds: 1
