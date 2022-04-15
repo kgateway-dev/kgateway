@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Fix duplicate key in YAML.
+    issueLink: https://github.com/solo-io/gloo/pull/5350
