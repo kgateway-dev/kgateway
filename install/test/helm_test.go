@@ -707,7 +707,8 @@ var _ = Describe("Helm Test", func() {
 
 			Context("gloo with istio sds settings", func() {
 				var (
-					istioAnnotation = "sidecar.istio.io/inject"
+					IstioInjectionLabel          = "sidecar.istio.io/inject"
+					istioExcludedPortsAnnotation = "traffic.sidecar.istio.io/excludeInboundPorts"
 
 					istioCertsVolume = v1.Volume{
 						Name: "istio-certs",
@@ -849,7 +850,7 @@ var _ = Describe("Helm Test", func() {
 					})
 				})
 
-				It("should add an anti-injection annotation to all pods when disableAutoinjection is enabled", func() {
+				It("should add an anti-injection label to gateway-proxy pods when disableAutoinjection is enabled", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"global.istioIntegration.disableAutoinjection=true",
@@ -861,19 +862,22 @@ var _ = Describe("Helm Test", func() {
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetKind() == "Deployment"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentName := deployment.GetName()
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
 						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-						// ensure every deployment has a istio annotation set to false
-						val, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
-						Expect(val).To(Equal("false"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'false'", deployment.GetName()))
+						if deploymentName == "gateway-proxy" {
+							// ensure every deployment has a istio annotation set to false
+							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection label", deploymentName))
+							Expect(val).To(Equal("false"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'false'", deploymentName))
+						}
 					})
 				})
 
-				It("should add an Istio injection annotation for pods that can be configured for it", func() {
+				It("should add an Istio injection label for pods that can be configured for it", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"global.istioIntegration.whitelistDiscovery=true",
 							"global.istioIntegration.disableAutoinjection=false"},
@@ -887,15 +891,60 @@ var _ = Describe("Helm Test", func() {
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-						// Ensure that the discovery pod has a true annotation, gateway-proxy has a false annotation (default), and nothing else has any annoation.
+						// Ensure that the discovery pod has a true label, gateway-proxy has a false label (default), and nothing else has any annoation.
 						// todo if we ever decide to add more pods to the list of 'allow istio injection' pods, then change this to a whitelist check
 						if structuredDeployment.GetName() == "discovery" {
-							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
+							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
 							Expect(val).To(Equal("true"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'true'", deployment.GetName()))
 						} else {
-							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
-							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should not contain an istio injection annotation", deployment.GetName()))
+							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should not contain an istio injection label", deployment.GetName()))
+						}
+					})
+				})
+
+				It("should add an Istio injection label for pods that can be configured for it", func() {
+					httpPort := 8080
+					httpsPort := 8443
+					secondDeploymentHttpPort := 1337
+					secondDeploymentHttpsPort := 1338
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.istioIntegration.whitelistDiscovery=true",
+							"global.istioIntegration.enableIstioSidecarOnGateway=true",
+							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
+							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
+							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpPort=%d", secondDeploymentHttpPort),
+							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpsPort=%d", secondDeploymentHttpsPort),
+						},
+					})
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						// Ensure that the discovery pod has a true annotation, gateway-proxy has a false annotation (default), and nothing else has any annoation.
+						// todo if we ever decide to add more pods to the list of 'allow istio injection' pods, then change this to a whitelist check
+						deploymentName := structuredDeployment.GetName()
+						if deploymentName == "discovery" {
+							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
+							Expect(val).To(Equal("true"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'true'", deployment.GetName()))
+						} else if deploymentName == "gateway-proxy" {
+							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deploymentName))
+							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
+							Expect(ok).To(BeTrue())
+							Expect(excludedPortString).To(Equal(fmt.Sprintf("%d,%d", httpPort, httpsPort)), fmt.Sprintf("Deployment %s should exclude specified ports", deploymentName))
+						} else if deploymentName == "second-gateway-proxy" {
+							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deploymentName))
+							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
+							Expect(ok).To(BeTrue())
+							Expect(excludedPortString).To(Equal(fmt.Sprintf("%d,%d", secondDeploymentHttpPort, secondDeploymentHttpsPort)), fmt.Sprintf("Deployment %s should exclude specified ports", deploymentName))
 						}
 					})
 				})

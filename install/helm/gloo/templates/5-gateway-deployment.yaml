@@ -27,15 +27,15 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
+        sidecar.istio.io/inject: "false"
+        {{- end }}
       annotations:
         {{- if $statsConfig.enabled }}
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
         {{- end}}
-        {{- if .Values.global.istioIntegration.disableAutoinjection }}
-        sidecar.istio.io/inject: "false"
-        {{- end }}
         {{- if .Values.gateway.deployment.extraGatewayAnnotations }}
         {{- range $key, $value := .Values.gateway.deployment.extraGatewayAnnotations }}
         {{ $key }}: {{ $value | quote }}
