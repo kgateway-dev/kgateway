@@ -11,7 +11,7 @@ Gloo Edge can be used as an Ingress/Gateway for the Nomad platform. This guide w
 
 You can see a demonstration of Gloo Edge using Consul, Nomad, and Vault in this YouTube video.
 
-<iframe src="https://www.youtube.com/embed/7Mk5r9P4kb0" frameborder="0" width="560" height="315" allowfullscreen></iframe>
+<iframe src="https://www.youtube.com/embed/0EXrVGXmDx0?start=1253" frameborder="0" width="560" height="315" allowfullscreen></iframe>
 
 ---
 
