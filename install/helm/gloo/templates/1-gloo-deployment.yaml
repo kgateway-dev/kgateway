@@ -86,14 +86,14 @@ spec:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
-          periodSeconds: 2
+          periodSeconds: 10
           failureThreshold: 3
 {{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
-          periodSeconds: 3
+          periodSeconds: 10
           failureThreshold: 10
 {{- end}}
         volumeMounts:
@@ -125,7 +125,7 @@ spec:
           tcpSocket:
             port: {{ .Values.gloo.deployment.validationPort }}
           initialDelaySeconds: 1
-          periodSeconds: 2
+          periodSeconds: 10
           failureThreshold: 3
         volumeMounts:
         - mountPath: /etc/envoy/ssl
@@ -216,14 +216,14 @@ spec:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
-          periodSeconds: 2
+          periodSeconds: 10
           failureThreshold: 3
 {{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
-          periodSeconds: 3
+          periodSeconds: 10
           failureThreshold: 10
 {{- end }}
 {{- end }}

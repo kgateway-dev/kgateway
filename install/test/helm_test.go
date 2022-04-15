@@ -2498,7 +2498,7 @@ spec:
 								},
 							},
 							InitialDelaySeconds: 1,
-							PeriodSeconds:       3,
+							PeriodSeconds:       10,
 							FailureThreshold:    10,
 						}
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
@@ -2517,7 +2517,7 @@ spec:
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=1",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold=10",
-								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.periodSeconds=3",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.periodSeconds=10",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.path=/server_info",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.port=19000",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.scheme=HTTP",
@@ -2544,7 +2544,7 @@ spec:
 								},
 							},
 							InitialDelaySeconds: 1,
-							PeriodSeconds:       3,
+							PeriodSeconds:       10,
 							FailureThreshold:    10,
 						}
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
@@ -3466,13 +3466,13 @@ spec:
           tcpSocket:
             port: 8443
           initialDelaySeconds: 1
-          periodSeconds: 2
+          periodSeconds: 10
           failureThreshold: 3
         livenessProbe:
           tcpSocket:
             port: 8443
           initialDelaySeconds: 1
-          periodSeconds: 3
+          periodSeconds: 10
           failureThreshold: 10
       volumes:
         - name: validation-certs
@@ -3726,7 +3726,7 @@ metadata:
 								},
 							},
 							InitialDelaySeconds: 1,
-							PeriodSeconds:       2,
+							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
 						deploy.Spec.Template.Spec.ServiceAccountName = "gloo"
@@ -3948,7 +3948,7 @@ metadata:
 								},
 							},
 							InitialDelaySeconds: 1,
-							PeriodSeconds:       2,
+							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
 						gatewayDeployment = deploy
@@ -4744,7 +4744,7 @@ metadata:
 													},
 												},
 												InitialDelaySeconds: 1,
-												PeriodSeconds:       2,
+												PeriodSeconds:       10,
 												FailureThreshold:    3,
 											},
 										},

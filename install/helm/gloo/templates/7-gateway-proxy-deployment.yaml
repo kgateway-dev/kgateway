@@ -271,7 +271,7 @@ spec:
             - /dev/null
             - {{ $spec.loopBackAddress }}:19000/server_info
           initialDelaySeconds: 1
-          periodSeconds: 3
+          periodSeconds: 10
           failureThreshold: 10
 {{- end}}
 {{- end}}
@@ -341,7 +341,7 @@ spec:
           tcpSocket:
             port: 8234
           initialDelaySeconds: 1
-          periodSeconds: 2
+          periodSeconds: 10
           failureThreshold: 3
 {{- end }} {{- /* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
 {{- if $global.istioSDS.enabled }}
@@ -438,7 +438,7 @@ spec:
             port: 15021
             scheme: HTTP
           initialDelaySeconds: 1
-          periodSeconds: 2
+          periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
         volumeMounts:
