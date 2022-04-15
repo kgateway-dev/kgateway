@@ -58,11 +58,17 @@ spec:
         {{- end }}
         {{- end }}
 {{ $annotationExist := false}}
-{{- if $spec.podTemplate.extraAnnotations }}
+{{- if or ($spec.podTemplate.extraAnnotations) (.Values.global.glooStats.setDatadogAnnotations) }}
 {{ $annotationExist = true}}
       annotations:
       {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
+      {{- end }}
+      {{- if .Values.global.glooStats.setDatadogAnnotations }}
+        ad.datadoghq.com/gateway-proxy.check_names: '["envoy"]'
+        ad.datadoghq.com/gateway-proxy.init_configs: '[{}]'
+        ad.datadoghq.com/gateway-proxy.instances: '[{"stats_url": "http://%%host%%:8081/stats"}]'
+        ad.datadoghq.com/gateway-proxy.logs: '[{"source": "envoy", "service": "gloo","log_processing_rules":[{"type": "multi_line", "name": "log_start_with_date","pattern" : "^\\[[0-9]{4}-[0-9]{2}-[0-9]{2}"}]}]'
       {{- end }}
 {{- end }}
 {{- if $statsConfig.enabled }}

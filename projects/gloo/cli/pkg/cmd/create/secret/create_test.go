@@ -1,6 +1,7 @@
 package secret_test
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -26,7 +27,7 @@ var _ = Describe("Create", func() {
 
 	BeforeSuite(func() {
 		var err error
-		vaultFactory, err = services.NewVaultFactory()
+		vaultFactory, err = services.NewVaultFactory(&services.VaultFactoryConfig{PathPrefix: services.TestPathPrefix})
 		Expect(err).NotTo(HaveOccurred())
 		client, err = api.NewClient(api.DefaultConfig())
 		Expect(err).NotTo(HaveOccurred())
@@ -62,6 +63,14 @@ var _ = Describe("Create", func() {
 			err := testutils.Glooctl("create secret aws --name test --access-key foo --secret-key bar --use-vault --vault-address=http://localhost:8200 --vault-token=root")
 			Expect(err).NotTo(HaveOccurred())
 			secret, err := client.Logical().Read("secret/data/gloo/gloo.solo.io/v1/Secret/gloo-system/test")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(secret).NotTo(BeNil())
+		})
+
+		It("works with custom secrets engine path secrets", func() {
+			err := testutils.Glooctl(fmt.Sprintf("create secret aws --name test --access-key foo --secret-key bar --use-vault --vault-address=http://localhost:8200 --vault-token=root --vault-path-prefix=%s", services.TestPathPrefix))
+			Expect(err).NotTo(HaveOccurred())
+			secret, err := client.Logical().Read(fmt.Sprintf("%s/data/gloo/gloo.solo.io/v1/Secret/gloo-system/test", services.TestPathPrefix))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(secret).NotTo(BeNil())
 		})
