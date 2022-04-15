@@ -27,10 +27,10 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      annotations:
         {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
         {{- end }}
+      annotations:
         {{- if .Values.settings.integrations.knative.extraKnativeInternalAnnotations }}
         {{- range $key, $value := .Values.settings.integrations.knative.extraKnativeInternalAnnotations }}
         {{ $key }}: {{ $value | quote }}

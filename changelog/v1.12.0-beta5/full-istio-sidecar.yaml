@@ -1,0 +1,5 @@
+changelog:
+- type: HELM
+  issueLink: https://github.com/solo-io/gloo/issues/6196
+  resolvesIssue: false
+  description: Add support for enabling sidecar.isio.io/inject annotation on gateway-proxy deployments.
