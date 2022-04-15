@@ -140,7 +140,7 @@ spec:
         imagePullPolicy: {{ $image.pullPolicy }}
         name: gloo
 {{- if .Values.gloo.deployment.resources }}
-        resources:
+        resources:q
 {{ toYaml .Values.gloo.deployment.resources | indent 10}}
 {{- else}}
         resources:
