@@ -85,7 +85,7 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 1
+          initialDelaySeconds: 10
           periodSeconds: 2
           failureThreshold: 3
 {{- if .Values.gloo.deployment.livenessProbeEnabled }}
@@ -140,7 +140,7 @@ spec:
         imagePullPolicy: {{ $image.pullPolicy }}
         name: gloo
 {{- if .Values.gloo.deployment.resources }}
-        resources:q
+        resources:
 {{ toYaml .Values.gloo.deployment.resources | indent 10}}
 {{- else}}
         resources:

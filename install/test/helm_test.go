@@ -2436,7 +2436,7 @@ spec:
 									},
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 10,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -2460,7 +2460,7 @@ spec:
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
 								"gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled=true",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=5",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=10",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/ready",
@@ -2482,7 +2482,7 @@ spec:
 									Scheme: "HTTP",
 								},
 							},
-							InitialDelaySeconds: 5,
+							InitialDelaySeconds: 10,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -3416,7 +3416,7 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 1
+          initialDelaySeconds: 10
           periodSeconds: 2
           failureThreshold: 3
         livenessProbe:
@@ -3676,7 +3676,7 @@ metadata:
 									Port: intstr.FromInt(9977),
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 10,
 							PeriodSeconds:       2,
 							FailureThreshold:    3,
 						}
@@ -3898,7 +3898,7 @@ metadata:
 									Port: intstr.FromInt(8443),
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 10,
 							PeriodSeconds:       2,
 							FailureThreshold:    3,
 						}
@@ -4694,7 +4694,7 @@ metadata:
 														Port: intstr.FromInt(9977),
 													},
 												},
-												InitialDelaySeconds: 1,
+												InitialDelaySeconds: 10,
 												PeriodSeconds:       2,
 												FailureThreshold:    3,
 											},
