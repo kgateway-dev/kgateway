@@ -117,12 +117,16 @@ spec:
           {{- if not .Values.gloo.deployment.floatingUserId }}
           runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
           {{- end }}
+        ports:
+        - containerPort: {{ .Values.gloo.deployment.validationPort }}
+          name: probe
+          protocol: TCP
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.validationPort }}
           initialDelaySeconds: 10
           periodSeconds: 2
-          failureThreshold: 10
+          failureThreshold: 3
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
@@ -211,7 +215,7 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 1
+          initialDelaySeconds: 10
           periodSeconds: 2
           failureThreshold: 3
 {{- if .Values.gloo.deployment.livenessProbeEnabled }}

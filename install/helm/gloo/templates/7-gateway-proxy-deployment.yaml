@@ -248,7 +248,7 @@ spec:
             - -O
             - /dev/null
             - {{ $spec.loopBackAddress }}:19000/ready
-          initialDelaySeconds: 1
+          initialDelaySeconds: 10
           periodSeconds: 10
           failureThreshold: 3
 {{- end}}
@@ -297,12 +297,6 @@ spec:
         resources:
 {{ toYaml $global.glooMtls.sdsResources | indent 10}}
 {{- end}}
-        readinessProbe:
-          tcpSocket:
-            port: 8234
-          initialDelaySeconds: 10
-          periodSeconds: 2
-          failureThreshold: 10
         env:
           - name: POD_NAME
             valueFrom:
@@ -336,6 +330,12 @@ spec:
         - containerPort: 8234
           name: sds
           protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: 8234
+          initialDelaySeconds: 10
+          periodSeconds: 2
+          failureThreshold: 3
 {{- end }} {{- /* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
 {{- if $global.istioSDS.enabled }}
 {{- if $global.istioSDS.customSidecars }}
@@ -430,7 +430,7 @@ spec:
             path: /healthz/ready
             port: 15021
             scheme: HTTP
-          initialDelaySeconds: 1
+          initialDelaySeconds: 10
           periodSeconds: 2
           successThreshold: 1
           timeoutSeconds: 1
