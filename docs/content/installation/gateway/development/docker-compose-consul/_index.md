@@ -106,6 +106,8 @@ The following ports will be exposed to the host machine:
 
 You can view resources stored in the Consul UI at [http://localhost:8500/ui](http://localhost:8500/ui).
 
+You can also view secrets stored in the Vault UI at [http://localhost:8200/ui](http://localhost:8200/ui). Use the `Token` sign-in method, with `root` as the token.
+
 With all the containers now running, it is time to configure the *Upstream* for the Per Store application and a *Virtual Service* on the Gloo Edge gateway to serve content from the Pet Store app.
 
 ---
