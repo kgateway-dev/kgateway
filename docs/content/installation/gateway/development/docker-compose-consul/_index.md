@@ -64,8 +64,11 @@ The files used for installation live in the `install/docker-compose-consul` dire
 ```bash
 ├── data
 │   ├── envoy-config.yaml
-│   └── gloo-system
-│       └── default.yaml
+│   ├── gloo-system
+│   │   └── default.yaml
+│   └── gateways
+│       └── gloo-system
+│           └── gw-proxy.yaml
 ├── docker-compose.yaml
 └── prepare-directories.sh
 ```
