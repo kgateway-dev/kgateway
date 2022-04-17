@@ -572,6 +572,9 @@ type K8s struct {
 type Stats struct {
 	Enabled               *bool   `json:"enabled,omitempty" desc:"Controls whether or not envoy stats are enabled"`
 	RoutePrefixRewrite    *string `json:"routePrefixRewrite,omitempty" desc:"The envoy stats endpoint to which the metrics are written"`
+	SetDatadogAnnotations *bool   `json:"setDatadogAnnotations,omitempty" desc:"Sets the default datadog annotations"`
+	EnableStatsRoute      *bool   `json:"enableStatsRoute,omitempty" desc:"Enables an additional route to the stats cluster defaulting to /stats"`
+	StatsPrefixRewrite    *string `json:"statsPrefixRewrite,omitempty" desc:"The envoy stats endpoint with general metrics for the additional stats route"`
 	ServiceMonitorEnabled *bool   `json:"serviceMonitorEnabled,omitempty" desc:"Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true"`
 	PodMonitorEnabled     *bool   `json:"podMonitorEnabled,omitempty" desc:"Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true"`
 }
@@ -598,7 +601,8 @@ type IstioSDS struct {
 }
 
 type IstioIntegration struct {
-	LabelInstallNamespace *bool `json:"labelInstallNamespace,omitempty" desc:"If creating a namespace for Gloo, include the 'istio-injection: enabled' label to allow Istio sidecar injection for Gloo pods. Be aware that Istio's default injection behavior will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio's configs or using gloo's global.istioIntegration.disableAutoinjection flag is recommended."`
-	WhitelistDiscovery    *bool `json:"whitelistDiscovery,omitempty" desc:"Annotate the discovery pod for Istio sidecar injection to ensure that it gets a sidecar even when namespace-wide auto-injection is disabled. Generally only needed for FDS is enabled."`
-	DisableAutoinjection  *bool `json:"disableAutoinjection,omitempty" desc:"Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true if Gloo's namespace is marked for Istio discovery, as some pods do not immediately work with an Istio sidecar without extra manual configuration."`
+	LabelInstallNamespace       *bool `json:"labelInstallNamespace,omitempty" desc:"If creating a namespace for Gloo, include the 'istio-injection: enabled' label to allow Istio sidecar injection for Gloo pods. Be aware that Istio's default injection behavior will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio's configs or using gloo's global.istioIntegration.disableAutoinjection flag is recommended."`
+	WhitelistDiscovery          *bool `json:"whitelistDiscovery,omitempty" desc:"Annotate the discovery pod for Istio sidecar injection to ensure that it gets a sidecar even when namespace-wide auto-injection is disabled. Generally only needed for FDS is enabled."`
+	DisableAutoinjection        *bool `json:"disableAutoinjection,omitempty" desc:"Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true if Gloo's namespace is marked for Istio discovery, as some pods do not immediately work with an Istio sidecar without extra manual configuration."`
+	EnableIstioSidecarOnGateway *bool `json:"enableIstioSidecarOnGateway,omitempty" desc:"Enable Istio sidecar injection on the gateway-proxy deployment. Ignored if LabelInstallNamespace is not 'true'. Ignored if DisableAutoInjection is 'true'."`
 }

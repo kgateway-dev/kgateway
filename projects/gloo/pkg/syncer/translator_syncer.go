@@ -44,6 +44,9 @@ type UpgradeableTranslatorSyncerExtension interface {
 	IsUpgrade() bool
 }
 
+// TODO(kdorosh) in follow up PR, update this interface so it can never error
+// It is logically invalid for us to return an error here (translation of resources always needs to
+// result in a xds snapshot, so we are resilient to pod restarts)
 type TranslatorSyncerExtension interface {
 	Sync(
 		ctx context.Context,
