@@ -52,7 +52,9 @@ func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (
 	var services []*dataCenterServicesTuple
 	for _, dataCenter := range dataCenters {
 
+		// TODO-JAKE not sure how I am going to get the Consistency mode here.
 		// Get names and tags for all services in the data center
+		// 1. look at what creates the upstreamClient
 		queryOpts := &consulapi.QueryOptions{Datacenter: dataCenter, RequireConsistent: true}
 		serviceNamesAndTags, _, err := c.consul.Services(queryOpts.WithContext(opts.Ctx))
 		if err != nil {

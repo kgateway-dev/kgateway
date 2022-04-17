@@ -175,6 +175,9 @@ spec:
                 properties:
                   connectEnabled:
                     type: boolean
+                  consistencyMode:
+                    type: string
+                    x-kubernetes-int-or-string: true
                   dataCenters:
                     items:
                       type: string

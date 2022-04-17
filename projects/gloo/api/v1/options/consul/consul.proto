@@ -41,6 +41,17 @@ message UpstreamSpec {
     // An optional Service Spec describing the service listening at this address
     .options.gloo.solo.io.ServiceSpec service_spec = 3;
 
+    enum ConsulConsistencyModes{
+        // 
+        ConsistentMode = 0;
+        // Not supported yet with version of code
+        DefaultMode = 2;
+        // State
+        StaleMode = 1;
+    }
+    //
+    ConsulConsistencyModes consistencyMode = 9;
+
     // Is this consul service connect enabled.
     bool connect_enabled = 4;
     // The data centers in which the service instance represented by this upstream is registered.

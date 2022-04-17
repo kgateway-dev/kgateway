@@ -61,6 +61,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string)
 		// Copy before passing to goroutines!
 		dcName := dataCenter
 
+		// TODO-JAKE
 		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName)
 
 		// Collect services
@@ -139,6 +140,7 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 
 						// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
 						// The first invocation (with lastIndex equal to zero) will return immediately
+						// TODO-JAKE
 						services, queryMeta, err = c.Services((&consulapi.QueryOptions{
 							Datacenter:        dataCenter,
 							RequireConsistent: true,

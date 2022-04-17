@@ -12,6 +12,7 @@ weight: 5
 
 
 - [UpstreamSpec](#upstreamspec)
+- [ConsulConsistencyModes](#consulconsistencymodes)
   
 
 
@@ -39,6 +40,7 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 "instanceTags": []string
 "instanceBlacklistTags": []string
 "serviceSpec": .options.gloo.solo.io.ServiceSpec
+"consistencyMode": .consul.options.gloo.solo.io.UpstreamSpec.ConsulConsistencyModes
 "connectEnabled": bool
 "dataCenters": []string
 
@@ -52,8 +54,23 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 | `instanceTags` | `[]string` | The list of service tags Gloo should search for on a service instance before deciding whether or not to include the instance as part of this upstream. Empty list means that all service instances with the same service name will be included. When not empty, only service instances that match all of the tags (subset match) will be selected for this upstream. |
 | `instanceBlacklistTags` | `[]string` | The opposite of instanceTags, this is a list of service tags that gloo should ensure are not in a service instance before including it in an upstream. |
 | `serviceSpec` | [.options.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk/#servicespec) | An optional Service Spec describing the service listening at this address. |
+| `consistencyMode` | [.consul.options.gloo.solo.io.UpstreamSpec.ConsulConsistencyModes](../consul.proto.sk/#consulconsistencymodes) |  |
 | `connectEnabled` | `bool` | Is this consul service connect enabled. |
 | `dataCenters` | `[]string` | The data centers in which the service instance represented by this upstream is registered. |
+
+
+
+
+---
+### ConsulConsistencyModes
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `ConsistentMode` |  |
+| `DefaultMode` | Not supported yet with version of code |
+| `StaleMode` | State |
 
 
 
