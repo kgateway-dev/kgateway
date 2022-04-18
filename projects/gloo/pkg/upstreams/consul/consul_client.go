@@ -23,6 +23,8 @@ type ConsulClient interface {
 	// Service is used to query catalog entries for a given service
 	Service(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error)
 	// Connect is used to query catalog entries for a given Connect-enabled service
+	// TODO-JAKE looks like the Connect has to be used somewhere??? I am not entirely sure, but it is used in the testing.
+	// maybe in testing only for the purpose of verifing changes made to the Consul?
 	Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error)
 }
 

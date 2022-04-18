@@ -42,6 +42,10 @@ func (*consulUpstreamClient) Delete(namespace, name string, opts skclients.Delet
 	panic(notImplementedErrMsg)
 }
 
+// TODO-JAKE might have to look into solo-kit particularly for projects/ingress/pkg/api/v1/translator_snapshot_emitter.sk.go
+// not sure what the purpose of this method is, but it returned the upstreamList....   the consulUpstreamClient will need to have
+// the appropriate changes if we are to proceed
+// this is an UpstreamClient interface so the signature of this will not change
 func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (v1.UpstreamList, error) {
 	// Get a list of the available data centers
 	dataCenters, err := c.consul.DataCenters()
@@ -52,7 +56,10 @@ func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (
 	var services []*dataCenterServicesTuple
 	for _, dataCenter := range dataCenters {
 
+		// TODO-JAKE not sure how I am going to get the Consistency mode here.
+		// Need to add the consistency mode here
 		// Get names and tags for all services in the data center
+		// 1. look at what creates the upstreamClient
 		queryOpts := &consulapi.QueryOptions{Datacenter: dataCenter, RequireConsistent: true}
 		serviceNamesAndTags, _, err := c.consul.Services(queryOpts.WithContext(opts.Ctx))
 		if err != nil {

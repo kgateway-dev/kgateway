@@ -9,6 +9,7 @@ option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/service_spec.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto";
 
 // Upstream Spec for Consul Upstreams
 // consul Upstreams represent a set of one or more addressable pods for a consul Service
@@ -40,6 +41,9 @@ message UpstreamSpec {
 
     // An optional Service Spec describing the service listening at this address
     .options.gloo.solo.io.ServiceSpec service_spec = 3;
+
+    // Sets the consistency mode. The default is the ConsistentMode.
+    .gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.ConsulConsistencyModes consistencyMode = 9;
 
     // Is this consul service connect enabled.
     bool connect_enabled = 4;

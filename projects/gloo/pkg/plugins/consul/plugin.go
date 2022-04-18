@@ -9,7 +9,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	"github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -40,6 +39,7 @@ var (
 	}
 )
 
+// TODO-JAKE-PLUGIN
 type plugin struct {
 	client                          consul.ConsulWatcher
 	resolver                        DnsResolver
@@ -74,7 +74,8 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 		dc = spec.GetDataCenters()[0]
 	}
 
-	instances, _, err := p.client.Service(spec.GetServiceName(), "", &api.QueryOptions{Datacenter: dc, RequireConsistent: true})
+	options := GenerateConsulOptions(dc, consulSpec.Consul.GetConsistencyMode())
+	instances, _, err := p.client.Service(spec.GetServiceName(), "", &options)
 	if err != nil {
 		return nil, eris.Wrapf(err, "getting service from catalog")
 	}
