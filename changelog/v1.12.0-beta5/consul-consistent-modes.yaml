@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6185
+    resolvesIssue: true
+    description: |
+      Adds the Consistency Modes to the queries in Consul
