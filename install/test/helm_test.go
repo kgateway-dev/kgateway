@@ -2485,7 +2485,7 @@ spec:
 									},
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 0,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -2497,9 +2497,9 @@ spec:
 									},
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 0,
 							PeriodSeconds:       10,
-							FailureThreshold:    10,
+							FailureThreshold:    3,
 						}
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
@@ -2509,14 +2509,14 @@ spec:
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
 								"gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled=true",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=1",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=0",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/ready",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=19000",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
-								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=1",
-								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold=10",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=0",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.periodSeconds=10",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.path=/server_info",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.port=19000",
@@ -2531,7 +2531,7 @@ spec:
 									Scheme: "HTTP",
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 0,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -2543,9 +2543,9 @@ spec:
 									Scheme: "HTTP",
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 0,
 							PeriodSeconds:       10,
-							FailureThreshold:    10,
+							FailureThreshold:    3,
 						}
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
@@ -3465,15 +3465,15 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 1
+          initialDelaySeconds: 0
           periodSeconds: 10
           failureThreshold: 3
         livenessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 1
+          initialDelaySeconds: 0
           periodSeconds: 10
-          failureThreshold: 10
+          failureThreshold: 3
       volumes:
         - name: validation-certs
           secret:
@@ -3725,7 +3725,7 @@ metadata:
 									Port: intstr.FromInt(9977),
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 0,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -3947,7 +3947,7 @@ metadata:
 									Port: intstr.FromInt(8443),
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 0,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -4743,7 +4743,7 @@ metadata:
 														Port: intstr.FromInt(9977),
 													},
 												},
-												InitialDelaySeconds: 1,
+												InitialDelaySeconds: 0,
 												PeriodSeconds:       10,
 												FailureThreshold:    3,
 											},
