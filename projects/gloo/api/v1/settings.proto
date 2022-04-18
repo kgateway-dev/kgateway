@@ -315,7 +315,8 @@ message Settings {
             // This is allows for stale reads. This will set the AllowStale in the consul api.
             StaleMode = 1;
         }
-        ConsulConsistencyModes consistencyMode = 9;
+        // Sets the consistency mode. The default is the ConsistentMode.
+        ConsulConsistencyModes consistencyMode = 20;
     }
 
     ConsulUpstreamDiscoveryConfiguration consulDiscovery = 30;

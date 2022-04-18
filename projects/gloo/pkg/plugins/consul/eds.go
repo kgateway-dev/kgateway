@@ -189,7 +189,7 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 	return specs.Get()
 }
 
-func GenerateConsulOptions(dataCenter string, consistencyMode glooConsul.UpstreamSpec_ConsulConsistencyModes) consulapi.QueryOptions {
+func GenerateConsulOptions(dataCenter string, cm glooConsul.UpstreamSpec_ConsulConsistencyModes) consulapi.QueryOptions {
 	// it can either be requireConsistent or allowStale or neither
 	// currently choosing Default Mode will clear both fields
 	requireConsistent := cm == glooConsul.UpstreamSpec_ConsistentMode

@@ -23,14 +23,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
+// For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions
 type UpstreamSpec_ConsulConsistencyModes int32
 
 const (
-	//
+	// This is strongly consistent. Sets the RequireConsistent in the consul api to true.
 	UpstreamSpec_ConsistentMode UpstreamSpec_ConsulConsistencyModes = 0
-	// Not supported yet with version of code
+	// Tis will set (clears) both the AllowStale and the RequireConsistent in the consul api to false.
 	UpstreamSpec_DefaultMode UpstreamSpec_ConsulConsistencyModes = 2
-	// State
+	// This is allows for stale reads. This will set the AllowStale in the consul api.
 	UpstreamSpec_StaleMode UpstreamSpec_ConsulConsistencyModes = 1
 )
 
@@ -104,7 +106,7 @@ type UpstreamSpec struct {
 	InstanceBlacklistTags []string `protobuf:"bytes,8,rep,name=instance_blacklist_tags,json=instanceBlacklistTags,proto3" json:"instance_blacklist_tags,omitempty"`
 	// An optional Service Spec describing the service listening at this address
 	ServiceSpec *options.ServiceSpec `protobuf:"bytes,3,opt,name=service_spec,json=serviceSpec,proto3" json:"service_spec,omitempty"`
-	//
+	// Sets the consistency mode. The default is the ConsistentMode.
 	ConsistencyMode UpstreamSpec_ConsulConsistencyModes `protobuf:"varint,9,opt,name=consistencyMode,proto3,enum=consul.options.gloo.solo.io.UpstreamSpec_ConsulConsistencyModes" json:"consistencyMode,omitempty"`
 	// Is this consul service connect enabled.
 	ConnectEnabled bool `protobuf:"varint,4,opt,name=connect_enabled,json=connectEnabled,proto3" json:"connect_enabled,omitempty"`
