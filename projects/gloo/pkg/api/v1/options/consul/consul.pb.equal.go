@@ -104,6 +104,10 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetConsistencyMode() != target.GetConsistencyMode() {
+		return false
+	}
+
 	if m.GetConnectEnabled() != target.GetConnectEnabled() {
 		return false
 	}
