@@ -440,7 +440,7 @@ type GatewayProxyPodTemplate struct {
 	NodeName                      *string               `json:"nodeName,omitempty" desc:"name of node to run on"`
 	NodeSelector                  map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
 	Tolerations                   []*appsv1.Toleration  `json:"tolerations,omitempty"`
-	Probes                        *bool                 `json:"probes,omitempty" desc:"enable readiness probe and allow liveness probe to be enabled"`
+	Probes                        *bool                 `json:"probes,omitempty" desc:"Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe."`
 	LivenessProbeEnabled          *bool                 `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe (default is false)."`
 	Resources                     *ResourceRequirements `json:"resources,omitempty"`
 	DisableNetBind                *bool                 `json:"disableNetBind,omitempty" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
