@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    description: Fix key in Helm template used to configure resources of istio-proxy sidecar
+    issueLink: https://github.com/solo-io/gloo/pull/6044
+    resolvesIssue: false
