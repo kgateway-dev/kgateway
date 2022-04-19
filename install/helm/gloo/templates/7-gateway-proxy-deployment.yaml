@@ -273,9 +273,9 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
-{{- end}}
-{{- end}}
-{{- end}}
+{{- end}} {{/* if $spec.podTemplate.customLivenessProbe */}}
+{{- end}} {{/* if $spec.podTemplate.livenessProbeEnabled */}}
+{{- end}} {{/* if $spec.podTemplate.probes */}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
