@@ -85,9 +85,17 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 1
-          periodSeconds: 2
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+{{- if .Values.gloo.deployment.livenessProbeEnabled }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.gloo.deployment.xdsPort }}
+          initialDelaySeconds: 3
+          periodSeconds: 10
           failureThreshold: 10
+{{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-sidecar-config
@@ -109,6 +117,16 @@ spec:
           {{- if not .Values.gloo.deployment.floatingUserId }}
           runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
           {{- end }}
+        ports:
+        - containerPort: {{ .Values.gloo.deployment.validationPort }}
+          name: validation
+          protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.gloo.deployment.validationPort }}
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
@@ -197,9 +215,17 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 1
-          periodSeconds: 2
-          failureThreshold: 10
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+{{- if .Values.gloo.deployment.livenessProbeEnabled }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.gloo.deployment.xdsPort }}
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+{{- end }}
 {{- end }}
 {{- end }} {{/* define "gloo.deploymentSpec "*/}}
 
