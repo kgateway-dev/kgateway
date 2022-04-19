@@ -130,7 +130,7 @@
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
 |gloo.deployment.extraGlooLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment.|
 |gloo.deployment.extraGlooAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment.|
-|gloo.deployment.livenessProbeEnabled|bool||Does gloo have a liveness probe (default false)|
+|gloo.deployment.livenessProbeEnabled|bool||Set to true to enable a liveness probe for Gloo Edge (default is false).|
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
 |gloo.deployment.customEnv[].value|string|||
@@ -248,7 +248,7 @@
 |gateway.validation.webhook.extraAnnotations.NAME|string||extra annotations to add to the webhook|
 |gateway.validation.webhook.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gateway.validation.validationServerGrpcMaxSizeBytes|int|104857600|gRPC max message size in bytes for the gloo validation server|
-|gateway.validation.livenessProbeEnabled|bool||Is liveness probe enabled on gateway (default false)|
+|gateway.validation.livenessProbeEnabled|bool||Set to true to enable a liveness probe for the gateway (default is false). You must also set the 'Probes' value to true.|
 |gateway.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gateway.deployment.image.repository|string|gateway|image name (repository) for the container.|
 |gateway.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -396,8 +396,8 @@
 |gatewayProxies.NAME.podTemplate.tolerations[].value|string|||
 |gatewayProxies.NAME.podTemplate.tolerations[].effect|string|||
 |gatewayProxies.NAME.podTemplate.tolerations[].tolerationSeconds|int64|||
-|gatewayProxies.NAME.podTemplate.probes|bool||enable readiness probe and allow liveness probe to be enabled|
-|gatewayProxies.NAME.podTemplate.livenessProbeEnabled|bool||enable liveness probe, Default is false|
+|gatewayProxies.NAME.podTemplate.probes|bool||Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe.|
+|gatewayProxies.NAME.podTemplate.livenessProbeEnabled|bool||Set to true to enable a liveness probe (default is false).|
 |gatewayProxies.NAME.podTemplate.resources.limits.memory|string||amount of memory|
 |gatewayProxies.NAME.podTemplate.resources.limits.cpu|string||amount of CPUs|
 |gatewayProxies.NAME.podTemplate.resources.requests.memory|string||amount of memory|
@@ -585,8 +585,8 @@
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].value|string|||
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].effect|string|||
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].tolerationSeconds|int64|||
-|gatewayProxies.gatewayProxy.podTemplate.probes|bool|false|enable readiness probe and allow liveness probe to be enabled|
-|gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled|bool||enable liveness probe, Default is false|
+|gatewayProxies.gatewayProxy.podTemplate.probes|bool|false|Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe.|
+|gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled|bool||Set to true to enable a liveness probe (default is false).|
 |gatewayProxies.gatewayProxy.podTemplate.resources.limits.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu|string||amount of CPUs|
 |gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory|string||amount of memory|
