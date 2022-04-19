@@ -104,9 +104,17 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 1
-          periodSeconds: 2
-          failureThreshold: 10
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+{{- if .Values.gateway.validation.livenessProbeEnabled }}
+        livenessProbe:
+          tcpSocket:
+            port: 8443
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+{{- end }}
       volumes:
         - name: validation-certs
           secret:

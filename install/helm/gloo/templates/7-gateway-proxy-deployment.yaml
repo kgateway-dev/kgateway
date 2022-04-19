@@ -255,21 +255,27 @@ spec:
             - -O
             - /dev/null
             - {{ $spec.loopBackAddress }}:19000/ready
-          initialDelaySeconds: 1
+          initialDelaySeconds: 3
           periodSeconds: 10
-          failureThreshold: 10
+          failureThreshold: 3
 {{- end}}
+{{- if $spec.podTemplate.livenessProbeEnabled }}
         livenessProbe:
+{{- if $spec.podTemplate.customLivenessProbe }}
+{{ toYaml $spec.podTemplate.customLivenessProbe | indent 10}}
+{{- else }}
           exec:
             command:
             - wget
             - -O
             - /dev/null
             - {{ $spec.loopBackAddress }}:19000/server_info
-          initialDelaySeconds: 1
+          initialDelaySeconds: 3
           periodSeconds: 10
-          failureThreshold: 10
-{{- end}}
+          failureThreshold: 3
+{{- end }}{{/*if $spec.podTemplate.customLivenessProbe*/}}
+{{- end }}{{/*if $spec.podTemplate.livenessProbeEnabled*/}}
+{{- end }}{{/*if $spec.podTemplate.probes*/}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
@@ -331,6 +337,12 @@ spec:
         - containerPort: 8234
           name: sds
           protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: 8234
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
 {{- end }} {{- /* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
 {{- if $global.istioSDS.enabled }}
 {{- if $global.istioSDS.customSidecars }}
@@ -420,13 +432,13 @@ spec:
                 fieldPath: metadata.namespace
         imagePullPolicy: IfNotPresent
         readinessProbe:
-          failureThreshold: 30
+          failureThreshold: 3
           httpGet:
             path: /healthz/ready
             port: 15021
             scheme: HTTP
-          initialDelaySeconds: 1
-          periodSeconds: 2
+          initialDelaySeconds: 3
+          periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
         volumeMounts:

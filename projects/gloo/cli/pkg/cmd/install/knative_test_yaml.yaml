@@ -5145,8 +5145,8 @@ spec:
           httpGet:
             path: /healthz
             port: 8080
-          initialDelaySeconds: 5
-          timeoutSeconds: 5
+          initialDelaySeconds: 3
+          timeoutSeconds: 1
         name: kube-state-metrics
         ports:
         - containerPort: 8080
@@ -5157,8 +5157,8 @@ spec:
           httpGet:
             path: /
             port: 8080
-          initialDelaySeconds: 5
-          timeoutSeconds: 5
+          initialDelaySeconds: 3
+          timeoutSeconds: 1
       serviceAccountName: kube-state-metrics
 ---
 
@@ -16065,25 +16065,25 @@ spec:
         image: prom/prometheus:v2.2.1
         imagePullPolicy: IfNotPresent
         livenessProbe:
-          failureThreshold: 10
+          failureThreshold: 3
           httpGet:
             path: /-/healthy
             port: web
             scheme: HTTP
-          initialDelaySeconds: 30
-          timeoutSeconds: 3
+          initialDelaySeconds: 3
+          timeoutSeconds: 1
         name: prometheus
         ports:
         - containerPort: 9090
           name: web
           protocol: TCP
         readinessProbe:
-          failureThreshold: 10
+          failureThreshold: 3
           httpGet:
             path: /-/ready
             port: web
             scheme: HTTP
-          timeoutSeconds: 3
+          timeoutSeconds: 1
         resources:
           limits:
             memory: 1000Mi

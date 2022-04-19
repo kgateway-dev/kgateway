@@ -225,6 +225,7 @@ type GlooDeployment struct {
 	ExternalTrafficPolicy *string           `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
 	ExtraGlooLabels       map[string]string `json:"extraGlooLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment."`
 	ExtraGlooAnnotations  map[string]string `json:"extraGlooAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment."`
+	LivenessProbeEnabled  *bool             `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for Gloo Edge (default is false)."`
 	*DeploymentSpec
 }
 
@@ -285,6 +286,7 @@ type GatewayValidation struct {
 	FailurePolicy                    *string  `json:"failurePolicy,omitempty" desc:"failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore "`
 	Webhook                          *Webhook `json:"webhook,omitempty" desc:"webhook specific configuration"`
 	ValidationServerGrpcMaxSizeBytes *int     `json:"validationServerGrpcMaxSizeBytes,omitempty" desc:"gRPC max message size in bytes for the gloo validation server"`
+	LivenessProbeEnabled             *bool    `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for the gateway (default is false). You must also set the 'Probes' value to true."`
 }
 
 type Webhook struct {
@@ -438,7 +440,8 @@ type GatewayProxyPodTemplate struct {
 	NodeName                      *string               `json:"nodeName,omitempty" desc:"name of node to run on"`
 	NodeSelector                  map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
 	Tolerations                   []*appsv1.Toleration  `json:"tolerations,omitempty"`
-	Probes                        *bool                 `json:"probes,omitempty" desc:"enable liveness and readiness probes"`
+	Probes                        *bool                 `json:"probes,omitempty" desc:"Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe."`
+	LivenessProbeEnabled          *bool                 `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe (default is false)."`
 	Resources                     *ResourceRequirements `json:"resources,omitempty"`
 	DisableNetBind                *bool                 `json:"disableNetBind,omitempty" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
 	RunUnprivileged               *bool                 `json:"runUnprivileged,omitempty" desc:"run envoy as an unprivileged user"`
@@ -448,6 +451,7 @@ type GatewayProxyPodTemplate struct {
 	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
 	TerminationGracePeriodSeconds *int                  `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
 	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitempty"`
+	CustomLivenessProbe           *appsv1.Probe         `json:"customLivenessProbe,omitempty"`
 	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
 	EnablePodSecurityContext      *bool                 `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
 }
