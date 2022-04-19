@@ -119,7 +119,7 @@ spec:
           {{- end }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
-          name: probe
+          name: validation
           protocol: TCP
         readinessProbe:
           tcpSocket:
