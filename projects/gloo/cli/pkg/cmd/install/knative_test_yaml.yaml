@@ -5145,7 +5145,7 @@ spec:
           httpGet:
             path: /healthz
             port: 8080
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           timeoutSeconds: 1
         name: kube-state-metrics
         ports:
@@ -5157,7 +5157,7 @@ spec:
           httpGet:
             path: /
             port: 8080
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           timeoutSeconds: 1
       serviceAccountName: kube-state-metrics
 ---
@@ -16070,7 +16070,7 @@ spec:
             path: /-/healthy
             port: web
             scheme: HTTP
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           timeoutSeconds: 1
         name: prometheus
         ports:

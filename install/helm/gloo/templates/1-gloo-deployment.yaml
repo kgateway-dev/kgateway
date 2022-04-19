@@ -85,14 +85,14 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
 {{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 10
 {{- end}}
@@ -124,7 +124,7 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.validationPort }}
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
         volumeMounts:
@@ -215,14 +215,14 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
 {{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
 {{- end }}

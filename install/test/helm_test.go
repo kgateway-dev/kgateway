@@ -2485,7 +2485,7 @@ spec:
 									},
 								},
 							},
-							InitialDelaySeconds: 0,
+							InitialDelaySeconds: 3,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -2497,7 +2497,7 @@ spec:
 									},
 								},
 							},
-							InitialDelaySeconds: 0,
+							InitialDelaySeconds: 3,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -2509,13 +2509,13 @@ spec:
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
 								"gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled=true",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=0",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/ready",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=19000",
 								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
-								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=0",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold=3",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.periodSeconds=10",
 								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.path=/server_info",
@@ -2531,7 +2531,7 @@ spec:
 									Scheme: "HTTP",
 								},
 							},
-							InitialDelaySeconds: 0,
+							InitialDelaySeconds: 3,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -2543,7 +2543,7 @@ spec:
 									Scheme: "HTTP",
 								},
 							},
-							InitialDelaySeconds: 0,
+							InitialDelaySeconds: 3,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -3465,13 +3465,13 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
         livenessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
       volumes:
@@ -3725,7 +3725,7 @@ metadata:
 									Port: intstr.FromInt(9977),
 								},
 							},
-							InitialDelaySeconds: 0,
+							InitialDelaySeconds: 3,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -3947,7 +3947,7 @@ metadata:
 									Port: intstr.FromInt(8443),
 								},
 							},
-							InitialDelaySeconds: 0,
+							InitialDelaySeconds: 3,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -4743,7 +4743,7 @@ metadata:
 														Port: intstr.FromInt(9977),
 													},
 												},
-												InitialDelaySeconds: 0,
+												InitialDelaySeconds: 3,
 												PeriodSeconds:       10,
 												FailureThreshold:    3,
 											},

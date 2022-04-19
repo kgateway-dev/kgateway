@@ -104,14 +104,14 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
 {{- if .Values.gateway.validation.livenessProbeEnabled }}
         livenessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 0
+          initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
 {{- end }}
