@@ -3323,7 +3323,7 @@ spec:
 								if container.Name == "envoy-sidecar" || container.Name == "sds" || container.Name == "istio-proxy" {
 									var expectedVals = sdsVals
 									// istio-proxy is another sds container
-									if container.Name == "envoy-sidecar" {
+									if container.Name == "envoy-sidecar" || container.Name == "istio-proxy" {
 										expectedVals = envoySidecarVals
 									}
 
