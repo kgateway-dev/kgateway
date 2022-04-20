@@ -140,7 +140,7 @@ gatewayProxies:
     overloadManager:
       enabled: false
       refreshInterval: 1s
-      resourseMonitors: []
+      resourceMonitors: []
       actions: []
       bufferFactoryConfig: {}
     globalDownstreamMaxConnections: 250000
