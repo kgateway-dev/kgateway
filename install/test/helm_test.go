@@ -4364,7 +4364,7 @@ metadata:
 					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
 				})
 
-				FIt("can create a gateway proxy with added overload manager config", func() {
+				It("can create a gateway proxy with added overload manager config", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"gatewayProxies.gatewayProxy.envoyOverloadManager.enabled=true",
