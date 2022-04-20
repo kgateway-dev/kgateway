@@ -2,8 +2,7 @@ package translator
 
 import (
 	"context"
-
-	"github.com/solo-io/solo-kit/pkg/errors"
+	"errors"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -11,6 +10,8 @@ import (
 )
 
 var _ ListenerTranslator = new(InvalidGatewayTypeTranslator)
+
+var MissingGatewayTypeErr = errors.New("gateway did not contain gatewayType")
 
 type ListenerTranslator interface {
 	Name() string
@@ -38,6 +39,6 @@ func (n InvalidGatewayTypeTranslator) Name() string {
 }
 
 func (n InvalidGatewayTypeTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener {
-	params.reports.AddError(gateway, errors.Errorf("Gateway contained invalid GatewayType: %v", gateway.GetGatewayType()))
+	params.reports.AddError(gateway, MissingGatewayTypeErr)
 	return nil
 }

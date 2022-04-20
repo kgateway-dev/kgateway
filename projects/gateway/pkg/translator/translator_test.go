@@ -330,7 +330,7 @@ var _ = Describe("Translator", func() {
 			_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 			err := errs.ValidateStrict()
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Gateway contained invalid GatewayType: <nil>"))
+			Expect(err.Error()).To(ContainSubstring(MissingGatewayTypeErr.Error()))
 		})
 	})
 
