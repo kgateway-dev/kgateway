@@ -354,6 +354,13 @@ data:
     bootstrap_extensions:
 {{ toYaml $spec.envoyBootstrapExtensions | indent 4}}
 {{- end}}
+{{- if $spec.overloadManager.enabled }}
+    overload_manager:
+      refresh_interval: {{ $spec.overloadManager.refreshInterval }}
+      resource_monitors: {{ $spec.overloadManager.resourceMonitors }}
+      actions: {{ $spec.overloadManager.actions }}
+      buffer_factory_config: {{ $spec.overloadManager.bufferFactoryConfig }}
+{{- end }}
     admin:
       access_log_path: /dev/null
       address:
