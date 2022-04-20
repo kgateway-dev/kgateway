@@ -44,93 +44,92 @@ var _ = Describe("ConsulClient", func() {
 
 		BeforeEach(func() {
 			client.EXPECT().DataCenters().Return([]string{"dc1", "dc2"}, nil).Times(1)
-
-			client.EXPECT().Services((&consulapi.QueryOptions{
-				Datacenter:        "dc1",
-				RequireConsistent: true,
-			}).WithContext(ctx)).Return(
-				map[string][]string{
-					"svc-1": {"tag-1", "tag-2"},
-					"svc-2": {"tag-2"},
-				},
-				nil,
-				nil,
-			).Times(1)
-
-			client.EXPECT().Services((&consulapi.QueryOptions{
-				Datacenter:        "dc2",
-				RequireConsistent: true,
-			}).WithContext(ctx)).Return(
-				map[string][]string{
-					"svc-1": {"tag-1"},
-					"svc-3": {},
-				},
-				nil,
-				nil,
-			).Times(1)
 		})
 
-		It("returns the expected upstreams", func() {
-			usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client), nil)
+		Context("default consistency mode", func() {
+			BeforeEach(func() {
+				dcServices := []dataCenterServicesTuple{{
+					DataCenter: "dc1",
+					Services:   map[string][]string{"svc-1": {"tag-1", "tag-2"}, "svc-2": {"tag-2"}},
+				}, {
+					DataCenter: "dc2",
+					Services:   map[string][]string{"svc-1": {"tag-1"}, "svc-3": {}},
+				}}
 
-			upstreams, err := usClient.List(defaults.GlooSystem, clients.ListOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
+				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: true}, &dcServices)
+			})
 
-			Expect(upstreams).To(HaveLen(3))
-			Expect(upstreams).To(ConsistOf(
-				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, nil)[0],
-				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, nil)[0],
-				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, nil)[0],
-			))
+			It("returns the expected upstreams", func() {
+				usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client), nil)
+
+				upstreams, err := usClient.List(defaults.GlooSystem, clients.ListOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(upstreams).To(HaveLen(3))
+				Expect(upstreams).To(ConsistOf(
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, nil)[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, nil)[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, nil)[0],
+				))
+			})
 		})
 
-		It("returns the expected upstreams using non-default consistency mode", func() {
-			ctx, cancel = context.WithCancel(context.Background())
-			ctrl = gomock.NewController(T)
-			client = NewMockConsulClient(ctrl)
-			client.EXPECT().DataCenters().Return([]string{"dc1", "dc2"}, nil).Times(1)
+		Context("non-default consistency mode", func() {
+			It("returns the expected upstreams using stale consistency mode", func() {
+				dcServices := []dataCenterServicesTuple{{
+					DataCenter: "dc1",
+					Services:   map[string][]string{"svc-1": {"tag-1", "tag-2"}, "svc-2": {"tag-2"}},
+				}, {
+					DataCenter: "dc2",
+					Services:   map[string][]string{"svc-1": {"tag-1"}, "svc-3": {}},
+				}}
 
-			client.EXPECT().Services((&consulapi.QueryOptions{
-				Datacenter:        "dc1",
-				RequireConsistent: false,
-				AllowStale:        true,
-			}).WithContext(ctx)).Return(
-				map[string][]string{
-					"svc-1": {"tag-1", "tag-2"},
-					"svc-2": {"tag-2"},
-				},
-				nil,
-				nil,
-			).Times(1)
+				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: true}, &dcServices)
+				usClient := NewConsulUpstreamClient(
+					NewConsulWatcherFromClient(client),
+					&v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+						ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode,
+					})
 
-			client.EXPECT().Services((&consulapi.QueryOptions{
-				Datacenter:        "dc2",
-				RequireConsistent: false,
-				AllowStale:        true,
-			}).WithContext(ctx)).Return(
-				map[string][]string{
-					"svc-1": {"tag-1"},
-					"svc-3": {},
-				},
-				nil,
-				nil,
-			).Times(1)
+				upstreams, err := usClient.List(defaults.GlooSystem, clients.ListOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
 
-			usClient := NewConsulUpstreamClient(
-				NewConsulWatcherFromClient(client),
-				&v1.Settings_ConsulUpstreamDiscoveryConfiguration{
-					ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode,
-				})
+				Expect(upstreams).To(HaveLen(3))
+				Expect(upstreams).To(ConsistOf(
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
+				))
+			})
 
-			upstreams, err := usClient.List(defaults.GlooSystem, clients.ListOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
+			It("returns the expected upstreams using Consul's default consistency mode", func() {
+				dcServices := []dataCenterServicesTuple{{
+					DataCenter: "dc1",
+					Services:   map[string][]string{"svc-1": {"tag-1", "tag-2"}, "svc-2": {"tag-2"}},
+				}, {
+					DataCenter: "dc2",
+					Services:   map[string][]string{"svc-1": {"tag-1"}, "svc-3": {}},
+				}}
 
-			Expect(upstreams).To(HaveLen(3))
-			Expect(upstreams).To(ConsistOf(
-				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
-				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
-				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
-			))
+				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: false}, &dcServices)
+
+				usClient := NewConsulUpstreamClient(
+					NewConsulWatcherFromClient(client),
+					&v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+						ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_DefaultMode,
+					})
+
+				upstreams, err := usClient.List(defaults.GlooSystem, clients.ListOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(upstreams).To(HaveLen(3))
+				Expect(upstreams).To(ConsistOf(
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_DefaultMode})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_DefaultMode})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_DefaultMode})[0],
+				))
+			})
+
 		})
 	})
 
@@ -338,5 +337,20 @@ func returnWithDelay(newIndex uint64, services []string, delay time.Duration) sv
 	return func(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error) {
 		time.Sleep(delay)
 		return svcMap, &consulapi.QueryMeta{LastIndex: newIndex}, nil
+	}
+}
+
+type dataCenterServicesTuple struct {
+	DataCenter string
+	Services   map[string][]string
+}
+
+func setupDatacenterServices(ctx context.Context, client *MockConsulClient, queryOptions *consulapi.QueryOptions, returns *[]dataCenterServicesTuple) {
+	for _, r := range *returns {
+		client.EXPECT().Services((&consulapi.QueryOptions{
+			Datacenter:        r.DataCenter,
+			RequireConsistent: queryOptions.RequireConsistent,
+			AllowStale:        queryOptions.AllowStale,
+		}).WithContext(ctx)).Return(r.Services, nil, nil).Times(1)
 	}
 }
