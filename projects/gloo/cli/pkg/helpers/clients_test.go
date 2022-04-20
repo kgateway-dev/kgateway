@@ -52,7 +52,7 @@ var _ = Describe("Clients", func() {
 	})
 	Describe("UseConsulClients", func() {
 		BeforeEach(func() {
-			UseConsulClients(&api.Client{}, "")
+			UseConsulClients(&api.Client{}, "", &api.QueryOptions{})
 		})
 		AfterEach(func() {
 			UseDefaultClients()
