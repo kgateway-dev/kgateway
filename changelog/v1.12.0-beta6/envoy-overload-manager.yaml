@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/5792
+    description: Expose config for Envoy's Overload Manager in Helm values for Gateway Proxy
