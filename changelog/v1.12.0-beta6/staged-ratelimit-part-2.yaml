@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5926
+    resolvesIssue: false
+    description: |
+      Expand the staged rate limiting api to explicitly support defining configuration
+      for a regular stage (new feature) in addition to an early stage (existing feature).
+      This is an Enterprise only feature.
