@@ -74,7 +74,8 @@ func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts)
 		return nil, nil, err
 	}
 
-	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, c.consulUpstreamDiscoveryConfig.GetConsistencyMode())
+	upstreamDiscoveryConfig := c.consulUpstreamDiscoveryConfig
+	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, upstreamDiscoveryConfig.GetConsistencyMode())
 
 	upstreamsChan := make(chan v1.UpstreamList)
 	go func() {
@@ -83,7 +84,7 @@ func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts)
 			case services, ok := <-servicesChan:
 				if ok {
 					//  Transform to upstreams
-					upstreams := toUpstreamList(namespace, services, c.consulUpstreamDiscoveryConfig)
+					upstreams := toUpstreamList(namespace, services, upstreamDiscoveryConfig)
 					upstreamsChan <- upstreams
 				}
 			case <-opts.Ctx.Done():

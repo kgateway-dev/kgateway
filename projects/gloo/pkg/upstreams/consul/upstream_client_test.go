@@ -2,6 +2,7 @@ package consul_test
 
 import (
 	"context"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -80,6 +81,55 @@ var _ = Describe("ConsulClient", func() {
 				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, nil)[0],
 				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, nil)[0],
 				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, nil)[0],
+			))
+		})
+
+		It("returns the expected upstreams using non-default consistency mode", func() {
+			ctx, cancel = context.WithCancel(context.Background())
+			ctrl = gomock.NewController(T)
+			client = NewMockConsulClient(ctrl)
+			client.EXPECT().DataCenters().Return([]string{"dc1", "dc2"}, nil).Times(1)
+
+			client.EXPECT().Services((&consulapi.QueryOptions{
+				Datacenter:        "dc1",
+				RequireConsistent: false,
+				AllowStale:        true,
+			}).WithContext(ctx)).Return(
+				map[string][]string{
+					"svc-1": {"tag-1", "tag-2"},
+					"svc-2": {"tag-2"},
+				},
+				nil,
+				nil,
+			).Times(1)
+
+			client.EXPECT().Services((&consulapi.QueryOptions{
+				Datacenter:        "dc2",
+				RequireConsistent: false,
+				AllowStale:        true,
+			}).WithContext(ctx)).Return(
+				map[string][]string{
+					"svc-1": {"tag-1"},
+					"svc-3": {},
+				},
+				nil,
+				nil,
+			).Times(1)
+
+			usClient := NewConsulUpstreamClient(
+				NewConsulWatcherFromClient(client),
+				&v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+					ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode,
+				})
+
+			upstreams, err := usClient.List(defaults.GlooSystem, clients.ListOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(upstreams).To(HaveLen(3))
+			Expect(upstreams).To(ConsistOf(
+				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
+				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
+				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
 			))
 		})
 	})
