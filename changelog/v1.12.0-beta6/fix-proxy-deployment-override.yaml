@@ -1,0 +1,8 @@
+changelog:
+  - type: HELM
+    description: Fix key in Helm template used to configure resources of istio-proxy sidecar
+    description: >-
+      Corrects helm value of the gateway-proxy envoy sidecar ("istio-proxy") to use glooMtls.envoySidecarResources
+      instead of glooMtls.sdsResources, matching the sidecar in the gloo container ("envoy-sidecar")
+    issueLink: https://github.com/solo-io/gloo/pull/6044
+    resolvesIssue: false
