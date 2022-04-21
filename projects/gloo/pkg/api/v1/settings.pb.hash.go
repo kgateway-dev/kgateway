@@ -1504,6 +1504,11 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Hash(hasher hash.Hash64)
 		return 0, err
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetConsistencyMode())
+	if err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 

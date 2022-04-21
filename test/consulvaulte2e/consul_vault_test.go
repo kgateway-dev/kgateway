@@ -103,8 +103,9 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		consulResources = &factory.ConsulResourceClientFactory{
-			RootKey: bootstrap.DefaultRootKey,
-			Consul:  consulClient,
+			RootKey:      bootstrap.DefaultRootKey,
+			Consul:       consulClient,
+			QueryOptions: &consulapi.QueryOptions{RequireConsistent: true},
 		}
 
 		gatewayClient, err := v1.NewGatewayClient(ctx, consulResources)

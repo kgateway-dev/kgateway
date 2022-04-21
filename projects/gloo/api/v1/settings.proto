@@ -304,6 +304,19 @@ message Settings {
          // be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those
          // without the tlsTagName tag are sorted into the non-TLS upstream.
          bool splitTlsServices = 19;
+
+        // These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
+        // For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
+        enum ConsulConsistencyModes{
+            // This is strongly consistent. Sets the RequireConsistent in the consul api to true.
+            ConsistentMode = 0;
+            // This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false.
+            DefaultMode = 2;
+            // Allows stale reads when set. This will set the AllowStale in the consul api.
+            StaleMode = 1;
+        }
+        // Sets the consistency mode. The default is the ConsistentMode.
+        ConsulConsistencyModes consistencyMode = 20;
     }
 
     ConsulUpstreamDiscoveryConfiguration consulDiscovery = 30;
