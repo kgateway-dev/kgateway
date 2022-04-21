@@ -403,7 +403,7 @@ The arguments should look like so:
 
 Alternatively, specify a `jsonFormat` format string to dump ModSecurity logs as part of a larger JSON object:
 
-{{< highlight yaml "hl_lines=13-19" >}}
+{{< highlight yaml "hl_lines=13-21" >}}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
