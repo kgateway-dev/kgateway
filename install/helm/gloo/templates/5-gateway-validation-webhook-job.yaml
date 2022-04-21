@@ -87,6 +87,5 @@ subjects:
 - kind: ServiceAccount
   name: gloo-gateway-rollout
   namespace: {{ .Release.Namespace }}
-
 {{- end }} {{/* .Values.global.glooRbac.create */}}
 {{- end }} {{/* if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled (eq .Values.gateway.validation.failurePolicy "Fail") */}}

@@ -15,7 +15,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "5" # must be installed after the gateway rollout job completes
-{{- end }} {{/* if eq .Values.gateway.validation.failurePolicy "Fail" */}}
+{{- end }}{{/* if eq .Values.gateway.validation.failurePolicy "Fail" */}}
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -76,7 +76,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "5" # must be installed after the gateway rollout job completes
-{{- end }} {{/* if eq .Values.gateway.validation.failurePolicy "Fail" */}}
+{{- end }}{{/* if eq .Values.gateway.validation.failurePolicy "Fail" */}}
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -136,7 +136,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "5" # must be installed after the gateway rollout job completes
-{{- end }} {{/* if eq .Values.gateway.validation.failurePolicy "Fail" */}}
+{{- end }}{{/* if eq .Values.gateway.validation.failurePolicy "Fail" */}}
 spec:
 {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
