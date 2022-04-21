@@ -2,8 +2,9 @@ package consul_test
 
 import (
 	"context"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"time"
+
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
