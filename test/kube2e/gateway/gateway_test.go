@@ -2091,7 +2091,7 @@ spec:
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: gw-without-gatewayType
+  name: gateway-without-type
   namespace: ` + testHelper.InstallNamespace + `
 spec:
   bindAddress: '::'
