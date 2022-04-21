@@ -1,10 +1,14 @@
 {{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled (eq .Values.gateway.validation.failurePolicy "Fail") }}
+{{- $image := .Values.gateway.rolloutJob.image }}
+{{- if .Values.global }}
+{{- $image = merge .Values.gateway.rolloutJob.image .Values.global.image }}
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
     app: gloo
-    gloo: gateway
+    gloo: gateway-rollout
   name: gloo-gateway-rollout
   namespace: {{ .Release.Namespace }}
   annotations:
@@ -15,13 +19,19 @@ spec:
   template:
     metadata:
       labels:
-        gloo: gateway
+        gloo: gateway-rollout
     spec:
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-gateway-rollout
       containers:
         - name: kubectl
-          image: bitnami/kubectl:1.22.9
-          imagePullPolicy: "IfNotPresent"
+          image: {{template "gloo.image" $image}}
+          imagePullPolicy: {{ $image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            {{- if not .Values.gateway.rolloutJob.floatingUserId }}
+            runAsUser: {{ printf "%.0f" (float64 .Values.gateway.rolloutJob.runAsUser) -}}
+            {{- end }}
           command:
           - /bin/sh
           - -c

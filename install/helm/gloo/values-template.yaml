@@ -93,6 +93,12 @@ gateway:
       enabled: false
       schedule: "* * * * *"
     runOnUpdate: false
+  rolloutJob:
+    image:
+      registry: bitnami
+      repository: kubectl
+      tag: 1.22.9
+    runAsUser: 10101
   proxyServiceAccount: {}
   serviceAccount: {}
 gatewayProxies:
