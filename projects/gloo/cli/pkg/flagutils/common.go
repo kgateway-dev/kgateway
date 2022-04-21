@@ -57,6 +57,7 @@ func AddConsulConfigFlags(set *pflag.FlagSet, consul *options.Consul) {
 		"Use with --use-consul")
 	set.StringVar(&config.Token, "consul-token", config.Token, "Token is used to provide a per-request ACL token which overrides the agent's default token. "+
 		"Use with --use-consul")
+	set.BoolVar(&consul.AllowStaleReads, "consul-allow-stale-reads", false, "Allows reading using Consul's stale consistency mode.")
 
 	consul.Client = func() (client *api.Client, e error) {
 		return api.NewClient(config)

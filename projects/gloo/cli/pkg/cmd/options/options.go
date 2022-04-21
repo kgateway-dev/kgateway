@@ -117,9 +117,10 @@ type Route struct {
 }
 
 type Consul struct {
-	UseConsul bool // enable consul config clients
-	RootKey   string
-	Client    func() (*api.Client, error)
+	UseConsul       bool // enable consul config clients
+	RootKey         string
+	AllowStaleReads bool
+	Client          func() (*api.Client, error)
 }
 
 type Vault struct {
