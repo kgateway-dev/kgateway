@@ -137,6 +137,12 @@ gatewayProxies:
     configMap:
       data:
     loopBackAddress: 127.0.0.1
+    envoyOverloadManager:
+      enabled: false
+      actions: []
+      bufferFactoryConfig: 
+      refreshInterval: 1s
+      resourceMonitors: []
     globalDownstreamMaxConnections: 250000
     healthyPanicThreshold: 50
     # intentionally unset, so we default to the gloo service address. if set, this overrides the derived gloo service address

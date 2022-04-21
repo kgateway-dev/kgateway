@@ -4366,6 +4366,31 @@ metadata:
 					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
 				})
 
+				It("can create a gateway proxy with added overload manager config", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.envoyOverloadManager.enabled=true",
+							"gatewayProxies.gatewayProxy.envoyOverloadManager.refreshInterval=2s",
+							"gatewayProxies.gatewayProxy.disabled=false"},
+					})
+
+					byt, err := ioutil.ReadFile("fixtures/envoy_config/overload_manager.yaml")
+					Expect(err).ToNot(HaveOccurred())
+					envoyBootstrapYaml := string(byt)
+
+					envoyBootstrapSpec := make(map[string]string)
+					envoyBootstrapSpec["envoy.yaml"] = envoyBootstrapYaml
+
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      envoyBootstrapSpec,
+					}
+					envoyBootstrapCm := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
+				})
+
 				It("can create a gateway proxy config with added bootstrap extensions", func() {
 
 					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
