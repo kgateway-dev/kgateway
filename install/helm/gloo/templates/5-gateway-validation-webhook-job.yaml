@@ -12,7 +12,7 @@ metadata:
   name: gloo-gateway-rollout
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
 spec:
@@ -35,8 +35,9 @@ spec:
           command:
           - /bin/sh
           - -c
-          - "kubectl rollout status deployment -n {{ .Release.Namespace }} gateway --timeout=2m || true"
+          - "kubectl rollout status deployment -n {{ .Release.Namespace }} gateway"
       restartPolicy: Never
+  ttlSecondsAfterFinished: 0
 ---
 {{- if .Values.global.glooRbac.create }}
 apiVersion: v1
@@ -46,7 +47,7 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
   name: gloo-gateway-rollout
   namespace: {{ .Release.Namespace }}
@@ -60,12 +61,12 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
 rules:
 - apiGroups: ["apps"]
   resources: ["deployments"]
-  verbs: ["get"]
+  verbs: ["get", "list", "watch"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -76,7 +77,7 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
 roleRef:
   kind: Role

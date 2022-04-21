@@ -13,7 +13,7 @@ metadata:
     app: gloo
 {{- if eq .Values.gateway.validation.failurePolicy "Fail" }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "5" # must be installed after the gateway rollout job completes
 {{- end }} {{/* if eq .Values.gateway.validation.failurePolicy "Fail" */}}
 spec:
@@ -74,7 +74,7 @@ metadata:
     app: gloo
 {{- if eq .Values.gateway.validation.failurePolicy "Fail" }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "5" # must be installed after the gateway rollout job completes
 {{- end }} {{/* if eq .Values.gateway.validation.failurePolicy "Fail" */}}
 spec:
@@ -134,7 +134,7 @@ metadata:
     app: gloo
 {{- if eq .Values.gateway.validation.failurePolicy "Fail" }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "5" # must be installed after the gateway rollout job completes
 {{- end }} {{/* if eq .Values.gateway.validation.failurePolicy "Fail" */}}
 spec:
