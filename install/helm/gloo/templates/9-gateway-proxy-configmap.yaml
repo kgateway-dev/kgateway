@@ -356,10 +356,10 @@ data:
 {{- end}}
 {{- if $spec.envoyOverloadManager.enabled }}
     overload_manager:
-      actions: {{ $spec.envoyOverloadManager.actions }}
-      buffer_factory_config: {{ if $spec.envoyOverloadManager.bufferFactoryConfig }}{{ $spec.envoyOverloadManager.bufferFactoryConfig }}{{ else }}{}{{ end }}
+      actions: {{- toYaml $spec.envoyOverloadManager.actions | nindent 6 }}
+      buffer_factory_config: {{ if $spec.envoyOverloadManager.bufferFactoryConfig }}{{- toYaml $spec.envoyOverloadManager.bufferFactoryConfig | nindent 6 }}{{ else }}{}{{ end }}
       refresh_interval: {{ $spec.envoyOverloadManager.refreshInterval }}
-      resource_monitors: {{ $spec.envoyOverloadManager.resourceMonitors }}
+      resource_monitors: {{- toYaml $spec.envoyOverloadManager.resourceMonitors | nindent 6 }}
 {{- end }}
     admin:
       access_log_path: /dev/null
