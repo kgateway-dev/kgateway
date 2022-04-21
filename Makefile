@@ -120,7 +120,7 @@ fmt-changed:
 # must be a seperate target so that make waits for it to complete before moving on
 .PHONY: mod-download
 mod-download:
-	go mod download
+	go mod download all
 
 DEPSGOBIN=$(shell pwd)/_output/.bin
 
