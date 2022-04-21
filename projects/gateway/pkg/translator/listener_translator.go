@@ -11,7 +11,7 @@ import (
 
 var _ ListenerTranslator = new(InvalidGatewayTypeTranslator)
 
-var MissingGatewayTypeErr = errors.New("gateway did not contain gatewayType")
+var MissingGatewayTypeErr = errors.New("invalid gateway: gateway must contain gatewayType")
 
 type ListenerTranslator interface {
 	Name() string
