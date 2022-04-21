@@ -3322,8 +3322,10 @@ spec:
 								Expect(container.Resources).NotTo(BeNil(), "deployment/container %s/%s had nil resources", deployment.GetName(), container.Name)
 								if container.Name == "envoy-sidecar" || container.Name == "sds" || container.Name == "istio-proxy" {
 									var expectedVals = sdsVals
-									// istio-proxy is another sds container
-									if container.Name == "envoy-sidecar" {
+									// Two deployments employ proxy containers requiring the envoySidecar resources config:
+									// - gloo (whose sidecar container is named: "envoy-sidecar")
+									// - gateway-proxy (named: "istio-proxy")
+									if container.Name == "envoy-sidecar" || container.Name == "istio-proxy" {
 										expectedVals = envoySidecarVals
 									}
 
