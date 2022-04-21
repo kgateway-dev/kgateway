@@ -203,7 +203,7 @@ var _ = Describe("Gateway", func() {
 
 				// Create a virtual service with a route pointing to the above service
 				vs := getTrivialVirtualServiceForService(writeNamespace, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
-				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
 				// Wait for proxy to be accepted
@@ -760,6 +760,7 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+				virtualService = getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.Metadata.Ref())
 				hybridGateway = gatewaydefaults.DefaultHybridGateway(writeNamespace)
 
 				err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
@@ -772,23 +773,24 @@ var _ = Describe("Gateway", func() {
 				_, err = testClients.UpstreamClient.Write(testUpstream.Upstream, clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred(), "Should be able to write upstream")
 
-				_, err = testClients.GatewayClient.Write(hybridGateway, clients.WriteOpts{Ctx: ctx})
+				virtualService, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred(), "Should be able to write virtual service")
+
+				hybridGateway, err = testClients.GatewayClient.Write(hybridGateway, clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred(), "Should be able to write hybrid gateway")
 			})
 
 			JustAfterEach(func() {
 				var err error
 
-				err = testClients.UpstreamClient.Delete(testUpstream.Upstream.GetMetadata().GetNamespace(), testUpstream.Upstream.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
-				Expect(err).NotTo(HaveOccurred(), "Should be able to delete upstream")
+				err = testClients.GatewayClient.Delete(hybridGateway.GetMetadata().GetNamespace(), hybridGateway.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred(), "Should be able to delete hybrid gateway")
 
-				// Each test configures a VirtualService to ensure that a Proxy exists. Perform the cleanup of that VirtualService here
-				// as opposed to in each test
 				err = testClients.VirtualServiceClient.Delete(virtualService.GetMetadata().GetNamespace(), virtualService.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
 				Expect(err).NotTo(HaveOccurred(), "Should be able to delete virtual service")
 
-				err = testClients.GatewayClient.Delete(hybridGateway.GetMetadata().GetNamespace(), hybridGateway.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
-				Expect(err).NotTo(HaveOccurred(), "Should be able to delete hybrid gateway")
+				err = testClients.UpstreamClient.Delete(testUpstream.Upstream.GetMetadata().GetNamespace(), testUpstream.Upstream.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred(), "Should be able to delete upstream")
 			})
 
 			AfterEach(func() {
@@ -836,11 +838,6 @@ var _ = Describe("Gateway", func() {
 				_, err = testClients.GatewayClient.Write(modifiedHybridGateway, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
-				// write a virtual service so we have a proxy
-				virtualService = getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.GetMetadata().Ref())
-				_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
-				Expect(err).NotTo(HaveOccurred())
-
 				// wait for hybrid listener to propagate to the proxy
 				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					proxy, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
@@ -880,8 +877,13 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Update the existing virtual service with a route pointing to the above service
-				virtualService = getTrivialVirtualServiceForService(writeNamespace, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
-				_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
+				virtualService.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Kube{
+					Kube: &gloov1.KubernetesServiceDestination{
+						Ref:  kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(),
+						Port: uint32(svc.Spec.Ports[0].Port),
+					},
+				}
+				_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
 				// Wait for proxy to be accepted
@@ -927,10 +929,6 @@ var _ = Describe("Gateway", func() {
 				It("works when rapid virtual service creation and deletion causes no race conditions", func() {
 					var err error
 
-					virtualService = getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.Metadata.Ref())
-					_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
-					Expect(err).NotTo(HaveOccurred())
-
 					TestUpstreamReachable()
 
 					// Delete the Virtual Service
@@ -946,14 +944,10 @@ var _ = Describe("Gateway", func() {
 				})
 
 				It("should work with no ssl and clean up the envoy config when the virtual service is deleted", func() {
-					virtualService = getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.Metadata.Ref())
-					_, err := testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
-					Expect(err).NotTo(HaveOccurred())
-
 					TestUpstreamReachable()
 
 					// Delete the Virtual Service
-					err = testClients.VirtualServiceClient.Delete(writeNamespace, virtualService.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
+					err := testClients.VirtualServiceClient.Delete(writeNamespace, virtualService.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
 					Expect(err).NotTo(HaveOccurred())
 
 					// Wait for proxy to be deleted
@@ -983,10 +977,6 @@ var _ = Describe("Gateway", func() {
 				})
 
 				It("should not match requests that contain a header that is excluded from match", func() {
-					virtualService = getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.Metadata.Ref())
-					_, err := testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
-					Expect(err).NotTo(HaveOccurred())
-
 					// Create a regular request
 					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HybridPort), nil)
 					Expect(err).NotTo(HaveOccurred())
@@ -1018,7 +1008,6 @@ var _ = Describe("Gateway", func() {
 				It("should direct requests that use cluster_header to the proper upstream", func() {
 					upstreamName := translator.UpstreamToClusterName(testUpstream.Upstream.Metadata.Ref())
 
-					virtualService = getTrivialVirtualService(writeNamespace)
 					// Create route that uses cluster header destination
 					virtualService.GetVirtualHost().Routes = []*gatewayv1.Route{{
 						Action: &gatewayv1.Route_RouteAction{
@@ -1029,7 +1018,7 @@ var _ = Describe("Gateway", func() {
 							},
 						}}}
 
-					_, err := testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
+					_, err := testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 
 					// Create a regular request
@@ -1089,10 +1078,7 @@ var _ = Describe("Gateway", func() {
 
 						sslConfig := &gloov1.SslConfig{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
-								SecretRef: &core.ResourceRef{
-									Name:      secret.GetMetadata().GetName(),
-									Namespace: secret.GetMetadata().GetNamespace(),
-								},
+								SecretRef: secret.GetMetadata().Ref(),
 							},
 						}
 
@@ -1103,15 +1089,8 @@ var _ = Describe("Gateway", func() {
 						for _, g := range gw {
 							hybridGateway := g.GetHybridGateway()
 							if hybridGateway != nil {
-								hybridGateway.MatchedGateways = []*gatewayv1.MatchedGateway{
-									{
-										Matcher: &gatewayv1.Matcher{
-											SslConfig: sslConfig,
-										},
-										GatewayType: &gatewayv1.MatchedGateway_HttpGateway{
-											HttpGateway: &gatewayv1.HttpGateway{},
-										},
-									},
+								hybridGateway.MatchedGateways[0].Matcher = &gatewayv1.Matcher{
+									SslConfig: sslConfig,
 								}
 							}
 
@@ -1119,17 +1098,8 @@ var _ = Describe("Gateway", func() {
 							Expect(err).NotTo(HaveOccurred())
 						}
 
-						virtualService = getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.Metadata.Ref())
-						virtualService.SslConfig = &gloov1.SslConfig{
-							SslSecrets: &gloov1.SslConfig_SecretRef{
-								SecretRef: &core.ResourceRef{
-									Name:      secret.GetMetadata().GetName(),
-									Namespace: secret.GetMetadata().GetNamespace(),
-								},
-							},
-						}
-
-						_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
+						virtualService.SslConfig = sslConfig
+						_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 						Expect(err).NotTo(HaveOccurred())
 
 						TestUpstreamSslReachable()
