@@ -29,6 +29,7 @@ import (
 // used for vault and consul key-value storage
 const DefaultRootKey = "gloo"
 
+// default query options for consul
 var DefaultQueryOptions = &consulapi.QueryOptions{RequireConsistent: true, AllowStale: false}
 
 type ConfigFactoryParams struct {

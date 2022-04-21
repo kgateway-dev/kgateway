@@ -45,7 +45,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		return nil, nil, err
 	}
 
-	// based off the comments above from Marco above, there should only be one upstream per Consul service name
+	// based off the comments above from Marco, there should only be one upstream per Consul service name
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters, p.consulUpstreamDiscoverySettings.GetConsistencyMode())
 
 	errChan := make(chan error)
@@ -143,22 +143,22 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 	// Get complete service information for every dataCenter:service tuple in separate goroutines
 	var eg errgroup.Group
 	for _, service := range serviceMeta {
-		for _, dataCenter := range service.DataCenters {
+		// the default consistency mode
+		cm := glooConsul.UpstreamSpec_ConsistentMode
+		// Based on Marco's comments in WatchEndpoints, there's only be one upstream per Consul service name, so we use its ConsistencyMode
+		if arrayOfConsulUpstreams := serviceToUpstream[service.Name]; len(arrayOfConsulUpstreams) > 0 {
+			consulUpstream := arrayOfConsulUpstreams[0]
+			cm = consulUpstream.GetConsul().GetConsistencyMode()
+		}
 
+		for _, dataCenter := range service.DataCenters {
 			// Copy iterator variables before passing them to goroutines!
 			svc := service
 			dcName := dataCenter
 
-			arrayOfConsulUpstreams := serviceToUpstream[service.Name]
-			// the default mode
-			cm := glooConsul.UpstreamSpec_ConsistentMode
-			if len(arrayOfConsulUpstreams) > 0 {
-				consulUpstream := arrayOfConsulUpstreams[0]
-				cm = consulUpstream.GetConsul().GetConsistencyMode()
-			}
 			// Get complete spec for each service in parallel
 			eg.Go(func() error {
-				queryOpts := GenerateConsulOptions(dcName, cm)
+				queryOpts := NewConsulQueryOptions(dcName, cm)
 
 				services, _, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
 				if err != nil {
@@ -186,7 +186,8 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 	return specs.Get()
 }
 
-func GenerateConsulOptions(dataCenter string, cm glooConsul.UpstreamSpec_ConsulConsistencyModes) *consulapi.QueryOptions {
+// NewConsulQueryOptions returns a QueryOptions configuration that's used for Consul queries.
+func NewConsulQueryOptions(dataCenter string, cm glooConsul.UpstreamSpec_ConsulConsistencyModes) *consulapi.QueryOptions {
 	// it can either be requireConsistent or allowStale or neither
 	// choosing the Default Mode will clear both fields
 	requireConsistent := cm == glooConsul.UpstreamSpec_ConsistentMode

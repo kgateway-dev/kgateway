@@ -106,7 +106,8 @@ func (c *consul) validateDataCenter(dataCenter string) error {
 	return nil
 }
 
-func GenerateConsulOptions(dataCenter string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) *consulapi.QueryOptions {
+// NewConsulQueryOptions returns a QueryOptions configuration that's used for Consul queries.
+func NewConsulQueryOptions(dataCenter string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) *consulapi.QueryOptions {
 	// it can either be requireConsistent or allowStale or neither
 	// currently choosing Default Mode will clear both fields
 	requireConsistent := cm == v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsistentMode
