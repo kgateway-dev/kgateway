@@ -1,7 +1,6 @@
 package consul
 
 import (
-	consulapi "github.com/hashicorp/consul/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
@@ -52,8 +51,9 @@ func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (
 	var services []*dataCenterServicesTuple
 	for _, dataCenter := range dataCenters {
 
-		// Get names and tags for all services in the data center
-		queryOpts := &consulapi.QueryOptions{Datacenter: dataCenter, RequireConsistent: true}
+		cm := c.consulUpstreamDiscoveryConfig.GetConsistencyMode()
+		queryOpts := NewConsulQueryOptions(dataCenter, cm)
+
 		serviceNamesAndTags, _, err := c.consul.Services(queryOpts.WithContext(opts.Ctx))
 		if err != nil {
 			return nil, err
@@ -74,7 +74,8 @@ func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts)
 		return nil, nil, err
 	}
 
-	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters)
+	upstreamDiscoveryConfig := c.consulUpstreamDiscoveryConfig
+	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, upstreamDiscoveryConfig.GetConsistencyMode())
 
 	upstreamsChan := make(chan v1.UpstreamList)
 	go func() {
@@ -83,7 +84,7 @@ func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts)
 			case services, ok := <-servicesChan:
 				if ok {
 					//  Transform to upstreams
-					upstreams := toUpstreamList(namespace, services, c.consulUpstreamDiscoveryConfig)
+					upstreams := toUpstreamList(namespace, services, upstreamDiscoveryConfig)
 					upstreamsChan <- upstreams
 				}
 			case <-opts.Ctx.Done():

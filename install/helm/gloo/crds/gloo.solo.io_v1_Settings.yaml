@@ -74,6 +74,9 @@ spec:
                 type: object
               consulDiscovery:
                 properties:
+                  consistencyMode:
+                    type: string
+                    x-kubernetes-int-or-string: true
                   rootCa:
                     properties:
                       name:

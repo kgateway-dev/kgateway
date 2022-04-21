@@ -6,6 +6,7 @@ import (
 
 	"github.com/avast/retry-go"
 	consulapi "github.com/hashicorp/consul/api"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/errutils"
 	"golang.org/x/sync/errgroup"
 )
@@ -21,7 +22,7 @@ type ServiceMeta struct {
 
 type ConsulWatcher interface {
 	ConsulClient
-	WatchServices(ctx context.Context, dataCenters []string) (<-chan []*ServiceMeta, <-chan error)
+	WatchServices(ctx context.Context, dataCenters []string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) (<-chan []*ServiceMeta, <-chan error)
 }
 
 func NewConsulWatcher(client *consulapi.Client, dataCenters []string) (ConsulWatcher, error) {
@@ -48,7 +49,7 @@ type dataCenterServicesTuple struct {
 	services   map[string][]string
 }
 
-func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string) (<-chan []*ServiceMeta, <-chan error) {
+func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) (<-chan []*ServiceMeta, <-chan error) {
 
 	var (
 		eg              errgroup.Group
@@ -61,7 +62,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string)
 		// Copy before passing to goroutines!
 		dcName := dataCenter
 
-		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName)
+		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName, cm)
 
 		// Collect services
 		eg.Go(func() error {
@@ -114,7 +115,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string)
 }
 
 // Honors the contract of Watch functions to open with an initial read.
-func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter string) (<-chan *dataCenterServicesTuple, <-chan error) {
+func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) (<-chan *dataCenterServicesTuple, <-chan error) {
 	servicesChan := make(chan *dataCenterServicesTuple)
 	errsChan := make(chan error)
 
@@ -139,11 +140,9 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 
 						// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
 						// The first invocation (with lastIndex equal to zero) will return immediately
-						services, queryMeta, err = c.Services((&consulapi.QueryOptions{
-							Datacenter:        dataCenter,
-							RequireConsistent: true,
-							WaitIndex:         lastIndex,
-						}).WithContext(ctx))
+						queryOpts := NewConsulQueryOptions(dataCenter, cm)
+						queryOpts.WaitIndex = lastIndex
+						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
 
 						return err
 					},

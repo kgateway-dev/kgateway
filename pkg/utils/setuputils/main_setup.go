@@ -58,6 +58,8 @@ func Main(opts SetupOpts) error {
 		return err
 	}
 
+	// settings come from the ResourceClient in the settingsClient
+	// the eventLoop will Watch the emitter's settingsClient to recieve settings from the ResourceClient
 	emitter := v1.NewSetupEmitter(settingsClient)
 	settingsRef := &core.ResourceRef{Namespace: setupNamespace, Name: setupName}
 	eventLoop := v1.NewSetupEventLoop(emitter, NewSetupSyncer(settingsRef, opts.SetupFunc))
