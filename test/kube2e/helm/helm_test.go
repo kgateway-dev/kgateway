@@ -67,10 +67,10 @@ var _ = Describe("Kube2e: helm", func() {
 				name: "httpgateways.gateway.solo.io",
 				file: filepath.Join(crdDir, "gateway.solo.io_v1_MatchableHttpGateway.yaml"),
 			},
-			{
-				name: "settings.gloo.solo.io",
-				file: filepath.Join(crdDir, "gloo.solo.io_v1_Settings.yaml"),
-			},
+			//{
+			//	name: "settings.gloo.solo.io",
+			//	file: filepath.Join(crdDir, "gloo.solo.io_v1_Settings.yaml"),
+			//},
 		}
 
 		for _, crd := range crdsToManuallyApply {
@@ -84,6 +84,7 @@ var _ = Describe("Kube2e: helm", func() {
 		}
 
 		// upgrade to the gloo version being tested
+		//can add field to crd, can't start using it in chart
 		runAndCleanCommand("helm", "upgrade", "gloo", chartUri, "-n", testHelper.InstallNamespace)
 
 		By("should have upgraded to the gloo version being tested")
