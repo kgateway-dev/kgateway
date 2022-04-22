@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Various small doc fixes, such as link fixes.
+    issueLink: https://github.com/solo-io/gloo/issues/6267
