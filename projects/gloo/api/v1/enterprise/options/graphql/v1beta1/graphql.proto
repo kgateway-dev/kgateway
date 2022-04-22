@@ -152,6 +152,9 @@ message RESTResolver {
 // Defines a configuration for serializing and deserializing requests for a gRPC resolver.
 // Is a Schema Extension
 message GrpcDescriptorRegistry {
+  message protoRefs {
+    repeated core.solo.io.ResourceRef proto_refs = 1;
+  }
   oneof descriptor_set {
     option (validate.required) = true;
 
@@ -165,6 +168,13 @@ message GrpcDescriptorRegistry {
     // services.
     // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
     bytes proto_descriptor_bin = 2;
+
+    // THE NEW API:
+    // TODO(bslabe):
+    // Allows the user to put proto file contents in configmaps; the control plane will be responsible for taking these files
+    // and generating the proto descriptor bytes and passing that along to envoy.
+    // we will need to add `protoc` binary to control plane to call out to during translation
+    protoRefs proto_refs_list = 3;
   }
 }
 
