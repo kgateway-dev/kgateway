@@ -1262,6 +1262,18 @@ spec:
                                           type: object
                                         type: array
                                     type: object
+                                  rateLimitRegularConfigs:
+                                    properties:
+                                      refs:
+                                        items:
+                                          properties:
+                                            name:
+                                              type: string
+                                            namespace:
+                                              type: string
+                                          type: object
+                                        type: array
+                                    type: object
                                   ratelimit:
                                     properties:
                                       rateLimits:
@@ -1458,6 +1470,180 @@ spec:
                                         type: object
                                     type: object
                                   ratelimitEarly:
+                                    properties:
+                                      rateLimits:
+                                        items:
+                                          properties:
+                                            actions:
+                                              items:
+                                                properties:
+                                                  destinationCluster:
+                                                    type: object
+                                                  genericKey:
+                                                    properties:
+                                                      descriptorValue:
+                                                        type: string
+                                                    type: object
+                                                  headerValueMatch:
+                                                    properties:
+                                                      descriptorValue:
+                                                        type: string
+                                                      expectMatch:
+                                                        nullable: true
+                                                        type: boolean
+                                                      headers:
+                                                        items:
+                                                          properties:
+                                                            exactMatch:
+                                                              type: string
+                                                            invertMatch:
+                                                              type: boolean
+                                                            name:
+                                                              type: string
+                                                            prefixMatch:
+                                                              type: string
+                                                            presentMatch:
+                                                              type: boolean
+                                                            rangeMatch:
+                                                              properties:
+                                                                end:
+                                                                  format: int64
+                                                                  type: integer
+                                                                  x-kubernetes-int-or-string: true
+                                                                start:
+                                                                  format: int64
+                                                                  type: integer
+                                                                  x-kubernetes-int-or-string: true
+                                                              type: object
+                                                            regexMatch:
+                                                              type: string
+                                                            suffixMatch:
+                                                              type: string
+                                                          type: object
+                                                        type: array
+                                                    type: object
+                                                  metadata:
+                                                    properties:
+                                                      defaultValue:
+                                                        type: string
+                                                      descriptorKey:
+                                                        type: string
+                                                      metadataKey:
+                                                        properties:
+                                                          key:
+                                                            type: string
+                                                          path:
+                                                            items:
+                                                              properties:
+                                                                key:
+                                                                  type: string
+                                                              type: object
+                                                            type: array
+                                                        type: object
+                                                      source:
+                                                        type: string
+                                                        x-kubernetes-int-or-string: true
+                                                    type: object
+                                                  remoteAddress:
+                                                    type: object
+                                                  requestHeaders:
+                                                    properties:
+                                                      descriptorKey:
+                                                        type: string
+                                                      headerName:
+                                                        type: string
+                                                    type: object
+                                                  sourceCluster:
+                                                    type: object
+                                                type: object
+                                              type: array
+                                            setActions:
+                                              items:
+                                                properties:
+                                                  destinationCluster:
+                                                    type: object
+                                                  genericKey:
+                                                    properties:
+                                                      descriptorValue:
+                                                        type: string
+                                                    type: object
+                                                  headerValueMatch:
+                                                    properties:
+                                                      descriptorValue:
+                                                        type: string
+                                                      expectMatch:
+                                                        nullable: true
+                                                        type: boolean
+                                                      headers:
+                                                        items:
+                                                          properties:
+                                                            exactMatch:
+                                                              type: string
+                                                            invertMatch:
+                                                              type: boolean
+                                                            name:
+                                                              type: string
+                                                            prefixMatch:
+                                                              type: string
+                                                            presentMatch:
+                                                              type: boolean
+                                                            rangeMatch:
+                                                              properties:
+                                                                end:
+                                                                  format: int64
+                                                                  type: integer
+                                                                  x-kubernetes-int-or-string: true
+                                                                start:
+                                                                  format: int64
+                                                                  type: integer
+                                                                  x-kubernetes-int-or-string: true
+                                                              type: object
+                                                            regexMatch:
+                                                              type: string
+                                                            suffixMatch:
+                                                              type: string
+                                                          type: object
+                                                        type: array
+                                                    type: object
+                                                  metadata:
+                                                    properties:
+                                                      defaultValue:
+                                                        type: string
+                                                      descriptorKey:
+                                                        type: string
+                                                      metadataKey:
+                                                        properties:
+                                                          key:
+                                                            type: string
+                                                          path:
+                                                            items:
+                                                              properties:
+                                                                key:
+                                                                  type: string
+                                                              type: object
+                                                            type: array
+                                                        type: object
+                                                      source:
+                                                        type: string
+                                                        x-kubernetes-int-or-string: true
+                                                    type: object
+                                                  remoteAddress:
+                                                    type: object
+                                                  requestHeaders:
+                                                    properties:
+                                                      descriptorKey:
+                                                        type: string
+                                                      headerName:
+                                                        type: string
+                                                    type: object
+                                                  sourceCluster:
+                                                    type: object
+                                                type: object
+                                              type: array
+                                          type: object
+                                        type: array
+                                    type: object
+                                  ratelimitRegular:
                                     properties:
                                       rateLimits:
                                         items:
@@ -2958,6 +3144,18 @@ spec:
                                                 type: object
                                               type: array
                                           type: object
+                                        rateLimitRegularConfigs:
+                                          properties:
+                                            refs:
+                                              items:
+                                                properties:
+                                                  name:
+                                                    type: string
+                                                  namespace:
+                                                    type: string
+                                                type: object
+                                              type: array
+                                          type: object
                                         ratelimit:
                                           properties:
                                             includeVhRateLimits:
@@ -3156,6 +3354,182 @@ spec:
                                               type: object
                                           type: object
                                         ratelimitEarly:
+                                          properties:
+                                            includeVhRateLimits:
+                                              type: boolean
+                                            rateLimits:
+                                              items:
+                                                properties:
+                                                  actions:
+                                                    items:
+                                                      properties:
+                                                        destinationCluster:
+                                                          type: object
+                                                        genericKey:
+                                                          properties:
+                                                            descriptorValue:
+                                                              type: string
+                                                          type: object
+                                                        headerValueMatch:
+                                                          properties:
+                                                            descriptorValue:
+                                                              type: string
+                                                            expectMatch:
+                                                              nullable: true
+                                                              type: boolean
+                                                            headers:
+                                                              items:
+                                                                properties:
+                                                                  exactMatch:
+                                                                    type: string
+                                                                  invertMatch:
+                                                                    type: boolean
+                                                                  name:
+                                                                    type: string
+                                                                  prefixMatch:
+                                                                    type: string
+                                                                  presentMatch:
+                                                                    type: boolean
+                                                                  rangeMatch:
+                                                                    properties:
+                                                                      end:
+                                                                        format: int64
+                                                                        type: integer
+                                                                        x-kubernetes-int-or-string: true
+                                                                      start:
+                                                                        format: int64
+                                                                        type: integer
+                                                                        x-kubernetes-int-or-string: true
+                                                                    type: object
+                                                                  regexMatch:
+                                                                    type: string
+                                                                  suffixMatch:
+                                                                    type: string
+                                                                type: object
+                                                              type: array
+                                                          type: object
+                                                        metadata:
+                                                          properties:
+                                                            defaultValue:
+                                                              type: string
+                                                            descriptorKey:
+                                                              type: string
+                                                            metadataKey:
+                                                              properties:
+                                                                key:
+                                                                  type: string
+                                                                path:
+                                                                  items:
+                                                                    properties:
+                                                                      key:
+                                                                        type: string
+                                                                    type: object
+                                                                  type: array
+                                                              type: object
+                                                            source:
+                                                              type: string
+                                                              x-kubernetes-int-or-string: true
+                                                          type: object
+                                                        remoteAddress:
+                                                          type: object
+                                                        requestHeaders:
+                                                          properties:
+                                                            descriptorKey:
+                                                              type: string
+                                                            headerName:
+                                                              type: string
+                                                          type: object
+                                                        sourceCluster:
+                                                          type: object
+                                                      type: object
+                                                    type: array
+                                                  setActions:
+                                                    items:
+                                                      properties:
+                                                        destinationCluster:
+                                                          type: object
+                                                        genericKey:
+                                                          properties:
+                                                            descriptorValue:
+                                                              type: string
+                                                          type: object
+                                                        headerValueMatch:
+                                                          properties:
+                                                            descriptorValue:
+                                                              type: string
+                                                            expectMatch:
+                                                              nullable: true
+                                                              type: boolean
+                                                            headers:
+                                                              items:
+                                                                properties:
+                                                                  exactMatch:
+                                                                    type: string
+                                                                  invertMatch:
+                                                                    type: boolean
+                                                                  name:
+                                                                    type: string
+                                                                  prefixMatch:
+                                                                    type: string
+                                                                  presentMatch:
+                                                                    type: boolean
+                                                                  rangeMatch:
+                                                                    properties:
+                                                                      end:
+                                                                        format: int64
+                                                                        type: integer
+                                                                        x-kubernetes-int-or-string: true
+                                                                      start:
+                                                                        format: int64
+                                                                        type: integer
+                                                                        x-kubernetes-int-or-string: true
+                                                                    type: object
+                                                                  regexMatch:
+                                                                    type: string
+                                                                  suffixMatch:
+                                                                    type: string
+                                                                type: object
+                                                              type: array
+                                                          type: object
+                                                        metadata:
+                                                          properties:
+                                                            defaultValue:
+                                                              type: string
+                                                            descriptorKey:
+                                                              type: string
+                                                            metadataKey:
+                                                              properties:
+                                                                key:
+                                                                  type: string
+                                                                path:
+                                                                  items:
+                                                                    properties:
+                                                                      key:
+                                                                        type: string
+                                                                    type: object
+                                                                  type: array
+                                                              type: object
+                                                            source:
+                                                              type: string
+                                                              x-kubernetes-int-or-string: true
+                                                          type: object
+                                                        remoteAddress:
+                                                          type: object
+                                                        requestHeaders:
+                                                          properties:
+                                                            descriptorKey:
+                                                              type: string
+                                                            headerName:
+                                                              type: string
+                                                          type: object
+                                                        sourceCluster:
+                                                          type: object
+                                                      type: object
+                                                    type: array
+                                                type: object
+                                              type: array
+                                          type: object
+                                        ratelimitRegular:
                                           properties:
                                             includeVhRateLimits:
                                               type: boolean
@@ -6912,6 +7286,18 @@ spec:
                                                     type: object
                                                   type: array
                                               type: object
+                                            rateLimitRegularConfigs:
+                                              properties:
+                                                refs:
+                                                  items:
+                                                    properties:
+                                                      name:
+                                                        type: string
+                                                      namespace:
+                                                        type: string
+                                                    type: object
+                                                  type: array
+                                              type: object
                                             ratelimit:
                                               properties:
                                                 rateLimits:
@@ -7108,6 +7494,180 @@ spec:
                                                   type: object
                                               type: object
                                             ratelimitEarly:
+                                              properties:
+                                                rateLimits:
+                                                  items:
+                                                    properties:
+                                                      actions:
+                                                        items:
+                                                          properties:
+                                                            destinationCluster:
+                                                              type: object
+                                                            genericKey:
+                                                              properties:
+                                                                descriptorValue:
+                                                                  type: string
+                                                              type: object
+                                                            headerValueMatch:
+                                                              properties:
+                                                                descriptorValue:
+                                                                  type: string
+                                                                expectMatch:
+                                                                  nullable: true
+                                                                  type: boolean
+                                                                headers:
+                                                                  items:
+                                                                    properties:
+                                                                      exactMatch:
+                                                                        type: string
+                                                                      invertMatch:
+                                                                        type: boolean
+                                                                      name:
+                                                                        type: string
+                                                                      prefixMatch:
+                                                                        type: string
+                                                                      presentMatch:
+                                                                        type: boolean
+                                                                      rangeMatch:
+                                                                        properties:
+                                                                          end:
+                                                                            format: int64
+                                                                            type: integer
+                                                                            x-kubernetes-int-or-string: true
+                                                                          start:
+                                                                            format: int64
+                                                                            type: integer
+                                                                            x-kubernetes-int-or-string: true
+                                                                        type: object
+                                                                      regexMatch:
+                                                                        type: string
+                                                                      suffixMatch:
+                                                                        type: string
+                                                                    type: object
+                                                                  type: array
+                                                              type: object
+                                                            metadata:
+                                                              properties:
+                                                                defaultValue:
+                                                                  type: string
+                                                                descriptorKey:
+                                                                  type: string
+                                                                metadataKey:
+                                                                  properties:
+                                                                    key:
+                                                                      type: string
+                                                                    path:
+                                                                      items:
+                                                                        properties:
+                                                                          key:
+                                                                            type: string
+                                                                        type: object
+                                                                      type: array
+                                                                  type: object
+                                                                source:
+                                                                  type: string
+                                                                  x-kubernetes-int-or-string: true
+                                                              type: object
+                                                            remoteAddress:
+                                                              type: object
+                                                            requestHeaders:
+                                                              properties:
+                                                                descriptorKey:
+                                                                  type: string
+                                                                headerName:
+                                                                  type: string
+                                                              type: object
+                                                            sourceCluster:
+                                                              type: object
+                                                          type: object
+                                                        type: array
+                                                      setActions:
+                                                        items:
+                                                          properties:
+                                                            destinationCluster:
+                                                              type: object
+                                                            genericKey:
+                                                              properties:
+                                                                descriptorValue:
+                                                                  type: string
+                                                              type: object
+                                                            headerValueMatch:
+                                                              properties:
+                                                                descriptorValue:
+                                                                  type: string
+                                                                expectMatch:
+                                                                  nullable: true
+                                                                  type: boolean
+                                                                headers:
+                                                                  items:
+                                                                    properties:
+                                                                      exactMatch:
+                                                                        type: string
+                                                                      invertMatch:
+                                                                        type: boolean
+                                                                      name:
+                                                                        type: string
+                                                                      prefixMatch:
+                                                                        type: string
+                                                                      presentMatch:
+                                                                        type: boolean
+                                                                      rangeMatch:
+                                                                        properties:
+                                                                          end:
+                                                                            format: int64
+                                                                            type: integer
+                                                                            x-kubernetes-int-or-string: true
+                                                                          start:
+                                                                            format: int64
+                                                                            type: integer
+                                                                            x-kubernetes-int-or-string: true
+                                                                        type: object
+                                                                      regexMatch:
+                                                                        type: string
+                                                                      suffixMatch:
+                                                                        type: string
+                                                                    type: object
+                                                                  type: array
+                                                              type: object
+                                                            metadata:
+                                                              properties:
+                                                                defaultValue:
+                                                                  type: string
+                                                                descriptorKey:
+                                                                  type: string
+                                                                metadataKey:
+                                                                  properties:
+                                                                    key:
+                                                                      type: string
+                                                                    path:
+                                                                      items:
+                                                                        properties:
+                                                                          key:
+                                                                            type: string
+                                                                        type: object
+                                                                      type: array
+                                                                  type: object
+                                                                source:
+                                                                  type: string
+                                                                  x-kubernetes-int-or-string: true
+                                                              type: object
+                                                            remoteAddress:
+                                                              type: object
+                                                            requestHeaders:
+                                                              properties:
+                                                                descriptorKey:
+                                                                  type: string
+                                                                headerName:
+                                                                  type: string
+                                                              type: object
+                                                            sourceCluster:
+                                                              type: object
+                                                          type: object
+                                                        type: array
+                                                    type: object
+                                                  type: array
+                                              type: object
+                                            ratelimitRegular:
                                               properties:
                                                 rateLimits:
                                                   items:
@@ -8608,6 +9168,18 @@ spec:
                                                           type: object
                                                         type: array
                                                     type: object
+                                                  rateLimitRegularConfigs:
+                                                    properties:
+                                                      refs:
+                                                        items:
+                                                          properties:
+                                                            name:
+                                                              type: string
+                                                            namespace:
+                                                              type: string
+                                                          type: object
+                                                        type: array
+                                                    type: object
                                                   ratelimit:
                                                     properties:
                                                       includeVhRateLimits:
@@ -8806,6 +9378,182 @@ spec:
                                                         type: object
                                                     type: object
                                                   ratelimitEarly:
+                                                    properties:
+                                                      includeVhRateLimits:
+                                                        type: boolean
+                                                      rateLimits:
+                                                        items:
+                                                          properties:
+                                                            actions:
+                                                              items:
+                                                                properties:
+                                                                  destinationCluster:
+                                                                    type: object
+                                                                  genericKey:
+                                                                    properties:
+                                                                      descriptorValue:
+                                                                        type: string
+                                                                    type: object
+                                                                  headerValueMatch:
+                                                                    properties:
+                                                                      descriptorValue:
+                                                                        type: string
+                                                                      expectMatch:
+                                                                        nullable: true
+                                                                        type: boolean
+                                                                      headers:
+                                                                        items:
+                                                                          properties:
+                                                                            exactMatch:
+                                                                              type: string
+                                                                            invertMatch:
+                                                                              type: boolean
+                                                                            name:
+                                                                              type: string
+                                                                            prefixMatch:
+                                                                              type: string
+                                                                            presentMatch:
+                                                                              type: boolean
+                                                                            rangeMatch:
+                                                                              properties:
+                                                                                end:
+                                                                                  format: int64
+                                                                                  type: integer
+                                                                                  x-kubernetes-int-or-string: true
+                                                                                start:
+                                                                                  format: int64
+                                                                                  type: integer
+                                                                                  x-kubernetes-int-or-string: true
+                                                                              type: object
+                                                                            regexMatch:
+                                                                              type: string
+                                                                            suffixMatch:
+                                                                              type: string
+                                                                          type: object
+                                                                        type: array
+                                                                    type: object
+                                                                  metadata:
+                                                                    properties:
+                                                                      defaultValue:
+                                                                        type: string
+                                                                      descriptorKey:
+                                                                        type: string
+                                                                      metadataKey:
+                                                                        properties:
+                                                                          key:
+                                                                            type: string
+                                                                          path:
+                                                                            items:
+                                                                              properties:
+                                                                                key:
+                                                                                  type: string
+                                                                              type: object
+                                                                            type: array
+                                                                        type: object
+                                                                      source:
+                                                                        type: string
+                                                                        x-kubernetes-int-or-string: true
+                                                                    type: object
+                                                                  remoteAddress:
+                                                                    type: object
+                                                                  requestHeaders:
+                                                                    properties:
+                                                                      descriptorKey:
+                                                                        type: string
+                                                                      headerName:
+                                                                        type: string
+                                                                    type: object
+                                                                  sourceCluster:
+                                                                    type: object
+                                                                type: object
+                                                              type: array
+                                                            setActions:
+                                                              items:
+                                                                properties:
+                                                                  destinationCluster:
+                                                                    type: object
+                                                                  genericKey:
+                                                                    properties:
+                                                                      descriptorValue:
+                                                                        type: string
+                                                                    type: object
+                                                                  headerValueMatch:
+                                                                    properties:
+                                                                      descriptorValue:
+                                                                        type: string
+                                                                      expectMatch:
+                                                                        nullable: true
+                                                                        type: boolean
+                                                                      headers:
+                                                                        items:
+                                                                          properties:
+                                                                            exactMatch:
+                                                                              type: string
+                                                                            invertMatch:
+                                                                              type: boolean
+                                                                            name:
+                                                                              type: string
+                                                                            prefixMatch:
+                                                                              type: string
+                                                                            presentMatch:
+                                                                              type: boolean
+                                                                            rangeMatch:
+                                                                              properties:
+                                                                                end:
+                                                                                  format: int64
+                                                                                  type: integer
+                                                                                  x-kubernetes-int-or-string: true
+                                                                                start:
+                                                                                  format: int64
+                                                                                  type: integer
+                                                                                  x-kubernetes-int-or-string: true
+                                                                              type: object
+                                                                            regexMatch:
+                                                                              type: string
+                                                                            suffixMatch:
+                                                                              type: string
+                                                                          type: object
+                                                                        type: array
+                                                                    type: object
+                                                                  metadata:
+                                                                    properties:
+                                                                      defaultValue:
+                                                                        type: string
+                                                                      descriptorKey:
+                                                                        type: string
+                                                                      metadataKey:
+                                                                        properties:
+                                                                          key:
+                                                                            type: string
+                                                                          path:
+                                                                            items:
+                                                                              properties:
+                                                                                key:
+                                                                                  type: string
+                                                                              type: object
+                                                                            type: array
+                                                                        type: object
+                                                                      source:
+                                                                        type: string
+                                                                        x-kubernetes-int-or-string: true
+                                                                    type: object
+                                                                  remoteAddress:
+                                                                    type: object
+                                                                  requestHeaders:
+                                                                    properties:
+                                                                      descriptorKey:
+                                                                        type: string
+                                                                      headerName:
+                                                                        type: string
+                                                                    type: object
+                                                                  sourceCluster:
+                                                                    type: object
+                                                                type: object
+                                                              type: array
+                                                          type: object
+                                                        type: array
+                                                    type: object
+                                                  ratelimitRegular:
                                                     properties:
                                                       includeVhRateLimits:
                                                         type: boolean
