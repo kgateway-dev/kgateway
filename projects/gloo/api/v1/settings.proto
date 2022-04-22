@@ -661,7 +661,7 @@ message GatewayOptions {
     VirtualServiceOptions virtual_service_options = 7;
 
     // Test adding a new value to the settings crd
-    google.protobuf.BoolValue persist_proxy_spec = 8;
+    bool persist_proxy_spec = 8;
 
     // Test adding a new value to the settings crd
     google.protobuf.BoolValue enable_gateway_controller = 9;

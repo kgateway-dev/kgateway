@@ -230,7 +230,6 @@ spec:
                     nullable: true
                     type: boolean
                   persistProxySpec:
-                    nullable: true
                     type: boolean
                   readGatewaysFromAllNamespaces:
                     type: boolean
