@@ -16,6 +16,7 @@ weight: 5
 - [GrpcRequestTemplate](#grpcrequesttemplate)
 - [RESTResolver](#restresolver)
 - [GrpcDescriptorRegistry](#grpcdescriptorregistry)
+- [protoRefs](#protorefs)
 - [GrpcResolver](#grpcresolver)
 - [StitchedSchema](#stitchedschema)
 - [SubschemaConfig](#subschemaconfig)
@@ -139,13 +140,32 @@ Is a Schema Extension
 ```yaml
 "protoDescriptor": string
 "protoDescriptorBin": bytes
+"protoRefsList": .graphql.gloo.solo.io.GrpcDescriptorRegistry.protoRefs
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor` or `protoDescriptorBin` can be set. |
-| `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin` or `protoDescriptor` can be set. |
+| `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor`, `protoDescriptorBin`, or `protoRefsList` can be set. |
+| `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin`, `protoDescriptor`, or `protoRefsList` can be set. |
+| `protoRefsList` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry.protoRefs](../graphql.proto.sk/#protorefs) | THE NEW API: TODO(bslabe): Allows the user to put proto file contents in configmaps; the control plane will be responsible for taking these files and generating the proto descriptor bytes and passing that along to envoy. we will need to add `protoc` binary to control plane to call out to during translation. Only one of `protoRefsList`, `protoDescriptor`, or `protoDescriptorBin` can be set. |
+
+
+
+
+---
+### protoRefs
+
+
+
+```yaml
+"protoRefs": []core.solo.io.ResourceRef
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `protoRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 
 
 
