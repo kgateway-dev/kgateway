@@ -854,6 +854,10 @@ func (m *Settings_VaultSecrets) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetPathPrefix(), target.GetPathPrefix()) != 0 {
+		return false
+	}
+
 	return true
 }
 
@@ -1159,6 +1163,10 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Equal(that interface{}) 
 	}
 
 	if m.GetSplitTlsServices() != target.GetSplitTlsServices() {
+		return false
+	}
+
+	if m.GetConsistencyMode() != target.GetConsistencyMode() {
 		return false
 	}
 

@@ -27,15 +27,15 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
+        sidecar.istio.io/inject: "false"
+        {{- end }}
       annotations:
         {{- if $statsConfig.enabled }}
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
         {{- end}}
-        {{- if .Values.global.istioIntegration.disableAutoinjection }}
-        sidecar.istio.io/inject: "false"
-        {{- end }}
         {{- if .Values.gateway.deployment.extraGatewayAnnotations }}
         {{- range $key, $value := .Values.gateway.deployment.extraGatewayAnnotations }}
         {{ $key }}: {{ $value | quote }}
@@ -104,9 +104,17 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 1
-          periodSeconds: 2
-          failureThreshold: 10
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+{{- if .Values.gateway.validation.livenessProbeEnabled }}
+        livenessProbe:
+          tcpSocket:
+            port: 8443
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+{{- end }}
       volumes:
         - name: validation-certs
           secret:

@@ -26,10 +26,10 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      annotations:
         {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
         {{- end }}
+      annotations:
         {{- if .Values.ingress.deployment.extraIngressAnnotations }}
         {{- range $key, $value := .Values.ingress.deployment.extraIngressAnnotations }}
         {{ $key }}: {{ $value | quote }}

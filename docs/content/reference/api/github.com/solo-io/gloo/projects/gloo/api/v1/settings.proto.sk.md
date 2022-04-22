@@ -25,6 +25,7 @@ weight: 5
 - [ConsulConfiguration](#consulconfiguration)
 - [ServiceDiscoveryOptions](#servicediscoveryoptions)
 - [ConsulUpstreamDiscoveryConfiguration](#consulupstreamdiscoveryconfiguration)
+- [ConsulConsistencyModes](#consulconsistencymodes)
 - [KubernetesConfiguration](#kubernetesconfiguration)
 - [RateLimits](#ratelimits)
 - [ObservabilityOptions](#observabilityoptions)
@@ -176,6 +177,7 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 "tlsServerName": string
 "insecure": .google.protobuf.BoolValue
 "rootKey": string
+"pathPrefix": string
 
 ```
 
@@ -190,6 +192,7 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 | `tlsServerName` | `string` | tlsServerName, if set, is used to set the SNI host when connecting via TLS. |
 | `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Insecure enables or disables SSL verification. |
 | `rootKey` | `string` | all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Consul cluster defaults to `gloo`. |
+| `pathPrefix` | `string` | Optional: The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'. |
 
 
 
@@ -405,6 +408,7 @@ upstreams to connect to those services and their instances.
 "tlsTagName": string
 "rootCa": .core.solo.io.ResourceRef
 "splitTlsServices": bool
+"consistencyMode": .gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.ConsulConsistencyModes
 
 ```
 
@@ -414,6 +418,23 @@ upstreams to connect to those services and their instances.
 | `tlsTagName` | `string` | The tag that gloo should use to make TLS upstreams from consul services, and to partition consul serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'. |
 | `rootCa` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The reference for the root CA resource to be used by discovered consul TLS upstreams. |
 | `splitTlsServices` | `bool` | If true, then create two upstreams when the tlsTagName is found on a consul service, one with tls and one without. This requires a consul service's serviceInstances be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those without the tlsTagName tag are sorted into the non-TLS upstream. |
+| `consistencyMode` | [.gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.ConsulConsistencyModes](../settings.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is the ConsistentMode. |
+
+
+
+
+---
+### ConsulConsistencyModes
+
+ 
+These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
+For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
+
+| Name | Description |
+| ----- | ----------- | 
+| `ConsistentMode` | This is strongly consistent. Sets the RequireConsistent in the consul api to true. |
+| `DefaultMode` | This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false. |
+| `StaleMode` | Allows stale reads when set. This will set the AllowStale in the consul api. |
 
 
 

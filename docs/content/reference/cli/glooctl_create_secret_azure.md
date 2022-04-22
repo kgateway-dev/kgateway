@@ -26,6 +26,7 @@ glooctl create secret azure [flags]
 ```
   -c, --config string                  set the path to the glooctl config file (default "<home_directory>/.gloo/glooctl-config.yaml")
       --consul-address string          address of the Consul server. Use with --use-consul (default "127.0.0.1:8500")
+      --consul-allow-stale-reads       Allows reading using Consul's stale consistency mode.
       --consul-datacenter string       Datacenter to use. If not provided, the default agent datacenter is used. Use with --use-consul
       --consul-root-key string         key prefix for for Consul key-value storage. (default "gloo")
       --consul-scheme string           URI scheme for the Consul server. Use with --use-consul (default "http")
@@ -43,7 +44,8 @@ glooctl create secret azure [flags]
       --vault-ca-path string           CAPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate.Use with --use-vault
       --vault-client-cert string       ClientCert is the path to the certificate for Vault communication.Use with --use-vault
       --vault-client-key string        ClientKey is the path to the private key for Vault communication.Use with --use-vault
-      --vault-root-key string          key prefix for for Vault key-value storage. (default "gloo")
+      --vault-path-prefix string       The Secrets Engine to which Vault should route traffic. (default "secret")
+      --vault-root-key string          key prefix for Vault key-value storage inside a storage engine. (default "gloo")
       --vault-tls-insecure             Insecure enables or disables SSL verification.Use with --use-vault
       --vault-tls-server-name string   TLSServerName, if set, is used to set the SNI host when connecting via TLS.Use with --use-vault
       --vault-token string             address of the Vault server. This should be a complete  URL such as "http://vault.example.com". Use with --use-vault

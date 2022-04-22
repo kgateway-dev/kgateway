@@ -398,3 +398,33 @@ The arguments should look like so:
         - "100"
 ```
 {{% /notice %}}
+
+### Audit Log Formatting
+
+Alternatively, specify a `jsonFormat` format string to dump ModSecurity logs as part of a larger JSON object:
+
+{{< highlight yaml "hl_lines=13-21" >}}
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  proxyNames: 
+    - gateway-proxy
+  httpGateway: {}
+  useProxyProto: false
+  options:
+    accessLoggingService:
+      accessLog:
+      - fileSink:
+          path: /dev/stderr
+          jsonFormat:
+            method: '%REQ(:METHOD)%'
+            response_code: '%RESPONSE_CODE%'
+            waf: "%FILTER_STATE(io.solo.modsecurity.audit_log)%"
+{{< / highlight >}}
+
+The above configuration will log a JSON object containing the request method, response code, and any logs obtained from ModSecurity when a request is processed.

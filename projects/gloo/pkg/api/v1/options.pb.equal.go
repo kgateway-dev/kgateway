@@ -627,6 +627,45 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	switch m.RateLimitRegularConfigType.(type) {
+
+	case *VirtualHostOptions_RatelimitRegular:
+		if _, ok := target.RateLimitRegularConfigType.(*VirtualHostOptions_RatelimitRegular); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRatelimitRegular()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRatelimitRegular()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRatelimitRegular(), target.GetRatelimitRegular()) {
+				return false
+			}
+		}
+
+	case *VirtualHostOptions_RateLimitRegularConfigs:
+		if _, ok := target.RateLimitRegularConfigType.(*VirtualHostOptions_RateLimitRegularConfigs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRateLimitRegularConfigs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRateLimitRegularConfigs()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRateLimitRegularConfigs(), target.GetRateLimitRegularConfigs()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.RateLimitRegularConfigType != target.RateLimitRegularConfigType {
+			return false
+		}
+	}
+
 	switch m.JwtConfig.(type) {
 
 	case *VirtualHostOptions_Jwt:
@@ -1031,6 +1070,45 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 	default:
 		// m is nil but target is not nil
 		if m.RateLimitConfigType != target.RateLimitConfigType {
+			return false
+		}
+	}
+
+	switch m.RateLimitRegularConfigType.(type) {
+
+	case *RouteOptions_RatelimitRegular:
+		if _, ok := target.RateLimitRegularConfigType.(*RouteOptions_RatelimitRegular); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRatelimitRegular()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRatelimitRegular()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRatelimitRegular(), target.GetRatelimitRegular()) {
+				return false
+			}
+		}
+
+	case *RouteOptions_RateLimitRegularConfigs:
+		if _, ok := target.RateLimitRegularConfigType.(*RouteOptions_RateLimitRegularConfigs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRateLimitRegularConfigs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRateLimitRegularConfigs()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRateLimitRegularConfigs(), target.GetRateLimitRegularConfigs()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.RateLimitRegularConfigType != target.RateLimitRegularConfigType {
 			return false
 		}
 	}

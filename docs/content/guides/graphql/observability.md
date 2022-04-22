@@ -8,7 +8,7 @@ Gather metrics for your GraphQL APIs in Prometheus and Grafana.
 
 ## Access Envoy logs in Prometheus and Grafana
 
-Review the Gloo Edge [Observability documentation]({{< versioned_link_path fromRoot="/guides/observability/" >}}) to access the default Prometheus and Grafana deployments that are installed with Gloo Edge, or configure your own Promethus or Grafana instances.
+Review the Gloo Edge [Observability documentation]({{< versioned_link_path fromRoot="/guides/observability/" >}}) to access the default Prometheus and Grafana deployments that are installed with Gloo Edge, or configure your own Prometheus or Grafana instances.
 
 For example, you can use the following commands to access the Envoy pod logs in the default Prometheus and Grafana dashboards:
 * Prometheus:

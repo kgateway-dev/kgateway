@@ -10,7 +10,9 @@
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
+{{- $ports := list }}
 {{- if not (empty $gatewaySpec.podTemplate) }}
+  {{- $ports = (list $gatewaySpec.podTemplate.httpPort $gatewaySpec.podTemplate.httpsPort $gatewaySpec.podTemplate.extraPorts) }}
   {{- if not (empty $gatewaySpec.podTemplate.nodeSelector) }}
     {{- $_ := set $spec.podTemplate "nodeSelector" $gatewaySpec.podTemplate.nodeSelector }}
   {{- end }}
@@ -57,12 +59,23 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
+        {{- if $global.istioIntegration.disableAutoinjection }}
+        sidecar.istio.io/inject: "false" # this deployment has custom logic related to istio sidecars, and shouldn't be blanket-injected ever
+        {{- else if $global.istioIntegration.enableIstioSidecarOnGateway }}
+        sidecar.istio.io/inject: "true"
+        {{- end }}
 {{ $annotationExist := false}}
-{{- if $spec.podTemplate.extraAnnotations }}
+{{- if or ($spec.podTemplate.extraAnnotations) (.Values.global.glooStats.setDatadogAnnotations) }}
 {{ $annotationExist = true}}
       annotations:
       {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
+      {{- end }}
+      {{- if .Values.global.glooStats.setDatadogAnnotations }}
+        ad.datadoghq.com/gateway-proxy.check_names: '["envoy"]'
+        ad.datadoghq.com/gateway-proxy.init_configs: '[{}]'
+        ad.datadoghq.com/gateway-proxy.instances: '[{"stats_url": "http://%%host%%:8081/stats"}]'
+        ad.datadoghq.com/gateway-proxy.logs: '[{"source": "envoy", "service": "gloo","log_processing_rules":[{"type": "multi_line", "name": "log_start_with_date","pattern" : "^\\[[0-9]{4}-[0-9]{2}-[0-9]{2}"}]}]'
       {{- end }}
 {{- end }}
 {{- if $statsConfig.enabled }}
@@ -73,8 +86,8 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "8081"
         prometheus.io/scrape: "true"
-        {{- if $global.istioIntegration.disableAutoinjection }}
-        sidecar.istio.io/inject: "false" # this deployment has custom logic related to istio sidecars, and shouldn't be blanket-injected ever
+        {{- if $global.istioIntegration.enableIstioSidecarOnGateway }}
+        traffic.sidecar.istio.io/excludeInboundPorts: {{ join "," $ports }}
         {{- end }}
 {{- end}}
 {{- if $spec.readConfig }}
@@ -85,8 +98,8 @@ spec:
         readconfig-ready: /ready
         readconfig-config_dump: /config_dump
         readconfig-port: "8082"
-        {{- if $global.istioIntegration.disableAutoinjection }}
-        sidecar.istio.io/inject: "false"
+        {{- if $global.istioIntegration.enableIstioSidecarOnGateway }}
+        traffic.sidecar.istio.io/excludeInboundPorts: {{ join "," $ports }}
         {{- end }}
 {{- end}}
     spec:
@@ -242,21 +255,27 @@ spec:
             - -O
             - /dev/null
             - {{ $spec.loopBackAddress }}:19000/ready
-          initialDelaySeconds: 1
+          initialDelaySeconds: 3
           periodSeconds: 10
-          failureThreshold: 10
+          failureThreshold: 3
 {{- end}}
+{{- if $spec.podTemplate.livenessProbeEnabled }}
         livenessProbe:
+{{- if $spec.podTemplate.customLivenessProbe }}
+{{ toYaml $spec.podTemplate.customLivenessProbe | indent 10}}
+{{- else }}
           exec:
             command:
             - wget
             - -O
             - /dev/null
             - {{ $spec.loopBackAddress }}:19000/server_info
-          initialDelaySeconds: 1
+          initialDelaySeconds: 3
           periodSeconds: 10
-          failureThreshold: 10
-{{- end}}
+          failureThreshold: 3
+{{- end }}{{/*if $spec.podTemplate.customLivenessProbe*/}}
+{{- end }}{{/*if $spec.podTemplate.livenessProbeEnabled*/}}
+{{- end }}{{/*if $spec.podTemplate.probes*/}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
@@ -318,6 +337,12 @@ spec:
         - containerPort: 8234
           name: sds
           protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: 8234
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
 {{- end }} {{- /* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
 {{- if $global.istioSDS.enabled }}
 {{- if $global.istioSDS.customSidecars }}
@@ -326,9 +351,9 @@ spec:
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
         image: docker.io/istio/proxyv2:1.9.5
-        {{- if $global.glooMtls.sdsResources }}
+        {{- if $global.glooMtls.envoySidecarResources }}
         resources:
-{{ toYaml $global.glooMtls.sdsResources | indent 10}}
+{{ toYaml $global.glooMtls.envoySidecarResources | indent 10}}
         {{- end}}
         args:
         - proxy
@@ -407,13 +432,13 @@ spec:
                 fieldPath: metadata.namespace
         imagePullPolicy: IfNotPresent
         readinessProbe:
-          failureThreshold: 30
+          failureThreshold: 3
           httpGet:
             path: /healthz/ready
             port: 15021
             scheme: HTTP
-          initialDelaySeconds: 1
-          periodSeconds: 2
+          initialDelaySeconds: 3
+          periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
         volumeMounts:

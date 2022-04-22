@@ -525,6 +525,8 @@ func (m *Settings_VaultSecrets) Clone() proto.Message {
 
 	target.RootKey = m.GetRootKey()
 
+	target.PathPrefix = m.GetPathPrefix()
+
 	return target
 }
 
@@ -677,6 +679,8 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Clone() proto.Message {
 	}
 
 	target.SplitTlsServices = m.GetSplitTlsServices()
+
+	target.ConsistencyMode = m.GetConsistencyMode()
 
 	return target
 }

@@ -21,10 +21,15 @@ import (
 )
 
 const defaultVaultDockerImage = "vault:1.1.3"
+const defaultAddress = "127.0.0.1:8200"
 
 type VaultFactory struct {
 	vaultPath string
 	tmpdir    string
+}
+
+type VaultFactoryConfig struct {
+	PathPrefix string
 }
 
 func NewVaultFactory() (*VaultFactory, error) {
@@ -94,8 +99,9 @@ type VaultInstance struct {
 	vaultpath string
 	tmpdir    string
 	cmd       *exec.Cmd
-	token     string
 	session   *gexec.Session
+	token     string
+	address   string
 }
 
 func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -113,19 +119,19 @@ func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 }
 
 func (i *VaultInstance) Run() error {
-	return i.RunWithPort()
+	return i.RunWithAddress(defaultAddress)
 }
 
-func (i *VaultInstance) Token() string {
-	return i.token
-}
+func (i *VaultInstance) RunWithAddress(address string) error {
+	i.token = "root"
+	i.address = address
 
-func (i *VaultInstance) RunWithPort() error {
 	cmd := exec.Command(i.vaultpath,
 		"server",
+		// https://www.vaultproject.io/docs/concepts/dev-server
 		"-dev",
-		"-dev-root-token-id=root",
-		"-dev-listen-address=0.0.0.0:8200",
+		fmt.Sprintf("-dev-root-token-id=%s", i.token),
+		fmt.Sprintf("-dev-listen-address=%s", i.address),
 	)
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = ginkgo.GinkgoWriter
@@ -145,9 +151,23 @@ func (i *VaultInstance) RunWithPort() error {
 		return errors.Errorf("%s did not contain root token", out)
 	}
 
+	i.address = address
 	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
 
 	return nil
+}
+
+func (i *VaultInstance) Token() string {
+	return i.token
+}
+
+func (i *VaultInstance) Address() string {
+	return fmt.Sprintf("http://%s", i.address)
+}
+
+func (i *VaultInstance) EnableSecretEngine(secretEngine string) error {
+	_, err := i.Exec("secrets", "enable", "-version=2", fmt.Sprintf("-path=%s", secretEngine), "kv")
+	return err
 }
 
 func (i *VaultInstance) Binary() string {
@@ -169,14 +189,20 @@ func (i *VaultInstance) Clean() error {
 
 func (i *VaultInstance) Exec(args ...string) (string, error) {
 	cmd := exec.Command(i.vaultpath, args...)
+	cmd.Dir = i.tmpdir
 	cmd.Env = os.Environ()
 	// disable DEBUG=1 from getting through to nomad
-	for i, pair := range cmd.Env {
+	for e, pair := range cmd.Env {
 		if strings.HasPrefix(pair, "DEBUG") {
-			cmd.Env = append(cmd.Env[:i], cmd.Env[i+1:]...)
+			cmd.Env = append(cmd.Env[:e], cmd.Env[e+1:]...)
 			break
 		}
 	}
+	cmd.Env = append(
+		cmd.Env,
+		fmt.Sprintf("VAULT_TOKEN=%s", i.Token()),
+		fmt.Sprintf("VAULT_ADDR=%s", i.Address()))
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		err = fmt.Errorf("%s (%v)", out, err)

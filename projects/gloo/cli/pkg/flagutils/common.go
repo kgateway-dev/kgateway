@@ -57,6 +57,7 @@ func AddConsulConfigFlags(set *pflag.FlagSet, consul *options.Consul) {
 		"Use with --use-consul")
 	set.StringVar(&config.Token, "consul-token", config.Token, "Token is used to provide a per-request ACL token which overrides the agent's default token. "+
 		"Use with --use-consul")
+	set.BoolVar(&consul.AllowStaleReads, "consul-allow-stale-reads", false, "Allows reading using Consul's stale consistency mode.")
 
 	consul.Client = func() (client *api.Client, e error) {
 		return api.NewClient(config)
@@ -70,7 +71,8 @@ func AddVaultSecretFlags(set *pflag.FlagSet, vault *options.Vault) {
 
 	set.BoolVar(&vault.UseVault, "use-vault", false, "use Vault Key-Value storage as the "+
 		"backend for reading and writing secrets")
-	set.StringVar(&vault.RootKey, "vault-root-key", bootstrap.DefaultRootKey, "key prefix for for Vault key-value storage.")
+	set.StringVar(&vault.PathPrefix, "vault-path-prefix", bootstrap.DefaultPathPrefix, "The Secrets Engine to which Vault should route traffic.")
+	set.StringVar(&vault.RootKey, "vault-root-key", bootstrap.DefaultRootKey, "key prefix for Vault key-value storage inside a storage engine.")
 
 	set.StringVar(&config.Address, "vault-address", config.Address, "address of the Vault server. This should be a complete  URL such as \"http://vault.example.com\". "+
 		"Use with --use-vault")

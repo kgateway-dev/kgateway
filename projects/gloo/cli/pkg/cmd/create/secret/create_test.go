@@ -1,6 +1,7 @@
 package secret_test
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -30,9 +31,6 @@ var _ = Describe("Create", func() {
 		Expect(err).NotTo(HaveOccurred())
 		client, err = api.NewClient(api.DefaultConfig())
 		Expect(err).NotTo(HaveOccurred())
-		client.SetToken("root")
-		_ = client.SetAddress("http://localhost:8200")
-
 	})
 
 	AfterSuite(func() {
@@ -47,6 +45,10 @@ var _ = Describe("Create", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
+
+		// Connect the client to the vaultInstance
+		client.SetToken(vaultInstance.Token())
+		_ = client.SetAddress(vaultInstance.Address())
 	})
 
 	AfterEach(func() {
@@ -62,6 +64,18 @@ var _ = Describe("Create", func() {
 			err := testutils.Glooctl("create secret aws --name test --access-key foo --secret-key bar --use-vault --vault-address=http://localhost:8200 --vault-token=root")
 			Expect(err).NotTo(HaveOccurred())
 			secret, err := client.Logical().Read("secret/data/gloo/gloo.solo.io/v1/Secret/gloo-system/test")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(secret).NotTo(BeNil())
+		})
+
+		It("works with custom secrets engine path secrets", func() {
+			customSecretEngine := "customSecretEngine"
+			err := vaultInstance.EnableSecretEngine(customSecretEngine)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = testutils.Glooctl(fmt.Sprintf("create secret aws --name test --access-key foo --secret-key bar --use-vault --vault-address=http://localhost:8200 --vault-token=root --vault-path-prefix=%s", customSecretEngine))
+			Expect(err).NotTo(HaveOccurred())
+			secret, err := client.Logical().Read(fmt.Sprintf("%s/data/gloo/gloo.solo.io/v1/Secret/gloo-system/test", customSecretEngine))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(secret).NotTo(BeNil())
 		})

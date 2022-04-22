@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -107,6 +108,9 @@ var _ = Describe("gzip", func() {
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
 				return err
+			}
+			if res.StatusCode != 200 {
+				return errors.New(fmt.Sprintf("expected status code 200 got %v", res.StatusCode))
 			}
 			p := new(bytes.Buffer)
 			if _, err := io.Copy(p, res.Body); err != nil {

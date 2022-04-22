@@ -70,7 +70,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	}
 
 	labels := map[string]string{
-		"created_by": "knative",
+		"created_by": "gloo-knative",
 	}
 
 	var desiredResources gloov1.ProxyList

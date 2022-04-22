@@ -1185,6 +1185,10 @@ func (m *Settings_VaultSecrets) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetPathPrefix())); err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -1496,6 +1500,11 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Hash(hasher hash.Hash64)
 	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetSplitTlsServices())
+	if err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetConsistencyMode())
 	if err != nil {
 		return 0, err
 	}

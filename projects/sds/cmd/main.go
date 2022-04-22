@@ -22,7 +22,7 @@ var (
 )
 
 type Config struct {
-	SdsServerAddress string `split_words:"true" default:"127.0.0.1:8234"` //sds_config target_uri in the envoy instance that it provides secrets to
+	SdsServerAddress string `split_words:"true" default:"0.0.0.0:8234"` //sds_config target_uri in the envoy instance that it provides secrets to
 	SdsClient        string `split_words:"true"`
 
 	PodName      string `split_words:"true"`

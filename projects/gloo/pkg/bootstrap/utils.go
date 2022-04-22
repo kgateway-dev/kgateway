@@ -29,6 +29,9 @@ import (
 // used for vault and consul key-value storage
 const DefaultRootKey = "gloo"
 
+// default query options for consul
+var DefaultQueryOptions = &consulapi.QueryOptions{RequireConsistent: true, AllowStale: false}
+
 type ConfigFactoryParams struct {
 	settings *v1.Settings
 	memory   configFactoryParamsMemory
@@ -117,8 +120,9 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 			rootKey = DefaultRootKey
 		}
 		return &factory.ConsulResourceClientFactory{
-			Consul:  consulClient,
-			RootKey: rootKey,
+			Consul:       consulClient,
+			RootKey:      rootKey,
+			QueryOptions: DefaultQueryOptions,
 		}, nil
 	case *v1.Settings_DirectoryConfigSource:
 		return &factory.FileResourceClientFactory{
@@ -191,10 +195,11 @@ func SecretFactoryForSettings(ctx context.Context,
 		if rootKey == "" {
 			rootKey = DefaultRootKey
 		}
-		return &factory.VaultSecretClientFactory{
-			Vault:   vaultClient,
-			RootKey: rootKey,
-		}, nil
+		pathPrefix := source.VaultSecretSource.GetPathPrefix()
+		if pathPrefix == "" {
+			pathPrefix = DefaultPathPrefix
+		}
+		return NewVaultSecretClientFactory(vaultClient, pathPrefix, rootKey), nil
 	case *v1.Settings_DirectorySecretSource:
 		return &factory.FileResourceClientFactory{
 			RootDir: filepath.Join(source.DirectorySecretSource.GetDirectory(), pluralName),
@@ -241,8 +246,9 @@ func ArtifactFactoryForSettings(ctx context.Context,
 			rootKey = DefaultRootKey
 		}
 		return &factory.ConsulResourceClientFactory{
-			Consul:  consulClient,
-			RootKey: rootKey,
+			Consul:       consulClient,
+			RootKey:      rootKey,
+			QueryOptions: DefaultQueryOptions,
 		}, nil
 	}
 	return nil, errors.Errorf("invalid config source type")
