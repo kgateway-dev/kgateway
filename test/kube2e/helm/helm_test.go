@@ -67,6 +67,10 @@ var _ = Describe("Kube2e: helm", func() {
 				name: "httpgateways.gateway.solo.io",
 				file: filepath.Join(crdDir, "gateway.solo.io_v1_MatchableHttpGateway.yaml"),
 			},
+			{
+				name: "settings.gloo.solo.io",
+				file: filepath.Join(crdDir, "gloo.solo.io_v1_Settings.yaml"),
+			},
 		}
 
 		for _, crd := range crdsToManuallyApply {

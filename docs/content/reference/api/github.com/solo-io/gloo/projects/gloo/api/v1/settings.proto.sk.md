@@ -671,6 +671,8 @@ Settings specific to the Gateway controller
 "alwaysSortRouteTableRoutes": bool
 "compressedProxySpec": bool
 "virtualServiceOptions": .gloo.solo.io.VirtualServiceOptions
+"persistProxySpec": .google.protobuf.BoolValue
+"enableGatewayController": .google.protobuf.BoolValue
 
 ```
 
@@ -682,6 +684,8 @@ Settings specific to the Gateway controller
 | `alwaysSortRouteTableRoutes` | `bool` | Deprecated. This setting is ignored. Maintained for backwards compatibility with settings exposed on 1.2.x branch of Gloo. |
 | `compressedProxySpec` | `bool` | If set, compresses proxy space. This can help make the Proxy CRD smaller to fit in etcd. This is an advanced option. Use with care. |
 | `virtualServiceOptions` | [.gloo.solo.io.VirtualServiceOptions](../settings.proto.sk/#virtualserviceoptions) | Default configuration to use for VirtualServices, when not provided by a specific virtual service When these properties are defined on a specific VirtualService, this configuration will be ignored. |
+| `persistProxySpec` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Test adding a new value to the settings crd. |
+| `enableGatewayController` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Test adding a new value to the settings crd. |
 
 
 

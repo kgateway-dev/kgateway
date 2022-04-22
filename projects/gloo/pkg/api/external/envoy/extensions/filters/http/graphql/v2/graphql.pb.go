@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any1 "github.com/golang/protobuf/ptypes/any"
+	any "github.com/golang/protobuf/ptypes/any"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -1667,7 +1667,7 @@ type ExecutableSchema struct {
 	// how to execute the schema
 	Executor *Executor `protobuf:"bytes,2,opt,name=executor,proto3" json:"executor,omitempty"`
 	// Schema extensions
-	Extensions map[string]*any1.Any `protobuf:"bytes,3,rep,name=extensions,proto3" json:"extensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Extensions map[string]*any.Any `protobuf:"bytes,3,rep,name=extensions,proto3" json:"extensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Logs request / response sensitive information
 	// By default, this is false so no request or response sensitive information is logged.
 	LogRequestResponseInfo bool `protobuf:"varint,4,opt,name=log_request_response_info,json=logRequestResponseInfo,proto3" json:"log_request_response_info,omitempty"`
@@ -1719,7 +1719,7 @@ func (x *ExecutableSchema) GetExecutor() *Executor {
 	return nil
 }
 
-func (x *ExecutableSchema) GetExtensions() map[string]*any1.Any {
+func (x *ExecutableSchema) GetExtensions() map[string]*any.Any {
 	if x != nil {
 		return x.Extensions
 	}
@@ -2853,7 +2853,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_gra
 	(*v3.DataSource)(nil),                         // 42: solo.io.envoy.config.core.v3.DataSource
 	(*v3.TypedExtensionConfig)(nil),               // 43: solo.io.envoy.config.core.v3.TypedExtensionConfig
 	(*wrappers.UInt32Value)(nil),                  // 44: google.protobuf.UInt32Value
-	(*any1.Any)(nil),                              // 45: google.protobuf.Any
+	(*any.Any)(nil),                               // 45: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_graphql_graphql_proto_depIdxs = []int32{
 	2,  // 0: envoy.config.filter.http.graphql.v2.Path.segments:type_name -> envoy.config.filter.http.graphql.v2.PathSegment

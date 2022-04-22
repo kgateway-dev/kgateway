@@ -659,6 +659,12 @@ message GatewayOptions {
     // Default configuration to use for VirtualServices, when not provided by a specific virtual service
     // When these properties are defined on a specific VirtualService, this configuration will be ignored
     VirtualServiceOptions virtual_service_options = 7;
+
+    // Test adding a new value to the settings crd
+    google.protobuf.BoolValue persist_proxy_spec = 8;
+
+    // Test adding a new value to the settings crd
+    google.protobuf.BoolValue enable_gateway_controller = 9;
 }
 
 // Settings used by the Enterprise Console (UI)
