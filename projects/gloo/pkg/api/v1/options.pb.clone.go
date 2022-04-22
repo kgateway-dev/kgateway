@@ -456,6 +456,34 @@ func (m *VirtualHostOptions) Clone() proto.Message {
 
 	}
 
+	switch m.RateLimitRegularConfigType.(type) {
+
+	case *VirtualHostOptions_RatelimitRegular:
+
+		if h, ok := interface{}(m.GetRatelimitRegular()).(clone.Cloner); ok {
+			target.RateLimitRegularConfigType = &VirtualHostOptions_RatelimitRegular{
+				RatelimitRegular: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit.RateLimitVhostExtension),
+			}
+		} else {
+			target.RateLimitRegularConfigType = &VirtualHostOptions_RatelimitRegular{
+				RatelimitRegular: proto.Clone(m.GetRatelimitRegular()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit.RateLimitVhostExtension),
+			}
+		}
+
+	case *VirtualHostOptions_RateLimitRegularConfigs:
+
+		if h, ok := interface{}(m.GetRateLimitRegularConfigs()).(clone.Cloner); ok {
+			target.RateLimitRegularConfigType = &VirtualHostOptions_RateLimitRegularConfigs{
+				RateLimitRegularConfigs: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit.RateLimitConfigRefs),
+			}
+		} else {
+			target.RateLimitRegularConfigType = &VirtualHostOptions_RateLimitRegularConfigs{
+				RateLimitRegularConfigs: proto.Clone(m.GetRateLimitRegularConfigs()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit.RateLimitConfigRefs),
+			}
+		}
+
+	}
+
 	switch m.JwtConfig.(type) {
 
 	case *VirtualHostOptions_Jwt:
@@ -714,6 +742,34 @@ func (m *RouteOptions) Clone() proto.Message {
 		} else {
 			target.RateLimitConfigType = &RouteOptions_RateLimitConfigs{
 				RateLimitConfigs: proto.Clone(m.GetRateLimitConfigs()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit.RateLimitConfigRefs),
+			}
+		}
+
+	}
+
+	switch m.RateLimitRegularConfigType.(type) {
+
+	case *RouteOptions_RatelimitRegular:
+
+		if h, ok := interface{}(m.GetRatelimitRegular()).(clone.Cloner); ok {
+			target.RateLimitRegularConfigType = &RouteOptions_RatelimitRegular{
+				RatelimitRegular: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit.RateLimitRouteExtension),
+			}
+		} else {
+			target.RateLimitRegularConfigType = &RouteOptions_RatelimitRegular{
+				RatelimitRegular: proto.Clone(m.GetRatelimitRegular()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit.RateLimitRouteExtension),
+			}
+		}
+
+	case *RouteOptions_RateLimitRegularConfigs:
+
+		if h, ok := interface{}(m.GetRateLimitRegularConfigs()).(clone.Cloner); ok {
+			target.RateLimitRegularConfigType = &RouteOptions_RateLimitRegularConfigs{
+				RateLimitRegularConfigs: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit.RateLimitConfigRefs),
+			}
+		} else {
+			target.RateLimitRegularConfigType = &RouteOptions_RateLimitRegularConfigs{
+				RateLimitRegularConfigs: proto.Clone(m.GetRateLimitRegularConfigs()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit.RateLimitConfigRefs),
 			}
 		}
 
