@@ -48,4 +48,4 @@ kubectl get graphqlapis -n gloo-system
 kubectl get graphqlapis <api_name> -o yaml -n gloo-system
 ```
 
-For more information about the contents of the generated GraphQL schema, see the [schema configuration documentation]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/resolver_config/" %}}).
+For more information about the contents of the generated GraphQL schema, see the [schema configuration documentation]({{% versioned_link_path fromRoot="/guides/graphql/resolver_config/" %}}).
