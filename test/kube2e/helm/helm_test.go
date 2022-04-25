@@ -96,7 +96,7 @@ var _ = Describe("Kube2e: helm", func() {
 		defer cleanupFunc()
 		// upgrade to the gloo version being tested
 		//TODO: remove debug mode and logging
-		output = runAndCleanCommand("helm", "upgrade","--debug","--disable-openapi-validation", "gloo", chartUri, "-n", testHelper.InstallNamespace, "--values", valueOverrideFile)
+		output = runAndCleanCommand("helm", "upgrade", "--debug", "--disable-openapi-validation", "gloo", chartUri, "-n", testHelper.InstallNamespace, "--values", valueOverrideFile)
 		fmt.Println(string(output))
 		By("should have upgraded to the gloo version being tested")
 		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
