@@ -171,7 +171,7 @@ message GrpcDescriptorRegistry {
     // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
     bytes proto_descriptor_bin = 2;
 
-    // Allows the user to put proto file contents in configmaps;
+    // Allows the user to put proto descriptor set binary content in configmaps;
     // The data in these config maps must be under the proto key and should be a base64 encoding
     // Generating the proto descriptor binary and base64 encoding it can be done using the following command
     // `protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="/dev/stdout" --include_imports | base64`
