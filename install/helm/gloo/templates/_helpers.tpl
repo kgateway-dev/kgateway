@@ -98,3 +98,13 @@ version, which merges two named templates.
 {{- toYaml $merged -}} {{/* render source with overrides as YAML */}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Whether we need to wait for the validation service to be up and running before applying custom resources.
+This is true if the validation webhook is enabled with a failurePolicy of Fail.
+*/}}
+{{- define "gloo.waitForValidationService" -}}
+{{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled (eq .Values.gateway.validation.failurePolicy "Fail") }}
+true
+{{- end }}{{/* if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled (eq .Values.gateway.validation.failurePolicy "Fail") */}}
+{{- end -}}

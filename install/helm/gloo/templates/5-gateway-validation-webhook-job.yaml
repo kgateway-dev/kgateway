@@ -1,4 +1,5 @@
-{{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled (eq .Values.gateway.validation.failurePolicy "Fail") }}
+{{- $waitForValidationService := include "gloo.waitForValidationService" . }}
+{{- if $waitForValidationService }}
 {{- $image := .Values.gateway.rolloutJob.image }}
 {{- if .Values.global }}
 {{- $image = merge .Values.gateway.rolloutJob.image .Values.global.image }}
@@ -88,4 +89,4 @@ subjects:
   name: gloo-gateway-rollout
   namespace: {{ .Release.Namespace }}
 {{- end }} {{/* .Values.global.glooRbac.create */}}
-{{- end }} {{/* if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled (eq .Values.gateway.validation.failurePolicy "Fail") */}}
+{{- end }} {{/* if $waitForValidationService */}}
