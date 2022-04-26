@@ -102,9 +102,24 @@ version, which merges two named templates.
 {{/*
 Whether we need to wait for the validation service to be up and running before applying custom resources.
 This is true if the validation webhook is enabled with a failurePolicy of Fail.
+The gloo helm values must be passed in as an argument.
 */}}
 {{- define "gloo.waitForValidationService" -}}
 {{- if and .gateway.enabled .gateway.validation.enabled .gateway.validation.webhook.enabled (eq .gateway.validation.failurePolicy "Fail") }}
 true
 {{- end }}{{/* if and .gateway.enabled .gateway.validation.enabled .gateway.validation.webhook.enabled (eq .gateway.validation.failurePolicy "Fail") */}}
+{{- end -}}
+
+{{/*
+This snippet should be included under the metadata for any Gloo custom resources.
+It is used to ensure that CRs that we validate are only installed after the validation service is running.
+The gloo helm values must be passed in as an argument.
+*/}}
+{{- define "gloo.customResourceAnnotations" -}}
+{{- $waitForValidationService := include "gloo.waitForValidationService" . }}
+{{- if $waitForValidationService }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10" # must be installed after the gateway rollout job completes
+{{- end -}}{{/* if $waitForValidationService */}}
 {{- end -}}

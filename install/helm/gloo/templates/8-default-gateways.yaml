@@ -3,7 +3,6 @@
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{- $waitForValidationService := include "gloo.waitForValidationService" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -12,11 +11,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
-{{- if $waitForValidationService }}
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "5" # must be installed after the gateway rollout job completes
-{{- end }}{{/* if $waitForValidationService */}}
+{{- include "gloo.customResourceAnnotations" .Values }}
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -65,7 +60,6 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{- $waitForValidationService := include "gloo.waitForValidationService" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -74,11 +68,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
-{{- if $waitForValidationService }}
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "5" # must be installed after the gateway rollout job completes
-{{- end }}{{/* if $waitForValidationService */}}
+{{- include "gloo.customResourceAnnotations" .Values }}
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -126,7 +116,6 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{- $waitForValidationService := include "gloo.waitForValidationService" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -135,11 +124,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
-{{- if $waitForValidationService }}
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "5" # must be installed after the gateway rollout job completes
-{{- end }}{{/* if $waitForValidationService */}}
+{{- include "gloo.customResourceAnnotations" .Values }}
 spec:
 {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
