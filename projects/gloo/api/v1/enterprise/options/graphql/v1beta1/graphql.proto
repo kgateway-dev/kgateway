@@ -153,9 +153,8 @@ message RESTResolver {
 // Is a Schema Extension
 message GrpcDescriptorRegistry {
   message ProtoRefs {
-    // This field references config_maps as they exist on the "proto" field of each artifact on the k8s cluster
-    // To reference these config_maps, the config_map_ref should have an appropriate namespace and name
-    // The config map should also exist in a watched namespace with the corresponding namespace field set appropriately
+    // List of references to config maps that contain proto data for this resolver.
+    // For each of the config maps referenced here, they must contain a `proto` field in their data map with a valid base64 encoded proto descriptor set binary and must be in a namespace watched by gloo edge.
     repeated core.solo.io.ResourceRef config_map_refs = 1;
   }
   oneof descriptor_set {
