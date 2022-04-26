@@ -172,7 +172,7 @@ message GrpcDescriptorRegistry {
     bytes proto_descriptor_bin = 2;
 
     // Allows the user to put proto descriptor set binary content in configmaps;
-    // The data in these config maps must be under the proto key and should be a base64 encoding
+    // The descriptor set binary content in these config maps must be under the proto key and should be baes64 encoded
     // Generating the proto descriptor binary and base64 encoding it can be done using the following command
     // `protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="/dev/stdout" --include_imports | base64`
     ProtoRefs proto_refs_list = 3;
