@@ -1,4 +1,4 @@
-{{- $waitForValidationService := include "gloo.waitForValidationService" . }}
+{{- $waitForValidationService := include "gloo.waitForValidationService" .Values }}
 {{- if $waitForValidationService }}
 {{- $image := .Values.gateway.rolloutJob.image }}
 {{- if .Values.global }}

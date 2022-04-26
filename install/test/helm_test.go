@@ -3490,6 +3490,206 @@ spec:
 						testManifest.ExpectUnstructured(gwDeployment.GetKind(), gwDeployment.GetNamespace(), gwDeployment.GetName()).To(BeEquivalentTo(gwDeployment))
 					})
 
+					Context("validation service rollout job", func() {
+						job := makeUnstructured(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway-rollout
+  name: gloo-gateway-rollout
+  namespace: ` + namespace + `
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  template:
+    metadata:
+      labels:
+        gloo: gateway-rollout
+    spec:
+      serviceAccountName: gloo-gateway-rollout
+      containers:
+        - name: kubectl
+          image: bitnami/kubectl:1.2.3
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10101
+          command:
+          - /bin/sh
+          - -c
+          - "kubectl rollout status deployment -n ` + namespace + ` gateway"
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 0
+`)
+						serviceAccount := makeUnstructured(`
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+  name: gloo-gateway-rollout
+  namespace: ` + namespace + `
+`)
+						role := makeUnstructured(`
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-rollout
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]
+`)
+						roleBinding := makeUnstructured(`
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-rollout
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+roleRef:
+  kind: Role
+  name: gloo-gateway-rollout
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: gloo-gateway-rollout
+  namespace: ` + namespace + `
+`)
+						It("creates job when failurePolicy=Fail", func() {
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{
+								"gateway.validation.failurePolicy=Fail",
+								"gateway.rolloutJob.image.tag=1.2.3",
+							}})
+
+							// when gateway validation is enabled and failurePolicy is Fail, a gateway rollout job and
+							// associated service account, role, and rolebinding should be created
+							testManifest.ExpectUnstructured(job.GetKind(), job.GetNamespace(), job.GetName()).To(BeEquivalentTo(job))
+							testManifest.ExpectUnstructured(serviceAccount.GetKind(), serviceAccount.GetNamespace(), serviceAccount.GetName()).To(BeEquivalentTo(serviceAccount))
+							testManifest.ExpectUnstructured(role.GetKind(), role.GetNamespace(), role.GetName()).To(BeEquivalentTo(role))
+							testManifest.ExpectUnstructured(roleBinding.GetKind(), roleBinding.GetNamespace(), roleBinding.GetName()).To(BeEquivalentTo(roleBinding))
+
+							// additionally, the default gateways should have a post-install/post-upgrade annotation
+							// so that they get created after the rollout job completes
+							gateway := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+spec:
+  bindAddress: "::"
+  bindPort: 8080
+  httpGateway: {}
+  useProxyProto: false
+  ssl: false
+  proxyNames:
+  - gateway-proxy
+`)
+							testManifest.ExpectUnstructured(gateway.GetKind(), gateway.GetNamespace(), gateway.GetName()).To(BeEquivalentTo(gateway))
+
+							sslGateway := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy-ssl
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+spec:
+  bindAddress: "::"
+  bindPort: 8443
+  httpGateway: {}
+  useProxyProto: false
+  ssl: true
+  proxyNames:
+  - gateway-proxy
+`)
+							testManifest.ExpectUnstructured(sslGateway.GetKind(), sslGateway.GetNamespace(), sslGateway.GetName()).To(BeEquivalentTo(sslGateway))
+						})
+
+						It("does not create job when failurePolicy=Ignore", func() {
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{
+								"gateway.validation.failurePolicy=Ignore",
+							}})
+
+							// when failurePolicy=Ignore, we do not need to wait on the validation service being ready before applying custom resources,
+							// so the rollout job should not exist
+							testManifest.ExpectUnstructured(job.GetKind(), job.GetNamespace(), job.GetName()).To(BeNil())
+							testManifest.ExpectUnstructured(serviceAccount.GetKind(), serviceAccount.GetNamespace(), serviceAccount.GetName()).To(BeNil())
+							testManifest.ExpectUnstructured(role.GetKind(), role.GetNamespace(), role.GetName()).To(BeNil())
+							testManifest.ExpectUnstructured(roleBinding.GetKind(), roleBinding.GetNamespace(), roleBinding.GetName()).To(BeNil())
+
+							// the default gateways should not have the helm hook annotations because they don't need to be applied in a specific order
+							// in relation to the rollout job
+							gateway := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+spec:
+  bindAddress: "::"
+  bindPort: 8080
+  httpGateway: {}
+  useProxyProto: false
+  ssl: false
+  proxyNames:
+  - gateway-proxy
+`)
+							testManifest.ExpectUnstructured(gateway.GetKind(), gateway.GetNamespace(), gateway.GetName()).To(BeEquivalentTo(gateway))
+
+							sslGateway := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy-ssl
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+spec:
+  bindAddress: "::"
+  bindPort: 8443
+  httpGateway: {}
+  useProxyProto: false
+  ssl: true
+  proxyNames:
+  - gateway-proxy
+`)
+							testManifest.ExpectUnstructured(sslGateway.GetKind(), sslGateway.GetNamespace(), sslGateway.GetName()).To(BeEquivalentTo(sslGateway))
+						})
+					})
+
 					It("creates the certgen job, rbac, and service account", func() {
 						prepareMakefile(namespace, helmValues{valuesArgs: []string{
 							"gateway.certGenJob.resources.requests.memory=64Mi",

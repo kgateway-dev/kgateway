@@ -3,7 +3,7 @@
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{- $waitForValidationService := include "gloo.waitForValidationService" . }}
+{{- $waitForValidationService := include "gloo.waitForValidationService" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -65,7 +65,7 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{- $waitForValidationService := include "gloo.waitForValidationService" . }}
+{{- $waitForValidationService := include "gloo.waitForValidationService" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -126,7 +126,7 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{- $waitForValidationService := include "gloo.waitForValidationService" . }}
+{{- $waitForValidationService := include "gloo.waitForValidationService" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway

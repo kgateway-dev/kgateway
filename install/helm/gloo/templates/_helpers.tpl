@@ -104,7 +104,7 @@ Whether we need to wait for the validation service to be up and running before a
 This is true if the validation webhook is enabled with a failurePolicy of Fail.
 */}}
 {{- define "gloo.waitForValidationService" -}}
-{{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled (eq .Values.gateway.validation.failurePolicy "Fail") }}
+{{- if and .gateway.enabled .gateway.validation.enabled .gateway.validation.webhook.enabled (eq .gateway.validation.failurePolicy "Fail") }}
 true
-{{- end }}{{/* if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled (eq .Values.gateway.validation.failurePolicy "Fail") */}}
+{{- end }}{{/* if and .gateway.enabled .gateway.validation.enabled .gateway.validation.webhook.enabled (eq .gateway.validation.failurePolicy "Fail") */}}
 {{- end -}}
