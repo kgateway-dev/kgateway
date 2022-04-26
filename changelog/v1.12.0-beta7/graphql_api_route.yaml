@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Added proto_refs_list route to the grpcDescriptorRegistry message in the graphQL API
+    issueLink: https://github.com/solo-io/gloo/issues/3541
