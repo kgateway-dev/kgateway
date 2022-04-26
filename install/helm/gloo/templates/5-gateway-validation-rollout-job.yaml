@@ -14,7 +14,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-weight": "3" # run this after the role/rolebinding is created
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
 spec:
   template:
@@ -49,7 +49,7 @@ metadata:
     gloo: rbac
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-weight": "0" # must be created before rollout job
   name: gloo-gateway-rollout
   namespace: {{ .Release.Namespace }}
 ---
@@ -63,7 +63,7 @@ metadata:
     gloo: rbac
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-weight": "0" # must be created before rollout job
 rules:
 - apiGroups: ["apps"]
   resources: ["deployments"]
@@ -79,7 +79,7 @@ metadata:
     gloo: rbac
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-weight": "0" # must be created before rollout job
 roleRef:
   kind: Role
   name: gloo-gateway-rollout
