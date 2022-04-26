@@ -73,11 +73,6 @@ settings:
   singleNamespace: true
   create: true
   replaceInvalidRoutes: true
-gateway:
-  validation:
-    allowWarnings: false
-    alwaysAcceptResources: false
-    failurePolicy: Fail
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
