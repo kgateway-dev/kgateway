@@ -87,7 +87,7 @@ Once you've installed Gloo Edge, please be sure [to verify your installation]({{
 
 {{% notice note %}}
 You can run the command with the flag `--dry-run` to output the Kubernetes manifests (as `yaml`) that `glooctl` will apply to the cluster instead of installing them.
-Note that a proper Gloo Edge installation depends on Helm Chart Hooks (https://helm.sh/docs/topics/charts_hooks/), so the behavior of your installation
+Note that a proper Gloo Edge installation depends on [Helm Chart Hooks](https://helm.sh/docs/topics/charts_hooks/), so the behavior of your installation
 may not be correct if you install by directly applying the dry run manifests, e.g. `glooctl install gateway --dry-run | kubectl apply -f -`.
 {{% /notice %}}
 
