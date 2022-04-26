@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6372
+    resolvesIssue: true
+    description: Fixes broken link to Helm hooks page.
