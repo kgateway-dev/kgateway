@@ -1145,7 +1145,6 @@ type GrpcDescriptorRegistry_ProtoRefs struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	//
 	// This field references config_maps as they exist on the "proto" field of each artifact on the k8s cluster
 	// To reference these config_maps, the config_map_ref should have an appropriate namespace and name
 	// The config map should also exist in a watched namespace with the corresponding namespace field set appropriately
