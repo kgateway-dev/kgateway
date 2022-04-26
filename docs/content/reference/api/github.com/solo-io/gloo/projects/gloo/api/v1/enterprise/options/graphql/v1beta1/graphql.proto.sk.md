@@ -148,7 +148,7 @@ Is a Schema Extension
 | ----- | ---- | ----------- | 
 | `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor`, `protoDescriptorBin`, or `protoRefsList` can be set. |
 | `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin`, `protoDescriptor`, or `protoRefsList` can be set. |
-| `protoRefsList` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs](../graphql.proto.sk/#protorefs) | Allows the user to put proto file contents in configmaps; The data in these config maps must be under the proto key and should be a base64 encoding Generating the proto descriptor binary can be done using the following protoc command protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="your-proto-here.proto.bin" --include_imports. Only one of `protoRefsList`, `protoDescriptor`, or `protoDescriptorBin` can be set. |
+| `protoRefsList` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs](../graphql.proto.sk/#protorefs) | Allows the user to put proto descriptor set binary content in configmaps; The descriptor set binary content in these config maps must be under the proto key and should be baes64 encoded Generating the proto descriptor binary and base64 encoding it can be done using the following command `protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="/dev/stdout" --include_imports | base64`. Only one of `protoRefsList`, `protoDescriptor`, or `protoDescriptorBin` can be set. |
 
 
 
@@ -165,7 +165,7 @@ Is a Schema Extension
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `configMapRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | This field references config_maps as they exist on the "proto" field of each artifact on the k8s cluster To reference these config_maps, the config_map_ref should have an appropriate namespace and name The config map should also exist in a watched namespace with the corresponding namespace field set appropriately. |
+| `configMapRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | List of references to config maps that contain proto data for this resolver. For each of the config maps referenced here, they must contain a `proto` field in their data map with a valid base64 encoded proto descriptor set binary and must be in a namespace watched by gloo edge. |
 
 
 
