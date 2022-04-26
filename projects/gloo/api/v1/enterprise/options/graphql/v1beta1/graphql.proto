@@ -173,8 +173,8 @@ message GrpcDescriptorRegistry {
 
     // Allows the user to put proto file contents in configmaps;
     // The data in these config maps must be under the proto key and should be a base64 encoding
-    // Generating the proto descriptor binary can be done using the following protoc command
-    // protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="your-proto-here.proto.bin" --include_imports
+    // Generating the proto descriptor binary and base64 encoding it can be done using the following command
+    // `protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="/dev/stdout" --include_imports | base64`
     ProtoRefs proto_refs_list = 3;
   }
 }
