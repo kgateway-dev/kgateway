@@ -148,7 +148,7 @@ Is a Schema Extension
 | ----- | ---- | ----------- | 
 | `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor`, `protoDescriptorBin`, or `protoRefsList` can be set. |
 | `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin`, `protoDescriptor`, or `protoRefsList` can be set. |
-| `protoRefsList` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs](../graphql.proto.sk/#protorefs) | Allows the user to put proto file contents in configmaps; The data in these config maps must be under the proto key and should be a base64 encoding Generating the proto descriptor binary can be done using the following protoc commang protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="your-proto-here.proto.bin" --include_imports. Only one of `protoRefsList`, `protoDescriptor`, or `protoDescriptorBin` can be set. |
+| `protoRefsList` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs](../graphql.proto.sk/#protorefs) | Allows the user to put proto file contents in configmaps; The data in these config maps must be under the proto key and should be a base64 encoding Generating the proto descriptor binary can be done using the following protoc command protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="your-proto-here.proto.bin" --include_imports. Only one of `protoRefsList`, `protoDescriptor`, or `protoDescriptorBin` can be set. |
 
 
 

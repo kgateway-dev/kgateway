@@ -453,7 +453,7 @@ type GrpcDescriptorRegistry_ProtoDescriptorBin struct {
 type GrpcDescriptorRegistry_ProtoRefsList struct {
 	// Allows the user to put proto file contents in configmaps;
 	// The data in these config maps must be under the proto key and should be a base64 encoding
-	// Generating the proto descriptor binary can be done using the following protoc commang
+	// Generating the proto descriptor binary can be done using the following protoc command
 	// protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="your-proto-here.proto.bin" --include_imports
 	ProtoRefsList *GrpcDescriptorRegistry_ProtoRefs `protobuf:"bytes,3,opt,name=proto_refs_list,json=protoRefsList,proto3,oneof"`
 }
