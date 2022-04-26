@@ -185,11 +185,11 @@ func (m *GrpcDescriptorRegistry) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetProtoRefsList()).(clone.Cloner); ok {
 			target.DescriptorSet = &GrpcDescriptorRegistry_ProtoRefsList{
-				ProtoRefsList: h.Clone().(*GrpcDescriptorRegistryProtoRefs),
+				ProtoRefsList: h.Clone().(*GrpcDescriptorRegistry_ProtoRefs),
 			}
 		} else {
 			target.DescriptorSet = &GrpcDescriptorRegistry_ProtoRefsList{
-				ProtoRefsList: proto.Clone(m.GetProtoRefsList()).(*GrpcDescriptorRegistryProtoRefs),
+				ProtoRefsList: proto.Clone(m.GetProtoRefsList()).(*GrpcDescriptorRegistry_ProtoRefs),
 			}
 		}
 
@@ -493,21 +493,21 @@ func (m *Executor) Clone() proto.Message {
 }
 
 // Clone function
-func (m *GrpcDescriptorRegistryProtoRefs) Clone() proto.Message {
-	var target *GrpcDescriptorRegistryProtoRefs
+func (m *GrpcDescriptorRegistry_ProtoRefs) Clone() proto.Message {
+	var target *GrpcDescriptorRegistry_ProtoRefs
 	if m == nil {
 		return target
 	}
-	target = &GrpcDescriptorRegistryProtoRefs{}
+	target = &GrpcDescriptorRegistry_ProtoRefs{}
 
-	if m.GetProtoRefs() != nil {
-		target.ProtoRefs = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetProtoRefs()))
-		for idx, v := range m.GetProtoRefs() {
+	if m.GetConfigMapRefs() != nil {
+		target.ConfigMapRefs = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetConfigMapRefs()))
+		for idx, v := range m.GetConfigMapRefs() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ProtoRefs[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+				target.ConfigMapRefs[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 			} else {
-				target.ProtoRefs[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+				target.ConfigMapRefs[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 			}
 
 		}

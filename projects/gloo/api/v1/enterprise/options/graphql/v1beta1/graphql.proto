@@ -152,8 +152,12 @@ message RESTResolver {
 // Defines a configuration for serializing and deserializing requests for a gRPC resolver.
 // Is a Schema Extension
 message GrpcDescriptorRegistry {
-  message protoRefs {
-    repeated core.solo.io.ResourceRef proto_refs = 1;
+  message ProtoRefs {
+    //
+    // This field references config_maps as they exist on the "proto" field of each artifact on the k8s cluster
+    // To reference these config_maps, the config_map_ref should have an appropriate namespace and name
+    // The config map should also exist in a watched namespace with the corresponding namespace field set appropriately
+    repeated core.solo.io.ResourceRef config_map_refs = 1;
   }
   oneof descriptor_set {
     option (validate.required) = true;
@@ -169,12 +173,11 @@ message GrpcDescriptorRegistry {
     // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
     bytes proto_descriptor_bin = 2;
 
-    // THE NEW API:
-    // TODO(bslabe):
-    // Allows the user to put proto file contents in configmaps; the control plane will be responsible for taking these files
-    // and generating the proto descriptor bytes and passing that along to envoy.
-    // we will need to add `protoc` binary to control plane to call out to during translation
-    protoRefs proto_refs_list = 3;
+    // Allows the user to put proto file contents in configmaps;
+    // The data in these config maps must be under the proto key and should be a base64 encoding
+    // Generating the proto descriptor binary can be done using the following protoc command
+    // protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="your-proto-here.proto.bin" --include_imports
+    ProtoRefs proto_refs_list = 3;
   }
 }
 

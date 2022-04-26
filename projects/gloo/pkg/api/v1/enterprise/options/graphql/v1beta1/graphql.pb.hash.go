@@ -903,7 +903,7 @@ func (m *Executor) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *GrpcDescriptorRegistryProtoRefs) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *GrpcDescriptorRegistry_ProtoRefs) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -911,11 +911,11 @@ func (m *GrpcDescriptorRegistryProtoRefs) Hash(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1.GrpcDescriptorRegistryProtoRefs")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1.GrpcDescriptorRegistry_ProtoRefs")); err != nil {
 		return 0, err
 	}
 
-	for _, v := range m.GetProtoRefs() {
+	for _, v := range m.GetConfigMapRefs() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("")); err != nil {

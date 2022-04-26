@@ -135,7 +135,7 @@ spec:
                         type: string
                       protoRefsList:
                         properties:
-                          protoRefs:
+                          configMapRefs:
                             items:
                               properties:
                                 name:

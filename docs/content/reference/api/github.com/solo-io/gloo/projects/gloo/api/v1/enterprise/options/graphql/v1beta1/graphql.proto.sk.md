@@ -16,7 +16,7 @@ weight: 5
 - [GrpcRequestTemplate](#grpcrequesttemplate)
 - [RESTResolver](#restresolver)
 - [GrpcDescriptorRegistry](#grpcdescriptorregistry)
-- [protoRefs](#protorefs)
+- [ProtoRefs](#protorefs)
 - [GrpcResolver](#grpcresolver)
 - [StitchedSchema](#stitchedschema)
 - [SubschemaConfig](#subschemaconfig)
@@ -140,7 +140,7 @@ Is a Schema Extension
 ```yaml
 "protoDescriptor": string
 "protoDescriptorBin": bytes
-"protoRefsList": .graphql.gloo.solo.io.GrpcDescriptorRegistry.protoRefs
+"protoRefsList": .graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs
 
 ```
 
@@ -148,24 +148,24 @@ Is a Schema Extension
 | ----- | ---- | ----------- | 
 | `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor`, `protoDescriptorBin`, or `protoRefsList` can be set. |
 | `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin`, `protoDescriptor`, or `protoRefsList` can be set. |
-| `protoRefsList` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry.protoRefs](../graphql.proto.sk/#protorefs) | THE NEW API: TODO(bslabe): Allows the user to put proto file contents in configmaps; the control plane will be responsible for taking these files and generating the proto descriptor bytes and passing that along to envoy. we will need to add `protoc` binary to control plane to call out to during translation. Only one of `protoRefsList`, `protoDescriptor`, or `protoDescriptorBin` can be set. |
+| `protoRefsList` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs](../graphql.proto.sk/#protorefs) | Allows the user to put proto file contents in configmaps; The data in these config maps must be under the proto key and should be a base64 encoding Generating the proto descriptor binary can be done using the following protoc commang protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="your-proto-here.proto.bin" --include_imports. Only one of `protoRefsList`, `protoDescriptor`, or `protoDescriptorBin` can be set. |
 
 
 
 
 ---
-### protoRefs
+### ProtoRefs
 
 
 
 ```yaml
-"protoRefs": []core.solo.io.ResourceRef
+"configMapRefs": []core.solo.io.ResourceRef
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `protoRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
+| `configMapRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | This field references config_maps as they exist on the "proto" field of each artifact on the k8s cluster To reference these config_maps, the config_map_ref should have an appropriate namespace and name The config map should also exist in a watched namespace with the corresponding namespace field set appropriately. |
 
 
 
