@@ -18,8 +18,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloomocks "github.com/solo-io/gloo/projects/gloo/pkg/mocks"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -28,20 +28,21 @@ import (
 var _ = Describe("TranslatorSyncer", func() {
 
 	var (
-		fakeWatcher  = &fakeWatcher{}
-		mockReporter *fakeReporter
-		syncer       *statusSyncer
+		fakeProxyClient *gloomocks.MockProxyClient
+		mockReporter    *fakeReporter
+		syncer          *statusSyncer
 
 		statusClient resources.StatusClient
 	)
 
 	BeforeEach(func() {
 		mockReporter = &fakeReporter{}
-
+		ctrl := gomock.NewController(GinkgoT())
+		fakeProxyClient = gloomocks.NewMockProxyClient(ctrl)
 		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
 		statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
 		Expect(err).NotTo(HaveOccurred())
-		curSyncer := newStatusSyncer(defaults.GlooSystem, fakeWatcher, mockReporter, statusClient, statusMetrics)
+		curSyncer := newStatusSyncer(defaults.GlooSystem, fakeProxyClient, mockReporter, statusClient, statusMetrics)
 		syncer = &curSyncer
 	})
 
@@ -55,14 +56,14 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	It("should set status correctly", func() {
 		acceptedProxy := &gloov1.Proxy{
-			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Metadata: &core.Metadata{Name: "test", Namespace: defaults.GlooSystem},
 		}
 		statusClient.SetStatus(acceptedProxy, &core.Status{State: core.Status_Accepted})
 
 		vs := &gatewayv1.VirtualService{
 			Metadata: &core.Metadata{
 				Name:      "vs",
-				Namespace: "gloo-system",
+				Namespace: defaults.GlooSystem,
 			},
 		}
 		errs := reporter.ResourceReports{}
@@ -166,24 +167,23 @@ var _ = Describe("TranslatorSyncer", func() {
 		desiredProxies := reconciler.GeneratedProxies{
 			desiredProxy: errs,
 		}
-		proxies := make(chan gloov1.ProxyList)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		go syncer.watchProxiesFromChannel(ctx, proxies, nil)
 		go syncer.syncStatusOnEmit(ctx)
 
 		syncer.setCurrentProxies(desiredProxies, make(reconciler.InvalidProxies))
-		proxies <- gloov1.ProxyList{pendingProxy}
-		proxies <- gloov1.ProxyList{acceptedProxy}
 
+		fakeProxyClient.EXPECT().List("gloo-system", gomock.Any()).Return(gloov1.ProxyList{pendingProxy}, nil).Times(1)
+		syncer.handleUpdatedProxies(ctx)
+		syncer.setCurrentProxies(desiredProxies, make(reconciler.InvalidProxies))
+		fakeProxyClient.EXPECT().List("gloo-system", gomock.Any()).Return(gloov1.ProxyList{acceptedProxy}, nil).Times(1)
+		syncer.handleUpdatedProxies(ctx)
 		Eventually(mockReporter.Reports, "5s", "0.5s").ShouldNot(BeEmpty())
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
 		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
-		m := map[string]*core.Status{
-			"*v1.Proxy.test_gloo-system": {State: core.Status_Accepted},
-		}
-		Eventually(func() map[string]*core.Status { return mockReporter.Statuses()[reportedKey] }, "5s", "0.5s").Should(BeEquivalentTo(m))
+		s := mockReporter.Statuses()[reportedKey]["*v1.Proxy.test_gloo-system"]
+		Expect(s.State).To(BeEquivalentTo(core.Status_Accepted))
 	})
 
 	It("should retry setting the status if it first fails", func() {
@@ -201,25 +201,21 @@ var _ = Describe("TranslatorSyncer", func() {
 		errs.Accept(vs)
 
 		desiredProxies := reconciler.GeneratedProxies{
-			desiredProxy: errs,
+			desiredProxy:  errs,
+			acceptedProxy: errs,
 		}
-		proxies := make(chan gloov1.ProxyList)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		go syncer.watchProxiesFromChannel(ctx, proxies, nil)
 		go syncer.syncStatusOnEmit(ctx)
 
 		syncer.setCurrentProxies(desiredProxies, make(reconciler.InvalidProxies))
-		proxies <- gloov1.ProxyList{acceptedProxy}
-
+		fakeProxyClient.EXPECT().List("gloo-system", gomock.Any()).Return(gloov1.ProxyList{acceptedProxy}, nil).Times(1)
+		syncer.handleUpdatedProxies(ctx)
 		Eventually(mockReporter.Reports, "5s", "0.5s").ShouldNot(BeEmpty())
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
 		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
-		m := map[string]*core.Status{
-			"*v1.Proxy.test_gloo-system": {State: core.Status_Accepted},
-		}
-		Eventually(func() map[string]*core.Status { return mockReporter.Statuses()[reportedKey] }, "5s", "0.5s").Should(BeEquivalentTo(m))
+		Expect(mockReporter.Statuses()[reportedKey]["*v1.Proxy.test_gloo-system"].State).To(BeEquivalentTo(core.Status_Accepted))
 	})
 
 	It("should set status correctly when one proxy errors", func() {
@@ -348,7 +344,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			ctx      context.Context
 			settings *gloov1.Settings
 
-			ts    *translatorSyncer
+			ts    *TranslatorSyncer
 			snap  *gatewayv1.ApiSnapshot
 			proxy *gloov1.Proxy
 		)
@@ -362,7 +358,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			}
 			ctx = context.Background()
 
-			ts = &translatorSyncer{
+			ts = &TranslatorSyncer{
 				writeNamespace: "gloo-system",
 				translator:     mockTranslator,
 			}
@@ -388,7 +384,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", "gloo-system", snap, gomock.Any()).
 				Return(proxy, nil)
 
-			ts.generatedDesiredProxies(ctx, snap)
+			ts.GeneratedDesiredProxies(ctx, snap)
 
 			Expect(proxy.Metadata.Annotations).To(HaveKeyWithValue(compress.CompressedKey, compress.CompressedValue))
 		})
@@ -397,7 +393,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", "gloo-system", snap, gomock.Any()).
 				Return(proxy, nil)
 
-			ts.generatedDesiredProxies(ctx, snap)
+			ts.GeneratedDesiredProxies(ctx, snap)
 
 			Expect(proxy.Metadata.Annotations).NotTo(HaveKeyWithValue(compress.CompressedKey, compress.CompressedValue))
 		})
@@ -405,13 +401,6 @@ var _ = Describe("TranslatorSyncer", func() {
 	})
 
 })
-
-type fakeWatcher struct {
-}
-
-func (f *fakeWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan gloov1.ProxyList, <-chan error, error) {
-	return nil, nil, nil
-}
 
 type fakeReporter struct {
 	reports  map[string]reporter.Report

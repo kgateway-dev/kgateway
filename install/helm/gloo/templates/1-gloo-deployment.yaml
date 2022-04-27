@@ -60,6 +60,12 @@ spec:
             - path: "labels"
               fieldRef:
                 fieldPath: metadata.labels
+      {{- if and .Values.gateway.enabled .Values.gateway.validation.enabled }}
+      - name: validation-certs
+        secret:
+          defaultMode: 420
+          secretName: {{ .Values.gateway.validation.secretName }}
+      {{- end }}
       containers:
 {{- if .Values.global.glooMtls.enabled }}
       {{- $sdsImage := merge .Values.global.glooMtls.sds.image .Values.global.image }}
@@ -181,6 +187,10 @@ spec:
           containerPort: 9091
         {{- end }}
         volumeMounts:
+        {{- if and .Values.gateway.validation.enabled .Values.gateway.enabled }}
+        - mountPath: /etc/gateway/validation-certs
+          name: validation-certs
+        {{- end }}
         - name: labels-volume
           mountPath: /etc/gloo
           readOnly: true
@@ -226,7 +236,12 @@ spec:
           periodSeconds: 10
           failureThreshold: 3
 {{- end }}
-{{- end }}
+  {{- if and .Values.gateway.validation.enabled .Values.gateway.enabled }}
+        volumeMounts:
+          - mountPath: /etc/gateway/validation-certs
+            name: validation-certs
+  {{- end }} {{/* if .Values.gateway.validation.enabled */}}
+{{- end }}{{/* if not .Values.global.glooMtls.enabled */}}
 {{- end }} {{/* define "gloo.deploymentSpec "*/}}
 
 {{/* Render template with yaml overrides */}}

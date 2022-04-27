@@ -19,24 +19,24 @@ type Translator interface {
 	Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
 }
 
-type translator struct {
+type GwTranslator struct {
 	listenerTranslators map[string]ListenerTranslator
 	opts                Opts
 }
 
-func NewTranslator(listenerTranslators []ListenerTranslator, opts Opts) *translator {
+func NewTranslator(listenerTranslators []ListenerTranslator, opts Opts) *GwTranslator {
 	translatorsByName := make(map[string]ListenerTranslator)
 	for _, t := range listenerTranslators {
 		translatorsByName[t.Name()] = t
 	}
 
-	return &translator{
+	return &GwTranslator{
 		listenerTranslators: translatorsByName,
 		opts:                opts,
 	}
 }
 
-func NewDefaultTranslator(opts Opts) *translator {
+func NewDefaultTranslator(opts Opts) *GwTranslator {
 	warnOnRouteShortCircuiting := false
 	if opts.Validation != nil {
 		warnOnRouteShortCircuiting = opts.Validation.WarnOnRouteShortCircuiting
@@ -54,7 +54,7 @@ func NewDefaultTranslator(opts Opts) *translator {
 	return NewTranslator([]ListenerTranslator{httpTranslator, tcpTranslator, hybridTranslator}, opts)
 }
 
-func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
+func (t *GwTranslator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
 	reports := make(reporter.ResourceReports)
@@ -94,7 +94,7 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	}, reports
 }
 
-func (t *translator) getListenerTranslatorForGateway(gateway *v1.Gateway) ListenerTranslator {
+func (t *GwTranslator) getListenerTranslatorForGateway(gateway *v1.Gateway) ListenerTranslator {
 	var listenerTranslatorImpl ListenerTranslator
 
 	switch gateway.GetGatewayType().(type) {
@@ -176,7 +176,7 @@ func gatewaysRefsToString(gateways v1.GatewayList) []string {
 }
 
 // Get the gateways that should be processed in this sync execution
-func (t *translator) filterGateways(gateways v1.GatewayList, namespace string) v1.GatewayList {
+func (t *GwTranslator) filterGateways(gateways v1.GatewayList, namespace string) v1.GatewayList {
 	var filteredGateways v1.GatewayList
 	for _, gateway := range gateways {
 		// Normally, Gloo should only pay attention to Gateways it creates, i.e. in its write

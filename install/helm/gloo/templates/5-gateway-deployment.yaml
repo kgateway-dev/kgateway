@@ -14,7 +14,7 @@ metadata:
   name: gateway
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.gateway.deployment.replicas }}
+  replicas: 0
   selector:
     matchLabels:
       gloo: gateway

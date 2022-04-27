@@ -3,10 +3,9 @@ package test
 import (
 	"fmt"
 
-	"github.com/onsi/gomega/format"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -56,6 +55,9 @@ var _ = Describe("RBAC Test", func() {
 			}
 
 			Context("implementation-agnostic permissions", func() {
+				BeforeEach(func() {
+					format.MaxLength = 0
+				})
 				It("correctly assigns permissions for single-namespace gloo", func() {
 					prepareMakefile("namespace.create=true", "global.glooRbac.namespaced=true")
 					permissions := GetServiceAccountPermissions("gloo-system")
@@ -510,7 +512,13 @@ var _ = Describe("RBAC Test", func() {
 							Kind:      "ServiceAccount",
 							Name:      "gateway",
 							Namespace: namespace,
-						}},
+						},
+							{
+								Kind:      "ServiceAccount",
+								Name:      "gloo",
+								Namespace: namespace,
+							},
+						},
 					}
 				})
 				Context("cluster scope", func() {

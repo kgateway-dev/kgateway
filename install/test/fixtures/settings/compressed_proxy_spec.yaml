@@ -12,6 +12,7 @@ spec:
  gateway:
    readGatewaysFromAllNamespaces: false
    compressedProxySpec: true
+   enableGatewayController: true
  gloo:
    enableRestEds: false
    xdsBindAddr: 0.0.0.0:9977

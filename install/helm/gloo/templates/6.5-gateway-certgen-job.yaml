@@ -47,7 +47,7 @@ spec:
           args:
 
             - "--secret-name={{ .Values.gateway.validation.secretName }}"
-            - "--svc-name=gateway"
+            - "--svc-name=gloo"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-{{ .Release.Namespace }}"
         {{- with .Values.gateway.certGenJob.resources }}
           resources: {{ toYaml . | nindent 12}}

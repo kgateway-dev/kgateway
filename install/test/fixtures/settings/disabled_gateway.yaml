@@ -9,12 +9,10 @@ metadata:
 spec:
   discovery:
     fdsMode: WHITELIST
-    udsOptions:
-      watchLabels:
-        A: B
   gateway:
     readGatewaysFromAllNamespaces: false
-    enableGatewayController: true
+    enableGatewayController: false
+    persistProxySpec: true
     validation:
       alwaysAccept: true
       allowWarnings: true
