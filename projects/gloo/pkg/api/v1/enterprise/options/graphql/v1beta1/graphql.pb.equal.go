@@ -272,6 +272,21 @@ func (m *GrpcDescriptorRegistry) Equal(that interface{}) bool {
 			return false
 		}
 
+	case *GrpcDescriptorRegistry_ProtoRefsList:
+		if _, ok := target.DescriptorSet.(*GrpcDescriptorRegistry_ProtoRefsList); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetProtoRefsList()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetProtoRefsList()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetProtoRefsList(), target.GetProtoRefsList()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.DescriptorSet != target.DescriptorSet {
@@ -774,6 +789,47 @@ func (m *Executor) Equal(that interface{}) bool {
 		if m.Executor != target.Executor {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GrpcDescriptorRegistry_ProtoRefs) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GrpcDescriptorRegistry_ProtoRefs)
+	if !ok {
+		that2, ok := that.(GrpcDescriptorRegistry_ProtoRefs)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetConfigMapRefs()) != len(target.GetConfigMapRefs()) {
+		return false
+	}
+	for idx, v := range m.GetConfigMapRefs() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetConfigMapRefs()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetConfigMapRefs()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true

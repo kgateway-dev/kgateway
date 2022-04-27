@@ -16,6 +16,7 @@ weight: 5
 - [GrpcRequestTemplate](#grpcrequesttemplate)
 - [RESTResolver](#restresolver)
 - [GrpcDescriptorRegistry](#grpcdescriptorregistry)
+- [ProtoRefs](#protorefs)
 - [GrpcResolver](#grpcresolver)
 - [StitchedSchema](#stitchedschema)
 - [SubschemaConfig](#subschemaconfig)
@@ -139,13 +140,32 @@ Is a Schema Extension
 ```yaml
 "protoDescriptor": string
 "protoDescriptorBin": bytes
+"protoRefsList": .graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor` or `protoDescriptorBin` can be set. |
-| `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin` or `protoDescriptor` can be set. |
+| `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor`, `protoDescriptorBin`, or `protoRefsList` can be set. |
+| `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin`, `protoDescriptor`, or `protoRefsList` can be set. |
+| `protoRefsList` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs](../graphql.proto.sk/#protorefs) | Allows the user to put proto descriptor set binary content in configmaps; The descriptor set binary content in these config maps must be base64 encoded Generating the proto descriptor binary and base64 encoding it can be done using the following command `protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="/dev/stdout" --include_imports | base64`. Only one of `protoRefsList`, `protoDescriptor`, or `protoDescriptorBin` can be set. |
+
+
+
+
+---
+### ProtoRefs
+
+
+
+```yaml
+"configMapRefs": []core.solo.io.ResourceRef
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `configMapRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | List of references to config maps that contain proto data for this resolver. For each of the config maps referenced here, they must contain keys in their data map with valid base64 encoded proto descriptor set binaries as the values. Also they must be in a namespace watched by gloo edge. |
 
 
 
