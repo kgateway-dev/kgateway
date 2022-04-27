@@ -261,7 +261,7 @@ type Gateway struct {
 	Validation                    GatewayValidation  `json:"validation,omitempty" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
 	Deployment                    *GatewayDeployment `json:"deployment,omitempty"`
 	CertGenJob                    *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
-	RolloutJob                    *RolloutJob        `json:"rolloutJob,omitempty" desc:"This job waits for the gateway deployment to be successfully rolled out. It is used to ensure the gateway validation webhook is available before applying Gloo Edge custom resources. This job will only run if gateway validation is enabled and failurePolicy is 'Fail'."`
+	RolloutJob                    *RolloutJob        `json:"rolloutJob,omitempty" desc:"This job waits for the gloo deployment to be successfully rolled out. It is used to ensure the gateway validation webhook is available before applying Gloo Edge custom resources. This job will only run if gateway validation is enabled and failurePolicy is 'Fail'."`
 	UpdateValues                  *bool              `json:"updateValues,omitempty" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
 	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount,omitempty" `
 	ServiceAccount                ServiceAccount     `json:"serviceAccount,omitempty" `
