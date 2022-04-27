@@ -3506,8 +3506,8 @@ kind: Job
 metadata:
   labels:
     app: gloo
-    gloo: gateway-rollout
-  name: gloo-gateway-rollout
+    gloo: validation-rollout
+  name: gloo-validation-rollout
   namespace: ` + namespace + `
   annotations:
     "helm.sh/hook": post-install,post-upgrade
@@ -3517,9 +3517,9 @@ spec:
   template:
     metadata:
       labels:
-        gloo: gateway-rollout
+        gloo: validation-rollout
     spec:
-      serviceAccountName: gloo-gateway-rollout
+      serviceAccountName: gloo-validation-rollout
       containers:
         - name: kubectl
           image: bitnami/kubectl:1.2.3
@@ -3544,14 +3544,14 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
-  name: gloo-gateway-rollout
+  name: gloo-validation-rollout
   namespace: ` + namespace + `
 `)
 						role := makeUnstructured(`
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-gateway-rollout
+  name: gloo-validation-rollout
   namespace: ` + namespace + `
   labels:
     app: gloo
@@ -3568,7 +3568,7 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-gateway-rollout
+  name: gloo-validation-rollout
   namespace: ` + namespace + `
   labels:
     app: gloo
@@ -3578,11 +3578,11 @@ metadata:
     "helm.sh/hook-weight": "0"
 roleRef:
   kind: Role
-  name: gloo-gateway-rollout
+  name: gloo-validation-rollout
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
-  name: gloo-gateway-rollout
+  name: gloo-validation-rollout
   namespace: ` + namespace + `
 `)
 						It("creates job when failurePolicy=Fail", func() {
@@ -3591,7 +3591,7 @@ subjects:
 								"gateway.rolloutJob.image.tag=1.2.3",
 							}})
 
-							// when gateway validation is enabled and failurePolicy is Fail, a gateway rollout job and
+							// when gateway validation is enabled and failurePolicy is Fail, a validation service rollout job and
 							// associated service account, role, and rolebinding should be created
 							testManifest.ExpectUnstructured(job.GetKind(), job.GetNamespace(), job.GetName()).To(BeEquivalentTo(job))
 							testManifest.ExpectUnstructured(serviceAccount.GetKind(), serviceAccount.GetNamespace(), serviceAccount.GetName()).To(BeEquivalentTo(serviceAccount))

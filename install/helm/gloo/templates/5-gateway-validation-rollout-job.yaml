@@ -9,8 +9,8 @@ kind: Job
 metadata:
   labels:
     app: gloo
-    gloo: gateway-rollout
-  name: gloo-gateway-rollout
+    gloo: validation-rollout
+  name: gloo-validation-rollout
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
@@ -20,10 +20,10 @@ spec:
   template:
     metadata:
       labels:
-        gloo: gateway-rollout
+        gloo: validation-rollout
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
-      serviceAccountName: gloo-gateway-rollout
+      serviceAccountName: gloo-validation-rollout
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
@@ -50,13 +50,13 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0" # must be created before rollout job
-  name: gloo-gateway-rollout
+  name: gloo-validation-rollout
   namespace: {{ .Release.Namespace }}
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-gateway-rollout
+  name: gloo-validation-rollout
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
@@ -72,7 +72,7 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-gateway-rollout
+  name: gloo-validation-rollout
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
@@ -82,11 +82,11 @@ metadata:
     "helm.sh/hook-weight": "0" # must be created before rollout job
 roleRef:
   kind: Role
-  name: gloo-gateway-rollout
+  name: gloo-validation-rollout
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
-  name: gloo-gateway-rollout
+  name: gloo-validation-rollout
   namespace: {{ .Release.Namespace }}
 {{- end }} {{/* .Values.global.glooRbac.create */}}
 {{- end }} {{/* if $waitForValidationService */}}
