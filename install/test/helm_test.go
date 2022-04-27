@@ -3530,7 +3530,7 @@ spec:
           command:
           - /bin/sh
           - -c
-          - "kubectl rollout status deployment -n ` + namespace + ` gateway"
+          - "kubectl rollout status deployment -n ` + namespace + ` gloo"
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
 `)
@@ -3544,6 +3544,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
   name: gloo-validation-service-rollout
   namespace: ` + namespace + `
 `)
@@ -3559,6 +3560,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
 rules:
 - apiGroups: ["apps"]
   resources: ["deployments"]
@@ -3576,6 +3578,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
 roleRef:
   kind: Role
   name: gloo-validation-service-rollout
