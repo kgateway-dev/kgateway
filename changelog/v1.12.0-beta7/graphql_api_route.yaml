@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Added `proto_refs_list` to the `GrpcDescriptorRegistry` message in the `GraphQLAPI` custom resource. This allows users to provide the binary proto descriptor bytes in configmaps rather than on the `GraphQLAPI` itself.
+    issueLink: https://github.com/solo-io/gloo/issues/3541

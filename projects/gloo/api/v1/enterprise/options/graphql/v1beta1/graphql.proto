@@ -152,6 +152,13 @@ message RESTResolver {
 // Defines a configuration for serializing and deserializing requests for a gRPC resolver.
 // Is a Schema Extension
 message GrpcDescriptorRegistry {
+  message ProtoRefs {
+    // List of references to config maps that contain proto data for this resolver.
+    // For each of the config maps referenced here, they must contain keys in their data map with valid base64 encoded
+    // proto descriptor set binaries as the values.
+    // Also they must be in a namespace watched by gloo edge.
+    repeated core.solo.io.ResourceRef config_map_refs = 1;
+  }
   oneof descriptor_set {
     option (validate.required) = true;
 
@@ -165,6 +172,12 @@ message GrpcDescriptorRegistry {
     // services.
     // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
     bytes proto_descriptor_bin = 2;
+
+    // Allows the user to put proto descriptor set binary content in configmaps;
+    // The descriptor set binary content in these config maps must be base64 encoded
+    // Generating the proto descriptor binary and base64 encoding it can be done using the following command
+    // `protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="/dev/stdout" --include_imports | base64`
+    ProtoRefs proto_refs_list = 3;
   }
 }
 
