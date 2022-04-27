@@ -133,6 +133,18 @@ spec:
                       protoDescriptorBin:
                         format: byte
                         type: string
+                      protoRefsList:
+                        properties:
+                          configMapRefs:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                            type: array
+                        type: object
                     type: object
                   schemaDefinition:
                     type: string
