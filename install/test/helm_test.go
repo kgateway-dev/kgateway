@@ -3506,8 +3506,8 @@ kind: Job
 metadata:
   labels:
     app: gloo
-    gloo: validation-rollout
-  name: gloo-validation-rollout
+    gloo: validation-service-rollout
+  name: gloo-validation-service-rollout
   namespace: ` + namespace + `
   annotations:
     "helm.sh/hook": post-install,post-upgrade
@@ -3517,9 +3517,9 @@ spec:
   template:
     metadata:
       labels:
-        gloo: validation-rollout
+        gloo: validation-service-rollout
     spec:
-      serviceAccountName: gloo-validation-rollout
+      serviceAccountName: gloo-validation-service-rollout
       containers:
         - name: kubectl
           image: bitnami/kubectl:1.2.3
@@ -3544,14 +3544,14 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
-  name: gloo-validation-rollout
+  name: gloo-validation-service-rollout
   namespace: ` + namespace + `
 `)
 						role := makeUnstructured(`
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-validation-rollout
+  name: gloo-validation-service-rollout
   namespace: ` + namespace + `
   labels:
     app: gloo
@@ -3568,7 +3568,7 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-validation-rollout
+  name: gloo-validation-service-rollout
   namespace: ` + namespace + `
   labels:
     app: gloo
@@ -3578,11 +3578,11 @@ metadata:
     "helm.sh/hook-weight": "0"
 roleRef:
   kind: Role
-  name: gloo-validation-rollout
+  name: gloo-validation-service-rollout
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
-  name: gloo-validation-rollout
+  name: gloo-validation-service-rollout
   namespace: ` + namespace + `
 `)
 						It("creates job when failurePolicy=Fail", func() {
