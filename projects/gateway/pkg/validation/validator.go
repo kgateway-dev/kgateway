@@ -214,6 +214,7 @@ func (v *validator) gatewayUpdate(snap *v1.ApiSnapshot) bool {
 		toHash = append(toHash, snap.RouteOptions.AsInterfaces()...)
 		toHash = append(toHash, snap.RouteTables.AsInterfaces()...)
 		toHash = append(toHash, snap.HttpGateways.AsInterfaces()...)
+		toHash = append(toHash, snap.VirtualHostOptions.AsInterfaces()...)
 		hash, err := hashutils.HashAllSafe(nil, toHash...)
 		if err != nil {
 			panic("this error should never happen, as this is safe hasher")
