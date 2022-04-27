@@ -60,7 +60,7 @@ spec:
             - path: "labels"
               fieldRef:
                 fieldPath: metadata.labels
-      {{- if .Values.gateway.enabled }}
+      {{- if and .Values.gateway.enabled .Values.gateway.validation.enabled }}
       - name: validation-certs
         secret:
           defaultMode: 420

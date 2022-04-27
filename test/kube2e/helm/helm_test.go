@@ -85,19 +85,12 @@ var _ = Describe("Kube2e: helm", func() {
 			}, "5s", "1s").Should(ContainSubstring(crd.name))
 		}
 
-		//TODO: logging state of settings before and after upgrade for debugging
-		output := runAndCleanCommand("kubectl", "get", "settings.gloo.solo.io", "-n", "gloo-system", "-o", "yaml")
-		fmt.Println("settings before upgrade")
-		fmt.Println(string(output))
-		fmt.Println("About to upgrade")
-
 		//Helm upgrade expects the same values overrides as installs
 		valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
 		defer cleanupFunc()
 		// upgrade to the gloo version being tested
-		//TODO: remove debug mode and logging
-		output = runAndCleanCommand("helm", "upgrade", "--debug", "--disable-openapi-validation", "gloo", chartUri, "-n", testHelper.InstallNamespace, "--values", valueOverrideFile)
-		fmt.Println(string(output))
+		// Using the flag --disable-openapi-validation although helm upgrade works without it everywhere except for CI
+		runAndCleanCommand("helm", "upgrade", "--disable-openapi-validation", "gloo", chartUri, "-n", testHelper.InstallNamespace, "--values", valueOverrideFile)
 		By("should have upgraded to the gloo version being tested")
 		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
 

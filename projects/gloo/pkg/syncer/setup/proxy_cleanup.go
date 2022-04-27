@@ -31,15 +31,15 @@ func deleteUnusedProxies(ctx context.Context, namespace string, proxyClient v1.P
 			}
 		}
 	}
-	// Concatenate error messages from all the failed deletes
-	if len(deleteErrs) > 0 {
-		allErrs := ""
-		for _, err := range deleteErrs {
-			allErrs += err.Error()
-		}
-		return errors.New(allErrs)
+	if len(deleteErrs) == 0 {
+		return nil
 	}
-	return nil
+	// Concatenate error messages from all the failed deletes
+	allErrs := ""
+	for _, err := range deleteErrs {
+		allErrs += err.Error()
+	}
+	return errors.New(allErrs)
 }
 func doProxyCleanup(ctx context.Context, params bootstrap.ConfigFactoryParams, settings *v1.Settings, namespace string) error {
 	//Do not clean up proxies if all the resources are held in memory or if proxies are being persisted
