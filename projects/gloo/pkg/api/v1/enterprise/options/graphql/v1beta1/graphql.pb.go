@@ -452,7 +452,7 @@ type GrpcDescriptorRegistry_ProtoDescriptorBin struct {
 
 type GrpcDescriptorRegistry_ProtoRefsList struct {
 	// Allows the user to put proto descriptor set binary content in configmaps;
-	// The descriptor set binary content in these config maps must be under the proto key and should be base64 encoded
+	// The descriptor set binary content in these config maps must be base64 encoded
 	// Generating the proto descriptor binary and base64 encoding it can be done using the following command
 	// `protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="/dev/stdout" --include_imports | base64`
 	ProtoRefsList *GrpcDescriptorRegistry_ProtoRefs `protobuf:"bytes,3,opt,name=proto_refs_list,json=protoRefsList,proto3,oneof"`
@@ -1146,7 +1146,9 @@ type GrpcDescriptorRegistry_ProtoRefs struct {
 	unknownFields protoimpl.UnknownFields
 
 	// List of references to config maps that contain proto data for this resolver.
-	// For each of the config maps referenced here, they must contain a `proto` field in their data map with a valid base64 encoded proto descriptor set binary and must be in a namespace watched by gloo edge.
+	// For each of the config maps referenced here, they must contain keys in their data map with valid base64 encoded
+	// proto descriptor set binaries as the values.
+	// Also they must be in a namespace watched by gloo edge.
 	ConfigMapRefs []*core.ResourceRef `protobuf:"bytes,1,rep,name=config_map_refs,json=configMapRefs,proto3" json:"config_map_refs,omitempty"`
 }
 
