@@ -102,7 +102,8 @@ version, which merges two named templates.
 {{/*
 Whether we need to wait for the validation service to be up and running before applying custom resources.
 This is true if the validation webhook is enabled with a failurePolicy of Fail.
-The gloo helm values must be passed in as an argument.
+
+The input to this function should be the gloo helm values object.
 */}}
 {{- define "gloo.waitForValidationService" -}}
 {{- if and .gateway.enabled .gateway.validation.enabled .gateway.validation.webhook.enabled (eq .gateway.validation.failurePolicy "Fail") }}
@@ -112,14 +113,26 @@ true
 
 {{/*
 This snippet should be included under the metadata for any Gloo custom resources.
+
 It is used to ensure that CRs that we validate are only installed after the validation service is running.
-The gloo helm values must be passed in as an argument.
+When the resource is applied as part of post-install/post-upgrade, we also need to explicitly add the helm
+labels/annotations, since by default Helm does not manage hook resources and won't add the annotations.
+
+The input to the function should be a dict with 2 keys:
+- "release" pointing to the helm release object
+- "values" pointing to the gloo helm values object (this is provided as an argument so that other charts such as the
+  GlooEE chart can also use this function and pass in the appropriate values from its subchart)
 */}}
-{{- define "gloo.customResourceAnnotations" -}}
-{{- $waitForValidationService := include "gloo.waitForValidationService" . }}
-{{- if $waitForValidationService }}
+{{- define "gloo.customResourceLabelsAndAnnotations" -}}
+{{- $isPostInstall := include "gloo.waitForValidationService" .values }}
+  labels:
+    app: gloo
+{{- if $isPostInstall }}
+    app.kubernetes.io/managed-by: Helm
   annotations:
+    "meta.helm.sh/release-name": {{ .release.Name }}
+    "meta.helm.sh/release-namespace": {{ .release.Namespace }}
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "10" # must be installed after the gateway rollout job completes
-{{- end -}}{{/* if $waitForValidationService */}}
+{{- end -}}{{/* if $isPostInstall */}}
 {{- end -}}

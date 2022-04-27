@@ -3599,9 +3599,12 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
+    "app.kubernetes.io/managed-by": Helm
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "10"
+    "meta.helm.sh/release-name": gloo
+    "meta.helm.sh/release-namespace": gloo-system
 spec:
   bindAddress: "::"
   bindPort: 8080
@@ -3621,9 +3624,12 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
+    "app.kubernetes.io/managed-by": Helm
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "10"
+    "meta.helm.sh/release-name": gloo
+    "meta.helm.sh/release-namespace": gloo-system
 spec:
   bindAddress: "::"
   bindPort: 8443
