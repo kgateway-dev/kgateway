@@ -83,8 +83,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20211215184000-5637b2735f09
-
 require (
 	cloud.google.com/go v0.98.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
