@@ -79,7 +79,7 @@ gateway:
   deployment:
     image:
       repository: gateway
-    replicas: 1
+    replicas: 0
     runAsUser: 10101
   certGenJob:
     enabled: true

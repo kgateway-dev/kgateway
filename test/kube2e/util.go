@@ -73,6 +73,8 @@ settings:
   singleNamespace: true
   create: true
   replaceInvalidRoutes: true
+gateway:
+  persistProxySpec: true
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0

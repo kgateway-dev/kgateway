@@ -11,6 +11,7 @@ spec:
    fdsMode: WHITELIST
  gateway:
    readGatewaysFromAllNamespaces: true
+   enableGatewayController: true
  gloo:
    enableRestEds: false
    xdsBindAddr: 0.0.0.0:9977

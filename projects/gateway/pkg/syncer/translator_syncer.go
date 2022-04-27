@@ -9,6 +9,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/hashicorp/go-multierror"
@@ -24,28 +25,24 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-type translatorSyncer struct {
+type TranslatorSyncer struct {
 	writeNamespace     string
 	reporter           reporter.Reporter
-	proxyWatcher       gloov1.ProxyWatcher
 	proxyReconciler    reconciler.ProxyReconciler
 	translator         translator.Translator
 	statusSyncer       statusSyncer
 	managedProxyLabels map[string]string
 }
 
-func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) v1.ApiSyncer {
-	t := &translatorSyncer{
+func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) *TranslatorSyncer {
+	t := &TranslatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
-		proxyWatcher:    proxyWatcher,
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
 		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient, statusMetrics),
@@ -53,18 +50,16 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 			"created_by": "gloo-gateway-translator",
 		},
 	}
-
-	go t.statusSyncer.watchProxies(ctx)
 	go t.statusSyncer.syncStatusOnEmit(ctx)
 	return t
 }
 
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
-func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
-	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
+func (s *TranslatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
+	ctx = contextutils.WithLogger(ctx, "TranslatorSyncer")
 
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Debugw("begin sync", zap.Any("snapshot", snap.Stringer()))
+	logger.Debugw("(gw)begin sync", zap.Any("snapshot", snap.Stringer()))
 	snapHash := hashutils.MustHash(snap)
 	logger.Infof("begin sync %v (%v virtual services, %v gateways, %v route tables)", snapHash,
 		len(snap.VirtualServices), len(snap.Gateways), len(snap.RouteTables))
@@ -76,12 +71,18 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
-	desiredProxies, invalidProxies := s.generatedDesiredProxies(ctx, snap)
+	desiredProxies, invalidProxies := s.GeneratedDesiredProxies(ctx, snap)
 
 	return s.reconcile(ctx, desiredProxies, invalidProxies)
 }
 
-func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1.ApiSnapshot) (reconciler.GeneratedProxies, reconciler.InvalidProxies) {
+// This replaced a watch on the proxy CR from when the gloo and gateway pods were separate
+// Now it is called at the end of the gloo translation loop after statuses have been set for proxies
+// This is where we update statuses on gateway types based on the proxy statuses
+func (s *TranslatorSyncer) UpdateProxies(ctx context.Context) {
+	s.statusSyncer.handleUpdatedProxies(ctx)
+}
+func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *v1.ApiSnapshot) (reconciler.GeneratedProxies, reconciler.InvalidProxies) {
 	logger := contextutils.LoggerFrom(ctx)
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 
@@ -112,11 +113,11 @@ func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1
 	return desiredProxies, invalidProxies
 }
 
-func (s *translatorSyncer) shouldCompresss(ctx context.Context) bool {
+func (s *TranslatorSyncer) shouldCompresss(ctx context.Context) bool {
 	return settingsutil.MaybeFromContext(ctx).GetGateway().GetCompressedProxySpec()
 }
 
-func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies, invalidProxies reconciler.InvalidProxies) error {
+func (s *TranslatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies, invalidProxies reconciler.InvalidProxies) error {
 	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, s.managedProxyLabels); err != nil {
 		return err
 	}
@@ -138,19 +139,20 @@ type statusSyncer struct {
 	mapLock                 sync.RWMutex
 	reporter                reporter.StatusReporter
 
-	proxyWatcher   gloov1.ProxyWatcher
-	writeNamespace string
-	statusClient   resources.StatusClient
-	statusMetrics  metrics.ConfigStatusMetrics
-	syncNeeded     chan struct{}
+	proxyClient             gloov1.ProxyClient
+	writeNamespace          string
+	statusClient            resources.StatusClient
+	statusMetrics           metrics.ConfigStatusMetrics
+	syncNeeded              chan struct{}
+	previousProxyStatusHash uint64
 }
 
-func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.StatusReporter, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) statusSyncer {
+func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, reporter reporter.StatusReporter, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) statusSyncer {
 	return statusSyncer{
 		proxyToLastStatus:       map[string]reportsAndStatus{},
 		currentGeneratedProxies: nil,
 		reporter:                reporter,
-		proxyWatcher:            proxyWatcher,
+		proxyClient:             proxyClient,
 		writeNamespace:          writeNamespace,
 		statusClient:            statusClient,
 		statusMetrics:           statusMetrics,
@@ -207,59 +209,36 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 	})
 }
 
-// run this in the background
-func (s *statusSyncer) watchProxies(ctx context.Context) error {
-	ctx = contextutils.WithLogger(ctx, "proxy-err-watcher")
+func (s *statusSyncer) handleUpdatedProxies(ctx context.Context) {
 	logger := contextutils.LoggerFrom(ctx)
-	defer logger.Debugw("done watching proxies")
-	proxies, errs, err := s.proxyWatcher.Watch(s.writeNamespace, clients.WatchOpts{
+	proxyList, err := s.proxyClient.List(s.writeNamespace, clients.ListOpts{
 		Ctx: ctx,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "creating watch for proxies in %v", s.writeNamespace)
+		// We don't return errors from this because we don't want to fail the rest of gloo translation
+		logger.Errorw("Error reading updated proxies, statuses may be out of date.", err)
+		return
 	}
-	return s.watchProxiesFromChannel(ctx, proxies, errs)
-}
-
-func (s *statusSyncer) watchProxiesFromChannel(ctx context.Context, proxies <-chan gloov1.ProxyList, errs <-chan error) error {
-
-	logger := contextutils.LoggerFrom(ctx)
-	var previousHash uint64
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case err, ok := <-errs:
-			if !ok {
-				return nil
-			}
-			logger.Error(err)
-		case proxyList, ok := <-proxies:
-			if !ok {
-				return nil
-			}
-
-			currentHash, err := s.hashStatuses(proxyList)
-			if err != nil {
-				logger.DPanicw("error while hashing, this should never happen", zap.Error(err))
-			}
-			// We use hashing here to be compatible with the memory client used in
-			// the local e2e; it fires a watch update too all watch object, on any change,
-			// this means that setting by the status of a virtual service we will get another
-			// proxyList from the channel. This results in excessive CPU usage in CI.
-			if currentHash != previousHash {
-				logger.Debugw("proxy list updated", "len(proxyList)", len(proxyList), "currentHash", currentHash, "previousHash", previousHash)
-				previousHash = currentHash
-				s.setStatuses(proxyList)
-				s.forceSync()
-			}
-		}
+	currentHash, err := s.hashStatuses(proxyList)
+	if err != nil {
+		logger.DPanicw("error while hashing, this should never happen", zap.Error(err))
+	}
+	// We use hashing here to be compatible with the memory client used in
+	// the local e2e; it fires a watch update too all watch object, on any change,
+	// this means that setting by the status of a virtual service we will get another
+	// proxyList from the channel. This results in excessive CPU usage in CI.
+	if currentHash != s.previousProxyStatusHash {
+		logger.Debugw("proxy list updated", "len(proxyList)", len(proxyList), "currentHash", currentHash, "previousProxyStatusHash", s.previousProxyStatusHash)
+		s.previousProxyStatusHash = currentHash
+		s.setStatuses(proxyList)
+		s.forceSync()
 	}
 }
 
 func (s *statusSyncer) hashStatuses(proxyList gloov1.ProxyList) (uint64, error) {
 	statuses := make([]interface{}, 0, len(proxyList))
 	for _, proxy := range proxyList {
+
 		statuses = append(statuses, s.statusClient.GetStatus(proxy))
 	}
 	return hashutils.HashAllSafe(nil, statuses...)
@@ -272,7 +251,6 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 		ref := proxy.GetMetadata().Ref()
 		refKey := gloo_translator.UpstreamToClusterName(ref)
 		status := s.statusClient.GetStatus(proxy)
-
 		if current, ok := s.proxyToLastStatus[refKey]; ok {
 			current.Status = status
 			s.proxyToLastStatus[refKey] = current

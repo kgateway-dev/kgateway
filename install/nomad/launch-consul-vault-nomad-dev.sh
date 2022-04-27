@@ -72,15 +72,6 @@ discovery:
   memLimit: 500
   bandwidthLimit: 10
 
-gateway:
-  image:
-    registry: quay.io/solo-io
-    repository: gateway
-    tag: ${GLOO_VERSION}
-  cpuLimit: 250
-  memLimit: 250
-  bandwidthLimit: 5
-
 gatewayProxy:
   image:
     registry: quay.io/solo-io

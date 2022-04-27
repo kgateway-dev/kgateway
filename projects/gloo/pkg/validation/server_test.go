@@ -35,7 +35,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var _ = Describe("Validation Server", func() {
+var _ = Describe("ValidationOpts Server", func() {
 	var (
 		ctrl              *gomock.Controller
 		settings          *v1.Settings
@@ -65,7 +65,7 @@ var _ = Describe("Validation Server", func() {
 
 		params = plugins.Params{
 			Ctx:      context.Background(),
-			Snapshot: samples.SimpleGlooSnapshot(),
+			Snapshot: samples.SimpleGlooSnapshot("gloo-system"),
 		}
 
 		routeReplacingSanitizer, _ := sanitizer.NewRouteReplacingSanitizer(settings.GetGloo().GetInvalidConfigPolicy())

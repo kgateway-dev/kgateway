@@ -29,7 +29,7 @@ var _ = Describe("Translator", func() {
 		translator Translator
 	)
 
-	Context("default translator", func() {
+	Context("default GwTranslator", func() {
 
 		BeforeEach(func() {
 			translator = NewDefaultTranslator(Opts{})

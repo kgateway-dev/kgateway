@@ -3,9 +3,6 @@ package reconciler_test
 import (
 	"context"
 
-	"google.golang.org/grpc"
-
-	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,7 +15,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/test/debugprint"
-	mock_validation "github.com/solo-io/gloo/test/mocks/gloo"
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -58,8 +54,11 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		})
 
-		validationClient *mock_validation.MockGlooValidationServiceClient
-		statusClient     resources.StatusClient
+		validationClient func(
+			context.Context,
+			*validation.GlooValidationServiceRequest,
+		) (*validation.GlooValidationServiceResponse, error)
+		statusClient resources.StatusClient
 
 		reconciler ProxyReconciler
 	)
@@ -72,18 +71,15 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 	}
 
 	BeforeEach(func() {
-		mockCtrl := gomock.NewController(GinkgoT())
-		validationClient = mock_validation.NewMockGlooValidationServiceClient(mockCtrl)
-		validationClient.EXPECT().Validate(ctx, gomock.Any()).DoAndReturn(
-			func(_ context.Context, req *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
-				return &validation.GlooValidationServiceResponse{
-					ValidationReports: []*validation.ValidationReport{
-						{
-							ProxyReport: validationutils.MakeReport(req.Proxy),
-						},
+		validationClient = func(_ context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
+			return &validation.GlooValidationServiceResponse{
+				ValidationReports: []*validation.ValidationReport{
+					{
+						ProxyReport: validationutils.MakeReport(req.Proxy),
 					},
-				}, nil
-			}).AnyTimes()
+				},
+			}, nil
+		}
 
 		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
 		reconciler = NewProxyReconciler(validationClient, proxyClient, statusClient)
@@ -125,7 +121,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		})
 		Context("a virtual service has a reported error", func() {
 			It("only creates the valid virtual hosts", func() {
-				samples.AddVsToSnap(snap, us, ns)
+				samples.AddVsToGwSnap(snap, us, ns)
 				genProxy()
 
 				addErr(snap.VirtualServices[1])
@@ -229,7 +225,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		Context("a virtual service has a reported error", func() {
 
 			It("only updates the valid virtual hosts", func() {
-				samples.AddVsToSnap(snap, us, ns)
+				samples.AddVsToGwSnap(snap, us, ns)
 				genProxy()
 				reconcile()
 
@@ -249,7 +245,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 			})
 
 			It("only updates the valid virtual hosts, without duplicating any", func() {
-				samples.AddVsToSnap(snap, us, ns)
+				samples.AddVsToGwSnap(snap, us, ns)
 				genProxy()
 				reconcile()
 
@@ -279,7 +275,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 
 		Context("a virtual service has been removed", func() {
 			It("removes the virtual host", func() {
-				samples.AddVsToSnap(snap, us, ns)
+				samples.AddVsToGwSnap(snap, us, ns)
 				genProxy()
 				reconcile()
 

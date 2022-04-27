@@ -253,7 +253,6 @@ NAME                                                       READY   STATUS    RES
 pod/api-server-56fcb78878-d9mxt                            2/2     Running   0          5m21s
 pod/discovery-759bd6cf85-sphjb                             1/1     Running   0          5m22s
 pod/extauth-679d587db8-l9k56                               1/1     Running   0          5m21s
-pod/gateway-568bfd477c-487zw                               1/1     Running   0          5m22s
 pod/gateway-proxy-c84cbd647-n9kz2                          1/1     Running   0          5m22s
 pod/gloo-6979c5bd8-2dfrj                                   1/1     Running   0          5m22s
 pod/glooe-grafana-86445b465b-mnn8t                         1/1     Running   0          5m22s
@@ -277,7 +276,7 @@ NAME                                                  READY   UP-TO-DATE   AVAIL
 deployment.apps/api-server                            1/1     1            1           5m21s
 deployment.apps/discovery                             1/1     1            1           5m22s
 deployment.apps/extauth                               1/1     1            1           5m21s
-deployment.apps/gateway                               1/1     1            1           5m22s
+deployment.apps/gateway                               0/0     0            0           5m22s
 deployment.apps/gateway-proxy                         1/1     1            1           5m22s
 deployment.apps/gloo                                  1/1     1            1           5m22s
 deployment.apps/glooe-grafana                         1/1     1            1           5m22s
@@ -291,7 +290,7 @@ NAME                                                             DESIRED   CURRE
 replicaset.apps/api-server-56fcb78878                            1         1         1       5m21s
 replicaset.apps/discovery-759bd6cf85                             1         1         1       5m22s
 replicaset.apps/extauth-679d587db8                               1         1         1       5m21s
-replicaset.apps/gateway-568bfd477c                               1         1         1       5m22s
+replicaset.apps/gateway-568bfd477c                               0         0         0       5m22s
 replicaset.apps/gateway-proxy-c84cbd647                          1         1         1       5m22s
 replicaset.apps/gloo-6979c5bd8                                   1         1         1       5m22s
 replicaset.apps/glooe-grafana-86445b465b                         1         1         1       5m22s

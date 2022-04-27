@@ -74,7 +74,7 @@ func SimpleSecret() *v1.Secret {
 	}
 }
 
-func SimpleGlooSnapshot() *v1snap.ApiSnapshot {
+func SimpleGlooSnapshot(namespace string) *v1snap.ApiSnapshot {
 	secret := SimpleSecret()
 	us := UpstreamWithSecret(secret)
 	routes := []*v1.Route{{
@@ -119,7 +119,7 @@ func SimpleGlooSnapshot() *v1snap.ApiSnapshot {
 									DestinationType: &v1.Destination_Upstream{
 										Upstream: &core.ResourceRef{
 											Name:      "test",
-											Namespace: "gloo-system",
+											Namespace: namespace,
 										},
 									},
 								},
@@ -169,6 +169,48 @@ func SimpleGlooSnapshot() *v1snap.ApiSnapshot {
 		Proxies:   []*v1.Proxy{proxy},
 		Upstreams: []*v1.Upstream{us},
 		Secrets:   []*v1.Secret{secret},
+		Gateways: []*gwv1.Gateway{
+			defaults.DefaultGateway(namespace),
+			defaults.DefaultSslGateway(namespace),
+			defaults.DefaultHybridGateway(namespace),
+			{
+				Metadata: &core.Metadata{
+					Name:      "tcp-gateway",
+					Namespace: namespace,
+				},
+				ProxyNames: []string{defaults.GatewayProxyName},
+				GatewayType: &gwv1.Gateway_TcpGateway{
+					TcpGateway: &gwv1.TcpGateway{
+						TcpHosts: []*v1.TcpHost{
+							{
+								Name: "tcp-dest",
+								Destination: &v1.TcpHost_TcpAction{
+									Destination: &v1.TcpHost_TcpAction_Single{
+										Single: &v1.Destination{
+											DestinationType: &v1.Destination_Upstream{
+												Upstream: us.GetMetadata().Ref(),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				BindAddress:   "::",
+				BindPort:      12345,
+				UseProxyProto: &wrappers.BoolValue{Value: false},
+			},
+		},
+		VirtualServices: []*gwv1.VirtualService{
+			{
+				Metadata: &core.Metadata{Namespace: namespace, Name: "virtualservice"},
+				VirtualHost: &gwv1.VirtualHost{
+					Domains: []string{"*"},
+					Routes:  SimpleRoute(us.GetMetadata().Ref()),
+				},
+			},
+		},
 	}
 }
 
@@ -241,7 +283,7 @@ func SimpleGatewaySnapshot(us *core.ResourceRef, namespace string) *gwv1.ApiSnap
 	}
 }
 
-func AddVsToSnap(snap *gwv1.ApiSnapshot, us *core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
+func AddVsToSnap(snap *v1snap.ApiSnapshot, us *core.ResourceRef, namespace string) *v1snap.ApiSnapshot {
 	snap.VirtualServices = append(snap.VirtualServices, &gwv1.VirtualService{
 		Metadata: &core.Metadata{Namespace: namespace, Name: "secondary-vs"},
 		VirtualHost: &gwv1.VirtualHost{
@@ -252,6 +294,16 @@ func AddVsToSnap(snap *gwv1.ApiSnapshot, us *core.ResourceRef, namespace string)
 	return snap
 }
 
+func AddVsToGwSnap(snap *gwv1.ApiSnapshot, us *core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
+	snap.VirtualServices = append(snap.VirtualServices, &gwv1.VirtualService{
+		Metadata: &core.Metadata{Namespace: namespace, Name: "secondary-vs"},
+		VirtualHost: &gwv1.VirtualHost{
+			Domains: []string{"secondary-vs.com"},
+			Routes:  SimpleRoute(us),
+		},
+	})
+	return snap
+}
 func GatewaySnapshotWithDelegates(us *core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
 	rtRoutes := []*gwv1.Route{
 		{
@@ -390,4 +442,15 @@ func GatewaySnapshotWithDelegateSelector(us *core.ResourceRef, namespace string)
 	rt := RouteTableWithLabelsAndPrefix("route1", namespace, "/foo/a", map[string]string{"pick": "me"})
 	snap.RouteTables = []*gwv1.RouteTable{rt}
 	return snap
+}
+
+func GatewayToGlooSnapshot(snap *gwv1.ApiSnapshot) *v1snap.ApiSnapshot {
+	return &v1snap.ApiSnapshot{
+		VirtualServices:    snap.VirtualServices,
+		RouteTables:        snap.RouteTables,
+		Gateways:           snap.Gateways,
+		VirtualHostOptions: snap.VirtualHostOptions,
+		RouteOptions:       snap.RouteOptions,
+		HttpGateways:       snap.HttpGateways,
+	}
 }

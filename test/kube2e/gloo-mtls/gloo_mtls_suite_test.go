@@ -109,6 +109,8 @@ gloo:
   rbac:
     namespaced: true
     nameSuffix: e2e-test-rbac-suffix
+gateway:
+  persistProxySpec: true
 settings:
   singleNamespace: true
   create: true
