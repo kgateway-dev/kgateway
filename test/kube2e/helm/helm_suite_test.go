@@ -3,6 +3,7 @@ package helm_test
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -65,21 +66,38 @@ func StartTestHelper() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
+	var valueOverrideFile string
+	var cleanupFunc func()
+	if os.Getenv("STRICT_VALIDATION") == "true" {
+		valueOverrideFile, cleanupFunc = getStrictValidationHelmValuesOverrideFile()
+	} else {
+		valueOverrideFile, cleanupFunc = kube2e.GetHelmValuesOverrideFile()
+	}
 	defer cleanupFunc()
 
 	// install gloo with helm
-	runAndCleanCommand("kubectl", "create", "namespace", testHelper.InstallNamespace)
-	runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName, "https://storage.googleapis.com/solo-public-helm")
-	runAndCleanCommand("helm", "repo", "update")
-	runAndCleanCommand("helm", "install", testHelper.HelmChartName, "gloo/gloo",
-		"--namespace", testHelper.InstallNamespace,
-		"--values", valueOverrideFile,
-		"--version", fmt.Sprintf("v%s", earliestVersionWithV1CRDs))
+	if os.Getenv("STRICT_VALIDATION") == "true" {
+		// in the strict validation tests, we want to install the gloo version from code (not a release version)
+		// to make sure it installs successfully
+		chartUri := filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
+		runAndCleanCommand("helm", "install", testHelper.HelmChartName, chartUri,
+			"--namespace", testHelper.InstallNamespace,
+			"--create-namespace",
+			"--values", valueOverrideFile)
+	} else {
+		// some tests are testing upgrades, so they initially need a release version to be installed before upgrading
+		// to the version from code
+		runAndCleanCommand("kubectl", "create", "namespace", testHelper.InstallNamespace)
+		runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName, "https://storage.googleapis.com/solo-public-helm")
+		runAndCleanCommand("helm", "repo", "update")
+		runAndCleanCommand("helm", "install", testHelper.HelmChartName, "gloo/gloo",
+			"--namespace", testHelper.InstallNamespace,
+			"--values", valueOverrideFile,
+			"--version", fmt.Sprintf("v%s", earliestVersionWithV1CRDs))
+	}
 
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
-
 }
 
 func TearDownTestHelper() {
@@ -108,4 +126,40 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 	cmd.Process.Kill()
 	cmd.Process.Release()
 	return b
+}
+
+func getStrictValidationHelmValuesOverrideFile() (filename string, cleanup func()) {
+	values, err := ioutil.TempFile("", "values-*.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	// disabling usage statistics is not important to the functionality of the tests,
+	// but we don't want to report usage in CI since we only care about how our users are actually using Gloo.
+	// install to a single namespace so we can run multiple invocations of the regression tests against the
+	// same cluster in CI.
+	_, err = values.Write([]byte(`
+global:
+  image:
+    pullPolicy: IfNotPresent
+  glooRbac:
+    namespaced: true
+    nameSuffix: e2e-test-rbac-suffix
+settings:
+  singleNamespace: true
+  create: true
+  replaceInvalidRoutes: true
+gateway:
+  validation:
+    allowWarnings: false
+    alwaysAcceptResources: false
+    failurePolicy: Fail
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
+`))
+	Expect(err).NotTo(HaveOccurred())
+
+	err = values.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	return values.Name(), func() { _ = os.Remove(values.Name()) }
 }

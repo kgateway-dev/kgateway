@@ -9,22 +9,24 @@ import (
 	"text/template"
 
 	"github.com/ghodss/yaml"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/solo-io/go-utils/testutils/exec"
-	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-
-	"github.com/solo-io/skv2/codegen/util"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/testutils/exec"
+	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
+	admission_v1_types "k8s.io/api/admissionregistration/v1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	admission_v1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
@@ -50,6 +52,9 @@ var _ = Describe("Kube2e: helm", func() {
 	})
 
 	It("uses helm to upgrade to this gloo version without errors", func() {
+		if os.Getenv("STRICT_VALIDATION") == "true" {
+			Skip("skipping test that only passes with strict validation disabled")
+		}
 
 		By("should start with gloo version 1.9.0")
 		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(earliestVersionWithV1CRDs))
@@ -148,6 +153,50 @@ var _ = Describe("Kube2e: helm", func() {
 		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 	})
 
+	Context("validation webhook failurePolicy", func() {
+		var webhookConfigClient admission_v1.ValidatingWebhookConfigurationInterface
+		BeforeEach(func() {
+			cfg, err := kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+			kubeClientset, err := kubernetes.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+			webhookConfigClient = kubeClientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
+		})
+
+		It("can change failurePolicy from Fail to Ignore and back again", func() {
+			if os.Getenv("STRICT_VALIDATION") != "true" {
+				Skip("skipping test that only passes with strict validation enabled")
+			}
+
+			By("should start with gateway.validation.failurePolicy=Fail")
+			webhookConfig, err := webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(admission_v1_types.Fail))
+
+			// upgrade and change to Ignore
+			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
+				"-n", testHelper.InstallNamespace,
+				"--set", "gateway.validation.failurePolicy=Ignore")
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+
+			By("should have updated to gateway.validation.failurePolicy=Ignore")
+			webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(admission_v1_types.Ignore))
+
+			// upgrade and change to Fail
+			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
+				"-n", testHelper.InstallNamespace,
+				"--set", "gateway.validation.failurePolicy=Fail")
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+
+			By("should have updated to gateway.validation.failurePolicy=Fail")
+			webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(admission_v1_types.Fail))
+		})
+	})
+
 	Context("applies all CRD manifests without an error", func() {
 
 		var crdsByFileName = map[string]v1.CustomResourceDefinition{}
@@ -231,7 +280,6 @@ var _ = Describe("Kube2e: helm", func() {
 		})
 
 	})
-
 })
 
 func GetGlooServerVersion(ctx context.Context, namespace string) (v string) {
