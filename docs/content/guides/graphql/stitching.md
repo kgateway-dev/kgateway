@@ -57,9 +57,9 @@ spec:
 {{< /tab >}}
 {{< tab name="Query" codelang="yaml">}}
 query {
-GetUser(username: "akeith") {
-    fullName
-}
+  GetUser(username: "akeith") {
+      fullName
+  }
 }
 {{< /tab >}}
 {{< tab name="Response" codelang="json">}}
