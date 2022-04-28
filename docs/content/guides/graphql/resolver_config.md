@@ -91,7 +91,7 @@ resolutions:
         namespace:
 ```
 
-This example gRPC resolver, `Query|UserService.GetUser`, specifies the `GetUser` method on the `user.UserService`, and the `user-svc` upstream service.
+This example gRPC resolver, `Query|UserService.GetUser`, specifies the `GetUser` method on the `user.UserService` service, and the `user-svc` upstream service.
 ```yaml
 apiVersion: graphql.gloo.solo.io/v1beta1
 kind: GraphQLApi
