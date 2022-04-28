@@ -3,13 +3,13 @@ package run
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/jobs/pkg/certgen"
 	"github.com/solo-io/gloo/jobs/pkg/kube"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
 )
 
 type Options struct {
@@ -50,38 +50,44 @@ func Run(ctx context.Context, opts Options) error {
 	if opts.ServerKeySecretFileName == "" {
 		return eris.Errorf("must provide name for the server key entry in the secret data")
 	}
-	certs, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
-	if err != nil {
-		return eris.Wrapf(err, "generating self-signed certs and key")
-	}
+
 	kubeClient := helpers.MustKubeClient()
 
-	caCert := append(certs.ServerCertificate, certs.CaCertificate...)
-	secretConfig := kube.TlsSecret{
-		SecretName:         opts.SecretName,
-		SecretNamespace:    opts.SecretNamespace,
-		PrivateKeyFileName: opts.ServerKeySecretFileName,
-		CertFileName:       opts.ServerCertSecretFileName,
-		CaBundleFileName:   opts.ServerCertAuthorityFileName,
-		PrivateKey:         certs.ServerCertKey,
-		Cert:               caCert,
-		CaBundle:           certs.CaCertificate,
-	}
-	existAndValid := false
+	var secret *v1.Secret
+	var err error
 	if !opts.ForceRotation {
-		existAndValid, err = kube.SecretExistsAndIsValidTlsSecret(ctx, kubeClient, secretConfig)
+		// check if there is an existing valid TLS secret
+		secret, err = kube.GetExistingValidTlsSecret(ctx, kubeClient, opts.SecretName, opts.SecretNamespace)
 		if err != nil {
 			return eris.Wrapf(err, "failed validating existing secret")
 		}
 
-		if existAndValid {
-			contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, skipping update to TLS secret and ValidatingWebhookConfiguration since the old TLS secret is still existAndValid",
-				zap.String("secretName", secretConfig.SecretName),
-				zap.String("secretNamespace", secretConfig.SecretNamespace))
+		if secret != nil {
+			contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, skipping update to TLS secret since the old TLS secret is still valid",
+				zap.String("secretName", opts.SecretName),
+				zap.String("secretNamespace", opts.SecretNamespace))
 		}
 	}
-	if !existAndValid {
-		if err := kube.CreateTlsSecret(ctx, kubeClient, secretConfig); err != nil {
+	// if ForceRotation=true or there is no existing valid secret, generate one
+	if secret == nil {
+		certs, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
+		if err != nil {
+			return eris.Wrapf(err, "generating self-signed certs and key")
+		}
+
+		caCert := append(certs.ServerCertificate, certs.CaCertificate...)
+		secretConfig := kube.TlsSecret{
+			SecretName:         opts.SecretName,
+			SecretNamespace:    opts.SecretNamespace,
+			PrivateKeyFileName: opts.ServerKeySecretFileName,
+			CertFileName:       opts.ServerCertSecretFileName,
+			CaBundleFileName:   opts.ServerCertAuthorityFileName,
+			PrivateKey:         certs.ServerCertKey,
+			Cert:               caCert,
+			CaBundle:           certs.CaCertificate,
+		}
+		secret, err = kube.CreateTlsSecret(ctx, kubeClient, secretConfig)
+		if err != nil {
 			return eris.Wrapf(err, "failed creating secret")
 		}
 	}
@@ -95,7 +101,7 @@ func Run(ctx context.Context, opts Options) error {
 	vwcConfig := kube.WebhookTlsConfig{
 		ServiceName:      opts.SvcName,
 		ServiceNamespace: opts.SvcNamespace,
-		CaBundle:         certs.CaCertificate,
+		CaBundle:         secret.Data[opts.ServerCertAuthorityFileName],
 	}
 
 	if err := kube.UpdateValidatingWebhookConfigurationCaBundle(ctx, kubeClient, vwcName, vwcConfig); err != nil {

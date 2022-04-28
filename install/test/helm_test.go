@@ -3516,7 +3516,7 @@ metadata:
   name: gateway-certgen
   namespace: ` + namespace + `
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-delete-policy": "hook-succeeded"
     "helm.sh/hook-weight": "10"
 spec:
