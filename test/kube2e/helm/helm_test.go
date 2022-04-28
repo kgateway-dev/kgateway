@@ -110,20 +110,26 @@ var _ = Describe("Kube2e: helm", func() {
 		Expect(err).To(BeNil())
 		Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
 
+		var args []string
 		// following logic handles chartUri for focused test
 		// update the settings with `helm upgrade` (without updating the gloo version)
 		if chartUri == "" { // hasn't yet upgraded to the chart being tested- use regular gloo/gloo chart
-			runAndCleanCommand("helm", "upgrade", "gloo", "gloo/gloo",
+			args = []string{"upgrade", "gloo", "gloo/gloo",
 				"-n", testHelper.InstallNamespace,
 				"--set", "settings.replaceInvalidRoutes=true",
 				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400",
-				"--version", GetGlooServerVersion(ctx, testHelper.InstallNamespace))
+				"--version", GetGlooServerVersion(ctx, testHelper.InstallNamespace)}
 		} else { // has already upgraded to the chart being tested- use it
-			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
+			args = []string{"upgrade", "gloo", chartUri,
 				"-n", testHelper.InstallNamespace,
 				"--set", "settings.replaceInvalidRoutes=true",
-				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400")
+				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400"}
 		}
+		if os.Getenv("STRICT_VALIDATION") == "true" {
+			// in the strict validation tests, make sure we retain the failurePolicy=Fail on upgrades
+			args = append(args, "--set", "gateway.validation.failurePolicy=Fail")
+		}
+		runAndCleanCommand("helm", args...)
 
 		By("should have updated to settings.invalidConfigPolicy.invalidRouteResponseCode=400")
 		settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
@@ -141,18 +147,24 @@ var _ = Describe("Kube2e: helm", func() {
 		Expect(err).To(BeNil())
 		Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(104857600)))
 
+		var args []string
 		// following logic handles chartUri for focused test
 		// update the settings with `helm upgrade` (without updating the gloo version)
 		if chartUri == "" { // hasn't yet upgraded to the chart being tested- use regular gloo/gloo chart
-			runAndCleanCommand("helm", "upgrade", "gloo", "gloo/gloo",
+			args = []string{"upgrade", "gloo", "gloo/gloo",
 				"-n", testHelper.InstallNamespace,
 				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000",
-				"--version", GetGlooServerVersion(ctx, testHelper.InstallNamespace))
+				"--version", GetGlooServerVersion(ctx, testHelper.InstallNamespace)}
 		} else { // has already upgraded to the chart being tested- use it
-			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
+			args = []string{"upgrade", "gloo", chartUri,
 				"-n", testHelper.InstallNamespace,
-				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000")
+				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000"}
 		}
+		if os.Getenv("STRICT_VALIDATION") == "true" {
+			// in the strict validation tests, make sure we retain the failurePolicy=Fail on upgrades
+			args = append(args, "--set", "gateway.validation.failurePolicy=Fail")
+		}
+		runAndCleanCommand("helm", args...)
 
 		By("should have updated to gateway.validation.validationServerGrpcMaxSizeBytes=5000000 (5MB)")
 		settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
@@ -193,10 +205,11 @@ var _ = Describe("Kube2e: helm", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(admission_v1_types.Ignore))
 
-			// upgrade and change to Fail
+			// upgrade and change to Fail, and set some arbitrary value on the gateway (which should trigger validation webhook)
 			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
 				"-n", testHelper.InstallNamespace,
-				"--set", "gateway.validation.failurePolicy=Fail")
+				"--set", "gateway.validation.failurePolicy=Fail",
+				"--set", "gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto=true")
 			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 
 			By("should have updated to gateway.validation.failurePolicy=Fail")
