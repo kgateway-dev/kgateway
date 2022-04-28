@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6384
+    description: Use existing cert for validation webhook if cert is still valid.
