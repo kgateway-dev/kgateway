@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Re-adds updated GraphQL stitching documentation.
-    issueLink: https://github.com/solo-io/gloo/issues/6246
