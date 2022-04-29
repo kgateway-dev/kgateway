@@ -14,12 +14,9 @@ jobs:
         # We have removed it from our CI regression tests
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl']
         xds-relay: [ 'false' ]
-        strict-validation: [ 'false' ]
         include:
           - kube-e2e-test-type: 'gateway'
             xds-relay: 'true'
-          - kube-e2e-test-type: 'helm'
-            strict-validation: 'true'
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.4.1
@@ -73,7 +70,6 @@ jobs:
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
         USE_XDS_RELAY: ${{ matrix.xds-relay }}
-        STRICT_VALIDATION: ${{ matrix.strict-validation }}
         CLUSTER_NAME: 'kind'
         CLUSTER_NODE_VERSION: 'v1.22.4@sha256:ca3587e6e545a96c07bf82e2c46503d9ef86fc704f44c17577fca7bcabf5f978'
         VERSION: '0.0.0-kind'

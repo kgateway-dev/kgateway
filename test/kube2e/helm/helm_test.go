@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"text/template"
 
@@ -16,20 +17,28 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/testutils/exec"
+	exec_utils "github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 	admission_v1_types "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
+
+// now that we run CI on a kube 1.22 cluster, we must ensure that we install versions of gloo with v1 CRDs
+// Per https://github.com/solo-io/gloo/issues/4543: CRDs were migrated from v1beta1 -> v1 in Gloo 1.9.0
+const earliestVersionWithV1CRDs = "1.9.0"
+
+const namespace = defaults.GlooSystem
 
 var _ = Describe("Kube2e: helm", func() {
 
@@ -39,139 +48,128 @@ var _ = Describe("Kube2e: helm", func() {
 
 		ctx    context.Context
 		cancel context.CancelFunc
+
+		testHelper *helper.SoloTestHelper
+
+		// whether to install from a released version of the helm chart
+		fromRelease bool
+		// whether to set validation webhook's failurePolicy=Fail
+		strictValidation bool
 	)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
+		cwd, err := os.Getwd()
+		Expect(err).NotTo(HaveOccurred())
+		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.HelmChartName = "gloo"
+			defaults.InstallNamespace = namespace
+			defaults.Verbose = true
+			return defaults
+		})
+		Expect(err).NotTo(HaveOccurred())
+
 		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
+
+		fromRelease = false
+		strictValidation = false
+	})
+
+	JustBeforeEach(func() {
+		installGloo(testHelper, chartUri, fromRelease, strictValidation)
 	})
 
 	AfterEach(func() {
-		cancel()
+		uninstallGloo(testHelper, ctx, cancel)
 	})
 
-	It("uses helm to upgrade to this gloo version without errors", func() {
-		if os.Getenv("STRICT_VALIDATION") == "true" {
-			Skip("skipping test that only passes with strict validation disabled")
-		}
+	Context("upgrades", func() {
+		BeforeEach(func() {
+			fromRelease = true
+		})
 
-		By("should start with gloo version 1.9.0")
-		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(earliestVersionWithV1CRDs))
+		It("uses helm to upgrade to this gloo version without errors", func() {
 
-		// CRDs are applied to a cluster when performing a `helm install` operation
-		// However, `helm upgrade` intentionally does not apply CRDs (https://helm.sh/docs/topics/charts/#limitations-on-crds)
-		// Before performing the upgrade, we must manually apply any CRDs that were introduced since v1.9.0
-		type crd struct{ name, file string }
-		crdsToManuallyApply := []crd{
-			{
-				name: "graphqlapis.graphql.gloo.solo.io",
-				file: filepath.Join(crdDir, "graphql.gloo.solo.io_v1beta1_GraphQLApi.yaml"),
-			},
-			{
-				name: "httpgateways.gateway.solo.io",
-				file: filepath.Join(crdDir, "gateway.solo.io_v1_MatchableHttpGateway.yaml"),
-			},
-			{
-				name: "settings.gloo.solo.io",
-				file: filepath.Join(crdDir, "gloo.solo.io_v1_Settings.yaml"),
-			},
-		}
+			By("should start with gloo version 1.9.0")
+			Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(earliestVersionWithV1CRDs))
 
-		for _, crd := range crdsToManuallyApply {
-			By(fmt.Sprintf("apply new %s CRD", crd.file))
-			crdContents, _ := ioutil.ReadFile(crd.file)
-			fmt.Println(string(crdContents))
-			// Apply the CRD and ensure it is eventually accepted
-			runAndCleanCommand("kubectl", "apply", "-f", crd.file)
-			Eventually(func() string {
-				return string(runAndCleanCommand("kubectl", "get", "crd", crd.name))
-			}, "5s", "1s").Should(ContainSubstring(crd.name))
-		}
+			// CRDs are applied to a cluster when performing a `helm install` operation
+			// However, `helm upgrade` intentionally does not apply CRDs (https://helm.sh/docs/topics/charts/#limitations-on-crds)
+			// Before performing the upgrade, we must manually apply any CRDs that were introduced since v1.9.0
+			type crd struct{ name, file string }
+			crdsToManuallyApply := []crd{
+				{
+					name: "graphqlapis.graphql.gloo.solo.io",
+					file: filepath.Join(crdDir, "graphql.gloo.solo.io_v1beta1_GraphQLApi.yaml"),
+				},
+				{
+					name: "httpgateways.gateway.solo.io",
+					file: filepath.Join(crdDir, "gateway.solo.io_v1_MatchableHttpGateway.yaml"),
+				},
+				{
+					name: "settings.gloo.solo.io",
+					file: filepath.Join(crdDir, "gloo.solo.io_v1_Settings.yaml"),
+				},
+			}
 
-		//Helm upgrade expects the same values overrides as installs
-		valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
-		defer cleanupFunc()
-		// upgrade to the gloo version being tested
-		// Using the flag --disable-openapi-validation although helm upgrade works without it everywhere except for CI
-		runAndCleanCommand("helm", "upgrade", "--disable-openapi-validation", "gloo", chartUri, "-n", testHelper.InstallNamespace, "--values", valueOverrideFile)
-		By("should have upgraded to the gloo version being tested")
-		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
+			for _, crd := range crdsToManuallyApply {
+				By(fmt.Sprintf("apply new %s CRD", crd.file))
+				crdContents, _ := ioutil.ReadFile(crd.file)
+				fmt.Println(string(crdContents))
+				// Apply the CRD and ensure it is eventually accepted
+				runAndCleanCommand("kubectl", "apply", "-f", crd.file)
+				Eventually(func() string {
+					return string(runAndCleanCommand("kubectl", "get", "crd", crd.name))
+				}, "5s", "1s").Should(ContainSubstring(crd.name))
+			}
 
-		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "180s")
-	})
+			// upgrade to the gloo version being tested
+			upgradeGloo(testHelper, chartUri, strictValidation, nil)
 
-	It("uses helm to update the settings without errors", func() {
+			By("should have upgraded to the gloo version being tested")
+			Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
+		})
 
-		By("should start with the settings.invalidConfigPolicy.invalidRouteResponseCode=404")
-		client := helpers.MustSettingsClient(ctx)
-		settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-		Expect(err).To(BeNil())
-		Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
+		It("uses helm to update the settings without errors", func() {
 
-		var args []string
-		// following logic handles chartUri for focused test
-		// update the settings with `helm upgrade` (without updating the gloo version)
-		if chartUri == "" { // hasn't yet upgraded to the chart being tested- use regular gloo/gloo chart
-			args = []string{"upgrade", "gloo", "gloo/gloo",
-				"-n", testHelper.InstallNamespace,
+			By("should start with the settings.invalidConfigPolicy.invalidRouteResponseCode=404")
+			client := helpers.MustSettingsClient(ctx)
+			settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
+			Expect(err).To(BeNil())
+			Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
+
+			upgradeGloo(testHelper, chartUri, strictValidation, []string{
 				"--set", "settings.replaceInvalidRoutes=true",
 				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400",
-				"--version", GetGlooServerVersion(ctx, testHelper.InstallNamespace)}
-		} else { // has already upgraded to the chart being tested- use it
-			args = []string{"upgrade", "gloo", chartUri,
-				"-n", testHelper.InstallNamespace,
-				"--set", "settings.replaceInvalidRoutes=true",
-				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400"}
-		}
-		if os.Getenv("STRICT_VALIDATION") == "true" {
-			// in the strict validation tests, make sure we retain the failurePolicy=Fail on upgrades
-			args = append(args, "--set", "gateway.validation.failurePolicy=Fail")
-		}
-		runAndCleanCommand("helm", args...)
+			})
 
-		By("should have updated to settings.invalidConfigPolicy.invalidRouteResponseCode=400")
-		settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-		Expect(err).To(BeNil())
-		Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(400)))
+			By("should have updated to settings.invalidConfigPolicy.invalidRouteResponseCode=400")
+			settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
+			Expect(err).To(BeNil())
+			Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(400)))
+		})
 
-		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
-	})
+		It("uses helm to update the validationServerGrpcMaxSizeBytes without errors", func() {
 
-	It("uses helm to update the validationServerGrpcMaxSizeBytes without errors", func() {
+			// this is the default value from the 1.9.0 chart
+			By("should start with the gateway.validation.validationServerGrpcMaxSizeBytes=4000000 (4MB)")
+			client := helpers.MustSettingsClient(ctx)
+			settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
+			Expect(err).To(BeNil())
+			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
 
-		By("should start with the gateway.validation.validationServerGrpcMaxSizeBytes=104857600 (100MiB)")
-		client := helpers.MustSettingsClient(ctx)
-		settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-		Expect(err).To(BeNil())
-		Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(104857600)))
-
-		var args []string
-		// following logic handles chartUri for focused test
-		// update the settings with `helm upgrade` (without updating the gloo version)
-		if chartUri == "" { // hasn't yet upgraded to the chart being tested- use regular gloo/gloo chart
-			args = []string{"upgrade", "gloo", "gloo/gloo",
-				"-n", testHelper.InstallNamespace,
+			upgradeGloo(testHelper, chartUri, strictValidation, []string{
 				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000",
-				"--version", GetGlooServerVersion(ctx, testHelper.InstallNamespace)}
-		} else { // has already upgraded to the chart being tested- use it
-			args = []string{"upgrade", "gloo", chartUri,
-				"-n", testHelper.InstallNamespace,
-				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000"}
-		}
-		if os.Getenv("STRICT_VALIDATION") == "true" {
-			// in the strict validation tests, make sure we retain the failurePolicy=Fail on upgrades
-			args = append(args, "--set", "gateway.validation.failurePolicy=Fail")
-		}
-		runAndCleanCommand("helm", args...)
+			})
 
-		By("should have updated to gateway.validation.validationServerGrpcMaxSizeBytes=5000000 (5MB)")
-		settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-		Expect(err).To(BeNil())
-		Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(5000000)))
-
-		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			By("should have updated to gateway.validation.validationServerGrpcMaxSizeBytes=5000000 (5MB)")
+			settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
+			Expect(err).To(BeNil())
+			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(5000000)))
+		})
 	})
 
 	Context("validation webhook", func() {
@@ -182,6 +180,8 @@ var _ = Describe("Kube2e: helm", func() {
 			Expect(err).NotTo(HaveOccurred())
 			kubeClientset, err = kubernetes.NewForConfig(cfg)
 			Expect(err).NotTo(HaveOccurred())
+
+			strictValidation = true
 		})
 
 		It("sets validation webhook caBundle on install and upgrade", func() {
@@ -196,9 +196,7 @@ var _ = Describe("Kube2e: helm", func() {
 			Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
 
 			// do an upgrade
-			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
-				"-n", testHelper.InstallNamespace)
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			upgradeGloo(testHelper, chartUri, strictValidation, nil)
 
 			By("the webhook caBundle and secret's root ca value should still match after upgrade")
 			webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
@@ -209,10 +207,6 @@ var _ = Describe("Kube2e: helm", func() {
 		})
 
 		It("can change failurePolicy from Fail to Ignore and back again", func() {
-			if os.Getenv("STRICT_VALIDATION") != "true" {
-				Skip("skipping test that only passes with strict validation enabled")
-			}
-
 			webhookConfigClient := kubeClientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
 
 			By("should start with gateway.validation.failurePolicy=Fail")
@@ -221,10 +215,7 @@ var _ = Describe("Kube2e: helm", func() {
 			Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(admission_v1_types.Fail))
 
 			// upgrade and change to Ignore
-			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
-				"-n", testHelper.InstallNamespace,
-				"--set", "gateway.validation.failurePolicy=Ignore")
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			upgradeGloo(testHelper, chartUri, false, nil)
 
 			By("should have updated to gateway.validation.failurePolicy=Ignore")
 			webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
@@ -232,11 +223,9 @@ var _ = Describe("Kube2e: helm", func() {
 			Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(admission_v1_types.Ignore))
 
 			// upgrade and change to Fail, and set some arbitrary value on the gateway (which should trigger validation webhook)
-			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
-				"-n", testHelper.InstallNamespace,
-				"--set", "gateway.validation.failurePolicy=Fail",
-				"--set", "gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto=true")
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			upgradeGloo(testHelper, chartUri, true, []string{
+				"--set", "gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto=true",
+			})
 
 			By("should have updated to gateway.validation.failurePolicy=Fail")
 			webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
@@ -274,12 +263,12 @@ var _ = Describe("Kube2e: helm", func() {
 		It("works using kubectl apply", func() {
 			for crdFile, crd := range crdsByFileName {
 				// Apply the CRD
-				err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", crdFile)
+				err := exec_utils.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", crdFile)
 				Expect(err).NotTo(HaveOccurred(), "should be able to kubectl apply -f %s", crdFile)
 
 				// Ensure the CRD is eventually accepted
 				Eventually(func() (string, error) {
-					return exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "crd", crd.GetName())
+					return exec_utils.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "crd", crd.GetName())
 				}, "10s", "1s").Should(ContainSubstring(crd.GetName()))
 			}
 		})
@@ -318,7 +307,7 @@ var _ = Describe("Kube2e: helm", func() {
 				settingsBytes, err := templatedSettings.MarshalJSON()
 
 				// Apply the fixture
-				err = exec.RunCommandInput(string(settingsBytes), testHelper.RootDir, false, "kubectl", "apply", "-f", "-")
+				err = exec_utils.RunCommandInput(string(settingsBytes), testHelper.RootDir, false, "kubectl", "apply", "-f", "-")
 				Expect(err).NotTo(HaveOccurred(), "should be able to kubectl apply -f %s", settingsFixtureFile)
 
 				// continue traversing
@@ -330,7 +319,7 @@ var _ = Describe("Kube2e: helm", func() {
 	})
 })
 
-func GetGlooServerVersion(ctx context.Context, namespace string) (v string) {
+func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 	glooVersion, err := version.GetClientServerVersions(ctx, version.NewKube(namespace))
 	Expect(err).To(BeNil())
 	Expect(len(glooVersion.GetServer())).To(Equal(1))
@@ -359,4 +348,84 @@ func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *u
 	err = tmpl.Execute(&b, values)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return makeUnstructured(b.String())
+}
+
+func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease bool, strictValidation bool) {
+	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
+	defer cleanupFunc()
+
+	// construct helm args
+	var args = []string{"install", testHelper.HelmChartName}
+	if fromRelease {
+		args = append(args, "gloo/gloo",
+			"--version", fmt.Sprintf("v%s", earliestVersionWithV1CRDs))
+	} else {
+		args = append(args, chartUri)
+	}
+	args = append(args, "-n", testHelper.InstallNamespace,
+		"--create-namespace",
+		"--values", valueOverrideFile)
+	if strictValidation {
+		args = append(args, strictValidationArgs...)
+	}
+
+	if fromRelease {
+		runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName, "https://storage.googleapis.com/solo-public-helm",
+			"--force-update")
+		runAndCleanCommand("helm", "repo", "update")
+	}
+	fmt.Printf("running helm with args: %v\n", args)
+	runAndCleanCommand("helm", args...)
+
+	// Check that everything is OK
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+}
+
+func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool, additionalArgs []string) {
+	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
+	defer cleanupFunc()
+
+	var args = []string{"upgrade", testHelper.HelmChartName, chartUri,
+		"-n", testHelper.InstallNamespace,
+		"--values", valueOverrideFile}
+	if strictValidation {
+		args = append(args, strictValidationArgs...)
+	}
+	args = append(args, additionalArgs...)
+
+	fmt.Printf("running helm with args: %v\n", args)
+	runAndCleanCommand("helm", args...)
+
+	// Check that everything is OK
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+}
+
+func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cancel context.CancelFunc) {
+	Expect(testHelper).ToNot(BeNil())
+	err := testHelper.UninstallGloo()
+	Expect(err).NotTo(HaveOccurred())
+	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
+	Expect(apierrors.IsNotFound(err)).To(BeTrue())
+	cancel()
+}
+
+var strictValidationArgs = []string{
+	"--set", "gateway.validation.failurePolicy=Fail",
+	"--set", "gateway.validation.allowWarnings=false",
+	"--set", "gateway.validation.alwaysAcceptResources=false",
+}
+
+func runAndCleanCommand(name string, arg ...string) []byte {
+	cmd := exec.Command(name, arg...)
+	b, err := cmd.Output()
+	// for debugging in Cloud Build
+	if err != nil {
+		if v, ok := err.(*exec.ExitError); ok {
+			fmt.Println("ExitError: ", string(v.Stderr))
+		}
+	}
+	Expect(err).To(BeNil())
+	cmd.Process.Kill()
+	cmd.Process.Release()
+	return b
 }
