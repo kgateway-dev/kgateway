@@ -118,15 +118,19 @@ It is used to ensure that CRs that we validate are only installed after the vali
 When the resource is applied as part of post-install/post-upgrade, we also need to explicitly add the helm
 labels/annotations, since by default Helm does not manage hook resources and won't add the annotations.
 
-The input to the function should be a dict with 2 keys:
-- "release" pointing to the helm release object
-- "values" pointing to the gloo helm values object (this is provided as an argument so that other charts such as the
+The input to the function should be a dict with the following key/value mappings:
+- "release": the helm release object
+- "values": the gloo helm values object (this is provided as an argument so that other charts such as the
   GlooEE chart can also use this function and pass in the appropriate values from its subchart)
+- "labels": (optional) additional labels to include (a dict of key/value pairs)
 */}}
 {{- define "gloo.customResourceLabelsAndAnnotations" -}}
 {{- $isPostInstall := include "gloo.waitForValidationService" .values }}
   labels:
     app: gloo
+{{- range $k, $v := .labels }}
+    {{$k}}: {{$v}}
+{{- end }}
 {{- if $isPostInstall }}
     app.kubernetes.io/managed-by: Helm
   annotations:

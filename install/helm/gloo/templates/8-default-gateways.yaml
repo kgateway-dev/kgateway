@@ -3,7 +3,7 @@
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{$data := dict "release" .Release "values" .Values }}
+{{ $data := dict "release" .Release "values" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -59,7 +59,7 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{$data := dict "release" .Release "values" .Values }}
+{{ $data := dict "release" .Release "values" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -114,7 +114,7 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{$data := dict "release" .Release "values" .Values }}
+{{ $data := dict "release" .Release "values" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
