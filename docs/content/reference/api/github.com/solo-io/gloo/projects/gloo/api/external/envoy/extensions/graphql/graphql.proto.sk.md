@@ -45,6 +45,8 @@ weight: 5
 - [Executor](#executor)
 - [Local](#local)
 - [Remote](#remote)
+- [Extraction](#extraction)
+- [DynamicMetadataExtraction](#dynamicmetadataextraction)
 - [RemoteSchemaRequest](#remoteschemarequest)
   
 
@@ -732,7 +734,7 @@ Execute schema using resolvers.
 Execute schema by querying a graphql upstream.
 
 ```yaml
-"upstreamRef": string
+"serverUri": .solo.io.envoy.config.core.v3.HttpUri
 "request": .envoy.config.filter.http.graphql.v2.Executor.Remote.RemoteSchemaRequest
 "spanName": string
 
@@ -740,9 +742,49 @@ Execute schema by querying a graphql upstream.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `upstreamRef` | `string` |  |
+| `serverUri` | [.solo.io.envoy.config.core.v3.HttpUri](../../../config/core/v3/http_uri.proto.sk/#httpuri) | Server URI of the remote graphql cluster. |
 | `request` | [.envoy.config.filter.http.graphql.v2.Executor.Remote.RemoteSchemaRequest](../graphql.proto.sk/#remoteschemarequest) |  |
 | `spanName` | `string` |  |
+
+
+
+
+---
+### Extraction
+
+
+
+```yaml
+"value": string
+"header": string
+"dynamicMetadata": .envoy.config.filter.http.graphql.v2.Executor.Remote.Extraction.DynamicMetadataExtraction
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `string` | Set the extraction type to use a static value. Only one of `value`, `header`, or `dynamicMetadata` can be set. |
+| `header` | `string` | Set the extraction type to use a header value. Specify the name of the header to extract the value from on the original request. Only one of `header`, `value`, or `dynamicMetadata` can be set. |
+| `dynamicMetadata` | [.envoy.config.filter.http.graphql.v2.Executor.Remote.Extraction.DynamicMetadataExtraction](../graphql.proto.sk/#dynamicmetadataextraction) | Set the extraction type to use a dynamic metadata value. Only one of `dynamicMetadata`, `value`, or `header` can be set. |
+
+
+
+
+---
+### DynamicMetadataExtraction
+
+
+
+```yaml
+"metadataNamespace": string
+"key": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `metadataNamespace` | `string` | The namespace that the dynamic metadata is stored in. |
+| `key` | `string` | The key in the namespace that the dynamic metadata is stored under. |
 
 
 
@@ -753,15 +795,15 @@ Execute schema by querying a graphql upstream.
 
 
 ```yaml
-"headers": map<string, string>
-"queryParams": map<string, string>
+"headers": map<string, .envoy.config.filter.http.graphql.v2.Executor.Remote.Extraction>
+"queryParams": map<string, .envoy.config.filter.http.graphql.v2.Executor.Remote.Extraction>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `headers` | `map<string, string>` | Map of headers to header value which will be included in the request to the remote graphql server. |
-| `queryParams` | `map<string, string>` | Query params to set on the request to the remote graphql server. |
+| `headers` | `map<string, .envoy.config.filter.http.graphql.v2.Executor.Remote.Extraction>` | Map of headers to header value which will be included in the request to the remote graphql server. |
+| `queryParams` | `map<string, .envoy.config.filter.http.graphql.v2.Executor.Remote.Extraction>` | Query params to set on the request to the remote graphql server. |
 
 
 
