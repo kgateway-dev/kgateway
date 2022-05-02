@@ -45,7 +45,6 @@ weight: 5
 - [Executor](#executor)
 - [Local](#local)
 - [Remote](#remote)
-- [Extraction](#extraction)
 - [RemoteSchemaRequest](#remoteschemarequest)
   
 
@@ -749,39 +748,20 @@ Execute schema by querying a graphql upstream.
 
 
 ---
-### Extraction
-
-
-
-```yaml
-"value": string
-"header": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `value` | `string` | Set the extraction type to use a static value. Only one of `value` or `header` can be set. |
-| `header` | `string` | Set the extraction type to use a header value. Specify the name of the header to extract the value from on the original request. Only one of `header` or `value` can be set. |
-
-
-
-
----
 ### RemoteSchemaRequest
 
 
 
 ```yaml
-"headers": map<string, .envoy.config.filter.http.graphql.v2.Executor.Remote.Extraction>
-"queryParams": map<string, .envoy.config.filter.http.graphql.v2.Executor.Remote.Extraction>
+"headers": map<string, string>
+"queryParams": map<string, string>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `headers` | `map<string, .envoy.config.filter.http.graphql.v2.Executor.Remote.Extraction>` | Map of headers to header value which will be included in the request to the remote graphql server. |
-| `queryParams` | `map<string, .envoy.config.filter.http.graphql.v2.Executor.Remote.Extraction>` | Query params to set on the request to the remote graphql server. |
+| `headers` | `map<string, string>` | Map of headers to header value which will be included in the request to the remote graphql server. |
+| `queryParams` | `map<string, string>` | Query params to set on the request to the remote graphql server. |
 
 
 
