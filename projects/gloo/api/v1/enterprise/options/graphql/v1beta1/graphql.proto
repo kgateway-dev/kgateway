@@ -471,10 +471,33 @@ message Executor {
     // Options that apply to this local executable schema
     LocalExecutorOptions options = 3;
   }
+  message Remote {
+    // by default, we copy the body and pass through none of the headers, defaulting :method to copied method and :path to copied path
+    // if method is GET then we do not copy the body (this is handled by envoy, nothing to do here brendan)
+    core.solo.io.ResourceRef upstream_ref = 1;
+
+    // map of header name to extraction type:
+    // e.g.
+    //
+    // ':method': '{$headers.:method}'
+    // ':path': '/hard/coded/path'
+    //
+    // translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508
+    map<string, string> headers = 2;
+
+    // map of header name to extraction type:
+    // e.g.
+    //
+    // 'query': '{$dynamicMetadata.$KEY_NAME.io.solo.transformation}'
+    //
+    // translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508
+    map<string, string> query_params = 3;
+
+    string span_name = 4;
+  }
 
   oneof executor {
     Local local = 1;
-    // coming soon, schema stitching:
-    //Remote remote = 2;
+    Remote remote = 2;
   }
 }

@@ -30,6 +30,7 @@ weight: 5
 - [Executor](#executor)
 - [Local](#local)
 - [LocalExecutorOptions](#localexecutoroptions)
+- [Remote](#remote)
   
 
 
@@ -400,12 +401,14 @@ This message specifies Persisted Query Cache configuration.
 
 ```yaml
 "local": .graphql.gloo.solo.io.Executor.Local
+"remote": .graphql.gloo.solo.io.Executor.Remote
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `local` | [.graphql.gloo.solo.io.Executor.Local](../graphql.proto.sk/#local) |  |
+| `local` | [.graphql.gloo.solo.io.Executor.Local](../graphql.proto.sk/#local) |  Only one of `local` or `remote` can be set. |
+| `remote` | [.graphql.gloo.solo.io.Executor.Remote](../graphql.proto.sk/#remote) |  Only one of `remote` or `local` can be set. |
 
 
 
@@ -445,6 +448,29 @@ Execute schema using resolvers.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `maxDepth` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Max GraphQL operation (query/mutation/subscription) depth. This sets a limitation on the max nesting on a query that runs against this schema. any GraphQL operation that runs past the `max_depth` will add an error message to the response and will return as `null`. As as simple example, if the schema is ```gql type Query { employee: Employee } type Employee { manager: Employee name: String } ``` and we set a `max_depth` of `3` and we run a query ```gql query { # query depth : 0 employee { # query depth : 1 manager { # query depth : 2 name # query depth : 3 manager { # query depth : 3 name # query depth : 4 } } } } ``` the graphql server will respond with a response: ```json { "data" : { "employee" : { "manager" : { "name" : "Manager 1", "manager" : { "name" : null }}}}, "errors": [ {"message": "field 'name' exceeds the max operation depth of 3 for this schema"} ] } If not configured, or the value is 0, the query depth will be unbounded. |
+
+
+
+
+---
+### Remote
+
+
+
+```yaml
+"upstreamRef": .core.solo.io.ResourceRef
+"headers": map<string, string>
+"queryParams": map<string, string>
+"spanName": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | by default, we copy the body and pass through none of the headers, defaulting :method to copied method and :path to copied path if method is GET then we do not copy the body (this is handled by envoy, nothing to do here brendan). |
+| `headers` | `map<string, string>` | map of header name to extraction type: e.g. ':method': '{$headers.:method}' ':path': '/hard/coded/path' translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508. |
+| `queryParams` | `map<string, string>` | map of header name to extraction type: e.g. 'query': '{$dynamicMetadata.$KEY_NAME.io.solo.transformation}' translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508. |
+| `spanName` | `string` |  |
 
 
 

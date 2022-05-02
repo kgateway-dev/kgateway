@@ -125,6 +125,26 @@ spec:
                               type: object
                             type: object
                         type: object
+                      remote:
+                        properties:
+                          headers:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          queryParams:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          spanName:
+                            type: string
+                          upstreamRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
                     type: object
                   grpcDescriptorRegistry:
                     properties:
