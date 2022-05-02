@@ -49,6 +49,7 @@ spec:
       type User {
         username: String
         fullName: String
+        userId: Int
       }
 
       type Query {
@@ -59,12 +60,16 @@ spec:
 query {
   GetUser(username: "akeith") {
       fullName
+      userId
   }
 }
 {{< /tab >}}
 {{< tab name="Response" codelang="json">}}
 {
-  "GetUser": "Abigail Keith"
+  "GetUser": {
+      "fullName": "Abigail Keith"
+      "userId": 346
+  }
 }
 {{< /tab >}}
 {{< /tabs >}}

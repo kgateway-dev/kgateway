@@ -68,7 +68,7 @@ spec:
 
 ## gRPC resolvers
 
-Configure a REST resolver as a section within your `GraphQLApi` YAML file.
+Configure a gRPC resolver as a section within your `GraphQLApi` YAML file.
 
 ```yaml
 resolutions:
