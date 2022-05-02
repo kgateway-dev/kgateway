@@ -1,0 +1,3 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow for basic caching service configuration in gloo
