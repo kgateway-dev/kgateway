@@ -182,8 +182,10 @@ var _ = Describe("TranslatorSyncer", func() {
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
 		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
-		s := mockReporter.Statuses()[reportedKey]["*v1.Proxy.test_gloo-system"]
-		Expect(s.State).To(BeEquivalentTo(core.Status_Accepted))
+		m := map[string]*core.Status{
+			"*v1.Proxy.test_gloo-system": {State: core.Status_Accepted},
+		}
+		Eventually(func() map[string]*core.Status { return mockReporter.Statuses()[reportedKey] }, "5s", "0.5s").Should(BeEquivalentTo(m))
 	})
 
 	It("should retry setting the status if it first fails", func() {
@@ -215,7 +217,10 @@ var _ = Describe("TranslatorSyncer", func() {
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
 		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
-		Expect(mockReporter.Statuses()[reportedKey]["*v1.Proxy.test_gloo-system"].State).To(BeEquivalentTo(core.Status_Accepted))
+		m := map[string]*core.Status{
+			"*v1.Proxy.test_gloo-system": {State: core.Status_Accepted},
+		}
+		Eventually(func() map[string]*core.Status { return mockReporter.Statuses()[reportedKey] }, "5s", "0.5s").Should(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors", func() {
