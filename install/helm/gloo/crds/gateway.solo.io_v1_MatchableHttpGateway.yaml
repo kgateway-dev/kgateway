@@ -35,6 +35,16 @@ spec:
                             nullable: true
                             type: integer
                         type: object
+                      caching:
+                        properties:
+                          cachingServiceRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
                       csrf:
                         properties:
                           additionalOrigins:
