@@ -3565,7 +3565,8 @@ spec:
           - /bin/sh
           - -c
           - "kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-` + namespace + `"
-          - "kubectl delete gateways.gateway.solo.io -n ` + namespace + ` --all"
+          - "kubectl delete gateways.gateway.solo.io -n ` + namespace + ` -l created-by=gloo-install"
+          - "kubectl delete upstreams.gloo.solo.io -n ` + namespace + ` -l created-by=gloo-install"
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
 `)
