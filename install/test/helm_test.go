@@ -3589,6 +3589,7 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
+    created-by: gloo-install
     "app.kubernetes.io/managed-by": Helm
   annotations:
     "helm.sh/hook": post-install,post-upgrade
@@ -3614,6 +3615,7 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
+    created-by: gloo-install
     "app.kubernetes.io/managed-by": Helm
   annotations:
     "helm.sh/hook": post-install,post-upgrade
