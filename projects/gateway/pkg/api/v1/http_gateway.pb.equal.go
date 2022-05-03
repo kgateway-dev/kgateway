@@ -26,70 +26,6 @@ var (
 )
 
 // Equal function
-func (m *MatchableHttpGateway) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*MatchableHttpGateway)
-	if !ok {
-		that2, ok := that.(MatchableHttpGateway)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetNamespacedStatuses()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetNamespacedStatuses()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetNamespacedStatuses(), target.GetNamespacedStatuses()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMetadata()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetMatcher()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMatcher()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetMatcher(), target.GetMatcher()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetHttpGateway()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetHttpGateway()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetHttpGateway(), target.GetHttpGateway()) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
 func (m *HttpGateway) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -208,57 +144,6 @@ func (m *VirtualServiceSelectorExpressions) Equal(that interface{}) bool {
 			}
 		}
 
-	}
-
-	return true
-}
-
-// Equal function
-func (m *MatchableHttpGateway_Matcher) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*MatchableHttpGateway_Matcher)
-	if !ok {
-		that2, ok := that.(MatchableHttpGateway_Matcher)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetSourcePrefixRanges()) != len(target.GetSourcePrefixRanges()) {
-		return false
-	}
-	for idx, v := range m.GetSourcePrefixRanges() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetSourcePrefixRanges()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetSourcePrefixRanges()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	if h, ok := interface{}(m.GetSslConfig()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetSslConfig()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetSslConfig(), target.GetSslConfig()) {
-			return false
-		}
 	}
 
 	return true
