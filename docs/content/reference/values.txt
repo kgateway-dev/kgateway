@@ -267,7 +267,7 @@
 |gateway.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gateway.deployment.extraGatewayLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway deployment.|
 |gateway.deployment.extraGatewayAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the gloo edge gateway deployment.|
-|gateway.deployment.replicas|int|1|number of instances to deploy|
+|gateway.deployment.replicas|int|0|number of instances to deploy|
 |gateway.deployment.customEnv[].name|string|||
 |gateway.deployment.customEnv[].value|string|||
 |gateway.deployment.customEnv[].valueFrom.fieldRef.apiVersion|string|||
@@ -344,6 +344,7 @@
 |gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller|
 |gateway.compressedProxySpec|bool||if true, enables compression for the Proxy CRD spec|
 |gateway.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
+|gateway.persistProxySpec|bool||Enable writing Proxy CRD to etcd. Disabled by default for performance.|
 |gateway.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.customEnv[].name|string|||

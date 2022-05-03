@@ -226,6 +226,12 @@ spec:
                     type: boolean
                   compressedProxySpec:
                     type: boolean
+                  enableGatewayController:
+                    nullable: true
+                    type: boolean
+                  persistProxySpec:
+                    nullable: true
+                    type: boolean
                   readGatewaysFromAllNamespaces:
                     type: boolean
                   validation:

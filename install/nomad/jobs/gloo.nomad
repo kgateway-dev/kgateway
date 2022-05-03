@@ -178,58 +178,6 @@ EOF
       mode = "fail"
     }
 
-    task "gateway" {
-    driver = "docker"
-    config {
-      image = "[[.gateway.image.registry]]/[[.gateway.image.repository]]:[[.gateway.image.tag]]"
-      args = [
-        "--namespace=[[.config.namespace]]",
-        "--dir=${NOMAD_TASK_DIR}/settings/",
-      ]
-
-      [[ if .dockerNetwork ]]
-      # Use overlay network
-      network_mode = "[[.dockerNetwork]]"
-      [[ end ]]
-    }
-
-    template {
-      data = <<EOF
-gloo:
-  xdsBindAddr: 0.0.0.0:[[.gloo.xdsPort]]
-consul:
-  address: [[.consul.address]]
-  serviceDiscovery: {}
-consulKvSource: {}
-consulKvArtifactSource: {}
-discoveryNamespace: [[.config.namespace]]
-metadata:
-  name: default
-  namespace: [[.config.namespace]]
-refreshRate: [[.config.refreshRate]]
-vaultSecretSource:
-  address: [[.vault.address]]
-  token: [[.vault.token]]
-EOF
-
-      destination = "${NOMAD_TASK_DIR}/settings/[[.config.namespace]]/default.yaml"
-    }
-
-    resources {
-      # cpu required in MHz
-      cpu = [[.gateway.cpuLimit]]
-
-      # memory required in MB
-      memory = [[.gateway.memLimit]]
-
-      network {
-        # bandwidth required in MBits
-        mbits = [[.gateway.bandwidthLimit]]
-      }
-    }
-
-  }
-
   }
 
   group "gateway-proxy" {

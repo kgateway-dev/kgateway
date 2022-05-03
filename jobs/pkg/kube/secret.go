@@ -22,23 +22,24 @@ type TlsSecret struct {
 	PrivateKey, Cert, CaBundle                         []byte
 }
 
-func SecretExistsAndIsValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg TlsSecret) (bool, error) {
-	secretClient := kube.CoreV1().Secrets(secretCfg.SecretNamespace)
+// Gets a valid TLS secret with the given name and namepsace, if it exists.
+func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretName string, secretNamespace string) (*v1.Secret, error) {
+	secretClient := kube.CoreV1().Secrets(secretNamespace)
 
-	existing, err := secretClient.Get(ctx, secretCfg.SecretName, metav1.GetOptions{})
+	existing, err := secretClient.Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			contextutils.LoggerFrom(ctx).Warnw("failed to retrieve existing secret",
-				zap.String("secretName", secretCfg.SecretName),
-				zap.String("secretNamespace", secretCfg.SecretNamespace))
+				zap.String("secretName", secretName),
+				zap.String("secretNamespace", secretNamespace))
 			// necessary to return no errors in this case so we don't short circuit certgen on the first run
-			return false, nil
+			return nil, nil
 		}
-		return false, errors.Wrapf(err, "failed to retrieve existing secret")
+		return nil, errors.Wrapf(err, "failed to retrieve existing secret")
 	}
 
 	if existing.Type != v1.SecretTypeTLS {
-		return false, errors.Errorf("unexpected secret type, expected %s and got %s", v1.SecretTypeTLS, existing.Type)
+		return nil, errors.Errorf("unexpected secret type, expected %s and got %s", v1.SecretTypeTLS, existing.Type)
 	}
 
 	certPemBytes := existing.Data[v1.TLSCertKey]
@@ -49,30 +50,32 @@ func SecretExistsAndIsValidTlsSecret(ctx context.Context, kube kubernetes.Interf
 		var decoded *pem.Block
 		decoded, rest = pem.Decode(rest)
 		if decoded == nil {
-			return false, errors.New("no PEM data found")
+			return nil, errors.New("no PEM data found")
 		}
 		cert, err := x509.ParseCertificate(decoded.Bytes)
 		if err != nil {
-			return false, errors.Wrapf(err, "failed to decode pem encoded ca cert")
+			return nil, errors.Wrapf(err, "failed to decode pem encoded ca cert")
 		}
 
 		if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
-			return false, nil
+			return nil, nil
 		}
 	}
 
 	// cert is still valid!
-	return true, nil
+	return existing, nil
 }
 
-func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg TlsSecret) error {
+// Returns the created or updated secret
+func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg TlsSecret) (*v1.Secret, error) {
 	secret := makeTlsSecret(secretCfg)
 
 	secretClient := kube.CoreV1().Secrets(secret.Namespace)
 
 	contextutils.LoggerFrom(ctx).Infow("creating TLS secret", zap.String("secret", secret.Name))
 
-	if _, err := secretClient.Create(ctx, secret, metav1.CreateOptions{}); err != nil {
+	createdSecret, err := secretClient.Create(ctx, secret, metav1.CreateOptions{})
+	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
 			contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, attempting to update",
 				zap.String("secretName", secret.Name),
@@ -80,20 +83,21 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 
 			existing, err := secretClient.Get(ctx, secret.Name, metav1.GetOptions{})
 			if err != nil {
-				return errors.Wrapf(err, "failed to retrieve existing secret after receiving AlreadyExists error on Create")
+				return nil, errors.Wrapf(err, "failed to retrieve existing secret after receiving AlreadyExists error on Create")
 			}
 
 			secret.ResourceVersion = existing.ResourceVersion
 
-			if _, err := secretClient.Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
-				return errors.Wrapf(err, "failed updating existing secret")
+			updatedSecret, err := secretClient.Update(ctx, secret, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed updating existing secret")
 			}
-			return nil
+			return updatedSecret, nil
 		}
-		return errors.Wrapf(err, "failed creating secret")
+		return nil, errors.Wrapf(err, "failed creating secret")
 	}
 
-	return nil
+	return createdSecret, nil
 }
 
 func makeTlsSecret(args TlsSecret) *v1.Secret {

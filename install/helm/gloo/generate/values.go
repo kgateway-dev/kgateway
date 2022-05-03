@@ -267,6 +267,7 @@ type Gateway struct {
 	ReadGatewaysFromAllNamespaces *bool              `json:"readGatewaysFromAllNamespaces,omitempty" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
 	CompressedProxySpec           *bool              `json:"compressedProxySpec,omitempty" desc:"if true, enables compression for the Proxy CRD spec"`
 	LogLevel                      *string            `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
+	PersistProxySpec              *bool              `json:"persistProxySpec,omitempty" desc:"Enable writing Proxy CRD to etcd. Disabled by default for performance."`
 	Service                       *KubeResourceOverride
 }
 

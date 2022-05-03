@@ -109,7 +109,7 @@ func addTLSSecret() {
 		// CaBundle:           certs.CaCertificate,
 	}
 
-	err = kube.CreateTlsSecret(context.Background(), kubeClient, secretConfig)
+	_, err = kube.CreateTlsSecret(context.Background(), kubeClient, secretConfig)
 	Expect(err).NotTo(HaveOccurred(), "it should create the tls secret")
 }
 

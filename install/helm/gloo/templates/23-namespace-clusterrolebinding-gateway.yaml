@@ -108,6 +108,9 @@ subjects:
 - kind: ServiceAccount
   name: gateway
   namespace: {{ .Release.Namespace }}
+- kind: ServiceAccount
+  name: gloo
+  namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
   name: gloo-resource-mutator{{ include "gloo.rbacNameSuffix" . }}

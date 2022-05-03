@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 
@@ -86,6 +87,11 @@ var _ = Describe("SetupSyncer", func() {
 			},
 			DiscoveryNamespace: "non-existent-namespace",
 			WatchNamespaces:    []string{"non-existent-namespace"},
+			Gateway: &v1.GatewayOptions{
+				EnableGatewayController: &wrapperspb.BoolValue{Value: true},
+				PersistProxySpec:        &wrapperspb.BoolValue{Value: false},
+				Validation:              nil,
+			},
 		}
 		memcache = memory.NewInMemoryResourceCache()
 		newContext()
@@ -195,6 +201,7 @@ var _ = Describe("SetupSyncer", func() {
 					gatewayv1.RouteOptionCrd,
 					gatewayv1.VirtualHostOptionCrd,
 					gatewayv1.RouteTableCrd,
+					gatewayv1.MatchableHttpGatewayCrd,
 				}
 
 				for _, crdToRegister := range crdsToRegister {

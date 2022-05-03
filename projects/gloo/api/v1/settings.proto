@@ -659,6 +659,14 @@ message GatewayOptions {
     // Default configuration to use for VirtualServices, when not provided by a specific virtual service
     // When these properties are defined on a specific VirtualService, this configuration will be ignored
     VirtualServiceOptions virtual_service_options = 7;
+
+    // Set this to persist the Proxy CRD to etcd By default, proxies are kept in memory to improve performance.
+    // Proxies can be persisted to etcd to allow external tools and other pods to read the contents the Proxy CRD.
+    google.protobuf.BoolValue persist_proxy_spec = 8;
+
+    // This is set based on the install mode. It indicates to gloo whether or not it should run the gateway
+    // translations and validation.
+    google.protobuf.BoolValue enable_gateway_controller = 9;
 }
 
 // Settings used by the Enterprise Console (UI)

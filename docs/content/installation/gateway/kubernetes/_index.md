@@ -87,7 +87,7 @@ Once you've installed Gloo Edge, please be sure [to verify your installation]({{
 
 {{% notice note %}}
 You can run the command with the flag `--dry-run` to output the Kubernetes manifests (as `yaml`) that `glooctl` will apply to the cluster instead of installing them.
-Note that a proper Gloo Edge installation depends on Helm Chart Hooks (https://helm.sh/docs/topics/charts_hooks/), so the behavior of your installation
+Note that a proper Gloo Edge installation depends on [Helm Chart Hooks](https://helm.sh/docs/topics/charts_hooks/), so the behavior of your installation
 may not be correct if you install by directly applying the dry run manifests, e.g. `glooctl install gateway --dry-run | kubectl apply -f -`.
 {{% /notice %}}
 
@@ -158,7 +158,6 @@ kubectl get all -n gloo-system
 ```noop
 NAME                                READY     STATUS    RESTARTS   AGE
 pod/discovery-f7548d984-slddk       1/1       Running   0          5m
-pod/gateway-5689fd59d7-wsg7f        1/1       Running   0          5m
 pod/gateway-proxy-9d79d48cd-wg8b8   1/1       Running   0          5m
 pod/gloo-5b7b748dbf-jdsvg           1/1       Running   0          5m
 
@@ -169,13 +168,13 @@ service/gloo            ClusterIP      10.100.64.166   <none>        9977/TCP,99
 
 NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
 deployment.apps/discovery       1/1     1            1           5m
-deployment.apps/gateway         1/1     1            1           5m
+deployment.apps/gateway         0/0     1            1           5m
 deployment.apps/gateway-proxy   1/1     1            1           5m
 deployment.apps/gloo            1/1     1            1           5m
 
 NAME                                      DESIRED   CURRENT   READY     AGE
 replicaset.apps/discovery-f7548d984       1         1         1         5m
-replicaset.apps/gateway-5689fd59d7        1         1         1         5m
+replicaset.apps/gateway-5689fd59d7        0         0         0         5m
 replicaset.apps/gateway-proxy-9d79d48cd   1         1         1         5m
 replicaset.apps/gloo-5b7b748dbf           1         1         1         5m
 

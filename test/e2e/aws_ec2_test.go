@@ -239,7 +239,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
-		testClients = services.RunGateway(ctx, false)
+		testClients = services.RunGateway(ctx, true)
 
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()

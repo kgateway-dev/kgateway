@@ -63,15 +63,6 @@ services:
     - ./data:/data/
     restart: always
 
-  gateway:
-    image: ${GLOO_REPO:-quay.io/solo-io}/gateway:${GLOO_VERSION:-1.10.0}
-    working_dir: /
-    command:
-    - "--dir=/data/"
-    volumes:
-    - ./data:/data/
-    restart: always
-
   gateway-proxy:
     image: ${GLOO_REPO:-quay.io/solo-io}/gloo-envoy-wrapper:${GLOO_VERSION:-1.10.0}
     entrypoint: ["envoy"]

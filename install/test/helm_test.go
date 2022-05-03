@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/ghodss/yaml"
+	"github.com/onsi/gomega/format"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -3136,7 +3137,14 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
-
+					It("always enables persisting proxy specs when not in gateway mode", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/disabled_gateway.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.enabled=false",
+							}})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
 					It("correctly allows setting readGatewaysFromAllNamespaces field in the settings when validation disabled", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/read_gateways_from_all_namespaces.yaml", namespace)
 
@@ -3254,6 +3262,7 @@ spec:
 
   gateway:
     readGatewaysFromAllNamespaces: false
+    enableGatewayController: true
     validation:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
@@ -3373,13 +3382,13 @@ metadata:
     app: gloo
     gloo: gateway
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install, pre-upgrade
     "helm.sh/hook-weight": "5" # should come before cert-gen job
 webhooks:
- - name: gateway.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
+ - name: gloo.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
    clientConfig:
      service:
-       name: gateway
+       name: gloo
        namespace: ` + namespace + `
        path: "/validation"
      caBundle: "" # update manually or use certgen job
@@ -3421,7 +3430,7 @@ metadata:
   name: gateway
   namespace: ` + namespace + `
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       gloo: gateway
@@ -3507,7 +3516,7 @@ metadata:
   name: gateway-certgen
   namespace: ` + namespace + `
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-delete-policy": "hook-succeeded"
     "helm.sh/hook-weight": "10"
 spec:
@@ -3539,7 +3548,7 @@ spec:
               memory: 128Mi
           args:
             - "--secret-name=gateway-validation-certs"
-            - "--svc-name=gateway"
+            - "--svc-name=gloo"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-` + namespace + `"
       restartPolicy: OnFailure
 
@@ -3677,6 +3686,7 @@ metadata:
 						labels         map[string]string
 					)
 					BeforeEach(func() {
+						format.MaxLength = 0
 						labels = map[string]string{
 							"gloo": "gloo",
 							"app":  "gloo",
@@ -3707,12 +3717,22 @@ metadata:
 									}},
 								},
 							},
-						}}
+						},
+							{
+								Name: "validation-certs",
+								VolumeSource: v1.VolumeSource{
+									Secret: &v1.SecretVolumeSource{
+										SecretName:  "gateway-validation-certs",
+										DefaultMode: proto.Int(420),
+									},
+								},
+							}}
 						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
-							Name:      "labels-volume",
-							MountPath: "/etc/gloo",
-							ReadOnly:  true,
+							Name:      "validation-certs",
+							MountPath: "/etc/gateway/validation-certs",
+							ReadOnly:  false,
 						}}
+
 						deploy.Spec.Template.Spec.Containers[0].Ports = glooPorts
 						deploy.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
 							Requests: v1.ResourceList{
@@ -3953,6 +3973,7 @@ metadata:
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
+						deploy.Spec.Replicas = pointer.Int32Ptr(0)
 						gatewayDeployment = deploy
 					})
 
@@ -4561,7 +4582,7 @@ metadata:
 					It("can parse multiple config maps", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxyInternal.kind.deployment.replicas=1",
+								"gatewayProxies.gatewayProxyInternal.kind.deployment.replicas=0",
 								"gatewayProxies.gatewayProxyInternal.configMap.data=null",
 								"gatewayProxies.gatewayProxyInternal.service.extraAnnotations=null",
 								"gatewayProxies.gatewayProxyInternal.service.type=ClusterIP",
@@ -4724,7 +4745,8 @@ metadata:
 												}},
 											},
 										},
-									}},
+									},
+									},
 									ServiceAccountName: "gloo",
 									Containers: []v1.Container{
 										{
