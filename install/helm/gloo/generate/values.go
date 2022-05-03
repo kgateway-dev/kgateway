@@ -208,7 +208,7 @@ type InvalidConfigPolicy struct {
 
 type Gloo struct {
 	Deployment     *GlooDeployment `json:"deployment,omitempty"`
-	ServiceAccount `json:"serviceAccount,omitempty" `
+	ServiceAccount `json:"serviceAccount,omitempty"`
 	SplitLogOutput *bool                 `json:"splitLogOutput,omitempty" desc:"Set to true to send debug/info/warning logs to stdout, error/fatal/panic to stderr. Set to false to send all logs to stdout"`
 	GlooService    *KubeResourceOverride `json:"service,omitempty"`
 	LogLevel       *string               `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
@@ -260,6 +260,8 @@ type Gateway struct {
 	Validation                    GatewayValidation  `json:"validation,omitempty" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
 	Deployment                    *GatewayDeployment `json:"deployment,omitempty"`
 	CertGenJob                    *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
+	RolloutJob                    *RolloutJob        `json:"rolloutJob,omitempty" desc:"This job waits for the gloo deployment to be successfully rolled out. It is used to ensure the gateway validation webhook is available before applying Gloo Edge custom resources. This job will only run if gateway validation is enabled and failurePolicy is 'Fail'."`
+	CleanupJob                    *CleanupJob        `json:"cleanupJob,omitempty" desc:"This job cleans up resources that are not deleted by Helm when Gloo Edge is uninstalled. This job will only run if gateway validation is enabled and failurePolicy is 'Fail'."`
 	UpdateValues                  *bool              `json:"updateValues,omitempty" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
 	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount,omitempty" `
 	ServiceAccount                ServiceAccount     `json:"serviceAccount,omitempty" `
@@ -321,6 +323,18 @@ type CertGenJob struct {
 	Resources               *ResourceRequirements `json:"resources,omitempty"`
 	RunOnUpdate             *bool                 `json:"runOnUpdate,omitempty" desc:"enable to run the job also on pre-upgrade"`
 	Cron                    *CertGenCron          `json:"cron,omitempty" desc:"CronJob parameters"`
+}
+
+type RolloutJob struct {
+	Image          *Image   `json:"image,omitempty"`
+	FloatingUserId *bool    `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser      *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+}
+
+type CleanupJob struct {
+	Image          *Image   `json:"image,omitempty"`
+	FloatingUserId *bool    `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser      *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 }
 
 /*

@@ -1,0 +1,131 @@
+{{- $customResourceLifecycle := include "gloo.customResourceLifecycle" .Values }}
+{{- if $customResourceLifecycle }}
+{{- $image := .Values.gateway.cleanupJob.image }}
+{{- if .Values.global }}
+{{- $image = merge .Values.gateway.cleanupJob.image .Values.global.image }}
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: gloo
+    gloo: resource-cleanup
+  name: gloo-resource-cleanup
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  template:
+    metadata:
+      labels:
+        gloo: resource-cleanup
+    spec:
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
+      serviceAccountName: gloo-resource-cleanup
+      containers:
+        - name: kubectl
+          image: {{template "gloo.image" $image}}
+          imagePullPolicy: {{ $image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            {{- if not .Values.gateway.cleanupJob.floatingUserId }}
+            runAsUser: {{ printf "%.0f" (float64 .Values.gateway.cleanupJob.runAsUser) -}}
+            {{- end }}
+          command:
+          - /bin/sh
+          - -c
+          - "kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-{{ .Release.Namespace }}"
+          - "kubectl delete gateways.gateway.solo.io -n {{ .Release.Namespace }} -l created-by=gloo-install"
+          - "kubectl delete upstreams.gloo.solo.io -n {{ .Release.Namespace }} -l created-by=gloo-install"
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 0
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "0" # must be created before cleanup job
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+  name: gloo-resource-cleanup
+  namespace: {{ .Release.Namespace }}
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-resource-cleanup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "0" # must be created before cleanup job
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+rules:
+- apiGroups: ["gateway.solo.io"]
+  resources: ["gateways"]
+  verbs: ["delete"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-resource-cleanup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "0" # must be created before cleanup job
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+roleRef:
+  kind: Role
+  name: gloo-resource-cleanup
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: gloo-resource-cleanup
+  namespace: {{ .Release.Namespace }}
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-resource-cleanup
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "0" # must be created before cleanup job
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+rules:
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingwebhookconfigurations"]
+  verbs: ["delete"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-resource-cleanup
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "0" # must be created before cleanup job
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+roleRef:
+  kind: ClusterRole
+  name: gloo-resource-cleanup
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: gloo-resource-cleanup
+  namespace: {{ .Release.Namespace }}
+{{- end }} {{/* if $customResourceLifecycle */}}
