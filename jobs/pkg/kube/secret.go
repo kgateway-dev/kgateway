@@ -65,7 +65,7 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 		}
 
 		// check if the cert is valid for this service
-		if certgen.ValidForService(cert.DNSNames, svcName, svcNamespace) {
+		if !matchesSvc && certgen.ValidForService(cert.DNSNames, svcName, svcNamespace) {
 			matchesSvc = true
 		}
 	}
