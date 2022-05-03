@@ -34,7 +34,7 @@ DLP is configured as an ordered list of `Action`s on an HTTP listener, virtual s
 configured on the listener, an additional matcher is paired with a list of `Action`s, and the first DLP rule that
 matches a request will be applied.
 
-The DLP filter must be run by Envoy after any other filters which might add data to be masked into the dynamic metadata. Gloo Edge's current filter order follows:
+The DLP filter will be run by Envoy after any other filters which might add data to be masked into the dynamic metadata. Gloo Edge's current filter order follows:
 
 1. Fault Stage (Fault injection)
 2. CORS
