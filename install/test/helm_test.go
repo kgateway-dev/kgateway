@@ -3499,8 +3499,8 @@ spec:
 						testManifest.ExpectUnstructured(gwDeployment.GetKind(), gwDeployment.GetNamespace(), gwDeployment.GetName()).To(BeEquivalentTo(gwDeployment))
 					})
 
-					Context("validation service rollout job", func() {
-						job := makeUnstructured(`
+					Context("gloo rollout and cleanup jobs", func() {
+						rolloutJob := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -3534,72 +3534,50 @@ spec:
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
 `)
-						serviceAccount := makeUnstructured(`
-apiVersion: v1
-kind: ServiceAccount
+						cleanupJob := makeUnstructured(`
+apiVersion: batch/v1
+kind: Job
 metadata:
   labels:
     app: gloo
-    gloo: rbac
+    gloo: resource-cleanup
+  name: gloo-resource-cleanup
+  namespace: ` + namespace + `
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0"
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "5"
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
-  name: gloo-validation-service-rollout
-  namespace: ` + namespace + `
+spec:
+  template:
+    metadata:
+      labels:
+        gloo: resource-cleanup
+    spec:
+      serviceAccountName: gloo-resource-cleanup
+      containers:
+        - name: kubectl
+          image: bitnami/kubectl:1.22.9
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10101
+          command:
+          - /bin/sh
+          - -c
+          - "kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-` + namespace + `"
+          - "kubectl delete gateways.gateway.solo.io -n ` + namespace + ` --all"
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 0
 `)
-						role := makeUnstructured(`
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: gloo-validation-service-rollout
-  namespace: ` + namespace + `
-  labels:
-    app: gloo
-    gloo: rbac
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0"
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
-rules:
-- apiGroups: ["apps"]
-  resources: ["deployments"]
-  verbs: ["get", "list", "watch"]
-`)
-						roleBinding := makeUnstructured(`
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: gloo-validation-service-rollout
-  namespace: ` + namespace + `
-  labels:
-    app: gloo
-    gloo: rbac
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0"
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
-roleRef:
-  kind: Role
-  name: gloo-validation-service-rollout
-  apiGroup: rbac.authorization.k8s.io
-subjects:
-- kind: ServiceAccount
-  name: gloo-validation-service-rollout
-  namespace: ` + namespace + `
-`)
-						It("creates job when failurePolicy=Fail", func() {
+						It("creates jobs when failurePolicy=Fail", func() {
 							prepareMakefile(namespace, helmValues{valuesArgs: []string{
 								"gateway.validation.failurePolicy=Fail",
 								"gateway.rolloutJob.image.tag=1.2.3",
 							}})
 
-							// when gateway validation is enabled and failurePolicy is Fail, a validation service rollout job and
-							// associated service account, role, and rolebinding should be created
-							testManifest.ExpectUnstructured(job.GetKind(), job.GetNamespace(), job.GetName()).To(BeEquivalentTo(job))
-							testManifest.ExpectUnstructured(serviceAccount.GetKind(), serviceAccount.GetNamespace(), serviceAccount.GetName()).To(BeEquivalentTo(serviceAccount))
-							testManifest.ExpectUnstructured(role.GetKind(), role.GetNamespace(), role.GetName()).To(BeEquivalentTo(role))
-							testManifest.ExpectUnstructured(roleBinding.GetKind(), roleBinding.GetNamespace(), roleBinding.GetName()).To(BeEquivalentTo(roleBinding))
+							// when gateway validation is enabled and failurePolicy is Fail, rollout and cleanup jobs should be created
+							testManifest.ExpectUnstructured(rolloutJob.GetKind(), rolloutJob.GetNamespace(), rolloutJob.GetName()).To(BeEquivalentTo(rolloutJob))
+							testManifest.ExpectUnstructured(cleanupJob.GetKind(), cleanupJob.GetNamespace(), cleanupJob.GetName()).To(BeEquivalentTo(cleanupJob))
 
 							// additionally, the default gateways should have a post-install/post-upgrade annotation
 							// so that they get created after the rollout job completes
@@ -3661,10 +3639,8 @@ spec:
 
 							// when failurePolicy=Ignore, we do not need to wait on the validation service being ready before applying custom resources,
 							// so the rollout job should not exist
-							testManifest.ExpectUnstructured(job.GetKind(), job.GetNamespace(), job.GetName()).To(BeNil())
-							testManifest.ExpectUnstructured(serviceAccount.GetKind(), serviceAccount.GetNamespace(), serviceAccount.GetName()).To(BeNil())
-							testManifest.ExpectUnstructured(role.GetKind(), role.GetNamespace(), role.GetName()).To(BeNil())
-							testManifest.ExpectUnstructured(roleBinding.GetKind(), roleBinding.GetNamespace(), roleBinding.GetName()).To(BeNil())
+							testManifest.ExpectUnstructured(rolloutJob.GetKind(), rolloutJob.GetNamespace(), rolloutJob.GetName()).To(BeNil())
+							testManifest.ExpectUnstructured(cleanupJob.GetKind(), cleanupJob.GetNamespace(), cleanupJob.GetName()).To(BeNil())
 
 							// the default gateways should not have the helm hook annotations because they don't need to be applied in a specific order
 							// in relation to the rollout job
