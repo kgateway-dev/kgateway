@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	any1 "github.com/golang/protobuf/ptypes/any"
+	any "github.com/golang/protobuf/ptypes/any"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -32,9 +32,9 @@ type KubeService struct {
 	unknownFields protoimpl.UnknownFields
 
 	// a raw byte representation of the kubernetes service this resource wraps
-	KubeServiceSpec *any1.Any `protobuf:"bytes,1,opt,name=kube_service_spec,json=kubeServiceSpec,proto3" json:"kube_service_spec,omitempty"`
+	KubeServiceSpec *any.Any `protobuf:"bytes,1,opt,name=kube_service_spec,json=kubeServiceSpec,proto3" json:"kube_service_spec,omitempty"`
 	// a raw byte representation of the service status of the kubernetes service object
-	KubeServiceStatus *any1.Any `protobuf:"bytes,2,opt,name=kube_service_status,json=kubeServiceStatus,proto3" json:"kube_service_status,omitempty"`
+	KubeServiceStatus *any.Any `protobuf:"bytes,2,opt,name=kube_service_status,json=kubeServiceStatus,proto3" json:"kube_service_status,omitempty"`
 	// Metadata contains the object metadata for this resource
 	Metadata *core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
 }
@@ -71,14 +71,14 @@ func (*KubeService) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_ingress_api_v1_service_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *KubeService) GetKubeServiceSpec() *any1.Any {
+func (x *KubeService) GetKubeServiceSpec() *any.Any {
 	if x != nil {
 		return x.KubeServiceSpec
 	}
 	return nil
 }
 
-func (x *KubeService) GetKubeServiceStatus() *any1.Any {
+func (x *KubeService) GetKubeServiceStatus() *any.Any {
 	if x != nil {
 		return x.KubeServiceStatus
 	}
@@ -146,7 +146,7 @@ func file_github_com_solo_io_gloo_projects_ingress_api_v1_service_proto_rawDescG
 var file_github_com_solo_io_gloo_projects_ingress_api_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_github_com_solo_io_gloo_projects_ingress_api_v1_service_proto_goTypes = []interface{}{
 	(*KubeService)(nil),   // 0: ingress.solo.io.KubeService
-	(*any1.Any)(nil),      // 1: google.protobuf.Any
+	(*any.Any)(nil),       // 1: google.protobuf.Any
 	(*core.Metadata)(nil), // 2: core.solo.io.Metadata
 }
 var file_github_com_solo_io_gloo_projects_ingress_api_v1_service_proto_depIdxs = []int32{
