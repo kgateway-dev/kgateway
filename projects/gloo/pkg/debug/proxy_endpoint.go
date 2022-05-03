@@ -12,15 +12,17 @@ import (
 type ProxyEndpointServer interface {
 	debug.ProxyEndpointServiceServer
 	Register(grpcServer *grpc.Server)
+	SetProxyClient(client v1.ProxyClient)
 }
 type proxyEndpointServer struct {
 	proxyClient v1.ProxyClient
 }
 
-func NewProxyEndpointServer(proxyClient v1.ProxyClient) *proxyEndpointServer {
-	return &proxyEndpointServer{
-		proxyClient: proxyClient,
-	}
+func NewProxyEndpointServer() *proxyEndpointServer {
+	return &proxyEndpointServer{}
+}
+func (p *proxyEndpointServer) SetProxyClient(proxyClient v1.ProxyClient) {
+	p.proxyClient = proxyClient
 }
 func (p *proxyEndpointServer) GetProxies(ctx context.Context, req *debug.ProxyEndpointRequest) (*debug.ProxyEndpointResponse, error) {
 	if req.GetName() == "" {

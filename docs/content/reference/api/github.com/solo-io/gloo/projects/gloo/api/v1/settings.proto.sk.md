@@ -371,7 +371,7 @@ need to be set on the Gloo container.
 | `insecureSkipVerify` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | InsecureSkipVerify if set to true will disable TLS host verification. |
 | `waitTime` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used. |
 | `serviceDiscovery` | [.gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions](../settings.proto.sk/#servicediscoveryoptions) | Enable Service Discovery via Consul with this field set to empty struct `{}` to enable with defaults. |
-| `httpAddress` | `string` | The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |
+| `httpAddress` | `string` | The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_DDR env if set, otherwise to 127.0.0.1:8500. |
 | `dnsAddress` | `string` | The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server). |
 | `dnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s. |
 
@@ -570,6 +570,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "enableRestEds": .google.protobuf.BoolValue
 "failoverUpstreamDnsPollingInterval": .google.protobuf.Duration
 "removeUnusedFilters": .google.protobuf.BoolValue
+"proxyDebugBindAddr": string
 
 ```
 
@@ -589,6 +590,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `enableRestEds` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether or not to use rest xds for all EDS by default. Rest XDS, as opposed to grpc, uses http polling rather than streaming. |
 | `failoverUpstreamDnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server if upstream failover is configured. If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 10s. |
 | `removeUnusedFilters` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default gloo adds a series of filters to envoy to ensure that new routes are picked up Even if the listener previously did not have a filter on the chain previously. When set to true unused filters are not added to the chain by default. Defaults to false. |
+| `proxyDebugBindAddr` | `string` | Where the `gloo` proxy debug server should bind. Defaults to `0.0.0.0:9966`. |
 
 
 

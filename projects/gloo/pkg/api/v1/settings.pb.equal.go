@@ -602,6 +602,10 @@ func (m *GlooOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if strings.Compare(m.GetProxyDebugBindAddr(), target.GetProxyDebugBindAddr()) != 0 {
+		return false
+	}
+
 	return true
 }
 

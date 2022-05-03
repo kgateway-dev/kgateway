@@ -5,6 +5,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
@@ -47,6 +49,7 @@ type Opts struct {
 	DevMode                      bool
 	ControlPlane                 ControlPlane
 	ValidationServer             ValidationServer
+	ProxyDebugServer             ProxyDebugServer
 	Settings                     *v1.Settings
 	KubeCoreCache                corecache.KubeCoreCache
 	ValidationOpts               *gwtranslator.ValidationOpts
@@ -71,7 +74,10 @@ type ValidationServer struct {
 	*GrpcService
 	Server validation.ValidationServer
 }
-
+type ProxyDebugServer struct {
+	*GrpcService
+	Server debug.ProxyEndpointServer
+}
 type GrpcService struct {
 	Ctx             context.Context
 	BindAddr        net.Addr
