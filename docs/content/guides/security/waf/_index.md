@@ -15,13 +15,13 @@ and uses a set of rules to determine access to the web application. In enterpris
 deployed to an application or group of applications to provide a layer of protection between the applications and the 
 end users.
 
-Gloo Edge now supports the popular Web Application Firewall framework/ruleset [ModSecurity](https://www.github.com/SpiderLabs/ModSecurity) 3.0.3.
+Gloo Edge supports the popular Web Application Firewall framework/ruleset [ModSecurity](https://www.github.com/SpiderLabs/ModSecurity) 3.0.3.
 
 ## **WAF in Gloo Edge**
-Gloo Edge Enterprise now includes the ability to enable the ModSecurity Web Application Firewall for any incoming and outgoing HTTP connections. There is support for configuring rule sets based on the OWASP Core Rule Set as well as custom rule sets. More information on available rule sets, and the rules language generally, can be found [here](https://www.modsecurity.org/rules.html).
+Gloo Edge Enterprise includes the ability to enable the ModSecurity Web Application Firewall for any incoming and outgoing HTTP connections. There is support for configuring rule sets based on the OWASP Core Rule Set as well as custom rule sets. More information on available rule sets, and the rules language generally, can be found [here](https://www.modsecurity.org/rules.html).
 
-## **Why Mod Security**
-API Gateways act as a control point for the outside world to access the various application services running in your environment. A Web Application Firewall offers a standard way to to inspect and handle all incoming traffic. Mod Security is one such firewall. ModSecurity uses a simple rules language to interpret and process incoming http traffic. There are many rule sets publically available, such as the [OWASP Core Rule Set](https://github.com/coreruleset/coreruleset).
+## **Why ModSecurity**
+API Gateways act as a control point for the outside world to access the various application services running in your environment. A Web Application Firewall offers a standard way to inspect and handle all incoming traffic. ModSecurity is one such firewall. ModSecurity uses a simple rules language to interpret and process incoming http traffic. There are many rule sets publically available, such as the [OWASP Core Rule Set](https://github.com/coreruleset/coreruleset).
 
 ### Configuring WAF in Gloo Edge
 ModSecurity rule sets are defined in gloo in one of 3 places:
@@ -32,11 +32,11 @@ ModSecurity rule sets are defined in gloo in one of 3 places:
 
 The precedence is as such: `Route` > `VirtualService` > `HttpGateway`. 
 
-The configuration of the three of them is nearly identical at the moment, and follows the same pattern as other enterprise features in Gloo Edge. 
-The configuration is included in the `options` object of the `httpGateway`. This process will be enumerated 
+The configuration of the three of them is nearly identical and follows the same pattern as other enterprise features in Gloo Edge. 
+The configuration is included in the `options` object of the `httpGateway`. This process will be outlined 
 below, but first we will go over the general flow of configuring WAF in Gloo Edge.
 
-The WAF filter at its core supports a list of `RuleSet` objects which are then loaded into the ModSecurity library. 
+The WAF filter supports a list of `RuleSet` objects which are loaded into the ModSecurity library. 
 The Gloo Edge API has a few conveniences built on top of that to allow easier access to the OWASP Core Rule Set (via the [coreRuleSet](#core-rule-set) field). 
 The  `RuleSet` Api looks as follows:
 
@@ -58,7 +58,7 @@ message RuleSet {
 }
 ```
 
-Each instance can be disabled, as well as include a list of `RuleSets`. These `RuleSets` are applied on top of each other in order. With the latter members overwriting the former. In addition, the `rule_str` is applied after the contents of the files in order to allow for fine-grained overrides.
+Each instance can be disabled independently. Each individual instance can include a list of `RuleSet`s, applied on top of each other in order with the latter members overwriting the former. In addition, the `rule_str` is applied after the contents of the files to allow for fine-grained overrides.
 
 A very simple example of a config is as follows:
 ```yaml
@@ -69,18 +69,18 @@ A very simple example of a config is as follows:
         # Deny requests which are container the header value user-agent:scammer
         SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
 ```
-This tutorial will not do a deep dive on the rules as there is already plenty of information available, further documentation on the rules can be found [here](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)). The purpose instead will be to understand how to apply the rules into new and existing Gloo Edge configs.
+This tutorial will not do a deep dive on the rules; further documentation on the these can be found [here](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)). The purpose instead will be to understand how to apply the rules into new and existing Gloo Edge configs.
 
-As stated earlier, the above rule is very simple. It does only two things:
+The above rule is very simple. It does only two things:
 
-1. It enables the rules engine. This step is important, by default the rules engine is off, so it must be explicitally turned on. It can also be set to `DetectionOnly`, which runs the rules but does not perform any obtrusive actions.
-2. It creates a rule which inspects the request header `"user-agent"`. If that specific header equals the value `"scammer"` then the request will be denied and return a `403` status.
+1. Enables the rules engine. This step is important; by default the rules engine is off, so it must be explicitly turned on. It can also be set to `DetectionOnly` which runs the rules but does not perform any obtrusive actions.
+2. Creates a rule which inspects the request header `"user-agent"`. If the value of that header equals `"scammer"`, then the request will be denied and a `403` status will be returned.
 
-This is a very basic example of the capabilities of the ModSecurity rules engine but useful in how it demonstrates its implementation in Enterprise Gloo Edge.
+This very basic example of the capabilities of the ModSecurity rules engine demonstrates its implementation in Enterprise Gloo Edge.
 
 The following sections will explain how to enable this rule on the gateway level as well as on the virtual service level.
 
-The following tutorials assume basic knowledge of Gloo Edge and its routing capabilities, as well a kubernetes cluster running Gloo Edge Enterprise edition and the [petstore example]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}).
+The following tutorials assume basic knowledge of Gloo Edge and its routing capabilities. A Kubernetes cluster running Gloo Edge Enterprise edition and the [petstore example]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) is also required.
 
 #### Http Gateway
 
@@ -173,7 +173,7 @@ The two methods outlined above represent the two main ways to apply basic rule s
 Using the `rbl` modsecurity rule in Gloo Edge will cause envoy performance issues and should be avoided. If `rbl` blacklisting is a requirement, an [extauth plugin]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth">}}) can be used to query the rbl list and forbid spam IPs.
 {{% /notice %}}
 
-As mentioned earlier, the main free Mod Security rule set available is the OWASP Core Rule Set. As with all other rule sets, the Core Rule Set can be applied manually via the rule set configs, Gloo Edge offers an easy way to apply the entire Core Rule Set, and configure it.
+As mentioned earlier, the main free ModSecurity rule set available is the OWASP Core Rule Set. As with all other rule sets, the Core Rule Set can be applied manually via the rule set configs, Gloo Edge offers an easy way to apply the entire Core Rule Set, and configure it.
 
 In order to apply the Core Rule Set add the following to the default virtual service. Without the coreRuleSet field, the OWASP Core Rule Set files will not be included.
 
@@ -284,17 +284,17 @@ waf:
 
 ## Audit Logging
 
-Audit Logging is supported starting Gloo Edge Enterprise v1.4.0-beta6, but it works differently than in other ModSecurity integrations.
+Audit Logging is supported starting Gloo Edge Enterprise v1.4.0, but it works differently than in other ModSecurity integrations.
 ModSecurity native audit logging is not a good fit for Envoy/Kubernetes cloud native environments.
 ModSecurity has 3 logging engines. They are not a good fit for the following reasons:
 1. Serial - all logs written to one file, which globally locks on each write. This will be horrendous
-   for performance, as all envoy worker threads will be blocked when trying to log, while one of them writes to the file.
-1. Parallel - each log entry is written to its unique file. This will impact performance as this file IO is 
-   outside the envoy worker thread event loop, thus blocking it and increasing latency. In addition
-   now we will have many logs files to collect from the pod. this means we'll a need writeable volume
-   and attach another sidecar container to collect them which increases complexity.
-1. Http - perform an http callout to an external logging server - like the other methods, this http call
-   is done outside of the envoy event loop, blocking it until it is completed, which will increase latency.
+   for performance, as all envoy worker threads will be blocked when trying to log while one-by-one they write to the file.
+2. Parallel - each log entry is written to its unique file. This will impact performance as this file IO is 
+   outside the envoy worker thread event loop, thus blocking it and increasing latency. In addition,
+   now we will have many logs files to collect from the pod. This means we'll a need writeable volume attached via sidecar 
+   container to collect them which increases complexity.
+3. Http - perform an http callout to an external logging server - like the other methods, this http call
+   is done outside the envoy event loop, blocking it until it is completed, which will increase latency.
 
 With this integration, we take a more cloud native approach. We expose the audit logs as part
 of envoy's access logging. This means that directives that configure the audit engine itself 
@@ -315,6 +315,10 @@ as the audit log will be computed even if envoy doesn't end-up logging it. To us
 - FilterState - this will only generate an AuditLog lazily - only if the envoy access log is about to log it. This will use
 less CPU if the message is not logged, but may use more memory, as the ModSecurity transaction 
 will linger in memory longer. To use, place `%FILTER_STATE(io.solo.modsecurity.audit_log)%` in the access log.
+
+{{% notice warning %}}
+[Data Loss Prevention (DLP)]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}}) is **not supported** with FilterState access logging.
+{{% /notice %}}
 
 We recommend testing both in an environment similar to your prod environment, to understand which approach
 is better for your specific use-case.
