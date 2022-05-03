@@ -438,6 +438,8 @@ func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir stri
 
 	var args = []string{"upgrade", testHelper.HelmChartName, chartUri,
 		"-n", testHelper.InstallNamespace,
+		// Using the flag --disable-openapi-validation although helm upgrade works without it everywhere except for CI
+		"--disable-openapi-validation",
 		"--values", valueOverrideFile}
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
