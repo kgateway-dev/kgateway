@@ -3,6 +3,10 @@
 # cd to the docs dir
 # make serve-site -B
 
+# Additional steps are required for darwin/arm64 (M1 macOS)
+# build hugo v0.69.2:
+# https://github.com/gohugoio/hugo must be built from commit ec9dcf304849ded11cea70ab9ad46e0a0a4615b2 and installed on $PATH
+
 
 
 # remove the "v" prefix
@@ -28,7 +32,7 @@ site-common: clean gloo-enterprise-version
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md -r gloo > content/static/content/gloo-changelog.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md -r glooe > content/static/content/glooe-changelog.docgen
 
-	# generate split security scans for gloo versions which HAVE recieved new split-templating updates
+	# generate split security scans for gloo versions which HAVE received new split-templating updates
 	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r gloo > content/static/content/gloo-security-scan.docgen
 	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r glooe > content/static/content/glooe-security-scan.docgen
 	cat content/static/content/gloo-security-scan.docgen
