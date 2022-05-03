@@ -181,6 +181,18 @@ func (m *GrpcDescriptorRegistry) Clone() proto.Message {
 			}
 		}
 
+	case *GrpcDescriptorRegistry_ProtoRefsList:
+
+		if h, ok := interface{}(m.GetProtoRefsList()).(clone.Cloner); ok {
+			target.DescriptorSet = &GrpcDescriptorRegistry_ProtoRefsList{
+				ProtoRefsList: h.Clone().(*GrpcDescriptorRegistry_ProtoRefs),
+			}
+		} else {
+			target.DescriptorSet = &GrpcDescriptorRegistry_ProtoRefsList{
+				ProtoRefsList: proto.Clone(m.GetProtoRefsList()).(*GrpcDescriptorRegistry_ProtoRefs),
+			}
+		}
+
 	}
 
 	return target
@@ -475,6 +487,30 @@ func (m *Executor) Clone() proto.Message {
 			}
 		}
 
+	}
+
+	return target
+}
+
+// Clone function
+func (m *GrpcDescriptorRegistry_ProtoRefs) Clone() proto.Message {
+	var target *GrpcDescriptorRegistry_ProtoRefs
+	if m == nil {
+		return target
+	}
+	target = &GrpcDescriptorRegistry_ProtoRefs{}
+
+	if m.GetConfigMapRefs() != nil {
+		target.ConfigMapRefs = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetConfigMapRefs()))
+		for idx, v := range m.GetConfigMapRefs() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ConfigMapRefs[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			} else {
+				target.ConfigMapRefs[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			}
+
+		}
 	}
 
 	return target

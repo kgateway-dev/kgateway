@@ -304,6 +304,19 @@ message Settings {
          // be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those
          // without the tlsTagName tag are sorted into the non-TLS upstream.
          bool splitTlsServices = 19;
+
+        // These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
+        // For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
+        enum ConsulConsistencyModes{
+            // This is strongly consistent. Sets the RequireConsistent in the consul api to true.
+            ConsistentMode = 0;
+            // This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false.
+            DefaultMode = 2;
+            // Allows stale reads when set. This will set the AllowStale in the consul api.
+            StaleMode = 1;
+        }
+        // Sets the consistency mode. The default is the ConsistentMode.
+        ConsulConsistencyModes consistencyMode = 20;
     }
 
     ConsulUpstreamDiscoveryConfiguration consulDiscovery = 30;
@@ -646,6 +659,14 @@ message GatewayOptions {
     // Default configuration to use for VirtualServices, when not provided by a specific virtual service
     // When these properties are defined on a specific VirtualService, this configuration will be ignored
     VirtualServiceOptions virtual_service_options = 7;
+
+    // Set this to persist the Proxy CRD to etcd By default, proxies are kept in memory to improve performance.
+    // Proxies can be persisted to etcd to allow external tools and other pods to read the contents the Proxy CRD.
+    google.protobuf.BoolValue persist_proxy_spec = 8;
+
+    // This is set based on the install mode. It indicates to gloo whether or not it should run the gateway
+    // translations and validation.
+    google.protobuf.BoolValue enable_gateway_controller = 9;
 }
 
 // Settings used by the Enterprise Console (UI)

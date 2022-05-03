@@ -111,7 +111,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			}
 		}
 	}
-
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.GetMetadata().Ref().Key())); err == nil {

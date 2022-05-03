@@ -43,18 +43,27 @@ resolutions:
 
 This example REST resolver, `Query|productsForHome`, specifies the path and the method that are needed to request the data.
 ```yaml
-...
-resolutions:
-  Query|productsForHome:
-    restResolver:
-      request:
-        headers:
-          :method: GET
-          :path: /api/v1/products
-      upstreamRef:
-        name: default-productpage-9080
-        namespace: gloo-system
-...
+apiVersion: graphql.gloo.solo.io/v1beta1
+kind: GraphQLApi
+metadata:
+  name: bookinfo-graphql
+  namespace: product-app
+spec:
+  executableSchema:
+    executor:
+      local:
+        enableIntrospection: true
+        resolutions:
+          Query|productsForHome:
+            restResolver:
+              request:
+                headers:
+                  :method: GET
+                  :path: /api/v1/products
+              upstreamRef:
+                name: default-productpage-9080
+                namespace: product-app
+        ...
 ```
 
 ## gRPC resolvers
@@ -82,21 +91,30 @@ resolutions:
         namespace:
 ```
 
-This example gRPC resolver, `Query|UserService.GetUser`, specifies the `GetUser` method on the `user.UserService`, and the `default-users-8080` upstream service.
+This example gRPC resolver, `Query|UserService.GetUser`, specifies the `GetUser` method on the `user.UserService` service, and the `user-svc` upstream service.
 ```yaml
-...
-resolutions:
-  Query|UserService.GetUser:
-    grpcResolver:
-      requestTransform:
-        methodName: GetUser
-        outgoingMessageJson:
-          username: '{$args.UserSearch.username}'
-        serviceName: user.UserService
-      upstreamRef:
-        name: default-users-8080
-        namespace: gloo-system
-...
+apiVersion: graphql.gloo.solo.io/v1beta1
+kind: GraphQLApi
+metadata:
+  name: products-graphql
+  namespace: product-app
+spec:
+  executableSchema:
+    executor:
+      local:
+        enableIntrospection: true
+        resolutions:
+          Query|UserService.GetUser:
+            grpcResolver:
+              requestTransform:
+                methodName: GetUser
+                outgoingMessageJson:
+                  username: '{$args.username}'
+                serviceName: user.UserService
+              upstreamRef:
+                name: user-svc
+                namespace: product-app
+        ...
 ```
 
 ## Schema definitions
@@ -106,31 +124,40 @@ A schema definition determines what kind of data can be returned to a client tha
 In this example, fields are defined for the three Bookinfo services, Product, Review, and Rating. Additionally, the schema definition indicates which services reference the resolvers. In this example, the Product service references the `Query|productForHome` REST resolver.
 
 ```yaml
-schemaDefinition: |
-  type Query {
-    productsForHome: [Product] @resolve(name: "Query|productsForHome")
-  }
+apiVersion: graphql.gloo.solo.io/v1beta1
+kind: GraphQLApi
+metadata:
+  name: bookinfo-graphql
+  namespace: product-app
+spec:
+  executableSchema:
+    executor:
+      ...
+    schemaDefinition: |
+      type Query {
+        productsForHome: [Product] @resolve(name: "Query|productsForHome")
+      }
 
-  type Product {
-    id: String
-    title: String
-    descriptionHtml: String
-    author: String @resolve(name: "author")
-    pages: Int @resolve(name: "pages")
-    year: Int @resolve(name: "year")
-    reviews : [Review] @resolve(name: "reviews")
-    ratings : [Rating] @resolve(name: "ratings")
-  }
+      type Product {
+        id: String
+        title: String
+        descriptionHtml: String
+        author: String @resolve(name: "author")
+        pages: Int @resolve(name: "pages")
+        year: Int @resolve(name: "year")
+        reviews : [Review] @resolve(name: "reviews")
+        ratings : [Rating] @resolve(name: "ratings")
+      }
 
-  type Review {
-    reviewer: String
-    text: String
-  }
+      type Review {
+        reviewer: String
+        text: String
+      }
 
-  type Rating {
-    reviewer : String
-    numStars : Int
-  }
+      type Rating {
+        reviewer : String
+        numStars : Int
+      }
 ```
 
 ## Sample GraphQL API
@@ -158,7 +185,7 @@ spec:
     routes:
     - graphqlApiRef:
         name: default-petstore-8080
-        namespace: gloo-system
+        namespace: product-app
       matchers:
       - prefix: /graphql
 EOF

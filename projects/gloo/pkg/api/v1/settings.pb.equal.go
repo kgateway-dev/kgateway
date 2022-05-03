@@ -696,6 +696,26 @@ func (m *GatewayOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPersistProxySpec()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPersistProxySpec()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPersistProxySpec(), target.GetPersistProxySpec()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetEnableGatewayController()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnableGatewayController()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEnableGatewayController(), target.GetEnableGatewayController()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -1163,6 +1183,10 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Equal(that interface{}) 
 	}
 
 	if m.GetSplitTlsServices() != target.GetSplitTlsServices() {
+		return false
+	}
+
+	if m.GetConsistencyMode() != target.GetConsistencyMode() {
 		return false
 	}
 

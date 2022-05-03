@@ -5,6 +5,8 @@ import (
 	"net"
 	"time"
 
+	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -21,32 +23,36 @@ import (
 )
 
 type Opts struct {
-	WriteNamespace          string
-	StatusReporterNamespace string
-	WatchNamespaces         []string
-	Upstreams               factory.ResourceClientFactory
-	KubeServiceClient       skkube.ServiceClient
-	UpstreamGroups          factory.ResourceClientFactory
-	Proxies                 factory.ResourceClientFactory
-	Secrets                 factory.ResourceClientFactory
-	Artifacts               factory.ResourceClientFactory
-	AuthConfigs             factory.ResourceClientFactory
-	RateLimitConfigs        factory.ResourceClientFactory
-	GraphQLApis             factory.ResourceClientFactory
-	VirtualServices         factory.ResourceClientFactory
-	RouteTables             factory.ResourceClientFactory
-	Gateways                factory.ResourceClientFactory
-	MatchableHttpGateways   factory.ResourceClientFactory
-	VirtualHostOptions      factory.ResourceClientFactory
-	RouteOptions            factory.ResourceClientFactory
-	KubeClient              kubernetes.Interface
-	Consul                  Consul
-	WatchOpts               clients.WatchOpts
-	DevMode                 bool
-	ControlPlane            ControlPlane
-	ValidationServer        ValidationServer
-	Settings                *v1.Settings
-	KubeCoreCache           corecache.KubeCoreCache
+	WriteNamespace               string
+	StatusReporterNamespace      string
+	WatchNamespaces              []string
+	Upstreams                    factory.ResourceClientFactory
+	KubeServiceClient            skkube.ServiceClient
+	UpstreamGroups               factory.ResourceClientFactory
+	Proxies                      factory.ResourceClientFactory
+	Secrets                      factory.ResourceClientFactory
+	Artifacts                    factory.ResourceClientFactory
+	AuthConfigs                  factory.ResourceClientFactory
+	RateLimitConfigs             factory.ResourceClientFactory
+	GraphQLApis                  factory.ResourceClientFactory
+	VirtualServices              factory.ResourceClientFactory
+	RouteTables                  factory.ResourceClientFactory
+	Gateways                     factory.ResourceClientFactory
+	MatchableHttpGateways        factory.ResourceClientFactory
+	VirtualHostOptions           factory.ResourceClientFactory
+	RouteOptions                 factory.ResourceClientFactory
+	KubeClient                   kubernetes.Interface
+	Consul                       Consul
+	WatchOpts                    clients.WatchOpts
+	DevMode                      bool
+	ControlPlane                 ControlPlane
+	ValidationServer             ValidationServer
+	Settings                     *v1.Settings
+	KubeCoreCache                corecache.KubeCoreCache
+	ValidationOpts               *gwtranslator.ValidationOpts
+	ReadGatwaysFromAllNamespaces bool
+	GatewayControllerEnabled     bool
+	ProxyCleanup                 func()
 }
 
 type Consul struct {

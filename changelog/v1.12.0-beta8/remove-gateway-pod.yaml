@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/2903
+    resolvesIssue: false
+    description: >
+      To reduce cross-pod communication, move the functionality from the gateway pod into the gloo pod. Specifically, the
+      validation webhook is moved to the gloo pod which reduces the number of GRPC calls required for validation. Also
+      while previously translation was done in two separate loops - one in the gateway pod to generate proxies and one in
+      the gloo pod to generate Envoy configuration. Merging the translation loops allows us to optionally keep proxies in
+      memory which reduces the time spent reading, persisting and marshalling/unmarshalling large CRs to etcd.

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -67,11 +68,16 @@ var _ = Describe("Kube2e: helm", func() {
 				name: "httpgateways.gateway.solo.io",
 				file: filepath.Join(crdDir, "gateway.solo.io_v1_MatchableHttpGateway.yaml"),
 			},
+			{
+				name: "settings.gloo.solo.io",
+				file: filepath.Join(crdDir, "gloo.solo.io_v1_Settings.yaml"),
+			},
 		}
 
 		for _, crd := range crdsToManuallyApply {
-			By(fmt.Sprintf("apply new %s CRD", crd.name))
-
+			By(fmt.Sprintf("apply new %s CRD", crd.file))
+			crdContents, _ := ioutil.ReadFile(crd.file)
+			fmt.Println(string(crdContents))
 			// Apply the CRD and ensure it is eventually accepted
 			runAndCleanCommand("kubectl", "apply", "-f", crd.file)
 			Eventually(func() string {
@@ -79,9 +85,12 @@ var _ = Describe("Kube2e: helm", func() {
 			}, "5s", "1s").Should(ContainSubstring(crd.name))
 		}
 
+		//Helm upgrade expects the same values overrides as installs
+		valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
+		defer cleanupFunc()
 		// upgrade to the gloo version being tested
-		runAndCleanCommand("helm", "upgrade", "gloo", chartUri, "-n", testHelper.InstallNamespace)
-
+		// Using the flag --disable-openapi-validation although helm upgrade works without it everywhere except for CI
+		runAndCleanCommand("helm", "upgrade", "--disable-openapi-validation", "gloo", chartUri, "-n", testHelper.InstallNamespace, "--values", valueOverrideFile)
 		By("should have upgraded to the gloo version being tested")
 		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
 

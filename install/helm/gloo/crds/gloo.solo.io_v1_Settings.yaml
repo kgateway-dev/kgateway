@@ -74,6 +74,9 @@ spec:
                 type: object
               consulDiscovery:
                 properties:
+                  consistencyMode:
+                    type: string
+                    x-kubernetes-int-or-string: true
                   rootCa:
                     properties:
                       name:
@@ -222,6 +225,12 @@ spec:
                   alwaysSortRouteTableRoutes:
                     type: boolean
                   compressedProxySpec:
+                    type: boolean
+                  enableGatewayController:
+                    nullable: true
+                    type: boolean
+                  persistProxySpec:
+                    nullable: true
                     type: boolean
                   readGatewaysFromAllNamespaces:
                     type: boolean
