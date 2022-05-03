@@ -1,5 +1,5 @@
-{{- $waitForValidationService := include "gloo.waitForValidationService" .Values }}
-{{- if $waitForValidationService }}
+{{- $customResourceLifecycle := include "gloo.customResourceLifecycle" .Values }}
+{{- if $customResourceLifecycle }}
 {{- $image := .Values.gateway.rolloutJob.image }}
 {{- if .Values.global }}
 {{- $image = merge .Values.gateway.rolloutJob.image .Values.global.image }}
@@ -40,7 +40,6 @@ spec:
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
 ---
-{{- if .Values.global.glooRbac.create }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -91,5 +90,4 @@ subjects:
 - kind: ServiceAccount
   name: gloo-validation-service-rollout
   namespace: {{ .Release.Namespace }}
-{{- end }} {{/* .Values.global.glooRbac.create */}}
-{{- end }} {{/* if $waitForValidationService */}}
+{{- end }} {{/* if $customResourceLifecycle */}}

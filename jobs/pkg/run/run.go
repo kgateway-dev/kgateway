@@ -57,7 +57,8 @@ func Run(ctx context.Context, opts Options) error {
 	var err error
 	if !opts.ForceRotation {
 		// check if there is an existing valid TLS secret
-		secret, err = kube.GetExistingValidTlsSecret(ctx, kubeClient, opts.SecretName, opts.SecretNamespace)
+		secret, err = kube.GetExistingValidTlsSecret(ctx, kubeClient, opts.SecretName, opts.SecretNamespace,
+			opts.SvcName, opts.SvcNamespace)
 		if err != nil {
 			return eris.Wrapf(err, "failed validating existing secret")
 		}

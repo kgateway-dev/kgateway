@@ -100,12 +100,13 @@ version, which merges two named templates.
 {{- end -}}
 
 {{/*
-Whether we need to wait for the validation service to be up and running before applying custom resources.
+Whether we need to wait for the validation service to be up and running before applying custom resources,
+and whether we need to clean up custom resources on uninstall.
 This is true if the validation webhook is enabled with a failurePolicy of Fail.
 
 The input to this function should be the gloo helm values object.
 */}}
-{{- define "gloo.waitForValidationService" -}}
+{{- define "gloo.customResourceLifecycle" -}}
 {{- if and .gateway.enabled .gateway.validation.enabled .gateway.validation.webhook.enabled (eq .gateway.validation.failurePolicy "Fail") }}
 true
 {{- end }}{{/* if and .gateway.enabled .gateway.validation.enabled .gateway.validation.webhook.enabled (eq .gateway.validation.failurePolicy "Fail") */}}
@@ -125,18 +126,18 @@ The input to the function should be a dict with the following key/value mappings
 - "labels": (optional) additional labels to include (a dict of key/value pairs)
 */}}
 {{- define "gloo.customResourceLabelsAndAnnotations" -}}
-{{- $isPostInstall := include "gloo.waitForValidationService" .values }}
+{{- $customResourceLifecycle := include "gloo.customResourceLifecycle" .values }}
   labels:
     app: gloo
 {{- range $k, $v := .labels }}
     {{$k}}: {{$v}}
 {{- end }}
-{{- if $isPostInstall }}
+{{- if $customResourceLifecycle }}
     app.kubernetes.io/managed-by: Helm
   annotations:
     "meta.helm.sh/release-name": {{ .release.Name }}
     "meta.helm.sh/release-namespace": {{ .release.Namespace }}
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "10" # must be installed after the gateway rollout job completes
-{{- end -}}{{/* if $isPostInstall */}}
+{{- end -}}{{/* if $customResourceLifecycle */}}
 {{- end -}}
