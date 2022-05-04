@@ -81,7 +81,7 @@ func (p *Plugin) Name() string {
 // Init attempts to set the plugin back to a clean slate state.
 func (p *Plugin) Init(params plugins.InitParams) error {
 	p.RequireEarlyTransformation = false
-	p.removeUnused = !params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
+	p.removeUnused = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
 	p.filterRequiredForListener = make(map[*v1.HttpListener]struct{})
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
