@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
+	"runtime"
 
 	"github.com/ghodss/yaml"
 	errors "github.com/rotisserie/eris"
@@ -150,6 +151,15 @@ func readValuesTemplate() (*generate.HelmConfig, error) {
 	var config generate.HelmConfig
 	if err := readYaml(valuesTemplate, &config); err != nil {
 		return nil, err
+	}
+	// adding in for arm64 registry work around
+	// TODO-JAKE this is the arm64 changes
+	if runtime.GOARCH == "arm64" {
+		configImage := config.Global.Image
+		reg := "localhost:5001"
+		always := "Always"
+		configImage.Registry = &reg
+		configImage.PullPolicy = &always
 	}
 	return &config, nil
 }
