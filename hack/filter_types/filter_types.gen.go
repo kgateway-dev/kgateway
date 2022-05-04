@@ -229,6 +229,7 @@ import (
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/advanced_http"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/cache/grpc"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/extauth"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"

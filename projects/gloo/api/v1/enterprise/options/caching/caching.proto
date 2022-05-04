@@ -3,6 +3,7 @@ package caching.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/caching";
 
 
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
@@ -16,7 +17,7 @@ option (extproto.clone_all) = true;
 
 message Settings {
   core.solo.io.ResourceRef caching_service_ref = 1;
-  
+  repeated .solo.io.envoy.type.matcher.v3.StringMatcher allowed_vary_headers = 2;
 
 }
 

@@ -29,12 +29,14 @@ weight: 5
 
 ```yaml
 "cachingServiceRef": .core.solo.io.ResourceRef
+"allowedVaryHeaders": []solo.io.envoy.type.matcher.v3.StringMatcher
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `cachingServiceRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
+| `allowedVaryHeaders` | [[]solo.io.envoy.type.matcher.v3.StringMatcher](../../../../../external/envoy/type/matcher/v3/string.proto.sk/#stringmatcher) |  |
 
 
 

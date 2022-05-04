@@ -47,6 +47,32 @@ spec:
                               type: object
                             caching:
                               properties:
+                                allowedVaryHeaders:
+                                  items:
+                                    properties:
+                                      exact:
+                                        type: string
+                                      ignoreCase:
+                                        type: boolean
+                                      prefix:
+                                        type: string
+                                      safeRegex:
+                                        properties:
+                                          googleRe2:
+                                            properties:
+                                              maxProgramSize:
+                                                maximum: 4294967295
+                                                minimum: 0
+                                                nullable: true
+                                                type: integer
+                                            type: object
+                                          regex:
+                                            type: string
+                                        type: object
+                                      suffix:
+                                        type: string
+                                    type: object
+                                  type: array
                                 cachingServiceRef:
                                   properties:
                                     name:
@@ -6081,6 +6107,32 @@ spec:
                                         type: object
                                       caching:
                                         properties:
+                                          allowedVaryHeaders:
+                                            items:
+                                              properties:
+                                                exact:
+                                                  type: string
+                                                ignoreCase:
+                                                  type: boolean
+                                                prefix:
+                                                  type: string
+                                                safeRegex:
+                                                  properties:
+                                                    googleRe2:
+                                                      properties:
+                                                        maxProgramSize:
+                                                          maximum: 4294967295
+                                                          minimum: 0
+                                                          nullable: true
+                                                          type: integer
+                                                      type: object
+                                                    regex:
+                                                      type: string
+                                                  type: object
+                                                suffix:
+                                                  type: string
+                                              type: object
+                                            type: array
                                           cachingServiceRef:
                                             properties:
                                               name:

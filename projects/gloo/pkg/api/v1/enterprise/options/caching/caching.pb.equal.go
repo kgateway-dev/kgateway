@@ -56,5 +56,22 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetAllowedVaryHeaders()) != len(target.GetAllowedVaryHeaders()) {
+		return false
+	}
+	for idx, v := range m.GetAllowedVaryHeaders() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAllowedVaryHeaders()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetAllowedVaryHeaders()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }
