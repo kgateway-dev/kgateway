@@ -86,7 +86,6 @@ function create_kind_cluster_or_skip() {
 
   echo "creating cluster ${CLUSTER_NAME}"
 
-  # cat > some.yaml << EOF
  cat <<EOF | kind create cluster --name "$CLUSTER_NAME" --image "kindest/node:$CLUSTER_NODE_VERSION" --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -125,16 +124,21 @@ EOF
 }
 create_kind_cluster_or_skip
 
+# so that you can just build the kind image alone if needed
+if [[ $JUST_KIND == 'true' ]]; then
+  exit
+fi
+
 # 2. Make all the docker images and load them to the kind cluster
 if [[ $ARCH == 'arm64' ]]; then
   # if using arm64, push to the docker registry container, instead of kind
-  VERSION=$VERSION CREATE_TEST_ASSETS= "true" IMAGE_REPO= "localhost:5000" make docker-push-local-arm
+  VERSION=$VERSION CREATE_TEST_ASSETS="true" TEST_ASSET_ID="docker-reg" IMAGE_REPO="localhost:$REGISTRY_PORT" make docker-push-local-arm
 else
   VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make push-kind-images
 fi
 
 # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-VERSION=$VERSION make build-test-chart
+RUNNING_REGRESSION_TESTS=true VERSION=$VERSION make build-test-chart
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
 make glooctl-$OS-$ARCH

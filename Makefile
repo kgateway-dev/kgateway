@@ -1,3 +1,6 @@
+##########################################################################################
+# KUBE2E_TESTS can be set to (gateway, gloo, gloomtls, glooctl, helm, ingress, knative)
+##########################################################################################
 #----------------------------------------------------------------------------------
 # Base
 #----------------------------------------------------------------------------------
@@ -156,7 +159,7 @@ install-go-tools: mod-download
 .PHONY: run-tests
 run-tests:
 ifneq ($(RELEASE), "true")
-	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
+	RUNNING_REGRESSION_TESTS=true $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests
@@ -683,7 +686,6 @@ push-kind-images: docker
 	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/sds:$(VERSION) --name $(CLUSTER_NAME)
 
-# TODO-JAKE this should be the new kind images-arm
 .PHONY: push-docker-images-arm-to-kind-registry
 push-docker-images-arm-to-kind-registry:
 	docker push $(IMAGE_REPO)/ingress:$(VERSION)

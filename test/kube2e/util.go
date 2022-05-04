@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -26,6 +27,14 @@ import (
 	errors "github.com/rotisserie/eris"
 	"k8s.io/client-go/kubernetes"
 )
+
+func GetHttpEchoImage() string {
+	httpEchoImage := "hashicorp/http-echo"
+	if runtime.GOARCH == "arm64" {
+		httpEchoImage = "gcr.io/solo-test-236622/http-echo"
+	}
+	return httpEchoImage
+}
 
 func MustKubeClient() kubernetes.Interface {
 	restConfig, err := kubeutils.GetConfig("", "")
