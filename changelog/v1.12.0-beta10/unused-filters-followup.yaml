@@ -5,8 +5,8 @@ changelog:
     resolvesIssue: false
   - type: FIX
     description: |
-      Ensure CORS filter is not added to filter chain when removeUnusedFilters is enabled
-      and there is no CORS configuration defined.
+      Ensure CORS and GrpcWeb filters are not added to filter chain when removeUnusedFilters is enabled
+      and there is no filter configuration defined.
     issueLink: https://github.com/solo-io/gloo/issues/6042
     resolvesIssue: false
   - type: FIX
@@ -16,3 +16,8 @@ changelog:
       translation runs and confuse users.
     issueLink: https://github.com/solo-io/gloo/issues/3964
     resolvesIssue: false
+  - type: FIX
+    description: |
+      Ensure that removeUnusedFilters is localized to an HttpListener instead of a Proxy.
+      Previously, if a filter were configured for one listener, it would cause another listener to
+      render empty configuration.
