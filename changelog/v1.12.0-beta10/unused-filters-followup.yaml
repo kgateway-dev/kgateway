@@ -17,6 +17,7 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/3964
     resolvesIssue: false
   - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5651
     description: |
       Ensure that removeUnusedFilters is localized to an HttpListener instead of a Proxy.
       Previously, if a filter were configured for one listener, it would cause another listener to
