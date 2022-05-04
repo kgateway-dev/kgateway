@@ -95,7 +95,7 @@ else ifeq ($(UNAME_M),arm64)
 endif
 
 ifeq ($(GOOS),)
-	GOOS := $(shell uname -s | awk '{print tolower($0)}')
+	GOOS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 endif
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
