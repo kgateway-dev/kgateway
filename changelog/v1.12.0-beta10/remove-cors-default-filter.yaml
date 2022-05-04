@@ -1,0 +1,11 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Allow CLI to cleanup Federated MatchableHttpGateway CRD
+    issueLink: https://github.com/solo-io/gloo/issues/5948
+    resolvesIssue: false
+  - type: FIX
+    description: |
+      Ensure CORS filter is not added to filter chain when removeUnusedFilters is enabled
+      and there is no CORS configuration defined.
+    issueLink: https://github.com/solo-io/gloo/issues/6042
+    resolvesIssue: false

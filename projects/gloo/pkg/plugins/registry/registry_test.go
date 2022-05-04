@@ -62,7 +62,7 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 		// Filters should not be added to this map without due consideration
 		// In general we should strive not to add any new default filters going forwards
 		knownBaseFilters := map[string]struct{}{
-			"envoy.filters.http.grpc_web": {}, "envoy.filters.http.cors": {},
+			"envoy.filters.http.grpc_web": {},
 		}
 		t.Run("Http Filters without override value", func(t *testing.T) {
 			plugs := pluginRegistry.GetPlugins()
