@@ -82,11 +82,18 @@ print-git-info:
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
+UNAME_M := $(shell uname -m)
 # Define Architecture. Default: amd64
 # If GOARCH is unset, docker-build will fail
-ifeq ($(GOARCH),)
-	GOARCH := $(shell uname -m)
+GOARCH ?= amd64
+ifeq ($(UNAME_M),aarch64)
+	GOARCH=arm64
+	PLATFORM=--platform=linux/amd64
+else ifeq ($(UNAME_M),arm64)
+	GOARCH=arm64
+	PLATFORM=--platform=linux/amd64
 endif
+
 ifeq ($(GOOS),)
 	GOOS := $(shell uname -s | awk '{print tolower($0)}')
 endif
