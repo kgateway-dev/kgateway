@@ -82,10 +82,20 @@ print-git-info:
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
+UNAME_M := $(shell uname -m)
 # Define Architecture. Default: amd64
 # If GOARCH is unset, docker-build will fail
-ifeq ($(GOARCH),)
-	GOARCH := amd64
+GOARCH ?= amd64
+ifeq ($(UNAME_M),aarch64)
+	GOARCH=arm64
+	PLATFORM=--platform=linux/amd64
+else ifeq ($(UNAME_M),arm64)
+	GOARCH=arm64
+	PLATFORM=--platform=linux/amd64
+endif
+
+ifeq ($(GOOS),)
+	GOOS := $(shell uname -s | awk '{print tolower($0)}')
 endif
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
@@ -248,11 +258,9 @@ CLI_DIR=projects/gloo/cli
 $(OUTPUT_DIR)/glooctl: $(SOURCES)
 	GO111MODULE=on go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
-$(OUTPUT_DIR)/glooctl-linux-$(GOARCH): $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
-
-$(OUTPUT_DIR)/glooctl-darwin-$(GOARCH): $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+# the output of the file is hard coded to glooctl linux amd64.
+$(OUTPUT_DIR)/glooctl-$(GOOS)-$(GOARCH): $(SOURCES)
+	$(GO_BUILD_FLAGS) GOOS=$(GOOS) go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o glooctl-linux-amd64 $(CLI_DIR)/cmd/main.go
 
 $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
@@ -634,6 +642,9 @@ docker: discovery-docker gateway-docker gloo-docker \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker
 
+.PHONY: docker-push-local-arm
+docker-push-local-arm: docker docker-push
+
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker-build`
 # to be used for local testing.
@@ -669,6 +680,16 @@ push-kind-images: docker
 	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/sds:$(VERSION) --name $(CLUSTER_NAME)
 
+# TODO-JAKE this should be the new kind images-arm
+.PHONY: push-docker-images-arm-to-kind-registry
+push-docker-images-arm-to-kind-registry:
+	docker push $(IMAGE_REPO)/ingress:$(VERSION)
+	docker push $(IMAGE_REPO)/discovery:$(VERSION)
+	docker push $(IMAGE_REPO)/gloo:$(VERSION)
+	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)
+	docker push $(IMAGE_REPO)/certgen:$(VERSION)
+	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
+	docker push $(IMAGE_REPO)/sds:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Build assets for Kube2e tests
