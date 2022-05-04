@@ -14,7 +14,12 @@ else
   OS='linux'
 fi
 # set the architecture of the machine
-ARCH=$(uname -m) || ARCH="amd64"
+UNAME_M=$(uname -m)
+ARCH="amd64"
+if [[ $UNAME_M == 'arm64' || $UNAME_M == 'aarch64' ]]; then
+  ARCH='arm64'
+fi
+
 
 # Offer a default value for type of installation
 KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, use 'gateway'.
