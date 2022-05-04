@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Separate the HttpGateway and MatchableHttpGateway into separate proto files
+    issueLink: https://github.com/solo-io/gloo/issues/5948
