@@ -39,6 +39,7 @@ var (
 
 type plugin struct {
 	filterNeeded bool
+	filterNeededForListener map[*v1.HttpListener]struct{}
 }
 
 func NewPlugin() *plugin {
@@ -51,6 +52,7 @@ func (p *plugin) Name() string {
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.filterNeeded = !params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
+	p.filterNeededForListener = make(map[*v1.HttpListener]struct{})
 	return nil
 }
 
@@ -69,7 +71,7 @@ func (p *plugin) ProcessVirtualHost(
 			zap.Any("virtual host", in.GetName()),
 		)
 	}
-	p.filterNeeded = true
+	p.filterNeededForListener[params.HttpListener] = struct{}{}
 	out.Cors = &envoy_config_route_v3.CorsPolicy{}
 	return p.translateCommonUserCorsConfig(params.Ctx, corsPlugin, out.GetCors())
 }
@@ -93,7 +95,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		outRa = out.GetRoute()
 	}
 
-	p.filterNeeded = true
+	p.filterNeededForListener[params.HttpListener] = struct{}{}
 	outRa.Cors = &envoy_config_route_v3.CorsPolicy{}
 	if err := p.translateCommonUserCorsConfig(params.Ctx, in.GetOptions().GetCors(), outRa.GetCors()); err != nil {
 		return err
@@ -147,8 +149,18 @@ func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envo
 	}
 }
 
+func (p *plugin) isFilterNeededForHttpListener(listener *v1.HttpListener) bool {
+	if p.filterNeeded {
+		// This is a global setting that indicates that the filter should be added, even if it is empty
+		return true
+	}
+
+	_, ok := p.filterNeededForListener[listener]
+	return ok
+}
+
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	if !p.filterNeeded {
+	if !p.isFilterNeededForHttpListener(listener) {
 		return []plugins.StagedHttpFilter{}, nil
 	}
 
