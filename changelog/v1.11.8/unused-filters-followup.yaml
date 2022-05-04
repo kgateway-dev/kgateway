@@ -1,5 +1,8 @@
 changelog:
   - type: NON_USER_FACING
+    description: Separate the HttpGateway and MatchableHttpGateway into separate proto files
+    issueLink: https://github.com/solo-io/gloo/issues/5948
+  - type: NON_USER_FACING
     description: Allow CLI to cleanup Federated MatchableHttpGateway CRD
     issueLink: https://github.com/solo-io/gloo/issues/5948
     resolvesIssue: false
