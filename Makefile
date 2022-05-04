@@ -258,9 +258,12 @@ CLI_DIR=projects/gloo/cli
 $(OUTPUT_DIR)/glooctl: $(SOURCES)
 	GO111MODULE=on go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
-# NOTE: the output of the file is hard coded to glooctl linux amd64.
-$(OUTPUT_DIR)/glooctl-$(GOOS)-$(GOARCH): $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=$(GOOS) go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $(OUTPUT_DIR)/glooctl-linux-amd64 $(CLI_DIR)/cmd/main.go
+$(OUTPUT_DIR)/glooctl-linux-$(GOARCH): $(SOURCES)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+
+# NOTE: the output of the file is hard coded to amd64 regardless of GOARCH
+$(OUTPUT_DIR)/glooctl-darwin-$(GOARCH): $(SOURCES)
+	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $(OUTPUT_DIR)/glooctl-darwin-amd64 $(CLI_DIR)/cmd/main.go
 
 $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
