@@ -37,7 +37,7 @@ var (
 	pluginStage             = plugins.DuringStage(plugins.CorsStage)
 )
 
-type plugin struct{
+type plugin struct {
 	filterNeeded bool
 }
 
