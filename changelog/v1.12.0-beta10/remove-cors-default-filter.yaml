@@ -9,3 +9,10 @@ changelog:
       and there is no CORS configuration defined.
     issueLink: https://github.com/solo-io/gloo/issues/6042
     resolvesIssue: false
+  - type: FIX
+    description: |
+      Change the log level from WARN to DEBUG when a resource kind is processed that does
+      not yet support metrics reporting for statuses. This message would occur on all
+      translation runs and confuse users.
+    issueLink: https://github.com/solo-io/gloo/issues/3964
+    resolvesIssue: false
