@@ -405,14 +405,34 @@ var _ = Describe("Hybrid Translator", func() {
 				)
 
 				It("Should set child HCM options when child has `nil` options field", func() {
+					// config setting
 					child.GetHttpGateway().Options = nil
 					parent.HttpConnectionManagerSettings = hcm_true
 
+					// perform transformation
 					params := NewTranslatorParams(ctx, snap, reports)
 					hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 
+					// evaluate results
 					hcm_after := child.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
 					Expect(hcm_after.GetSkipXffAppend()).To(Equal(true))
+				})
+
+				It("Should overwrite nested nil child fields", func() {
+					// config setting
+					child.GetMatcher().SslConfig = ssl_empty
+					parent.SslConfig = ssl_empty
+					parent.GetSslConfig().TransportSocketConnectTimeout = &duration.Duration{
+						Seconds: 10,
+					}
+
+					// perform transformation
+					params := NewTranslatorParams(ctx, snap, reports)
+					hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+
+					// evaluate results
+					ssl_after := child.GetMatcher().GetSslConfig()
+					Expect(ssl_after.GetTransportSocketConnectTimeout().GetSeconds()).To(Equal(int64(10)))
 				})
 			})
 
