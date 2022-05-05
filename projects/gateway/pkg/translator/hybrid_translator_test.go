@@ -403,6 +403,17 @@ var _ = Describe("Hybrid Translator", func() {
 					Entry("!PreventChildOverrides, child.subfield == nil && parent.subfield != nil", // should prefer parent.subfield
 						ssl_empty, ssl_true, hcm_empty, hcm_true, false),
 				)
+
+				It("Should set child HCM options when child has `nil` options field", func() {
+					child.GetHttpGateway().Options = nil
+					parent.HttpConnectionManagerSettings = hcm_true
+
+					params := NewTranslatorParams(ctx, snap, reports)
+					hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+
+					hcm_after := child.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
+					Expect(hcm_after.GetSkipXffAppend()).To(Equal(true))
+				})
 			})
 
 			Context("non-ssl", func() {
