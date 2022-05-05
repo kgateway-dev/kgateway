@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -153,8 +152,6 @@ func readValuesTemplate() (*generate.HelmConfig, error) {
 	if err := readYaml(valuesTemplate, &config); err != nil {
 		return nil, err
 	}
-	fmt.Println(runtime.GOARCH)
-	fmt.Println(os.Getenv("RUNNING_REGRESSION_TESTS"))
 	// adding in for arm64 registry work around
 	if runtime.GOARCH == "arm64" && os.Getenv("RUNNING_REGRESSION_TESTS") == "true" {
 		configImage := config.Global.Image
