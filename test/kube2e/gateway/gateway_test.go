@@ -261,7 +261,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
 				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
@@ -342,7 +342,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Port:              gatewayPort,
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
-				}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 			})
 
 		})
@@ -414,7 +414,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					CaFile:            "/tmp/ca.crt",
 					ConnectionTimeout: 1,
 					WithoutStats:      true,
-				}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 			})
 		})
 
@@ -597,7 +597,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Port:              gatewayPort,
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
-				}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "http",
 					Path:              "/",
@@ -640,7 +640,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Port:              gatewayPort,
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
-				}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 				// the fixed virtual service should also work
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -652,7 +652,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Port:              gatewayPort,
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
-				}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 			})
 
 			Context("adds the invalid virtual services back into the proxy", func() {
@@ -806,7 +806,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						Port:              gatewayPort,
 						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 						WithoutStats:      true,
-					}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+					}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 					// the invalid route should respond with the direct response
 					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -1032,7 +1032,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
 	})
 
@@ -2348,7 +2348,7 @@ spec:
 				Port:              gatewayPort,
 				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
 
 	})
@@ -2467,7 +2467,7 @@ spec:
 				Port:              gatewayPort,
 				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 			// destination reachable via HybridGateway
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -2479,7 +2479,7 @@ spec:
 				Port:              int(hybridProxyServicePort.Port),
 				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
 
 	})
