@@ -21,6 +21,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_selectors "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_hcm "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -198,6 +200,20 @@ func (m *DelegatedHttpGateway) Clone() proto.Message {
 		return target
 	}
 	target = &DelegatedHttpGateway{}
+
+	target.PreventChildOverrides = m.GetPreventChildOverrides()
+
+	if h, ok := interface{}(m.GetHttpConnectionManagerSettings()).(clone.Cloner); ok {
+		target.HttpConnectionManagerSettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_hcm.HttpConnectionManagerSettings)
+	} else {
+		target.HttpConnectionManagerSettings = proto.Clone(m.GetHttpConnectionManagerSettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_hcm.HttpConnectionManagerSettings)
+	}
+
+	if h, ok := interface{}(m.GetSslConfig()).(clone.Cloner); ok {
+		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SslConfig)
+	} else {
+		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SslConfig)
+	}
 
 	switch m.SelectionType.(type) {
 
