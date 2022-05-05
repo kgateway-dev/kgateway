@@ -5,9 +5,12 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"google.golang.org/grpc"
 )
 
 func GetVirtualServices(name string, opts *options.Options) (v1.VirtualServiceList, error) {
@@ -102,8 +105,20 @@ func GetUpstreamGroups(name string, opts *options.Options) (gloov1.UpstreamGroup
 }
 
 func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
+	//settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	//settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), "default", clients.ReadOpts{Ctx: opts.Top.Ctx})
+	//if err != nil {
+	//	return nil, err
+	//}
+	proxyEndpointAddr := "gloo:9966" // settings.GetGloo().GetProxyDebugBindAddr()
+	if proxyEndpointAddr != "" {
+		contextutils.LoggerFrom(opts.Top.Ctx).Infof("proxy endpoint %s", proxyEndpointAddr)
+		return getProxiesFromGrpc(name, opts, proxyEndpointAddr)
+	}
+	return getProxiesFromK8s(name, opts)
+}
+func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	var list gloov1.ProxyList
-
 	pxClient := helpers.MustNamespacedProxyClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
 		uss, err := pxClient.List(opts.Metadata.GetNamespace(),
@@ -123,7 +138,18 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 
 	return list, nil
 }
-
+func getProxiesFromGrpc(name string, opts *options.Options, proxyEndpointAddr string) (gloov1.ProxyList, error) {
+	cc, err := grpc.DialContext(opts.Top.Ctx, proxyEndpointAddr, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	pxClient := debug.NewProxyEndpointServiceClient(cc)
+	resp, err := pxClient.GetProxies(opts.Top.Ctx, &debug.ProxyEndpointRequest{
+		Name:      name,
+		Namespace: opts.Metadata.GetNamespace(),
+	})
+	return resp.GetProxies(), err
+}
 func GetAuthConfigs(name string, opts *options.Options) (extauthv1.AuthConfigList, error) {
 	var authConfigList extauthv1.AuthConfigList
 

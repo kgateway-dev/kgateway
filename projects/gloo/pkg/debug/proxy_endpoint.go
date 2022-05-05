@@ -2,6 +2,7 @@ package debug
 
 import (
 	"context"
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -25,6 +26,7 @@ func (p *proxyEndpointServer) SetProxyClient(proxyClient v1.ProxyClient) {
 	p.proxyClient = proxyClient
 }
 func (p *proxyEndpointServer) GetProxies(ctx context.Context, req *debug.ProxyEndpointRequest) (*debug.ProxyEndpointResponse, error) {
+	contextutils.LoggerFrom(ctx).Infof("received grpc request to read proxies")
 	if req.GetName() == "" {
 		proxies, err := p.proxyClient.List(req.GetNamespace(), clients.ListOpts{
 			Ctx:      ctx,

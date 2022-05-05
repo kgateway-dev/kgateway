@@ -233,6 +233,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		proxyDebugAddr = DefaultProxyDebugAddr
 	}
 	proxyDebugTcpAddress, err := getAddr(proxyDebugAddr)
+	contextutils.LoggerFrom(ctx).Infof("proxy debug address %v %v", proxyDebugAddr, proxyDebugTcpAddress)
 	if err != nil {
 		return errors.Wrapf(err, "parsing proxy debug endpoint addr")
 	}
@@ -298,6 +299,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.previousValidationServer.cancel = cancel
 		s.previousValidationServer.addr = validationAddr
 	}
+	// initialize the proxy debug server context in this block either on the first loop, or if bind addr changed
 	if s.proxyDebugServer == emptyProxyDebugServer {
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
@@ -661,7 +663,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		}()
 		opts.ControlPlane.StartGrpcServer = false
 	}
-	if opts.ProxyDebugServer.StartGrpcServer {
+	if true { //opts.ProxyDebugServer.StartGrpcServer {
+		logger.Infof("starting proxy debug server %v", opts.ProxyDebugServer.StartGrpcServer)
 		proxyDebugServer := opts.ProxyDebugServer
 		proxyDebugServer.Server.SetProxyClient(proxyClient)
 		lis, err := net.Listen(opts.ProxyDebugServer.BindAddr.Network(), opts.ProxyDebugServer.BindAddr.String())

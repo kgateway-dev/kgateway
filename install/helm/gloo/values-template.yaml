@@ -198,7 +198,7 @@ ingressProxy:
   tracing:
 global:
   image:
-    registry: quay.io/solo-io
+    registry: elcasteel
     pullPolicy: IfNotPresent
     extended: false
   glooRbac:
