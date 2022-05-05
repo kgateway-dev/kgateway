@@ -172,11 +172,11 @@ func (t *HybridTranslator) computeMatchedListener(
 		childSslConfig = matchableHttpGateway.GetMatcher().GetSslConfig()
 	}
 
-	if parentSslConfig == nil {
-		// use childSslConfig exactly as-is
-	} else if childSslConfig == nil && parentSslConfig != nil {
+	if childSslConfig == nil {
 		// use parentSslConfig exactly as-is
 		childSslConfig = parentSslConfig
+	} else if parentSslConfig == nil {
+		// use childSslConfig exactly as-is
 	} else if childSslConfig != nil && parentSslConfig != nil {
 		if preventChildOverrides {
 			// merge, preferring parentSslConfig
@@ -199,11 +199,11 @@ func (t *HybridTranslator) computeMatchedListener(
 		childHcmOptions = matchableHttpGateway.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
 	}
 
-	if parentHcmOptions == nil {
-		// use childHcmOptions exactly as-is
-	} else if childHcmOptions == nil && parentHcmOptions != nil {
+	if childHcmOptions == nil {
 		// use parentHcmOptions exactly as-is
 		childHcmOptions = parentHcmOptions
+	} else if parentHcmOptions == nil {
+		// use childHcmOptions exactly as-is
 	} else if childHcmOptions != nil && parentHcmOptions != nil {
 		if preventChildOverrides {
 			// merge, preferring parentHcmOptions
@@ -216,6 +216,10 @@ func (t *HybridTranslator) computeMatchedListener(
 
 	if matchableHttpGateway.GetHttpGateway().GetOptions() != nil {
 		matchableHttpGateway.GetHttpGateway().GetOptions().HttpConnectionManagerSettings = childHcmOptions
+	} else {
+		matchableHttpGateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+			HttpConnectionManagerSettings: childHcmOptions,
+		}
 	}
 	parentGateway.GetHybridGateway().GetDelegatedHttpGateways().HttpConnectionManagerSettings = childHcmOptions
 	// ^ ---- inheritence logic ---- ^
