@@ -1,6 +1,6 @@
 ##########################################################################################
 # run-ci-regression-tests - runs a set of regression tests. Set KUBE2E_TESTS = (gateway, gloo, gloomtls, glooctl, helm, ingress)
-# run-tests - runs tests (see https://github.com/solo-io/gloo/blob/M1-changes/test/e2e/README.md)
+# run-tests - runs tests (see https://github.com/solo-io/gloo/blob/master/test/e2e/README.md)
 # 
 ##########################################################################################
 #----------------------------------------------------------------------------------
@@ -23,6 +23,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 RELEASE := "false"
 CREATE_TEST_ASSETS := "false"
 CREATE_ASSETS := "true"
+RUN_REGRESSION_TESTS=false
 
 ifneq ($(TEST_ASSET_ID),)
 	CREATE_TEST_ASSETS := "true"
@@ -161,11 +162,12 @@ install-go-tools: mod-download
 .PHONY: run-tests
 run-tests:
 ifneq ($(RELEASE), "true")
-	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
+	RUN_REGRESSION_TESTS=$(RUN_REGRESSION_TESTS) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests
 run-ci-regression-tests: TEST_PKG=./test/kube2e/...
+run-ci-regression-tests: RUN_REGRESSION_TESTS=true
 run-ci-regression-tests: install-go-tools run-tests
 
 .PHONY: check-format
