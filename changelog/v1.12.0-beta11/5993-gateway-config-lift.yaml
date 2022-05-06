@@ -1,0 +1,11 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5993
+    resolvesIssue: false
+    description: >
+      This PR expands on the functionality of `DelegatedHttpGateway` and `MatchableHttpGateway`.  It allows for anscestry-
+      level setting of TLS and HCM configuration.  Phrased differently:  configuration can now be set for a single
+      `DelegatedHttpGateway` that will be propagated to all `MatchableHttpGateway`s.  Setting the `preventChildOverrides` flag
+      specifies that parent config is to be prioritized over child.  For example:
+      * preventChildOverrides=false | {"parent":{"foo":"bar"}, "child":{"foo":"baz"}} --> {"foo":"baz"}
+      * preventChildOverrides=true  | {"parent":{"foo":"bar"}, "child":{"foo":"baz"}} --> {"foo":"bar"}
