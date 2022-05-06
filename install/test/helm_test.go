@@ -3564,9 +3564,10 @@ spec:
           command:
           - /bin/sh
           - -c
-          - "kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-` + namespace + `"
-          - "kubectl delete gateways.gateway.solo.io -n ` + namespace + ` -l created-by=gloo-install"
-          - "kubectl delete upstreams.gloo.solo.io -n ` + namespace + ` -l created-by=gloo-install"
+          - |
+            kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-` + namespace + `
+            kubectl delete gateways.gateway.solo.io -n ` + namespace + ` -l created_by=gloo-install
+            kubectl delete upstreams.gloo.solo.io -n ` + namespace + ` -l created_by=gloo-install
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
 `)
@@ -3590,7 +3591,7 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
-    created-by: gloo-install
+    created_by: gloo-install
     "app.kubernetes.io/managed-by": Helm
   annotations:
     "helm.sh/hook": post-install,post-upgrade
@@ -3616,7 +3617,7 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
-    created-by: gloo-install
+    created_by: gloo-install
     "app.kubernetes.io/managed-by": Helm
   annotations:
     "helm.sh/hook": post-install,post-upgrade
