@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -410,7 +409,7 @@ func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir s
 	}
 
 	// delete all solo crds from the previous release
-	dir, err := ioutil.TempDir("", "old-gloo-chart")
+	dir, err := os.MkdirTemp("", "old-gloo-chart")
 	Expect(err).NotTo(HaveOccurred())
 	defer os.RemoveAll(dir)
 
