@@ -140,7 +140,6 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 	}
 	return multiErr.ErrorOrNil()
 }
-
 func (s *translatorSyncer) translateProxies(ctx context.Context, snap *v1snap.ApiSnapshot) error {
 	gwSnap := &gatewayv1.ApiSnapshot{
 		VirtualServices:    snap.VirtualServices,

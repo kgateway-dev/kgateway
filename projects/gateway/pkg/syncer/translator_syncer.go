@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -37,6 +38,7 @@ type TranslatorSyncer struct {
 	translator         translator.Translator
 	statusSyncer       statusSyncer
 	managedProxyLabels map[string]string
+	proxyStatusMaxSize string
 }
 
 func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) *TranslatorSyncer {
@@ -49,6 +51,9 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 		managedProxyLabels: map[string]string{
 			"created_by": "gloo-gateway-translator",
 		},
+	}
+	if pxStatusSizeEnv := os.Getenv("PROXY_STATUS_MAX_SIZE"); pxStatusSizeEnv != "" {
+		t.proxyStatusMaxSize = pxStatusSizeEnv
 	}
 	go t.statusSyncer.syncStatusOnEmit(ctx)
 	return t
@@ -96,7 +101,9 @@ func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *v1
 			if s.shouldCompresss(ctx) {
 				compress.SetShouldCompressed(proxy)
 			}
-
+			if s.proxyStatusMaxSize != "" {
+				compress.SetMaxStatusSize(proxy, s.proxyStatusMaxSize)
+			}
 			logger.Infof("desired proxy %v", proxy.GetMetadata().Ref())
 			proxy.GetMetadata().Labels = s.managedProxyLabels
 			desiredProxies[proxy] = reports
@@ -116,7 +123,6 @@ func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *v1
 func (s *TranslatorSyncer) shouldCompresss(ctx context.Context) bool {
 	return settingsutil.MaybeFromContext(ctx).GetGateway().GetCompressedProxySpec()
 }
-
 func (s *TranslatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies, invalidProxies reconciler.InvalidProxies) error {
 	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, s.managedProxyLabels); err != nil {
 		return err

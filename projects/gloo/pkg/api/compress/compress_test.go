@@ -135,6 +135,54 @@ var _ = Describe("Compress", func() {
 
 			Expect(status1).To(BeEquivalentTo(status2))
 		})
+		It("should truncate the status reason when annotated with max length", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+			}
+			SetMaxStatusSize(p, "4")
+			statusClient.SetStatus(p, &core.Status{State: core.Status_Accepted, Reason: "very long message"})
+			status, err := MarshalStatus(p)
+			Expect(err).NotTo(HaveOccurred())
+			unmarshalledProxy := &v1.Proxy{}
+			UnmarshalStatus(unmarshalledProxy, status, statusUnmarshaler)
+			finalStatus := statusClient.GetStatus(unmarshalledProxy)
+			//Truncate the status and append the warning
+			Expect(finalStatus.GetReason()).To(Equal("very" + MaxLengthWarningMessage))
+		})
+		It("should not truncate the status reason when annotated with invalid max length", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+			}
+			p.Metadata.Annotations = map[string]string{ShortenKey: "not an int"}
+			originalStatus := &core.Status{State: core.Status_Accepted, Reason: "very long message"}
+			statusClient.SetStatus(p, originalStatus)
+			status, err := MarshalStatus(p)
+			Expect(err).NotTo(HaveOccurred())
+			unmarshalledProxy := &v1.Proxy{}
+			UnmarshalStatus(unmarshalledProxy, status, statusUnmarshaler)
+			finalStatus := statusClient.GetStatus(unmarshalledProxy)
+			Expect(finalStatus).To(BeEquivalentTo(finalStatus))
+		})
+		It("should not modify the status reason when message is shorter than the limit", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+			}
+			p.Metadata.Annotations = map[string]string{ShortenKey: "5"}
+			originalStatus := &core.Status{State: core.Status_Accepted, Reason: "hi"}
+			statusClient.SetStatus(p, originalStatus)
+			status, err := MarshalStatus(p)
+			Expect(err).NotTo(HaveOccurred())
+			unmarshalledProxy := &v1.Proxy{}
+			UnmarshalStatus(unmarshalledProxy, status, statusUnmarshaler)
+			finalStatus := statusClient.GetStatus(unmarshalledProxy)
+			Expect(finalStatus).To(BeEquivalentTo(finalStatus))
+		})
 	})
 
 })
