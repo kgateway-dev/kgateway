@@ -39,10 +39,10 @@ var _ = Describe("Clean up proxies", func() {
 			},
 		}
 		managedProxyLabels = map[string]string{
-			"created-by": "gloo-gateway-translator",
+			"created_by": "gloo-gateway-translator",
 		}
 		unmanagedProxyLabels = map[string]string{
-			"created-by": "other-controller",
+			"created_by": "other-controller",
 		}
 		gatewayProxy = &v1.Proxy{
 			Metadata: &core.Metadata{

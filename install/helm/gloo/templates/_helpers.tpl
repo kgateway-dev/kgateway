@@ -133,7 +133,7 @@ The input to the function should be a dict with the following key/value mappings
     {{$k}}: {{$v}}
 {{- end }}
 {{- if $customResourceLifecycle }}
-    created-by: gloo-install
+    created_by: gloo-install
     app.kubernetes.io/managed-by: Helm
   annotations:
     "meta.helm.sh/release-name": {{ .release.Name }}
