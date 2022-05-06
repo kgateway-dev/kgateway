@@ -6,18 +6,21 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	hcm "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
@@ -287,6 +290,151 @@ var _ = Describe("Hybrid Translator", func() {
 	Context("DelegatedHttpGateways", func() {
 
 		Context("http", func() {
+
+			Context("anscestry override logic", func() {
+				var (
+					parent   *v1.DelegatedHttpGateway
+					child    *v1.MatchableHttpGateway
+					ssl_true *gloov1.SslConfig = &gloov1.SslConfig{
+						OneWayTls: &wrapperspb.BoolValue{
+							Value: true,
+						},
+					}
+					ssl_false *gloov1.SslConfig = &gloov1.SslConfig{
+						OneWayTls: &wrapperspb.BoolValue{
+							Value: false,
+						},
+					}
+					ssl_empty *gloov1.SslConfig                  = &gloov1.SslConfig{}
+					hcm_true  *hcm.HttpConnectionManagerSettings = &hcm.HttpConnectionManagerSettings{
+						SkipXffAppend: true,
+					}
+					hcm_false *hcm.HttpConnectionManagerSettings = &hcm.HttpConnectionManagerSettings{
+						SkipXffAppend: false,
+					}
+					hcm_empty *hcm.HttpConnectionManagerSettings = &hcm.HttpConnectionManagerSettings{}
+				)
+
+				BeforeEach(func() {
+					snap = &v1.ApiSnapshot{
+						Gateways: v1.GatewayList{
+							{
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+								GatewayType: &v1.Gateway_HybridGateway{
+									HybridGateway: &v1.HybridGateway{
+										DelegatedHttpGateways: &v1.DelegatedHttpGateway{
+											SelectionType: &v1.DelegatedHttpGateway_Ref{
+												Ref: &core.ResourceRef{
+													Name:      "name",
+													Namespace: ns,
+												},
+											},
+										},
+									},
+								},
+								BindPort: 2,
+							},
+						},
+
+						HttpGateways: v1.MatchableHttpGatewayList{
+							{
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+								Matcher: &v1.MatchableHttpGateway_Matcher{
+									SourcePrefixRanges: []*v3.CidrRange{
+										{
+											AddressPrefix: "match1",
+										},
+									},
+								},
+								HttpGateway: &v1.HttpGateway{
+									Options: &gloov1.HttpListenerOptions{},
+								},
+							},
+						},
+
+						VirtualServices: v1.VirtualServiceList{
+							createVirtualService("name1", ns, false),
+							createVirtualService("name2", ns, false),
+							createVirtualService("name3", ns+"-other-namespace", false),
+						},
+					}
+
+					parent = snap.Gateways[0].GetHybridGateway().GetDelegatedHttpGateways()
+					child = snap.HttpGateways[0]
+				})
+
+				DescribeTable("anscestry override tests", func(child_ssl *gloov1.SslConfig, parent_ssl *gloov1.SslConfig, child_hcm *hcm.HttpConnectionManagerSettings, parent_hcm *hcm.HttpConnectionManagerSettings, prevent_child_overrides bool) {
+					parent.PreventChildOverrides = prevent_child_overrides
+					// config setting
+					child.GetMatcher().SslConfig = child_ssl
+					parent.SslConfig = parent_ssl
+					child.GetHttpGateway().GetOptions().HttpConnectionManagerSettings = child_hcm
+					parent.HttpConnectionManagerSettings = parent_hcm
+
+					// perform translation
+					params := NewTranslatorParams(ctx, snap, reports)
+					hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+
+					// evaluate results
+					hcm_after := child.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
+					ssl_after := child.GetMatcher().GetSslConfig()
+
+					Expect(hcm_after.GetSkipXffAppend()).To(Equal(true))
+					Expect(ssl_after.GetOneWayTls().GetValue()).To(Equal(true))
+				},
+					Entry("PreventChildOverrides, child == nil", // should prefer parent fields
+						nil, ssl_true, nil, hcm_true, true),
+					Entry("PreventChildOverrides, parent == nil", // should prefer child fields
+						ssl_true, nil, hcm_true, nil, true),
+					Entry("PreventChildOverrides, child.subfield != nil && parent.subfield != nil", // should prefer parent.subfield
+						ssl_false, ssl_true, hcm_false, hcm_true, true),
+					Entry("PreventChildOverrides, child.subfield != nil && parent.subfield == nil", // should prefer child.subfield
+						ssl_true, ssl_empty, hcm_true, hcm_empty, true),
+					Entry("PreventChildOverrides, child.subfield == nil && parent.subfield != nil", // should prefer parent.subfield
+						ssl_empty, ssl_true, hcm_empty, hcm_true, true),
+					Entry("!PreventChildOverrides, child == nil", // should prefer parent fields
+						nil, ssl_true, nil, hcm_true, false),
+					Entry("!PreventChildOverrides, parent == nil", // should prefer child fields
+						ssl_true, nil, hcm_true, nil, false),
+					Entry("!PreventChildOverrides, child.subfield != nil && parent.subfield != nil", // should prefer child.subfield
+						ssl_true, ssl_false, hcm_true, hcm_false, false),
+					Entry("!PreventChildOverrides, child.subfield != nil && parent.subfield == nil", // should prefer child.subfield
+						ssl_true, ssl_empty, hcm_true, hcm_empty, false),
+					Entry("!PreventChildOverrides, child.subfield == nil && parent.subfield != nil", // should prefer parent.subfield
+						ssl_empty, ssl_true, hcm_empty, hcm_true, false),
+				)
+
+				It("Should set child HCM options when child has `nil` options field", func() {
+					// config setting
+					child.GetHttpGateway().Options = nil
+					parent.HttpConnectionManagerSettings = hcm_true
+
+					// perform transformation
+					params := NewTranslatorParams(ctx, snap, reports)
+					hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+
+					// evaluate results
+					hcm_after := child.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
+					Expect(hcm_after.GetSkipXffAppend()).To(Equal(true))
+				})
+
+				It("Should overwrite nested nil child fields", func() {
+					// config setting
+					child.GetMatcher().SslConfig = ssl_empty
+					parent.SslConfig = ssl_empty
+					parent.GetSslConfig().TransportSocketConnectTimeout = &duration.Duration{
+						Seconds: 10,
+					}
+
+					// perform transformation
+					params := NewTranslatorParams(ctx, snap, reports)
+					hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+
+					// evaluate results
+					ssl_after := child.GetMatcher().GetSslConfig()
+					Expect(ssl_after.GetTransportSocketConnectTimeout().GetSeconds()).To(Equal(int64(10)))
+				})
+			})
 
 			Context("non-ssl", func() {
 

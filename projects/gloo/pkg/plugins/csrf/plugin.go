@@ -34,7 +34,8 @@ const (
 var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
 type plugin struct {
-	filterNeeded bool
+	removeUnused              bool
+	filterRequiredForListener map[*v1.HttpListener]struct{}
 }
 
 func NewPlugin() *plugin {
@@ -46,16 +47,19 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
-	p.filterNeeded = !params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
+	p.removeUnused = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
+	p.filterRequiredForListener = make(map[*v1.HttpListener]struct{})
 	return nil
 }
 
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	if !p.filterNeeded {
+	glooCsrfConfig := listener.GetOptions().GetCsrf()
+
+	_, ok := p.filterRequiredForListener[listener]
+	if !ok && p.removeUnused && glooCsrfConfig == nil {
 		return []plugins.StagedHttpFilter{}, nil
 	}
 
-	glooCsrfConfig := listener.GetOptions().GetCsrf()
 	envoyCsrfConfig, err := translateCsrfConfig(glooCsrfConfig)
 	if err != nil {
 		return nil, err
@@ -79,7 +83,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if err != nil {
 		return err
 	}
-	p.filterNeeded = true
+	p.filterRequiredForListener[params.HttpListener] = struct{}{}
 
 	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
@@ -98,7 +102,7 @@ func (p *plugin) ProcessVirtualHost(
 	if err != nil {
 		return err
 	}
-	p.filterNeeded = true
+	p.filterRequiredForListener[params.HttpListener] = struct{}{}
 
 	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
@@ -117,7 +121,7 @@ func (p *plugin) ProcessWeightedDestination(
 	if err != nil {
 		return err
 	}
-	p.filterNeeded = true
+	p.filterRequiredForListener[params.HttpListener] = struct{}{}
 
 	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
