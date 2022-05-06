@@ -1,5 +1,7 @@
 ##########################################################################################
-# KUBE2E_TESTS can be set to (gateway, gloo, gloomtls, glooctl, helm, ingress)
+# run-ci-regression-tests - runs a set of regression tests. Set KUBE2E_TESTS = (gateway, gloo, gloomtls, glooctl, helm, ingress)
+# run-tests - runs tests (see https://github.com/solo-io/gloo/blob/M1-changes/test/e2e/README.md)
+# 
 ##########################################################################################
 #----------------------------------------------------------------------------------
 # Base
@@ -159,7 +161,7 @@ install-go-tools: mod-download
 .PHONY: run-tests
 run-tests:
 ifneq ($(RELEASE), "true")
-	RUNNING_REGRESSION_TESTS=true $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
+	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests
