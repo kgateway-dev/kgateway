@@ -246,6 +246,7 @@ const SimpleTestRunnerHttpResponse = `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.
 <li><a href="mnt/">mnt/</a>
 <li><a href="opt/">opt/</a>
 <li><a href="proc/">proc/</a>
+<li><a href="product_name">product_name</a>
 <li><a href="product_uuid">product_uuid</a>
 <li><a href="root/">root/</a>
 <li><a href="root.crt">root.crt</a>
