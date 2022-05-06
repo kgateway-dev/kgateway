@@ -131,6 +131,11 @@ spec:
                             additionalProperties:
                               type: string
                             type: object
+                          options:
+                            properties:
+                              timeout:
+                                type: string
+                            type: object
                           queryParams:
                             additionalProperties:
                               type: string

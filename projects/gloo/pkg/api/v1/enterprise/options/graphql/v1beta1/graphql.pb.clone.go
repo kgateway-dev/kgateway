@@ -682,6 +682,12 @@ func (m *Executor_Remote) Clone() proto.Message {
 
 	target.SpanName = m.GetSpanName()
 
+	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
+		target.Options = h.Clone().(*Executor_Remote_LocalExecutorOptions)
+	} else {
+		target.Options = proto.Clone(m.GetOptions()).(*Executor_Remote_LocalExecutorOptions)
+	}
+
 	return target
 }
 
@@ -697,6 +703,23 @@ func (m *Executor_Local_LocalExecutorOptions) Clone() proto.Message {
 		target.MaxDepth = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	} else {
 		target.MaxDepth = proto.Clone(m.GetMaxDepth()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Executor_Remote_LocalExecutorOptions) Clone() proto.Message {
+	var target *Executor_Remote_LocalExecutorOptions
+	if m == nil {
+		return target
+	}
+	target = &Executor_Remote_LocalExecutorOptions{}
+
+	if h, ok := interface{}(m.GetTimeout()).(clone.Cloner); ok {
+		target.Timeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.Timeout = proto.Clone(m.GetTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
 	return target

@@ -1593,8 +1593,9 @@ type Executor_Remote struct {
 	// 'query': '{$dynamicMetadata.$KEY_NAME.io.solo.transformation}'
 	//
 	// translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508
-	QueryParams map[string]string `protobuf:"bytes,3,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	SpanName    string            `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
+	QueryParams map[string]string                     `protobuf:"bytes,3,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	SpanName    string                                `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
+	Options     *Executor_Remote_LocalExecutorOptions `protobuf:"bytes,5,opt,name=options,proto3" json:"options,omitempty"`
 }
 
 func (x *Executor_Remote) Reset() {
@@ -1655,6 +1656,13 @@ func (x *Executor_Remote) GetSpanName() string {
 		return x.SpanName
 	}
 	return ""
+}
+
+func (x *Executor_Remote) GetOptions() *Executor_Remote_LocalExecutorOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
 }
 
 type Executor_Local_LocalExecutorOptions struct {
@@ -1740,6 +1748,53 @@ func (*Executor_Local_LocalExecutorOptions) Descriptor() ([]byte, []int) {
 func (x *Executor_Local_LocalExecutorOptions) GetMaxDepth() *wrappers.UInt32Value {
 	if x != nil {
 		return x.MaxDepth
+	}
+	return nil
+}
+
+type Executor_Remote_LocalExecutorOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Timeout *duration.Duration `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
+}
+
+func (x *Executor_Remote_LocalExecutorOptions) Reset() {
+	*x = Executor_Remote_LocalExecutorOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_msgTypes[28]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Executor_Remote_LocalExecutorOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Executor_Remote_LocalExecutorOptions) ProtoMessage() {}
+
+func (x *Executor_Remote_LocalExecutorOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_msgTypes[28]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Executor_Remote_LocalExecutorOptions.ProtoReflect.Descriptor instead.
+func (*Executor_Remote_LocalExecutorOptions) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_rawDescGZIP(), []int{12, 1, 0}
+}
+
+func (x *Executor_Remote_LocalExecutorOptions) GetTimeout() *duration.Duration {
+	if x != nil {
+		return x.Timeout
 	}
 	return nil
 }
@@ -2026,7 +2081,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x47, 0x72, 0x70, 0x63, 0x44, 0x65,
 	0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79,
 	0x52, 0x16, 0x67, 0x72, 0x70, 0x63, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72,
-	0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x22, 0xc0, 0x07, 0x0a, 0x08, 0x45, 0x78, 0x65,
+	0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x22, 0xe3, 0x08, 0x0a, 0x08, 0x45, 0x78, 0x65,
 	0x63, 0x75, 0x74, 0x6f, 0x72, 0x12, 0x3c, 0x0a, 0x05, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x24, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67,
 	0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x45, 0x78, 0x65, 0x63,
@@ -2061,7 +2116,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71,
 	0x6c, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52,
 	0x65, 0x73, 0x6f, 0x6c, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65,
-	0x3a, 0x02, 0x38, 0x01, 0x1a, 0x88, 0x03, 0x0a, 0x06, 0x52, 0x65, 0x6d, 0x6f, 0x74, 0x65, 0x12,
+	0x3a, 0x02, 0x38, 0x01, 0x1a, 0xab, 0x04, 0x0a, 0x06, 0x52, 0x65, 0x6d, 0x6f, 0x74, 0x65, 0x12,
 	0x3c, 0x0a, 0x0c, 0x75, 0x70, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x5f, 0x72, 0x65, 0x66, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73, 0x6f, 0x6c,
 	0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x52, 0x65, 0x66,
@@ -2078,26 +2133,37 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 	0x72, 0x61, 0x6d, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0b, 0x71, 0x75, 0x65, 0x72, 0x79,
 	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x1b, 0x0a, 0x09, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x6e,
 	0x61, 0x6d, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x73, 0x70, 0x61, 0x6e, 0x4e,
-	0x61, 0x6d, 0x65, 0x1a, 0x3a, 0x0a, 0x0c, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x45, 0x6e,
-	0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x1a,
-	0x3e, 0x0a, 0x10, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x45, 0x6e,
-	0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x42,
-	0x0a, 0x0a, 0x08, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72, 0x42, 0xaa, 0x01, 0x0a, 0x31,
-	0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x2e, 0x65, 0x6e,
-	0x76, 0x6f, 0x79, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x66, 0x69, 0x6c, 0x74, 0x65,
-	0x72, 0x2e, 0x68, 0x74, 0x74, 0x70, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x76,
-	0x32, 0x42, 0x12, 0x47, 0x72, 0x61, 0x70, 0x68, 0x51, 0x4c, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72,
-	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x53, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
-	0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f,
-	0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70,
-	0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x70,
-	0x72, 0x69, 0x73, 0x65, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x67, 0x72, 0x61,
-	0x70, 0x68, 0x71, 0x6c, 0x2f, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0xc0, 0xf5, 0x04, 0x01,
-	0xb8, 0xf5, 0x04, 0x01, 0xd0, 0xf5, 0x04, 0x01, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x6d, 0x65, 0x12, 0x54, 0x0a, 0x07, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x05,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x3a, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2e, 0x67,
+	0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x45, 0x78, 0x65, 0x63,
+	0x75, 0x74, 0x6f, 0x72, 0x2e, 0x52, 0x65, 0x6d, 0x6f, 0x74, 0x65, 0x2e, 0x4c, 0x6f, 0x63, 0x61,
+	0x6c, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x52, 0x07, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x1a, 0x4b, 0x0a, 0x14, 0x4c, 0x6f, 0x63,
+	0x61, 0x6c, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x12, 0x33, 0x0a, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x19, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x44, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x07, 0x74,
+	0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74, 0x1a, 0x3a, 0x0a, 0x0c, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72,
+	0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75,
+	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02,
+	0x38, 0x01, 0x1a, 0x3e, 0x0a, 0x10, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d,
+	0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75,
+	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02,
+	0x38, 0x01, 0x42, 0x0a, 0x0a, 0x08, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72, 0x42, 0xaa,
+	0x01, 0x0a, 0x31, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x70, 0x72, 0x6f, 0x78, 0x79,
+	0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x66, 0x69,
+	0x6c, 0x74, 0x65, 0x72, 0x2e, 0x68, 0x74, 0x74, 0x70, 0x2e, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71,
+	0x6c, 0x2e, 0x76, 0x32, 0x42, 0x12, 0x47, 0x72, 0x61, 0x70, 0x68, 0x51, 0x4c, 0x46, 0x69, 0x6c,
+	0x74, 0x65, 0x72, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x53, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67,
+	0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f,
+	0x6f, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x65, 0x6e, 0x74,
+	0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f,
+	0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c, 0x2f, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0xc0,
+	0xf5, 0x04, 0x01, 0xb8, 0xf5, 0x04, 0x01, 0xd0, 0xf5, 0x04, 0x01, 0x62, 0x06, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2112,7 +2178,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_rawDescData
 }
 
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_goTypes = []interface{}{
 	(*RequestTemplate)(nil),                  // 0: graphql.gloo.solo.io.RequestTemplate
 	(*ResponseTemplate)(nil),                 // 1: graphql.gloo.solo.io.ResponseTemplate
@@ -2141,66 +2207,69 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 	(*Executor_Local)(nil),               // 24: graphql.gloo.solo.io.Executor.Local
 	(*Executor_Remote)(nil),              // 25: graphql.gloo.solo.io.Executor.Remote
 	(*Executor_Local_LocalExecutorOptions)(nil), // 26: graphql.gloo.solo.io.Executor.Local.LocalExecutorOptions
-	nil,                             // 27: graphql.gloo.solo.io.Executor.Local.ResolutionsEntry
-	nil,                             // 28: graphql.gloo.solo.io.Executor.Remote.HeadersEntry
-	nil,                             // 29: graphql.gloo.solo.io.Executor.Remote.QueryParamsEntry
-	(*_struct.Value)(nil),           // 30: google.protobuf.Value
-	(*core.ResourceRef)(nil),        // 31: core.solo.io.ResourceRef
-	(*wrappers.StringValue)(nil),    // 32: google.protobuf.StringValue
-	(*core.NamespacedStatuses)(nil), // 33: core.solo.io.NamespacedStatuses
-	(*core.Metadata)(nil),           // 34: core.solo.io.Metadata
-	(*duration.Duration)(nil),       // 35: google.protobuf.Duration
-	(*wrappers.UInt32Value)(nil),    // 36: google.protobuf.UInt32Value
+	nil, // 27: graphql.gloo.solo.io.Executor.Local.ResolutionsEntry
+	(*Executor_Remote_LocalExecutorOptions)(nil), // 28: graphql.gloo.solo.io.Executor.Remote.LocalExecutorOptions
+	nil,                             // 29: graphql.gloo.solo.io.Executor.Remote.HeadersEntry
+	nil,                             // 30: graphql.gloo.solo.io.Executor.Remote.QueryParamsEntry
+	(*_struct.Value)(nil),           // 31: google.protobuf.Value
+	(*core.ResourceRef)(nil),        // 32: core.solo.io.ResourceRef
+	(*wrappers.StringValue)(nil),    // 33: google.protobuf.StringValue
+	(*core.NamespacedStatuses)(nil), // 34: core.solo.io.NamespacedStatuses
+	(*core.Metadata)(nil),           // 35: core.solo.io.Metadata
+	(*duration.Duration)(nil),       // 36: google.protobuf.Duration
+	(*wrappers.UInt32Value)(nil),    // 37: google.protobuf.UInt32Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_depIdxs = []int32{
 	13, // 0: graphql.gloo.solo.io.RequestTemplate.headers:type_name -> graphql.gloo.solo.io.RequestTemplate.HeadersEntry
 	14, // 1: graphql.gloo.solo.io.RequestTemplate.query_params:type_name -> graphql.gloo.solo.io.RequestTemplate.QueryParamsEntry
-	30, // 2: graphql.gloo.solo.io.RequestTemplate.body:type_name -> google.protobuf.Value
+	31, // 2: graphql.gloo.solo.io.RequestTemplate.body:type_name -> google.protobuf.Value
 	15, // 3: graphql.gloo.solo.io.ResponseTemplate.setters:type_name -> graphql.gloo.solo.io.ResponseTemplate.SettersEntry
-	30, // 4: graphql.gloo.solo.io.GrpcRequestTemplate.outgoing_message_json:type_name -> google.protobuf.Value
+	31, // 4: graphql.gloo.solo.io.GrpcRequestTemplate.outgoing_message_json:type_name -> google.protobuf.Value
 	16, // 5: graphql.gloo.solo.io.GrpcRequestTemplate.request_metadata:type_name -> graphql.gloo.solo.io.GrpcRequestTemplate.RequestMetadataEntry
-	31, // 6: graphql.gloo.solo.io.RESTResolver.upstream_ref:type_name -> core.solo.io.ResourceRef
+	32, // 6: graphql.gloo.solo.io.RESTResolver.upstream_ref:type_name -> core.solo.io.ResourceRef
 	0,  // 7: graphql.gloo.solo.io.RESTResolver.request:type_name -> graphql.gloo.solo.io.RequestTemplate
 	1,  // 8: graphql.gloo.solo.io.RESTResolver.response:type_name -> graphql.gloo.solo.io.ResponseTemplate
 	17, // 9: graphql.gloo.solo.io.GrpcDescriptorRegistry.proto_refs_list:type_name -> graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs
-	31, // 10: graphql.gloo.solo.io.GrpcResolver.upstream_ref:type_name -> core.solo.io.ResourceRef
+	32, // 10: graphql.gloo.solo.io.GrpcResolver.upstream_ref:type_name -> core.solo.io.ResourceRef
 	2,  // 11: graphql.gloo.solo.io.GrpcResolver.request_transform:type_name -> graphql.gloo.solo.io.GrpcRequestTemplate
 	18, // 12: graphql.gloo.solo.io.StitchedSchema.subschemas:type_name -> graphql.gloo.solo.io.StitchedSchema.SubschemaConfig
-	30, // 13: graphql.gloo.solo.io.MockResolver.sync_response:type_name -> google.protobuf.Value
+	31, // 13: graphql.gloo.solo.io.MockResolver.sync_response:type_name -> google.protobuf.Value
 	22, // 14: graphql.gloo.solo.io.MockResolver.async_response:type_name -> graphql.gloo.solo.io.MockResolver.AsyncResponse
 	3,  // 15: graphql.gloo.solo.io.Resolution.rest_resolver:type_name -> graphql.gloo.solo.io.RESTResolver
 	5,  // 16: graphql.gloo.solo.io.Resolution.grpc_resolver:type_name -> graphql.gloo.solo.io.GrpcResolver
 	7,  // 17: graphql.gloo.solo.io.Resolution.mock_resolver:type_name -> graphql.gloo.solo.io.MockResolver
-	32, // 18: graphql.gloo.solo.io.Resolution.stat_prefix:type_name -> google.protobuf.StringValue
-	33, // 19: graphql.gloo.solo.io.GraphQLApi.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
-	34, // 20: graphql.gloo.solo.io.GraphQLApi.metadata:type_name -> core.solo.io.Metadata
+	33, // 18: graphql.gloo.solo.io.Resolution.stat_prefix:type_name -> google.protobuf.StringValue
+	34, // 19: graphql.gloo.solo.io.GraphQLApi.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
+	35, // 20: graphql.gloo.solo.io.GraphQLApi.metadata:type_name -> core.solo.io.Metadata
 	11, // 21: graphql.gloo.solo.io.GraphQLApi.executable_schema:type_name -> graphql.gloo.solo.io.ExecutableSchema
 	6,  // 22: graphql.gloo.solo.io.GraphQLApi.stitched_schema:type_name -> graphql.gloo.solo.io.StitchedSchema
-	32, // 23: graphql.gloo.solo.io.GraphQLApi.stat_prefix:type_name -> google.protobuf.StringValue
+	33, // 23: graphql.gloo.solo.io.GraphQLApi.stat_prefix:type_name -> google.protobuf.StringValue
 	10, // 24: graphql.gloo.solo.io.GraphQLApi.persisted_query_cache_config:type_name -> graphql.gloo.solo.io.PersistedQueryCacheConfig
 	23, // 25: graphql.gloo.solo.io.GraphQLApi.options:type_name -> graphql.gloo.solo.io.GraphQLApi.GraphQLApiOptions
 	12, // 26: graphql.gloo.solo.io.ExecutableSchema.executor:type_name -> graphql.gloo.solo.io.Executor
 	4,  // 27: graphql.gloo.solo.io.ExecutableSchema.grpc_descriptor_registry:type_name -> graphql.gloo.solo.io.GrpcDescriptorRegistry
 	24, // 28: graphql.gloo.solo.io.Executor.local:type_name -> graphql.gloo.solo.io.Executor.Local
 	25, // 29: graphql.gloo.solo.io.Executor.remote:type_name -> graphql.gloo.solo.io.Executor.Remote
-	31, // 30: graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs.config_map_refs:type_name -> core.solo.io.ResourceRef
+	32, // 30: graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs.config_map_refs:type_name -> core.solo.io.ResourceRef
 	20, // 31: graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.type_merge:type_name -> graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeEntry
 	21, // 32: graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeConfig.args:type_name -> graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeConfig.ArgsEntry
 	19, // 33: graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeEntry.value:type_name -> graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeConfig
-	30, // 34: graphql.gloo.solo.io.MockResolver.AsyncResponse.response:type_name -> google.protobuf.Value
-	35, // 35: graphql.gloo.solo.io.MockResolver.AsyncResponse.delay:type_name -> google.protobuf.Duration
+	31, // 34: graphql.gloo.solo.io.MockResolver.AsyncResponse.response:type_name -> google.protobuf.Value
+	36, // 35: graphql.gloo.solo.io.MockResolver.AsyncResponse.delay:type_name -> google.protobuf.Duration
 	27, // 36: graphql.gloo.solo.io.Executor.Local.resolutions:type_name -> graphql.gloo.solo.io.Executor.Local.ResolutionsEntry
 	26, // 37: graphql.gloo.solo.io.Executor.Local.options:type_name -> graphql.gloo.solo.io.Executor.Local.LocalExecutorOptions
-	31, // 38: graphql.gloo.solo.io.Executor.Remote.upstream_ref:type_name -> core.solo.io.ResourceRef
-	28, // 39: graphql.gloo.solo.io.Executor.Remote.headers:type_name -> graphql.gloo.solo.io.Executor.Remote.HeadersEntry
-	29, // 40: graphql.gloo.solo.io.Executor.Remote.query_params:type_name -> graphql.gloo.solo.io.Executor.Remote.QueryParamsEntry
-	36, // 41: graphql.gloo.solo.io.Executor.Local.LocalExecutorOptions.max_depth:type_name -> google.protobuf.UInt32Value
-	8,  // 42: graphql.gloo.solo.io.Executor.Local.ResolutionsEntry.value:type_name -> graphql.gloo.solo.io.Resolution
-	43, // [43:43] is the sub-list for method output_type
-	43, // [43:43] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	32, // 38: graphql.gloo.solo.io.Executor.Remote.upstream_ref:type_name -> core.solo.io.ResourceRef
+	29, // 39: graphql.gloo.solo.io.Executor.Remote.headers:type_name -> graphql.gloo.solo.io.Executor.Remote.HeadersEntry
+	30, // 40: graphql.gloo.solo.io.Executor.Remote.query_params:type_name -> graphql.gloo.solo.io.Executor.Remote.QueryParamsEntry
+	28, // 41: graphql.gloo.solo.io.Executor.Remote.options:type_name -> graphql.gloo.solo.io.Executor.Remote.LocalExecutorOptions
+	37, // 42: graphql.gloo.solo.io.Executor.Local.LocalExecutorOptions.max_depth:type_name -> google.protobuf.UInt32Value
+	8,  // 43: graphql.gloo.solo.io.Executor.Local.ResolutionsEntry.value:type_name -> graphql.gloo.solo.io.Resolution
+	36, // 44: graphql.gloo.solo.io.Executor.Remote.LocalExecutorOptions.timeout:type_name -> google.protobuf.Duration
+	45, // [45:45] is the sub-list for method output_type
+	45, // [45:45] is the sub-list for method input_type
+	45, // [45:45] is the sub-list for extension type_name
+	45, // [45:45] is the sub-list for extension extendee
+	0,  // [0:45] is the sub-list for field type_name
 }
 
 func init() {
@@ -2463,6 +2532,18 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 				return nil
 			}
 		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Executor_Remote_LocalExecutorOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_msgTypes[4].OneofWrappers = []interface{}{
 		(*GrpcDescriptorRegistry_ProtoDescriptor)(nil),
@@ -2493,7 +2574,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphq
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   30,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
