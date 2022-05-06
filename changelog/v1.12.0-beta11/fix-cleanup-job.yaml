@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6213
+    resolvesIssue: false
+    description: |
+      Fix the rbac/syntax in the job that cleans up the validation webhook and custom resources on uninstall.
