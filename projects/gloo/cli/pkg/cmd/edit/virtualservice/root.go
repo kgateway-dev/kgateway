@@ -15,7 +15,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 type EditVirtualService struct {
@@ -92,11 +91,6 @@ func editVirtualService(opts *options.EditOptions, optsExt *EditVirtualService, 
 		if vs.GetSslConfig() == nil {
 			vs.SslConfig = &gloov1.SslConfig{}
 		}
-
-
-	
-
-
 
 		if optsExt.SslSecretRef.GetName() != "" {
 			vs.GetSslConfig().SslSecrets = &gloov1.SslConfig_SecretRef{
