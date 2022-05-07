@@ -92,10 +92,7 @@ UNAME_M := $(shell uname -m)
 # Define Architecture. Default: amd64
 # If GOARCH is unset, docker-build will fail
 GOARCH ?= amd64
-ifeq ($(UNAME_M),aarch64)
-	GOARCH=arm64
-	PLATFORM=--platform=linux/amd64
-else ifeq ($(UNAME_M),arm64)
+ifneq ($(or $(filter $(UNAME_M), arm64), $(filter $(UNAME_M), aarch64)), )
 	GOARCH=arm64
 	PLATFORM=--platform=linux/amd64
 endif
