@@ -373,7 +373,7 @@ message Settings {
     // If an auth server name is not supplied on a route, the default auth server will be applied.
     map<string, enterprise.gloo.solo.io.Settings> named_extauth = 33;
 
-    // Enterprise-only: Settings for the rate limiting server itself
+    // Enterprise-only: Settings for the caching server itself
     caching.options.gloo.solo.io.Settings caching_server = 36;
 
 
