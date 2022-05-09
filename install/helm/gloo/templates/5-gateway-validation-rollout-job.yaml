@@ -36,7 +36,7 @@ spec:
           command:
           - /bin/sh
           - -c
-          - "kubectl rollout status deployment -n {{ .Release.Namespace }} gloo"
+          - "kubectl rollout status deployment -n {{ .Release.Namespace }} gateway"
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
 ---

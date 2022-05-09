@@ -3454,7 +3454,7 @@ spec:
           command:
           - /bin/sh
           - -c
-          - "kubectl rollout status deployment -n ` + namespace + ` gloo"
+          - "kubectl rollout status deployment -n ` + namespace + ` gateway"
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
 `)
