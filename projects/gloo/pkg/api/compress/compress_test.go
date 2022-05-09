@@ -141,7 +141,7 @@ var _ = Describe("Compress", func() {
 					Name: "foo",
 				},
 			}
-			SetMaxStatusSize(p, "4")
+			SetMaxStatusSizeBytes(p, "4")
 			statusClient.SetStatus(p, &core.Status{State: core.Status_Accepted, Reason: "very long message"})
 			status, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())
@@ -157,7 +157,8 @@ var _ = Describe("Compress", func() {
 					Name: "foo",
 				},
 			}
-			SetMaxStatusSize(p, "Not an int")
+			err := SetMaxStatusSizeBytes(p, "Not an int")
+			Expect(err).To(HaveOccurred())
 			originalStatus := &core.Status{State: core.Status_Accepted, Reason: "very long message"}
 			statusClient.SetStatus(p, originalStatus)
 			status, err := MarshalStatus(p)
@@ -173,7 +174,7 @@ var _ = Describe("Compress", func() {
 					Name: "foo",
 				},
 			}
-			SetMaxStatusSize(p, "5")
+			SetMaxStatusSizeBytes(p, "5")
 			originalStatus := &core.Status{State: core.Status_Accepted, Reason: "hi"}
 			statusClient.SetStatus(p, originalStatus)
 			status, err := MarshalStatus(p)
@@ -189,7 +190,7 @@ var _ = Describe("Compress", func() {
 					Name: "foo",
 				},
 			}
-			SetMaxStatusSize(p, "4")
+			SetMaxStatusSizeBytes(p, "4")
 			originalStatus := &core.Status{State: core.Status_Accepted, Reason: "very long message"}
 			statusClient.SetStatus(p, originalStatus)
 			otherNamespaceStatusClient := gloostatusutils.GetStatusClientForNamespace("ns2")

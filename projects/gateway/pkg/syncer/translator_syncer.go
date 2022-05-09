@@ -52,7 +52,7 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 			"created_by": "gloo-gateway-translator",
 		},
 	}
-	if pxStatusSizeEnv := os.Getenv("PROXY_STATUS_MAX_SIZE"); pxStatusSizeEnv != "" {
+	if pxStatusSizeEnv := os.Getenv("PROXY_STATUS_MAX_SIZE_BYTES"); pxStatusSizeEnv != "" {
 		t.proxyStatusMaxSize = pxStatusSizeEnv
 	}
 	go t.statusSyncer.syncStatusOnEmit(ctx)
@@ -102,7 +102,7 @@ func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *v1
 				compress.SetShouldCompressed(proxy)
 			}
 			if s.proxyStatusMaxSize != "" {
-				if err := compress.SetMaxStatusSize(proxy, s.proxyStatusMaxSize); err != nil {
+				if err := compress.SetMaxStatusSizeBytes(proxy, s.proxyStatusMaxSize); err != nil {
 					logger.Warnf("Could not parse the maximum status size for the proxy, statuses will not be truncated. Setting %s error: %v",
 						s.proxyStatusMaxSize, err)
 				}

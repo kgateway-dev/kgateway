@@ -55,7 +55,7 @@ func addAnnotation(in resources.Resource, key string, value string) {
 func SetShouldCompressed(in resources.Resource) {
 	addAnnotation(in, CompressedKey, CompressedValue)
 }
-func GetMaxStatusSize(in resources.Resource) int64 {
+func GetMaxStatusSizeBytes(in resources.Resource) int64 {
 	annotations := in.GetMetadata().GetAnnotations()
 	if annotations == nil {
 		return -1
@@ -67,7 +67,7 @@ func GetMaxStatusSize(in resources.Resource) int64 {
 	}
 	return -1
 }
-func SetMaxStatusSize(in resources.Resource, maxStatusSize string) error {
+func SetMaxStatusSizeBytes(in resources.Resource, maxStatusSize string) error {
 	if _, err := strconv.ParseInt(maxStatusSize, 0, 64); err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func MarshalStatus(in resources.InputResource) (v1.Status, error) {
 	if namespacedStatuses == nil {
 		return v1.Status{}, nil
 	}
-	maxStatusSize := GetMaxStatusSize(in)
+	maxStatusSize := GetMaxStatusSizeBytes(in)
 	if maxStatusSize > 0 {
 		namespacedStatuses = shortenStatus(namespacedStatuses, maxStatusSize)
 	}
