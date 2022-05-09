@@ -229,8 +229,10 @@ var _ = Describe("Robustness tests", func() {
 				return false
 
 			}, "12s", "1s").Should(BeTrue())
-			_, writeErr := virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
-			Expect(writeErr).NotTo(HaveOccurred())
+			Eventually(func() error {
+				_, writeErr := virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
+				return writeErr
+			}, "12s", "1s").ShouldNot(HaveOccurred())
 
 			// Wait for the proxy to be accepted
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
