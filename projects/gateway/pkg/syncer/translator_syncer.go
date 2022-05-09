@@ -102,7 +102,10 @@ func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *v1
 				compress.SetShouldCompressed(proxy)
 			}
 			if s.proxyStatusMaxSize != "" {
-				compress.SetMaxStatusSize(proxy, s.proxyStatusMaxSize)
+				if err := compress.SetMaxStatusSize(proxy, s.proxyStatusMaxSize); err != nil {
+					logger.Warnf("Could not parse the maximum status size for the proxy, statuses will not be truncated. Setting %s error: %v",
+						s.proxyStatusMaxSize, err)
+				}
 			}
 			logger.Infof("desired proxy %v", proxy.GetMetadata().Ref())
 			proxy.GetMetadata().Labels = s.managedProxyLabels

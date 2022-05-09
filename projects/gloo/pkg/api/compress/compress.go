@@ -39,7 +39,7 @@ func shouldCompress(in resources.Resource) bool {
 
 	return annotations[CompressedKey] == CompressedValue
 }
-func SetShouldCompressed(in resources.Resource) {
+func addAnnotation(in resources.Resource, key string, value string) {
 	metadata := &core.Metadata{}
 	if in.GetMetadata() != nil {
 		metadata = in.GetMetadata()
@@ -48,9 +48,12 @@ func SetShouldCompressed(in resources.Resource) {
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}
-	annotations[CompressedKey] = CompressedValue
+	annotations[key] = value
 	metadata.Annotations = annotations
 	in.SetMetadata(metadata)
+}
+func SetShouldCompressed(in resources.Resource) {
+	addAnnotation(in, CompressedKey, CompressedValue)
 }
 func GetMaxStatusSize(in resources.Resource) int64 {
 	annotations := in.GetMetadata().GetAnnotations()
@@ -58,23 +61,18 @@ func GetMaxStatusSize(in resources.Resource) int64 {
 		return -1
 	}
 	if maxSize, ok := annotations[ShortenKey]; ok {
+		// We ensure that we can parse the size before setting this value
 		size, _ := strconv.ParseInt(maxSize, 0, 64)
 		return size
 	}
 	return -1
 }
-func SetMaxStatusSize(in resources.Resource, maxStatusSize string) {
-	metadata := &core.Metadata{}
-	if in.GetMetadata() != nil {
-		metadata = in.GetMetadata()
+func SetMaxStatusSize(in resources.Resource, maxStatusSize string) error {
+	if _, err := strconv.ParseInt(maxStatusSize, 0, 64); err != nil {
+		return err
 	}
-	annotations := metadata.GetAnnotations()
-	if annotations == nil {
-		annotations = make(map[string]string)
-	}
-	annotations[ShortenKey] = maxStatusSize
-	metadata.Annotations = annotations
-	in.SetMetadata(metadata)
+	addAnnotation(in, ShortenKey, maxStatusSize)
+	return nil
 }
 func compressSpec(s v1.Spec) (v1.Spec, error) {
 	// serialize  spec to json:
