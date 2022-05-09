@@ -36,9 +36,10 @@ spec:
           command:
           - /bin/sh
           - -c
-          - "kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-{{ .Release.Namespace }}"
-          - "kubectl delete gateways.gateway.solo.io -n {{ .Release.Namespace }} -l created-by=gloo-install"
-          - "kubectl delete upstreams.gloo.solo.io -n {{ .Release.Namespace }} -l created-by=gloo-install"
+          - |
+            kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-{{ .Release.Namespace }}
+            kubectl delete gateways.gateway.solo.io -n {{ .Release.Namespace }} -l created_by=gloo-install
+            kubectl delete upstreams.gloo.solo.io -n {{ .Release.Namespace }} -l created_by=gloo-install
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
 ---
@@ -69,8 +70,11 @@ metadata:
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
 rules:
 - apiGroups: ["gateway.solo.io"]
-  resources: ["gateways"]
-  verbs: ["delete"]
+  resources: ["*"]
+  verbs: ["list", "delete"]
+- apiGroups: ["gloo.solo.io"]
+  resources: ["*"]
+  verbs: ["list", "delete"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
