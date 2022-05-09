@@ -731,13 +731,17 @@ ifeq ($(shell uname), Darwin)
 else
 	machine ?= Linux
 endif
+TRIVY_ARCH:=64bit
+ifeq ($(GOARCH), arm64)
+	TRIVY_ARCH:=ARM64
+endif
 
 # Local run for trivy security checks
 .PHONY: security-checks
 security-checks:
 	mkdir -p $(SCAN_DIR)/$(VERSION)
 
-	curl -Ls "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_${machine}-64bit.tar.gz" | tar zx '*trivy' || { echo "Download/extract failed for trivy."; exit 1; };
+	curl -Ls "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_${machine}-${TRIVY_ARCH}.tar.gz" | tar zx '*trivy' || { echo "Download/extract failed for trivy."; exit 1; };
 
 	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/gateway_cve_report.docgen $(IMAGE_REPO)/gateway:$(VERSION) && \
 	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/ingress_cve_report.docgen $(IMAGE_REPO)/ingress:$(VERSION) && \
