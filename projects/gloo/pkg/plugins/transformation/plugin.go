@@ -56,8 +56,10 @@ type TranslateTransformationFn func(*transformation.Transformation) (*envoytrans
 // methods were exported.
 // Other plugins may
 type Plugin struct {
+	removeUnused              bool
+	filterRequiredForListener map[*v1.HttpListener]struct{}
+
 	RequireEarlyTransformation bool
-	filterNeeded               bool
 	TranslateTransformation    TranslateTransformationFn
 	settings                   *v1.Settings
 
@@ -79,7 +81,8 @@ func (p *Plugin) Name() string {
 // Init attempts to set the plugin back to a clean slate state.
 func (p *Plugin) Init(params plugins.InitParams) error {
 	p.RequireEarlyTransformation = false
-	p.filterNeeded = !params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
+	p.removeUnused = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
+	p.filterRequiredForListener = make(map[*v1.HttpListener]struct{})
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
 	return nil
@@ -122,7 +125,7 @@ func (p *Plugin) ProcessVirtualHost(
 		return err
 	}
 
-	p.filterNeeded = true
+	p.filterRequiredForListener[params.HttpListener] = struct{}{}
 
 	return pluginutils.ModifyVhostPerFilterConfig(out, FilterName, mergeFunc(envoyTransformation))
 }
@@ -144,7 +147,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return err
 	}
 
-	p.filterNeeded = true
+	p.filterRequiredForListener[params.HttpListener] = struct{}{}
 	return pluginutils.ModifyRoutePerFilterConfig(out, FilterName, mergeFunc(envoyTransformation))
 }
 
@@ -169,7 +172,7 @@ func (p *Plugin) ProcessWeightedDestination(
 	if err != nil {
 		return err
 	}
-	p.filterNeeded = true
+	p.filterRequiredForListener[params.HttpListener] = struct{}{}
 	return pluginutils.ModifyWeightedClusterPerFilterConfig(out, FilterName, mergeFunc(envoyTransformation))
 }
 
@@ -178,7 +181,8 @@ func (p *Plugin) ProcessWeightedDestination(
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	var filters []plugins.StagedHttpFilter
 
-	if !p.filterNeeded {
+	_, ok := p.filterRequiredForListener[listener]
+	if !ok && p.removeUnused {
 		return filters, nil
 	}
 

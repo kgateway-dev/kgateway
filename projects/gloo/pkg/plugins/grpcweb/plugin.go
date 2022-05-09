@@ -35,25 +35,21 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	if maybeDisabled != nil {
 		p.disabled = maybeDisabled.GetValue()
 	} else {
-		// default to true if not specified
-		p.disabled = false
+		// default to the state of RemoveUnusedFilters, if unspecified
+		// this is a safe fallback because this value defaults to false
+		p.disabled = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
 	}
 	return nil
 }
 
 func (p *plugin) isDisabled(httplistener *v1.HttpListener) bool {
-	if httplistener == nil {
+	grpcWeb := httplistener.GetOptions().GetGrpcWeb()
+
+	if grpcWeb == nil {
+		// There is no configured defined on this listener, fallback to the settings
 		return p.disabled
 	}
-	listenerplugins := httplistener.GetOptions()
-	if listenerplugins == nil {
-		return p.disabled
-	}
-	grpcweb := listenerplugins.GetGrpcWeb()
-	if grpcweb == nil {
-		return p.disabled
-	}
-	return grpcweb.GetDisable()
+	return grpcWeb.GetDisable()
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {

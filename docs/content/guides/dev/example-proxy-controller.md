@@ -866,8 +866,8 @@ However, we don't actually have an Envoy instance deployed that will receive thi
 we'll walk through the steps to deploy an Envoy pod wired to receive config from Gloo Edge, identifying itself as 
 `my-cool-proxy`.  
 {{% notice warning %}}
-Proxies that are managed by Gloo Edge have a label named `created-by` with values that begin with `gloo`. Do not modify these 
-labels or use the same labels for your own proxies. Gloo Edge might overwrite or delete proxies with the label `created-by: gloo-*`
+Proxies that are managed by Gloo Edge have a label named `created_by` with values that begin with `gloo`. Do not modify these
+labels or use the same labels for your own proxies. Gloo Edge might overwrite or delete proxies with the label `created_by: gloo-*`
 
 {{% /notice %}}
 ## Deploying Envoy to Kubernetes
