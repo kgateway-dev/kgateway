@@ -4,4 +4,4 @@ changelog:
     resolvesIssue: false
     description: >
       Allow truncating the status field in the Proxy. The maximum length of the description is taken from the environment 
-      variable "PROXY_STATUS_MAX_SIZE".
+      variable "PROXY_STATUS_MAX_SIZE_BYTES".
