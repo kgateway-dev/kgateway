@@ -276,6 +276,20 @@ spec:
                                           type: object
                                         type: array
                                     type: object
+                                  headerAction:
+                                    properties:
+                                      headerToMask:
+                                        type: string
+                                      maskChar:
+                                        type: string
+                                      name:
+                                        type: string
+                                      percent:
+                                        properties:
+                                          value:
+                                            type: number
+                                        type: object
+                                    type: object
                                   shadow:
                                     type: boolean
                                 type: object

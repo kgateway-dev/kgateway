@@ -17,6 +17,7 @@ weight: 5
 - [Transformation](#transformation)
 - [DlpTransformation](#dlptransformation)
 - [Action](#action)
+- [HeaderAction](#headeraction)
 - [RegexAction](#regexaction)
   
 
@@ -113,6 +114,7 @@ weight: 5
 
 ```yaml
 "actions": []envoy.config.filter.http.transformation_ee.v2.Action
+"headerActions": []envoy.config.filter.http.transformation_ee.v2.HeaderAction
 "enableHeaderTransformation": bool
 "enableDynamicMetadataTransformation": bool
 
@@ -121,6 +123,7 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `actions` | [[]envoy.config.filter.http.transformation_ee.v2.Action](../transformation.proto.sk/#action) | list of actions to apply. |
+| `headerActions` | [[]envoy.config.filter.http.transformation_ee.v2.HeaderAction](../transformation.proto.sk/#headeraction) | list of header actions to apply. |
 | `enableHeaderTransformation` | `bool` | If true, headers will be transformed. Should only be true for the on_stream_complete_transformation route transformation type. |
 | `enableDynamicMetadataTransformation` | `bool` | If true, dynamic metadata will be transformed. Should only be used for the on_stream_complete_transformation route transformation type. |
 
@@ -150,6 +153,29 @@ weight: 5
 | `shadow` | `bool` | If specified, this rule will not actually be applied, but only logged. |
 | `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which should be masked. If not set, defaults to 75%. |
 | `maskChar` | `string` | The character which should overwrite the masked data If left empty, defaults to "X". |
+
+
+
+
+---
+### HeaderAction
+
+
+
+```yaml
+"name": string
+"maskChar": string
+"percent": .solo.io.envoy.type.Percent
+"headerToMask": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | The name of the header action. This name is used for logging and debugging purposes. If left null will default to unknown. |
+| `maskChar` | `string` | The masking character for the sensitive data. If left empty, defaults to "X". |
+| `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which should be masked. If not set, defaults to 75%. |
+| `headerToMask` | `string` | The header name for which corresponding values should be censored Must be specified. |
 
 
 

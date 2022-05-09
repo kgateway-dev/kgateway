@@ -59,6 +59,8 @@ message Transformation {
 message DlpTransformation {
     // list of actions to apply
     repeated Action actions = 1;
+    // list of header actions to apply
+    repeated HeaderAction header_actions = 4;
     // If true, headers will be transformed. Should only be true for the
     // on_stream_complete_transformation route transformation type.
     bool enable_header_transformation = 2;
@@ -88,6 +90,22 @@ message Action {
     // The character which should overwrite the masked data
     // If left empty, defaults to "X"
     string mask_char = 5 [(validate.rules).string.max_bytes = 1];
+}
+
+message HeaderAction {
+    // The name of the header action.
+    // This name is used for logging and debugging purposes.
+    // If left null will default to unknown
+    string name = 1;
+    // The masking character for the sensitive data.
+    // If left empty, defaults to "X"
+    string mask_char = 2;
+    // The percent of the string which should be masked.
+    // If not set, defaults to 75%
+    .solo.io.envoy.type.Percent percent = 3;
+    // The header name for which corresponding values should be censored
+    // Must be specified
+    string header_to_mask = 4;
 }
 
 message RegexAction {
