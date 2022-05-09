@@ -473,7 +473,7 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 }
 
 func checkGlooHealthy(testHelper *helper.SoloTestHelper) {
-	deploymentNames := []string{"gloo", "discovery", "gateway-proxy"}
+	deploymentNames := []string{"gloo", "gateway", "discovery", "gateway-proxy"}
 	for _, deploymentName := range deploymentNames {
 		runAndCleanCommand("kubectl", "rollout", "status", "deployment", "-n", testHelper.InstallNamespace, deploymentName)
 	}
