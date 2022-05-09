@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -39,6 +40,7 @@ type translatorSyncer struct {
 	translator         translator.Translator
 	statusSyncer       statusSyncer
 	managedProxyLabels map[string]string
+	proxyStatusMaxSize string
 }
 
 func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) v1.ApiSyncer {
@@ -53,8 +55,10 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 			"created_by": "gloo-gateway-translator",
 		},
 	}
-
 	go t.statusSyncer.watchProxies(ctx)
+	if pxStatusSizeEnv := os.Getenv("PROXY_STATUS_MAX_SIZE_BYTES"); pxStatusSizeEnv != "" {
+		t.proxyStatusMaxSize = pxStatusSizeEnv
+	}
 	go t.statusSyncer.syncStatusOnEmit(ctx)
 	return t
 }
@@ -95,7 +99,12 @@ func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1
 			if s.shouldCompresss(ctx) {
 				compress.SetShouldCompressed(proxy)
 			}
-
+			if s.proxyStatusMaxSize != "" {
+				if err := compress.SetMaxStatusSizeBytes(proxy, s.proxyStatusMaxSize); err != nil {
+					logger.Warnf("Could not parse the maximum status size for the proxy, statuses will not be truncated. Setting %s error: %v",
+						s.proxyStatusMaxSize, err)
+				}
+			}
 			logger.Infof("desired proxy %v", proxy.GetMetadata().Ref())
 			proxy.GetMetadata().Labels = s.managedProxyLabels
 			desiredProxies[proxy] = reports
