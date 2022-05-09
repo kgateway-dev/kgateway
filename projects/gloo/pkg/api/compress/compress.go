@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
+	"strconv"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -16,10 +17,12 @@ import (
 )
 
 const (
-	CompressedKey   = "gloo.solo.io/compress"
-	CompressedValue = "true"
-	compressedSpec  = "compressedSpec"
-	compressed_spec = "compressed_spec"
+	CompressedKey           = "gloo.solo.io/compress"
+	CompressedValue         = "true"
+	compressedSpec          = "compressedSpec"
+	compressed_spec         = "compressed_spec"
+	ShortenKey              = "gloo.solo.io/maxStatusSize"
+	MaxLengthWarningMessage = "\nStatus truncated, see logs for details."
 )
 
 func isCompressed(in v1.Spec) bool {
@@ -36,8 +39,7 @@ func shouldCompress(in resources.Resource) bool {
 
 	return annotations[CompressedKey] == CompressedValue
 }
-
-func SetShouldCompressed(in resources.Resource) {
+func addAnnotation(in resources.Resource, key string, value string) {
 	metadata := &core.Metadata{}
 	if in.GetMetadata() != nil {
 		metadata = in.GetMetadata()
@@ -46,11 +48,32 @@ func SetShouldCompressed(in resources.Resource) {
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}
-	annotations[CompressedKey] = CompressedValue
+	annotations[key] = value
 	metadata.Annotations = annotations
 	in.SetMetadata(metadata)
 }
-
+func SetShouldCompressed(in resources.Resource) {
+	addAnnotation(in, CompressedKey, CompressedValue)
+}
+func GetMaxStatusSizeBytes(in resources.Resource) int64 {
+	annotations := in.GetMetadata().GetAnnotations()
+	if annotations == nil {
+		return -1
+	}
+	if maxSize, ok := annotations[ShortenKey]; ok {
+		// We ensure that we can parse the size before setting this value
+		size, _ := strconv.ParseInt(maxSize, 0, 64)
+		return size
+	}
+	return -1
+}
+func SetMaxStatusSizeBytes(in resources.Resource, maxStatusSize string) error {
+	if _, err := strconv.ParseInt(maxStatusSize, 0, 64); err != nil {
+		return err
+	}
+	addAnnotation(in, ShortenKey, maxStatusSize)
+	return nil
+}
 func compressSpec(s v1.Spec) (v1.Spec, error) {
 	// serialize  spec to json:
 	ser, err := json.Marshal(s)
@@ -157,9 +180,25 @@ func MarshalStatus(in resources.InputResource) (v1.Status, error) {
 	if namespacedStatuses == nil {
 		return v1.Status{}, nil
 	}
+	maxStatusSize := GetMaxStatusSizeBytes(in)
+	if maxStatusSize > 0 {
+		namespacedStatuses = shortenStatus(namespacedStatuses, maxStatusSize)
+	}
 	namespacedStatusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(namespacedStatuses)
 	if err != nil {
 		return nil, crd.MarshalErr(err, "resource status to map")
 	}
 	return namespacedStatusMap, nil
+}
+
+func shortenStatus(namespacedStatuses *core.NamespacedStatuses, maxLength int64) *core.NamespacedStatuses {
+	statuses := namespacedStatuses.GetStatuses()
+	for ns, status := range namespacedStatuses.GetStatuses() {
+		if int64(len(status.GetReason())) > maxLength {
+			status.Reason = status.GetReason()[0:maxLength] + MaxLengthWarningMessage
+			statuses[ns] = status
+		}
+	}
+	namespacedStatuses.Statuses = statuses
+	return namespacedStatuses
 }
