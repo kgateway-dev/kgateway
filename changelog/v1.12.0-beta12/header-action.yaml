@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/6377
+  description: >
+    Adds the HeaderAction message type to transformation_ee_filter.proto
+    This action type will mask request and response headers in access logs which have the specified header name 
