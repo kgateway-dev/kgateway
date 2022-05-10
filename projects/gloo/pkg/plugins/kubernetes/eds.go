@@ -123,12 +123,9 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 		endpointList = append(endpointList, endpoints...)
 	}
 
-	// TODO: Switch to filterServiceEndpoints when Gloo configured to user Kube services as endpoints (i.e. for Istio compatibility)
-	var eps v1.EndpointList
-	var warns, errsToLog []string //, []string
-	// TODO: I need to add the new Helm value and use it here
-	istioIntegration := os.Getenv("GLOO_INTEGRATION_ISTIO") == "true"
-	eps, warns, errsToLog = filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams, istioIntegration)
+	lookupResult, found := os.LookupEnv("ENABLE_ISTIO_SIDECAR")
+	istioIntegration := found && strings.ToLower(lookupResult) == "true"
+	eps, warns, errsToLog := filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams, istioIntegration)
 
 	warnsToLog = append(warnsToLog, warns...)
 
