@@ -1174,14 +1174,14 @@ func (m *Executor_Local_LocalExecutorOptions) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *Executor_Remote_LocalExecutorOptions) Equal(that interface{}) bool {
+func (m *Executor_Remote_RemoteExecutorOptions) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*Executor_Remote_LocalExecutorOptions)
+	target, ok := that.(*Executor_Remote_RemoteExecutorOptions)
 	if !ok {
-		that2, ok := that.(Executor_Remote_LocalExecutorOptions)
+		that2, ok := that.(Executor_Remote_RemoteExecutorOptions)
 		if ok {
 			target = &that2
 		} else {

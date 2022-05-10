@@ -32,7 +32,7 @@ weight: 5
 - [Local](#local)
 - [LocalExecutorOptions](#localexecutoroptions)
 - [Remote](#remote)
-- [LocalExecutorOptions](#localexecutoroptions)
+- [RemoteExecutorOptions](#remoteexecutoroptions)
   
 
 
@@ -483,7 +483,7 @@ Execute schema using resolvers.
 "headers": map<string, string>
 "queryParams": map<string, string>
 "spanName": string
-"options": .graphql.gloo.solo.io.Executor.Remote.LocalExecutorOptions
+"options": .graphql.gloo.solo.io.Executor.Remote.RemoteExecutorOptions
 
 ```
 
@@ -493,13 +493,13 @@ Execute schema using resolvers.
 | `headers` | `map<string, string>` | map of header name to extraction type: e.g. ':method': '{$headers.:method}' ':path': '/hard/coded/path' translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508. |
 | `queryParams` | `map<string, string>` | map of header name to extraction type: e.g. 'query': '{$dynamicMetadata.$KEY_NAME.io.solo.transformation}' translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508. |
 | `spanName` | `string` |  |
-| `options` | [.graphql.gloo.solo.io.Executor.Remote.LocalExecutorOptions](../graphql.proto.sk/#localexecutoroptions) |  |
+| `options` | [.graphql.gloo.solo.io.Executor.Remote.RemoteExecutorOptions](../graphql.proto.sk/#remoteexecutoroptions) |  |
 
 
 
 
 ---
-### LocalExecutorOptions
+### RemoteExecutorOptions
 
 
 

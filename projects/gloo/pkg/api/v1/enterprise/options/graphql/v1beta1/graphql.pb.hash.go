@@ -1374,7 +1374,7 @@ func (m *Executor_Local_LocalExecutorOptions) Hash(hasher hash.Hash64) (uint64, 
 }
 
 // Hash function
-func (m *Executor_Remote_LocalExecutorOptions) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *Executor_Remote_RemoteExecutorOptions) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1382,7 +1382,7 @@ func (m *Executor_Remote_LocalExecutorOptions) Hash(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1.Executor_Remote_LocalExecutorOptions")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1.Executor_Remote_RemoteExecutorOptions")); err != nil {
 		return 0, err
 	}
 
