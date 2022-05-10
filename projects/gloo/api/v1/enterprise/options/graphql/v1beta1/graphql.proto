@@ -485,7 +485,7 @@ message Executor {
     LocalExecutorOptions options = 3;
   }
   message Remote {
-    message LocalExecutorOptions {
+    message RemoteExecutorOptions {
       google.protobuf.Duration timeout = 1;
     }
     // by default, we copy the body and pass through none of the headers, defaulting :method to copied method and :path to copied path
@@ -510,7 +510,7 @@ message Executor {
     map<string, string> query_params = 3;
 
     string span_name = 4;
-    LocalExecutorOptions options = 5;
+    RemoteExecutorOptions options = 5;
   }
 
   oneof executor {
