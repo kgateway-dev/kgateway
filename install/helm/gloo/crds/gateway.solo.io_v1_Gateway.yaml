@@ -792,6 +792,204 @@ spec:
                 properties:
                   delegatedHttpGateways:
                     properties:
+                      httpConnectionManagerSettings:
+                        properties:
+                          acceptHttp10:
+                            type: boolean
+                          allowChunkedLength:
+                            type: boolean
+                          codecType:
+                            type: string
+                            x-kubernetes-int-or-string: true
+                          defaultHostForHttp10:
+                            type: string
+                          delayedCloseTimeout:
+                            type: string
+                          drainTimeout:
+                            type: string
+                          enableTrailers:
+                            type: boolean
+                          forwardClientCertDetails:
+                            type: string
+                            x-kubernetes-int-or-string: true
+                          generateRequestId:
+                            nullable: true
+                            type: boolean
+                          headersWithUnderscoresAction:
+                            type: string
+                            x-kubernetes-int-or-string: true
+                          idleTimeout:
+                            type: string
+                          maxConnectionDuration:
+                            type: string
+                          maxHeadersCount:
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
+                            type: integer
+                          maxRequestHeadersKb:
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
+                            type: integer
+                          maxRequestsPerConnection:
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
+                            type: integer
+                          maxStreamDuration:
+                            type: string
+                          mergeSlashes:
+                            type: boolean
+                          normalizePath:
+                            nullable: true
+                            type: boolean
+                          pathWithEscapedSlashesAction:
+                            type: string
+                            x-kubernetes-int-or-string: true
+                          preserveCaseHeaderKeyFormat:
+                            type: boolean
+                          preserveExternalRequestId:
+                            type: boolean
+                          properCaseHeaderKeyFormat:
+                            type: boolean
+                          proxy100Continue:
+                            type: boolean
+                          requestTimeout:
+                            type: string
+                          serverHeaderTransformation:
+                            type: string
+                            x-kubernetes-int-or-string: true
+                          serverName:
+                            type: string
+                          setCurrentClientCertDetails:
+                            properties:
+                              cert:
+                                type: boolean
+                              chain:
+                                type: boolean
+                              dns:
+                                type: boolean
+                              subject:
+                                nullable: true
+                                type: boolean
+                              uri:
+                                type: boolean
+                            type: object
+                          skipXffAppend:
+                            type: boolean
+                          streamIdleTimeout:
+                            type: string
+                          stripAnyHostPort:
+                            type: boolean
+                          tracing:
+                            properties:
+                              datadogConfig:
+                                properties:
+                                  clusterName:
+                                    type: string
+                                  collectorUpstreamRef:
+                                    properties:
+                                      name:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    type: object
+                                  serviceName:
+                                    type: string
+                                type: object
+                              environmentVariablesForTags:
+                                items:
+                                  properties:
+                                    defaultValue:
+                                      type: string
+                                    name:
+                                      type: string
+                                    tag:
+                                      type: string
+                                  type: object
+                                type: array
+                              literalsForTags:
+                                items:
+                                  properties:
+                                    tag:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                              requestHeadersForTags:
+                                items:
+                                  type: string
+                                type: array
+                              tracePercentages:
+                                properties:
+                                  clientSamplePercentage:
+                                    nullable: true
+                                    type: number
+                                  overallSamplePercentage:
+                                    nullable: true
+                                    type: number
+                                  randomSamplePercentage:
+                                    nullable: true
+                                    type: number
+                                type: object
+                              verbose:
+                                type: boolean
+                              zipkinConfig:
+                                properties:
+                                  clusterName:
+                                    type: string
+                                  collectorEndpoint:
+                                    type: string
+                                  collectorEndpointVersion:
+                                    type: string
+                                    x-kubernetes-int-or-string: true
+                                  collectorUpstreamRef:
+                                    properties:
+                                      name:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    type: object
+                                  sharedSpanContext:
+                                    nullable: true
+                                    type: boolean
+                                  traceId128bit:
+                                    type: boolean
+                                type: object
+                            type: object
+                          upgrades:
+                            items:
+                              properties:
+                                websocket:
+                                  properties:
+                                    enabled:
+                                      nullable: true
+                                      type: boolean
+                                  type: object
+                              type: object
+                            type: array
+                          useRemoteAddress:
+                            nullable: true
+                            type: boolean
+                          uuidRequestIdConfig:
+                            properties:
+                              packTraceReason:
+                                nullable: true
+                                type: boolean
+                              useRequestIdForTraceSampling:
+                                nullable: true
+                                type: boolean
+                            type: object
+                          via:
+                            type: string
+                          xffNumTrustedHops:
+                            format: int32
+                            type: integer
+                        type: object
+                      preventChildOverrides:
+                        type: boolean
                       ref:
                         properties:
                           name:
@@ -820,6 +1018,83 @@ spec:
                               type: string
                             type: object
                           namespaces:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      sslConfig:
+                        properties:
+                          alpnProtocols:
+                            items:
+                              type: string
+                            type: array
+                          disableTlsSessionResumption:
+                            nullable: true
+                            type: boolean
+                          oneWayTls:
+                            nullable: true
+                            type: boolean
+                          parameters:
+                            properties:
+                              cipherSuites:
+                                items:
+                                  type: string
+                                type: array
+                              ecdhCurves:
+                                items:
+                                  type: string
+                                type: array
+                              maximumProtocolVersion:
+                                type: string
+                                x-kubernetes-int-or-string: true
+                              minimumProtocolVersion:
+                                type: string
+                                x-kubernetes-int-or-string: true
+                            type: object
+                          sds:
+                            properties:
+                              callCredentials:
+                                properties:
+                                  fileCredentialSource:
+                                    properties:
+                                      header:
+                                        type: string
+                                      tokenFileName:
+                                        type: string
+                                    type: object
+                                type: object
+                              certificatesSecretName:
+                                type: string
+                              clusterName:
+                                type: string
+                              targetUri:
+                                type: string
+                              validationContextName:
+                                type: string
+                            type: object
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                          sniDomains:
+                            items:
+                              type: string
+                            type: array
+                          sslFiles:
+                            properties:
+                              rootCa:
+                                type: string
+                              tlsCert:
+                                type: string
+                              tlsKey:
+                                type: string
+                            type: object
+                          transportSocketConnectTimeout:
+                            type: string
+                          verifySubjectAltName:
                             items:
                               type: string
                             type: array

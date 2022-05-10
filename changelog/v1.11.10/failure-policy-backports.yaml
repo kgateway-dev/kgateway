@@ -1,0 +1,12 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6384
+    description: Use existing cert for validation webhook if cert is still valid.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6213
+    resolvesIssue: false
+    description: |
+      Ensure that Gloo Edge can be installed successfully when the validation webhook failure policy is set to Fail.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6403
+    description: Fix certgen job to make sure service name from cert is correct.

@@ -197,6 +197,8 @@ var _ = Describe("plugin", func() {
 
 	It("allows vhost specific csrf config", func() {
 		p := NewPlugin()
+		p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+
 		out := &envoy_config_route.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
@@ -218,6 +220,8 @@ var _ = Describe("plugin", func() {
 
 	It("allows weighted destination specific csrf config", func() {
 		p := NewPlugin()
+		p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+
 		out := &envoy_config_route.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{

@@ -37,7 +37,7 @@ var _ = Describe("Secret", func() {
 			CaBundle:           data,
 		}
 
-		err := CreateTlsSecret(context.TODO(), kube, secretCfg)
+		_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -54,7 +54,7 @@ var _ = Describe("Secret", func() {
 		}))
 	})
 
-	Context("SecretExistsAndIsValidTlsSecret", func() {
+	Context("Get existing valid TLS secret", func() {
 
 		generateCaCertBytes := func(notBefore, notAfter time.Time) []byte {
 			// CA cert
@@ -70,6 +70,7 @@ var _ = Describe("Secret", func() {
 				PublicKey:    ca.Public(),
 				SerialNumber: serial,
 				Subject:      subject,
+				DNSNames:     []string{"mysvcname.mysvcnamespace"},
 			}
 			tmpl.SubjectKeyId, _ = computeSKI(tmpl)
 
@@ -82,23 +83,12 @@ var _ = Describe("Secret", func() {
 		}
 
 		It("doesn't error on non-existing secret", func() {
-			data := []byte{1, 2, 3}
-
 			kube := fake.NewSimpleClientset()
-			secretCfg := TlsSecret{
-				SecretName:         "mysecret",
-				SecretNamespace:    "mynamespace",
-				PrivateKeyFileName: "tls.key",
-				CertFileName:       "tls.crt",
-				CaBundleFileName:   "ca.crt",
-				PrivateKey:         data,
-				Cert:               generateCaCertBytes(time.Now(), time.Now().Add(1*time.Minute)),
-				CaBundle:           data,
-			}
 
-			valid, err := SecretExistsAndIsValidTlsSecret(context.TODO(), kube, secretCfg)
+			secret, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+				"mysvcname", "mysvcnamespace")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(valid).To(BeFalse())
+			Expect(secret).To(BeNil())
 		})
 
 		It("recognizes a tls secret that is still valid", func() {
@@ -116,12 +106,13 @@ var _ = Describe("Secret", func() {
 				CaBundle:           data,
 			}
 
-			err := CreateTlsSecret(context.TODO(), kube, secretCfg)
+			_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			valid, err := SecretExistsAndIsValidTlsSecret(context.TODO(), kube, secretCfg)
+			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+				"mysvcname", "mysvcnamespace")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(valid).To(BeTrue())
+			Expect(existing).NotTo(BeNil())
 		})
 
 		It("recognizes a tls secret that is invalid relative to now", func() {
@@ -139,12 +130,13 @@ var _ = Describe("Secret", func() {
 				CaBundle:           data,
 			}
 
-			err := CreateTlsSecret(context.TODO(), kube, secretCfg)
+			_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			valid, err := SecretExistsAndIsValidTlsSecret(context.TODO(), kube, secretCfg)
+			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+				"mysvcname", "mysvcnamespace")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(valid).To(BeFalse())
+			Expect(existing).To(BeNil())
 		})
 
 		It("recognizes a tls secret that is invalid relative to now, not first cert in chain", func() {
@@ -166,12 +158,37 @@ var _ = Describe("Secret", func() {
 				CaBundle:           data,
 			}
 
-			err := CreateTlsSecret(context.TODO(), kube, secretCfg)
+			_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			valid, err := SecretExistsAndIsValidTlsSecret(context.TODO(), kube, secretCfg)
+			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+				"mysvcname", "mysvcnamespace")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(valid).To(BeFalse())
+			Expect(existing).To(BeNil())
+		})
+
+		It("recognizes a tls secret that is invalid due to service mismatch", func() {
+			data := []byte{1, 2, 3}
+
+			kube := fake.NewSimpleClientset()
+			secretCfg := TlsSecret{
+				SecretName:         "mysecret",
+				SecretNamespace:    "mynamespace",
+				PrivateKeyFileName: "tls.key",
+				CertFileName:       "tls.crt",
+				CaBundleFileName:   "ca.crt",
+				PrivateKey:         data,
+				Cert:               generateCaCertBytes(time.Now(), time.Now().Add(1*time.Minute)),
+				CaBundle:           data,
+			}
+
+			_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+				"newservicename", "mysvcnamespace")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(existing).To(BeNil())
 		})
 	})
 })

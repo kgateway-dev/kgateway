@@ -18,6 +18,7 @@ import "github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/selectors/selectors.proto";
 
@@ -128,6 +129,21 @@ message DelegatedHttpGateway {
         // Delegate to the MatchableHttpGateway that match the given selector.
         selectors.core.gloo.solo.io.Selector selector = 4;
     }
+
+    // Used as a meta modifier to the `http_connection_manager_settings` and `ssl_config` fields in a DelegatedHttpGateway.  When set, provided ancestor config cannot be overriden by matched HttpGateways.
+    // Useful in a multi-team context, where a controlling team managing a primary Gateway file may want to lock down specific functionality
+    // from other teams.
+    //
+    // For example: (DelegatedHttpGateway, MatchableHttpGateway) = {"a": "a1", "b": "b1"}, {"b": "b2", "c": "c2"}
+    // When true:    get_config(MatchableHttpGateway) --> {"a": "a1", "b": "b1", "c": "c2"}
+    // When false:   get_config(MatchableHttpGateway) --> {"a": "a1", "b": "b2", "c": "c2"}
+    bool prevent_child_overrides = 5;
+
+    // Anscestry-level HTTP Gateway configuration.  Options specified here will be passed down to each `MatchableHttpGateway` that is matched via `selector` or `ref`.  Ultimately, said options will be consumed by instances of `MatchableHttpGateway.http_gateway`
+    hcm.options.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 6;
+
+    // Anscestry-level TLS/SSL traffic configuration.  Options specified here will be passed down to each `MatchableHttpGateway` that is matched via `selector` or `ref`.  From there, they are passed to all VirtualServices associated with said `MatchableHttpGateway`s.
+    gloo.solo.io.SslConfig ssl_config = 2;
 }
 
 message MatchedGateway {
