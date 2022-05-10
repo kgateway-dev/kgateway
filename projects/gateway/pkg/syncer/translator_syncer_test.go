@@ -402,7 +402,21 @@ var _ = Describe("TranslatorSyncer", func() {
 
 			Expect(proxy.Metadata.Annotations).NotTo(HaveKeyWithValue(compress.CompressedKey, compress.CompressedValue))
 		})
+		It("should truncate proxy status when limit is set", func() {
 
+			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", "gloo-system", snap, gomock.Any()).
+				Return(proxy, nil)
+			ts.proxyStatusMaxSize = "5"
+			ts.GeneratedDesiredProxies(ctx, snap)
+			Expect(proxy.Metadata.Annotations).To(HaveKeyWithValue(compress.ShortenKey, "5"))
+		})
+		It("should not truncate proxy status when limit is not set", func() {
+
+			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", "gloo-system", snap, gomock.Any()).
+				Return(proxy, nil)
+			ts.GeneratedDesiredProxies(ctx, snap)
+			Expect(proxy.Metadata.Annotations).NotTo(HaveKey(compress.ShortenKey))
+		})
 	})
 
 })

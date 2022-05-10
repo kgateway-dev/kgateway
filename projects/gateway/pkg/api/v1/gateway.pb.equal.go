@@ -299,6 +299,30 @@ func (m *DelegatedHttpGateway) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetPreventChildOverrides() != target.GetPreventChildOverrides() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetHttpConnectionManagerSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttpConnectionManagerSettings()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttpConnectionManagerSettings(), target.GetHttpConnectionManagerSettings()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetSslConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSslConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSslConfig(), target.GetSslConfig()) {
+			return false
+		}
+	}
+
 	switch m.SelectionType.(type) {
 
 	case *DelegatedHttpGateway_Ref:

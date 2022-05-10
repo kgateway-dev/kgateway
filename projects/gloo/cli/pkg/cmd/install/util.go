@@ -54,6 +54,7 @@ func init() {
 		"failoverschemes.fed.solo.io",
 		"federatedauthconfigs.fed.enterprise.gloo.solo.io",
 		"federatedgateways.fed.gateway.solo.io",
+		"federatedmatchablehttpgateways.fed.gateway.solo.io",
 		"federatedroutetables.fed.gateway.solo.io",
 		"federatedsettings.fed.gloo.solo.io",
 		"federatedupstreamgroups.fed.gloo.solo.io",
