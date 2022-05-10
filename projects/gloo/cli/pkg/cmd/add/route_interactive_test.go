@@ -46,6 +46,7 @@ var _ = Describe("Routes interactive", func() {
 	})
 
 	It("Create interactive route", func() {
+		//Failing in CI
 		testutil.ExpectInteractive(func(c *testutil.Console) {
 			c.ExpectString("Choose a Virtual Service to add the route to:")
 			c.SendLine("")
