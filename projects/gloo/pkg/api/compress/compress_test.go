@@ -116,6 +116,54 @@ var _ = Describe("Compress", func() {
 
 			Expect(status1).To(BeEquivalentTo(status2))
 		})
+		It("should truncate the status reason when annotated with max length", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+				Status: &core.Status{State: core.Status_Accepted, Reason: "very long message"},
+			}
+			SetMaxStatusSizeBytes(p, "4")
+			status, err := MarshalStatus(p)
+			Expect(err).NotTo(HaveOccurred())
+			unmarshalledProxy := &v1.Proxy{}
+			UnmarshalStatus(unmarshalledProxy, status)
+			finalStatus := unmarshalledProxy.Status
+			//Truncate the status and append the warning
+			Expect(finalStatus.GetReason()).To(Equal("very" + MaxLengthWarningMessage))
+		})
+		It("should not truncate the status reason when annotated with invalid max length", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+				Status: &core.Status{State: core.Status_Accepted, Reason: "very long message"},
+			}
+			err := SetMaxStatusSizeBytes(p, "Not an int")
+			Expect(err).To(HaveOccurred())
+			originalStatus := &core.Status{State: core.Status_Accepted, Reason: "very long message"}
+			modifiedStatus, err := MarshalStatus(p)
+			Expect(err).NotTo(HaveOccurred())
+			unmarshalledProxy := &v1.Proxy{}
+			UnmarshalStatus(unmarshalledProxy, modifiedStatus)
+			finalStatus := unmarshalledProxy.GetStatus()
+			Expect(finalStatus.GetReason()).To(BeEquivalentTo(originalStatus.GetReason()))
+		})
+		It("should not modify the status reason when message is shorter than the limit", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+				Status: &core.Status{State: core.Status_Accepted, Reason: "hi"},
+			}
+			SetMaxStatusSizeBytes(p, "5")
+			status, err := MarshalStatus(p)
+			Expect(err).NotTo(HaveOccurred())
+			unmarshalledProxy := &v1.Proxy{}
+			UnmarshalStatus(unmarshalledProxy, status)
+			finalStatus := unmarshalledProxy.GetStatus()
+			Expect(finalStatus.GetReason()).To(BeEquivalentTo("hi"))
+		})
 	})
 
 })
