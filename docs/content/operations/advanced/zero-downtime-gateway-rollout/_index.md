@@ -66,7 +66,7 @@ spec:
   ignoreHealthOnHostRemoval: true
 {{< /highlight >}}
 
-Some customers have noticed that the above active health check settings are too aggressive for their environment, with `Upstream` pings being issued every 2 seconds. If that is true for you and the health checks themselves generate excessive traffic, then consider less aggressive active health check settings, like these:
+In the previous example, `Upstream` pings are issued every 2 seconds. You might find that this active health check setting is too frequent and generates excessive traffic. If so, consider a health check with a longer interval, such as the following example.
 
 {{< highlight yaml "hl_lines=6-9" >}}
   # ----- Health Check (a.k.a. active health checks) -------
