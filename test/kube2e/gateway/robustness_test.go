@@ -18,6 +18,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -690,7 +691,7 @@ func createEchoDeploymentAndService(kubeClient kubernetes.Interface, namespace, 
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:  "http-echo",
-						Image: "hashicorp/http-echo",
+						Image: kube2e.GetHttpEchoImage(),
 						Args:  []string{fmt.Sprintf("-text=%s", expectedResponse(appName))},
 						Ports: []corev1.ContainerPort{{
 							Name:          "http",
