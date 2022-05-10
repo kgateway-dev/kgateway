@@ -106,6 +106,8 @@ message HeaderAction {
     // The header name for which corresponding values should be censored
     // Must be specified
     string header_to_mask = 4;
+    // If specified, this rule will not actually be applied, but only logged.
+    bool shadow = 5;
 }
 
 message RegexAction {

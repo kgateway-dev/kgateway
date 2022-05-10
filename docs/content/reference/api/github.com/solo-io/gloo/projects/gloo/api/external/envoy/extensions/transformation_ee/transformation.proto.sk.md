@@ -167,6 +167,7 @@ weight: 5
 "maskChar": string
 "percent": .solo.io.envoy.type.Percent
 "headerToMask": string
+"shadow": bool
 
 ```
 
@@ -176,6 +177,7 @@ weight: 5
 | `maskChar` | `string` | The masking character for the sensitive data. If left empty, defaults to "X". |
 | `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which should be masked. If not set, defaults to 75%. |
 | `headerToMask` | `string` | The header name for which corresponding values should be censored Must be specified. |
+| `shadow` | `bool` | If specified, this rule will not actually be applied, but only logged. |
 
 
 
