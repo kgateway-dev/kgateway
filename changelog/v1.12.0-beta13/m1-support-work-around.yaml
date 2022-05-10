@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: adding support for M1, and M1 work around.
+    issueLink: https://github.com/solo-io/gloo/issues/5471
+    resolvesIssue: false

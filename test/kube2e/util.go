@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -26,6 +27,14 @@ import (
 	errors "github.com/rotisserie/eris"
 	"k8s.io/client-go/kubernetes"
 )
+
+func GetHttpEchoImage() string {
+	httpEchoImage := "hashicorp/http-echo"
+	if runtime.GOARCH == "arm64" {
+		httpEchoImage = "gcr.io/solo-test-236622/http-echo"
+	}
+	return httpEchoImage
+}
 
 func MustKubeClient() kubernetes.Interface {
 	restConfig, err := kubeutils.GetConfig("", "")
@@ -212,6 +221,14 @@ func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Setting
 // Ideally the test utilities used by Gloo are maintained in the Gloo repo, so I opted to move
 // this constant here.
 // This response is given by the testrunner when the SimpleServer is started
+func GetSimpleTestRunnerHttpResponse() string {
+	if runtime.GOARCH == "arm64" {
+		return SimpleTestRunnerHttpResponseArm
+	} else {
+		return SimpleTestRunnerHttpResponse
+	}
+}
+
 const SimpleTestRunnerHttpResponse = `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><html>
 <title>Directory listing for /</title>
 <body>
@@ -230,6 +247,38 @@ const SimpleTestRunnerHttpResponse = `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.
 <li><a href="opt/">opt/</a>
 <li><a href="proc/">proc/</a>
 <li><a href="product_name">product_name</a>
+<li><a href="product_uuid">product_uuid</a>
+<li><a href="root/">root/</a>
+<li><a href="root.crt">root.crt</a>
+<li><a href="run/">run/</a>
+<li><a href="sbin/">sbin/</a>
+<li><a href="srv/">srv/</a>
+<li><a href="sys/">sys/</a>
+<li><a href="tmp/">tmp/</a>
+<li><a href="usr/">usr/</a>
+<li><a href="var/">var/</a>
+</ul>
+<hr>
+</body>
+</html>`
+
+const SimpleTestRunnerHttpResponseArm = `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><html>
+<title>Directory listing for /</title>
+<body>
+<h2>Directory listing for /</h2>
+<hr>
+<ul>
+<li><a href="bin/">bin/</a>
+<li><a href="boot/">boot/</a>
+<li><a href="dev/">dev/</a>
+<li><a href="etc/">etc/</a>
+<li><a href="home/">home/</a>
+<li><a href="lib/">lib/</a>
+<li><a href="lib64/">lib64/</a>
+<li><a href="media/">media/</a>
+<li><a href="mnt/">mnt/</a>
+<li><a href="opt/">opt/</a>
+<li><a href="proc/">proc/</a>
 <li><a href="product_uuid">product_uuid</a>
 <li><a href="root/">root/</a>
 <li><a href="root.crt">root.crt</a>
