@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -104,6 +105,10 @@ func getHelmOverrides() (filename string, cleanup func()) {
 	values, err := ioutil.TempFile("", "*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 	// Set global.glooMtls.enabled = true, and make sure to pull the quay.io/solo-io
+	imageRegistry := "quay.io/solo-io"
+	if runtime.GOARCH == "arm64" && os.Getenv("RUNNING_REGRESSION_TESTS") == "true" {
+		imageRegistry = "\"localhost:5000\""
+	}
 	_, err = values.Write([]byte(`
 gloo:
   rbac:
@@ -125,7 +130,7 @@ global:
     enabled: true
     sds:
       image:
-        registry: quay.io/solo-io
+        registry: ` + imageRegistry + `
 `)) // need to override registry because we use gcr and quay confusingly https://github.com/solo-io/solo-projects/issues/1733
 	Expect(err).NotTo(HaveOccurred())
 	err = values.Close()

@@ -89,7 +89,7 @@ var _ = Describe("Installing gloo edge in mtls mode", func() {
 			Service:           defaults.GatewayProxyName,
 			Port:              gatewayPort,
 			ConnectionTimeout: 10, // this is important, as the first curl call sometimes hangs indefinitely
-		}, kube2e.SimpleTestRunnerHttpResponse, 1, time.Minute*20)
+		}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, time.Minute*20)
 	})
 
 })

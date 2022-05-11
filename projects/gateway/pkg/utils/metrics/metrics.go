@@ -126,7 +126,7 @@ func (m *ConfigStatusMetrics) SetResourceValid(ctx context.Context, resource res
 	log := contextutils.LoggerFrom(ctx)
 	gvk, err := resourceToGVK(resource)
 	if err != nil {
-		log.Warnf(err.Error())
+		log.Debugf(err.Error())
 		return
 	}
 	if m.metrics[gvk] != nil {
@@ -143,7 +143,7 @@ func (m *ConfigStatusMetrics) SetResourceInvalid(ctx context.Context, resource r
 	log := contextutils.LoggerFrom(ctx)
 	gvk, err := resourceToGVK(resource)
 	if err != nil {
-		log.Warnf(err.Error())
+		log.Debugf(err.Error())
 		return
 	}
 	if m.metrics[gvk] != nil {

@@ -135,6 +135,77 @@ var _ = Describe("Compress", func() {
 
 			Expect(status1).To(BeEquivalentTo(status2))
 		})
+		It("should truncate the status reason when annotated with max length", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+			}
+			SetMaxStatusSizeBytes(p, "4")
+			statusClient.SetStatus(p, &core.Status{State: core.Status_Accepted, Reason: "very long message"})
+			status, err := MarshalStatus(p)
+			Expect(err).NotTo(HaveOccurred())
+			unmarshalledProxy := &v1.Proxy{}
+			UnmarshalStatus(unmarshalledProxy, status, statusUnmarshaler)
+			finalStatus := statusClient.GetStatus(unmarshalledProxy)
+			//Truncate the status and append the warning
+			Expect(finalStatus.GetReason()).To(Equal("very" + MaxLengthWarningMessage))
+		})
+		It("should not truncate the status reason when annotated with invalid max length", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+			}
+			err := SetMaxStatusSizeBytes(p, "Not an int")
+			Expect(err).To(HaveOccurred())
+			originalStatus := &core.Status{State: core.Status_Accepted, Reason: "very long message"}
+			statusClient.SetStatus(p, originalStatus)
+			status, err := MarshalStatus(p)
+			Expect(err).NotTo(HaveOccurred())
+			unmarshalledProxy := &v1.Proxy{}
+			UnmarshalStatus(unmarshalledProxy, status, statusUnmarshaler)
+			finalStatus := statusClient.GetStatus(unmarshalledProxy)
+			Expect(finalStatus).To(BeEquivalentTo(originalStatus))
+		})
+		It("should not modify the status reason when message is shorter than the limit", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+			}
+			SetMaxStatusSizeBytes(p, "5")
+			originalStatus := &core.Status{State: core.Status_Accepted, Reason: "hi"}
+			statusClient.SetStatus(p, originalStatus)
+			status, err := MarshalStatus(p)
+			Expect(err).NotTo(HaveOccurred())
+			unmarshalledProxy := &v1.Proxy{}
+			UnmarshalStatus(unmarshalledProxy, status, statusUnmarshaler)
+			finalStatus := statusClient.GetStatus(unmarshalledProxy)
+			Expect(finalStatus).To(BeEquivalentTo(finalStatus))
+		})
+		It("should truncate status reasons from multiple namespaces", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+			}
+			SetMaxStatusSizeBytes(p, "4")
+			originalStatus := &core.Status{State: core.Status_Accepted, Reason: "very long message"}
+			statusClient.SetStatus(p, originalStatus)
+			otherNamespaceStatusClient := gloostatusutils.GetStatusClientForNamespace("ns2")
+			otherNamespaceStatusClient.SetStatus(p, originalStatus)
+
+			status, err := MarshalStatus(p)
+			Expect(err).NotTo(HaveOccurred())
+			unmarshalledProxy := &v1.Proxy{}
+			UnmarshalStatus(unmarshalledProxy, status, statusUnmarshaler)
+			finalStatus := statusClient.GetStatus(unmarshalledProxy)
+			//Truncate the status and append the warning
+			Expect(finalStatus.GetReason()).To(Equal("very" + MaxLengthWarningMessage))
+			otherNamespaceFinalStatus := otherNamespaceStatusClient.GetStatus(unmarshalledProxy)
+			Expect(otherNamespaceFinalStatus.GetReason()).To(Equal("very" + MaxLengthWarningMessage))
+		})
 	})
 
 })
