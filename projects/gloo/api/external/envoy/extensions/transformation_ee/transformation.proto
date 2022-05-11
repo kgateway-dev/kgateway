@@ -59,8 +59,6 @@ message Transformation {
 message DlpTransformation {
     // list of actions to apply
     repeated Action actions = 1;
-    // list of header actions to apply
-    repeated HeaderAction header_actions = 4;
     // If true, headers will be transformed. Should only be true for the
     // on_stream_complete_transformation route transformation type.
     bool enable_header_transformation = 2;
@@ -74,9 +72,11 @@ message Action {
     // Used mostly to help ID specific actions in logs.
     // If left null will default to unknown
     string name = 1;
+    // Deprecated in favor of DlpMatcher
     // List of regexes to apply to the response body to match data which should be masked
     // They will be applied iteratively in the order which they are specified
     repeated string regex = 2 [(validate.rules).repeated.items.string.min_bytes = 1];
+    // Deprecated in favor of DlpMatcher
     // List of regexes to apply to the response body to match data which should be
     // masked. They will be applied iteratively in the order which they are
     // specified. If this field and `regex` are both provided, all the regexes will
@@ -90,24 +90,27 @@ message Action {
     // The character which should overwrite the masked data
     // If left empty, defaults to "X"
     string mask_char = 5 [(validate.rules).string.max_bytes = 1];
-}
-
-message HeaderAction {
-    // The name of the header action.
-    // This name is used for logging and debugging purposes.
-    // If left null will default to unknown
-    string name = 1;
-    // The masking character for the sensitive data.
-    // If left empty, defaults to "X"
-    string mask_char = 2;
-    // The percent of the string which should be masked.
-    // If not set, defaults to 75%
-    .solo.io.envoy.type.Percent percent = 3;
-    // The header name for which corresponding values should be censored
-    // Must be specified
-    string header_to_mask = 4;
-    // If specified, this rule will not actually be applied, but only logged.
-    bool shadow = 5;
+    // List of regexes to apply to the response body to match data which should be
+    // masked. They will be applied iteratively in the order which they are
+    // specified.
+    message RegexMatcher {
+        repeated RegexAction regex_actions = 1;
+    }
+    // List of headers for which associated values will be masked.
+    // Note that enable_header_transformation must be set for this to take effect.
+    // Note that if enable_dynamic_metadata_transformation is set, proto struct dynamic metadata
+    // (in particular, JSON-formatted WAF audit logs) will also be masked accordingly.
+    message HeaderMatcher {
+        repeated string header_name = 1;
+    }
+    message DlpMatcher {
+        oneof matcher {
+        RegexMatcher regex_matcher = 1;
+        HeaderMatcher header_matcher = 2;
+        }
+    }
+    // The matcher used to determine which values will be masked by this action.
+    DlpMatcher matcher = 7;
 }
 
 message RegexAction {

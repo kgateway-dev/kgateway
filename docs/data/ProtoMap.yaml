@@ -398,9 +398,6 @@ apis:
   envoy.config.filter.http.transformation_ee.v2.FilterTransformations:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#FilterTransformations
     package: envoy.config.filter.http.transformation_ee.v2
-  envoy.config.filter.http.transformation_ee.v2.HeaderAction:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#HeaderAction
-    package: envoy.config.filter.http.transformation_ee.v2
   envoy.config.filter.http.transformation_ee.v2.RegexAction:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#RegexAction
     package: envoy.config.filter.http.transformation_ee.v2

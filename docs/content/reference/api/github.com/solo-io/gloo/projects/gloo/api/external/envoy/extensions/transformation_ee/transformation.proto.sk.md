@@ -17,7 +17,9 @@ weight: 5
 - [Transformation](#transformation)
 - [DlpTransformation](#dlptransformation)
 - [Action](#action)
-- [HeaderAction](#headeraction)
+- [RegexMatcher](#regexmatcher)
+- [HeaderMatcher](#headermatcher)
+- [DlpMatcher](#dlpmatcher)
 - [RegexAction](#regexaction)
   
 
@@ -114,7 +116,6 @@ weight: 5
 
 ```yaml
 "actions": []envoy.config.filter.http.transformation_ee.v2.Action
-"headerActions": []envoy.config.filter.http.transformation_ee.v2.HeaderAction
 "enableHeaderTransformation": bool
 "enableDynamicMetadataTransformation": bool
 
@@ -123,7 +124,6 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `actions` | [[]envoy.config.filter.http.transformation_ee.v2.Action](../transformation.proto.sk/#action) | list of actions to apply. |
-| `headerActions` | [[]envoy.config.filter.http.transformation_ee.v2.HeaderAction](../transformation.proto.sk/#headeraction) | list of header actions to apply. |
 | `enableHeaderTransformation` | `bool` | If true, headers will be transformed. Should only be true for the on_stream_complete_transformation route transformation type. |
 | `enableDynamicMetadataTransformation` | `bool` | If true, dynamic metadata will be transformed. Should only be used for the on_stream_complete_transformation route transformation type. |
 
@@ -142,42 +142,79 @@ weight: 5
 "shadow": bool
 "percent": .solo.io.envoy.type.Percent
 "maskChar": string
+"matcher": .envoy.config.filter.http.transformation_ee.v2.Action.DlpMatcher
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `name` | `string` | Identifier for this action. Used mostly to help ID specific actions in logs. If left null will default to unknown. |
-| `regex` | `[]string` | List of regexes to apply to the response body to match data which should be masked They will be applied iteratively in the order which they are specified. |
-| `regexActions` | [[]envoy.config.filter.http.transformation_ee.v2.RegexAction](../transformation.proto.sk/#regexaction) | List of regexes to apply to the response body to match data which should be masked. They will be applied iteratively in the order which they are specified. If this field and `regex` are both provided, all the regexes will be applied iteratively in the order provided, starting with the ones from `regex`. |
+| `regex` | `[]string` | Deprecated in favor of DlpMatcher List of regexes to apply to the response body to match data which should be masked They will be applied iteratively in the order which they are specified. |
+| `regexActions` | [[]envoy.config.filter.http.transformation_ee.v2.RegexAction](../transformation.proto.sk/#regexaction) | Deprecated in favor of DlpMatcher List of regexes to apply to the response body to match data which should be masked. They will be applied iteratively in the order which they are specified. If this field and `regex` are both provided, all the regexes will be applied iteratively in the order provided, starting with the ones from `regex`. |
 | `shadow` | `bool` | If specified, this rule will not actually be applied, but only logged. |
 | `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which should be masked. If not set, defaults to 75%. |
 | `maskChar` | `string` | The character which should overwrite the masked data If left empty, defaults to "X". |
+| `matcher` | [.envoy.config.filter.http.transformation_ee.v2.Action.DlpMatcher](../transformation.proto.sk/#dlpmatcher) | The matcher used to determine which values will be masked by this action. |
 
 
 
 
 ---
-### HeaderAction
+### RegexMatcher
 
-
+ 
+List of regexes to apply to the response body to match data which should be
+masked. They will be applied iteratively in the order which they are
+specified.
 
 ```yaml
-"name": string
-"maskChar": string
-"percent": .solo.io.envoy.type.Percent
-"headerToMask": string
-"shadow": bool
+"regexActions": []envoy.config.filter.http.transformation_ee.v2.RegexAction
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `name` | `string` | The name of the header action. This name is used for logging and debugging purposes. If left null will default to unknown. |
-| `maskChar` | `string` | The masking character for the sensitive data. If left empty, defaults to "X". |
-| `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which should be masked. If not set, defaults to 75%. |
-| `headerToMask` | `string` | The header name for which corresponding values should be censored Must be specified. |
-| `shadow` | `bool` | If specified, this rule will not actually be applied, but only logged. |
+| `regexActions` | [[]envoy.config.filter.http.transformation_ee.v2.RegexAction](../transformation.proto.sk/#regexaction) |  |
+
+
+
+
+---
+### HeaderMatcher
+
+ 
+List of headers for which associated values will be masked.
+Note that enable_header_transformation must be set for this to take effect.
+Note that if enable_dynamic_metadata_transformation is set, proto struct dynamic metadata
+(in particular, JSON-formatted WAF audit logs) will also be masked accordingly.
+
+```yaml
+"headerName": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `headerName` | `[]string` |  |
+
+
+
+
+---
+### DlpMatcher
+
+
+
+```yaml
+"regexMatcher": .envoy.config.filter.http.transformation_ee.v2.Action.RegexMatcher
+"headerMatcher": .envoy.config.filter.http.transformation_ee.v2.Action.HeaderMatcher
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `regexMatcher` | [.envoy.config.filter.http.transformation_ee.v2.Action.RegexMatcher](../transformation.proto.sk/#regexmatcher) |  Only one of `regexMatcher` or `headerMatcher` can be set. |
+| `headerMatcher` | [.envoy.config.filter.http.transformation_ee.v2.Action.HeaderMatcher](../transformation.proto.sk/#headermatcher) |  Only one of `headerMatcher` or `regexMatcher` can be set. |
 
 
 
