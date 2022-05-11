@@ -123,9 +123,7 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 		endpointList = append(endpointList, endpoints...)
 	}
 
-	lookupResult, found := os.LookupEnv("ENABLE_ISTIO_SIDECAR")
-	istioIntegration := found && strings.ToLower(lookupResult) == "true"
-	eps, warns, errsToLog := filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams, istioIntegration)
+	eps, warns, errsToLog := filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams)
 
 	warnsToLog = append(warnsToLog, warns...)
 
@@ -161,6 +159,14 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 	}
 
 	return eps, nil
+}
+
+// Returns true for when configured for Istio integration where endpoints must
+// be defined by IP address rather than hostnames. For details, see:
+// * https://github.com/solo-io/gloo/issues/6195
+func isIstioIntegrationEnabled() bool {
+	lookupResult, found := os.LookupEnv("ENABLE_ISTIO_INTEGRATION")
+	return found && strings.ToLower(lookupResult) == "true"
 }
 
 func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
@@ -215,28 +221,23 @@ type Epkey struct {
 	UpstreamRef *core.ResourceRef
 }
 
+// Returns first matching port in the namespace and boolean value of true if the
+// service has a single port.
+// If no matching port is found, returns nil and false.
 func findPortForService(services []*kubev1.Service, spec *kubeplugin.UpstreamSpec) (*kubev1.ServicePort, bool) {
 	for _, svc := range services {
 		if svc.Namespace != spec.GetServiceNamespace() || svc.Name != spec.GetServiceName() {
 			continue
 		}
-		if len(svc.Spec.Ports) == 1 {
-			if spec.GetServicePort() == uint32(svc.Spec.Ports[0].Port) {
-				return &svc.Spec.Ports[0], true
-			}
-		}
 		for _, port := range svc.Spec.Ports {
 			if spec.GetServicePort() == uint32(port.Port) {
-				return &port, false
+				return &port, len(svc.Spec.Ports) == 1
 			}
 		}
 	}
 	return nil, false
 }
 
-// filterToIpAddresses - Set to true for Istio integration where endpoints must
-// be defined by IP address rather than hostnames. For details, see:
-// * https://github.com/murphye/demo-gloo-edge-istio
 func filterEndpoints(
 	_ context.Context, // do not use for logging! return logging messages as strings and log them after hashing (see https://github.com/solo-io/gloo/issues/3761)
 	writeNamespace string,
@@ -244,13 +245,13 @@ func filterEndpoints(
 	services []*kubev1.Service,
 	pods []*kubev1.Pod,
 	upstreams map[*core.ResourceRef]*kubeplugin.UpstreamSpec,
-	filterToIpAddresses bool,
 ) (v1.EndpointList, []string, []string) {
 	var endpoints v1.EndpointList
 
 	var warnsToLog, errorsToLog []string
-
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
+
+	istioIntegrationEnabled := isIstioIntegrationEnabled()
 
 	// for each upstream
 	for usRef, spec := range upstreams {
@@ -265,13 +266,13 @@ func filterEndpoints(
 				continue
 			}
 			for _, subset := range eps.Subsets {
-				port := findPortForEndpointSubset(subset, singlePortService, kubeServicePort)
+				port := findFirstPortInEndpointSubsets(subset, singlePortService, kubeServicePort)
 				if port == 0 {
 					warnsToLog = append(warnsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.GetServicePort(), spec.GetServiceName(), subset))
 					continue
 				}
 
-				if filterToIpAddresses {
+				if istioIntegrationEnabled {
 					hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
 					key := Epkey{hostname, port, spec.GetServiceName(), spec.GetServiceNamespace(), usRef}
 					copyRef := *usRef
@@ -284,7 +285,7 @@ func filterEndpoints(
 		}
 	}
 
-	endpoints = generateFilteredEndpointList(endpointsMap, services, pods, writeNamespace, endpoints, filterToIpAddresses)
+	endpoints = generateFilteredEndpointList(endpointsMap, services, pods, writeNamespace, endpoints, istioIntegrationEnabled)
 
 	return endpoints, warnsToLog, errorsToLog
 }
@@ -323,7 +324,7 @@ func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.Upstr
 	return warnings
 }
 
-func findPortForEndpointSubset(subset kubev1.EndpointSubset, singlePortService bool, kubeServicePort *kubev1.ServicePort) uint32 {
+func findFirstPortInEndpointSubsets(subset kubev1.EndpointSubset, singlePortService bool, kubeServicePort *kubev1.ServicePort) uint32 {
 	var port uint32
 	for _, p := range subset.Ports {
 		// if the endpoint port is not named, it implies that
@@ -345,7 +346,7 @@ func generateFilteredEndpointList(
 	pods []*kubev1.Pod,
 	writeNamespace string,
 	endpoints v1.EndpointList,
-	filterToIpAddresses bool) v1.EndpointList {
+	istioIntegrationEnabled bool) v1.EndpointList {
 	for addr, refs := range endpointsMap {
 
 		// sort refs for idempotency
@@ -364,7 +365,8 @@ func generateFilteredEndpointList(
 		endpointName := fmt.Sprintf("ep-%v-%v-%x", dnsname, addr.Port, hasher.Sum64())
 
 		var ep *v1.Endpoint
-		if filterToIpAddresses {
+		if istioIntegrationEnabled {
+			// Istio integration requires assigning endpoints the Kub service VIP rather than pod address
 			service, _ := getServiceForHostname(addr.Address, addr.Name, addr.Namespace, services)
 			ep = createEndpoint(writeNamespace, endpointName, refs, service.Spec.ClusterIP, addr.Port, service.GetObjectMeta().GetLabels()) // TODO: labels may be nil
 		} else {
