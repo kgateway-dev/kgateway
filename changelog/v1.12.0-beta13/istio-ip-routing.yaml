@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/6195
+  resolvesIssue: true
+  description: Add support for istio integration in endpoint discovery, routing to service IP rather than pod IP.
