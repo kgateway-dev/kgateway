@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Revised pre-defined DLP actions' regex in proto comments to reflect new re2 values in solo-projects
+    issueLink: https://github.com/solo-io/gloo/issues/6257
+    resolvesIssue: false
