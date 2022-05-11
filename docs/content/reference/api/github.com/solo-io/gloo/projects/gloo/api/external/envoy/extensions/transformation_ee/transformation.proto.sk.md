@@ -18,7 +18,7 @@ weight: 5
 - [DlpTransformation](#dlptransformation)
 - [Action](#action)
 - [RegexMatcher](#regexmatcher)
-- [HeaderMatcher](#headermatcher)
+- [KeyValueMatcher](#keyvaluematcher)
 - [DlpMatcher](#dlpmatcher)
 - [RegexAction](#regexaction)
   
@@ -180,22 +180,22 @@ specified.
 
 
 ---
-### HeaderMatcher
+### KeyValueMatcher
 
  
 List of headers for which associated values will be masked.
 Note that enable_header_transformation must be set for this to take effect.
 Note that if enable_dynamic_metadata_transformation is set, proto struct dynamic metadata
-(in particular, JSON-formatted WAF audit logs) will also be masked accordingly.
+(i.e., the values matching any JSON keys specified in `keys`; primarily for json-formatted WAF audit logs) will also be masked accordingly.
 
 ```yaml
-"headerName": []string
+"keys": []string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `headerName` | `[]string` |  |
+| `keys` | `[]string` |  |
 
 
 
@@ -207,14 +207,14 @@ Note that if enable_dynamic_metadata_transformation is set, proto struct dynamic
 
 ```yaml
 "regexMatcher": .envoy.config.filter.http.transformation_ee.v2.Action.RegexMatcher
-"headerMatcher": .envoy.config.filter.http.transformation_ee.v2.Action.HeaderMatcher
+"keyValueMatcher": .envoy.config.filter.http.transformation_ee.v2.Action.KeyValueMatcher
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `regexMatcher` | [.envoy.config.filter.http.transformation_ee.v2.Action.RegexMatcher](../transformation.proto.sk/#regexmatcher) |  Only one of `regexMatcher` or `headerMatcher` can be set. |
-| `headerMatcher` | [.envoy.config.filter.http.transformation_ee.v2.Action.HeaderMatcher](../transformation.proto.sk/#headermatcher) |  Only one of `headerMatcher` or `regexMatcher` can be set. |
+| `regexMatcher` | [.envoy.config.filter.http.transformation_ee.v2.Action.RegexMatcher](../transformation.proto.sk/#regexmatcher) |  Only one of `regexMatcher` or `keyValueMatcher` can be set. |
+| `keyValueMatcher` | [.envoy.config.filter.http.transformation_ee.v2.Action.KeyValueMatcher](../transformation.proto.sk/#keyvaluematcher) |  Only one of `keyValueMatcher` or `regexMatcher` can be set. |
 
 
 
