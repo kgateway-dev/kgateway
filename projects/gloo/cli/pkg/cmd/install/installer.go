@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -293,7 +292,7 @@ func getChartUri(chartOverride, versionOverride string, mode Mode) (string, erro
 		case Enterprise:
 			enterpriseVersion, err := version.GetLatestEnterpriseVersion(true)
 			if err != nil {
-				return "", errors.Wrap(err, UnreleasedWithoutOverrideErr.Error())
+				return "", eris.Wrap(UnreleasedWithoutOverrideErr, err.Error())
 			}
 			helmChartVersion = enterpriseVersion
 		case Gloo:
