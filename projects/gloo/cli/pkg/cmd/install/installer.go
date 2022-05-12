@@ -31,9 +31,11 @@ import (
 )
 
 var (
+	// ChartAndReleaseFlagErr is thrown when both options are set.
 	ChartAndReleaseFlagErr = func(chartOverride, versionOverride string) error {
 		return eris.Errorf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", chartOverride, versionOverride)
 	}
+	// UnreleasedWithoutOverrideErr details that the user is running an unreleased or invalid verison of gloo.
 	UnreleasedWithoutOverrideErr = eris.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
 		"when running an unreleased version of glooctl")
 )
@@ -59,12 +61,14 @@ const (
 	Federation
 )
 
+// NewInstaller consumes a helm client and sets up an installer for usage in glooctl.
 func NewInstaller(helmClient HelmClient) Installer {
 	client := helpers.MustKubeClient()
 	return NewInstallerWithWriter(helmClient, client.CoreV1().Namespaces(), os.Stdout)
 }
 
-// visible for testing
+// NewInstallerWithWriter creates a new Installer for a given helm client,
+// namespace and output writer. The extra variables are exposed to allow for ease of testing.
 func NewInstallerWithWriter(helmClient HelmClient, kubeNsClient v1.NamespaceInterface, outputWriter io.Writer) Installer {
 	return &installer{
 		helmClient:         helmClient,
@@ -73,6 +77,7 @@ func NewInstallerWithWriter(helmClient HelmClient, kubeNsClient v1.NamespaceInte
 	}
 }
 
+// Install gloo given the provided config.
 func (i *installer) Install(installerConfig *InstallerConfig) error {
 	return i.installFromConfig(installerConfig)
 }
@@ -287,7 +292,7 @@ func getChartUri(chartOverride, versionOverride string, mode Mode) (string, erro
 		case Enterprise:
 			enterpriseVersion, err := version.GetLatestEnterpriseVersion(true)
 			if err != nil {
-				return "", err
+				return "", eris.Wrap(UnreleasedWithoutOverrideErr, err.Error())
 			}
 			helmChartVersion = enterpriseVersion
 		case Gloo:
