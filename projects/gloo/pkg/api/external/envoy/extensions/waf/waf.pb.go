@@ -204,8 +204,7 @@ type ModSecurity struct {
 	// log in a format suited for the OWASP regression tests.
 	// this format is a multiline log format, so it is disabled for regular use.
 	// do not enable this in production!
-	RegressionLogs bool `protobuf:"varint,4,opt,name=regression_logs,json=regressionLogs,proto3" json:"regression_logs,omitempty"`
-	// DLP Transformation to perform at ModSecurity processing time
+	RegressionLogs    bool                                 `protobuf:"varint,4,opt,name=regression_logs,json=regressionLogs,proto3" json:"regression_logs,omitempty"`
 	DlpTransformation *transformation_ee.DlpTransformation `protobuf:"bytes,8,opt,name=dlp_transformation,json=dlpTransformation,proto3" json:"dlp_transformation,omitempty"`
 }
 
@@ -379,10 +378,9 @@ type ModSecurityPerRoute struct {
 	AuditLogging *AuditLogging `protobuf:"bytes,5,opt,name=audit_logging,json=auditLogging,proto3" json:"audit_logging,omitempty"`
 	// If set, the body will not be buffered and fed to ModSecurity. Only the headers will.
 	// This can help improve performance.
-	RequestHeadersOnly  bool `protobuf:"varint,6,opt,name=request_headers_only,json=requestHeadersOnly,proto3" json:"request_headers_only,omitempty"`
-	ResponseHeadersOnly bool `protobuf:"varint,7,opt,name=response_headers_only,json=responseHeadersOnly,proto3" json:"response_headers_only,omitempty"`
-	// DLP Transformation to perform at ModSecurity processing time
-	DlpTransformation *transformation_ee.DlpTransformation `protobuf:"bytes,8,opt,name=dlp_transformation,json=dlpTransformation,proto3" json:"dlp_transformation,omitempty"`
+	RequestHeadersOnly  bool                                 `protobuf:"varint,6,opt,name=request_headers_only,json=requestHeadersOnly,proto3" json:"request_headers_only,omitempty"`
+	ResponseHeadersOnly bool                                 `protobuf:"varint,7,opt,name=response_headers_only,json=responseHeadersOnly,proto3" json:"response_headers_only,omitempty"`
+	DlpTransformation   *transformation_ee.DlpTransformation `protobuf:"bytes,8,opt,name=dlp_transformation,json=dlpTransformation,proto3" json:"dlp_transformation,omitempty"`
 }
 
 func (x *ModSecurityPerRoute) Reset() {

@@ -53,7 +53,6 @@ message ModSecurity {
   // this format is a multiline log format, so it is disabled for regular use.
   // do not enable this in production!
   bool regression_logs = 4;
-  // DLP Transformation to perform at ModSecurity processing time
   envoy.config.filter.http.transformation_ee.v2.DlpTransformation dlp_transformation = 8;
 }
 
@@ -81,6 +80,5 @@ message ModSecurityPerRoute {
   // This can help improve performance.
   bool request_headers_only = 6;
   bool response_headers_only = 7;
-  // DLP Transformation to perform at ModSecurity processing time
   envoy.config.filter.http.transformation_ee.v2.DlpTransformation dlp_transformation = 8;
 }
