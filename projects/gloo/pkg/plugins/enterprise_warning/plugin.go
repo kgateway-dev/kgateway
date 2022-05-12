@@ -147,8 +147,6 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		enterpriseExtensions = append(enterpriseExtensions, WasmExtensionName)
 	}
 
-	// if is
-
 	return nil, GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
 }
 

@@ -33,7 +33,7 @@ type GrpcCacheConfig struct {
 
 	// A GRPC service: this maps exactly to envoy GRPC service defintions
 	Service *v3.GrpcService `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
-	// Connection timeout
+	// Connection timeout  for retrieval from cache
 	Timeout *duration.Duration `protobuf:"bytes,2,opt,name=timeout,proto3" json:"timeout,omitempty"`
 }
 
