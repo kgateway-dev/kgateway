@@ -35,8 +35,8 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `cachingServiceRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
-| `allowedVaryHeaders` | [[]solo.io.envoy.type.matcher.v3.StringMatcher](../../../../../external/envoy/type/matcher/v3/string.proto.sk/#stringmatcher) |  |
+| `cachingServiceRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The basic reference for the service. Details name and namespace. |
+| `allowedVaryHeaders` | [[]solo.io.envoy.type.matcher.v3.StringMatcher](../../../../../external/envoy/type/matcher/v3/string.proto.sk/#stringmatcher) | A list of string matchers that state what headers are allowed to vary and still be cached. Per upstream envoy allowed vary headers. |
 
 
 

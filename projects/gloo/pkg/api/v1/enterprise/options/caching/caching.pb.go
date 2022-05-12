@@ -31,7 +31,10 @@ type Settings struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	CachingServiceRef  *core.ResourceRef   `protobuf:"bytes,1,opt,name=caching_service_ref,json=cachingServiceRef,proto3" json:"caching_service_ref,omitempty"`
+	// The basic reference for the service. Details name and namespace.
+	CachingServiceRef *core.ResourceRef `protobuf:"bytes,1,opt,name=caching_service_ref,json=cachingServiceRef,proto3" json:"caching_service_ref,omitempty"`
+	// A list of string matchers that state what headers are allowed to vary
+	// and still be cached. Per upstream envoy allowed vary headers.
 	AllowedVaryHeaders []*v3.StringMatcher `protobuf:"bytes,2,rep,name=allowed_vary_headers,json=allowedVaryHeaders,proto3" json:"allowed_vary_headers,omitempty"`
 }
 

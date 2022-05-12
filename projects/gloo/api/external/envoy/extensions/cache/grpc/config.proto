@@ -24,7 +24,9 @@ option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 // [#proto-status: experimental]
 message GrpcCacheConfig {
 
-  .solo.io.envoy.config.core.v3.GrpcService service = 2 [(validate.rules).message = {required: true}];
+  // A GRPC service: this maps exactly to envoy GRPC service defintions
+  .solo.io.envoy.config.core.v3.GrpcService service = 1 [(validate.rules).message = {required: true}];
 
-  google.protobuf.Duration timeout = 3;
+  // Connection timeout  for retrieval from cache
+  google.protobuf.Duration timeout = 2;
 }

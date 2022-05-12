@@ -233,6 +233,7 @@ type Settings struct {
 	// If an auth server name is not supplied on a route, the default auth server will be applied.
 	NamedExtauth map[string]*v1.Settings `protobuf:"bytes,33,rep,name=named_extauth,json=namedExtauth,proto3" json:"named_extauth,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Enterprise-only: Settings for the caching server itself
+	// Can be configured per listener and is used to configure the envoy filter
 	CachingServer *caching.Settings `protobuf:"bytes,36,opt,name=caching_server,json=cachingServer,proto3" json:"caching_server,omitempty"`
 	// Metadata contains the object metadata for this resource
 	Metadata *core.Metadata `protobuf:"bytes,14,opt,name=metadata,proto3" json:"metadata,omitempty"`
