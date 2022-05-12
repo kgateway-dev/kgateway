@@ -201,6 +201,16 @@ func (m *Action) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetKeyValueAction()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetKeyValueAction()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetKeyValueAction(), target.GetKeyValueAction()) {
+			return false
+		}
+	}
+
 	if m.GetShadow() != target.GetShadow() {
 		return false
 	}
@@ -273,6 +283,52 @@ func (m *CustomAction) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *KeyValueAction) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*KeyValueAction)
+	if !ok {
+		that2, ok := that.(KeyValueAction)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetMaskChar(), target.GetMaskChar()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetPercent()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPercent()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPercent(), target.GetPercent()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetKeyToMask(), target.GetKeyToMask()) != 0 {
+		return false
 	}
 
 	return true
