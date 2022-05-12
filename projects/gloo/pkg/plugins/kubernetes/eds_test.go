@@ -2,17 +2,17 @@ package kubernetes
 
 import (
 	"context"
+	"os"
 
 	"github.com/golang/mock/gomock"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	mock_kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/mocks"
 	mock_cache "github.com/solo-io/gloo/test/mocks/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Eds", func() {
@@ -52,6 +52,24 @@ var _ = Describe("Eds", func() {
 		watcher.List("foo", clients.ListOpts{Ctx: ctx})
 		Expect(func() {}).NotTo(Panic())
 
+	})
+
+	Context("Istio integration", func() {
+
+		It("isIstioIntegrationEnabled should respond correctly to ENABLE_ISTIO_INTEGRATION env var", func() {
+
+			os.Setenv("ENABLE_ISTIO_INTEGRATION", "true")
+			Expect(isIstioIntegrationEnabled()).To(BeTrue())
+
+			os.Setenv("ENABLE_ISTIO_INTEGRATION", "TRUE")
+			Expect(isIstioIntegrationEnabled()).To(BeTrue())
+
+			os.Unsetenv("ENABLE_ISTIO_INTEGRATION")
+			Expect(isIstioIntegrationEnabled()).To(BeFalse())
+
+			os.Setenv("ENABLE_ISTIO_INTEGRATION", "false")
+			Expect(isIstioIntegrationEnabled()).To(BeFalse())
+		})
 	})
 
 })
