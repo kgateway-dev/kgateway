@@ -221,6 +221,10 @@ spec:
           - name: LOG_LEVEL
             value: {{ .Values.gloo.logLevel }}
         {{- end}}
+        {{- if .Values.global.istioIntegration.enableIstioSidecarOnGateway }}
+          - name: ENABLE_ISTIO_INTEGRATION
+            value: "true"
+        {{- end}}
 {{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:
           tcpSocket:
