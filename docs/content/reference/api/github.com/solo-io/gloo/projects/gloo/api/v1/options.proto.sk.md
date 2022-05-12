@@ -91,6 +91,7 @@ Optional, feature-specific configuration that lives on http listeners
 "wasm": .wasm.options.gloo.solo.io.PluginSource
 "extauth": .enterprise.gloo.solo.io.Settings
 "ratelimitServer": .ratelimit.options.gloo.solo.io.Settings
+"caching": .caching.options.gloo.solo.io.Settings
 "gzip": .solo.io.envoy.config.filter.http.gzip.v2.Gzip
 "proxyLatency": .envoy.config.filter.http.proxylatency.v2.ProxyLatency
 "buffer": .solo.io.envoy.extensions.filters.http.buffer.v3.Buffer
@@ -113,6 +114,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `wasm` | [.wasm.options.gloo.solo.io.PluginSource](../options/wasm/wasm.proto.sk/#pluginsource) | Enterprise-only: WASM related configuration [experimental!]. |
 | `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/options/extauth/v1/extauth.proto.sk/#settings) | Enterprise-only: External auth related settings. |
 | `ratelimitServer` | [.ratelimit.options.gloo.solo.io.Settings](../enterprise/options/ratelimit/ratelimit.proto.sk/#settings) | Enterprise-only: Settings for the rate limiting server itself. |
+| `caching` | [.caching.options.gloo.solo.io.Settings](../enterprise/options/caching/caching.proto.sk/#settings) | Enterprise-only: Settings for the cache server itself. |
 | `gzip` | [.solo.io.envoy.config.filter.http.gzip.v2.Gzip](../../external/envoy/config/filter/http/gzip/v2/gzip.proto.sk/#gzip) | Gzip is an HTTP option which enables Gloo to compress data returned from an upstream service upon client request. Compression is useful in situations where large payloads need to be transmitted without compromising the response time. Example: ``` gzip: contentType: - "application/json" compressionLevel: BEST ```. |
 | `proxyLatency` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency](../../external/envoy/extensions/proxylatency/proxylatency.proto.sk/#proxylatency) | Enterprise-only: Proxy latency. |
 | `buffer` | [.solo.io.envoy.extensions.filters.http.buffer.v3.Buffer](../../external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#buffer) | Buffer can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. |
