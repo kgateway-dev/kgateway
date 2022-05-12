@@ -17,6 +17,9 @@ weight: 5
 - [Transformation](#transformation)
 - [DlpTransformation](#dlptransformation)
 - [Action](#action)
+- [RegexMatcher](#regexmatcher)
+- [KeyValueMatcher](#keyvaluematcher)
+- [DlpMatcher](#dlpmatcher)
 - [RegexAction](#regexaction)
   
 
@@ -139,17 +142,79 @@ weight: 5
 "shadow": bool
 "percent": .solo.io.envoy.type.Percent
 "maskChar": string
+"matcher": .envoy.config.filter.http.transformation_ee.v2.Action.DlpMatcher
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `name` | `string` | Identifier for this action. Used mostly to help ID specific actions in logs. If left null will default to unknown. |
-| `regex` | `[]string` | List of regexes to apply to the response body to match data which should be masked They will be applied iteratively in the order which they are specified. |
-| `regexActions` | [[]envoy.config.filter.http.transformation_ee.v2.RegexAction](../transformation.proto.sk/#regexaction) | List of regexes to apply to the response body to match data which should be masked. They will be applied iteratively in the order which they are specified. If this field and `regex` are both provided, all the regexes will be applied iteratively in the order provided, starting with the ones from `regex`. |
+| `regex` | `[]string` | Deprecated in favor of DlpMatcher List of regexes to apply to the response body to match data which should be masked They will be applied iteratively in the order which they are specified. |
+| `regexActions` | [[]envoy.config.filter.http.transformation_ee.v2.RegexAction](../transformation.proto.sk/#regexaction) | Deprecated in favor of DlpMatcher List of regexes to apply to the response body to match data which should be masked. They will be applied iteratively in the order which they are specified. If this field and `regex` are both provided, all the regexes will be applied iteratively in the order provided, starting with the ones from `regex`. |
 | `shadow` | `bool` | If specified, this rule will not actually be applied, but only logged. |
 | `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which should be masked. If not set, defaults to 75%. |
 | `maskChar` | `string` | The character which should overwrite the masked data If left empty, defaults to "X". |
+| `matcher` | [.envoy.config.filter.http.transformation_ee.v2.Action.DlpMatcher](../transformation.proto.sk/#dlpmatcher) | The matcher used to determine which values will be masked by this action. |
+
+
+
+
+---
+### RegexMatcher
+
+ 
+List of regexes to apply to the response body to match data which should be
+masked. They will be applied iteratively in the order which they are
+specified.
+
+```yaml
+"regexActions": []envoy.config.filter.http.transformation_ee.v2.RegexAction
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `regexActions` | [[]envoy.config.filter.http.transformation_ee.v2.RegexAction](../transformation.proto.sk/#regexaction) |  |
+
+
+
+
+---
+### KeyValueMatcher
+
+ 
+List of headers for which associated values will be masked.
+Note that enable_header_transformation must be set for this to take effect.
+Note that if enable_dynamic_metadata_transformation is set, proto struct dynamic metadata
+(i.e., the values matching any JSON keys specified in `keys`; primarily for json-formatted WAF audit logs) will also be masked accordingly.
+
+```yaml
+"keys": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `keys` | `[]string` |  |
+
+
+
+
+---
+### DlpMatcher
+
+
+
+```yaml
+"regexMatcher": .envoy.config.filter.http.transformation_ee.v2.Action.RegexMatcher
+"keyValueMatcher": .envoy.config.filter.http.transformation_ee.v2.Action.KeyValueMatcher
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `regexMatcher` | [.envoy.config.filter.http.transformation_ee.v2.Action.RegexMatcher](../transformation.proto.sk/#regexmatcher) |  Only one of `regexMatcher` or `keyValueMatcher` can be set. |
+| `keyValueMatcher` | [.envoy.config.filter.http.transformation_ee.v2.Action.KeyValueMatcher](../transformation.proto.sk/#keyvaluematcher) |  Only one of `keyValueMatcher` or `regexMatcher` can be set. |
 
 
 
