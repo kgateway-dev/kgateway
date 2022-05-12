@@ -136,6 +136,7 @@ var _ = Describe("Access Log", func() {
 					gw.Options = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
+
 				})
 
 				It("can stream access logs", func() {
@@ -165,11 +166,14 @@ var _ = Describe("Access Log", func() {
 					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
-					TestUpstreamReachable()
+					Eventually(func() bool {
+						TestUpstreamReachable()
 
-					var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
-					Eventually(msgChan, 5*time.Second).Should(Receive(&entry))
-					Expect(entry.CommonProperties.UpstreamCluster).To(Equal(translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())))
+						var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
+						Eventually(msgChan, 5*time.Second).Should(Receive(&entry))
+						return entry.CommonProperties.UpstreamCluster == translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())
+
+					}, time.Second*21, time.Second*7).ShouldNot(BeFalse())
 
 				})
 			})
