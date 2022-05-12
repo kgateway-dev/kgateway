@@ -83,6 +83,7 @@ Represents global settings for all the Gloo components.
 "rbac": .rbac.options.gloo.solo.io.Settings
 "extauth": .enterprise.gloo.solo.io.Settings
 "namedExtauth": map<string, .enterprise.gloo.solo.io.Settings>
+"cachingServer": .caching.options.gloo.solo.io.Settings
 "metadata": .core.solo.io.Metadata
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
 "observabilityOptions": .gloo.solo.io.Settings.ObservabilityOptions
@@ -120,6 +121,7 @@ Represents global settings for all the Gloo components.
 | `rbac` | [.rbac.options.gloo.solo.io.Settings](../enterprise/options/rbac/rbac.proto.sk/#settings) | Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.). |
 | `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/options/extauth/v1/extauth.proto.sk/#settings) | Enterprise-only: External auth related settings. |
 | `namedExtauth` | `map<string, .enterprise.gloo.solo.io.Settings>` | Enterprise-only: External auth related settings for additional auth servers This should only be used in the case where separate servers are needed to authorize separate routes. With multiple auth servers configured in Settings, multiple filters will be configured on the filter chain, but only 1 will be executed on a route. The name of the auth server (ie the key in the map) will be used to apply the configuration on the route. If an auth server name is not supplied on a route, the default auth server will be applied. |
+| `cachingServer` | [.caching.options.gloo.solo.io.Settings](../enterprise/options/caching/caching.proto.sk/#settings) | Enterprise-only: Settings for the caching server itself This may eventually be able to be set at a per listener level. At this time is used for plugin translation via the init.Params. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `observabilityOptions` | [.gloo.solo.io.Settings.ObservabilityOptions](../settings.proto.sk/#observabilityoptions) | Provides settings related to the observability deployment (enterprise only). |
