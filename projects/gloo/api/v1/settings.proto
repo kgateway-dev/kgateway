@@ -374,7 +374,8 @@ message Settings {
     map<string, enterprise.gloo.solo.io.Settings> named_extauth = 33;
 
     // Enterprise-only: Settings for the caching server itself
-    // Can be configured per listener and is used to configure the envoy filter
+    // This may eventually be able to be set at a per listener level.
+	// At this time is used for plugin translation via the init.Params.
     caching.options.gloo.solo.io.Settings caching_server = 36;
 
 
