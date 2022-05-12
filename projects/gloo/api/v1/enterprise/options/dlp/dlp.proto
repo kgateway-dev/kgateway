@@ -140,7 +140,7 @@ message Action {
     */
     enum ActionType {
         CUSTOM = 0;
-        HEADER = 1;
+        KEYVALUE = 1;
         SSN = 2;
         MASTERCARD = 3;
         VISA = 4;
@@ -157,10 +157,10 @@ message Action {
     // The custom user action to be applied.
     // This field will only be used if the custom action type is specified above.
     CustomAction custom_action = 2;
-    // The header action to be applied.
-    // This field will only be used if the header action type is specified above
+    // The key/value action to be applied.
+    // This field will only be used if the KEYVALUE action type is specified above
     // will only affect access logs and response headers, not response bodies
-    HeaderAction header_action = 4;
+    KeyValueAction key_value_action = 4;
     // Shadow represents whether the action should be taken, or just recorded.
     bool shadow = 3;
 }
@@ -209,8 +209,8 @@ message CustomAction {
     repeated .envoy.config.filter.http.transformation_ee.v2.RegexAction regex_actions = 5;
 }
 
-message HeaderAction {
-    // The name of the header action.
+message KeyValueAction {
+    // The name of the key/value action.
     // This name is used for logging and debugging purposes.
     string name = 1;
     // The masking character for the sensitive data.
@@ -220,8 +220,7 @@ message HeaderAction {
     // default value: 75%
     // rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/
     .solo.io.envoy.type.Percent percent = 3;
-
-    // The header name for which corresponding values should be censored
+    // The key for which corresponding header names/dynamic metadata values should be censored
     // Must be specified
-    string header_to_mask = 4;
+    string key_to_mask = 4;
 }

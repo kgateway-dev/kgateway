@@ -201,12 +201,12 @@ func (m *Action) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetHeaderAction()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetHeaderAction()) {
+	if h, ok := interface{}(m.GetKeyValueAction()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetKeyValueAction()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetHeaderAction(), target.GetHeaderAction()) {
+		if !proto.Equal(m.GetKeyValueAction(), target.GetKeyValueAction()) {
 			return false
 		}
 	}
@@ -289,14 +289,14 @@ func (m *CustomAction) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *HeaderAction) Equal(that interface{}) bool {
+func (m *KeyValueAction) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*HeaderAction)
+	target, ok := that.(*KeyValueAction)
 	if !ok {
-		that2, ok := that.(HeaderAction)
+		that2, ok := that.(KeyValueAction)
 		if ok {
 			target = &that2
 		} else {
@@ -327,7 +327,7 @@ func (m *HeaderAction) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetHeaderToMask(), target.GetHeaderToMask()) != 0 {
+	if strings.Compare(m.GetKeyToMask(), target.GetKeyToMask()) != 0 {
 		return false
 	}
 

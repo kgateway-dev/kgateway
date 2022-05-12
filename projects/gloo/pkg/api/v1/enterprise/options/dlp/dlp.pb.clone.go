@@ -129,10 +129,10 @@ func (m *Action) Clone() proto.Message {
 		target.CustomAction = proto.Clone(m.GetCustomAction()).(*CustomAction)
 	}
 
-	if h, ok := interface{}(m.GetHeaderAction()).(clone.Cloner); ok {
-		target.HeaderAction = h.Clone().(*HeaderAction)
+	if h, ok := interface{}(m.GetKeyValueAction()).(clone.Cloner); ok {
+		target.KeyValueAction = h.Clone().(*KeyValueAction)
 	} else {
-		target.HeaderAction = proto.Clone(m.GetHeaderAction()).(*HeaderAction)
+		target.KeyValueAction = proto.Clone(m.GetKeyValueAction()).(*KeyValueAction)
 	}
 
 	target.Shadow = m.GetShadow()
@@ -184,12 +184,12 @@ func (m *CustomAction) Clone() proto.Message {
 }
 
 // Clone function
-func (m *HeaderAction) Clone() proto.Message {
-	var target *HeaderAction
+func (m *KeyValueAction) Clone() proto.Message {
+	var target *KeyValueAction
 	if m == nil {
 		return target
 	}
-	target = &HeaderAction{}
+	target = &KeyValueAction{}
 
 	target.Name = m.GetName()
 
@@ -201,7 +201,7 @@ func (m *HeaderAction) Clone() proto.Message {
 		target.Percent = proto.Clone(m.GetPercent()).(*github_com_solo_io_solo_kit_pkg_api_external_envoy_type.Percent)
 	}
 
-	target.HeaderToMask = m.GetHeaderToMask()
+	target.KeyToMask = m.GetKeyToMask()
 
 	return target
 }

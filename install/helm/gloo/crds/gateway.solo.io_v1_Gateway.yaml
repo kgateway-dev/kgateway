@@ -134,9 +134,9 @@ spec:
                                               type: object
                                             type: array
                                         type: object
-                                      headerAction:
+                                      keyValueAction:
                                         properties:
-                                          headerToMask:
+                                          keyToMask:
                                             type: string
                                           maskChar:
                                             type: string
@@ -1223,9 +1223,9 @@ spec:
                                                         type: object
                                                       type: array
                                                   type: object
-                                                headerAction:
+                                                keyValueAction:
                                                   properties:
-                                                    headerToMask:
+                                                    keyToMask:
                                                       type: string
                                                     maskChar:
                                                       type: string
