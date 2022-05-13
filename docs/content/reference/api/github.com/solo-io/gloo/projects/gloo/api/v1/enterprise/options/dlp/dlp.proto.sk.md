@@ -211,7 +211,6 @@ ALL_CREDIT_CARDS:
 | Name | Description |
 | ----- | ----------- | 
 | `CUSTOM` |  |
-| `KEYVALUE` |  |
 | `SSN` |  |
 | `MASTERCARD` |  |
 | `VISA` |  |
