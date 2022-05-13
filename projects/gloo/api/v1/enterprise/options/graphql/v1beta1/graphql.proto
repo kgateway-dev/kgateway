@@ -507,7 +507,6 @@ message Executor {
 
     string span_name = 4;
   }
-
   oneof executor {
     Local local = 1;
     Remote remote = 2;
