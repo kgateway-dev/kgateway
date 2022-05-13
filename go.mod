@@ -53,7 +53,7 @@ require (
 	github.com/solo-io/protoc-gen-openapi v0.0.4
 	github.com/solo-io/skv2 v0.21.6
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
-	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
+	github.com/solo-io/solo-apis v1.6.32-0.20220513164443-312deecc0e05
 	github.com/solo-io/solo-kit v0.27.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
