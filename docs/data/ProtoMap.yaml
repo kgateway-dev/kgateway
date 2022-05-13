@@ -611,6 +611,9 @@ apis:
   gloo.solo.io.GlooValidationServiceResponse:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#GlooValidationServiceResponse
     package: gloo.solo.io
+  gloo.solo.io.GraphqlOptions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#GraphqlOptions
+    package: gloo.solo.io
   gloo.solo.io.HeaderSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#HeaderSecret
     package: gloo.solo.io
@@ -952,12 +955,6 @@ apis:
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GraphQLApi:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#GraphQLApi
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.GraphQLToolsStitchingInput:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/stitching_info.proto.sk/#GraphQLToolsStitchingInput
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.GraphQlToolsStitchingOutput:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/stitching_info.proto.sk/#GraphQlToolsStitchingOutput
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GrpcDescriptorRegistry:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#GrpcDescriptorRegistry
