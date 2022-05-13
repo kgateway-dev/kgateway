@@ -41,6 +41,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto";
@@ -113,6 +114,8 @@ message HttpListenerOptions {
     enterprise.gloo.solo.io.Settings extauth = 10;
     // Enterprise-only: Settings for the rate limiting server itself
     ratelimit.options.gloo.solo.io.Settings ratelimit_server = 11;
+    // Enterprise-only: Settings for the cache server itself
+    caching.options.gloo.solo.io.Settings caching = 17;
 
     // Gzip is an HTTP option which enables Gloo to compress
     // data returned from an upstream service upon client request.

@@ -14,6 +14,7 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
@@ -371,6 +372,12 @@ message Settings {
     // The name of the auth server (ie the key in the map) will be used to apply the configuration on the route.
     // If an auth server name is not supplied on a route, the default auth server will be applied.
     map<string, enterprise.gloo.solo.io.Settings> named_extauth = 33;
+
+    // Enterprise-only: Settings for the caching server itself
+    // This may eventually be able to be set at a per listener level.
+	// At this time is used for plugin translation via the init.Params.
+    caching.options.gloo.solo.io.Settings caching_server = 36;
+
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 14;

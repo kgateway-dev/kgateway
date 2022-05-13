@@ -72,14 +72,16 @@ message Action {
     // Used mostly to help ID specific actions in logs.
     // If left null will default to unknown
     string name = 1;
+    // Deprecated in favor of DlpMatcher
     // List of regexes to apply to the response body to match data which should be masked
     // They will be applied iteratively in the order which they are specified
-    repeated string regex = 2 [(validate.rules).repeated.items.string.min_bytes = 1];
+    repeated string regex = 2 [(validate.rules).repeated.items.string.min_bytes = 1, deprecated = true];
+    // Deprecated in favor of DlpMatcher
     // List of regexes to apply to the response body to match data which should be
     // masked. They will be applied iteratively in the order which they are
     // specified. If this field and `regex` are both provided, all the regexes will
     // be applied iteratively in the order provided, starting with the ones from `regex`
-    repeated RegexAction regex_actions = 6;
+    repeated RegexAction regex_actions = 6 [deprecated = true];
     // If specified, this rule will not actually be applied, but only logged.
     bool shadow = 3;
     // The percent of the string which should be masked.
@@ -88,6 +90,27 @@ message Action {
     // The character which should overwrite the masked data
     // If left empty, defaults to "X"
     string mask_char = 5 [(validate.rules).string.max_bytes = 1];
+    // List of regexes to apply to the response body to match data which should be
+    // masked. They will be applied iteratively in the order which they are
+    // specified.
+    message RegexMatcher {
+        repeated RegexAction regex_actions = 1;
+    }
+    // List of headers for which associated values will be masked.
+    // Note that enable_header_transformation must be set for this to take effect.
+    // Note that if enable_dynamic_metadata_transformation is set, proto struct dynamic metadata
+    // (i.e., the values matching any JSON keys specified in `keys`; primarily for json-formatted WAF audit logs) will also be masked accordingly.
+    message KeyValueMatcher {
+        repeated string keys = 1;
+    }
+    message DlpMatcher {
+        oneof matcher {
+        RegexMatcher regex_matcher = 1;
+        KeyValueMatcher key_value_matcher = 2;
+        }
+    }
+    // The matcher used to determine which values will be masked by this action.
+    DlpMatcher matcher = 7;
 }
 
 message RegexAction {
