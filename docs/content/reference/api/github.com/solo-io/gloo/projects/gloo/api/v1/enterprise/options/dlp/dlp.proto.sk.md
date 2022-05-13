@@ -211,7 +211,6 @@ ALL_CREDIT_CARDS:
 | Name | Description |
 | ----- | ----------- | 
 | `CUSTOM` |  |
-| `KEYVALUE` |  |
 | `SSN` |  |
 | `MASTERCARD` |  |
 | `VISA` |  |
@@ -221,6 +220,7 @@ ALL_CREDIT_CARDS:
 | `DINERS_CLUB` |  |
 | `CREDIT_CARD_TRACKERS` |  |
 | `ALL_CREDIT_CARDS` |  |
+| `KEYVALUE` |  |
 
 
 
