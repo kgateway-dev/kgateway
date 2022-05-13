@@ -486,21 +486,20 @@ message Executor {
   }
   message Remote {
     // by default, we copy the body and pass through none of the headers, defaulting :method to copied method and :path to copied path
-    // if method is GET then we do not copy the body (this is handled by envoy, nothing to do here brendan)
+    // if method is GET then we do not copy the body
     core.solo.io.ResourceRef upstream_ref = 1;
     // map of header name to extraction type:
     // e.g.
-    //
-    // ':method': '{$headers.:method}'
-    // ':path': '/hard/coded/path'
+    // ':key': '/hard/coded/path'
+    // ':key': '{$headers.method}'
+    // ':key': '{$metadata.namespace.name}'
     //
     // translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508
     map<string, string> headers = 2;
 
-    // map of header name to extraction type:
+    // map of query name extraction type:
     // e.g.
-    //
-    // 'query': '{$dynamicMetadata.$KEY_NAME.io.solo.transformation}'
+    // 'query': '{$metadata.namespace.name}'
     //
     // translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508
     map<string, string> query_params = 3;
