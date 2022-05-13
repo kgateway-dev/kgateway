@@ -1163,9 +1163,6 @@ apis:
   ratelimit.api.solo.io.RateLimitActions:
     relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitActions
     package: ratelimit.api.solo.io
-  ratelimit.api.solo.io.RateLimitConfigNamespacedStatuses:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigNamespacedStatuses
-    package: ratelimit.api.solo.io
   ratelimit.api.solo.io.RateLimitConfigSpec:
     relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigSpec
     package: ratelimit.api.solo.io

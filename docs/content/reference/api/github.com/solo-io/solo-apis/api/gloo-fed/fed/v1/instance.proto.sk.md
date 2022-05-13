@@ -92,6 +92,7 @@ weight: 5
 "availableReplicas": int
 "readyReplicas": int
 "wasmEnabled": bool
+"readConfigMulticlusterEnabled": bool
 "version": string
 "name": string
 "namespace": string
@@ -107,6 +108,7 @@ weight: 5
 | `availableReplicas` | `int` | The number of available proxy replicas. |
 | `readyReplicas` | `int` | The number of ready proxy replicas. |
 | `wasmEnabled` | `bool` | Whether or not this proxy supports wasm plugins. |
+| `readConfigMulticlusterEnabled` | `bool` | Whether or not this proxy allows its config dumps to be read. |
 | `version` | `string` | The version. |
 | `name` | `string` | Name of the proxy instance, this is important to distinguish it from other proxy instances, which may be in the same namespace. |
 | `namespace` | `string` | Namespace in which the proxy is located. |
