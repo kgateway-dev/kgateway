@@ -251,6 +251,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetCaching()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCaching()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCaching(), target.GetCaching()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetGzip()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetGzip()) {
 			return false
