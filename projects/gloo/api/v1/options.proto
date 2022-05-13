@@ -41,6 +41,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto";
@@ -113,6 +114,8 @@ message HttpListenerOptions {
     enterprise.gloo.solo.io.Settings extauth = 10;
     // Enterprise-only: Settings for the rate limiting server itself
     ratelimit.options.gloo.solo.io.Settings ratelimit_server = 11;
+    // Enterprise-only: Settings for the cache server itself
+    caching.options.gloo.solo.io.Settings caching = 17;
 
     // Gzip is an HTTP option which enables Gloo to compress
     // data returned from an upstream service upon client request.
@@ -216,6 +219,20 @@ message VirtualHostOptions {
         // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
         // Only one of `ratelimit` or `rate_limit_configs` can be set.
         ratelimit.options.gloo.solo.io.RateLimitConfigRefs rate_limit_configs = 71;
+    }
+
+    oneof rate_limit_regular_config_type {
+        // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
+        // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+        // Configure rate-limit *actions* here, which define how request characteristics get translated into
+        // descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
+        // their associated limits on the Gloo settings.
+        // Only one of `ratelimit_regular` or `rate_limit_regular_configs` can be set.
+        ratelimit.options.gloo.solo.io.RateLimitVhostExtension ratelimit_regular = 74;
+
+        // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+        // Only one of `ratelimit_regular` or `rate_limit_regular_configs` can be set.
+        ratelimit.options.gloo.solo.io.RateLimitConfigRefs rate_limit_regular_configs = 75;
     }
 
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
@@ -359,6 +376,20 @@ message RouteOptions {
         // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
         // Only one of `ratelimit` or `rate_limit_configs` can be set.
         ratelimit.options.gloo.solo.io.RateLimitConfigRefs rate_limit_configs = 141;
+    }
+
+    oneof rate_limit_regular_config_type {
+        // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
+        // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+        // Configure rate-limit *actions* here, which define how request characteristics get translated into
+        // descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
+        // their associated limits on the Gloo settings.
+        // Only one of `ratelimit_early` or `rate_limit_early_configs` can be set.
+        ratelimit.options.gloo.solo.io.RateLimitRouteExtension ratelimit_regular = 144;
+
+        // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+        // Only one of `ratelimit_early` or `rate_limit_early_configs` can be set.
+        ratelimit.options.gloo.solo.io.RateLimitConfigRefs rate_limit_regular_configs = 145;
     }
 
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting

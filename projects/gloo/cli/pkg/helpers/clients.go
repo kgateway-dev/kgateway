@@ -95,12 +95,13 @@ func UseMemoryClients() {
 }
 
 // only applies to Config and Artifact clients
-func UseConsulClients(client *api.Client, rootKey string) {
+func UseConsulClients(client *api.Client, rootKey string, queryOptions *api.QueryOptions) {
 	lock.Lock()
 	defer lock.Unlock()
 	consulClient = &factory.ConsulResourceClientFactory{
-		Consul:  client,
-		RootKey: rootKey,
+		Consul:       client,
+		RootKey:      rootKey,
+		QueryOptions: queryOptions,
 	}
 }
 

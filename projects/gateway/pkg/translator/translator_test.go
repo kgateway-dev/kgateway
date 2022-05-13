@@ -29,7 +29,7 @@ var _ = Describe("Translator", func() {
 		translator Translator
 	)
 
-	Context("default translator", func() {
+	Context("default GwTranslator", func() {
 
 		BeforeEach(func() {
 			translator = NewDefaultTranslator(Opts{})
@@ -316,6 +316,21 @@ var _ = Describe("Translator", func() {
 				Expect(proxy.Metadata.Namespace).To(Equal(ns))
 				Expect(proxy.Listeners).To(HaveLen(2))
 			})
+		})
+
+		It("should error on gateway without gateway type", func() {
+			gatewayWithoutType := &v1.Gateway{
+				Metadata: &core.Metadata{
+					Name:      "gateway-without-type",
+					Namespace: ns,
+				},
+			}
+			snap.Gateways = []*v1.Gateway{gatewayWithoutType}
+
+			_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+			err := errs.ValidateStrict()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(MissingGatewayTypeErr.Error()))
 		})
 	})
 

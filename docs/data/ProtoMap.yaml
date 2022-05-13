@@ -44,6 +44,9 @@ apis:
   azure.options.gloo.solo.io.UpstreamSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto.sk/#UpstreamSpec
     package: azure.options.gloo.solo.io
+  caching.options.gloo.solo.io.Settings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto.sk/#Settings
+    package: caching.options.gloo.solo.io
   consul.options.gloo.solo.io.UpstreamSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/consul.proto.sk/#UpstreamSpec
     package: consul.options.gloo.solo.io
@@ -130,6 +133,9 @@ apis:
     package: dlp.options.gloo.solo.io
   dlp.options.gloo.solo.io.FilterConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto.sk/#FilterConfig
+    package: dlp.options.gloo.solo.io
+  dlp.options.gloo.solo.io.KeyValueAction:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto.sk/#KeyValueAction
     package: dlp.options.gloo.solo.io
   enterprise.gloo.solo.io.AccessTokenValidation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AccessTokenValidation
@@ -461,6 +467,9 @@ apis:
   envoy.config.transformer.xslt.v2.XsltTransformation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformers/xslt/xslt_transformer.proto.sk/#XsltTransformation
     package: envoy.config.transformer.xslt.v2
+  envoy.extensions.cache.grpc.v2.GrpcCacheConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/cache/grpc/config.proto.sk/#GrpcCacheConfig
+    package: envoy.extensions.cache.grpc.v2
   fault.options.gloo.solo.io.RouteAbort:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto.sk/#RouteAbort
     package: fault.options.gloo.solo.io
@@ -501,7 +510,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#HybridGateway
     package: gateway.solo.io
   gateway.solo.io.MatchableHttpGateway:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#MatchableHttpGateway
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/matchable_http_gateway.proto.sk/#MatchableHttpGateway
     package: gateway.solo.io
   gateway.solo.io.MatchedGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#MatchedGateway

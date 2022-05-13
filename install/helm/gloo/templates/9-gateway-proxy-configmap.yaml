@@ -354,6 +354,13 @@ data:
     bootstrap_extensions:
 {{ toYaml $spec.envoyBootstrapExtensions | indent 4}}
 {{- end}}
+{{- if $spec.envoyOverloadManager.enabled }}
+    overload_manager:
+      actions: {{- toYaml $spec.envoyOverloadManager.actions | nindent 8 }}
+      buffer_factory_config: {{ if $spec.envoyOverloadManager.bufferFactoryConfig }}{{- toYaml $spec.envoyOverloadManager.bufferFactoryConfig | nindent 8 }}{{ else }}{}{{ end }}
+      refresh_interval: {{ $spec.envoyOverloadManager.refreshInterval }}
+      resource_monitors: {{- toYaml $spec.envoyOverloadManager.resourceMonitors | nindent 8 }}
+{{- end }}
     admin:
       access_log_path: /dev/null
       address:

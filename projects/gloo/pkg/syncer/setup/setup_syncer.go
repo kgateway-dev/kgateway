@@ -5,9 +5,16 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
+
+	gwreconciler "github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
+	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
+	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
@@ -27,6 +34,8 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -37,6 +46,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	extauthExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/extauth"
+	ratelimitExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -63,10 +74,12 @@ import (
 	"google.golang.org/grpc/reflection"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	extauthExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/extauth"
-	ratelimitExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/ratelimit"
 )
+
+// TODO: (copied from gateway) switch AcceptAllResourcesByDefault to false after validation has been tested in user environments
+var AcceptAllResourcesByDefault = true
+
+var AllowWarnings = true
 
 type RunFunc func(opts bootstrap.Opts) error
 
@@ -279,6 +292,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		vaultClient,
 		memCache,
 		settings,
+		writeNamespace,
 	)
 	if err != nil {
 		return err
@@ -447,6 +461,13 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		return err
 	}
 
+	matchableHttpGatewayClient, err := gateway.NewMatchableHttpGatewayClient(watchOpts.Ctx, opts.MatchableHttpGateways)
+	if err != nil {
+		return err
+	}
+	if err := matchableHttpGatewayClient.Register(); err != nil {
+		return err
+	}
 	virtualHostOptionClient, err := gateway.NewVirtualHostOptionClient(watchOpts.Ctx, opts.VirtualHostOptions)
 	if err != nil {
 		return err
@@ -462,7 +483,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	if err := routeOptionClient.Register(); err != nil {
 		return err
 	}
-
+	if opts.ProxyCleanup != nil {
+		opts.ProxyCleanup()
+	}
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
@@ -487,7 +510,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	errs := make(chan error)
 
 	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
-
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
 	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
@@ -520,7 +542,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	// We are ready!
 
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
-
 	apiCache := v1snap.NewApiEmitterWithEmit(
 		artifactClient,
 		endpointClient,
@@ -535,6 +556,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		gatewayClient,
 		virtualHostOptionClient,
 		routeOptionClient,
+		matchableHttpGatewayClient,
 		graphqlApiClient,
 		apiEmitterChan,
 	)
@@ -545,8 +567,83 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		proxyClient.BaseClient(),
 		upstreamGroupClient.BaseClient(),
 		authConfigClient.BaseClient(),
+		gatewayClient.BaseClient(),
+		matchableHttpGatewayClient.BaseClient(),
+		virtualServiceClient.BaseClient(),
+		rtClient.BaseClient(),
+		virtualHostOptionClient.BaseClient(),
+		routeOptionClient.BaseClient(),
 		rlReporterClient,
 	)
+	statusMetrics, err := metrics.NewConfigStatusMetrics(opts.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels())
+	if err != nil {
+		return err
+	}
+	//The validation grpc server is available for custom controllers
+	if opts.ValidationServer.StartGrpcServer {
+		validationServer := opts.ValidationServer
+		lis, err := net.Listen(validationServer.BindAddr.Network(), validationServer.BindAddr.String())
+		if err != nil {
+			return err
+		}
+		validationServer.Server.Register(validationServer.GrpcServer)
+
+		go func() {
+			<-validationServer.Ctx.Done()
+			validationServer.GrpcServer.Stop()
+		}()
+
+		go func() {
+			if err := validationServer.GrpcServer.Serve(lis); err != nil {
+				logger.Errorf("validation grpc server failed to start")
+			}
+		}()
+		opts.ValidationServer.StartGrpcServer = false
+	}
+	if opts.ControlPlane.StartGrpcServer {
+		// copy for the go-routines
+		controlPlane := opts.ControlPlane
+		lis, err := net.Listen(opts.ControlPlane.BindAddr.Network(), opts.ControlPlane.BindAddr.String())
+		if err != nil {
+			return err
+		}
+		go func() {
+			<-controlPlane.GrpcService.Ctx.Done()
+			controlPlane.GrpcServer.Stop()
+		}()
+
+		go func() {
+			if err := controlPlane.GrpcServer.Serve(lis); err != nil {
+				logger.Errorf("xds grpc server failed to start")
+			}
+		}()
+		opts.ControlPlane.StartGrpcServer = false
+	}
+	gwOpts := gwtranslator.Opts{
+		GlooNamespace:                 opts.WriteNamespace,
+		WriteNamespace:                opts.WriteNamespace,
+		StatusReporterNamespace:       opts.StatusReporterNamespace,
+		WatchNamespaces:               opts.WatchNamespaces,
+		Gateways:                      opts.Gateways,
+		VirtualServices:               opts.VirtualServices,
+		RouteTables:                   opts.RouteTables,
+		Proxies:                       opts.Proxies,
+		RouteOptions:                  opts.RouteOptions,
+		VirtualHostOptions:            opts.VirtualHostOptions,
+		WatchOpts:                     opts.WatchOpts,
+		DevMode:                       opts.DevMode,
+		ReadGatewaysFromAllNamespaces: opts.ReadGatwaysFromAllNamespaces,
+		Validation:                    opts.ValidationOpts,
+		ConfigStatusMetricOpts:        nil,
+	}
+	var (
+		ignoreProxyValidationFailure bool
+		allowWarnings                bool
+	)
+	if gwOpts.Validation != nil && opts.GatewayControllerEnabled {
+		ignoreProxyValidationFailure = gwOpts.Validation.IgnoreProxyValidationFailure
+		allowWarnings = gwOpts.Validation.AllowWarnings
+	}
 
 	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistryFactory)
 
@@ -559,12 +656,30 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		sanitizer.NewUpstreamRemovingSanitizer(),
 		routeReplacingSanitizer,
 	}
-
 	validator := validation.NewValidator(watchOpts.Ctx, t, xdsSanitizer)
 	if opts.ValidationServer.Server != nil {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}
 
+	var (
+		gwTranslatorSyncer *gwsyncer.TranslatorSyncer
+		gatewayTranslator  *gwtranslator.GwTranslator
+	)
+	if opts.GatewayControllerEnabled {
+		logger.Debugf("Setting up gateway translator")
+		gatewayTranslator = gwtranslator.NewDefaultTranslator(gwOpts)
+		proxyReconciler := gwreconciler.NewProxyReconciler(validator.Validate, proxyClient, statusClient)
+		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(opts.WatchOpts.Ctx, opts.WriteNamespace, proxyClient, proxyReconciler, rpt, gatewayTranslator, statusClient, statusMetrics)
+	} else {
+		logger.Debugf("Gateway translation is disabled. Proxies are provided from another source")
+	}
+	gwValidationSyncer := gwvalidation.NewValidator(gwvalidation.NewValidatorConfig(
+		gatewayTranslator,
+		validator.Validate,
+		gwOpts.WriteNamespace,
+		ignoreProxyValidationFailure,
+		allowWarnings,
+	))
 	params := syncer.TranslatorSyncerExtensionParams{
 		RateLimitServiceSettings: ratelimit.ServiceSettings{
 			Descriptors:    opts.Settings.GetRatelimit().GetDescriptors(),
@@ -589,17 +704,15 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	}
 	syncerExtensions = reconcileUpgradedTranslatorSyncerExtensions(syncerExtensions, upgradedExtensions)
 
-	statusMetrics, err := metrics.NewConfigStatusMetrics(opts.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels())
-	if err != nil {
-		return err
-	}
-	translationSync := syncer.NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings, statusMetrics)
+	translationSync := syncer.NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings, statusMetrics, gwTranslatorSyncer, proxyClient, opts.WriteNamespace)
 
 	syncers := v1snap.ApiSyncers{
-		translationSync,
 		validator,
+		translationSync,
 	}
-
+	if opts.GatewayControllerEnabled {
+		syncers = append(syncers, gwValidationSyncer)
+	}
 	apiEventLoop := v1snap.NewApiEventLoop(apiCache, syncers)
 	apiEventLoopErrs, err := apiEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
@@ -617,45 +730,70 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		}
 	}()
 
-	if opts.ControlPlane.StartGrpcServer {
-		// copy for the go-routines
-		controlPlane := opts.ControlPlane
-		lis, err := net.Listen(opts.ControlPlane.BindAddr.Network(), opts.ControlPlane.BindAddr.String())
-		if err != nil {
-			return err
+	//Start the validation webhook
+	validationServerErr := make(chan error, 1)
+	if gwOpts.Validation != nil {
+		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
+		// ReadGatewaysFromAllNamespaces is false
+		if !gwOpts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
+			foundSelf := false
+			for _, namespace := range opts.WatchNamespaces {
+				if gwOpts.GlooNamespace == namespace {
+					foundSelf = true
+					break
+				}
+			}
+			if !foundSelf {
+				return errors.Errorf("The gateway configuration value readGatewaysFromAllNamespaces was set "+
+					"to false, but the non-empty settings.watchNamespaces "+
+					"list (%s) did not contain this gloo instance's own namespace: %s.",
+					strings.Join(opts.WatchNamespaces, ", "), gwOpts.GlooNamespace)
+			}
 		}
-		go func() {
-			<-controlPlane.GrpcService.Ctx.Done()
-			controlPlane.GrpcServer.Stop()
-		}()
+
+		validationWebhook, err := k8sadmission.NewGatewayValidatingWebhook(
+			k8sadmission.NewWebhookConfig(
+				watchOpts.Ctx,
+				gwValidationSyncer,
+				gwOpts.WatchNamespaces,
+				gwOpts.Validation.ValidatingWebhookPort,
+				gwOpts.Validation.ValidatingWebhookCertPath,
+				gwOpts.Validation.ValidatingWebhookKeyPath,
+				gwOpts.Validation.AlwaysAcceptResources,
+				gwOpts.ReadGatewaysFromAllNamespaces,
+				gwOpts.GlooNamespace,
+			),
+		)
+		if err != nil {
+			return errors.Wrapf(err, "creating validating webhook")
+		}
 
 		go func() {
-			if err := controlPlane.GrpcServer.Serve(lis); err != nil {
-				logger.Errorf("xds grpc server failed to start")
+			// close out validation server when context is cancelled
+			<-watchOpts.Ctx.Done()
+			validationWebhook.Close()
+		}()
+		go func() {
+			contextutils.LoggerFrom(watchOpts.Ctx).Infow("starting gateway validation server",
+				zap.Int("port", gwOpts.Validation.ValidatingWebhookPort),
+				zap.String("cert", gwOpts.Validation.ValidatingWebhookCertPath),
+				zap.String("key", gwOpts.Validation.ValidatingWebhookKeyPath),
+			)
+			if err := validationWebhook.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+				select {
+				case validationServerErr <- err:
+				default:
+					logger.DPanicw("failed to start validation webhook server", zap.Error(err))
+				}
 			}
 		}()
-		opts.ControlPlane.StartGrpcServer = false
 	}
 
-	if opts.ValidationServer.StartGrpcServer {
-		validationServer := opts.ValidationServer
-		lis, err := net.Listen(validationServer.BindAddr.Network(), validationServer.BindAddr.String())
-		if err != nil {
-			return err
-		}
-		validationServer.Server.Register(validationServer.GrpcServer)
-
-		go func() {
-			<-validationServer.Ctx.Done()
-			validationServer.GrpcServer.Stop()
-		}()
-
-		go func() {
-			if err := validationServer.GrpcServer.Serve(lis); err != nil {
-				logger.Errorf("validation grpc server failed to start")
-			}
-		}()
-		opts.ValidationServer.StartGrpcServer = false
+	// give the validation server 100ms to start
+	select {
+	case err := <-validationServerErr:
+		return errors.Wrapf(err, "failed to start validation webhook server")
+	case <-time.After(time.Millisecond * 100):
 	}
 
 	go func() {
@@ -729,8 +867,7 @@ func startRestXdsServer(opts bootstrap.Opts) {
 		}
 	}()
 }
-
-func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings) (bootstrap.Opts, error) {
+func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings, writeNamespace string) (bootstrap.Opts, error) {
 
 	var (
 		cfg           *rest.Config
@@ -762,9 +899,21 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
-	proxyFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.ProxyCrd)
-	if err != nil {
-		return bootstrap.Opts{}, err
+	var proxyFactory factory.ResourceClientFactory
+	// Delete proxies that may have been left from prior to an upgrade or from previously having set persistProxySpec
+	// Ignore errors because gloo will still work with stray proxies.
+	proxyCleanup := func() {
+		doProxyCleanup(ctx, params, settings, writeNamespace)
+	}
+	if settings.GetGateway().GetPersistProxySpec().GetValue() {
+		proxyFactory, err = bootstrap.ConfigFactoryForSettings(params, v1.ProxyCrd)
+		if err != nil {
+			return bootstrap.Opts{}, err
+		}
+	} else {
+		proxyFactory = &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
 	}
 
 	secretFactory, err := bootstrap.SecretFactoryForSettings(
@@ -840,21 +989,80 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
+	matchableHttpGatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.MatchableHttpGatewayCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+	var validation *gwtranslator.ValidationOpts
+	validationCfg := settings.GetGateway().GetValidation()
+	var gatewayMode bool
+	if settings.GetGateway().GetEnableGatewayController() != nil {
+		gatewayMode = settings.GetGateway().GetEnableGatewayController().GetValue()
+	} else {
+		gatewayMode = true
+	}
+	if validationCfg != nil && gatewayMode {
+		alwaysAcceptResources := AcceptAllResourcesByDefault
+
+		if alwaysAccept := validationCfg.GetAlwaysAccept(); alwaysAccept != nil {
+			alwaysAcceptResources = alwaysAccept.GetValue()
+		}
+
+		allowWarnings := AllowWarnings
+
+		if allowWarning := validationCfg.GetAllowWarnings(); allowWarning != nil {
+			allowWarnings = allowWarning.GetValue()
+		}
+
+		validation = &gwtranslator.ValidationOpts{
+			ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
+			ValidatingWebhookPort:        gwdefaults.ValidationWebhookBindPort,
+			ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
+			ValidatingWebhookKeyPath:     validationCfg.GetValidationWebhookTlsKey(),
+			IgnoreProxyValidationFailure: validationCfg.GetIgnoreGlooValidationFailure(),
+			AlwaysAcceptResources:        alwaysAcceptResources,
+			AllowWarnings:                allowWarnings,
+			WarnOnRouteShortCircuiting:   validationCfg.GetWarnRouteShortCircuiting().GetValue(),
+		}
+		if validation.ProxyValidationServerAddress == "" {
+			validation.ProxyValidationServerAddress = gwdefaults.GlooProxyValidationServerAddr
+		}
+		if overrideAddr := os.Getenv("PROXY_VALIDATION_ADDR"); overrideAddr != "" {
+			validation.ProxyValidationServerAddress = overrideAddr
+		}
+		if validation.ValidatingWebhookCertPath == "" {
+			validation.ValidatingWebhookCertPath = gwdefaults.ValidationWebhookTlsCertPath
+		}
+		if validation.ValidatingWebhookKeyPath == "" {
+			validation.ValidatingWebhookKeyPath = gwdefaults.ValidationWebhookTlsKeyPath
+		}
+	} else {
+		if validationMustStart := os.Getenv("VALIDATION_MUST_START"); validationMustStart != "" && validationMustStart != "false" {
+			return bootstrap.Opts{}, errors.Errorf("VALIDATION_MUST_START was set to true, but no validation configuration was provided in the settings. "+
+				"Ensure the v1.Settings %v contains the spec.gateway.validation config", settings.GetMetadata().Ref())
+		}
+	}
+	readGatewaysFromAllNamespaces := settings.GetGateway().GetReadGatewaysFromAllNamespaces()
 	return bootstrap.Opts{
-		Upstreams:          upstreamFactory,
-		KubeServiceClient:  kubeServiceClient,
-		Proxies:            proxyFactory,
-		UpstreamGroups:     upstreamGroupFactory,
-		Secrets:            secretFactory,
-		Artifacts:          artifactFactory,
-		AuthConfigs:        authConfigFactory,
-		RateLimitConfigs:   rateLimitConfigFactory,
-		GraphQLApis:        graphqlApiFactory,
-		VirtualServices:    virtualServiceFactory,
-		RouteTables:        routeTableFactory,
-		VirtualHostOptions: virtualHostOptionFactory,
-		RouteOptions:       routeOptionFactory,
-		Gateways:           gatewayFactory,
-		KubeCoreCache:      kubeCoreCache,
+		Upstreams:                    upstreamFactory,
+		KubeServiceClient:            kubeServiceClient,
+		Proxies:                      proxyFactory,
+		UpstreamGroups:               upstreamGroupFactory,
+		Secrets:                      secretFactory,
+		Artifacts:                    artifactFactory,
+		AuthConfigs:                  authConfigFactory,
+		RateLimitConfigs:             rateLimitConfigFactory,
+		GraphQLApis:                  graphqlApiFactory,
+		VirtualServices:              virtualServiceFactory,
+		RouteTables:                  routeTableFactory,
+		VirtualHostOptions:           virtualHostOptionFactory,
+		RouteOptions:                 routeOptionFactory,
+		Gateways:                     gatewayFactory,
+		MatchableHttpGateways:        matchableHttpGatewayFactory,
+		KubeCoreCache:                kubeCoreCache,
+		ValidationOpts:               validation,
+		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
+		GatewayControllerEnabled:     gatewayMode,
+		ProxyCleanup:                 proxyCleanup,
 	}, nil
 }

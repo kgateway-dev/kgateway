@@ -79,7 +79,7 @@ gateway:
   deployment:
     image:
       repository: gateway
-    replicas: 1
+    replicas: 0
     runAsUser: 10101
   certGenJob:
     enabled: true
@@ -93,6 +93,18 @@ gateway:
       enabled: false
       schedule: "* * * * *"
     runOnUpdate: false
+  rolloutJob:
+    image:
+      registry: bitnami
+      repository: kubectl
+      tag: 1.22.9
+    runAsUser: 10101
+  cleanupJob:
+    image:
+      registry: bitnami
+      repository: kubectl
+      tag: 1.22.9
+    runAsUser: 10101
   proxyServiceAccount: {}
   serviceAccount: {}
 gatewayProxies:
@@ -123,6 +135,7 @@ gatewayProxies:
         enabled: false
         sleepTimeSeconds: 25
       customReadinessProbe: {}
+      customLivenessProbe: {}
     service:
       customPorts: []
       type: LoadBalancer
@@ -136,6 +149,12 @@ gatewayProxies:
     configMap:
       data:
     loopBackAddress: 127.0.0.1
+    envoyOverloadManager:
+      enabled: false
+      actions: []
+      bufferFactoryConfig: 
+      refreshInterval: 1s
+      resourceMonitors: []
     globalDownstreamMaxConnections: 250000
     healthyPanicThreshold: 50
     # intentionally unset, so we default to the gloo service address. if set, this overrides the derived gloo service address

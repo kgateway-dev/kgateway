@@ -7,6 +7,8 @@ option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto";
+
 message AuditLogging {
   enum AuditLogAction {
     // Never generate audit logs.
@@ -51,6 +53,7 @@ message ModSecurity {
   // this format is a multiline log format, so it is disabled for regular use.
   // do not enable this in production!
   bool regression_logs = 4;
+  envoy.config.filter.http.transformation_ee.v2.DlpTransformation dlp_transformation = 8;
 }
 
 message RuleSet {
@@ -77,4 +80,5 @@ message ModSecurityPerRoute {
   // This can help improve performance.
   bool request_headers_only = 6;
   bool response_headers_only = 7;
+  envoy.config.filter.http.transformation_ee.v2.DlpTransformation dlp_transformation = 8;
 }

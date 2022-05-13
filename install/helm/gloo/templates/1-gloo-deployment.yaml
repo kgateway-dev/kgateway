@@ -60,6 +60,12 @@ spec:
             - path: "labels"
               fieldRef:
                 fieldPath: metadata.labels
+      {{- if and .Values.gateway.enabled .Values.gateway.validation.enabled }}
+      - name: validation-certs
+        secret:
+          defaultMode: 420
+          secretName: {{ .Values.gateway.validation.secretName }}
+      {{- end }}
       containers:
 {{- if .Values.global.glooMtls.enabled }}
       {{- $sdsImage := merge .Values.global.glooMtls.sds.image .Values.global.image }}
@@ -85,9 +91,17 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 1
-          periodSeconds: 2
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+{{- if .Values.gloo.deployment.livenessProbeEnabled }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.gloo.deployment.xdsPort }}
+          initialDelaySeconds: 3
+          periodSeconds: 10
           failureThreshold: 10
+{{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-sidecar-config
@@ -109,6 +123,16 @@ spec:
           {{- if not .Values.gloo.deployment.floatingUserId }}
           runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
           {{- end }}
+        ports:
+        - containerPort: {{ .Values.gloo.deployment.validationPort }}
+          name: validation
+          protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.gloo.deployment.validationPort }}
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
@@ -163,6 +187,10 @@ spec:
           containerPort: 9091
         {{- end }}
         volumeMounts:
+        {{- if and .Values.gateway.validation.enabled .Values.gateway.enabled }}
+        - mountPath: /etc/gateway/validation-certs
+          name: validation-certs
+        {{- end }}
         - name: labels-volume
           mountPath: /etc/gloo
           readOnly: true
@@ -193,14 +221,31 @@ spec:
           - name: LOG_LEVEL
             value: {{ .Values.gloo.logLevel }}
         {{- end}}
+        {{- if .Values.global.istioIntegration.enableIstioSidecarOnGateway }}
+          - name: ENABLE_ISTIO_INTEGRATION
+            value: "true"
+        {{- end}}
 {{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
-          initialDelaySeconds: 1
-          periodSeconds: 2
-          failureThreshold: 10
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+{{- if .Values.gloo.deployment.livenessProbeEnabled }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.gloo.deployment.xdsPort }}
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
 {{- end }}
+  {{- if and .Values.gateway.validation.enabled .Values.gateway.enabled }}
+        volumeMounts:
+          - mountPath: /etc/gateway/validation-certs
+            name: validation-certs
+  {{- end }} {{/* if .Values.gateway.validation.enabled */}}
+{{- end }}{{/* if not .Values.global.glooMtls.enabled */}}
 {{- end }} {{/* define "gloo.deploymentSpec "*/}}
 
 {{/* Render template with yaml overrides */}}

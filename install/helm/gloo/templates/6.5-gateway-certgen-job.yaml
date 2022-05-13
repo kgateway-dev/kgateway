@@ -14,7 +14,7 @@ metadata:
   name: gateway-certgen
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
@@ -47,7 +47,7 @@ spec:
           args:
 
             - "--secret-name={{ .Values.gateway.validation.secretName }}"
-            - "--svc-name=gateway"
+            - "--svc-name=gloo"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-{{ .Release.Namespace }}"
         {{- with .Values.gateway.certGenJob.resources }}
           resources: {{ toYaml . | nindent 12}}

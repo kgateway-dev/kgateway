@@ -25,6 +25,7 @@ weight: 5
 - [ConsulConfiguration](#consulconfiguration)
 - [ServiceDiscoveryOptions](#servicediscoveryoptions)
 - [ConsulUpstreamDiscoveryConfiguration](#consulupstreamdiscoveryconfiguration)
+- [ConsulConsistencyModes](#consulconsistencymodes)
 - [KubernetesConfiguration](#kubernetesconfiguration)
 - [RateLimits](#ratelimits)
 - [ObservabilityOptions](#observabilityoptions)
@@ -82,6 +83,7 @@ Represents global settings for all the Gloo components.
 "rbac": .rbac.options.gloo.solo.io.Settings
 "extauth": .enterprise.gloo.solo.io.Settings
 "namedExtauth": map<string, .enterprise.gloo.solo.io.Settings>
+"cachingServer": .caching.options.gloo.solo.io.Settings
 "metadata": .core.solo.io.Metadata
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
 "observabilityOptions": .gloo.solo.io.Settings.ObservabilityOptions
@@ -119,6 +121,7 @@ Represents global settings for all the Gloo components.
 | `rbac` | [.rbac.options.gloo.solo.io.Settings](../enterprise/options/rbac/rbac.proto.sk/#settings) | Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.). |
 | `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/options/extauth/v1/extauth.proto.sk/#settings) | Enterprise-only: External auth related settings. |
 | `namedExtauth` | `map<string, .enterprise.gloo.solo.io.Settings>` | Enterprise-only: External auth related settings for additional auth servers This should only be used in the case where separate servers are needed to authorize separate routes. With multiple auth servers configured in Settings, multiple filters will be configured on the filter chain, but only 1 will be executed on a route. The name of the auth server (ie the key in the map) will be used to apply the configuration on the route. If an auth server name is not supplied on a route, the default auth server will be applied. |
+| `cachingServer` | [.caching.options.gloo.solo.io.Settings](../enterprise/options/caching/caching.proto.sk/#settings) | Enterprise-only: Settings for the caching server itself This may eventually be able to be set at a per listener level. At this time is used for plugin translation via the init.Params. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `observabilityOptions` | [.gloo.solo.io.Settings.ObservabilityOptions](../settings.proto.sk/#observabilityoptions) | Provides settings related to the observability deployment (enterprise only). |
@@ -407,6 +410,7 @@ upstreams to connect to those services and their instances.
 "tlsTagName": string
 "rootCa": .core.solo.io.ResourceRef
 "splitTlsServices": bool
+"consistencyMode": .gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.ConsulConsistencyModes
 
 ```
 
@@ -416,6 +420,23 @@ upstreams to connect to those services and their instances.
 | `tlsTagName` | `string` | The tag that gloo should use to make TLS upstreams from consul services, and to partition consul serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'. |
 | `rootCa` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The reference for the root CA resource to be used by discovered consul TLS upstreams. |
 | `splitTlsServices` | `bool` | If true, then create two upstreams when the tlsTagName is found on a consul service, one with tls and one without. This requires a consul service's serviceInstances be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those without the tlsTagName tag are sorted into the non-TLS upstream. |
+| `consistencyMode` | [.gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.ConsulConsistencyModes](../settings.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is the ConsistentMode. |
+
+
+
+
+---
+### ConsulConsistencyModes
+
+ 
+These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
+For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
+
+| Name | Description |
+| ----- | ----------- | 
+| `ConsistentMode` | This is strongly consistent. Sets the RequireConsistent in the consul api to true. |
+| `DefaultMode` | This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false. |
+| `StaleMode` | Allows stale reads when set. This will set the AllowStale in the consul api. |
 
 
 
@@ -652,6 +673,8 @@ Settings specific to the Gateway controller
 "alwaysSortRouteTableRoutes": bool
 "compressedProxySpec": bool
 "virtualServiceOptions": .gloo.solo.io.VirtualServiceOptions
+"persistProxySpec": .google.protobuf.BoolValue
+"enableGatewayController": .google.protobuf.BoolValue
 
 ```
 
@@ -663,6 +686,8 @@ Settings specific to the Gateway controller
 | `alwaysSortRouteTableRoutes` | `bool` | Deprecated. This setting is ignored. Maintained for backwards compatibility with settings exposed on 1.2.x branch of Gloo. |
 | `compressedProxySpec` | `bool` | If set, compresses proxy space. This can help make the Proxy CRD smaller to fit in etcd. This is an advanced option. Use with care. |
 | `virtualServiceOptions` | [.gloo.solo.io.VirtualServiceOptions](../settings.proto.sk/#virtualserviceoptions) | Default configuration to use for VirtualServices, when not provided by a specific virtual service When these properties are defined on a specific VirtualService, this configuration will be ignored. |
+| `persistProxySpec` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set this to persist the Proxy CRD to etcd By default, proxies are kept in memory to improve performance. Proxies can be persisted to etcd to allow external tools and other pods to read the contents the Proxy CRD. |
+| `enableGatewayController` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | This is set based on the install mode. It indicates to gloo whether or not it should run the gateway translations and validation. |
 
 
 

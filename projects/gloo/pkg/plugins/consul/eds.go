@@ -13,6 +13,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glooConsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
@@ -44,7 +45,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		return nil, nil, err
 	}
 
-	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters)
+	// based off the comments above from Marco, there should only be one upstream per Consul service name
+	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters, p.consulUpstreamDiscoverySettings.GetConsistencyMode())
 
 	errChan := make(chan error)
 	var wg sync.WaitGroup
@@ -94,7 +96,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 				// Here is where the specs are produced; each resulting spec is a grouping of serviceInstances (aka endpoints)
 				// associated with a single consul service on one datacenter.
-				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan)
+				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
 				previousHash = hashutils.MustHash(endpoints)
@@ -133,7 +135,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 // For each service AND data center combination, return a CatalogService that contains a list of all service instances
 // belonging to that service within that datacenter.
-func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta []*consul.ServiceMeta, errChan chan error) []*consulapi.CatalogService {
+func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta []*consul.ServiceMeta, errChan chan error, serviceToUpstream map[string][]*v1.Upstream) []*consulapi.CatalogService {
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "consul_eds"))
 
 	specs := newSpecCollector()
@@ -141,15 +143,22 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 	// Get complete service information for every dataCenter:service tuple in separate goroutines
 	var eg errgroup.Group
 	for _, service := range serviceMeta {
-		for _, dataCenter := range service.DataCenters {
+		// the default consistency mode
+		cm := glooConsul.UpstreamSpec_ConsistentMode
+		// Based on Marco's comments in WatchEndpoints, there's only be one upstream per Consul service name, so we use its ConsistencyMode
+		if arrayOfConsulUpstreams := serviceToUpstream[service.Name]; len(arrayOfConsulUpstreams) > 0 {
+			consulUpstream := arrayOfConsulUpstreams[0]
+			cm = consulUpstream.GetConsul().GetConsistencyMode()
+		}
 
+		for _, dataCenter := range service.DataCenters {
 			// Copy iterator variables before passing them to goroutines!
 			svc := service
 			dcName := dataCenter
 
 			// Get complete spec for each service in parallel
 			eg.Go(func() error {
-				queryOpts := &consulapi.QueryOptions{Datacenter: dcName, RequireConsistent: true}
+				queryOpts := NewConsulQueryOptions(dcName, cm)
 
 				services, _, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
 				if err != nil {
@@ -175,6 +184,15 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 		}
 	}
 	return specs.Get()
+}
+
+// NewConsulQueryOptions returns a QueryOptions configuration that's used for Consul queries.
+func NewConsulQueryOptions(dataCenter string, cm glooConsul.UpstreamSpec_ConsulConsistencyModes) *consulapi.QueryOptions {
+	// it can either be requireConsistent or allowStale or neither
+	// choosing the Default Mode will clear both fields
+	requireConsistent := cm == glooConsul.UpstreamSpec_ConsistentMode
+	allowStale := cm == glooConsul.UpstreamSpec_StaleMode
+	return &consulapi.QueryOptions{Datacenter: dataCenter, AllowStale: allowStale, RequireConsistent: requireConsistent}
 }
 
 // build gloo endpoints out of consul catalog services and gloo upstreams

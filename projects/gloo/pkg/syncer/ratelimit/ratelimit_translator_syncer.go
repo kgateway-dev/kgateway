@@ -87,6 +87,9 @@ func (s *TranslatorSyncerExtension) Sync(
 				if virtualHost.GetOptions().GetRateLimitEarlyConfigType() != nil {
 					return enterpriseOnlyError("RateLimitEarly")
 				}
+				if virtualHost.GetOptions().GetRateLimitRegularConfigType() != nil {
+					return enterpriseOnlyError("RateLimitRegular")
+				}
 
 				for _, route := range virtualHost.GetRoutes() {
 					if route.GetOptions().GetRateLimitConfigs() != nil {
@@ -108,6 +111,9 @@ func (s *TranslatorSyncerExtension) Sync(
 					// Staged RateLimiting is an enterprise feature
 					if route.GetOptions().GetRateLimitEarlyConfigType() != nil {
 						return enterpriseOnlyError("RateLimitEarly")
+					}
+					if route.GetOptions().GetRateLimitRegularConfigType() != nil {
+						return enterpriseOnlyError("RateLimitRegular")
 					}
 				}
 			}

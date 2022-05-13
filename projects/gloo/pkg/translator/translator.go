@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/mitchellh/hashstructure"
 	errors "github.com/rotisserie/eris"
+	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -89,6 +90,7 @@ type translatorInstance struct {
 	sslConfigTranslator       utils.SslConfigTranslator
 	hasher                    func(resources []envoycache.Resource) uint64
 	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
+	gwTranslator              gwtranslator.Translator
 }
 
 func (t *translatorInstance) Translate(

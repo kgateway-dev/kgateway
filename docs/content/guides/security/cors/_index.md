@@ -41,6 +41,8 @@ spec:
     - '*'
 {{< /highlight >}}
 
+{{< notice note >}} Some apps, such as `httpbin`, have built-in CORS policies that allow all origins. These policies take precedence over CORS policies that you might configured in Gloo Edge.  {{< /notice >}}
+
 ### Available Fields
 
 The following fields are available when specifying CORS on your `VirtualService`:

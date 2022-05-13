@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/ghodss/yaml"
+	"github.com/onsi/gomega/format"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -2471,6 +2472,12 @@ spec:
 					})
 
 					It("enables probes", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
+								"gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled=true",
+							},
+						})
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 							Handler: v1.Handler{
 								Exec: &v1.ExecAction{
@@ -2479,50 +2486,7 @@ spec:
 									},
 								},
 							},
-							InitialDelaySeconds: 1,
-							PeriodSeconds:       10,
-							FailureThreshold:    10,
-						}
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
-							Handler: v1.Handler{
-								Exec: &v1.ExecAction{
-									Command: []string{
-										"wget", "-O", "/dev/null", "127.0.0.1:19000/server_info",
-									},
-								},
-							},
-							InitialDelaySeconds: 1,
-							PeriodSeconds:       10,
-							FailureThreshold:    10,
-						}
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.probes=true"},
-						})
-						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
-					})
-
-					It("supports custom readiness probe", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=5",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/gloo/health",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=8080",
-								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
-							},
-						})
-
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							Handler: v1.Handler{
-								HTTPGet: &v1.HTTPGetAction{
-									Path:   "/gloo/health",
-									Port:   intstr.FromInt(8080),
-									Scheme: "HTTP",
-								},
-							},
-							InitialDelaySeconds: 5,
+							InitialDelaySeconds: 3,
 							PeriodSeconds:       10,
 							FailureThreshold:    3,
 						}
@@ -2534,11 +2498,56 @@ spec:
 									},
 								},
 							},
-							InitialDelaySeconds: 1,
+							InitialDelaySeconds: 3,
 							PeriodSeconds:       10,
-							FailureThreshold:    10,
+							FailureThreshold:    3,
 						}
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
 
+					It("supports custom readiness and liveness probe", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
+								"gatewayProxies.gatewayProxy.podTemplate.livenessProbeEnabled=true",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=3",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/ready",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=19000",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds=3",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold=3",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.periodSeconds=10",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.path=/server_info",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.port=19000",
+								"gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.httpGet.scheme=HTTP",
+							},
+						})
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
+							Handler: v1.Handler{
+								HTTPGet: &v1.HTTPGetAction{
+									Path:   "/ready",
+									Port:   intstr.FromInt(19000),
+									Scheme: "HTTP",
+								},
+							},
+							InitialDelaySeconds: 3,
+							PeriodSeconds:       10,
+							FailureThreshold:    3,
+						}
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
+							Handler: v1.Handler{
+								HTTPGet: &v1.HTTPGetAction{
+									Path:   "/server_info",
+									Port:   intstr.FromInt(19000),
+									Scheme: "HTTP",
+								},
+							},
+							InitialDelaySeconds: 3,
+							PeriodSeconds:       10,
+							FailureThreshold:    3,
+						}
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
@@ -3128,7 +3137,14 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
-
+					It("always enables persisting proxy specs when not in gateway mode", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/disabled_gateway.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.enabled=false",
+							}})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
 					It("correctly allows setting readGatewaysFromAllNamespaces field in the settings when validation disabled", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/read_gateways_from_all_namespaces.yaml", namespace)
 
@@ -3246,6 +3262,7 @@ spec:
 
   gateway:
     readGatewaysFromAllNamespaces: false
+    enableGatewayController: true
     validation:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
@@ -3314,8 +3331,10 @@ spec:
 								Expect(container.Resources).NotTo(BeNil(), "deployment/container %s/%s had nil resources", deployment.GetName(), container.Name)
 								if container.Name == "envoy-sidecar" || container.Name == "sds" || container.Name == "istio-proxy" {
 									var expectedVals = sdsVals
-									// istio-proxy is another sds container
-									if container.Name == "envoy-sidecar" {
+									// Two deployments employ proxy containers requiring the envoySidecar resources config:
+									// - gloo (whose sidecar container is named: "envoy-sidecar")
+									// - gateway-proxy (named: "istio-proxy")
+									if container.Name == "envoy-sidecar" || container.Name == "istio-proxy" {
 										expectedVals = envoySidecarVals
 									}
 
@@ -3363,13 +3382,13 @@ metadata:
     app: gloo
     gloo: gateway
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install, pre-upgrade
     "helm.sh/hook-weight": "5" # should come before cert-gen job
 webhooks:
- - name: gateway.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
+ - name: gloo.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
    clientConfig:
      service:
-       name: gateway
+       name: gloo
        namespace: ` + namespace + `
        path: "/validation"
      caBundle: "" # update manually or use certgen job
@@ -3411,7 +3430,7 @@ metadata:
   name: gateway
   namespace: ` + namespace + `
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       gloo: gateway
@@ -3457,17 +3476,216 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 1
-          periodSeconds: 2
-          failureThreshold: 10
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          tcpSocket:
+            port: 8443
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
       volumes:
         - name: validation-certs
           secret:
             defaultMode: 420
             secretName: gateway-validation-certs
 `)
-						prepareMakefile(namespace, helmValues{})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.validation.livenessProbeEnabled=true",
+							},
+						})
 						testManifest.ExpectUnstructured(gwDeployment.GetKind(), gwDeployment.GetNamespace(), gwDeployment.GetName()).To(BeEquivalentTo(gwDeployment))
+					})
+
+					Context("gloo rollout and cleanup jobs", func() {
+						rolloutJob := makeUnstructured(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: gloo
+    gloo: validation-service-rollout
+  name: gloo-validation-service-rollout
+  namespace: ` + namespace + `
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  template:
+    metadata:
+      labels:
+        gloo: validation-service-rollout
+    spec:
+      serviceAccountName: gloo-validation-service-rollout
+      containers:
+        - name: kubectl
+          image: bitnami/kubectl:1.2.3
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10101
+          command:
+          - /bin/sh
+          - -c
+          - "kubectl rollout status deployment -n ` + namespace + ` gloo"
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 0
+`)
+						cleanupJob := makeUnstructured(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: gloo
+    gloo: resource-cleanup
+  name: gloo-resource-cleanup
+  namespace: ` + namespace + `
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  template:
+    metadata:
+      labels:
+        gloo: resource-cleanup
+    spec:
+      serviceAccountName: gloo-resource-cleanup
+      containers:
+        - name: kubectl
+          image: bitnami/kubectl:1.22.9
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10101
+          command:
+          - /bin/sh
+          - -c
+          - |
+            kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-` + namespace + `
+            kubectl delete gateways.gateway.solo.io -n ` + namespace + ` -l created_by=gloo-install
+            kubectl delete upstreams.gloo.solo.io -n ` + namespace + ` -l created_by=gloo-install
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 0
+`)
+						It("creates jobs when failurePolicy=Fail", func() {
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{
+								"gateway.validation.failurePolicy=Fail",
+								"gateway.rolloutJob.image.tag=1.2.3",
+							}})
+
+							// when gateway validation is enabled and failurePolicy is Fail, rollout and cleanup jobs should be created
+							testManifest.ExpectUnstructured(rolloutJob.GetKind(), rolloutJob.GetNamespace(), rolloutJob.GetName()).To(BeEquivalentTo(rolloutJob))
+							testManifest.ExpectUnstructured(cleanupJob.GetKind(), cleanupJob.GetNamespace(), cleanupJob.GetName()).To(BeEquivalentTo(cleanupJob))
+
+							// additionally, the default gateways should have a post-install/post-upgrade annotation
+							// so that they get created after the rollout job completes
+							gateway := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+    created_by: gloo-install
+    "app.kubernetes.io/managed-by": Helm
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "meta.helm.sh/release-name": gloo
+    "meta.helm.sh/release-namespace": gloo-system
+spec:
+  bindAddress: "::"
+  bindPort: 8080
+  httpGateway: {}
+  useProxyProto: false
+  ssl: false
+  proxyNames:
+  - gateway-proxy
+`)
+							testManifest.ExpectUnstructured(gateway.GetKind(), gateway.GetNamespace(), gateway.GetName()).To(BeEquivalentTo(gateway))
+
+							sslGateway := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy-ssl
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+    created_by: gloo-install
+    "app.kubernetes.io/managed-by": Helm
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "meta.helm.sh/release-name": gloo
+    "meta.helm.sh/release-namespace": gloo-system
+spec:
+  bindAddress: "::"
+  bindPort: 8443
+  httpGateway: {}
+  useProxyProto: false
+  ssl: true
+  proxyNames:
+  - gateway-proxy
+`)
+							testManifest.ExpectUnstructured(sslGateway.GetKind(), sslGateway.GetNamespace(), sslGateway.GetName()).To(BeEquivalentTo(sslGateway))
+						})
+
+						It("does not create job when failurePolicy=Ignore", func() {
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{
+								"gateway.validation.failurePolicy=Ignore",
+							}})
+
+							// when failurePolicy=Ignore, we do not need to wait on the validation service being ready before applying custom resources,
+							// so the rollout job should not exist
+							testManifest.ExpectUnstructured(rolloutJob.GetKind(), rolloutJob.GetNamespace(), rolloutJob.GetName()).To(BeNil())
+							testManifest.ExpectUnstructured(cleanupJob.GetKind(), cleanupJob.GetNamespace(), cleanupJob.GetName()).To(BeNil())
+
+							// the default gateways should not have the helm hook annotations because they don't need to be applied in a specific order
+							// in relation to the rollout job
+							gateway := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+spec:
+  bindAddress: "::"
+  bindPort: 8080
+  httpGateway: {}
+  useProxyProto: false
+  ssl: false
+  proxyNames:
+  - gateway-proxy
+`)
+							testManifest.ExpectUnstructured(gateway.GetKind(), gateway.GetNamespace(), gateway.GetName()).To(BeEquivalentTo(gateway))
+
+							sslGateway := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy-ssl
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+spec:
+  bindAddress: "::"
+  bindPort: 8443
+  httpGateway: {}
+  useProxyProto: false
+  ssl: true
+  proxyNames:
+  - gateway-proxy
+`)
+							testManifest.ExpectUnstructured(sslGateway.GetKind(), sslGateway.GetNamespace(), sslGateway.GetName()).To(BeEquivalentTo(sslGateway))
+						})
 					})
 
 					It("creates the certgen job, rbac, and service account", func() {
@@ -3487,7 +3705,7 @@ metadata:
   name: gateway-certgen
   namespace: ` + namespace + `
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-delete-policy": "hook-succeeded"
     "helm.sh/hook-weight": "10"
 spec:
@@ -3519,7 +3737,7 @@ spec:
               memory: 128Mi
           args:
             - "--secret-name=gateway-validation-certs"
-            - "--svc-name=gateway"
+            - "--svc-name=gloo"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-` + namespace + `"
       restartPolicy: OnFailure
 
@@ -3657,6 +3875,7 @@ metadata:
 						labels         map[string]string
 					)
 					BeforeEach(func() {
+						format.MaxLength = 0
 						labels = map[string]string{
 							"gloo": "gloo",
 							"app":  "gloo",
@@ -3687,12 +3906,22 @@ metadata:
 									}},
 								},
 							},
-						}}
+						},
+							{
+								Name: "validation-certs",
+								VolumeSource: v1.VolumeSource{
+									Secret: &v1.SecretVolumeSource{
+										SecretName:  "gateway-validation-certs",
+										DefaultMode: proto.Int(420),
+									},
+								},
+							}}
 						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
-							Name:      "labels-volume",
-							MountPath: "/etc/gloo",
-							ReadOnly:  true,
+							Name:      "validation-certs",
+							MountPath: "/etc/gateway/validation-certs",
+							ReadOnly:  false,
 						}}
+
 						deploy.Spec.Template.Spec.Containers[0].Ports = glooPorts
 						deploy.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
 							Requests: v1.ResourceList{
@@ -3700,15 +3929,16 @@ metadata:
 								v1.ResourceCPU:    resource.MustParse("500m"),
 							},
 						}
+
 						deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 							Handler: v1.Handler{
 								TCPSocket: &v1.TCPSocketAction{
 									Port: intstr.FromInt(9977),
 								},
 							},
-							InitialDelaySeconds: 1,
-							PeriodSeconds:       2,
-							FailureThreshold:    10,
+							InitialDelaySeconds: 3,
+							PeriodSeconds:       10,
+							FailureThreshold:    3,
 						}
 						deploy.Spec.Template.Spec.ServiceAccountName = "gloo"
 						glooDeployment = deploy
@@ -3928,11 +4158,11 @@ metadata:
 									Port: intstr.FromInt(8443),
 								},
 							},
-							InitialDelaySeconds: 1,
-							PeriodSeconds:       2,
-							FailureThreshold:    10,
+							InitialDelaySeconds: 3,
+							PeriodSeconds:       10,
+							FailureThreshold:    3,
 						}
-
+						deploy.Spec.Replicas = pointer.Int32Ptr(0)
 						gatewayDeployment = deploy
 					})
 
@@ -4346,6 +4576,31 @@ metadata:
 					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
 				})
 
+				It("can create a gateway proxy with added overload manager config", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.envoyOverloadManager.enabled=true",
+							"gatewayProxies.gatewayProxy.envoyOverloadManager.refreshInterval=2s",
+							"gatewayProxies.gatewayProxy.disabled=false"},
+					})
+
+					byt, err := ioutil.ReadFile("fixtures/envoy_config/overload_manager.yaml")
+					Expect(err).ToNot(HaveOccurred())
+					envoyBootstrapYaml := string(byt)
+
+					envoyBootstrapSpec := make(map[string]string)
+					envoyBootstrapSpec["envoy.yaml"] = envoyBootstrapYaml
+
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      envoyBootstrapSpec,
+					}
+					envoyBootstrapCm := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
+				})
+
 				It("can create a gateway proxy config with added bootstrap extensions", func() {
 
 					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
@@ -4516,7 +4771,7 @@ metadata:
 					It("can parse multiple config maps", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxyInternal.kind.deployment.replicas=1",
+								"gatewayProxies.gatewayProxyInternal.kind.deployment.replicas=0",
 								"gatewayProxies.gatewayProxyInternal.configMap.data=null",
 								"gatewayProxies.gatewayProxyInternal.service.extraAnnotations=null",
 								"gatewayProxies.gatewayProxyInternal.service.type=ClusterIP",
@@ -4679,7 +4934,8 @@ metadata:
 												}},
 											},
 										},
-									}},
+									},
+									},
 									ServiceAccountName: "gloo",
 									Containers: []v1.Container{
 										{
@@ -4725,9 +4981,9 @@ metadata:
 														Port: intstr.FromInt(9977),
 													},
 												},
-												InitialDelaySeconds: 1,
-												PeriodSeconds:       2,
-												FailureThreshold:    10,
+												InitialDelaySeconds: 3,
+												PeriodSeconds:       10,
+												FailureThreshold:    3,
 											},
 										},
 									},

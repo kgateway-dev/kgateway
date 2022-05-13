@@ -261,7 +261,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
 				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
@@ -313,7 +313,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 
 					for _, l := range proxy.Listeners {
-						for _, vh := range l.GetHttpListener().VirtualHosts {
+						for _, vh := range l.GetHttpListener().GetVirtualHosts() {
 							for _, r := range vh.Routes {
 								if action := r.GetRouteAction(); action != nil {
 									if single := action.GetSingle(); single != nil {
@@ -342,7 +342,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Port:              gatewayPort,
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
-				}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 			})
 
 		})
@@ -414,7 +414,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					CaFile:            "/tmp/ca.crt",
 					ConnectionTimeout: 1,
 					WithoutStats:      true,
-				}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 			})
 		})
 
@@ -496,8 +496,10 @@ var _ = Describe("Kube2e: gateway", func() {
 					},
 				}
 
-				_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() error {
+					_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
+					return err
+				}, time.Second*10).ShouldNot(HaveOccurred())
 
 				responseString := fmt.Sprintf(`"%s":"%s.%s.svc.cluster.local:%v"`,
 					linkerd.HeaderKey, helper.HttpEchoName, testHelper.InstallNamespace, helper.HttpEchoPort)
@@ -523,7 +525,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			)
 
 			BeforeEach(func() {
-				valid := withName(validVsName, withDomains([]string{"valid.com"},
+				valid := withName(validVsName, withDomains([]string{"valid1.com"},
 					getVirtualService(&gloov1.Destination{
 						DestinationType: &gloov1.Destination_Upstream{
 							Upstream: &core.ResourceRef{
@@ -545,6 +547,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				// sanity check that validation is enabled/strict
 				_, err = virtualServiceClient.Write(inValid, clients.WriteOpts{})
+
 				Expect(err).To(MatchError(ContainSubstring("could not render proxy")))
 
 				// disable strict validation
@@ -556,6 +559,10 @@ var _ = Describe("Kube2e: gateway", func() {
 					return err
 				}, time.Second*10).ShouldNot(HaveOccurred())
 
+				// ensure that we have successfully gotten into an invalid state
+				helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+					return virtualServiceClient.Read(testHelper.InstallNamespace, invalidVsName, clients.ReadOpts{})
+				})
 			})
 
 			AfterEach(func() {
@@ -585,12 +592,12 @@ var _ = Describe("Kube2e: gateway", func() {
 					Protocol:          "http",
 					Path:              "/",
 					Method:            "GET",
-					Host:              "valid.com",
+					Host:              "valid1.com",
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
-				}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "http",
 					Path:              "/",
@@ -606,6 +613,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			It("preserves the valid virtual services in envoy when a virtual service has been made invalid", func() {
 				invalidVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, invalidVsName, clients.ReadOpts{})
+
 				Expect(err).NotTo(HaveOccurred())
 
 				validVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, validVsName, clients.ReadOpts{})
@@ -618,7 +626,6 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				invalidVs.VirtualHost = validVh
 				validVs.VirtualHost = invalidVh
-
 				virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient, statusClient)
 				err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{validVs, invalidVs}, nil, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -628,12 +635,12 @@ var _ = Describe("Kube2e: gateway", func() {
 					Protocol:          "http",
 					Path:              "/",
 					Method:            "GET",
-					Host:              "valid.com",
+					Host:              "valid1.com",
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
-				}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 				// the fixed virtual service should also work
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -645,7 +652,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Port:              gatewayPort,
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
-				}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 			})
 
 			Context("adds the invalid virtual services back into the proxy", func() {
@@ -666,8 +673,10 @@ var _ = Describe("Kube2e: gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 					petstoreDeployment, err = kubeClient.AppsV1().Deployments(petstoreDeployment.Namespace).Create(ctx, petstoreDeployment, metav1.CreateOptions{})
 					Expect(err).NotTo(HaveOccurred())
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return upstreamClient.Read(testHelper.InstallNamespace, fmt.Sprintf("%s-%s-8080", testHelper.InstallNamespace, petstoreName), clients.ReadOpts{})
+					}, "15s", "5s")
 				})
-
 				AfterEach(func() {
 					_ = virtualServiceClient.Delete(petstoreSvc.Namespace, petstoreName, clients.DeleteOpts{})
 					helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
@@ -687,7 +696,6 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				It("when updating an upstream makes them valid", func() {
 					upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, petstoreName, 8080)
-
 					// the vs will be invalid
 					vsWithFunctionRoute := withName(petstoreName, withDomains([]string{"petstore.com"},
 						getVirtualService(&gloov1.Destination{
@@ -705,14 +713,13 @@ var _ = Describe("Kube2e: gateway", func() {
 								},
 							},
 						}, nil)))
-
 					vsWithFunctionRoute, err = virtualServiceClient.Write(vsWithFunctionRoute, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
 					// the VS should not be rejected since the failure is sanitized by route replacement
 					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 						return virtualServiceClient.Read(testHelper.InstallNamespace, petstoreName, clients.ReadOpts{})
-					})
+					}, "15s", "5s")
 
 					// wrapped in eventually to get around resource version errors
 					Eventually(func() error {
@@ -799,7 +806,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						Port:              gatewayPort,
 						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 						WithoutStats:      true,
-					}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+					}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 					// the invalid route should respond with the direct response
 					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -1025,7 +1032,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
 	})
 
@@ -1726,7 +1733,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					TerminationGracePeriodSeconds: pointerToInt64(0),
 					Containers: []corev1.Container{{
 						Name:  "echo",
-						Image: "hashicorp/http-echo@sha256:ba27d460cd1f22a1a4331bdf74f4fccbc025552357e8a3249c40ae216275de96",
+						Image: kube2e.GetHttpEchoImage(),
 						Args:  []string{"-text=\"red-pod\""},
 					}},
 				}}
@@ -2086,6 +2093,18 @@ spec:
 `,
 							expectedErr: gwtranslator.MissingPrefixErr.Error(),
 						},
+						{
+							resourceYaml: `
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-without-type
+  namespace: ` + testHelper.InstallNamespace + `
+spec:
+  bindAddress: '::'
+`,
+							expectedErr: gwtranslator.MissingGatewayTypeErr.Error(),
+						},
 					}
 
 					for _, tc := range testCases {
@@ -2098,7 +2117,7 @@ spec:
 			Context("gloo", func() {
 
 				var (
-					// Validation of Gloo resources requires that a Proxy resource exist
+					// ValidationOpts of Gloo resources requires that a Proxy resource exist
 					// Therefore, before the tests start, we must create valid resources that produce a Proxy
 					placeholderVs *gatewayv1.VirtualService
 				)
@@ -2329,7 +2348,7 @@ spec:
 				Port:              gatewayPort,
 				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
 
 	})
@@ -2448,7 +2467,7 @@ spec:
 				Port:              gatewayPort,
 				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 			// destination reachable via HybridGateway
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -2460,7 +2479,7 @@ spec:
 				Port:              int(hybridProxyServicePort.Port),
 				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.SimpleTestRunnerHttpResponse, 1, 60*time.Second, 1*time.Second)
+			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
 
 	})

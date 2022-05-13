@@ -129,6 +129,12 @@ func (m *Action) Clone() proto.Message {
 		target.CustomAction = proto.Clone(m.GetCustomAction()).(*CustomAction)
 	}
 
+	if h, ok := interface{}(m.GetKeyValueAction()).(clone.Cloner); ok {
+		target.KeyValueAction = h.Clone().(*KeyValueAction)
+	} else {
+		target.KeyValueAction = proto.Clone(m.GetKeyValueAction()).(*KeyValueAction)
+	}
+
 	target.Shadow = m.GetShadow()
 
 	return target
@@ -173,6 +179,29 @@ func (m *CustomAction) Clone() proto.Message {
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *KeyValueAction) Clone() proto.Message {
+	var target *KeyValueAction
+	if m == nil {
+		return target
+	}
+	target = &KeyValueAction{}
+
+	target.Name = m.GetName()
+
+	target.MaskChar = m.GetMaskChar()
+
+	if h, ok := interface{}(m.GetPercent()).(clone.Cloner); ok {
+		target.Percent = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_external_envoy_type.Percent)
+	} else {
+		target.Percent = proto.Clone(m.GetPercent()).(*github_com_solo_io_solo_kit_pkg_api_external_envoy_type.Percent)
+	}
+
+	target.KeyToMask = m.GetKeyToMask()
 
 	return target
 }

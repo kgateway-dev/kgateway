@@ -24,6 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -353,6 +354,16 @@ func parseReviewResponse(resp *http.Response) (*AdmissionReviewWithProxies, erro
 	}
 	return &review, nil
 }
+func convertSnapshot(glooSnap *gloov1snap.ApiSnapshot) *v1.ApiSnapshot {
+	return &v1.ApiSnapshot{
+		VirtualServices:    glooSnap.VirtualServices,
+		RouteTables:        glooSnap.RouteTables,
+		Gateways:           glooSnap.Gateways,
+		VirtualHostOptions: glooSnap.VirtualHostOptions,
+		RouteOptions:       glooSnap.RouteOptions,
+		HttpGateways:       glooSnap.HttpGateways,
+	}
+}
 
 type mockValidator struct {
 	fSync                         func(context.Context, *v1.ApiSnapshot) error
@@ -367,11 +378,12 @@ type mockValidator struct {
 	fValidateDeleteSecret         func(ctx context.Context, secret *core.ResourceRef, dryRun bool) error
 }
 
-func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
+func (v *mockValidator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) error {
 	if v.fSync == nil {
 		return nil
 	}
-	return v.fSync(ctx, snap)
+	gwsnap := convertSnapshot(snap)
+	return v.fSync(ctx, gwsnap)
 }
 
 func (v *mockValidator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*validation.Reports, *multierror.Error) {

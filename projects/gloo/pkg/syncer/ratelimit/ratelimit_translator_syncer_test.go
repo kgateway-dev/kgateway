@@ -397,6 +397,178 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 			})
 
+			When("RateLimitRegularConfigs is set on VirtualHost", func() {
+
+				BeforeEach(func() {
+					virtualHost := &gloov1.VirtualHost{
+						Name: "gloo-system.default",
+						Options: &gloov1.VirtualHostOptions{
+							RateLimitRegularConfigType: &gloov1.VirtualHostOptions_RateLimitRegularConfigs{
+								RateLimitRegularConfigs: &ratelimit.RateLimitConfigRefs{
+									Refs: []*ratelimit.RateLimitConfigRef{{
+										Name:      "foo",
+										Namespace: "gloo-system",
+									}},
+								},
+							},
+						},
+					}
+
+					proxy = &gloov1.Proxy{
+						Metadata: &skcore.Metadata{
+							Name:      "proxy",
+							Namespace: "gloo-system",
+						},
+						Listeners: []*gloov1.Listener{{
+							Name: "listener-::-8080",
+							ListenerType: &gloov1.Listener_HttpListener{
+								HttpListener: &gloov1.HttpListener{
+									VirtualHosts: []*gloov1.VirtualHost{
+										virtualHost,
+									},
+								},
+							},
+						}},
+					}
+				})
+
+				It("errors", func() {
+					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitRegular' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+				})
+			})
+
+			When("RateLimitRegular is set on VirtualHost", func() {
+
+				BeforeEach(func() {
+					virtualHost := &gloov1.VirtualHost{
+						Name: "gloo-system.default",
+						Options: &gloov1.VirtualHostOptions{
+							RateLimitRegularConfigType: &gloov1.VirtualHostOptions_RatelimitRegular{
+								RatelimitRegular: &ratelimit.RateLimitVhostExtension{
+									RateLimits: []*v1alpha1.RateLimitActions{
+										{
+											SetActions: []*v1alpha1.Action{},
+										},
+									},
+								},
+							},
+						},
+					}
+
+					proxy = &gloov1.Proxy{
+						Metadata: &skcore.Metadata{
+							Name:      "proxy",
+							Namespace: "gloo-system",
+						},
+						Listeners: []*gloov1.Listener{{
+							Name: "listener-::-8080",
+							ListenerType: &gloov1.Listener_HttpListener{
+								HttpListener: &gloov1.HttpListener{
+									VirtualHosts: []*gloov1.VirtualHost{
+										virtualHost,
+									},
+								},
+							},
+						}},
+					}
+				})
+
+				It("errors", func() {
+					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitRegular' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+				})
+			})
+
+			When("RateLimitRegularConfigs is set on Route", func() {
+
+				BeforeEach(func() {
+					route := &gloov1.Route{
+						Options: &gloov1.RouteOptions{
+							RateLimitRegularConfigType: &gloov1.RouteOptions_RateLimitRegularConfigs{
+								RateLimitRegularConfigs: &ratelimit.RateLimitConfigRefs{
+									Refs: []*ratelimit.RateLimitConfigRef{{
+										Name:      "foo",
+										Namespace: "gloo-system",
+									}},
+								},
+							},
+						},
+					}
+
+					proxy = &gloov1.Proxy{
+						Metadata: &skcore.Metadata{
+							Name:      "proxy",
+							Namespace: "gloo-system",
+						},
+						Listeners: []*gloov1.Listener{{
+							Name: "listener-::-8080",
+							ListenerType: &gloov1.Listener_HttpListener{
+								HttpListener: &gloov1.HttpListener{
+									VirtualHosts: []*gloov1.VirtualHost{
+										{
+											Routes: []*gloov1.Route{route},
+										},
+									},
+								},
+							},
+						}},
+					}
+				})
+
+				It("errors", func() {
+					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitRegular' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+				})
+			})
+
+			When("RateLimitRegular is set on Route", func() {
+
+				BeforeEach(func() {
+					route := &gloov1.Route{
+						Options: &gloov1.RouteOptions{
+							RateLimitRegularConfigType: &gloov1.RouteOptions_RatelimitRegular{
+								RatelimitRegular: &ratelimit.RateLimitRouteExtension{
+									RateLimits: []*v1alpha1.RateLimitActions{
+										{
+											SetActions: []*v1alpha1.Action{},
+										},
+									},
+								},
+							},
+						},
+					}
+
+					proxy = &gloov1.Proxy{
+						Metadata: &skcore.Metadata{
+							Name:      "proxy",
+							Namespace: "gloo-system",
+						},
+						Listeners: []*gloov1.Listener{{
+							Name: "listener-::-8080",
+							ListenerType: &gloov1.Listener_HttpListener{
+								HttpListener: &gloov1.HttpListener{
+									VirtualHosts: []*gloov1.VirtualHost{
+										{
+											Routes: []*gloov1.Route{route},
+										},
+									},
+								},
+							},
+						}},
+					}
+				})
+
+				It("errors", func() {
+					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitRegular' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+				})
+			})
+
 		})
 
 	})

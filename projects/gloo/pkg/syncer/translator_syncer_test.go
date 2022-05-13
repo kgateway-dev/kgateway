@@ -73,7 +73,7 @@ var _ = Describe("Translate Proxy", func() {
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
-		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics)
+		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "")
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
@@ -102,7 +102,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		snap.Proxies[0] = p1
 
-		syncer = NewTranslatorSyncer(&mockTranslator{false, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics)
+		syncer = NewTranslatorSyncer(&mockTranslator{false, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "")
 
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
@@ -132,7 +132,6 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(sanitizer.Called).To(BeTrue())
 		Expect(xdsCache.SetSnap).To(BeEquivalentTo(sanitizer.Snap))
 	})
-
 })
 
 var _ = Describe("Translate multiple proxies with errors", func() {
@@ -226,7 +225,7 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
-		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics)
+		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "")
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy1,
