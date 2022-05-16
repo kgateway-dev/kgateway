@@ -3,8 +3,11 @@ package gateway_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
+	"google.golang.org/grpc"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -2353,7 +2356,56 @@ spec:
 
 	})
 	Context("proxy debug endpoint", func() {
+		var (
+			portFwd     *exec.Cmd
+			debugClient debug.ProxyEndpointServiceClient
 
+			placeholderVs *gatewayv1.VirtualService
+		)
+		BeforeEach(func() {
+			ctx = context.Background()
+			portFwd = exec.Command("kubectl", "port-forward", "-n", testHelper.InstallNamespace,
+				"deployment/gloo", "9966")
+			portFwd.Stdout = os.Stderr
+			portFwd.Stderr = os.Stderr
+			err := portFwd.Start()
+			Expect(err).ToNot(HaveOccurred())
+
+			cc, err := grpc.DialContext(ctx, "localhost:9966", grpc.WithInsecure())
+			Expect(err).NotTo(HaveOccurred())
+			debugClient = debug.NewProxyEndpointServiceClient(cc)
+
+			//Create a VS so we have a proxy
+			dest := &gloov1.Destination{
+				DestinationType: &gloov1.Destination_Upstream{
+					Upstream: &core.ResourceRef{
+						Namespace: testHelper.InstallNamespace,
+						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+					},
+				},
+			}
+
+			placeholderVs = getVirtualService(dest, nil)
+
+			_, err = virtualServiceClient.Write(placeholderVs, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+		})
+		AfterEach(func() {
+			if portFwd.Process != nil {
+				portFwd.Process.Kill()
+			}
+		})
+		It("Returns proxies", func() {
+
+			Eventually(func() error {
+				resp, err := debugClient.GetProxies(ctx, &debug.ProxyEndpointRequest{Namespace: testHelper.InstallNamespace})
+				if err != nil {
+					return err
+				}
+				Expect(resp.GetProxies()).To(HaveLen(1))
+				return nil
+			}, "10s", "1s").ShouldNot(HaveOccurred())
+		})
 	})
 	Context("matchable hybrid gateway", func() {
 

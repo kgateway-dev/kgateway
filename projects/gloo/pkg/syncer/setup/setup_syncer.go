@@ -663,7 +663,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		}()
 		opts.ControlPlane.StartGrpcServer = false
 	}
-	if true { //opts.ProxyDebugServer.StartGrpcServer {
+	if opts.ProxyDebugServer.StartGrpcServer {
 		logger.Infof("starting proxy debug server %v", opts.ProxyDebugServer.StartGrpcServer)
 		proxyDebugServer := opts.ProxyDebugServer
 		proxyDebugServer.Server.SetProxyClient(proxyClient)
