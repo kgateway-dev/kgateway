@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/3519
+  description: >
+    Instantiates a DlpTransformer directly within the ModSecurity filter to ensure sensitive data is masked before audit logs are output. 

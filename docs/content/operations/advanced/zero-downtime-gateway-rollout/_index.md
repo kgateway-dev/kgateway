@@ -23,12 +23,12 @@ To implement these principles, you can configure health checking for your load b
 
 From right to left:
 - **B** - Envoy is not _immediately_ aware of the state of the Kubernetes liveness & readiness probes that are set on an upstream API. So, here are two recommendations:
-  - the API should start failing health checks once it receives a SIGTERM signal, and also it should start draining connections gracefully
-  - Envoy should be configured with health checks, retries, and outlier detection on these upstreams
+  - The API should start failing health checks once it receives a SIGTERM signal, and also it should start draining connections gracefully.
+  - Envoy should be configured with health checks, retries, and outlier detection on these upstreams.
 - **A** - Depending on your load balancer and network setup, the health check can reach either the Kubernetes nodes or the Kubernetes pods. Keep in mind these rules of thumb:
   - Cloud LB health checks to the same node should end in the same pod. You can use either a **DaemonSet** with host port or you use Kubernetes **affinity** policies to have at most one Envoy proxy on each node, with the `ExternalTrafficPolicy: local` setting in the Envoy proxy deployment.
-  - configure the health check filter on Envoy. More details below and also in the dedicated [documentation page](/guides/traffic_management/request_processing/health_checks/). Configure the readiness probe accordingly
-  - enable the shutdown hook on the Envoy pods. Configure this hook to fail LB health checks once it gets a termination signal
+  - Configure the health check filter on Envoy. More details below and also in the dedicated [documentation page]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks/" %}}). Configure the readiness probe accordingly.
+  - Enable the shutdown hook on the Envoy pods. Configure this hook to fail LB health checks once it gets a termination signal
 
 This guide shows how to configure these different elements and demonstrates the benefits during a gateway rollout.
 
@@ -37,7 +37,7 @@ This guide shows how to configure these different elements and demonstrates the 
 
 ### Upstream options
 
-As explained above, it's best to have your upstream API start failing health checks once it receives a termination signal. Talking Envoy side, you can add retries, health checks and outlier detection as shown below:
+As explained above, it's best to have your upstream API start failing health checks once it receives a termination signal. From the Envoy side, you can add retries, health checks and outlier detection as shown below:
 
 {{< highlight yaml "hl_lines=9 19" >}}
 apiVersion: gloo.solo.io/v1
@@ -66,7 +66,25 @@ spec:
   ignoreHealthOnHostRemoval: true
 {{< /highlight >}}
 
-Retries are set at the route level:
+In the previous example, `Upstream` pings are issued every 2 seconds. You might find that this active health check setting is too frequent and generates excessive traffic. If so, consider a health check with a longer interval, such as the following example.
+
+{{< highlight yaml "hl_lines=6-9" >}}
+  # ----- Health Check (a.k.a. active health checks) -------
+  healthChecks:
+    - healthyThreshold: 1
+      httpHealthCheck:
+        path: /status/200
+      interval: 15s
+      noTrafficInterval: 10s
+      timeout: 5s
+      unhealthyThreshold: 3
+      reuseConnection: false
+```
+{{< /highlight >}}
+
+For more information, see the [health check API documentation]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto.sk/#healthcheck" %}}).
+
+[Retries](({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/retries/" %}})) are configured on `VirtualServices` at the route level:
 
 {{< highlight yaml "hl_lines=17" >}}
 apiVersion: gateway.solo.io/v1
@@ -101,7 +119,7 @@ It's fair to quickly remember here that Envoy can be listening to multiple hosts
 
 Once you have these `Gateways` and `VirtualServices` configured, Gloo Edge will generate `Proxy` _Custom Resources_ that will, in turn, generate Envoy **Listeners**, **Routes**, and more. From this point, Envoy is ready to accept new connections. 
 
-The goal here is to know when these [Envoy Listener](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners) are ready. Luckily, Envoy comes with a handy [Health Check filter](/guides/traffic_management/request_processing/health_checks/) which helps with that.
+The goal here is to know when these [Envoy Listeners](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners) are ready. Luckily, Envoy comes with a handy [Health Check filter]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks/" %}}) which helps with that.
 
 For example, you can add the following `healthCheck` setting to your Helm configuration file. Then, upgrade your Helm installation of Gloo Edge to set up health checking for the Envoy proxy.
 

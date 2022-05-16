@@ -125,6 +125,16 @@ func (m *ModSecurity) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetDlpTransformation()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDlpTransformation()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDlpTransformation(), target.GetDlpTransformation()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -233,6 +243,16 @@ func (m *ModSecurityPerRoute) Equal(that interface{}) bool {
 
 	if m.GetResponseHeadersOnly() != target.GetResponseHeadersOnly() {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetDlpTransformation()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDlpTransformation()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDlpTransformation(), target.GetDlpTransformation()) {
+			return false
+		}
 	}
 
 	return true

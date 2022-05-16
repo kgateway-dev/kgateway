@@ -1,3 +1,11 @@
+/*
+Package enterprise_warning creates the EnterpriseWarning plugin.
+EnterpriseWarning plugin is responsible for identifying Enterprise config that a
+non-Enterprise install has configured, and warning on it.
+NOTE: This is probably not the ideal solution, and it would be nice to find something more robust
+However, it follows a pattern used in our SyncerExtensions (for ratelimit and extauth)
+so its good to be consistent and good enough for now.
+*/
 package enterprise_warning
 
 import (
@@ -15,10 +23,13 @@ var (
 	_ plugins.RoutePlugin       = new(plugin)
 )
 
+// A series of names to be emitted in errors
+// when an enterprise-only extension is used.
 const (
 	ExtensionName = "enterprise_warning"
 
 	AdvancedHttpExtensionName          = "advanced_http"
+	CachingExtensionName               = "caching"
 	DlpExtensionName                   = "dlp"
 	FailoverExtensionName              = "failover"
 	JwtExtensionName                   = "jwt"
@@ -30,11 +41,6 @@ const (
 	WasmExtensionName                  = "wasm"
 )
 
-// The EnterpriseWarning plugin is responsible for identifying Enterprise config that a non-Enterprise
-// user has configured, and warning them about it
-// NOTE: This is probably not the ideal solution, and it would be nice to find something more robust
-// 		However, it follows a pattern used in our SyncerExtensions (for ratelimit and extauth)
-//		so I figured it was good to be consistent and good enough for now.
 type plugin struct{}
 
 func NewPlugin() *plugin {
@@ -113,6 +119,10 @@ func (p *plugin) ProcessUpstream(_ plugins.Params, in *v1.Upstream, _ *envoy_con
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	var enterpriseExtensions []string
 
+	if isCachingConfiguredOnListener(listener) {
+		enterpriseExtensions = append(enterpriseExtensions, CachingExtensionName)
+	}
+
 	if isDlpConfiguredOnListener(listener) {
 		enterpriseExtensions = append(enterpriseExtensions, DlpExtensionName)
 	}
@@ -160,6 +170,13 @@ func isAdvancedHttpConfiguredOnUpstream(in *v1.Upstream) bool {
 	}
 
 	return false
+}
+
+//
+// caching
+//
+func isCachingConfiguredOnListener(in *v1.HttpListener) bool {
+	return in.GetOptions().GetCaching() != nil
 }
 
 //
