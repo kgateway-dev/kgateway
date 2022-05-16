@@ -497,9 +497,12 @@ message Executor {
     // translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508
     map<string, string> headers = 2;
 
-    // map of query name extraction type:
+    // map of header name to extraction type:
     // e.g.
-    // 'query': '{$metadata.namespace.name}'
+    //
+    // 'query': '{$dynamicMetadata.$KEY_NAME:$KEY_VALUE}'
+    // 
+    // where $KEY_NAME is, for example, io.solo.transformation and $KEY_VALUE is endpoint_url
     //
     // translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508
     map<string, string> query_params = 3;
