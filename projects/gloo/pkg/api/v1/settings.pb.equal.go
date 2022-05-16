@@ -1737,12 +1737,12 @@ func (m *GraphqlOptions_SchemaChangeValidationOptions) Equal(that interface{}) b
 		return false
 	}
 
-	if h, ok := interface{}(m.GetAllowBreakingChanges()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetAllowBreakingChanges()) {
+	if h, ok := interface{}(m.GetRejectBreakingChanges()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRejectBreakingChanges()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetAllowBreakingChanges(), target.GetAllowBreakingChanges()) {
+		if !proto.Equal(m.GetRejectBreakingChanges(), target.GetRejectBreakingChanges()) {
 			return false
 		}
 	}

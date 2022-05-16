@@ -775,14 +775,14 @@ GraphQL settings used by the control plane and UI.
 
 
 ```yaml
-"allowBreakingChanges": .google.protobuf.BoolValue
+"rejectBreakingChanges": .google.protobuf.BoolValue
 "processingRules": []gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.ProcessingRule
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `allowBreakingChanges` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Schema definition updates can be considered safe, dangerous, or breaking. If this field is set to true, then breaking schema updates are allowed. |
+| `rejectBreakingChanges` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Schema definition updates can be considered safe, dangerous, or breaking. If this field is set to true, then breaking schema updates will be rejected. Defaults to false. |
 | `processingRules` | [[]gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.ProcessingRule](../settings.proto.sk/#processingrule) | We use [GraphQL Inspector](https://www.graphql-inspector.com/docs/essentials/diff) to detect breaking changes to GraphQL schemas. This field allows for passing [processing rules](https://www.graphql-inspector.com/docs/essentials/diff#rules) to GraphQL Inspector to customize how various change types are handled. |
 
 

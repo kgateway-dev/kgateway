@@ -395,14 +395,14 @@ spec:
                 properties:
                   schemaChangeValidationOptions:
                     properties:
-                      allowBreakingChanges:
-                        nullable: true
-                        type: boolean
                       processingRules:
                         items:
                           type: string
                           x-kubernetes-int-or-string: true
                         type: array
+                      rejectBreakingChanges:
+                        nullable: true
+                        type: boolean
                     type: object
                 type: object
               knative:

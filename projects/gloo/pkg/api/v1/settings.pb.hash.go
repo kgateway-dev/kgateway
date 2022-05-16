@@ -2188,18 +2188,18 @@ func (m *GraphqlOptions_SchemaChangeValidationOptions) Hash(hasher hash.Hash64) 
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetAllowBreakingChanges()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("AllowBreakingChanges")); err != nil {
+	if h, ok := interface{}(m.GetRejectBreakingChanges()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("RejectBreakingChanges")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetAllowBreakingChanges(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetRejectBreakingChanges(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("AllowBreakingChanges")); err != nil {
+			if _, err = hasher.Write([]byte("RejectBreakingChanges")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

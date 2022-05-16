@@ -992,10 +992,10 @@ func (m *GraphqlOptions_SchemaChangeValidationOptions) Clone() proto.Message {
 	}
 	target = &GraphqlOptions_SchemaChangeValidationOptions{}
 
-	if h, ok := interface{}(m.GetAllowBreakingChanges()).(clone.Cloner); ok {
-		target.AllowBreakingChanges = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	if h, ok := interface{}(m.GetRejectBreakingChanges()).(clone.Cloner); ok {
+		target.RejectBreakingChanges = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
-		target.AllowBreakingChanges = proto.Clone(m.GetAllowBreakingChanges()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.RejectBreakingChanges = proto.Clone(m.GetRejectBreakingChanges()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
 	if m.GetProcessingRules() != nil {

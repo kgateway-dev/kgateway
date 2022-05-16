@@ -701,8 +701,9 @@ message GraphqlOptions {
 
     message SchemaChangeValidationOptions {
         // Schema definition updates can be considered safe, dangerous, or breaking.
-        // If this field is set to true, then breaking schema updates are allowed.
-        google.protobuf.BoolValue allow_breaking_changes = 1;
+        // If this field is set to true, then breaking schema updates will be rejected.
+        // Defaults to false.
+        google.protobuf.BoolValue reject_breaking_changes = 1;
 
         // We use [GraphQL Inspector](https://www.graphql-inspector.com/docs/essentials/diff) to detect breaking changes
         // to GraphQL schemas. This field allows for passing [processing rules](https://www.graphql-inspector.com/docs/essentials/diff#rules)
