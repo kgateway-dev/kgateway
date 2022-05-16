@@ -23,7 +23,7 @@ type GeneratedProxies map[*gloov1.Proxy]reporter.ResourceReports
 type InvalidProxies map[*core.ResourceRef]reporter.ResourceReports
 
 type ProxyReconciler interface {
-	ReconcileProxies(ctx context.Context, proxiesToWrite GeneratedProxies, writeNamespace string, listOptions clients.ListOpts) error
+	ReconcileProxies(ctx context.Context, proxiesToWrite GeneratedProxies, writeNamespace string, labelSelectorOptions clients.ListOpts) error
 }
 
 type proxyReconciler struct {
@@ -63,12 +63,11 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 
 	proxyTransitionFunction := transitionFunc(proxiesToWrite, s.statusClient)
 
-	proxyListOptions := clients.ListOpts{
+	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, proxyTransitionFunction, clients.ListOpts{
 		Ctx: ctx,
 		Selector: labelSelectorOptions.Selector,
 		ExpressionSelector: labelSelectorOptions.ExpressionSelector,
-	}
-	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, proxyTransitionFunction, proxyListOptions); err != nil {
+	}); err != nil {
 		return err
 	}
 

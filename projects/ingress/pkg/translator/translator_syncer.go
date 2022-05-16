@@ -48,8 +48,8 @@ var (
 	//
 	// This is only required for backwards compatibility.
 	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
-	proxyLabelsToRead = map[string]string{
-		"created_by": "gloo-ingress,ingress",
+	proxyLabelSelectorOptions = clients.ListOpts{
+		ExpressionSelector: "created_by in (gloo-ingress, ingress)",
 	}
 )
 
@@ -95,7 +95,8 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 
 	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
-		Selector: proxyLabelsToRead,
+		Selector: proxyLabelSelectorOptions.Selector,
+		ExpressionSelector: proxyLabelSelectorOptions.ExpressionSelector,
 	}); err != nil {
 		return err
 	}
