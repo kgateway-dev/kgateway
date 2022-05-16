@@ -179,7 +179,7 @@ spec:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: grpc-validation
           protocol: TCP
-        - containerPort: 9966
+        - containerPort: {{ .Values.gloo.deployment.proxyDebugPort | default 9966 }}
           name: grpc-proxydebug
           protocol: TCP
         - containerPort: 9979

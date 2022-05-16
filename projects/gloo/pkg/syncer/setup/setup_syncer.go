@@ -190,7 +190,7 @@ var (
 	DefaultXdsBindAddr        = fmt.Sprintf("0.0.0.0:%v", defaults.GlooXdsPort)
 	DefaultValidationBindAddr = fmt.Sprintf("0.0.0.0:%v", defaults.GlooValidationPort)
 	DefaultRestXdsBindAddr    = fmt.Sprintf("0.0.0.0:%v", defaults.GlooRestXdsPort)
-	DefaultProxyDebugAddr     = fmt.Sprintf("0.0.0:%v", defaults.GlooProxyDebugPort)
+	DefaultProxyDebugAddr     = fmt.Sprintf("0.0.0.0:%v", defaults.GlooProxyDebugPort)
 )
 
 func getAddr(addr string) (*net.TCPAddr, error) {
@@ -667,6 +667,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		logger.Infof("starting proxy debug server %v", opts.ProxyDebugServer.StartGrpcServer)
 		proxyDebugServer := opts.ProxyDebugServer
 		proxyDebugServer.Server.SetProxyClient(proxyClient)
+		proxyDebugServer.Server.Register(proxyDebugServer.GrpcServer)
 		lis, err := net.Listen(opts.ProxyDebugServer.BindAddr.Network(), opts.ProxyDebugServer.BindAddr.String())
 		if err != nil {
 			return err

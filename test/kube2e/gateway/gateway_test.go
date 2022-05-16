@@ -2352,7 +2352,9 @@ spec:
 		})
 
 	})
+	Context("proxy debug endpoint", func() {
 
+	})
 	Context("matchable hybrid gateway", func() {
 
 		var (

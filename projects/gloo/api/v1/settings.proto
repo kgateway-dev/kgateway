@@ -266,7 +266,7 @@ message Settings {
 
         // The address of the Consul HTTP server.
         // Used by service discovery and key-value storage (if-enabled).
-        // Defaults to the value of the standard CONSUL_HTTP_DDR env if set, otherwise to 127.0.0.1:8500.
+        // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
         string http_address = 13;
 
         // The address of the DNS server used to resolve hostnames in the Consul service address.
@@ -572,7 +572,7 @@ message GlooOptions {
     // Defaults to false
     google.protobuf.BoolValue remove_unused_filters = 14;
 
-    // Where the `gloo` proxy debug server should bind. Defaults to `0.0.0.0:9966`
+    // Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`
     string proxy_debug_bind_addr = 15;
 }
 

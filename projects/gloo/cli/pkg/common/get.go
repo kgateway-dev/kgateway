@@ -1,6 +1,10 @@
 package common
 
 import (
+	"context"
+	"github.com/hashicorp/go-multierror"
+	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/cliutil"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -8,9 +12,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"google.golang.org/grpc"
+	"net/url"
+	"strconv"
+	"time"
 )
 
 func GetVirtualServices(name string, opts *options.Options) (v1.VirtualServiceList, error) {
@@ -105,18 +111,24 @@ func GetUpstreamGroups(name string, opts *options.Options) (gloov1.UpstreamGroup
 }
 
 func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
-	//settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	//settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), "default", clients.ReadOpts{Ctx: opts.Top.Ctx})
-	//if err != nil {
-	//	return nil, err
-	//}
-	proxyEndpointAddr := "gloo:9966" // settings.GetGloo().GetProxyDebugBindAddr()
-	if proxyEndpointAddr != "" {
-		contextutils.LoggerFrom(opts.Top.Ctx).Infof("proxy endpoint %s", proxyEndpointAddr)
-		return getProxiesFromGrpc(name, opts, proxyEndpointAddr)
+	settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), "default", clients.ReadOpts{Ctx: opts.Top.Ctx})
+	if err != nil {
+		return nil, err
+	}
+	proxyEndpointPort := ""
+	proxyEndpointAddress := settings.GetGloo().GetProxyDebugBindAddr()
+	u, err := url.ParseRequestURI(proxyEndpointAddress)
+	if err == nil {
+		proxyEndpointPort = u.Port()
+	}
+	if proxyEndpointPort != "" {
+		return getProxiesFromGrpc(name, opts.Metadata.GetNamespace(), opts, proxyEndpointPort)
 	}
 	return getProxiesFromK8s(name, opts)
 }
+
+// This is necessary for older versions of gloo
 func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	var list gloov1.ProxyList
 	pxClient := helpers.MustNamespacedProxyClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
@@ -138,17 +150,69 @@ func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, er
 
 	return list, nil
 }
-func getProxiesFromGrpc(name string, opts *options.Options, proxyEndpointAddr string) (gloov1.ProxyList, error) {
-	cc, err := grpc.DialContext(opts.Top.Ctx, proxyEndpointAddr, grpc.WithInsecure())
+func getProxiesFromGrpc(name string, namespace string, opts *options.Options, proxyEndpointPort string) (gloov1.ProxyList, error) {
+	freePort, err := cliutil.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
-	pxClient := debug.NewProxyEndpointServiceClient(cc)
-	resp, err := pxClient.GetProxies(opts.Top.Ctx, &debug.ProxyEndpointRequest{
-		Name:      name,
-		Namespace: opts.Metadata.GetNamespace(),
-	})
-	return resp.GetProxies(), err
+	localPort := strconv.Itoa(freePort)
+	portFwdCmd, err := cliutil.PortForward(namespace, "deployment/gloo",
+		localPort, proxyEndpointPort, opts.Top.Verbose)
+	if portFwdCmd.Process != nil {
+		defer portFwdCmd.Process.Release()
+		defer portFwdCmd.Process.Kill()
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err != nil {
+		return nil, err
+	}
+	localCtx, cancel := context.WithTimeout(opts.Top.Ctx, time.Second*30)
+	defer cancel()
+	// wait for port-forward to be ready
+	retryInterval := time.Millisecond * 250
+	errs := make(chan error)
+	resp := make(chan *debug.ProxyEndpointResponse)
+	go func() {
+		for {
+			select {
+			case <-localCtx.Done():
+				return
+			default:
+			}
+			cc, err := grpc.DialContext(localCtx, "localhost:"+localPort, grpc.WithInsecure())
+			if err != nil {
+				errs <- err
+				time.Sleep(retryInterval)
+				continue
+			}
+			pxClient := debug.NewProxyEndpointServiceClient(cc)
+			r, err := pxClient.GetProxies(opts.Top.Ctx, &debug.ProxyEndpointRequest{
+				Name:      name,
+				Namespace: opts.Metadata.GetNamespace(),
+			})
+			if err != nil {
+				errs <- err
+				time.Sleep(retryInterval)
+				continue
+			}
+			resp <- r
+		}
+	}()
+
+	var multiErr *multierror.Error
+	for {
+		select {
+		case err := <-errs:
+			multiErr = multierror.Append(multiErr, err)
+		case r := <-resp:
+			return r.GetProxies(), nil
+		case <-localCtx.Done():
+			return nil, errors.Errorf("timed out trying to connect to localhost during port-forward, errors: %v", multiErr)
+		}
+	}
+
 }
 func GetAuthConfigs(name string, opts *options.Options) (extauthv1.AuthConfigList, error) {
 	var authConfigList extauthv1.AuthConfigList
