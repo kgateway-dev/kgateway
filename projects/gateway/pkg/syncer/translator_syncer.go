@@ -42,10 +42,6 @@ type translatorSyncer struct {
 	proxyStatusMaxSize string
 }
 
-<<<<<<< HEAD
-func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) v1.ApiSyncer {
-	t := &translatorSyncer{
-=======
 var (
 	// labels used to uniquely identify Proxies that are managed by the Gloo controllers
 	proxyLabelsToWrite = map[string]string{
@@ -68,9 +64,9 @@ var (
 	}
 )
 
-func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) *TranslatorSyncer {
-	t := &TranslatorSyncer{
->>>>>>> 3d5657552 (Proxy labels support deprecated labels)
+
+func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) v1.ApiSyncer {
+	t := &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
 		proxyWatcher:    proxyWatcher,
@@ -147,14 +143,9 @@ func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1
 func (s *translatorSyncer) shouldCompresss(ctx context.Context) bool {
 	return settingsutil.MaybeFromContext(ctx).GetGateway().GetCompressedProxySpec()
 }
-<<<<<<< HEAD
 
 func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies, invalidProxies reconciler.InvalidProxies) error {
-	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, s.managedProxyLabels); err != nil {
-=======
-func (s *TranslatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies, invalidProxies reconciler.InvalidProxies) error {
 	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, proxyLabelsToRead); err != nil {
->>>>>>> 3d5657552 (Proxy labels support deprecated labels)
 		return err
 	}
 
