@@ -3,13 +3,14 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
-	"google.golang.org/grpc"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
+	"google.golang.org/grpc"
 
 	"github.com/solo-io/solo-kit/test/setup"
 

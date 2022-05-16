@@ -2,6 +2,10 @@ package common
 
 import (
 	"context"
+	"net/url"
+	"strconv"
+	"time"
+
 	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -14,9 +18,6 @@ import (
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"google.golang.org/grpc"
-	"net/url"
-	"strconv"
-	"time"
 )
 
 func GetVirtualServices(name string, opts *options.Options) (v1.VirtualServiceList, error) {
