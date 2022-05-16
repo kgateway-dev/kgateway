@@ -59,8 +59,8 @@ var (
 	//
 	// This is only required for backwards compatibility.
 	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
-	proxyLabelsToRead = map[string]string{
-		"created_by": "gloo-gateway-translator,gateway",
+	proxyLabelSelectorOptions = clients.ListOpts{
+		ExpressionSelector: "created_by in (gloo-gateway-translator, gateway)",
 	}
 )
 
@@ -145,7 +145,7 @@ func (s *translatorSyncer) shouldCompresss(ctx context.Context) bool {
 }
 
 func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies, invalidProxies reconciler.InvalidProxies) error {
-	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, proxyLabelsToRead); err != nil {
+	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, proxyLabelSelectorOptions); err != nil {
 		return err
 	}
 
