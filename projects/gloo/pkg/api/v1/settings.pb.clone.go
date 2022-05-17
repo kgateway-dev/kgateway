@@ -191,6 +191,12 @@ func (m *Settings) Clone() proto.Message {
 		target.ConsoleOptions = proto.Clone(m.GetConsoleOptions()).(*ConsoleOptions)
 	}
 
+	if h, ok := interface{}(m.GetGraphqlOptions()).(clone.Cloner); ok {
+		target.GraphqlOptions = h.Clone().(*GraphqlOptions)
+	} else {
+		target.GraphqlOptions = proto.Clone(m.GetGraphqlOptions()).(*GraphqlOptions)
+	}
+
 	switch m.ConfigSource.(type) {
 
 	case *Settings_KubernetesConfigSource:
@@ -488,6 +494,23 @@ func (m *ConsoleOptions) Clone() proto.Message {
 		target.ApiExplorerEnabled = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
 		target.ApiExplorerEnabled = proto.Clone(m.GetApiExplorerEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *GraphqlOptions) Clone() proto.Message {
+	var target *GraphqlOptions
+	if m == nil {
+		return target
+	}
+	target = &GraphqlOptions{}
+
+	if h, ok := interface{}(m.GetSchemaChangeValidationOptions()).(clone.Cloner); ok {
+		target.SchemaChangeValidationOptions = h.Clone().(*GraphqlOptions_SchemaChangeValidationOptions)
+	} else {
+		target.SchemaChangeValidationOptions = proto.Clone(m.GetSchemaChangeValidationOptions()).(*GraphqlOptions_SchemaChangeValidationOptions)
 	}
 
 	return target
@@ -956,6 +979,32 @@ func (m *GatewayOptions_ValidationOptions) Clone() proto.Message {
 		target.ValidationServerGrpcMaxSizeBytes = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
 	} else {
 		target.ValidationServerGrpcMaxSizeBytes = proto.Clone(m.GetValidationServerGrpcMaxSizeBytes()).(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *GraphqlOptions_SchemaChangeValidationOptions) Clone() proto.Message {
+	var target *GraphqlOptions_SchemaChangeValidationOptions
+	if m == nil {
+		return target
+	}
+	target = &GraphqlOptions_SchemaChangeValidationOptions{}
+
+	if h, ok := interface{}(m.GetRejectBreakingChanges()).(clone.Cloner); ok {
+		target.RejectBreakingChanges = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.RejectBreakingChanges = proto.Clone(m.GetRejectBreakingChanges()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if m.GetProcessingRules() != nil {
+		target.ProcessingRules = make([]GraphqlOptions_SchemaChangeValidationOptions_ProcessingRule, len(m.GetProcessingRules()))
+		for idx, v := range m.GetProcessingRules() {
+
+			target.ProcessingRules[idx] = v
+
+		}
 	}
 
 	return target

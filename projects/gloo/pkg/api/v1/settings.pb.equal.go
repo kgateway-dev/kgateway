@@ -276,6 +276,16 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetGraphqlOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGraphqlOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGraphqlOptions(), target.GetGraphqlOptions()) {
+			return false
+		}
+	}
+
 	switch m.ConfigSource.(type) {
 
 	case *Settings_KubernetesConfigSource:
@@ -766,6 +776,40 @@ func (m *ConsoleOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetApiExplorerEnabled(), target.GetApiExplorerEnabled()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GraphqlOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GraphqlOptions)
+	if !ok {
+		that2, ok := that.(GraphqlOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetSchemaChangeValidationOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSchemaChangeValidationOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSchemaChangeValidationOptions(), target.GetSchemaChangeValidationOptions()) {
 			return false
 		}
 	}
@@ -1667,6 +1711,51 @@ func (m *GatewayOptions_ValidationOptions) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetValidationServerGrpcMaxSizeBytes(), target.GetValidationServerGrpcMaxSizeBytes()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GraphqlOptions_SchemaChangeValidationOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GraphqlOptions_SchemaChangeValidationOptions)
+	if !ok {
+		that2, ok := that.(GraphqlOptions_SchemaChangeValidationOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetRejectBreakingChanges()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRejectBreakingChanges()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRejectBreakingChanges(), target.GetRejectBreakingChanges()) {
+			return false
+		}
+	}
+
+	if len(m.GetProcessingRules()) != len(target.GetProcessingRules()) {
+		return false
+	}
+	for idx, v := range m.GetProcessingRules() {
+
+		if v != target.GetProcessingRules()[idx] {
+			return false
+		}
+
 	}
 
 	return true
