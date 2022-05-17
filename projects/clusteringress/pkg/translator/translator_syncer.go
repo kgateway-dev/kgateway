@@ -33,6 +33,28 @@ type translatorSyncer struct {
 	statusClient    resources.StatusClient
 }
 
+var (
+	// labels used to uniquely identify Proxies that are managed by the Gloo controllers
+	proxyLabelsToWrite = map[string]string{
+		"created_by": "gloo-knative",
+	}
+
+	// Previously, proxies would be identified with:
+	//   created_by: knative
+	// Now, proxies are identified with:
+	//   created_by: gloo-knative
+	//
+	// We need to ensure that users can successfully upgrade from versions
+	// where the previous labels were used, to versions with the new labels.
+	// Therefore, we watch Proxies with a superset of the old and new labels, and persist Proxies with new labels.
+	//
+	// This is only required for backwards compatibility.
+	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
+	proxyLabelSelectorOptions = clients.ListOpts{
+		ExpressionSelector: "created_by in (gloo-knative, knative)",
+	}
+)
+
 func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, statusClient resources.StatusClient, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		proxyAddress:    proxyAddress,
@@ -69,22 +91,19 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		return err
 	}
 
-	labels := map[string]string{
-		"created_by": "gloo-knative",
-	}
-
 	var desiredResources gloov1.ProxyList
 	if proxy != nil {
 		logger.Infof("creating proxy %v", proxy.GetMetadata().Ref())
-		proxy.GetMetadata().Labels = labels
+		proxy.GetMetadata().Labels = proxyLabelsToWrite
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
 	proxyTransitionFunction := utils.TransitionFunction(s.statusClient)
 
 	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
-		Ctx:      ctx,
-		Selector: labels,
+		Ctx:                ctx,
+		Selector:           proxyLabelSelectorOptions.Selector,
+		ExpressionSelector: proxyLabelSelectorOptions.ExpressionSelector,
 	}); err != nil {
 		return err
 	}
