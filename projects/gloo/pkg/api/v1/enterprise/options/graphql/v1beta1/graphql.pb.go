@@ -1581,16 +1581,16 @@ type Executor_Remote struct {
 	UpstreamRef *core.ResourceRef `protobuf:"bytes,1,opt,name=upstream_ref,json=upstreamRef,proto3" json:"upstream_ref,omitempty"`
 	// map of header name to extraction type:
 	// e.g.
-	// ':key': '/hard/coded/path'
-	// ':key': '{$headers.method}'
-	// ':key': '{$metadata.namespace.name}'
+	// ':path':   '/hard/coded/path'
+	// ':method': '{$headers.method}'
+	//  ':key':    '{$metadata.io.solo.transformation:endpoint_url}'
 	//
 	// translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508
 	Headers map[string]string `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// map of header name to extraction type:
 	// e.g.
 	//
-	// 'query': '{$dynamicMetadata.$KEY_NAME:$KEY_VALUE}'
+	// 'query': '{$metadata.$KEY_NAME:$KEY_VALUE}'
 	//
 	// where $KEY_NAME is, for example, io.solo.transformation and $KEY_VALUE is endpoint_url
 	//

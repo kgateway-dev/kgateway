@@ -488,8 +488,8 @@ Execute schema using resolvers.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | by default, we copy the body and pass through none of the headers, defaulting :method to copied method and :path to copied path if method is GET then we do not copy the body. |
-| `headers` | `map<string, string>` | map of header name to extraction type: e.g. ':key': '/hard/coded/path' ':key': '{$headers.method}' ':key': '{$metadata.namespace.name}' translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508. |
-| `queryParams` | `map<string, string>` | map of header name to extraction type: e.g. 'query': '{$dynamicMetadata.$KEY_NAME:$KEY_VALUE}' where $KEY_NAME is, for example, io.solo.transformation and $KEY_VALUE is endpoint_url translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508. |
+| `headers` | `map<string, string>` | map of header name to extraction type: e.g. ':path': '/hard/coded/path' ':method': '{$headers.method}' ':key': '{$metadata.io.solo.transformation:endpoint_url}' translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508. |
+| `queryParams` | `map<string, string>` | map of header name to extraction type: e.g. 'query': '{$metadata.$KEY_NAME:$KEY_VALUE}' where $KEY_NAME is, for example, io.solo.transformation and $KEY_VALUE is endpoint_url translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508. |
 | `spanName` | `string` |  |
 
 
