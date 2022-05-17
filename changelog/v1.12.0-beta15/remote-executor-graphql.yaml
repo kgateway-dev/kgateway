@@ -1,4 +1,4 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/gloo/issues/3541
     description: Bringing support for remote graphql executors in gloo edge.
