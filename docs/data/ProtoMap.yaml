@@ -131,6 +131,9 @@ apis:
   dlp.options.gloo.solo.io.FilterConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto.sk/#FilterConfig
     package: dlp.options.gloo.solo.io
+  dlp.options.gloo.solo.io.KeyValueAction:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto.sk/#KeyValueAction
+    package: dlp.options.gloo.solo.io
   enterprise.gloo.solo.io.AccessTokenValidation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AccessTokenValidation
     package: enterprise.gloo.solo.io
