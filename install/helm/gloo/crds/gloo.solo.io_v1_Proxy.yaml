@@ -139,6 +139,20 @@ spec:
                                                     type: object
                                                   type: array
                                               type: object
+                                            keyValueAction:
+                                              properties:
+                                                keyToMask:
+                                                  type: string
+                                                maskChar:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                percent:
+                                                  properties:
+                                                    value:
+                                                      type: number
+                                                  type: object
+                                              type: object
                                             shadow:
                                               type: boolean
                                           type: object
@@ -927,6 +941,20 @@ spec:
                                                         type: integer
                                                     type: object
                                                   type: array
+                                              type: object
+                                            keyValueAction:
+                                              properties:
+                                                keyToMask:
+                                                  type: string
+                                                maskChar:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                percent:
+                                                  properties:
+                                                    value:
+                                                      type: number
+                                                  type: object
                                               type: object
                                             shadow:
                                               type: boolean
@@ -2965,6 +2993,20 @@ spec:
                                                               type: integer
                                                           type: object
                                                         type: array
+                                                    type: object
+                                                  keyValueAction:
+                                                    properties:
+                                                      keyToMask:
+                                                        type: string
+                                                      maskChar:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      percent:
+                                                        properties:
+                                                          value:
+                                                            type: number
+                                                        type: object
                                                     type: object
                                                   shadow:
                                                     type: boolean
@@ -6163,6 +6205,20 @@ spec:
                                                               type: object
                                                             type: array
                                                         type: object
+                                                      keyValueAction:
+                                                        properties:
+                                                          keyToMask:
+                                                            type: string
+                                                          maskChar:
+                                                            type: string
+                                                          name:
+                                                            type: string
+                                                          percent:
+                                                            properties:
+                                                              value:
+                                                                type: number
+                                                            type: object
+                                                        type: object
                                                       shadow:
                                                         type: boolean
                                                     type: object
@@ -6951,6 +7007,20 @@ spec:
                                                                   type: integer
                                                               type: object
                                                             type: array
+                                                        type: object
+                                                      keyValueAction:
+                                                        properties:
+                                                          keyToMask:
+                                                            type: string
+                                                          maskChar:
+                                                            type: string
+                                                          name:
+                                                            type: string
+                                                          percent:
+                                                            properties:
+                                                              value:
+                                                                type: number
+                                                            type: object
                                                         type: object
                                                       shadow:
                                                         type: boolean
@@ -8989,6 +9059,20 @@ spec:
                                                                         type: integer
                                                                     type: object
                                                                   type: array
+                                                              type: object
+                                                            keyValueAction:
+                                                              properties:
+                                                                keyToMask:
+                                                                  type: string
+                                                                maskChar:
+                                                                  type: string
+                                                                name:
+                                                                  type: string
+                                                                percent:
+                                                                  properties:
+                                                                    value:
+                                                                      type: number
+                                                                  type: object
                                                               type: object
                                                             shadow:
                                                               type: boolean
