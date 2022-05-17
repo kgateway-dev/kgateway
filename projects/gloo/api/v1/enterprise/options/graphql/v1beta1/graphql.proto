@@ -500,7 +500,7 @@ message Executor {
     // map of header name to extraction type:
     // e.g.
     //
-    // 'query': '{$dynamicMetadata.$KEY_NAME:$KEY_VALUE}'
+    // 'query': '{$metadata.$KEY_NAME:$KEY_VALUE}'
     //
     // where $KEY_NAME is, for example, io.solo.transformation and $KEY_VALUE is endpoint_url
     //
