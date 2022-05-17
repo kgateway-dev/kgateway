@@ -94,8 +94,8 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	proxyTransitionFunction := utils.TransitionFunction(s.statusClient)
 
 	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
-		Ctx:      ctx,
-		Selector: proxyLabelSelectorOptions.Selector,
+		Ctx:                ctx,
+		Selector:           proxyLabelSelectorOptions.Selector,
 		ExpressionSelector: proxyLabelSelectorOptions.ExpressionSelector,
 	}); err != nil {
 		return err

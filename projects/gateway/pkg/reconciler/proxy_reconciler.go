@@ -64,8 +64,8 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 	proxyTransitionFunction := transitionFunc(proxiesToWrite, s.statusClient)
 
 	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, proxyTransitionFunction, clients.ListOpts{
-		Ctx: ctx,
-		Selector: labelSelectorOptions.Selector,
+		Ctx:                ctx,
+		Selector:           labelSelectorOptions.Selector,
 		ExpressionSelector: labelSelectorOptions.ExpressionSelector,
 	}); err != nil {
 		return err

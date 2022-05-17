@@ -224,36 +224,6 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
 	})
 
-	FIt("should process proxy with deprecated label", func() {
-		ts.Sync(ctx, snapshot())
-
-		// wait for proxy to be written
-		Eventually(func() (*gloov1.Proxy, error) {
-			return proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
-		}).ShouldNot(BeNil())
-
-		// change the proxy to use the deprecated labels
-		// this will simulate proxies that were persisted before the label change
-		proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-		proxy.Metadata.Labels = map[string]string{
-			"created_by": "gateway",
-		}
-		_, err = proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-		// update the VS but adding a route to it (anything will do here)
-		vs, err := baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, vs.VirtualHost.Routes[0])
-		_, err = baseVirtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
-
-		// re-sync to process the new VS
-		err = ts.Sync(ctx, snapshot())
-		Expect(err).NotTo(HaveOccurred())
-	})
-
 })
 
 type delayingVsClient struct {
