@@ -40,9 +40,9 @@ var (
 	}
 
 	// Previously, proxies would be identified with:
-	//   created_by: gateway
+	//   created_by: knative
 	// Now, proxies are identified with:
-	//   created_by: gloo-gateway-translator
+	//   created_by: gloo-knative
 	//
 	// We need to ensure that users can successfully upgrade from versions
 	// where the previous labels were used, to versions with the new labels.
