@@ -796,10 +796,10 @@ GraphQL settings used by the control plane and UI.
 | Name | Description |
 | ----- | ----------- | 
 | `RULE_UNSPECIFIED` |  |
-| `RULE_DANGEROUS_BREAKING` | Turn every dangerous change into a breaking change. |
-| `RULE_SUPPRESS_REMOVAL_OF_DEPRECATED_FIELD` | Treat the removal of a deprecated field as a dangerous change, instead of a breaking change. |
+| `RULE_DANGEROUS_TO_BREAKING` | Turn every dangerous change into a breaking change. |
+| `RULE_DEPRECATED_FIELD_REMOVAL_DANGEROUS` | Treat the removal of a deprecated field as a dangerous change, instead of a breaking change. |
 | `RULE_IGNORE_DESCRIPTION_CHANGES` | Ignore description changes. |
-| `RULE_SAFE_UNREACHABLE` | Ignore breaking changes on parts of the schema that are not reachable starting from the root types. |
+| `RULE_IGNORE_UNREACHABLE` | Ignore breaking changes on parts of the schema that are not reachable starting from the root types. |
 
 
 

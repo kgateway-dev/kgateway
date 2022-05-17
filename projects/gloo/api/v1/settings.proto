@@ -714,16 +714,16 @@ message GraphqlOptions {
             RULE_UNSPECIFIED = 0;
 
             // Turn every dangerous change into a breaking change.
-            RULE_DANGEROUS_BREAKING = 1;
+            RULE_DANGEROUS_TO_BREAKING = 1;
 
             // Treat the removal of a deprecated field as a dangerous change, instead of a breaking change.
-            RULE_SUPPRESS_REMOVAL_OF_DEPRECATED_FIELD = 2;
+            RULE_DEPRECATED_FIELD_REMOVAL_DANGEROUS = 2;
 
             // Ignore description changes.
             RULE_IGNORE_DESCRIPTION_CHANGES = 3;
 
             // Ignore breaking changes on parts of the schema that are not reachable starting from the root types.
-            RULE_SAFE_UNREACHABLE = 4;
+            RULE_IGNORE_UNREACHABLE = 4;
         }
     }
 }
