@@ -4,3 +4,7 @@ changelog:
     resolvesIssue: false
     description: |
       Ensure Proxies with deprecated `created_by` labels can be reconciled correctly.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.27.2
