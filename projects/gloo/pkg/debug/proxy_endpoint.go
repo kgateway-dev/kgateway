@@ -26,6 +26,8 @@ func NewProxyEndpointServer() *proxyEndpointServer {
 func (p *proxyEndpointServer) SetProxyClient(proxyClient v1.ProxyClient) {
 	p.proxyClient = proxyClient
 }
+
+// GetProxies receives a request from outside the gloo pod and returns a filtered list of proxies in a format that mirrors the k8s client
 func (p *proxyEndpointServer) GetProxies(ctx context.Context, req *debug.ProxyEndpointRequest) (*debug.ProxyEndpointResponse, error) {
 	contextutils.LoggerFrom(ctx).Infof("received grpc request to read proxies")
 	if req.GetName() == "" {

@@ -313,6 +313,8 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 			proxyGrpcServerOpts = append(proxyGrpcServerOpts, grpc.MaxRecvMsgSize(int(maxGrpcMsgSize.GetValue())))
 		}
 		s.proxyDebugServer = NewProxyDebugServer(ctx, s.makeGrpcServer(ctx, proxyGrpcServerOpts...), proxyDebugTcpAddress, true)
+		s.previousProxyDebugServer.cancel = cancel
+		s.previousProxyDebugServer.addr = proxyDebugAddr
 	}
 	consulClient, err := bootstrap.ConsulClientForSettings(ctx, settings)
 	if err != nil {
