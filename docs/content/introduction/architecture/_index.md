@@ -30,7 +30,7 @@ Gloo Edge offers first-class API management features on all functions:
 
 ## Component Architecture
 
-In the most basic sense, Gloo Edge is a translation engine and [Envoy xDS server](https://github.com/envoyproxy/data-plane-api/blob/master/xds_protocol.rst) providing advanced configuration for Envoy (including Gloo Edge's custom Envoy filters). Gloo Edge follows an event-based architecture, watching various sources of configuration for updates and responding immediately with v2 gRPC updates to Envoy.
+In the most basic sense, Gloo Edge is a translation engine and [Envoy xDS server](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) providing advanced configuration for Envoy (including Gloo Edge's custom Envoy filters). Gloo Edge follows an event-based architecture, watching various sources of configuration for updates and responding immediately with v2 gRPC updates to Envoy.
 
 ![Component Architecture]({{% versioned_link_path fromRoot="/img/component_architecture.png" %}})
 
