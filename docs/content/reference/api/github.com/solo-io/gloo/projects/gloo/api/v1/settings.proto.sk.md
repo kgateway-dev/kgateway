@@ -39,6 +39,9 @@ weight: 5
 - [GatewayOptions](#gatewayoptions)
 - [ValidationOptions](#validationoptions)
 - [ConsoleOptions](#consoleoptions)
+- [GraphqlOptions](#graphqloptions)
+- [SchemaChangeValidationOptions](#schemachangevalidationoptions)
+- [ProcessingRule](#processingrule)
   
 
 
@@ -89,6 +92,7 @@ Represents global settings for all the Gloo components.
 "observabilityOptions": .gloo.solo.io.Settings.ObservabilityOptions
 "upstreamOptions": .gloo.solo.io.UpstreamOptions
 "consoleOptions": .gloo.solo.io.ConsoleOptions
+"graphqlOptions": .gloo.solo.io.GraphqlOptions
 
 ```
 
@@ -127,6 +131,7 @@ Represents global settings for all the Gloo components.
 | `observabilityOptions` | [.gloo.solo.io.Settings.ObservabilityOptions](../settings.proto.sk/#observabilityoptions) | Provides settings related to the observability deployment (enterprise only). |
 | `upstreamOptions` | [.gloo.solo.io.UpstreamOptions](../settings.proto.sk/#upstreamoptions) | Default configuration to use for upstreams, when not provided by specific upstream When these properties are defined on an upstream, this configuration will be ignored. |
 | `consoleOptions` | [.gloo.solo.io.ConsoleOptions](../settings.proto.sk/#consoleoptions) | Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI). |
+| `graphqlOptions` | [.gloo.solo.io.GraphqlOptions](../settings.proto.sk/#graphqloptions) | Enterprise-only: GraphQL settings. |
 
 
 
@@ -742,6 +747,59 @@ Settings used by the Enterprise Console (UI)
 | ----- | ---- | ----------- | 
 | `readOnly` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, then custom resources can only be viewed in read-only mode in the UI. If false, then resources can be created, updated, and deleted via the UI. Currently, create/update/delete operations are only supported for GraphQL resources. This feature requires a Gloo Edge Enterprise license with GraphQL enabled. Defaults to true. |
 | `apiExplorerEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether to enable the GraphQL API Explorer. This feature requires a Gloo Edge Enterprise license with GraphQL enabled. Defaults to true. |
+
+
+
+
+---
+### GraphqlOptions
+
+ 
+GraphQL settings used by the control plane and UI.
+
+```yaml
+"schemaChangeValidationOptions": .gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `schemaChangeValidationOptions` | [.gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions](../settings.proto.sk/#schemachangevalidationoptions) | Options for how to validate changes to schema definitions. |
+
+
+
+
+---
+### SchemaChangeValidationOptions
+
+
+
+```yaml
+"rejectBreakingChanges": .google.protobuf.BoolValue
+"processingRules": []gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.ProcessingRule
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `rejectBreakingChanges` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Schema definition updates can be considered safe, dangerous, or breaking. If this field is set to true, then breaking schema updates will be rejected. Defaults to false. |
+| `processingRules` | [[]gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.ProcessingRule](../settings.proto.sk/#processingrule) | We use [GraphQL Inspector](https://www.graphql-inspector.com/docs/essentials/diff) to detect breaking changes to GraphQL schemas. This field allows for passing [processing rules](https://www.graphql-inspector.com/docs/essentials/diff#rules) to GraphQL Inspector to customize how various change types are handled. |
+
+
+
+
+---
+### ProcessingRule
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `RULE_UNSPECIFIED` |  |
+| `RULE_DANGEROUS_TO_BREAKING` | Turn every dangerous change into a breaking change. |
+| `RULE_DEPRECATED_FIELD_REMOVAL_DANGEROUS` | Treat the removal of a deprecated field as a dangerous change, instead of a breaking change. |
+| `RULE_IGNORE_DESCRIPTION_CHANGES` | Ignore description changes. |
+| `RULE_IGNORE_UNREACHABLE` | Ignore breaking changes on parts of the schema that are not reachable starting from the root types. |
 
 
 

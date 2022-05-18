@@ -391,6 +391,20 @@ spec:
                   xdsBindAddr:
                     type: string
                 type: object
+              graphqlOptions:
+                properties:
+                  schemaChangeValidationOptions:
+                    properties:
+                      processingRules:
+                        items:
+                          type: string
+                          x-kubernetes-int-or-string: true
+                        type: array
+                      rejectBreakingChanges:
+                        nullable: true
+                        type: boolean
+                    type: object
+                type: object
               knative:
                 properties:
                   clusterIngressProxyAddress:

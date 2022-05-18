@@ -969,3 +969,4 @@
 |global.extraSpecs|bool||Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise.|
 |global.extauthCustomYaml|bool|true|Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise|
 |global.console|interface||Configuration options for the Enterprise Console (UI).|
+|global.graphql|interface||(Enterprise Only): GraphQL configuration options.|
