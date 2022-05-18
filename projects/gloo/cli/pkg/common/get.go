@@ -2,10 +2,11 @@ package common
 
 import (
 	"context"
-	"github.com/solo-io/go-utils/contextutils"
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"
