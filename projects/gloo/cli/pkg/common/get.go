@@ -2,7 +2,8 @@ package common
 
 import (
 	"context"
-	"net/url"
+	"github.com/solo-io/go-utils/contextutils"
+	"net"
 	"strconv"
 	"time"
 
@@ -117,16 +118,22 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	if err != nil {
 		return nil, err
 	}
-	proxyEndpointPort := ""
-	proxyEndpointAddress := settings.GetGloo().GetProxyDebugBindAddr()
-	u, err := url.ParseRequestURI(proxyEndpointAddress)
-	if err == nil {
-		proxyEndpointPort = u.Port()
-	}
+	proxyEndpointPort := computeProxyEndpointPort(opts.Top.Ctx, settings)
 	if proxyEndpointPort != "" {
 		return getProxiesFromGrpc(name, opts.Metadata.GetNamespace(), opts, proxyEndpointPort)
 	}
 	return getProxiesFromK8s(name, opts)
+}
+func computeProxyEndpointPort(ctx context.Context, settings *gloov1.Settings) string {
+
+	proxyEndpointAddress := settings.GetGloo().GetProxyDebugBindAddr()
+	_, proxyEndpointPort, err := net.SplitHostPort(proxyEndpointAddress)
+	if err != nil {
+		proxyEndpointPort = ""
+		contextutils.LoggerFrom(ctx).Debugf("Could not parse the port for the proxy debug endpoint. " +
+			"Will check for proxies persisted to etcd.")
+	}
+	return proxyEndpointPort
 }
 
 // This is necessary for older versions of gloo
