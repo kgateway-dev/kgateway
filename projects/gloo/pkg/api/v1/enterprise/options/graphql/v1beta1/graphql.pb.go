@@ -1584,17 +1584,11 @@ type Executor_Remote struct {
 	// ':path':   '/hard/coded/path'
 	// ':method': '{$headers.method}'
 	//  ':key':    '{$metadata.io.solo.transformation:endpoint_url}'
-	//
-	// translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508
 	Headers map[string]string `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// map of header name to extraction type:
+	// map of query parameter name to extraction type:
 	// e.g.
 	//
 	// 'query': '{$metadata.$KEY_NAME:$KEY_VALUE}'
-	//
-	// where $KEY_NAME is, for example, io.solo.transformation and $KEY_VALUE is endpoint_url
-	//
-	// translate this into: https://github.com/solo-io/envoy-gloo-ee/blob/master/api/envoy/config/filter/http/graphql/v2/graphql.proto#L506-L508
 	QueryParams map[string]string `protobuf:"bytes,3,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	SpanName    string            `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
 }
