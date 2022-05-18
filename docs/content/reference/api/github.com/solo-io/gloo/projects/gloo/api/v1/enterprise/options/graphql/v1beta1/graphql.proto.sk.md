@@ -487,7 +487,7 @@ Execute schema using resolvers.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | by default, we copy the body and pass through none of the headers, defaulting :method to copied method and :path to copied path if method is GET then we do not copy the body. |
+| `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `headers` | `map<string, string>` | map of header name to extraction type: e.g. ':path': '/hard/coded/path' ':method': '{$headers.method}' ':key': '{$metadata.io.solo.transformation:endpoint_url}'. |
 | `queryParams` | `map<string, string>` | map of query parameter name to extraction type: e.g. 'query': '{$metadata.$KEY_NAME:$KEY_VALUE}'. |
 | `spanName` | `string` |  |

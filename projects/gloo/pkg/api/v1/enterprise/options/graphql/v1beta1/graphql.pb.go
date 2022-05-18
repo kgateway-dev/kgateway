@@ -1576,8 +1576,6 @@ type Executor_Remote struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// by default, we copy the body and pass through none of the headers, defaulting :method to copied method and :path to copied path
-	// if method is GET then we do not copy the body
 	UpstreamRef *core.ResourceRef `protobuf:"bytes,1,opt,name=upstream_ref,json=upstreamRef,proto3" json:"upstream_ref,omitempty"`
 	// map of header name to extraction type:
 	// e.g.

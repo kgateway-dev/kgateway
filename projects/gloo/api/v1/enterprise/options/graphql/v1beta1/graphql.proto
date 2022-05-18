@@ -485,8 +485,6 @@ message Executor {
     LocalExecutorOptions options = 3;
   }
   message Remote {
-    // by default, we copy the body and pass through none of the headers, defaulting :method to copied method and :path to copied path
-    // if method is GET then we do not copy the body
     core.solo.io.ResourceRef upstream_ref = 1;
     // map of header name to extraction type:
     // e.g.
