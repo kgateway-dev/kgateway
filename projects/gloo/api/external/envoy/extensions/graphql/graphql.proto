@@ -481,11 +481,40 @@ message Executor {
     uint32 max_depth = 3;
   }
 
-  // NOT IMPLEMENTED YET!
   // Execute schema by querying a graphql upstream.
   message Remote {
-    // Executes a query remotly, as a graphql client.
-    string cluster = 1;
+    message Extraction {
+      message DynamicMetadataExtraction {
+        // The namespace that the dynamic metadata is stored in.
+        string metadata_namespace = 1;
+        // The key in the namespace that the dynamic metadata is stored under.
+        string key = 2;
+      }
+      oneof extraction_type {
+        // Set the extraction type to use a static value.
+        string value = 1;
+        // Set the extraction type to use a header value.
+        // Specify the name of the header to extract the value from on the original request.
+        string header = 2;
+        // Set the extraction type to use a dynamic metadata value.
+        DynamicMetadataExtraction dynamic_metadata = 3;
+      }
+    }
+
+    message RemoteSchemaRequest {
+      // Map of headers to header value which will be included in the request to the remote graphql server.
+      map<string, Extraction> headers = 2;
+
+      // Query params to set on the request to the remote graphql server.
+      map<string, Extraction> query_params = 3;
+    }
+    // Server URI of the remote graphql cluster.
+    .solo.io.envoy.config.core.v3.HttpUri server_uri = 1;
+
+    RemoteSchemaRequest request = 2;
+
+    string span_name = 3 ;
+
   }
   oneof executor {
     Local local = 1;

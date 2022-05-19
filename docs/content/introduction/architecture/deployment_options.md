@@ -40,7 +40,7 @@ Each deployment creates a replica set for the pods, which can be used to scale t
 
 Along with the pods and deployments, three services are created.
 
-* `gloo`: Type ClusterIP exposing the ports 9966 (grpc metrics), 9977 (grpc-xds), 9979 (wasm-cache), and 9988 (grpc-validation)
+* `gloo`: Type ClusterIP exposing the ports 9966 (grpc-proxydebug), 9977 (grpc-xds), 9979 (wasm-cache), and 9988 (grpc-validation)
 * `gateway`: Type ClusterIP exposing the port 443
 * `gateway-proxy`: Type LoadBalancer exposing the ports 80, 443
 

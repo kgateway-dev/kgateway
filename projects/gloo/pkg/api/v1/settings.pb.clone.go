@@ -413,6 +413,8 @@ func (m *GlooOptions) Clone() proto.Message {
 		target.RemoveUnusedFilters = proto.Clone(m.GetRemoveUnusedFilters()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	target.ProxyDebugBindAddr = m.GetProxyDebugBindAddr()
+
 	return target
 }
 

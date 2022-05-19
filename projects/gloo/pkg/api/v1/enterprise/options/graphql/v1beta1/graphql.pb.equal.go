@@ -784,6 +784,21 @@ func (m *Executor) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Executor_Remote_:
+		if _, ok := target.Executor.(*Executor_Remote_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRemote()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRemote()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRemote(), target.GetRemote()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.Executor != target.Executor {
@@ -1049,6 +1064,66 @@ func (m *Executor_Local) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Executor_Remote) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Executor_Remote)
+	if !ok {
+		that2, ok := that.(Executor_Remote)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetUpstreamRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUpstreamRef()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUpstreamRef(), target.GetUpstreamRef()) {
+			return false
+		}
+	}
+
+	if len(m.GetHeaders()) != len(target.GetHeaders()) {
+		return false
+	}
+	for k, v := range m.GetHeaders() {
+
+		if strings.Compare(v, target.GetHeaders()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetQueryParams()) != len(target.GetQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetQueryParams() {
+
+		if strings.Compare(v, target.GetQueryParams()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if strings.Compare(m.GetSpanName(), target.GetSpanName()) != 0 {
+		return false
 	}
 
 	return true
