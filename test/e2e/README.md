@@ -3,13 +3,12 @@ This directory contains end-to-end tests that do not require kubernetes
 
 *Note: All commands should be run from the root directory of the Gloo repository*
 
-## (Option A) Run Envoy in a Docker Container
+## Run Envoy in a Docker Container
 ### Setup
-For these tests to run, we require Envoy be built in a docker container. The VERSION env variable determines the name of the tag for that image.
+For these tests to run, we require Envoy be built in a docker container.
 
-```bash
-VERSION=<version-name> make gloo-envoy-wrapper-docker
-```
+Refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/master/projects/envoyinit) for build instructions.
+
 
 ### Run Tests
 The `run-tests` make target runs ginkgo with a set of useful flags. The following environment variables can be configured for this target:
@@ -39,8 +38,6 @@ The `WAIT_ON_FAIL` environment variable can be used to inspect Gloo/Envoy state 
   - we default the adminPort to 20000 (https://github.com/solo-io/gloo/blob/master/test/services/envoy.go#L36), and when we create a new instance we add some digits to ensure it can be run in parallel (https://github.com/solo-io/gloo/blob/master/test/services/envoy.go#L401)
   - I believe our current way of running tests only runs a single envoy at a time, so this will always be 1 instance more than the default case, which is why it is port 21001.
 - Click on the `config_dump` hyperlink to obtain a complete dump of the current envoy configuration
-## (Option B) Run Envoy as a Binary
-*Note: We need someone to update these instructions*
 
 
 ## Additional Notes
