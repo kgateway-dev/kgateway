@@ -228,10 +228,6 @@ spec:
           - name: ENABLE_ISTIO_INTEGRATION
             value: "true"
         {{- end}}
-        {{- if .Values.gateway.validation.enabled }}
-          - name: VALIDATION_MUST_START
-            value: "true"
-        {{- end}}
 {{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:
           tcpSocket:

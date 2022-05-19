@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"net"
 	"strconv"
 	"time"
@@ -115,7 +116,7 @@ func GetUpstreamGroups(name string, opts *options.Options) (gloov1.UpstreamGroup
 
 func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), "default", clients.ReadOpts{Ctx: opts.Top.Ctx})
+	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{Ctx: opts.Top.Ctx})
 	if err != nil {
 		return nil, err
 	}
