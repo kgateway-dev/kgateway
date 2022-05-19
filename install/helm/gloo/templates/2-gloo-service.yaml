@@ -22,6 +22,9 @@ spec:
   - name: grpc-validation
     port: {{ .Values.gloo.deployment.validationPort }}
     protocol: TCP
+  - name: grpc-proxydebug
+    port: {{ .Values.gloo.deployment.proxyDebugPort }}
+    protocol: TCP
   - name: wasm-cache
     port: 9979
     protocol: TCP

@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
+	"google.golang.org/grpc"
 
 	"github.com/solo-io/solo-kit/test/setup"
 
@@ -430,6 +434,7 @@ var _ = Describe("Kube2e: gateway", func() {
 								if action := r.GetRouteAction(); action != nil {
 									if single := action.GetSingle(); single != nil {
 										if svcDest := single.GetKube(); svcDest != nil {
+											fmt.Sprintf("found destination %v", svcDest)
 											if svcDest.Ref.Name == helper.TestrunnerName &&
 												svcDest.Ref.Namespace == testHelper.InstallNamespace &&
 												svcDest.Port == uint32(helper.TestRunnerPort) {
@@ -442,7 +447,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						}
 					}
 
-					return eris.Errorf("proxy did not contain expected route")
+					return eris.Errorf("proxy did not contain expected route. Listeners %v", proxy.Listeners)
 				}, "15s", "0.5s").Should(BeNil())
 
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -1091,6 +1096,69 @@ var _ = Describe("Kube2e: gateway", func() {
 						WithoutStats:      true,
 					}, "Updated good response", 1, 60*time.Second, 1*time.Second)
 				})
+			})
+		})
+		Context("proxy debug endpoint", func() {
+			var (
+				portFwd     *exec.Cmd
+				debugClient debug.ProxyEndpointServiceClient
+				vsName      = "test-vs"
+			)
+			BeforeEach(func() {
+				ctx = context.Background()
+				portFwd = exec.Command("kubectl", "port-forward", "-n", testHelper.InstallNamespace,
+					"deployment/gloo", "9966")
+				portFwd.Stdout = os.Stderr
+				portFwd.Stderr = os.Stderr
+				err := portFwd.Start()
+				Expect(err).ToNot(HaveOccurred())
+
+				cc, err := grpc.DialContext(ctx, "localhost:9966", grpc.WithInsecure())
+				Expect(err).NotTo(HaveOccurred())
+				debugClient = debug.NewProxyEndpointServiceClient(cc)
+
+				placeholderVs := withName(vsName, withDomains([]string{"valid1.com"},
+					getVirtualService(&gloov1.Destination{
+						DestinationType: &gloov1.Destination_Upstream{
+							Upstream: &core.ResourceRef{
+								Namespace: testHelper.InstallNamespace,
+								Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+							},
+						},
+					}, nil)))
+				_, err = virtualServiceClient.Write(placeholderVs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+			AfterEach(func() {
+				if portFwd.Process != nil {
+					portFwd.Process.Kill()
+				}
+				_ = virtualServiceClient.Delete(testHelper.InstallNamespace, vsName, clients.DeleteOpts{Ctx: ctx})
+
+				helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+					return virtualServiceClient.Read(testHelper.InstallNamespace, vsName, clients.ReadOpts{})
+				}, "15s", "0.5s")
+			})
+			It("Returns proxies", func() {
+				Eventually(func() error {
+
+					referenceProxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+					if err != nil {
+						return err
+					}
+					resp, err := debugClient.GetProxies(ctx, &debug.ProxyEndpointRequest{Namespace: testHelper.InstallNamespace, Name: defaults.GatewayProxyName})
+					if err != nil {
+						return err
+					}
+					fmt.Sprintf("response %v", resp)
+					if len(resp.GetProxies()) != 1 {
+						return eris.Errorf("Expected to find 1 proxy, found %d", len(resp.GetProxies()))
+					}
+					if !resp.GetProxies()[0].Equal(referenceProxy) {
+						return eris.Errorf("Expected the proxy from the debug endpoint to equal the proxy from proxyClient")
+					}
+					return nil
+				}, "10s", "1s").ShouldNot(HaveOccurred())
 			})
 		})
 	})

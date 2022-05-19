@@ -376,6 +376,8 @@ spec:
                       replaceInvalidRoutes:
                         type: boolean
                     type: object
+                  proxyDebugBindAddr:
+                    type: string
                   regexMaxProgramSize:
                     maximum: 4294967295
                     minimum: 0

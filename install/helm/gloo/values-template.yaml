@@ -46,6 +46,7 @@ gloo:
     xdsPort: 9977
     restXdsPort: 9976
     validationPort: 9988
+    proxyDebugPort: 9966
     replicas: 1
     runAsUser: 10101
     serviceAccount: {}

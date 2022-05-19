@@ -46,7 +46,6 @@ The four primary components are instantiated using pods and services. The follow
 | gloo | 9977 | xDS Server |
 | gloo | 9988 | Validation |
 | gloo | 9979 | WASM cache |
-| gloo | 9966 | Metrics gRPC |
 | gateway-proxy | 8080 | HTTP |
 | gateway-proxy | 8443 | HTTPS |
 | gateway-proxy | 19000 | Envoy admin |
@@ -58,16 +57,16 @@ The `discovery` pod does not listen on any ports as it uses outbound connections
 
 The following table lists the services backed by the deployed pods.
 
-| Service | Port | Target | Target Port | Usage |
-|---------|------|--------|-------------|-------|
-| gateway | 443 | gateway | 8443 | Validation |
-| gloo | 9977 | gloo | 9977 | xDS Server |
-| gloo | 9988 | gloo | 9988 | Validation |
-| gloo | 9979 | gloo | 9979 | WASM cache |
-| gloo | 9966 | gloo | 9966 | Metrics gRPC |
-| gateway-proxy | 80 | gateway-proxy | 8080 | HTTP |
-| gateway-proxy | 443 | gateway-proxy | 8443 | HTTPS |
-| access-log | 8083 | access-log | 8083 | Access logging |
+| Service | Port | Target | Target Port | Usage            |
+|---------|------|--------|-------------|------------------|
+| gateway | 443 | gateway | 8443 | Validation       |
+| gloo | 9977 | gloo | 9977 | xDS Server       |
+| gloo | 9988 | gloo | 9988 | Validation       |
+| gloo | 9979 | gloo | 9979 | WASM cache       |
+| gloo | 9966 | gloo | 9966 | Proxy Debug gRPC |
+| gateway-proxy | 80 | gateway-proxy | 8080 | HTTP             |
+| gateway-proxy | 443 | gateway-proxy | 8443 | HTTPS            |
+| access-log | 8083 | access-log | 8083 | Access logging   |
 
 ---
 

@@ -686,6 +686,12 @@ apis:
   gloo.solo.io.Proxy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Proxy
     package: gloo.solo.io
+  gloo.solo.io.ProxyEndpointRequest:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/debug/proxy_endpoint.proto.sk/#ProxyEndpointRequest
+    package: gloo.solo.io
+  gloo.solo.io.ProxyEndpointResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/debug/proxy_endpoint.proto.sk/#ProxyEndpointResponse
+    package: gloo.solo.io
   gloo.solo.io.ProxyReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ProxyReport
     package: gloo.solo.io
