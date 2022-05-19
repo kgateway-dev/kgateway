@@ -3956,7 +3956,6 @@ metadata:
 							valuesArgs: []string{"gloo.deployment.runAsUser=10102"},
 						})
 						uid := int64(10102)
-						glooDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 
