@@ -487,6 +487,18 @@ func (m *Executor) Clone() proto.Message {
 			}
 		}
 
+	case *Executor_Remote_:
+
+		if h, ok := interface{}(m.GetRemote()).(clone.Cloner); ok {
+			target.Executor = &Executor_Remote_{
+				Remote: h.Clone().(*Executor_Remote),
+			}
+		} else {
+			target.Executor = &Executor_Remote_{
+				Remote: proto.Clone(m.GetRemote()).(*Executor_Remote),
+			}
+		}
+
 	}
 
 	return target
@@ -632,6 +644,43 @@ func (m *Executor_Local) Clone() proto.Message {
 	} else {
 		target.Options = proto.Clone(m.GetOptions()).(*Executor_Local_LocalExecutorOptions)
 	}
+
+	return target
+}
+
+// Clone function
+func (m *Executor_Remote) Clone() proto.Message {
+	var target *Executor_Remote
+	if m == nil {
+		return target
+	}
+	target = &Executor_Remote{}
+
+	if h, ok := interface{}(m.GetUpstreamRef()).(clone.Cloner); ok {
+		target.UpstreamRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.UpstreamRef = proto.Clone(m.GetUpstreamRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	if m.GetHeaders() != nil {
+		target.Headers = make(map[string]string, len(m.GetHeaders()))
+		for k, v := range m.GetHeaders() {
+
+			target.Headers[k] = v
+
+		}
+	}
+
+	if m.GetQueryParams() != nil {
+		target.QueryParams = make(map[string]string, len(m.GetQueryParams()))
+		for k, v := range m.GetQueryParams() {
+
+			target.QueryParams[k] = v
+
+		}
+	}
+
+	target.SpanName = m.GetSpanName()
 
 	return target
 }
