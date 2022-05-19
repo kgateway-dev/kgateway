@@ -2,10 +2,11 @@ package common
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/go-utils/contextutils"
 
