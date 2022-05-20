@@ -3,4 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/6421
     resolvesIssue: true
     description: >
-      Remove the reference to the VALIDATION_MUST_START environment variable from gloo setup.
+      Add the VALIDATION_MUST_START environment variable to the gloo pod deployment.
