@@ -74,7 +74,7 @@ query {
 {{< /tab >}}
 {{< /tabs >}}
 
-**Product service**: The `GraphQLApi` resource for the product service also defines a partial type definition for the `User` type, and a query for how to get the product name and the seller's user ID given the product ID.
+**Product service**: The `GraphQLApi` resource for the product service also defines a partial type definition for the `User` type, and a query for how to get the product name and the seller's username given the product ID.
 
 {{< tabs >}}
 {{< tab name="Product type definition" codelang="yaml" >}}
@@ -102,7 +102,7 @@ spec:
                 namespace: product-app
     schemaDefinition: |
       type User {
-        userId: Int
+        username: String
       }
 
       type Product{
@@ -137,7 +137,7 @@ query {
 {{< /tab >}}
 {{< /tabs >}}
 
-What if a client wants the full name of the seller for a product, instead of the user ID? Given the product ID, the client cannot get the seller's full name from the product service. However, the full name of any user _is_ provided by the user service. 
+What if a client wants the full name of the seller for a product, instead of the username? Given the product ID, the client cannot get the seller's full name from the product service. However, the full name of any user _is_ provided by the user service. 
 
 ## Stitching together the services
 

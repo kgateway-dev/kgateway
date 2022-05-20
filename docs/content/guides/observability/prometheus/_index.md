@@ -15,7 +15,7 @@ Gloo is shipped by default with prometheus 11.x charts, and provides a set of de
 {{% /notice %}}
 
 {{% notice note %}}
-For a complete set of options, please refer to: https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus/values.yaml, or run `helm show values prometheus-community/prometheus`
+For a complete set of options, refer to the [Prometheus community Helm charts](https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus/values.yaml), or run `helm show values prometheus-community/prometheus`.
 {{% /notice %}}
 
 ## Run Your Own Prometheus
