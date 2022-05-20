@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
 
 	gwreconciler "github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
@@ -135,8 +137,10 @@ type setupSyncer struct {
 	makeGrpcServer           func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server
 	previousXdsServer        grpcServer
 	previousValidationServer grpcServer
+	previousProxyDebugServer grpcServer
 	controlPlane             bootstrap.ControlPlane
 	validationServer         bootstrap.ValidationServer
+	proxyDebugServer         bootstrap.ProxyDebugServer
 	callbacks                xdsserver.Callbacks
 }
 
@@ -170,10 +174,23 @@ func NewValidationServer(ctx context.Context, grpcServer *grpc.Server, bindAddr 
 	}
 }
 
+func NewProxyDebugServer(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, start bool) bootstrap.ProxyDebugServer {
+	return bootstrap.ProxyDebugServer{
+		GrpcService: &bootstrap.GrpcService{
+			Ctx:             ctx,
+			BindAddr:        bindAddr,
+			GrpcServer:      grpcServer,
+			StartGrpcServer: start,
+		},
+		Server: debug.NewProxyEndpointServer(),
+	}
+}
+
 var (
 	DefaultXdsBindAddr        = fmt.Sprintf("0.0.0.0:%v", defaults.GlooXdsPort)
 	DefaultValidationBindAddr = fmt.Sprintf("0.0.0.0:%v", defaults.GlooValidationPort)
 	DefaultRestXdsBindAddr    = fmt.Sprintf("0.0.0.0:%v", defaults.GlooRestXdsPort)
+	DefaultProxyDebugAddr     = fmt.Sprintf("0.0.0.0:%v", defaults.GlooProxyDebugPort)
 )
 
 func getAddr(addr string) (*net.TCPAddr, error) {
@@ -211,6 +228,14 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		return errors.Wrapf(err, "parsing validation addr")
 	}
 
+	proxyDebugAddr := settings.GetGloo().GetProxyDebugBindAddr()
+	if proxyDebugAddr == "" {
+		proxyDebugAddr = DefaultProxyDebugAddr
+	}
+	proxyDebugTcpAddress, err := getAddr(proxyDebugAddr)
+	if err != nil {
+		return errors.Wrapf(err, "parsing proxy debug endpoint addr")
+	}
 	refreshRate := time.Minute
 	if settings.GetRefreshRate() != nil {
 		refreshRate = prototime.DurationFromProto(settings.GetRefreshRate())
@@ -224,6 +249,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	emptyControlPlane := bootstrap.ControlPlane{}
 	emptyValidationServer := bootstrap.ValidationServer{}
+	emptyProxyDebugServer := bootstrap.ProxyDebugServer{}
 
 	if xdsAddr != s.previousXdsServer.addr {
 		if s.previousXdsServer.cancel != nil {
@@ -240,7 +266,13 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		}
 		s.validationServer = emptyValidationServer
 	}
-
+	if proxyDebugAddr != s.previousProxyDebugServer.addr {
+		if s.previousProxyDebugServer.cancel != nil {
+			s.previousProxyDebugServer.cancel()
+			s.previousProxyDebugServer.cancel = nil
+		}
+		s.proxyDebugServer = emptyProxyDebugServer
+	}
 	// initialize the control plane context in this block either on the first loop, or if bind addr changed
 	if s.controlPlane == emptyControlPlane {
 		// create new context as the grpc server might survive multiple iterations of this loop.
@@ -270,7 +302,23 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.previousValidationServer.cancel = cancel
 		s.previousValidationServer.addr = validationAddr
 	}
-
+	// initialize the proxy debug server context in this block either on the first loop, or if bind addr changed
+	if s.proxyDebugServer == emptyProxyDebugServer {
+		// create new context as the grpc server might survive multiple iterations of this loop.
+		ctx, cancel := context.WithCancel(context.Background())
+		var proxyGrpcServerOpts []grpc.ServerOption
+		// Use the same maxGrpcMsgSize as validation as this is determined by the size of proxies.
+		if maxGrpcMsgSize := settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); maxGrpcMsgSize != nil {
+			if maxGrpcMsgSize.GetValue() < 0 {
+				cancel()
+				return errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be non-negative, current value: %v", maxGrpcMsgSize.GetValue())
+			}
+			proxyGrpcServerOpts = append(proxyGrpcServerOpts, grpc.MaxRecvMsgSize(int(maxGrpcMsgSize.GetValue())))
+		}
+		s.proxyDebugServer = NewProxyDebugServer(ctx, s.makeGrpcServer(ctx, proxyGrpcServerOpts...), proxyDebugTcpAddress, true)
+		s.previousProxyDebugServer.cancel = cancel
+		s.previousProxyDebugServer.addr = proxyDebugAddr
+	}
 	consulClient, err := bootstrap.ConsulClientForSettings(ctx, settings)
 	if err != nil {
 		return err
@@ -306,6 +354,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 	opts.ControlPlane = s.controlPlane
 	opts.ValidationServer = s.validationServer
+	opts.ProxyDebugServer = s.proxyDebugServer
 	// if nil, kube plugin disabled
 	opts.KubeClient = clientset
 	opts.DevMode = settings.GetDevMode()
@@ -618,6 +667,26 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 			}
 		}()
 		opts.ControlPlane.StartGrpcServer = false
+	}
+	if opts.ProxyDebugServer.StartGrpcServer {
+		proxyDebugServer := opts.ProxyDebugServer
+		proxyDebugServer.Server.SetProxyClient(proxyClient)
+		proxyDebugServer.Server.Register(proxyDebugServer.GrpcServer)
+		lis, err := net.Listen(opts.ProxyDebugServer.BindAddr.Network(), opts.ProxyDebugServer.BindAddr.String())
+		if err != nil {
+			return err
+		}
+		go func() {
+			<-proxyDebugServer.GrpcService.Ctx.Done()
+			proxyDebugServer.GrpcServer.Stop()
+		}()
+
+		go func() {
+			if err := proxyDebugServer.GrpcServer.Serve(lis); err != nil {
+				logger.Errorf("Proxy debug grpc server failed to start")
+			}
+		}()
+		opts.ProxyDebugServer.StartGrpcServer = false
 	}
 	gwOpts := gwtranslator.Opts{
 		GlooNamespace:                 opts.WriteNamespace,

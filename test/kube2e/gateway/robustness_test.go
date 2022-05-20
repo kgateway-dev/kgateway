@@ -18,6 +18,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -229,8 +230,10 @@ var _ = Describe("Robustness tests", func() {
 				return false
 
 			}, "12s", "1s").Should(BeTrue())
-			_, writeErr := virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
-			Expect(writeErr).NotTo(HaveOccurred())
+			Eventually(func() error {
+				_, writeErr := virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
+				return writeErr
+			}, "12s", "1s").ShouldNot(HaveOccurred())
 
 			// Wait for the proxy to be accepted
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
@@ -688,7 +691,7 @@ func createEchoDeploymentAndService(kubeClient kubernetes.Interface, namespace, 
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:  "http-echo",
-						Image: "hashicorp/http-echo",
+						Image: kube2e.GetHttpEchoImage(),
 						Args:  []string{fmt.Sprintf("-text=%s", expectedResponse(appName))},
 						Ports: []corev1.ContainerPort{{
 							Name:          "http",

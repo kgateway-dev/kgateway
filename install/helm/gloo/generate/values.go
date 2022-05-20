@@ -33,6 +33,7 @@ type Global struct {
 	ExtraSpecs        *bool            `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
 	ExtauthCustomYaml *bool            `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
 	Console           interface{}      `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
+	Graphql           interface{}      `json:"graphql,omitempty" desc:"(Enterprise Only): GraphQL configuration options."`
 }
 
 type Namespace struct {
@@ -219,6 +220,7 @@ type GlooDeployment struct {
 	XdsPort               *int              `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
 	RestXdsPort           *uint32           `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy"`
 	ValidationPort        *int              `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
+	ProxyDebugPort        *int              `json:"proxyDebugPort,omitempty" desc:"port where gloo serves gRPC Proxy contents to glooctl"`
 	Stats                 *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
 	FloatingUserId        *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
 	RunAsUser             *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`

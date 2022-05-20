@@ -90,6 +90,7 @@ var _ = Describe("Helm Test", func() {
 				{Name: "grpc-xds", ContainerPort: 9977, Protocol: "TCP"},
 				{Name: "rest-xds", ContainerPort: 9976, Protocol: "TCP"},
 				{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
+				{Name: "grpc-proxydebug", ContainerPort: 9966, Protocol: "TCP"},
 				{Name: "wasm-cache", ContainerPort: 9979, Protocol: "TCP"},
 			}
 			selector         map[string]string
@@ -3247,6 +3248,7 @@ spec:
   gloo:
     xdsBindAddr: "0.0.0.0:9977"
     restXdsBindAddr: "0.0.0.0:9976"
+    proxyDebugBindAddr: "0.0.0.0:9966"
     enableRestEds: false
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false

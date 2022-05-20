@@ -267,7 +267,6 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 	}
 
 }
-
 func GetFreePort() (int, error) {
 	l, err := net.Listen("tcp", ":0")
 	if err != nil {

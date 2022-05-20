@@ -44,6 +44,9 @@ apis:
   azure.options.gloo.solo.io.UpstreamSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto.sk/#UpstreamSpec
     package: azure.options.gloo.solo.io
+  caching.options.gloo.solo.io.Settings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto.sk/#Settings
+    package: caching.options.gloo.solo.io
   consul.options.gloo.solo.io.UpstreamSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/consul.proto.sk/#UpstreamSpec
     package: consul.options.gloo.solo.io
@@ -130,6 +133,9 @@ apis:
     package: dlp.options.gloo.solo.io
   dlp.options.gloo.solo.io.FilterConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto.sk/#FilterConfig
+    package: dlp.options.gloo.solo.io
+  dlp.options.gloo.solo.io.KeyValueAction:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto.sk/#KeyValueAction
     package: dlp.options.gloo.solo.io
   enterprise.gloo.solo.io.AccessTokenValidation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AccessTokenValidation
@@ -461,6 +467,9 @@ apis:
   envoy.config.transformer.xslt.v2.XsltTransformation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformers/xslt/xslt_transformer.proto.sk/#XsltTransformation
     package: envoy.config.transformer.xslt.v2
+  envoy.extensions.cache.grpc.v2.GrpcCacheConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/cache/grpc/config.proto.sk/#GrpcCacheConfig
+    package: envoy.extensions.cache.grpc.v2
   fault.options.gloo.solo.io.RouteAbort:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto.sk/#RouteAbort
     package: fault.options.gloo.solo.io
@@ -602,6 +611,9 @@ apis:
   gloo.solo.io.GlooValidationServiceResponse:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#GlooValidationServiceResponse
     package: gloo.solo.io
+  gloo.solo.io.GraphqlOptions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#GraphqlOptions
+    package: gloo.solo.io
   gloo.solo.io.HeaderSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#HeaderSecret
     package: gloo.solo.io
@@ -673,6 +685,12 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.Proxy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Proxy
+    package: gloo.solo.io
+  gloo.solo.io.ProxyEndpointRequest:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/debug/proxy_endpoint.proto.sk/#ProxyEndpointRequest
+    package: gloo.solo.io
+  gloo.solo.io.ProxyEndpointResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/debug/proxy_endpoint.proto.sk/#ProxyEndpointResponse
     package: gloo.solo.io
   gloo.solo.io.ProxyReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ProxyReport
@@ -943,12 +961,6 @@ apis:
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GraphQLApi:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#GraphQLApi
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.GraphQLToolsStitchingInput:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/stitching_info.proto.sk/#GraphQLToolsStitchingInput
-    package: graphql.gloo.solo.io
-  graphql.gloo.solo.io.GraphQlToolsStitchingOutput:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/stitching_info.proto.sk/#GraphQlToolsStitchingOutput
     package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GrpcDescriptorRegistry:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#GrpcDescriptorRegistry

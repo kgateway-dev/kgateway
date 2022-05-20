@@ -19,6 +19,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_aws "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_caching "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/caching"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
@@ -153,6 +155,12 @@ func (m *Settings) Clone() proto.Message {
 		}
 	}
 
+	if h, ok := interface{}(m.GetCachingServer()).(clone.Cloner); ok {
+		target.CachingServer = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_caching.Settings)
+	} else {
+		target.CachingServer = proto.Clone(m.GetCachingServer()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_caching.Settings)
+	}
+
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
 		target.Metadata = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.Metadata)
 	} else {
@@ -181,6 +189,12 @@ func (m *Settings) Clone() proto.Message {
 		target.ConsoleOptions = h.Clone().(*ConsoleOptions)
 	} else {
 		target.ConsoleOptions = proto.Clone(m.GetConsoleOptions()).(*ConsoleOptions)
+	}
+
+	if h, ok := interface{}(m.GetGraphqlOptions()).(clone.Cloner); ok {
+		target.GraphqlOptions = h.Clone().(*GraphqlOptions)
+	} else {
+		target.GraphqlOptions = proto.Clone(m.GetGraphqlOptions()).(*GraphqlOptions)
 	}
 
 	switch m.ConfigSource.(type) {
@@ -399,6 +413,8 @@ func (m *GlooOptions) Clone() proto.Message {
 		target.RemoveUnusedFilters = proto.Clone(m.GetRemoveUnusedFilters()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	target.ProxyDebugBindAddr = m.GetProxyDebugBindAddr()
+
 	return target
 }
 
@@ -480,6 +496,23 @@ func (m *ConsoleOptions) Clone() proto.Message {
 		target.ApiExplorerEnabled = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
 		target.ApiExplorerEnabled = proto.Clone(m.GetApiExplorerEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *GraphqlOptions) Clone() proto.Message {
+	var target *GraphqlOptions
+	if m == nil {
+		return target
+	}
+	target = &GraphqlOptions{}
+
+	if h, ok := interface{}(m.GetSchemaChangeValidationOptions()).(clone.Cloner); ok {
+		target.SchemaChangeValidationOptions = h.Clone().(*GraphqlOptions_SchemaChangeValidationOptions)
+	} else {
+		target.SchemaChangeValidationOptions = proto.Clone(m.GetSchemaChangeValidationOptions()).(*GraphqlOptions_SchemaChangeValidationOptions)
 	}
 
 	return target
@@ -948,6 +981,32 @@ func (m *GatewayOptions_ValidationOptions) Clone() proto.Message {
 		target.ValidationServerGrpcMaxSizeBytes = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
 	} else {
 		target.ValidationServerGrpcMaxSizeBytes = proto.Clone(m.GetValidationServerGrpcMaxSizeBytes()).(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *GraphqlOptions_SchemaChangeValidationOptions) Clone() proto.Message {
+	var target *GraphqlOptions_SchemaChangeValidationOptions
+	if m == nil {
+		return target
+	}
+	target = &GraphqlOptions_SchemaChangeValidationOptions{}
+
+	if h, ok := interface{}(m.GetRejectBreakingChanges()).(clone.Cloner); ok {
+		target.RejectBreakingChanges = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.RejectBreakingChanges = proto.Clone(m.GetRejectBreakingChanges()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if m.GetProcessingRules() != nil {
+		target.ProcessingRules = make([]GraphqlOptions_SchemaChangeValidationOptions_ProcessingRule, len(m.GetProcessingRules()))
+		for idx, v := range m.GetProcessingRules() {
+
+			target.ProcessingRules[idx] = v
+
+		}
 	}
 
 	return target
