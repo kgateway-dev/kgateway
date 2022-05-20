@@ -35,5 +35,5 @@ func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyC
 	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, envoyServer)
 
 	// Seed the cache with a fallback snapshot
-	envoyCache.SetSnapshot(FallbackNodeKey, createFallbackSnapshot())
+	envoyCache.SetSnapshot(FallbackNodeCacheKey, createFallbackSnapshot())
 }

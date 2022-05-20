@@ -9,16 +9,16 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
-// FallbackNodeKey is used to let nodes know they have a bad config
+// FallbackNodeCacheKey is used to let nodes know they have a bad config
 // we assign a "fix me" snapshot for bad nodes
-const FallbackNodeKey = "misconfigured-node"
+const FallbackNodeCacheKey = "misconfigured-node"
 
 var (
 	// Compile-time assertion
 	_ cache.NodeHash = &nodeRoleHasher{}
 )
 
-// nodeRoleHasher returns the node.metadata.role or the FallbackNodeKey if no role is defined
+// nodeRoleHasher returns the node.metadata.role or the FallbackNodeCacheKey if no role is defined
 // Envoy proxies are assigned their configuration by Gloo based on their Node ID
 // Therefore, proxies must identify themselves (using node.metadata.role) using the same naming
 // convention that we use to persist the Proxy resource in the snapshot cache.
@@ -39,24 +39,23 @@ func (h *nodeRoleHasher) ID(node *envoy_config_core_v3.Node) string {
 		}
 	}
 
-	return FallbackNodeKey
+	return FallbackNodeCacheKey
 }
 
-// SnapshotKey returns the ID of a Proxy resource
-// This is the key used to identify the snapshot in the cache
+// SnapshotCacheKey returns the key used to identify a Proxy resource in a SnapshotCache
 // This key must match the node.metadata.role of the Envoy Node
-func SnapshotKey(proxy *v1.Proxy) string {
+func SnapshotCacheKey(proxy *v1.Proxy) string {
 	namespace, name := proxy.GetMetadata().Ref().Strings()
 	return fmt.Sprintf("%v~%v", namespace, name)
 }
 
-// SnapshotKeys returns a list of SnapshotKey
-func SnapshotKeys(proxies v1.ProxyList) []string {
+// SnapshotCacheKeys returns a list with the SnapshotCacheKey for each Proxy
+func SnapshotCacheKeys(proxies v1.ProxyList) []string {
 	var keys []string
 	// Get keys from proxies
 	for _, proxy := range proxies {
 		// This is where we correlate Node ID with proxy namespace~name
-		keys = append(keys, SnapshotKey(proxy))
+		keys = append(keys, SnapshotCacheKey(proxy))
 	}
 	return keys
 }
