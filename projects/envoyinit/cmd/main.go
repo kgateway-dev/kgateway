@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "github.com/solo-io/gloo/hack/filter_types"
+	_ "github.com/solo-io/gloo/projects/envoyinit/hack/filter_types"
 
 	"bytes"
 	"io/ioutil"
