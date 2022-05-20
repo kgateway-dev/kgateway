@@ -13,7 +13,7 @@ var (
 	// These could theoretically be passed in as arguments to make the cleanup resources by label functionality more generic
 	// Currently there isn't a clear use case for that and defining the values here feels most readable
 	gatewayLabelValue = "gloo-gateway-translator"
-	createdByLabelKey = "created-by"
+	createdByLabelKey = "created_by"
 )
 
 func deleteUnusedProxies(ctx context.Context, namespace string, proxyClient v1.ProxyClient) error {

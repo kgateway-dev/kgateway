@@ -7,11 +7,11 @@ import (
 	"time"
 
 	errors "github.com/rotisserie/eris"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
+	"github.com/solo-io/gloo/jobs/pkg/certgen"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -22,8 +22,10 @@ type TlsSecret struct {
 	PrivateKey, Cert, CaBundle                         []byte
 }
 
-// Gets a valid TLS secret with the given name and namepsace, if it exists.
-func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretName string, secretNamespace string) (*v1.Secret, error) {
+// If there is a currently valid TLS secret with the given name and namespace, that is valid for the given
+// service name/namespace, then return it. Otherwise return nil.
+func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretName string, secretNamespace string,
+	svcName string, svcNamespace string) (*v1.Secret, error) {
 	secretClient := kube.CoreV1().Secrets(secretNamespace)
 
 	existing, err := secretClient.Get(ctx, secretName, metav1.GetOptions{})
@@ -46,6 +48,7 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 	now := time.Now().UTC()
 
 	rest := certPemBytes
+	matchesSvc := false
 	for len(rest) > 0 {
 		var decoded *pem.Block
 		decoded, rest = pem.Decode(rest)
@@ -60,9 +63,17 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 		if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
 			return nil, nil
 		}
+
+		// check if the cert is valid for this service
+		if !matchesSvc && certgen.ValidForService(cert.DNSNames, svcName, svcNamespace) {
+			matchesSvc = true
+		}
 	}
 
-	// cert is still valid!
+	if !matchesSvc {
+		return nil, nil
+	}
+	// cert is valid!
 	return existing, nil
 }
 

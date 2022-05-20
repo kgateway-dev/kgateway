@@ -7,7 +7,11 @@ description: Data Loss Prevention (DLP) is a method of ensuring that sensitive d
 ### Understanding DLP
 
 Data Loss Prevention (DLP) is a method of ensuring that sensitive data isn't logged or leaked. This is done by doing
-a series of regex replacements on the response body.
+a series of regex replacements on the response body and content that is logged by Envoy ([see Access Logging]({{% versioned_link_path fromRoot="/guides/security/access_logging/" %}})).
+
+{{% notice info %}}
+Valid regex patterns are those in the [RE2 syntax](https://github.com/google/re2/wiki/Syntax). Note that some features such as lookaheads are not supported by RE2.
+{{% /notice %}}
 
 For example, we can use Gloo Edge to transform this response:
 ```json
@@ -26,16 +30,17 @@ into this response:
 }
 ```
 
-DLP is configured as a list of `Action`s, applied in order, on an HTTP listener, virtual service, or route. If
+DLP is configured as an ordered list of `Action`s on an HTTP listener, virtual service, or route. If
 configured on the listener, an additional matcher is paired with a list of `Action`s, and the first DLP rule that
 matches a request will be applied.
 
-DLP is one of the first filters run by Envoy. Gloo Edge's current filter order follows:
+The DLP filter will be run by Envoy after any other filters which might add data to be masked into the dynamic metadata. Gloo Edge's current filter order follows:
 
 1. Fault Stage (Fault injection)
-1. CORS/DLP Stage (order here is not guaranteed to be idempotent)
-1. WAF Stage
-1. Rest of the filters ... (not all in the same stage)
+2. CORS
+3. WAF Stage
+4. Rest of the filters ... (not all in the same stage)
+5. DLP
 
 ### DLP for access logs
 
@@ -43,6 +48,14 @@ By default, DLP will only run regex replacements on the response body. If
 [access logging]({{% versioned_link_path fromRoot="/guides/security/access_logging/" %}}) is configured, the DLP actions
 can also be applied to the headers and dynamic metadata that is logged by the configured access loggers. To do so, the `enabledFor`
 DLP configuration option must be set to `ACCESS_LOGS` or `ALL` (to mask access logs AND the response bodies).
+
+{{% notice info %}}
+Masking headers in access logs will only match based on header value. 
+{{% /notice %}}
+
+{{% notice info %}}
+Masking access logs configured with Filter State is not supported.
+{{% /notice %}}
 
 ### Prerequisites
 
@@ -211,8 +224,9 @@ spec:
             name: test   # only used for logging
             percent:
               value: 60  # % of regex match to mask
-            regex:
-            - '(?!"name":"[\s]*)[^"]+(?=",)'
+            regexActions:
+            - regex: '"name":[^"]*"([^"]*)"'
+              subgroup: 1
 EOF
 {{< /highlight >}}
 
