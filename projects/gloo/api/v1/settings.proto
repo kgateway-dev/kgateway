@@ -581,6 +581,9 @@ message GlooOptions {
     // When set to true unused filters are not added to the chain by default.
     // Defaults to false
     google.protobuf.BoolValue remove_unused_filters = 14;
+
+    // Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`
+    string proxy_debug_bind_addr = 15;
 }
 
 

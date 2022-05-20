@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/3471
+    resolvesIssue: false
+    description: >
+      Allow reading proxies via a GRPC call when they are not persisted to etcd. Update glooctl so that `glooctl get proxies`
+      accesses the debug endpoint.
