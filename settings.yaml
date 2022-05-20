@@ -1,0 +1,47 @@
+apiVersion: v1
+items:
+- apiVersion: gloo.solo.io/v1
+  kind: Settings
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"gloo.solo.io/v1","kind":"Settings","metadata":{"annotations":{"meta.helm.sh/release-name":"gloo","meta.helm.sh/release-namespace":"gloo-system"},"creationTimestamp":"2022-05-20T20:11:25Z","generation":1,"labels":{"app":"gloo","app.kubernetes.io/managed-by":"Helm","gloo":"settings"},"name":"default","namespace":"gloo-system","resourceVersion":"154388","uid":"b6023d20-26e5-4cae-a9fd-2238f1026642"},"spec":{"discovery":{"fdsMode":"WHITELIST"},"discoveryNamespace":"gloo-system","gateway":{"enableGatewayController":true,"readGatewaysFromAllNamespaces":false},"gloo":{"disableKubernetesDestinations":false,"disableProxyGarbageCollection":false,"enableRestEds":false,"invalidConfigPolicy":{"invalidRouteResponseBody":"Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.","invalidRouteResponseCode":404,"replaceInvalidRoutes":false},"proxyDebugBindAddr":"0.0.0.0:9966","restXdsBindAddr":"0.0.0.0:9976","xdsBindAddr":"0.0.0.0:9977"},"kubernetesArtifactSource":{},"kubernetesConfigSource":{},"kubernetesSecretSource":{},"refreshRate":"60s"}}
+      meta.helm.sh/release-name: gloo
+      meta.helm.sh/release-namespace: gloo-system
+    creationTimestamp: "2022-05-20T20:11:25Z"
+    generation: 1
+    labels:
+      app: gloo
+      app.kubernetes.io/managed-by: Helm
+      gloo: settings
+    name: default
+    namespace: gloo-system
+    resourceVersion: "155103"
+    uid: b6023d20-26e5-4cae-a9fd-2238f1026642
+  spec:
+    discovery:
+      fdsMode: WHITELIST
+    discoveryNamespace: gloo-system
+    gateway:
+      enableGatewayController: true
+      readGatewaysFromAllNamespaces: false
+    gloo:
+      disableKubernetesDestinations: false
+      disableProxyGarbageCollection: false
+      enableRestEds: false
+      invalidConfigPolicy:
+        invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators
+          should run `glooctl check` to find and fix config errors.
+        invalidRouteResponseCode: 404
+        replaceInvalidRoutes: false
+      proxyDebugBindAddr: 0.0.0.0:9966
+      restXdsBindAddr: 0.0.0.0:9976
+      xdsBindAddr: 0.0.0.0:9977
+    kubernetesArtifactSource: {}
+    kubernetesConfigSource: {}
+    kubernetesSecretSource: {}
+    refreshRate: 60s
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

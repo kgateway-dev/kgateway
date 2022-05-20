@@ -1105,6 +1105,14 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		if validation.ValidatingWebhookKeyPath == "" {
 			validation.ValidatingWebhookKeyPath = gwdefaults.ValidationWebhookTlsKeyPath
 		}
+	} else {
+		// This will stop users from setting failurePolicy=fail and then removing the webhook configuration
+		if validationMustStart := os.Getenv("VALIDATION_MUST_START"); validationMustStart != "" && validationMustStart != "false" && gatewayMode {
+			return bootstrap.Opts{}, errors.Errorf("A validation webhook was configured, but no validation configuration was provided in the settings. "+
+				"Ensure the v1.Settings %v contains the spec.gateway.validation config."+
+				"If you have removed the webhook configuration since installing, set the envirnment variable VALIDATION_MUST_START=false",
+				settings.GetMetadata().Ref())
+		}
 	}
 	readGatewaysFromAllNamespaces := settings.GetGateway().GetReadGatewaysFromAllNamespaces()
 	return bootstrap.Opts{

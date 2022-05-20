@@ -73,7 +73,12 @@ func GetTestExtraEnvVar() v1.EnvVar {
 		Value: "test",
 	}
 }
-
+func GetValidationEnvVar() v1.EnvVar {
+	return v1.EnvVar{
+		Name:  "VALIDATION_MUST_START",
+		Value: "true",
+	}
+}
 func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource) {
 	byt, err := unst.MarshalJSON()
 	Expect(err).NotTo(HaveOccurred())
@@ -3885,7 +3890,7 @@ metadata:
 						selector = map[string]string{
 							"gloo": "gloo",
 						}
-						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
+						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats(), GetValidationEnvVar())
 
 						rb := ResourceBuilder{
 							Namespace:   namespace,
@@ -4020,6 +4025,7 @@ metadata:
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 					It("can disable validation", func() {
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = []v1.EnvVar{GetPodNamespaceEnvVar(), GetPodNamespaceStats()}
 						glooDeployment.Spec.Template.Spec.Volumes = []v1.Volume{{
 							Name: "labels-volume",
 							VolumeSource: v1.VolumeSource{
@@ -4983,6 +4989,10 @@ metadata:
 												},
 												{
 													Name:  "START_STATS_SERVER",
+													Value: "true",
+												},
+												{
+													Name:  "VALIDATION_MUST_START",
 													Value: "true",
 												},
 											},
