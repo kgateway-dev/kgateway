@@ -4019,7 +4019,31 @@ metadata:
 						})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
-
+					It("can disable validation", func() {
+						glooDeployment.Spec.Template.Spec.Volumes = []v1.Volume{{
+							Name: "labels-volume",
+							VolumeSource: v1.VolumeSource{
+								DownwardAPI: &v1.DownwardAPIVolumeSource{
+									Items: []v1.DownwardAPIVolumeFile{{
+										Path: "labels",
+										FieldRef: &v1.ObjectFieldSelector{
+											FieldPath: "metadata.labels",
+										},
+									}},
+								},
+							},
+						},
+						}
+						glooDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{
+							{Name: "labels-volume",
+								MountPath: "/etc/gloo",
+								ReadOnly:  true,
+							}}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gateway.validation.enabled=false"},
+						})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
 					It("can accept extra env vars", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							[]v1.EnvVar{GetTestExtraEnvVar()},
