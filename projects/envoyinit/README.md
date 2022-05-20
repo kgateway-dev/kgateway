@@ -57,9 +57,10 @@ Envoy receives dynamic configuration via the [xDS protocol](https://www.envoypro
 
 ## Debug
 
-It can be useful to run the Envoy proxy, without the control-plane, as a way of validating behavior. [hack/envoy.yaml](./hack/envoy.yaml) provides example bootstrap that can be used
+It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior. [hack/envoy.yaml](./hack/envoy.yaml) provides example bootstrap that can be used.
 
-`docker run \
+`
+docker run \
     --rm \
     -ti \
     -p 8000:8000 \
@@ -67,6 +68,20 @@ It can be useful to run the Envoy proxy, without the control-plane, as a way of 
     -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro \
     -l trace \
     quay.io/solo-io/gloo-envoy-wrapper:1.11.11
+`
+
+Envoy supports a series of [command line options](https://www.envoyproxy.io/docs/envoy/latest/operations/cli), which may be helpful as well. `component-log-level` is an especially useful option, below is how it would be used:
+
+`
+docker run \
+    --rm \
+    -ti \
+    -p 8000:8000 \
+    -p 19000:19000 \
+    -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro \
+    -l trace \
+    quay.io/solo-io/gloo-envoy-wrapper:1.11.11 \
+    --component-log-level upstream:debug,connection:trace
 `
 
 After running this, you should see a lot of Envoy logs:
@@ -87,6 +102,8 @@ To discover further information about Envoy, there are a number of great sources
  - [Hoot YouTube series](https://www.youtube.com/watch?v=KsO4pw4tEGA)
  - [Envoy docs](https://www.envoyproxy.io/docs.html)
  - [Envoy slack](https://envoyproxy.io/slack)
+ - [Envoy getting started](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/index.html)
+ - [Envoy best practices](https://www.envoyproxy.io/docs/envoy/latest/configuration/best_practices/edge)
 
 ### Determine the underlying version of Envoy
 `docker run --entrypoint=envoy gcr.io/gloo-edge/gloo-envoy-wrapper:1.11.11 --version`
