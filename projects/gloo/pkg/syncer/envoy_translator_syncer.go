@@ -100,10 +100,15 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		for _, key := range s.xdsCache.GetStatusKeys() {
 			allKeys[key] = false
 		}
-		// Get all valid node ID keys
-		for _, key := range xds.GetValidKeys(snap.Proxies, s.extensionKeys) {
+		// Get all valid node ID keys for Proxies
+		for _, key := range xds.SnapshotKeys(snap.Proxies) {
 			allKeys[key] = true
 		}
+		// Get all valid node ID keys for extensions (rate-limit, ext-auth)
+		for key := range s.extensionKeys {
+			allKeys[key] = true
+		}
+
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
 		for key, valid := range allKeys {
 			if !valid {

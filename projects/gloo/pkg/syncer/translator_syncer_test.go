@@ -72,7 +72,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
-		xdsHasher := &xds.ProxyKeyHasher{}
+		xdsHasher := &xds.nodeRoleHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "")
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
@@ -224,7 +224,7 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 
-		xdsHasher := &xds.ProxyKeyHasher{}
+		xdsHasher := &xds.nodeRoleHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "")
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{

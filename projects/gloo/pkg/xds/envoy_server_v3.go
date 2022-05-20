@@ -44,7 +44,6 @@ type envoyServerV3 struct {
 	server.Server
 }
 
-// NewServer creates handlers from a config watcher and an optional logger.
 func NewEnvoyServerV3(genericServer server.Server) EnvoyServerV3 {
 	return &envoyServerV3{Server: genericServer}
 }
