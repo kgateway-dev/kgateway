@@ -43,8 +43,8 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	}
 
 	// 2. Write to a file for debug purposes
-	err = ioutil.WriteFile(outputPath, []byte(bootstrapConfig), 0444)
-	if err != nil {
+	writeConfigErr := ioutil.WriteFile(outputPath, []byte(bootstrapConfig), 0444)
+	if writeConfigErr != nil {
 		// do nothing
 		// since this operation is meant only for debug purposes, we ignore the error
 		// this might fail if root fs is read only
@@ -55,8 +55,8 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	if len(os.Args) > 1 {
 		args = append(args, os.Args[1:]...)
 	}
-	if err := syscall.Exec(args[0], args, os.Environ()); err != nil {
-		panic(err)
+	if execErr := syscall.Exec(args[0], args, os.Environ()); err != nil {
+		panic(execErr)
 	}
 }
 

@@ -59,13 +59,13 @@ Envoy receives dynamic configuration via the [xDS protocol](https://www.envoypro
 
 It can be useful to run the Envoy proxy, without the control-plane, as a way of validating behavior. [hack/envoy.yaml](./hack/envoy.yaml) provides example bootstrap that can be used
 
-`docker run 
-    --rm 
-    -ti 
-    -p 8000:8000 
-    -p 19000:19000 
-    -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro
-    -l trace 
+`docker run \
+    --rm \
+    -ti \
+    -p 8000:8000 \
+    -p 19000:19000 \
+    -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro \
+    -l trace \
     quay.io/solo-io/gloo-envoy-wrapper:1.11.11
 `
 
