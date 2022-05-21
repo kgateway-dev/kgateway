@@ -12,7 +12,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 )
 
-
 var fallbackBindPort = defaults.HttpPort
 
 const (

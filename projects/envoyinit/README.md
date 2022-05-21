@@ -93,7 +93,6 @@ After running this, you should see a lot of Envoy logs:
 Envoy exposes an [administration interface](https://www.envoyproxy.io/docs/envoy/latest/operations/admin) which can be used to query and modify different aspects of the server. The address of this interface is defined in the [bootstrap API](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/bootstrap/v3/bootstrap.proto#envoy-v3-api-msg-config-bootstrap-v3-admin), though it is commonly found at port `19000`. 
 If the above command succeeded, you should be able to visit [port 19000 in your browser](http://localhost:19000/) to explore the admin interface.
 
-
 ## Useful Information
 
 ### Other resources

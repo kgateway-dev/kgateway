@@ -3,6 +3,7 @@ package xds
 import (
 	"context"
 	"fmt"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -59,7 +60,6 @@ func SnapshotCacheKeys(proxies v1.ProxyList) []string {
 	}
 	return keys
 }
-
 
 // NewAdsSnapshotCache returns a snapshot-based cache, used to serve xDS requests
 func NewAdsSnapshotCache(ctx context.Context) cache.SnapshotCache {

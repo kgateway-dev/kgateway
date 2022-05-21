@@ -43,20 +43,17 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	}
 
 	// 2. Write to a file for debug purposes
-	writeConfigErr := ioutil.WriteFile(outputPath, []byte(bootstrapConfig), 0444)
-	if writeConfigErr != nil {
-		// do nothing
-		// since this operation is meant only for debug purposes, we ignore the error
-		// this might fail if root fs is read only
-	}
+	// since this operation is meant only for debug purposes, we ignore the error
+	// this might fail if root fs is read only
+	_ = ioutil.WriteFile(outputPath, []byte(bootstrapConfig), 0444)
 
 	// 3. Execute Envoy with the provided configuration
 	args := []string{envoyExecutable, "--config-yaml", bootstrapConfig}
 	if len(os.Args) > 1 {
 		args = append(args, os.Args[1:]...)
 	}
-	if execErr := syscall.Exec(args[0], args, os.Environ()); err != nil {
-		panic(execErr)
+	if err = syscall.Exec(args[0], args, os.Environ()); err != nil {
+		panic(err)
 	}
 }
 
