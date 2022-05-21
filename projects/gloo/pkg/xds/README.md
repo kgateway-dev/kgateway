@@ -38,7 +38,7 @@ In addition to serving configuration for Envoy resources, the Gloo xDS server is
 
 The SoloDiscoveryService is required to serve these extension resources. It is largely based on the Envoy v2 API, and since it is purely an internal API, we do not need to upgrade the API as the Envoy xDS API. [This issue](https://github.com/solo-io/gloo/issues/4369) contains additional context around the reason behind this custom discovery service.
 
-## xDS Requests in Gloo Edge
+## xDS Requests
 
 Gloo Edge supports managing configuration for multiple proxies through a single xDS server. To do so, it stores each snapshot in the cache at a key that is unique to that proxy.
 

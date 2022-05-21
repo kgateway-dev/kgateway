@@ -12,13 +12,13 @@ The Gloo Edge service proxies provide all the functionality of the [open source 
 
 ### Versioning
 
-In the [Makefile](../../Makefile), the `ENVOY_GLOO_IMAGE` value defines the version of `envoy-gloo` that Gloo Edge depends on.
+In the [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile), the `ENVOY_GLOO_IMAGE` value defines the version of `envoy-gloo` that Gloo Edge depends on.
 
 Envoy publishes new minor releases [each quarter](https://www.envoyproxy.io/docs/envoy/latest/version_history/version_history#). Gloo attempts to follow this cadence, and increment our minor version of `envoy-gloo` as well.
 
 ## Build
 
-*All make targets are currently defined in the [Makefile](../../Makefile) at the root of the repository.*
+*All make targets are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile) at the root of the repository.*
 
 The `VERSION` env variable determines the name of the tag for the image.
 
@@ -28,7 +28,7 @@ VERSION=<version name> make gloo-envoy-wrapper-docker
 ```
 
 Or rely on the auto-generated version:
-```bash
+```shell
 make gloo-envoy-wrapper-docker
 ```
 
@@ -59,30 +59,15 @@ Envoy receives dynamic configuration via the [xDS protocol](https://www.envoypro
 
 It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior. [hack/envoy.yaml](./hack/envoy.yaml) provides example bootstrap that can be used.
 
-`
-docker run \
-    --rm \
-    -ti \
-    -p 8000:8000 \
-    -p 19000:19000 \
-    -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro \
-    -l trace \
-    quay.io/solo-io/gloo-envoy-wrapper:1.11.11
-`
+```shell
+docker run --rm -ti -p 8000:8000 -p 19000:19000 -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro -l trace gcr.io/gloo-edge/gloo-envoy-wrapper:1.11.11
+```
 
 Envoy supports a series of [command line options](https://www.envoyproxy.io/docs/envoy/latest/operations/cli), which may be helpful as well. `component-log-level` is an especially useful option, below is how it would be used:
 
-`
-docker run \
-    --rm \
-    -ti \
-    -p 8000:8000 \
-    -p 19000:19000 \
-    -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro \
-    -l trace \
-    quay.io/solo-io/gloo-envoy-wrapper:1.11.11 \
-    --component-log-level upstream:debug,connection:trace
-`
+```shell
+docker run --rm -ti -p 8000:8000 -p 19000:19000 -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro -l trace gcr.io/gloo-edge/gloo-envoy-wrapper:1.11.11 --component-log-level upstream:debug,connection:trace
+```
 
 After running this, you should see a lot of Envoy logs:
 ```text
@@ -105,7 +90,9 @@ To discover further information about Envoy, there are a number of great sources
  - [Envoy best practices](https://www.envoyproxy.io/docs/envoy/latest/configuration/best_practices/edge)
 
 ### Determine the underlying version of Envoy
-`docker run --entrypoint=envoy gcr.io/gloo-edge/gloo-envoy-wrapper:1.11.11 --version`
+```shell
+docker run --entrypoint=envoy gcr.io/gloo-edge/gloo-envoy-wrapper:1.11.11 --version
+```
 
 ```text
 envoy  version: 1f606cca72a8cd5f712803a732d0dd97828bd860/1.21.1/Distribution/RELEASE/BoringSSL
