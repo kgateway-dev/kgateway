@@ -3,6 +3,8 @@ package syncer_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -71,7 +73,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
-		xdsHasher := &xds.nodeRoleHasher{}
+		xdsHasher := xds.NewNodeRoleHasher()
 		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "")
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
@@ -223,7 +225,7 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 
-		xdsHasher := &xds.nodeRoleHasher{}
+		xdsHasher := xds.NewNodeRoleHasher()
 		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "")
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
