@@ -94,16 +94,21 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 	if !s.settings.GetGloo().GetDisableProxyGarbageCollection().GetValue() {
 		allKeys := map[string]bool{
-			xds.FallbackNodeKey: true,
+			xds.FallbackNodeCacheKey: true,
 		}
 		// Get all envoy node ID keys
 		for _, key := range s.xdsCache.GetStatusKeys() {
 			allKeys[key] = false
 		}
-		// Get all valid node ID keys
-		for _, key := range xds.GetValidKeys(snap.Proxies, s.extensionKeys) {
+		// Get all valid node ID keys for Proxies
+		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
 			allKeys[key] = true
 		}
+		// Get all valid node ID keys for extensions (rate-limit, ext-auth)
+		for key := range s.extensionKeys {
+			allKeys[key] = true
+		}
+
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
 		for key, valid := range allKeys {
 			if !valid {
@@ -149,7 +154,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		allReports.Merge(reports)
-		key := xds.SnapshotKey(proxy)
+		key := xds.SnapshotCacheKey(proxy)
 		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
 
 		// Record some metrics
