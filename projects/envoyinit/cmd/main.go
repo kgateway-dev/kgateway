@@ -4,7 +4,6 @@ import (
 	_ "github.com/solo-io/gloo/projects/envoyinit/hack/filter_types"
 
 	"bytes"
-	"io/ioutil"
 	"log"
 	"os"
 	"syscall"
@@ -45,7 +44,7 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	// 2. Write to a file for debug purposes
 	// since this operation is meant only for debug purposes, we ignore the error
 	// this might fail if root fs is read only
-	_ = ioutil.WriteFile(outputPath, []byte(bootstrapConfig), 0444)
+	_ = os.WriteFile(outputPath, []byte(bootstrapConfig), 0444)
 
 	// 3. Execute Envoy with the provided configuration
 	args := []string{envoyExecutable, "--config-yaml", bootstrapConfig}
