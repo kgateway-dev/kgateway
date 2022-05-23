@@ -97,5 +97,3 @@ docker run --entrypoint=envoy gcr.io/gloo-edge/gloo-envoy-wrapper:1.11.11 --vers
 ```text
 envoy  version: 1f606cca72a8cd5f712803a732d0dd97828bd860/1.21.1/Distribution/RELEASE/BoringSSL
 ```
-
-
