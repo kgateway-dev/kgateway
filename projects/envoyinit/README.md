@@ -84,6 +84,7 @@ If the above command succeeded, you should be able to visit [port 19000 in your 
 
 To discover further information about Envoy, there are a number of great sources:
  - [Hoot YouTube series](https://www.youtube.com/watch?v=KsO4pw4tEGA)
+ - [Hoot Repository](https://github.com/solo-io/hoot)
  - [Envoy docs](https://www.envoyproxy.io/docs.html)
  - [Envoy slack](https://envoyproxy.io/slack)
  - [Envoy getting started](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/index.html)
