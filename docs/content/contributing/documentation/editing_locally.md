@@ -69,7 +69,7 @@ Those commands download any Go dependencies and render the site using Hugo.
 - the `SKIP_CHANGELOG_GENERATION` part tells the program to avoid pulling changelog documentation from git
 - the `SKIP_SECURITY_SCAN` skips the Trivy security scan
 - the `SKIP_ENTERPRISE_DOCS_GENERATION` skips fetching some documentation from a private Solo.io GitHub repository
-- the `HUGO_PARAMS_noSecurityScan=true` variable tells Hugo not to render security scan reports (requires a corporate Solo.io GH account)
+- the `HUGO_PARAMS_noSecurityScan=true` variable tells Hugo not to render security scan reports, which requires a corporate Solo.io GH account
 
 Once the command completes, you should see output similar to this:
 
