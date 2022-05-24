@@ -59,6 +59,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		glooPort       int
 		validationPort int
 		restXdsPort    int
+		proxyDebugPort int
 	)
 
 	const writeNamespace = defaults.GlooSystem
@@ -70,6 +71,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		glooPort = int(services.AllocateGlooPort())
 		validationPort = int(services.AllocateGlooPort())
 		restXdsPort = int(services.AllocateGlooPort())
+		proxyDebugPort = int(services.AllocateGlooPort())
 
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
@@ -94,7 +96,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		settingsDir, err = ioutil.TempDir("", "")
 		Expect(err).NotTo(HaveOccurred())
 
-		settings, err := writeSettings(settingsDir, glooPort, validationPort, restXdsPort, writeNamespace, vaultSecretSource)
+		settings, err := writeSettings(settingsDir, glooPort, validationPort, restXdsPort, proxyDebugPort, writeNamespace, vaultSecretSource)
 		Expect(err).NotTo(HaveOccurred())
 
 		consulClient, err = bootstrap.ConsulClientForSettings(ctx, settings)
@@ -334,7 +336,7 @@ func getVaultSecretSource(vaultInstance *services.VaultInstance, secretEngine st
 
 func writeSettings(
 	settingsDir string,
-	glooPort, validationPort, restXdsPort int,
+	glooPort, validationPort, restXdsPort, proxyDebugPort int,
 	writeNamespace string,
 	vaultSecretSource *gloov1.Settings_VaultSecrets,
 ) (*gloov1.Settings, error) {
@@ -360,6 +362,7 @@ func writeSettings(
 			XdsBindAddr:        fmt.Sprintf("0.0.0.0:%v", glooPort),
 			ValidationBindAddr: fmt.Sprintf("0.0.0.0:%v", validationPort),
 			RestXdsBindAddr:    fmt.Sprintf("0.0.0.0:%v", restXdsPort),
+			ProxyDebugBindAddr: fmt.Sprintf("0.0.0.0:%v", proxyDebugPort),
 		},
 		Gateway: &gloov1.GatewayOptions{
 			PersistProxySpec: &wrapperspb.BoolValue{Value: true},

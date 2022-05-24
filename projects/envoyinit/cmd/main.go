@@ -1,59 +1,101 @@
 package main
 
 import (
-	"io/ioutil"
+	_ "github.com/solo-io/gloo/projects/envoyinit/hack/filter_types"
+
+	"bytes"
 	"log"
 	"os"
 	"syscall"
 
-	"github.com/solo-io/gloo/projects/envoyinit/cmd/utils"
+	"github.com/solo-io/gloo/projects/envoyinit/pkg/downward"
 )
 
-func writeConfig(cfg string) {
-	ioutil.WriteFile(outputCfg(), []byte(cfg), 0444)
-}
+const (
+	// Environment variable for the file that is used to inject input configuration used to bootstrap envoy
+	inputConfigPathEnv     = "INPUT_CONF"
+	defaultInputConfigPath = "/etc/envoy/envoy.yaml"
+
+	// Environment variable for the file that is written to with transformed bootstrap configuration
+	outputConfigPathEnv     = "OUTPUT_CONF"
+	defaultOutputConfigPath = "/tmp/envoy.yaml"
+
+	// Environment variable for the path to the envoy executable
+	envoyExecutableEnv     = "ENVOY"
+	defaultEnvoyExecutable = "/usr/local/bin/envoy"
+)
 
 func main() {
-	inputFile := inputCfg()
-	outCfg, err := utils.GetConfig(inputFile)
+	envoyExecutable := GetEnvoyExecutable()
+	inputPath := GetInputConfigPath()
+	outputPath := GetOutputConfigPath()
+
+	RunEnvoy(envoyExecutable, inputPath, outputPath)
+}
+
+// RunEnvoy run Envoy with bootstrap configuration injected from a file
+func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
+	// 1. Transform the configuration using the Kubernetes Downward API
+	bootstrapConfig, err := getAndTransformConfig(inputPath)
 	if err != nil {
 		log.Fatalf("initializer failed: %v", err)
 	}
 
-	// best effort - write to a file for debug purposes.
+	// 2. Write to a file for debug purposes
+	// since this operation is meant only for debug purposes, we ignore the error
 	// this might fail if root fs is read only
-	writeConfig(outCfg)
+	_ = os.WriteFile(outputPath, []byte(bootstrapConfig), 0444)
 
-	env := os.Environ()
-	args := []string{envoy(), "--config-yaml", outCfg}
+	// 3. Execute Envoy with the provided configuration
+	args := []string{envoyExecutable, "--config-yaml", bootstrapConfig}
 	if len(os.Args) > 1 {
 		args = append(args, os.Args[1:]...)
 	}
-	if err := syscall.Exec(args[0], args, env); err != nil {
+	if err = syscall.Exec(args[0], args, os.Environ()); err != nil {
 		panic(err)
 	}
 }
 
-func envoy() string {
-	maybeEnvoy := os.Getenv("ENVOY")
-	if maybeEnvoy != "" {
-		return maybeEnvoy
-	}
-	return "/usr/local/bin/envoy"
+// GetInputConfigPath returns the path to a file containing the Envoy bootstrap configuration
+// This configuration may leverage the Kubernetes Downward API
+// https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/#the-downward-api
+func GetInputConfigPath() string {
+	return getEnvOrDefault(inputConfigPathEnv, defaultInputConfigPath)
 }
 
-func inputCfg() string {
-	maybeConf := os.Getenv("INPUT_CONF")
-	if maybeConf != "" {
-		return maybeConf
-	}
-	return "/etc/envoy/envoy.yaml"
+// GetOutputConfigPath returns the path to a file where the raw Envoy bootstrap configuration will
+// be persisted for debugging purposes
+func GetOutputConfigPath() string {
+	return getEnvOrDefault(outputConfigPathEnv, defaultOutputConfigPath)
 }
 
-func outputCfg() string {
-	maybeConf := os.Getenv("OUTPUT_CONF")
-	if maybeConf != "" {
-		return maybeConf
+// GetEnvoyExecutable returns the Envoy executable
+func GetEnvoyExecutable() string {
+	return getEnvOrDefault(envoyExecutableEnv, defaultEnvoyExecutable)
+}
+
+// getEnvOrDefault returns the value of the environment variable, if one exists, or a default string
+func getEnvOrDefault(envName, defaultValue string) string {
+	maybeEnvValue := os.Getenv(envName)
+	if maybeEnvValue != "" {
+		return maybeEnvValue
 	}
-	return "/tmp/envoy.yaml"
+	return defaultValue
+}
+
+// getAndTransformConfig reads a file, transforms it using the Downward API
+// and returns the transformed configuration
+func getAndTransformConfig(inputFile string) (string, error) {
+	inReader, err := os.Open(inputFile)
+	if err != nil {
+		return "", err
+	}
+	defer inReader.Close()
+
+	var buffer bytes.Buffer
+	err = downward.Transform(inReader, &buffer)
+	if err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
 }

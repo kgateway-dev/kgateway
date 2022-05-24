@@ -179,6 +179,9 @@ spec:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: grpc-validation
           protocol: TCP
+        - containerPort: {{ .Values.gloo.deployment.proxyDebugPort }}
+          name: grpc-proxydebug
+          protocol: TCP
         - containerPort: 9979
           name: wasm-cache
           protocol: TCP
@@ -215,6 +218,10 @@ spec:
         {{- end}}
         {{- if $statsConfig.enabled }}
           - name: START_STATS_SERVER
+            value: "true"
+        {{- end}}
+        {{- if .Values.gateway.validation.enabled }}
+          - name: VALIDATION_MUST_START
             value: "true"
         {{- end}}
         {{- if .Values.gloo.logLevel }}

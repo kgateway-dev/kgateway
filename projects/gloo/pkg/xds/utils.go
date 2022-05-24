@@ -10,6 +10,14 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
+// SetEdsOnCluster marks an Envoy Cluster to receive its Endpoints from the xDS Server
+// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/service_discovery#arch-overview-service-discovery-types-eds
+// In Gloo, we support both streaming (gRPC) and polling (REST)
+//
+// NOTE: REST EDS was introduced as a way of bypassing https://github.com/envoyproxy/envoy/issues/13070
+// a bug in Envoy that would cause clusters to warm, without endpoints.
+// That bug has since been resolved and gRPC EDS is preferred as the polling solution is more
+// resource intensive and could delay updates by as much as 5 seconds (or whatever the refresh delay is)
 func SetEdsOnCluster(out *envoy_config_cluster_v3.Cluster, settings *v1.Settings) {
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_EDS,

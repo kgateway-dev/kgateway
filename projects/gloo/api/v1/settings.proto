@@ -14,6 +14,7 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
@@ -372,6 +373,12 @@ message Settings {
     // If an auth server name is not supplied on a route, the default auth server will be applied.
     map<string, enterprise.gloo.solo.io.Settings> named_extauth = 33;
 
+    // Enterprise-only: Settings for the caching server itself
+    // This may eventually be able to be set at a per listener level.
+	// At this time is used for plugin translation via the init.Params.
+    caching.options.gloo.solo.io.Settings caching_server = 36;
+
+
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 14;
 
@@ -433,6 +440,9 @@ message Settings {
 
     // Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI)
     ConsoleOptions console_options = 35;
+
+    // Enterprise-only: GraphQL settings
+    GraphqlOptions graphql_options = 37;
 }
 
 // Default configuration to use for upstreams, when not provided by a specific upstream
@@ -571,6 +581,9 @@ message GlooOptions {
     // When set to true unused filters are not added to the chain by default.
     // Defaults to false
     google.protobuf.BoolValue remove_unused_filters = 14;
+
+    // Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`
+    string proxy_debug_bind_addr = 15;
 }
 
 
@@ -681,4 +694,39 @@ message ConsoleOptions {
     // Whether to enable the GraphQL API Explorer. This feature requires a Gloo Edge Enterprise license with GraphQL enabled.
     // Defaults to true.
     google.protobuf.BoolValue api_explorer_enabled = 2;
+}
+
+// GraphQL settings used by the control plane and UI.
+message GraphqlOptions {
+
+    // Options for how to validate changes to schema definitions.
+    SchemaChangeValidationOptions schema_change_validation_options = 1;
+
+    message SchemaChangeValidationOptions {
+        // Schema definition updates can be considered safe, dangerous, or breaking.
+        // If this field is set to true, then breaking schema updates will be rejected.
+        // Defaults to false.
+        google.protobuf.BoolValue reject_breaking_changes = 1;
+
+        // We use [GraphQL Inspector](https://www.graphql-inspector.com/docs/essentials/diff) to detect breaking changes
+        // to GraphQL schemas. This field allows for passing [processing rules](https://www.graphql-inspector.com/docs/essentials/diff#rules)
+        // to GraphQL Inspector to customize how various change types are handled.
+        repeated ProcessingRule processing_rules = 2;
+
+        enum ProcessingRule {
+            RULE_UNSPECIFIED = 0;
+
+            // Turn every dangerous change into a breaking change.
+            RULE_DANGEROUS_TO_BREAKING = 1;
+
+            // Treat the removal of a deprecated field as a dangerous change, instead of a breaking change.
+            RULE_DEPRECATED_FIELD_REMOVAL_DANGEROUS = 2;
+
+            // Ignore description changes.
+            RULE_IGNORE_DESCRIPTION_CHANGES = 3;
+
+            // Ignore breaking changes on parts of the schema that are not reachable starting from the root types.
+            RULE_IGNORE_UNREACHABLE = 4;
+        }
+    }
 }

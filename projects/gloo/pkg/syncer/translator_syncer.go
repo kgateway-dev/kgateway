@@ -16,7 +16,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -25,7 +24,7 @@ type translatorSyncer struct {
 	translator translator.Translator
 	sanitizer  sanitizer.XdsSanitizer
 	xdsCache   envoycache.SnapshotCache
-	xdsHasher  *xds.ProxyKeyHasher
+	xdsHasher  envoycache.NodeHash
 	reporter   reporter.StatusReporter
 	// used for debugging purposes only
 	latestSnap *v1snap.ApiSnapshot
@@ -66,7 +65,7 @@ type TranslatorSyncerExtension interface {
 func NewTranslatorSyncer(
 	translator translator.Translator,
 	xdsCache envoycache.SnapshotCache,
-	xdsHasher *xds.ProxyKeyHasher,
+	xdsHasher envoycache.NodeHash,
 	sanitizer sanitizer.XdsSanitizer,
 	reporter reporter.StatusReporter,
 	devMode bool,

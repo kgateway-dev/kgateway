@@ -73,7 +73,12 @@ func GetTestExtraEnvVar() v1.EnvVar {
 		Value: "test",
 	}
 }
-
+func GetValidationEnvVar() v1.EnvVar {
+	return v1.EnvVar{
+		Name:  "VALIDATION_MUST_START",
+		Value: "true",
+	}
+}
 func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource) {
 	byt, err := unst.MarshalJSON()
 	Expect(err).NotTo(HaveOccurred())
@@ -90,6 +95,7 @@ var _ = Describe("Helm Test", func() {
 				{Name: "grpc-xds", ContainerPort: 9977, Protocol: "TCP"},
 				{Name: "rest-xds", ContainerPort: 9976, Protocol: "TCP"},
 				{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
+				{Name: "grpc-proxydebug", ContainerPort: 9966, Protocol: "TCP"},
 				{Name: "wasm-cache", ContainerPort: 9979, Protocol: "TCP"},
 			}
 			selector         map[string]string
@@ -3247,6 +3253,7 @@ spec:
   gloo:
     xdsBindAddr: "0.0.0.0:9977"
     restXdsBindAddr: "0.0.0.0:9976"
+    proxyDebugBindAddr: "0.0.0.0:9966"
     enableRestEds: false
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
@@ -3883,7 +3890,7 @@ metadata:
 						selector = map[string]string{
 							"gloo": "gloo",
 						}
-						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
+						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats(), GetValidationEnvVar())
 
 						rb := ResourceBuilder{
 							Namespace:   namespace,
@@ -4017,7 +4024,32 @@ metadata:
 						})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
-
+					It("can disable validation", func() {
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = []v1.EnvVar{GetPodNamespaceEnvVar(), GetPodNamespaceStats()}
+						glooDeployment.Spec.Template.Spec.Volumes = []v1.Volume{{
+							Name: "labels-volume",
+							VolumeSource: v1.VolumeSource{
+								DownwardAPI: &v1.DownwardAPIVolumeSource{
+									Items: []v1.DownwardAPIVolumeFile{{
+										Path: "labels",
+										FieldRef: &v1.ObjectFieldSelector{
+											FieldPath: "metadata.labels",
+										},
+									}},
+								},
+							},
+						},
+						}
+						glooDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{
+							{Name: "labels-volume",
+								MountPath: "/etc/gloo",
+								ReadOnly:  true,
+							}}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gateway.validation.enabled=false"},
+						})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
 					It("can accept extra env vars", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							[]v1.EnvVar{GetTestExtraEnvVar()},
@@ -4957,6 +4989,10 @@ metadata:
 												},
 												{
 													Name:  "START_STATS_SERVER",
+													Value: "true",
+												},
+												{
+													Name:  "VALIDATION_MUST_START",
 													Value: "true",
 												},
 											},

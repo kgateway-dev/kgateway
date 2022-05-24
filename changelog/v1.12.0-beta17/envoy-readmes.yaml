@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Add internal documentation around Envoy static and dynamic configuration.

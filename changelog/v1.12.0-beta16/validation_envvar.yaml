@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6421
+    resolvesIssue: true
+    description: >
+      Add the VALIDATION_MUST_START environment variable to the gloo pod deployment.

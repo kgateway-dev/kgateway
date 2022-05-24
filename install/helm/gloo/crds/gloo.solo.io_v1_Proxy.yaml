@@ -45,6 +45,42 @@ spec:
                                   nullable: true
                                   type: integer
                               type: object
+                            caching:
+                              properties:
+                                allowedVaryHeaders:
+                                  items:
+                                    properties:
+                                      exact:
+                                        type: string
+                                      ignoreCase:
+                                        type: boolean
+                                      prefix:
+                                        type: string
+                                      safeRegex:
+                                        properties:
+                                          googleRe2:
+                                            properties:
+                                              maxProgramSize:
+                                                maximum: 4294967295
+                                                minimum: 0
+                                                nullable: true
+                                                type: integer
+                                            type: object
+                                          regex:
+                                            type: string
+                                        type: object
+                                      suffix:
+                                        type: string
+                                    type: object
+                                  type: array
+                                cachingServiceRef:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
+                              type: object
                             csrf:
                               properties:
                                 additionalOrigins:
@@ -138,6 +174,20 @@ spec:
                                                         type: integer
                                                     type: object
                                                   type: array
+                                              type: object
+                                            keyValueAction:
+                                              properties:
+                                                keyToMask:
+                                                  type: string
+                                                maskChar:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                percent:
+                                                  properties:
+                                                    value:
+                                                      type: number
+                                                  type: object
                                               type: object
                                             shadow:
                                               type: boolean
@@ -927,6 +977,20 @@ spec:
                                                         type: integer
                                                     type: object
                                                   type: array
+                                              type: object
+                                            keyValueAction:
+                                              properties:
+                                                keyToMask:
+                                                  type: string
+                                                maskChar:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                percent:
+                                                  properties:
+                                                    value:
+                                                      type: number
+                                                  type: object
                                               type: object
                                             shadow:
                                               type: boolean
@@ -2965,6 +3029,20 @@ spec:
                                                               type: integer
                                                           type: object
                                                         type: array
+                                                    type: object
+                                                  keyValueAction:
+                                                    properties:
+                                                      keyToMask:
+                                                        type: string
+                                                      maskChar:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      percent:
+                                                        properties:
+                                                          value:
+                                                            type: number
+                                                        type: object
                                                     type: object
                                                   shadow:
                                                     type: boolean
@@ -6069,6 +6147,42 @@ spec:
                                             nullable: true
                                             type: integer
                                         type: object
+                                      caching:
+                                        properties:
+                                          allowedVaryHeaders:
+                                            items:
+                                              properties:
+                                                exact:
+                                                  type: string
+                                                ignoreCase:
+                                                  type: boolean
+                                                prefix:
+                                                  type: string
+                                                safeRegex:
+                                                  properties:
+                                                    googleRe2:
+                                                      properties:
+                                                        maxProgramSize:
+                                                          maximum: 4294967295
+                                                          minimum: 0
+                                                          nullable: true
+                                                          type: integer
+                                                      type: object
+                                                    regex:
+                                                      type: string
+                                                  type: object
+                                                suffix:
+                                                  type: string
+                                              type: object
+                                            type: array
+                                          cachingServiceRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                        type: object
                                       csrf:
                                         properties:
                                           additionalOrigins:
@@ -6162,6 +6276,20 @@ spec:
                                                                   type: integer
                                                               type: object
                                                             type: array
+                                                        type: object
+                                                      keyValueAction:
+                                                        properties:
+                                                          keyToMask:
+                                                            type: string
+                                                          maskChar:
+                                                            type: string
+                                                          name:
+                                                            type: string
+                                                          percent:
+                                                            properties:
+                                                              value:
+                                                                type: number
+                                                            type: object
                                                         type: object
                                                       shadow:
                                                         type: boolean
@@ -6951,6 +7079,20 @@ spec:
                                                                   type: integer
                                                               type: object
                                                             type: array
+                                                        type: object
+                                                      keyValueAction:
+                                                        properties:
+                                                          keyToMask:
+                                                            type: string
+                                                          maskChar:
+                                                            type: string
+                                                          name:
+                                                            type: string
+                                                          percent:
+                                                            properties:
+                                                              value:
+                                                                type: number
+                                                            type: object
                                                         type: object
                                                       shadow:
                                                         type: boolean
@@ -8989,6 +9131,20 @@ spec:
                                                                         type: integer
                                                                     type: object
                                                                   type: array
+                                                              type: object
+                                                            keyValueAction:
+                                                              properties:
+                                                                keyToMask:
+                                                                  type: string
+                                                                maskChar:
+                                                                  type: string
+                                                                name:
+                                                                  type: string
+                                                                percent:
+                                                                  properties:
+                                                                    value:
+                                                                      type: number
+                                                                  type: object
                                                               type: object
                                                             shadow:
                                                               type: boolean

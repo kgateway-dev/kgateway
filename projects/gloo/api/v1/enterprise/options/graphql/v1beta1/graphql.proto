@@ -200,27 +200,27 @@ message StitchedSchema {
       string selection_set = 1;
       // specifies the root field from this subschema used to request the local type
       string query_name = 2;
-//       this provides the schema stitching engine the format to turn the initial object representation
-//       to query arguments
-//       so if the GetUser query was defined as
-//
-//      ```gql
-//      input UserSearch {
-//        username: String
-//      }
-//
-//      type Query {
-//        GetUser(user_search: UserSearch): User
-//      }
-//      ```
-//      we would want to set the user query argument with the correct username from an object.
-//      we can do that by setting the args as:
-//      ```yaml
-//      args:
-//        user_search.username: username
-//      ```
-//      where `user_search.username` is the "setter" path that we are setting the argument input value at and
-//      `username` is the "extraction" path that we are extracting from an object, such as `{"username": "wpatel"}`.
+      //       this provides the schema stitching engine the format to turn the initial object representation
+      //       to query arguments
+      //       so if the GetUser query was defined as
+      //
+      //      ```gql
+      //      input UserSearch {
+      //        username: String
+      //      }
+      //
+      //      type Query {
+      //        GetUser(user_search: UserSearch): User
+      //      }
+      //      ```
+      //      we would want to set the user query argument with the correct username from an object.
+      //      we can do that by setting the args as:
+      //      ```yaml
+      //      args:
+      //        user_search.username: username
+      //      ```
+      //      where `user_search.username` is the "setter" path that we are setting the argument input value at and
+      //      `username` is the "extraction" path that we are extracting from an object, such as `{"username": "wpatel"}`.
 
       map<string, string> args = 3;
     }
@@ -484,10 +484,25 @@ message Executor {
     // Options that apply to this local executable schema
     LocalExecutorOptions options = 3;
   }
+  message Remote {
+    core.solo.io.ResourceRef upstream_ref = 1;
+    // map of header name to extraction type:
+    // e.g.
+    // ':path':   '/hard/coded/path'
+    // ':method': '{$headers.method}'
+    //  ':key':    '{$metadata.io.solo.transformation:endpoint_url}'
+    map<string, string> headers = 2;
 
+    // map of query parameter name to extraction type:
+    // e.g.
+    //
+    // 'query': '{$metadata.$KEY_NAME:$KEY_VALUE}'
+    map<string, string> query_params = 3;
+
+    string span_name = 4;
+  }
   oneof executor {
     Local local = 1;
-    // coming soon, schema stitching:
-    //Remote remote = 2;
+    Remote remote = 2;
   }
 }

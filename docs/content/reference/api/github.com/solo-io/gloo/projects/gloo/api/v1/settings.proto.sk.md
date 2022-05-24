@@ -39,6 +39,9 @@ weight: 5
 - [GatewayOptions](#gatewayoptions)
 - [ValidationOptions](#validationoptions)
 - [ConsoleOptions](#consoleoptions)
+- [GraphqlOptions](#graphqloptions)
+- [SchemaChangeValidationOptions](#schemachangevalidationoptions)
+- [ProcessingRule](#processingrule)
   
 
 
@@ -83,11 +86,13 @@ Represents global settings for all the Gloo components.
 "rbac": .rbac.options.gloo.solo.io.Settings
 "extauth": .enterprise.gloo.solo.io.Settings
 "namedExtauth": map<string, .enterprise.gloo.solo.io.Settings>
+"cachingServer": .caching.options.gloo.solo.io.Settings
 "metadata": .core.solo.io.Metadata
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
 "observabilityOptions": .gloo.solo.io.Settings.ObservabilityOptions
 "upstreamOptions": .gloo.solo.io.UpstreamOptions
 "consoleOptions": .gloo.solo.io.ConsoleOptions
+"graphqlOptions": .gloo.solo.io.GraphqlOptions
 
 ```
 
@@ -120,11 +125,13 @@ Represents global settings for all the Gloo components.
 | `rbac` | [.rbac.options.gloo.solo.io.Settings](../enterprise/options/rbac/rbac.proto.sk/#settings) | Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.). |
 | `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/options/extauth/v1/extauth.proto.sk/#settings) | Enterprise-only: External auth related settings. |
 | `namedExtauth` | `map<string, .enterprise.gloo.solo.io.Settings>` | Enterprise-only: External auth related settings for additional auth servers This should only be used in the case where separate servers are needed to authorize separate routes. With multiple auth servers configured in Settings, multiple filters will be configured on the filter chain, but only 1 will be executed on a route. The name of the auth server (ie the key in the map) will be used to apply the configuration on the route. If an auth server name is not supplied on a route, the default auth server will be applied. |
+| `cachingServer` | [.caching.options.gloo.solo.io.Settings](../enterprise/options/caching/caching.proto.sk/#settings) | Enterprise-only: Settings for the caching server itself This may eventually be able to be set at a per listener level. At this time is used for plugin translation via the init.Params. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `observabilityOptions` | [.gloo.solo.io.Settings.ObservabilityOptions](../settings.proto.sk/#observabilityoptions) | Provides settings related to the observability deployment (enterprise only). |
 | `upstreamOptions` | [.gloo.solo.io.UpstreamOptions](../settings.proto.sk/#upstreamoptions) | Default configuration to use for upstreams, when not provided by specific upstream When these properties are defined on an upstream, this configuration will be ignored. |
 | `consoleOptions` | [.gloo.solo.io.ConsoleOptions](../settings.proto.sk/#consoleoptions) | Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI). |
+| `graphqlOptions` | [.gloo.solo.io.GraphqlOptions](../settings.proto.sk/#graphqloptions) | Enterprise-only: GraphQL settings. |
 
 
 
@@ -570,6 +577,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "enableRestEds": .google.protobuf.BoolValue
 "failoverUpstreamDnsPollingInterval": .google.protobuf.Duration
 "removeUnusedFilters": .google.protobuf.BoolValue
+"proxyDebugBindAddr": string
 
 ```
 
@@ -589,6 +597,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `enableRestEds` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether or not to use rest xds for all EDS by default. Rest XDS, as opposed to grpc, uses http polling rather than streaming. |
 | `failoverUpstreamDnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server if upstream failover is configured. If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 10s. |
 | `removeUnusedFilters` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default gloo adds a series of filters to envoy to ensure that new routes are picked up Even if the listener previously did not have a filter on the chain previously. When set to true unused filters are not added to the chain by default. Defaults to false. |
+| `proxyDebugBindAddr` | `string` | Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`. |
 
 
 
@@ -740,6 +749,59 @@ Settings used by the Enterprise Console (UI)
 | ----- | ---- | ----------- | 
 | `readOnly` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, then custom resources can only be viewed in read-only mode in the UI. If false, then resources can be created, updated, and deleted via the UI. Currently, create/update/delete operations are only supported for GraphQL resources. This feature requires a Gloo Edge Enterprise license with GraphQL enabled. Defaults to true. |
 | `apiExplorerEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether to enable the GraphQL API Explorer. This feature requires a Gloo Edge Enterprise license with GraphQL enabled. Defaults to true. |
+
+
+
+
+---
+### GraphqlOptions
+
+ 
+GraphQL settings used by the control plane and UI.
+
+```yaml
+"schemaChangeValidationOptions": .gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `schemaChangeValidationOptions` | [.gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions](../settings.proto.sk/#schemachangevalidationoptions) | Options for how to validate changes to schema definitions. |
+
+
+
+
+---
+### SchemaChangeValidationOptions
+
+
+
+```yaml
+"rejectBreakingChanges": .google.protobuf.BoolValue
+"processingRules": []gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.ProcessingRule
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `rejectBreakingChanges` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Schema definition updates can be considered safe, dangerous, or breaking. If this field is set to true, then breaking schema updates will be rejected. Defaults to false. |
+| `processingRules` | [[]gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.ProcessingRule](../settings.proto.sk/#processingrule) | We use [GraphQL Inspector](https://www.graphql-inspector.com/docs/essentials/diff) to detect breaking changes to GraphQL schemas. This field allows for passing [processing rules](https://www.graphql-inspector.com/docs/essentials/diff#rules) to GraphQL Inspector to customize how various change types are handled. |
+
+
+
+
+---
+### ProcessingRule
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `RULE_UNSPECIFIED` |  |
+| `RULE_DANGEROUS_TO_BREAKING` | Turn every dangerous change into a breaking change. |
+| `RULE_DEPRECATED_FIELD_REMOVAL_DANGEROUS` | Treat the removal of a deprecated field as a dangerous change, instead of a breaking change. |
+| `RULE_IGNORE_DESCRIPTION_CHANGES` | Ignore description changes. |
+| `RULE_IGNORE_UNREACHABLE` | Ignore breaking changes on parts of the schema that are not reachable starting from the root types. |
 
 
 

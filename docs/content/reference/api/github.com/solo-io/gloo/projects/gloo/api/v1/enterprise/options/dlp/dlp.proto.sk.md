@@ -19,6 +19,7 @@ weight: 5
 - [Action](#action)
 - [ActionType](#actiontype)
 - [CustomAction](#customaction)
+- [KeyValueAction](#keyvalueaction)
   
 
 
@@ -153,6 +154,7 @@ percent: 60
 ```yaml
 "actionType": .dlp.options.gloo.solo.io.Action.ActionType
 "customAction": .dlp.options.gloo.solo.io.CustomAction
+"keyValueAction": .dlp.options.gloo.solo.io.KeyValueAction
 "shadow": bool
 
 ```
@@ -161,6 +163,7 @@ percent: 60
 | ----- | ---- | ----------- | 
 | `actionType` | [.dlp.options.gloo.solo.io.Action.ActionType](../dlp.proto.sk/#actiontype) | The action type to implement. |
 | `customAction` | [.dlp.options.gloo.solo.io.CustomAction](../dlp.proto.sk/#customaction) | The custom user action to be applied. This field will only be used if the custom action type is specified above. |
+| `keyValueAction` | [.dlp.options.gloo.solo.io.KeyValueAction](../dlp.proto.sk/#keyvalueaction) | The key/value action to be applied. This field will only be used if the KEYVALUE action type is specified above will only affect access logs and response headers, not response bodies. |
 | `shadow` | `bool` | Shadow represents whether the action should be taken, or just recorded. |
 
 
@@ -170,37 +173,37 @@ percent: 60
 ### ActionType
 
  
-The following pre-made action types map to the following regex matchers:
+The following pre-made action types map to subgroup 1 of the listed regex patterns:
 
 SSN:
-- '(?!\D)[0-9]{9}(?=\D|$)'
-- '(?!\D)[0-9]{3}\-[0-9]{2}\-[0-9]{4}(?=\D|$)'
-- '(?!\D)[0-9]{3}\ [0-9]{2}\ [0-9]{4}(?=\D|$)'
+- '(?:^|\D)([0-9]{9})(?:\D|$)'
+- '(?:^|\D)([0-9]{3}\-[0-9]{2}\-[0-9]{4})(?:\D|$)'
+- '(?:^|\D)([0-9]{3}\ [0-9]{2}\ [0-9]{4})(?:\D|$)'
 
 MASTERCARD:
-- '(?!\D)5[1-5][0-9]{2}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(?=\D|$)'
+- '(?:^|\D)(5[1-5][0-9]{2}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
 
 VISA:
-- '(?!\D)4[0-9]{3}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(?=\D|$)'
+- '(?:^|\D)(4[0-9]{3}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
 
 AMEX:
-- '(?!\D)(34|37)[0-9]{2}(\ |\-|)[0-9]{6}(\ |\-|)[0-9]{5}(?=\D|$)'
+- '(?:^|\D)((?:34|37)[0-9]{2}(?:\ |\-|)[0-9]{6}(?:\ |\-|)[0-9]{5})(?:\D|$)'
 
 DISCOVER:
-- '(?!\D)6011(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(?=\D|$)'
+- '(?:^|\D)(6011(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
 
 JCB:
-- '(?!\D)3[0-9]{3}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(?=\D|$)'
-- '(?!\D)(2131|1800)[0-9]{11}(?=\D|$)'
+- '(?:^|\D)(3[0-9]{3}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
+- '(?:^|\D)((?:2131|1800)[0-9]{11})(?:\D|$)'
 
 DINERS_CLUB:
-- '(?!\D)30[0-5][0-9](\ |\-|)[0-9]{6}(\ |\-|)[0-9]{4}(?=\D|$)'
-- '(?!\D)(36|38)[0-9]{2}(\ |\-|)[0-9]{6}(\ |\-|)[0-9]{4}(?=\D|$)'
+- '(?:^|\D)(30[0-5][0-9](?:\ |\-|)[0-9]{6}(?:\ |\-|)[0-9]{4})(?:\D|$)'
+- '(?:^|\D)((?:36|38)[0-9]{2}(?:\ |\-|)[0-9]{6}(?:\ |\-|)[0-9]{4})(?:\D|$)'
 
 CREDIT_CARD_TRACKERS:
-- '[1-9][0-9]{2}\-[0-9]{2}\-[0-9]{4}\^\d'
-- '(?!\D)\%?[Bb]\d{13,19}\^[\-\/\.\w\s]{2,26}\^[0-9][0-9][01][0-9][0-9]{3}'
-- '(?!\D)\;\d{13,19}\=(\d{3}|)(\d{4}|\=)'
+- '([1-9][0-9]{2}\-[0-9]{2}\-[0-9]{4}\^\d)'
+- '(?:^|\D)(\%?[Bb]\d{13,19}\^[\-\/\.\w\s]{2,26}\^[0-9][0-9][01][0-9][0-9]{3})'
+- '(?:^|\D)(\;\d{13,19}\=(?:\d{3}|)(?:\d{4}|\=))'
 
 ALL_CREDIT_CARDS:
 - (All credit card related regexes from above)
@@ -217,6 +220,7 @@ ALL_CREDIT_CARDS:
 | `DINERS_CLUB` |  |
 | `CREDIT_CARD_TRACKERS` |  |
 | `ALL_CREDIT_CARDS` |  |
+| `KEYVALUE` |  |
 
 
 
@@ -263,6 +267,29 @@ If the mask_char, and percent were left to default, the result would be:
 | `maskChar` | `string` | The masking character for the sensitive data. default value: X. |
 | `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which will be masked by the mask_char default value: 75% rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/. |
 | `regexActions` | [[]envoy.config.filter.http.transformation_ee.v2.RegexAction](../../../../../external/envoy/extensions/transformation_ee/transformation.proto.sk/#regexaction) | List of regexes to apply to the response body to match data which should be masked. They will be applied iteratively in the order which they are specified. If this field and `regex` are both provided, all the regexes will be applied iteratively in the order provided, starting with the ones from `regex`. |
+
+
+
+
+---
+### KeyValueAction
+
+
+
+```yaml
+"name": string
+"maskChar": string
+"percent": .solo.io.envoy.type.Percent
+"keyToMask": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | The name of the key/value action. This name is used for logging and debugging purposes. |
+| `maskChar` | `string` | The masking character for the sensitive data. default value: X. |
+| `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which will be masked by the mask_char default value: 75% rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/. |
+| `keyToMask` | `string` | The key for which corresponding header names/dynamic metadata values should be censored Must be specified. |
 
 
 
