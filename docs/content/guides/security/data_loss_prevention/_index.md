@@ -242,6 +242,130 @@ You should get a masked response:
 [{"id":1,"name":"XXg","status":"available"},{"id":2,"name":"XXt","status":"pending"}]
 ```
 
+### Key/Value (Header Masking) Example
+
+In this example, we will define a Key/Value DLP action, which can be used to mask the value associated with a specified request header
+
+Let's start by creating our typical petstore microservice:
+
+```shell
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
+```
+
+Apply the following virtual service to route to the Gloo Edge discovered petstore upstream:
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: vs
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+```
+
+Additionally, apply the following gateway definition, which will configure the `gateway-proxy` deployment to log the value of the `test-header` request header:
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  proxyNames:
+  - gateway-proxy
+  useProxyProto: false
+  options:
+    accessLoggingService:
+      accessLog:
+      - fileSink:
+          stringFormat: "test-header: %REQ(test-header)%\n"
+          path: /dev/stdout
+```
+
+Query the petstore microservice, specifying a value for the `test-header` request header:
+
+```shell
+curl $(glooctl proxy url)/api/pets -H test-header:test-value
+```
+
+Then, obtain the access logs from the gateway-proxy deployment
+
+```shell
+kubectl logs deployment/gateway-proxy -n gloo-system
+```
+
+You should see the following log:
+
+```
+test-header: test-value 
+```
+
+Now, update the Virtual Service to use DLP to mask the value of the `test-header` request header, using a Key/Value matcher:
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: vs
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+    options:
+      dlp:
+        enabledFor: ALL
+        actions:
+        - keyValueAction:
+            maskChar: "*"
+            name: test-header-mask   # only used for logging
+            keyToMask: test-header
+            percent:
+              value: 100  # % of regex match to mask
+          actionType: KEYVALUE
+```
+
+Send another request to the petstore service:
+
+```shell
+curl $(glooctl proxy url)/api/pets -H test-header:test-value
+```
+
+Now, obtain the gateway-proxy access logs again:
+
+```
+kubectl logs deployment/gateway-proxy -n gloo-system
+```
+
+You should see the following log entry:
+
+```
+test-header: ****-*****
+```
+
+Some notes on Key/Value actions:
+ - Key/Value actions cannot be used to mask pseudo headers
+ - Key/Value actions will not mask data in response bodies, only the value of request headers, response headers, and dynamic metadata in access logs
+ - Key/Value actions will only be applied if `dlp.enabledFor` is set to `ALL` or `ACCESS_LOGS`
+
 ### Summary
 
 In this tutorial we installed Gloo Edge Enterprise and demonstrated rewriting responses from upstreams
