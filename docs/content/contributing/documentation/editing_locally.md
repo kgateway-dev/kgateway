@@ -62,21 +62,14 @@ Navigate to the `docs` folder from the Gloo Edge repo root and run `make` to sta
 ```bash
 cd docs
 export GITHUB_TOKEN=foo
-SKIP_CHANGELOG_GENERATION=true SKIP_SECURITY_SCAN=true SKIP_ENTERPRISE_DOCS_GENERATION=true make serve-site -b
+SKIP_CHANGELOG_GENERATION=true SKIP_SECURITY_SCAN=true SKIP_ENTERPRISE_DOCS_GENERATION=true HUGO_PARAMS_noSecurityScan=true make serve-site -b
 ```
 
 Those commands download any Go dependencies and render the site using Hugo.
 - the `SKIP_CHANGELOG_GENERATION` part tells the program to avoid pulling changelog documentation from git
 - the `SKIP_SECURITY_SCAN` skips the Trivy security scan
-- the `SKIP_ENTERPRISE_DOCS_GENERATION` skips fetching some documentation from a private Solo.io GitHub repository.
-
-Now, to start the local Hugo server on port 1313, you need to run the following command:
-
-```bash
-HUGO_PARAMS_noSecurityScan=true hugo --config docs.toml --themesDir themes server -D
-```
-
-The `HUGO_PARAMS_noSecurityScan` environment variable tells Hugo to not render security scan reports (requires a corporate Solo.io GH account).
+- the `SKIP_ENTERPRISE_DOCS_GENERATION` skips fetching some documentation from a private Solo.io GitHub repository
+- the `HUGO_PARAMS_noSecurityScan=true` variable tells Hugo not to render security scan reports, which requires a corporate Solo.io GH account
 
 Once the command completes, you should see output similar to this:
 
