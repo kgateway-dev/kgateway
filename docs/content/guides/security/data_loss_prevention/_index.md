@@ -37,10 +37,9 @@ matches a request will be applied.
 The DLP filter will be run by Envoy after any other filters which might add data to be masked into the dynamic metadata. Gloo Edge's current filter order follows:
 
 1. Fault Stage (Fault injection)
-2. CORS
-3. WAF Stage
-4. Rest of the filters ... (not all in the same stage)
-5. DLP
+1. DLP
+1. CORS
+1. Rest of the filters ... (not all in the same stage)
 
 ### DLP for access logs
 
