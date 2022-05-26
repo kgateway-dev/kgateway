@@ -115,10 +115,9 @@ Set up Zipkin tracing in a [local Kind cluster]({{< versioned_link_path fromRoot
 ### 2. Configure the Zipkin tracing cluster in Gloo Edge {#cluster}
 
 Zipkin uses a dedicated tracing cluster where tracing information is sent to. The name of the tracing cluster must be set in the Envoy bootstrap configuration for Envoy to know where to send the information to. The following example shows how you can configure the Zipkin tracing cluster by using Gloo Edge or updating the Envoy bootstrap configuration directly. 
- 
 
-{{< tabs >}}
-{{< tab name="Install Gloo Edge with Zipkin tracing">}}
+
+#### Option 1: Install Gloo Edge with Zipkin tracing
 
 Use the Gloo Edge installation Helm chart template to configure the Zipkin tracing platform. Gloo Edge automatically determines the updates that must be made to apply the Zipkin configuration in your Envoy proxies. 
 
@@ -148,9 +147,8 @@ Use the Gloo Edge installation Helm chart template to configure the Zipkin traci
    kubectl create namespace gloo-system
    helm install gloo gloo/gloo --namespace gloo-system -f values.yaml
    ```
-   
-{{< /tab >}}
-{{< tab name="Update the Envoy configmap">}}
+
+#### Option 2: Update the Envoy configmap directly
 
 Add the Envoy code that you want to apply to a Kubernetes configmap and restart the proxy deployments. 
 
@@ -206,9 +204,6 @@ Add the Envoy code that you want to apply to a Kubernetes configmap and restart 
    ```bash
    kubectl rollout restart deployment gateway-proxy
    ```
-   
-{{< /tab >}}
-{{< /tabs >}}
 
 ### 3. Configure Zipkin as the tracing provider for a listener {#provider}
 
