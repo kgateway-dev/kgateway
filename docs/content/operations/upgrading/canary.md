@@ -31,6 +31,12 @@ from working because the old control plane crash went into a crash loop when new
 
 {{% /notice %}}
 
+**What happens with CRDs when I perform a canary upgrade?**
+
+Each patch version might add custom resource definitions (CRDs), update existing CRDs, or remove outdated CRDs. When you deploy perform canary upgrade by installing a newer version of Gloo Edge in your data plane cluster, the Gloo Edge CRDs in your cluster are updated to the newer version. The Gloo Edge APIs are designed to be both forward and backward compatible, so the updated CRDs should not impact the performance of your older installation. However, if after evaluating the newer you decide to continue to use the older installtion, you can easily re-apply the CRDs for the older version.
+
+To check the updates to CRDs, view the upgrade notice for each minor version, or the changelogs for each patch version. To re-apply older versions of CRDs, you can run `helm pull gloo/gloo --version <version> --untar` and `kubectl apply -f gloo/crds`.
+
 ## Simple canary upgrades (recommended approach)
 
 1. Install the newer version of Gloo Edge in another namespace in your data plane cluster, such as with the following command.
