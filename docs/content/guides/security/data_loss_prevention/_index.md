@@ -49,11 +49,7 @@ can also be applied to the headers and dynamic metadata that is logged by the co
 DLP configuration option must be set to `ACCESS_LOGS` or `ALL` (to mask access logs AND the response bodies).
 
 {{% notice info %}}
-Masking headers in access logs will only match based on header value. 
-{{% /notice %}}
-
-{{% notice info %}}
-Masking access logs configured with Filter State is not supported.
+WAF access logs will only be masked when logged to Dynamic metadata. WAF logs written to Filter State will not be masked.
 {{% /notice %}}
 
 ### Prerequisites
@@ -244,6 +240,11 @@ You should get a masked response:
 ### Key/value (header masking) example
 
 In this example, you define a key/value DLP action, which you can use to mask the value associated with a specified request header.
+
+{{% notice info %}}
+Predefined and Custom actions will only match based on header value in access logs. To match against a header name, use a key/value action.
+{{% /notice %}}
+
 
 1. Get started by creating the petstore microservice.
    ```shell
