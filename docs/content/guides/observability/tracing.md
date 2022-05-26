@@ -117,14 +117,14 @@ Set up Zipkin tracing in a [local Kind cluster]({{< versioned_link_path fromRoot
 Zipkin uses a dedicated tracing cluster where tracing information is sent to. The name of the tracing cluster must be set in the Envoy bootstrap configuration for Envoy to know where to send the information to. The following example shows how you can configure the Zipkin tracing cluster by using Gloo Edge or updating the Envoy bootstrap configuration directly. 
 
 
-#### Option 1: Install Gloo Edge with Zipkin tracing
+**Option 1: Install Gloo Edge with Zipkin tracing**
 
 Use the Gloo Edge installation Helm chart template to configure the Zipkin tracing platform. Gloo Edge automatically determines the updates that must be made to apply the Zipkin configuration in your Envoy proxies. 
 
 1. Create a `values.yaml` file and add your Zipkin configuration. In the following example, the Zipkin cluster is called `zipkin`.
 
    {{< highlight yaml "hl_lines=4-16" >}}
-   gatewayProxies: <!--
+   gatewayProxies: 
      gatewayProxy:
        tracing:
          cluster:
@@ -139,7 +139,7 @@ Use the Gloo Edge installation Helm chart template to configure the Zipkin traci
                      address:
                        socket_address:
                          address: zipkin
-                         port_value: 9411 -->
+                         port_value: 9411
    {{< /highlight >}}
    
 2. Install Gloo Edge with your Zipkin configuration.   
@@ -148,7 +148,7 @@ Use the Gloo Edge installation Helm chart template to configure the Zipkin traci
    helm install gloo gloo/gloo --namespace gloo-system -f values.yaml
    ```
 
-#### Option 2: Update the Envoy configmap directly
+**Option 2: Update the Envoy configmap directly**
 
 Add the Envoy code that you want to apply to a Kubernetes configmap and restart the proxy deployments. 
 
@@ -213,13 +213,11 @@ After you configure the [tracing cluster](#cluster), you can now set Zipkin as t
 When you choose to manually update the Envoy proxies with a configmap, you can apply the updated configuration to a static listener that is defined in the Envoy bootstrap config only. If you want to configure a tracing provider for dynamically created listeners, you must update the gateway in Gloo Edge. 
 {{% /notice %}}
 
-{{< tabs >}}
-{{< tab name="Dynamic listeners with Gloo Edge">}}
+**Option 1: Dynamic listeners with Gloo Edge**
 
 You can enable tracing on a listener-by-listener basis. To find an example tracing listener configuration for your gateway, see [the tracing listener docs]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/#tracing" %}}). In this example, the Zipkin cluster that you created in step 1 is referenced in the `clusterName` field. 
 
-{{< /tab >}}
-{{< tab name="Static listeners with configmaps">}}
+**Option 2: Static listeners with configmaps**
 
 1. Edit the Envoy proxy configuration. 
 
@@ -275,9 +273,6 @@ You can enable tracing on a listener-by-listener basis. To find an example traci
 {{% notice note %}}
 This provider configuration will only be applied to the static listeners that are defined in the bootstrap config. If you need to support tracing on dynamically created listeners, follow the steps in the "Dynamic Listener" tab.
 {{% /notice %}}
-
-{{< /tab >}}
-{{< /tabs >}}
 
 ### 4. Optional: Annotate routes with tracing descriptors {#annotations}
 
