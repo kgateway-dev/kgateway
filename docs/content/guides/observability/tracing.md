@@ -148,8 +148,8 @@ Use the Gloo Edge installation Helm chart template to configure the Zipkin traci
    kubectl create namespace gloo-system
    helm install gloo gloo/gloo --namespace gloo-system -f values.yaml
    ```
+   
 {{< /tab >}}
-
 {{< tab name="Update the Envoy configmap">}}
 
 Add the Envoy code that you want to apply to a Kubernetes configmap and restart the proxy deployments. 
@@ -206,6 +206,7 @@ Add the Envoy code that you want to apply to a Kubernetes configmap and restart 
    ```bash
    kubectl rollout restart deployment gateway-proxy
    ```
+   
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -276,11 +277,10 @@ You can enable tracing on a listener-by-listener basis. To find an example traci
    kubectl rollout restart deployment [deployment_name]
    ```
 
-When the `gateway-proxy` pod restarts it should have the new trace provider config.
-
 {{% notice note %}}
 This provider configuration will only be applied to the static listeners that are defined in the bootstrap config. If you need to support tracing on dynamically created listeners, follow the steps in the "Dynamic Listener" tab.
 {{% /notice %}}
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -301,7 +301,7 @@ The following steps show how to add the name to the virtual service in Gloo Edge
    ```
    
 3. Enter the name for the route that you want to associate your trace with in the `routeDescriptor` field. 
-   ```bash
+
    {{< highlight yaml "hl_lines=17-18" >}}
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
