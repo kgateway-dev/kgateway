@@ -16,7 +16,7 @@ node:
   id: "{{.PodName}}.{{.PodNamespace}}"
   metadata:
     # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-    role: "{{.PodNamespace}}~gateway-proxy"
+    role: "gloo-system~gateway-proxy"
 static_resources:
   listeners:
     - name: prometheus_listener
