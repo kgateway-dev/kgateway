@@ -271,7 +271,7 @@ You can enable tracing on a listener-by-listener basis. To find an example traci
    ```
 
 {{% notice note %}}
-This provider configuration will only be applied to the static listeners that are defined in the bootstrap config. If you need to support tracing on dynamically created listeners, follow the steps in the "Dynamic Listener" tab.
+This provider configuration will only be applied to the static listeners that are defined in the bootstrap config. If you need to support tracing on dynamically created listeners, see `Option 1: Dynamic listeners with Gloo Edge`.
 {{% /notice %}}
 
 ### 4. Optional: Annotate routes with tracing descriptors {#annotations}
