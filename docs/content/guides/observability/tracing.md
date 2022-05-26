@@ -125,7 +125,7 @@ Use the Gloo Edge installation Helm chart template to configure the Zipkin traci
 1. Create a `values.yaml` file and add your Zipkin configuration. In the following example, the Zipkin cluster is called `zipkin`.
 
    {{< highlight yaml "hl_lines=4-16" >}}
-   gatewayProxies:
+   gatewayProxies: <!--
      gatewayProxy:
        tracing:
          cluster:
@@ -140,7 +140,7 @@ Use the Gloo Edge installation Helm chart template to configure the Zipkin traci
                      address:
                        socket_address:
                          address: zipkin
-                         port_value: 9411
+                         port_value: 9411 -->
    {{< /highlight >}}
    
 2. Install Gloo Edge with your Zipkin configuration.   
