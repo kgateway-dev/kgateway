@@ -31,17 +31,28 @@ from working because the old control plane crash went into a crash loop when new
 
 {{% /notice %}}
 
+**What happens with CRDs when I perform a canary upgrade?**
+
+Each patch version might add custom resource definitions (CRDs), update existing CRDs, or remove outdated CRDs. When you perform a canary upgrade by installing a newer version of Gloo Edge in your data plane cluster, the existing Gloo Edge CRDs are not updated to the newer version automatically, so you must manually apply the new CRDs first. To check the updates to CRDs, view the [upgrade notice for each minor version]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}), or the [changelogs for each patch version]({{< versioned_link_path fromRoot="/reference/changelog/" >}}).
+
+The Gloo Edge CRDs are designed to be backward compatible, so the updated CRDs should not impact the performance of your older installation. However, if after evaluating the newer installation you decide to continue to use the older installation, you can easily remove any added CRDs by referring to the upgrade notices for the CRD names and running `kubectl delete crd <CRD>`. Then, to re-apply older versions of CRDs, you can run `helm pull gloo/gloo --version <older_version> --untar` and `kubectl apply -f gloo/crds`.
+
 ## Simple canary upgrades (recommended approach)
 
-1. Install the newer version of Gloo Edge in another namespace in your data plane cluster, such as with the following command.
+1. Apply the new and updated CRDs for the newer version.
+   ```sh
+   helm pull gloo/gloo --version <version> --untar
+   kubectl apply -f gloo/crds
+   ```
+2. Install the newer version of Gloo Edge in another namespace in your data plane cluster, such as with the following command.
     ```shell
-     glooctl install gateway --version 1.9.1 -n gloo-system-1-9-1
+     glooctl install gateway --version <version> -n gloo-system-<version>
      ```
-2. Test your routes and monitor the metrics of the newer version.
+3. Test your routes and monitor the metrics of the newer version.
     ```shell
     glooctl check
     ```
-3. Remove the older version of Gloo Edge so that your cluster uses the newer version going forward.
+4. Remove the older version of Gloo Edge so that your cluster uses the newer version going forward.
    With `glooctl`:
     ```shell
     gloooctl uninstall -n gloo-system
