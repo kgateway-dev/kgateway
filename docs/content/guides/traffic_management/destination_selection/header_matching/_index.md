@@ -15,11 +15,10 @@ use `:authority` (HTTP/2) as the name instead.
   * If no value is specified, then the presence of the header in the request with any value will match
 ([Envoy present_match](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-headermatcher-present-match))
   * If present, then field value interpreted based on the value of `regex` field
-  * `invertMatch` - inverts the matching logic. A request matches if it does **not** match the above criteria.
+  * `invertMatch` - inverts the matching logic. A request matches if it does **not** match the above criteria. Note that Gloo Edge 0.20.9 or later is required to use this setting.
 
 {{% notice note %}}
-The `invertMatch` attribute was introduced with **Gloo Edge**, release 0.20.9. If you are using an earlier version, the 
-attribute will not be available.
+When you use header matchers, you **must also specify a prefix matcher**. Note that the path you define in prefix matcher cannot contain any hyphens (`-`).
 {{% /notice %}}
 
 In this guide, we're going to take a closer look at an example Virtual Service that uses multiple headers to match requests.  We'll begin by creating an *Upstream* and then creating the Virtual Service to route requests to that Upstream based on the headers submitted as part of the request.
@@ -57,7 +56,8 @@ glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --
 
 ## Create a Virtual Service
 
-Let's create a Virtual Service with several header match rules. For simplicity, we'll set the path matcher to prefix on `/` to match all request paths.
+Let's create a Virtual Service with several header match rules. For simplicity, we'll set the path matcher to prefix on `/` to match all request paths. Note that when you use header matchers, you **must also specify a prefix matcher**, and the path you define in prefix matcher cannot contain any hyphens (`-`).
+
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/headermatch_createvs.mp4" type="video/mp4">
