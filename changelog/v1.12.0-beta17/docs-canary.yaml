@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add docs for information about CRDs when doing canary upgrades.
+    issueLink: https://github.com/solo-io/gloo/issues/5466
