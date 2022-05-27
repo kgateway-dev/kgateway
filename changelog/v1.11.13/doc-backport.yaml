@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Backports various docs.
+  - type: NON_USER_FACING
+    description: Add docs for information about CRDs when doing canary upgrades.
+    issueLink: https://github.com/solo-io/gloo/issues/5466
+  - type: NON_USER_FACING
+    description: Updates the tracing doc.
+    issueLink: https://github.com/solo-io/gloo/pull/6502
