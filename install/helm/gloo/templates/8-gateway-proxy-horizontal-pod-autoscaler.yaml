@@ -14,7 +14,7 @@ metadata:
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $name | kebabcase }}-hpa
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $spec.namespace | default .Release.Namespace }}
 spec:
   minReplicas: {{ $spec.horizontalPodAutoscaler.minReplicas }}
   maxReplicas: {{ $spec.horizontalPodAutoscaler.maxReplicas }}

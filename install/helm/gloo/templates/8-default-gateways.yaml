@@ -9,7 +9,7 @@ apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $spec.namespace | default .Release.Namespace }}
 {{- include "gloo.customResourceLabelsAndAnnotations" $data }}
 spec:
   {{- if $gatewaySettings.ipv4Only }}
@@ -120,7 +120,7 @@ apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}-failover
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $spec.namespace | default .Release.Namespace }}
 {{- include "gloo.customResourceLabelsAndAnnotations" $data }}
 spec:
 {{- if $gatewaySettings.ipv4Only }}
