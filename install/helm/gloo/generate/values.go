@@ -362,6 +362,7 @@ type CertGenCron struct {
 
 type GatewayProxy struct {
 	Kind                           *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
+	Namespace                      *string                      `json:"namespace,omitempty" desc:"Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace"`
 	PodTemplate                    *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
 	ConfigMap                      *ConfigMap                   `json:"configMap,omitempty"`
 	CustomStaticLayer              interface{}                  `json:"customStaticLayer,omitempty" desc:"Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime"`

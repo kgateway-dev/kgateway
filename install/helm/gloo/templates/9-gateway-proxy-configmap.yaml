@@ -15,7 +15,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ $name | kebabcase }}-envoy-config
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
     app: gloo
     gloo: gateway-proxy
@@ -41,8 +41,9 @@ data:
       cluster: gateway
       id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
       metadata:
-        # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-        role: "{{ `{{.PodNamespace}}` }}~{{ $name | kebabcase }}"
+        # Specifies the proxy's in-memory xds cache key (see projects/gloo/pkg/xds/envoy.go)
+        # This value needs to match discoveryNamespace (or "writeNamespace") in the settings template
+        role: {{.Values.settings.writeNamespace | default .Release.Namespace }}~{{ $name | kebabcase }}
     static_resources:
 {{- if or $statsConfig.enabled (or $spec.readConfig $spec.extraListenersHelper) }}
       listeners:

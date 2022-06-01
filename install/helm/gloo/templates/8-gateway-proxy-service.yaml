@@ -12,7 +12,7 @@ metadata:
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $svcName | kebabcase }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $spec.namespace | default .Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
   annotations:
   {{- range $key, $value := $spec.service.extraAnnotations }}
@@ -100,12 +100,13 @@ spec:
   {{- end }} {{/* define gatewayProxy.serviceSpec */}}
 {{- define "gatewayProxy.configDumpServiceSpec" }}
 {{- $name := (index . 1) }}
+{{- $spec := (index . 2) }}
 {{- with (first .) }}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ $name | kebabcase }}-config-dump-service
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
     app: gloo
     gloo: gateway-proxy
@@ -122,12 +123,13 @@ spec:
 {{- end }} {{/* define gatewayProxy.configDumpServiceSpec */}}
 {{- define "gatewayProxy.monitoringServiceSpec" }}
 {{- $name := (index . 1) -}}
+{{- $spec := (index . 2) -}}
 {{- with (first .) }}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ $name | kebabcase }}-monitoring-service
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
     app: gloo
     gloo: gateway-proxy
