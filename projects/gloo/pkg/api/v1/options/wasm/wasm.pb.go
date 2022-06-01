@@ -266,8 +266,7 @@ type WasmFilter struct {
 	RootId string `protobuf:"bytes,6,opt,name=root_id,json=rootId,proto3" json:"root_id,omitempty"`
 	// selected VM type
 	VmType WasmFilter_VmType `protobuf:"varint,7,opt,name=vm_type,json=vmType,proto3,enum=wasm.options.gloo.solo.io.WasmFilter_VmType" json:"vm_type,omitempty"`
-	// when true, bypass the filter if there is a fatal error on the VM
-	// defaults to false
+	// when true, bypass the filter if there is a fatal error on the VM; defaults to false
 	FailOpen bool `protobuf:"varint,9,opt,name=fail_open,json=failOpen,proto3" json:"fail_open,omitempty"`
 }
 
