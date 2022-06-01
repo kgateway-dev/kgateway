@@ -77,6 +77,8 @@ func (m *WasmFilter) Clone() proto.Message {
 
 	target.VmType = m.GetVmType()
 
+	target.FailOpen = m.GetFailOpen()
+
 	switch m.Src.(type) {
 
 	case *WasmFilter_Image:
