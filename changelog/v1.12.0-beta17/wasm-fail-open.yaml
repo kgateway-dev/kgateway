@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add `fail_open` field to `wasm_filter` proto, mirroring Envoy's wasm PluginConfig
+    issueLink: https://github.com/solo-io/gloo/issues/6474
+    resolvesIssue: false
