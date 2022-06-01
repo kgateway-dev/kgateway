@@ -171,9 +171,17 @@ var _ = Describe("Kube2e: helm", func() {
 
 			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, strictValidation, settings)
 
+			// Ensures deployment is created for extra namespace (name is kebab-case of gatewayProxies NAME helm value)
 			Eventually(func() (string, error) {
-				return exec_utils.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "serviceaccount", "-n", externalNamespace)
-			}, "10s", "1s").Should(ContainSubstring(externalNamespace))
+				return exec_utils.RunCommandOutput(testHelper.RootDir, false,
+					"kubectl", "get", "deployment", "-n", externalNamespace)
+			}, "10s", "1s").Should(ContainSubstring("proxy-external"))
+
+			// Ensures service account is created for extra namespace
+			Eventually(func() (string, error) {
+				return exec_utils.RunCommandOutput(testHelper.RootDir, false,
+					"kubectl", "get", "serviceaccount", "-n", externalNamespace)
+			}, "10s", "1s").Should(ContainSubstring("gateway-proxy"))
 		})
 	})
 
