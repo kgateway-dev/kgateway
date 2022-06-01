@@ -1,10 +1,10 @@
 ---
-title: Set up your gateway with an Istio sidecar
+title: Gloo Edge and Istio
 menuTitle: Configure your Gloo Edge gateway to run an Istio sidecar 
 weight: 20
 ---
 
-You can configure your Gloo Edge gateway with an Istio sidecar to secure the connection between your gateway and the services in your Istio service mesh. The sidecar in your Gloo Edge gateway uses mutual TLS (mTLS) to proves its identity to the services in the mesh and vice versa.
+You can configure your Gloo Edge gateway with an Istio sidecar to secure the connection between your gateway and the services in your Istio service mesh. The sidecar in your Gloo Edge gateway uses mutual TLS (mTLS) to prove its identity to the services in the mesh and vice versa.
 
 ## Before you begin
 
