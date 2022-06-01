@@ -148,9 +148,10 @@ var _ = Describe("Kube2e: helm", func() {
 		})
 
 		It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
+			const externalNamespace = "other-ns"
 			requiredSettings := map[string]string{
 				"gatewayProxies.proxyExternal.disabled":              "false",
-				"gatewayProxies.proxyExternal.namespace":             "gloo-external",
+				"gatewayProxies.proxyExternal.namespace":             externalNamespace,
 				"gatewayProxies.proxyExternal.service.type":          "NodePort",
 				"gatewayProxies.proxyExternal.service.httpPort":      "31500",
 				"gatewayProxies.proxyExternal.service.httpsPort":     "32500",
@@ -158,16 +159,21 @@ var _ = Describe("Kube2e: helm", func() {
 				"gatewayProxies.proxyExternal.service.httpsNodePort": "32500",
 				//settings.watchNamespaces={}
 			}
+
 			var settings []string
 			for key, val := range requiredSettings {
 				settings = append(settings, "--set")
 				settings = append(settings, strings.Join([]string{key, val}, "="))
 			}
+
+			runAndCleanCommand("kubectl", "create", "ns", externalNamespace)
+			defer runAndCleanCommand("kubectl", "delete", "ns", externalNamespace)
+
 			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, strictValidation, settings)
 
 			Eventually(func() (string, error) {
-				return exec_utils.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "serviceaccount", "-n", requiredSettings["proxyExternal.namespace"])
-			}, "10s", "1s").Should(ContainSubstring(requiredSettings["proxyExternal.namespace"]))
+				return exec_utils.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "serviceaccount", "-n", externalNamespace)
+			}, "10s", "1s").Should(ContainSubstring(externalNamespace))
 		})
 	})
 
