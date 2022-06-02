@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any1 "github.com/golang/protobuf/ptypes/any"
+	any "github.com/golang/protobuf/ptypes/any"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -40,7 +40,7 @@ type TypedExtensionConfig struct {
 	// the inner type URL of *TypedStruct* will be utilized. See the
 	// :ref:`extension configuration overview
 	// <config_overview_extension_configuration>` for further details.
-	TypedConfig *any1.Any `protobuf:"bytes,2,opt,name=typed_config,json=typedConfig,proto3" json:"typed_config,omitempty"`
+	TypedConfig *any.Any `protobuf:"bytes,2,opt,name=typed_config,json=typedConfig,proto3" json:"typed_config,omitempty"`
 }
 
 func (x *TypedExtensionConfig) Reset() {
@@ -82,7 +82,7 @@ func (x *TypedExtensionConfig) GetName() string {
 	return ""
 }
 
-func (x *TypedExtensionConfig) GetTypedConfig() *any1.Any {
+func (x *TypedExtensionConfig) GetTypedConfig() *any.Any {
 	if x != nil {
 		return x.TypedConfig
 	}
@@ -141,7 +141,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_extension_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_extension_proto_goTypes = []interface{}{
 	(*TypedExtensionConfig)(nil), // 0: solo.io.envoy.config.core.v3.TypedExtensionConfig
-	(*any1.Any)(nil),             // 1: google.protobuf.Any
+	(*any.Any)(nil),              // 1: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_extension_proto_depIdxs = []int32{
 	1, // 0: solo.io.envoy.config.core.v3.TypedExtensionConfig.typed_config:type_name -> google.protobuf.Any

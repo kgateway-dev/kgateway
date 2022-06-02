@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any1 "github.com/golang/protobuf/ptypes/any"
+	any "github.com/golang/protobuf/ptypes/any"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1347,7 +1347,7 @@ type ExecutableSchema struct {
 	// how to execute the schema
 	Executor *Executor `protobuf:"bytes,2,opt,name=executor,proto3" json:"executor,omitempty"`
 	// Schema extensions
-	Extensions map[string]*any1.Any `protobuf:"bytes,3,rep,name=extensions,proto3" json:"extensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Extensions map[string]*any.Any `protobuf:"bytes,3,rep,name=extensions,proto3" json:"extensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *ExecutableSchema) Reset() {
@@ -1396,7 +1396,7 @@ func (x *ExecutableSchema) GetExecutor() *Executor {
 	return nil
 }
 
-func (x *ExecutableSchema) GetExtensions() map[string]*any1.Any {
+func (x *ExecutableSchema) GetExtensions() map[string]*any.Any {
 	if x != nil {
 		return x.Extensions
 	}
@@ -2388,7 +2388,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_gra
 	(*v3.HttpUri)(nil),                            // 35: solo.io.envoy.config.core.v3.HttpUri
 	(*v3.DataSource)(nil),                         // 36: solo.io.envoy.config.core.v3.DataSource
 	(*v3.TypedExtensionConfig)(nil),               // 37: solo.io.envoy.config.core.v3.TypedExtensionConfig
-	(*any1.Any)(nil),                              // 38: google.protobuf.Any
+	(*any.Any)(nil),                               // 38: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_graphql_graphql_proto_depIdxs = []int32{
 	1,  // 0: envoy.config.filter.http.graphql.v2.Path.segments:type_name -> envoy.config.filter.http.graphql.v2.PathSegment
