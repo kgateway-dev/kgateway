@@ -114,7 +114,7 @@ To verify that you can connect to your app, you can install the Bookinfo app in 
    ```
    
 2. Create an upstream to open up a port on your Gloo Edge gateway. The following example creates the `www.example.com` host that listens for incoming requests on port 80. 
-   ```shell
+   ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gloo.solo.io/v1
    kind: Upstream
@@ -130,7 +130,7 @@ To verify that you can connect to your app, you can install the Bookinfo app in 
    ```
    
 3. Create a virtual service to set up the routing rules for your Bookinfo app. In the following example, you instruct the Gloo Edge gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
-   ```shell
+   ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
