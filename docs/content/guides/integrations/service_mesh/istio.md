@@ -136,14 +136,14 @@ To verify that you can connect to your app, you can install the Bookinfo app in 
    kind: VirtualService
    metadata:
      name: my-virtual-service
-     namespace: gloo-system
+    namespace: gloo-system
    spec:
      virtualHost:
        domains:
          - 'www.example.com'
        routes:
        - matchers:
-          - prefix: /productpage
+         - prefix: /productpage
          routeAction:
            single:
              kube:
@@ -151,7 +151,7 @@ To verify that you can connect to your app, you can install the Bookinfo app in 
                  name: productpage
                  namespace: default
                port: 9080
-   EOF            
+   EOF           
    ```
    
 4. Send a request to the product page. The routing is set up correctly if you receive a 200 HTTP response code. 
