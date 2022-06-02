@@ -83,12 +83,17 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
     gateway-proxy-584974c887-km4mk   2/2     Running   0          158m
     gloo-6c8f68bd4b-rv52f            1/1     Running   0          3h58m
     ```
+    
+11. Describe the `gateway-proxy` pod to verify that the second container runs an Istio proxy image, such as `docker.io/istio/proxyv2:1.12.7`. 
+    ```shell
+    kubectl describe <gateway-pod-name> -n gloo-system
+    ```
 
 Congratuliations! You successfully configured an Istio sidecar for your Gloo Edge gateway. 
 
-## Verify the connection 
+## Verify the mTLS connection 
 
-To verify that you can connect to your app, you can install the Bookinfo app in your cluster and set up an upstream and a virtual service to route incoming requests to that app. 
+To verify that you can connect to your app via mutual TLS (mTLS), you can install the Bookinfo app in your cluster and set up an upstream and a virtual service to route incoming requests to that app. 
 
 1. Install the Bookinfo app in your cluster. 
    ```shell
@@ -154,7 +159,7 @@ To verify that you can connect to your app, you can install the Bookinfo app in 
    EOF           
    ```
    
-4. Send a request to the product page. The routing is set up correctly if you receive a 200 HTTP response code. 
+4. Send a request to the product page. Because the Istio sidecar is injected into the Gloo Edge gateway proxy, mTLS is used to securely connect to the service in your cluster. The routing is set up correctly if you receive a 200 HTTP response code. 
    ```shell
    curl -vik -H "Host: www.example.com" "$(glooctl proxy url)/productpage" 
    ```
