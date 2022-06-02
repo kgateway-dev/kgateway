@@ -87,3 +87,75 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
 Congratuliations! You successfully configured an Istio sidecar for your Gloo Edge gateway. 
 
 ## Verify the connection 
+
+To verify that you can connect to your app, you can install the Bookinfo app in your cluster and set up an upstream and a virtual service to route incoming requests to that app. 
+
+1. Install the Bookinfo app in your cluster. 
+   ```shell
+   kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
+   ```
+   
+   Example output: 
+   ```
+   service/details created
+   serviceaccount/bookinfo-details created
+   deployment.apps/details-v1 created
+   service/ratings created
+   serviceaccount/bookinfo-ratings created
+   deployment.apps/ratings-v1 created
+   service/reviews created
+   serviceaccount/bookinfo-reviews created
+   deployment.apps/reviews-v1 created
+   deployment.apps/reviews-v2 created
+   deployment.apps/reviews-v3 created
+   service/productpage created
+   serviceaccount/bookinfo-productpage created
+   deployment.apps/productpage-v1 created
+   ```
+   
+2. Create an upstream to open up a port on your Gloo Edge gateway. The following example creates the `www.example.com` host that listens for incoming requests on port 80. 
+   ```shell
+   kubectl apply -f- <<EOF
+   apiVersion: gloo.solo.io/v1
+   kind: Upstream
+   metadata:
+     name: my-upstream
+     namespace: gloo-system
+   spec:
+     static:
+       hosts:
+         - addr: www.example.com
+           port: 8080
+   EOF
+   ```
+   
+3. Create a virtual service to set up the routing rules for your Bookinfo app. In the following example, you instruct the Gloo Edge gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
+   ```shell
+   kubectl apply -f- <<EOF
+   apiVersion: gateway.solo.io/v1
+   kind: VirtualService
+   metadata:
+     name: my-virtual-service
+     namespace: gloo-system
+   spec:
+     virtualHost:
+       domains:
+         - 'www.example.com'
+       routes:
+       - matchers:
+          - prefix: /productpage
+         routeAction:
+           single:
+             kube:
+               ref:
+                 name: productpage
+                 namespace: default
+               port: 9080
+   EOF            
+   ```
+   
+4. Send a request to the product page. The routing is set up correctly if you receive a 200 HTTP response code. 
+   ```shell
+   curl -vik -H "Host: www.example.com" "$(glooctl proxy url)/productpage" 
+   ```
+   
