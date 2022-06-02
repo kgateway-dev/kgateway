@@ -715,6 +715,8 @@ spec:
                                 config:
                                   type: object
                                   x-kubernetes-preserve-unknown-fields: true
+                                failOpen:
+                                  type: boolean
                                 filePath:
                                   type: string
                                 filterStage:
@@ -1501,6 +1503,8 @@ spec:
                                           config:
                                             type: object
                                             x-kubernetes-preserve-unknown-fields: true
+                                          failOpen:
+                                            type: boolean
                                           filePath:
                                             type: string
                                           filterStage:
