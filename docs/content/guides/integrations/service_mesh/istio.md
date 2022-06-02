@@ -60,7 +60,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    ```
    
 6. [Verify your installation]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
-8. Label the `gloo` namespace to automatically inject an Istio sidecar to all pods that run in that namespace. 
+7. Label the `gloo` namespace to automatically inject an Istio sidecar to all pods that run in that namespace. 
    ```shell
    kubectl label namespaces gloo-system istio-injection=enabled
    ```
