@@ -59,6 +59,7 @@ This message defines a single Envoy WASM filter to be placed into the filter cha
 "name": string
 "rootId": string
 "vmType": .wasm.options.gloo.solo.io.WasmFilter.VmType
+"failOpen": bool
 
 ```
 
@@ -71,6 +72,7 @@ This message defines a single Envoy WASM filter to be placed into the filter cha
 | `name` | `string` | the name of the filter, used for logging. |
 | `rootId` | `string` | the root_id of the filter which should be run, if this value is incorrect, or empty the filter will crash. |
 | `vmType` | [.wasm.options.gloo.solo.io.WasmFilter.VmType](../wasm.proto.sk/#vmtype) | selected VM type. |
+| `failOpen` | `bool` | when true, bypass the filter if there is a fatal error on the VM; defaults to false. |
 
 
 

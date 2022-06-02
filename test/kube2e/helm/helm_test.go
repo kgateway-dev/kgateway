@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/ghodss/yaml"
@@ -144,6 +145,46 @@ var _ = Describe("Kube2e: helm", func() {
 			settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 			Expect(err).To(BeNil())
 			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(5000000)))
+		})
+
+		It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
+			const externalNamespace = "other-ns"
+			requiredSettings := map[string]string{
+				"gatewayProxies.proxyExternal.disabled":              "false",
+				"gatewayProxies.proxyExternal.namespace":             externalNamespace,
+				"gatewayProxies.proxyExternal.service.type":          "NodePort",
+				"gatewayProxies.proxyExternal.service.httpPort":      "31500",
+				"gatewayProxies.proxyExternal.service.httpsPort":     "32500",
+				"gatewayProxies.proxyExternal.service.httpNodePort":  "31500",
+				"gatewayProxies.proxyExternal.service.httpsNodePort": "32500",
+				//settings.watchNamespaces={}
+			}
+
+			var settings []string
+			for key, val := range requiredSettings {
+				settings = append(settings, "--set")
+				settings = append(settings, strings.Join([]string{key, val}, "="))
+			}
+
+			runAndCleanCommand("kubectl", "create", "ns", externalNamespace)
+			defer runAndCleanCommand("kubectl", "delete", "ns", externalNamespace)
+
+			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, strictValidation, settings)
+
+			// Ensures deployment is created for both default namespace and external one
+			// Note- name of external deployments is kebab-case of gatewayProxies NAME helm value
+			Eventually(func() (string, error) {
+				return exec_utils.RunCommandOutput(testHelper.RootDir, false,
+					"kubectl", "get", "deployment", "-A")
+			}, "10s", "1s").Should(
+				And(ContainSubstring("gateway-proxy"),
+					ContainSubstring("proxy-external")))
+
+			// Ensures service account is created for the external namespace
+			Eventually(func() (string, error) {
+				return exec_utils.RunCommandOutput(testHelper.RootDir, false,
+					"kubectl", "get", "serviceaccount", "-n", externalNamespace)
+			}, "10s", "1s").Should(ContainSubstring("gateway-proxy"))
 		})
 	})
 

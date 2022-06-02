@@ -398,6 +398,7 @@
 |gatewayProxies.NAME.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
+|gatewayProxies.NAME.namespace|string||Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace|
 |gatewayProxies.NAME.podTemplate.image.tag|string||The image tag for the container.|
 |gatewayProxies.NAME.podTemplate.image.repository|string||The image repository (name) for the container.|
 |gatewayProxies.NAME.podTemplate.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
@@ -588,6 +589,7 @@
 |gatewayProxies.gatewayProxy.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
+|gatewayProxies.gatewayProxy.namespace|string||Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace|
 |gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|

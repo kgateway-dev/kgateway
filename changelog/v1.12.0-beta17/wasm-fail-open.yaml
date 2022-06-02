@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: |
+      Add `fail_open` field to `wasm_filter` proto, mirroring Envoy's wasm PluginConfig; intended for use in
+      Edge Enterprise
+    issueLink: https://github.com/solo-io/gloo/issues/6474
+    resolvesIssue: false

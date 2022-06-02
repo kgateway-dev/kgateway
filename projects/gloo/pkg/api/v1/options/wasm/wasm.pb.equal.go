@@ -119,6 +119,10 @@ func (m *WasmFilter) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetFailOpen() != target.GetFailOpen() {
+		return false
+	}
+
 	switch m.Src.(type) {
 
 	case *WasmFilter_Image:

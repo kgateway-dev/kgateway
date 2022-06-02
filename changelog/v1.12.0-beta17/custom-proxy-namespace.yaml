@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6295
+    resolvesIssue: true
+    description: >
+      Allow specifying a non-control plane namespace in which to deploy gatewayProxies

@@ -35,7 +35,7 @@ metadata:
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $name | kebabcase }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $spec.namespace | default .Release.Namespace }}
 spec:
   {{- if $spec.kind.deployment}}
   {{- if $spec.kind.deployment.replicas}}
