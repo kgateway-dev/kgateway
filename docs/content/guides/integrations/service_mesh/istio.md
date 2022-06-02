@@ -19,7 +19,7 @@ Complete the following tasks before configuring an Istio sidecar for your Gloo E
    kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
    ```
    
-5. Install [Helm](https://helm.sh/docs/intro/install/) on your local machine.
+5. Install [Helm version 3](https://helm.sh/docs/intro/install/) on your local machine.
 
 ## Configure the Gloo Edge gateway with an Istio sidecar
 
