@@ -123,7 +123,7 @@ spec:
 ## Logout URL
 
 Gloo also supports specifying a logout url. When specified, accessing this url will
-trigger a deletion of the user session and revokes the user's Access Token. This returns with an empty 200 OK response.
+trigger a deletion of the user session and revokes the user's access token. This action returns with an empty 200 HTTP response.
 
 Example configuration:
 
@@ -149,10 +149,10 @@ spec:
         logoutPath: /logout
 {{< /highlight >}}
 
-When this url is accessed, the user session and cookie will be deleted. The Access Token will also be revoked on the server.
+When this URL is accessed, the user session and cookie are deleted. The access token on the server is also revoked.
 
 {{% notice warning %}}
-Gloo currently doesn't retry revoking an Access Token if there is a service error with the external OIDC provider/authorization server.
+Gloo currently does not retry to revoke an access token if there is a service error with the authorization server.
 {{% /notice %}}
 
 ## Sessions in Redis
