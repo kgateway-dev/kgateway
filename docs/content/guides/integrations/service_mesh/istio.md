@@ -59,6 +59,11 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    helm install gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
    ```
    
+   If you already installed Gloo Edge before, you can upgrade your existing installation. 
+   ```shell
+   helm upgrade gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
+   ```
+   
 6. [Verify your installation]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
 7. Label the `gloo` namespace to automatically inject an Istio sidecar to all pods that run in that namespace. 
    ```shell
@@ -164,3 +169,6 @@ To verify that you can connect to your app via mutual TLS (mTLS), you can instal
    curl -vik -H "Host: www.example.com" "$(glooctl proxy url)/productpage" 
    ```
    
+{{% notice note %}} 
+If you use Gloo Mesh Enterprise in relay mode for your service mesh, you can configure your Gloo Edge upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the Bookinfo app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
+{{% /notice %}}
