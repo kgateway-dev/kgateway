@@ -227,6 +227,8 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                revocationEndpoint:
+                                  type: string
                                 scopes:
                                   items:
                                     type: string
