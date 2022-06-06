@@ -34,13 +34,8 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    ```shell
    helm repo update
    ```
-   
-3. Create the namespace where you want to install Gloo Edge. The following command creates the `gloo` namespace.
-   ```shell
-   kubectl create namespace gloo-system
-   ```
-   
-4. Create a `value-overrides.yaml` file with the following content. To configure your gateway with an Istio sidecar, make sure to add the `istioIntegration` section and set the `enableIstioSidecarOnGateway` option to `true`. 
+      
+3. Create a `value-overrides.yaml` file with the following content. To configure your gateway with an Istio sidecar, make sure to add the `istioIntegration` section and set the `enableIstioSidecarOnGateway` option to `true`. 
    ```yaml
    global:
      istioIntegration:
@@ -54,45 +49,55 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
          httpsPort: 8443
    ```
    
-5. Install Gloo Edge with the settings in the `value-overrides.yaml` file.  
-   ```shell
-   helm install gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
-   ```
+4. Install or upgrade Gloo Edge. 
+   {{< tabs >}} 
+   {{< tab name="Install Gloo Edge">}}
+
+   **To install Gloo Edge**: 
+   1. Create the namespace where you want to install Gloo Edge. The following command creates the `gloo` namespace.
+      ```shell
+      kubectl create namespace gloo-system
+      ```
    
-   If you already installed Gloo Edge before, you can upgrade your existing installation. 
+   2. Install Gloo Edge with the settings in the `value-overrides.yaml` file.  
+      ```shell
+      helm install gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
+      ```
+      
+   **To upgrade Gloo Edge**:
    ```shell
    helm upgrade gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
    ```
    
-6. [Verify your installation]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
-7. Label the `gloo` namespace to automatically inject an Istio sidecar to all pods that run in that namespace. 
+5. [Verify your setup]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
+6. Label the `gloo` namespace to automatically inject an Istio sidecar to all pods that run in that namespace. 
    ```shell
    kubectl label namespaces gloo-system istio-injection=enabled
    ```
    
-9. Restart the proxy gateway deployment to pick up the Envoy configuration for the Istio sidecar. 
+7. Restart the proxy gateway deployment to pick up the Envoy configuration for the Istio sidecar. 
    ```shell
    kubectl rollout restart -n gloo-system deployment gateway-proxy
    ```
    
-10. Get the pods for your gateway proxy deployment. You now see a second container in each pod. 
-    ```shell
-    kubectl get pods -n gloo-system
-    ```
+8. Get the pods for your gateway proxy deployment. You now see a second container in each pod. 
+   ```shell
+   kubectl get pods -n gloo-system
+   ```
     
-    Example output: 
-    ```
-    NAME                             READY   STATUS    RESTARTS   AGE
-    discovery-5c66ccfccb-tvr5v       1/1     Running   0          3h58m
-    gateway-6f88cff479-7mx6k         1/1     Running   0          3h58m
-    gateway-proxy-584974c887-km4mk   2/2     Running   0          158m
-    gloo-6c8f68bd4b-rv52f            1/1     Running   0          3h58m
-    ```
+   Example output: 
+   ```
+   NAME                             READY   STATUS    RESTARTS   AGE
+   discovery-5c66ccfccb-tvr5v       1/1     Running   0          3h58m
+   gateway-6f88cff479-7mx6k         1/1     Running   0          3h58m
+   gateway-proxy-584974c887-km4mk   2/2     Running   0          158m
+   gloo-6c8f68bd4b-rv52f            1/1     Running   0          3h58m
+   ```
     
-11. Describe the `gateway-proxy` pod to verify that the second container runs an Istio proxy image, such as `docker.io/istio/proxyv2:1.12.7`. 
-    ```shell
-    kubectl describe <gateway-pod-name> -n gloo-system
-    ```
+9. Describe the `gateway-proxy` pod to verify that the second container runs an Istio proxy image, such as `docker.io/istio/proxyv2:1.12.7`. 
+   ```shell
+   kubectl describe <gateway-pod-name> -n gloo-system
+   ```
 
 Congratuliations! You successfully configured an Istio sidecar for your Gloo Edge gateway. 
 
