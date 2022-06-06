@@ -69,8 +69,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    helm upgrade gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
    ```
    {{< /tab >}}
-   {{< /tabs >}}
-   
+   {{< /tabs >}}   
 5. [Verify your setup]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
 6. Label the `gloo` namespace to automatically inject an Istio sidecar to all pods that run in that namespace. 
    ```shell
