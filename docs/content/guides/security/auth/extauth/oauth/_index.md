@@ -123,7 +123,7 @@ spec:
 ## Logout URL
 
 Gloo also supports specifying a logout url. When specified, accessing this url will
-trigger a deletion of the user session and revokes the user's access token. This action returns with an empty 200 HTTP response.
+trigger a deletion of the user session and revoke the user's access token. This action returns with an empty 200 HTTP response.
 
 Example configuration:
 
