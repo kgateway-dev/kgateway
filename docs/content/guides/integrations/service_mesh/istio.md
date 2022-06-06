@@ -53,7 +53,6 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    {{< tabs >}} 
    {{< tab name="Install Gloo Edge">}}
 
-   **To install Gloo Edge**: 
    1. Create the namespace where you want to install Gloo Edge. The following command creates the `gloo` namespace.
       ```shell
       kubectl create namespace gloo-system
@@ -63,11 +62,14 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
       ```shell
       helm install gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
       ```
+   {{< /tab >}}
+   {{< tab name="Upgrade Gloo Edge">}}
       
-   **To upgrade Gloo Edge**:
    ```shell
    helm upgrade gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
    ```
+   {{< /tab >}}
+   {{< /tabs >}}
    
 5. [Verify your setup]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
 6. Label the `gloo` namespace to automatically inject an Istio sidecar to all pods that run in that namespace. 
