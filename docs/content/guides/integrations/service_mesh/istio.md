@@ -170,5 +170,5 @@ To verify that you can connect to your app via mutual TLS (mTLS), you can instal
    ```
    
 {{% notice note %}} 
-If you use Gloo Mesh Enterprise in relay mode for your service mesh, you can configure your Gloo Edge upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the Bookinfo app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
+If you use Gloo Mesh Enterprise for your service mesh, you can configure your Gloo Edge upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the Bookinfo app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
 {{% /notice %}}
