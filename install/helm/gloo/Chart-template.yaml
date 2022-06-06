@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: v2
 description: Gloo Helm chart for Kubernetes
 name: gloo
 home: https://gloo.solo.io/
