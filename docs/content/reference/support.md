@@ -12,10 +12,10 @@ Gloo Edge Enterprise offers `n-3` patching support for bug and critical security
 
 | Gloo Edge | Kubernetes | Envoy | Helm | Istio |
 |------|----------|---------|--------|------|
-| 1.11.x | 1.21 - 1.22 | v3 xDS API | >= 3.0 | 1.7 - 1.11 |
-| 1.10.x | 1.21 - 1.22 | v3 xDS API | >= 3.0 | 1.7 - 1.11 |
-| 1.9.x | 1.19 - 1.22 | v3 xDS API | >= 3.0 | 1.7 - 1.11 |
-| 1.8.x | 1.19 - 1.21 | v3 xDS API | >= 3.0 | 1.7 - 1.8 |
+| 1.11.x | 1.21 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
+| 1.10.x | 1.21 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
+| 1.9.x | 1.19 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
+| 1.8.x | 1.19 - 1.21 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
 <!--TO FIND VERSIONS
 Go to the branch for the Edge version you want, like 1.11.x. In https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh, search for CLUSTER_NODE_VERSION to see the max k8s version, and ISTIO_VERSION for max istio version. You will have to ask someone on the team to find out the minimum versions of each for a given Edge release. They do have an [issue](https://github.com/solo-io/gloo/issues/5358) open to run regular tests for min-max though.-->
 
