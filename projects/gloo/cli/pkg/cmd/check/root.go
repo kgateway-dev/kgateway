@@ -5,7 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
+
+	jwt "github.com/dgrijalva/jwt-go"
+	jwks "github.com/MicahParks/keyfunc"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -78,6 +82,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			}
 
 			CheckMulticlusterResources(opts)
+
+			CheckLicense(opts)
 
 			CheckVersionsMatch(opts)
 
@@ -951,5 +957,86 @@ func CheckVersionsMatch(opts *options.Options) {
 				}
 			}
 		}
+	}
+}
+
+func CheckLicense(opts *options.Options) {
+	printer.AppendCheck("Checking license...")
+
+	vrs, err := version.GetClientServerVersions(opts.Top.Ctx, version.NewKube(opts.Metadata.GetNamespace()))
+
+	if err != nil {
+		return
+	}
+
+	var isEnterprise = false
+	for _, v := range vrs.GetServer() {
+		if v.GetType() == version2.GlooType_Gateway {
+			for _, cvr := range v.GetKubernetes().GetContainers() {
+				if cvr.GetName() == "gloo-ee-envoy-wrapper" {
+					isEnterprise = true
+				}
+			}
+		}
+	}
+
+	if isEnterprise {
+		client, err := helpers.KubeClient()
+		if err != nil {
+			errMessage := "error getting KubeClient"
+			fmt.Println(errMessage)
+			printer.AppendError(fmt.Sprintf(errMessage+": %v", err))
+		}
+		_, err = client.CoreV1().Namespaces().Get(opts.Top.Ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
+		if err != nil {
+			errMessage := "Gloo namespace does not exist"
+			fmt.Println(errMessage)
+			printer.AppendError(errMessage)
+		}
+		deployments, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{})
+		if err != nil {
+			printer.AppendError(fmt.Sprint(err))
+		}
+
+		var licenseSecretName = ""
+		for _, deploy := range deployments.Items {
+			if deploy.Name == "gloo" {
+				for _, container := range deploy.Spec.Template.Spec.Containers {
+					if container.Name == "gloo" {
+						for _, env := range container.Env {
+							if env.Name == "GLOO_LICENSE_KEY" {
+								licenseSecretName = env.ValueFrom.SecretKeyRef.Name
+							}
+						}
+					}
+				}
+			}
+		}
+
+		secretClient, err := helpers.GetKubernetesClientWithTimeout(5 * time.Second)
+		if err != nil {
+			printer.AppendError(fmt.Sprint(err))
+		}
+
+		secret, err := secretClient.CoreV1().Secrets(opts.Metadata.GetNamespace()).Get(opts.Top.Ctx, licenseSecretName, metav1.GetOptions{})
+		if err != nil {
+			printer.AppendError(fmt.Sprint(err))
+		}
+
+		// Parse the JWT.
+		token, err := jwt.Parse(string(secret.Data["license-key"]), jwks.KeyFunc)
+		if err != nil {
+			log.Fatalf("Failed to parse the JWT.\nError: %s", err.Error())
+		}
+
+		// Check if the token is valid.
+		if !token.Valid {
+			log.Fatalf("The token is not valid.")
+		}
+
+		log.Println("The token is valid.")
+
+	} else {
+		printer.AppendStatus("License", "Not Required - Open Source")
 	}
 }
