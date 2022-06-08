@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	licensingModel "github.com/solo-io/licensing/pkg/model"
@@ -982,7 +983,7 @@ func CheckLicense(opts *options.Options) error {
 	for _, v := range vrs.GetServer() {
 		if v.GetType() == version2.GlooType_Gateway {
 			for _, cvr := range v.GetKubernetes().GetContainers() {
-				if cvr.GetName() == "gloo-ee-envoy-wrapper" {
+				if strings.Contains(cvr.GetName(), "gloo-ee") {
 					isEnterprise = true
 					break
 				}
@@ -1073,7 +1074,7 @@ func CheckLicense(opts *options.Options) error {
 				printer.AppendStatus("license", "Not Valid - Expired "+lic.ExpiresAt.String())
 				return nil
 			} else if licWarn == licensing.EmptyLicenseError {
-				printer.AppendStatus("license", "Not Valid - Wrong Product")
+				printer.AppendStatus("license", "Not Valid - Empty License")
 				return nil
 			}
 		}
