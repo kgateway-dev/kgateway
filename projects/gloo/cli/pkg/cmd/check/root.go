@@ -212,7 +212,7 @@ func CheckResources(opts *options.Options) error {
 	}
 
 	if included := doesNotContain(opts.Top.CheckName, "license"); included {
-		err = CheckLicense(opts)
+		err = checkLicense(opts)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -965,7 +965,7 @@ func CheckVersionsMatch(opts *options.Options) {
 	}
 }
 
-func CheckLicense(opts *options.Options) error {
+func checkLicense(opts *options.Options) error {
 	var multiErr *multierror.Error
 
 	printer.AppendCheck("Checking license...")
