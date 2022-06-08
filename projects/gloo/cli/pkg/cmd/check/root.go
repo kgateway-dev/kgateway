@@ -5,11 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
-	jwks "github.com/MicahParks/keyfunc"
+	licensingModel "github.com/solo-io/licensing/pkg/model"
+	licensing "github.com/solo-io/licensing/pkg/validate"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -82,8 +81,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			}
 
 			CheckMulticlusterResources(opts)
-
-			CheckLicense(opts)
 
 			CheckVersionsMatch(opts)
 
@@ -208,6 +205,13 @@ func CheckResources(opts *options.Options) error {
 
 	if included := doesNotContain(opts.Top.CheckName, "xds-metrics"); included {
 		err = checkXdsMetrics(opts, opts.Metadata.GetNamespace(), deployments)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
+	}
+
+	if included := doesNotContain(opts.Top.CheckName, "license"); included {
+		err = CheckLicense(opts)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -960,13 +964,18 @@ func CheckVersionsMatch(opts *options.Options) {
 	}
 }
 
-func CheckLicense(opts *options.Options) {
+func CheckLicense(opts *options.Options) error {
+	var multiErr *multierror.Error
+
 	printer.AppendCheck("Checking license...")
 
 	vrs, err := version.GetClientServerVersions(opts.Top.Ctx, version.NewKube(opts.Metadata.GetNamespace()))
 
 	if err != nil {
-		return
+		errMessage := "error getting client/server versions"
+		printer.AppendError(fmt.Sprintf(errMessage+": %v", err))
+		multiErr = multierror.Append(multiErr, err)
+		return multiErr
 	}
 
 	var isEnterprise = false
@@ -975,8 +984,12 @@ func CheckLicense(opts *options.Options) {
 			for _, cvr := range v.GetKubernetes().GetContainers() {
 				if cvr.GetName() == "gloo-ee-envoy-wrapper" {
 					isEnterprise = true
+					break
 				}
 			}
+		}
+		if isEnterprise {
+			break
 		}
 	}
 
@@ -984,18 +997,23 @@ func CheckLicense(opts *options.Options) {
 		client, err := helpers.KubeClient()
 		if err != nil {
 			errMessage := "error getting KubeClient"
-			fmt.Println(errMessage)
 			printer.AppendError(fmt.Sprintf(errMessage+": %v", err))
+			multiErr = multierror.Append(multiErr, err)
+			return multiErr
 		}
 		_, err = client.CoreV1().Namespaces().Get(opts.Top.Ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
 		if err != nil {
-			errMessage := "Gloo namespace does not exist"
-			fmt.Println(errMessage)
-			printer.AppendError(errMessage)
+			errMessage := "gloo namespace does not exist"
+			printer.AppendError(fmt.Sprintf(errMessage+": %v", err))
+			multiErr = multierror.Append(multiErr, err)
+			return multiErr
 		}
 		deployments, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{})
 		if err != nil {
-			printer.AppendError(fmt.Sprint(err))
+			errMessage := "error getting gloo deployment"
+			printer.AppendError(fmt.Sprintf(errMessage+": %v", err))
+			multiErr = multierror.Append(multiErr, err)
+			return multiErr
 		}
 
 		var licenseSecretName = ""
@@ -1009,34 +1027,66 @@ func CheckLicense(opts *options.Options) {
 							}
 						}
 					}
+
+					if licenseSecretName != "" {
+						break
+					}
 				}
+				if licenseSecretName != "" {
+					break
+				}
+			}
+			if licenseSecretName != "" {
+				break
 			}
 		}
 
 		secretClient, err := helpers.GetKubernetesClientWithTimeout(5 * time.Second)
 		if err != nil {
-			printer.AppendError(fmt.Sprint(err))
+			errMessage := "error getting client"
+			printer.AppendError(fmt.Sprintf(errMessage+": %v", err))
+			multiErr = multierror.Append(multiErr, err)
+			return multiErr
 		}
 
 		secret, err := secretClient.CoreV1().Secrets(opts.Metadata.GetNamespace()).Get(opts.Top.Ctx, licenseSecretName, metav1.GetOptions{})
 		if err != nil {
-			printer.AppendError(fmt.Sprint(err))
+			errMessage := "error getting secret"
+			printer.AppendError(fmt.Sprintf(errMessage+": %v", err))
+			multiErr = multierror.Append(multiErr, err)
+			return multiErr
 		}
 
-		// Parse the JWT.
-		token, err := jwt.Parse(string(secret.Data["license-key"]), jwks.KeyFunc)
-		if err != nil {
-			log.Fatalf("Failed to parse the JWT.\nError: %s", err.Error())
+		lic, licWarn, licErr := licensing.ValidateLicenseKey(opts.Top.Ctx, string(secret.Data["license-key"]), licensingModel.Product_Gloo, licensingModel.AddOns{})
+		if licErr != nil {
+			if licErr == licensing.LicenseInvalidError(licErr) {
+				printer.AppendStatus("license", "Not Valid")
+				return nil
+			} else if licErr == licensing.WrongProductError(lic.Product, licensingModel.Product_Gloo) {
+				printer.AppendStatus("license", "Not Valid - Wrong Product")
+			}
+			return nil
 		}
 
-		// Check if the token is valid.
-		if !token.Valid {
-			log.Fatalf("The token is not valid.")
+		if licWarn != nil {
+			if licWarn == licensing.LicenseExpiredError {
+				printer.AppendStatus("license", "Not Valid - Expired "+lic.ExpiresAt.String())
+				return nil
+			} else if licWarn == licensing.EmptyLicenseError {
+				printer.AppendStatus("license", "Not Valid - Wrong Product")
+				return nil
+			}
 		}
 
-		log.Println("The token is valid.")
+		if licWarn == nil && licErr == nil {
+			printer.AppendStatus("license", "Valid until "+lic.ExpiresAt.String())
+			return nil
+		}
 
 	} else {
 		printer.AppendStatus("License", "Not Required - Open Source")
+		return nil
 	}
+
+	return multiErr
 }

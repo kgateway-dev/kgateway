@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3520
+    resolvesIssue: true
+    description: >
+      Glooctl check will now verify the deployed license for enterprise versions
