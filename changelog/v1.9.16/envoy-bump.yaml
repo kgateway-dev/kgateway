@@ -1,0 +1,6 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyTag: 1.20.4-patch1
+    dependencyRepo: envoy-gloo
+    description: Update envoy-gloo to version 1.20.4-patch1. This addresses a number of CVE's, including [CVE-2022-29225, CVE-2022-29224, CVE-2022-29226, CVE-2022-29228, CVE-2022-29227]
