@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add automation to add issues to team boards and a template for CI specific issues.
+    issueLink: https://github.com/solo-io/gloo/issues/6305
+    resolvesIssue: false
