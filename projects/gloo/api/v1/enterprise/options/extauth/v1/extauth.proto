@@ -407,6 +407,9 @@ message DiscoveryOverride {
 
     // list of claim types that the provider supports
     repeated string claims = 9;
+
+    // url of the provider token revocation endpoint
+    string revocation_endpoint = 10;
 }
 
 // The json web key set (JWKS) (https://tools.ietf.org/html/rfc7517) is discovered at an interval

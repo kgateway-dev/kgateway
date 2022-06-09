@@ -611,6 +611,7 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 "idTokenAlgs": []string
 "authMethods": []string
 "claims": []string
+"revocationEndpoint": string
 
 ```
 
@@ -625,6 +626,7 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 | `idTokenAlgs` | `[]string` | list of json web signature signing algorithms that the provider supports for encoding claims in a jwt. |
 | `authMethods` | `[]string` | list of client authentication methods supported by the provider token endpoint. |
 | `claims` | `[]string` | list of claim types that the provider supports. |
+| `revocationEndpoint` | `string` | url of the provider token revocation endpoint. |
 
 
 

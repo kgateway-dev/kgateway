@@ -134,7 +134,7 @@ spec:
 ## Logout URL
 
 Gloo also supports specifying a logout url. When specified, accessing this url will
-trigger a deletion of the user session, with an empty 200 OK response returned.
+trigger a deletion of the user session and revoke the user's access token. This action returns with an empty 200 HTTP response.
 
 Example configuration:
 
@@ -160,7 +160,13 @@ spec:
         logoutPath: /logout
 {{< /highlight >}}
 
-When this url is accessed, the user session and cookie will be deleted.
+When this URL is accessed, the user session and cookie are deleted. 
+The access token on the server is also revoked based on the discovered revocation endpoint. 
+You can also override the revocation endpoint through the [DiscoveryOverride field]{{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#discoveryoverride" >}}) in `AuthConfig`.
+
+{{% notice warning %}}
+Gloo currently does not retry to revoke an access token if there is a service error with the authorization server.
+{{% /notice %}}
 
 ## Sessions in Redis
 

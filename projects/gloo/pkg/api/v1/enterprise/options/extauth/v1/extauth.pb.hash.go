@@ -905,6 +905,10 @@ func (m *DiscoveryOverride) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	if _, err = hasher.Write([]byte(m.GetRevocationEndpoint())); err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 

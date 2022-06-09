@@ -510,6 +510,8 @@ func (m *DiscoveryOverride) Clone() proto.Message {
 		}
 	}
 
+	target.RevocationEndpoint = m.GetRevocationEndpoint()
+
 	return target
 }
 
