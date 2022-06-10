@@ -14,7 +14,9 @@ func NewStagedFilterWithConfig(name string, config proto.Message, stage FilterSt
 	return NewStagedFilter(name, config, stage)
 }
 
-// NewStagedFilter creates an instance of the named filter with the desired stage
+// NewStagedFilter creates an instance of the named filter with the desired stage.
+// Errors if the config is nil or we cannot determine the type of the config.
+// Config type determination may fail if the config is both  unknown and has no fields.
 func NewStagedFilter(name string, config proto.Message, stage FilterStage) (StagedHttpFilter, error) {
 
 	s := StagedHttpFilter{
