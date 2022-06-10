@@ -155,6 +155,6 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	if !ok && p.removeUnused {
 		return []plugins.StagedHttpFilter{}, nil
 	}
-	emptyFilter, _ := plugins.NewStagedFilter(wellknown.CORS, &envoy_config_cors_v3.Cors{}, pluginStage)
+	emptyFilter, _ := plugins.NewStagedFilterWithConfig(wellknown.CORS, &envoy_config_cors_v3.Cors{}, pluginStage)
 	return []plugins.StagedHttpFilter{emptyFilter}, nil
 }

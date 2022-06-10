@@ -53,7 +53,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return []plugins.StagedHttpFilter{}, nil
 	}
 	// put the filter in the chain, but the actual faults will be configured on the routes
-	emptyFilter, _ := plugins.NewStagedFilter(wellknown.Fault, &envoyhttpfault.HTTPFault{}, pluginStage)
+	emptyFilter, _ := plugins.NewStagedFilterWithConfig(wellknown.Fault, &envoyhttpfault.HTTPFault{}, pluginStage)
 	return []plugins.StagedHttpFilter{emptyFilter}, nil
 }
 

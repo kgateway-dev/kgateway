@@ -60,7 +60,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	if p.isDisabled(listener) {
 		return nil, nil
 	}
-	filter, _ := plugins.NewStagedFilter(wellknown.GRPCWeb, &envoygrpcweb.GrpcWeb{}, pluginStage)
+	filter, _ := plugins.NewStagedFilterWithConfig(wellknown.GRPCWeb, &envoygrpcweb.GrpcWeb{}, pluginStage)
 
 	return []plugins.StagedHttpFilter{filter}, nil
 }

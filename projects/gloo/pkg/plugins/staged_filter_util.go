@@ -8,6 +8,12 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
+// NewStagedFilterWithConfig is deprecated as config is now always needed
+// See the new signature of NewStagedFilter
+func NewStagedFilterWithConfig(name string, config proto.Message, stage FilterStage) (StagedHttpFilter, error) {
+	return NewStagedFilter(name, config, stage)
+}
+
 // NewStagedFilter creates an instance of the named filter with the desired stage.
 // Errors if the config is nil or we cannot determine the type of the config.
 // Config type determination may fail if the config is both  unknown and has no fields.
