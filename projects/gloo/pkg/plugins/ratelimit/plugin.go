@@ -122,7 +122,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	rateLimitFilter := GenerateEnvoyHttpFilterConfig(serverSettings)
 	rateLimitFilterStage := GetFilterStageForRateLimitStage(rateLimitFilter.GetStage())
 
-	stagedRateLimitFilter, err := plugins.NewStagedFilterWithConfig(
+	stagedRateLimitFilter, err := plugins.NewStagedFilter(
 		wellknown.HTTPRateLimit,
 		rateLimitFilter,
 		rateLimitFilterStage,

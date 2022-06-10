@@ -8,10 +8,20 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-// NewStagedFilterWithConfig is deprecated as config is now always needed
-// See the new signature of NewStagedFilter
+// NewStagedFilterWithConfig creates an instance of the named filter with the desired stage.
+// Deprecated: config is now always needed and so NewStagedFilter should always be used.
 func NewStagedFilterWithConfig(name string, config proto.Message, stage FilterStage) (StagedHttpFilter, error) {
 	return NewStagedFilter(name, config, stage)
+}
+
+// MustNewStagedFilter creates an instance of the named filter with the desired stage.
+// Returns a filter even if an error occured.
+// Should rarely be used as disregarding an error is bad practice but does make
+// appending easier.
+// If not directly appending consider using NewStagedFilter instead of this function.
+func MustNewStagedFilter(name string, config proto.Message, stage FilterStage) StagedHttpFilter {
+	s, _ := NewStagedFilter(name, config, stage)
+	return s
 }
 
 // NewStagedFilter creates an instance of the named filter with the desired stage.

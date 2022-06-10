@@ -65,7 +65,7 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		return nil, err
 	}
 
-	csrfFilter, err := plugins.NewStagedFilterWithConfig(FilterName, envoyCsrfConfig, pluginStage)
+	csrfFilter, err := plugins.NewStagedFilter(FilterName, envoyCsrfConfig, pluginStage)
 	if err != nil {
 		return nil, eris.Wrap(err, "generating filter config")
 	}
