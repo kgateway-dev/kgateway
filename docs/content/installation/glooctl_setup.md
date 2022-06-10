@@ -34,7 +34,7 @@ You can use the `glooctl upgrade` command to set the `--release` that you want t
 glooctl upgrade --release v1.10.0
 ```
 
-### Verify that glooctl is installed {#verify-glooctl}
+### Verify the installation or update {#verify-glooctl}
 
 You can verify the `glooctl` CLI is installed and running the appropriate version.
 
