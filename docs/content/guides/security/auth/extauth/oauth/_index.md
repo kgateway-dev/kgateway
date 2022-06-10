@@ -74,12 +74,12 @@ The callback path must have a matching route in the VirtualService associated wi
 - `client_id`: This is the **client id** that you obtained when you registered your application with the identity provider.
 - `client_secret_ref`: This is a reference to a Kubernetes secret containing the **client secret** that you obtained 
 when you registered your application with the identity provider. The easiest way to create the Kubernetes secret in the 
-expected format is to use `glooctl`, but you can also provide it by `kubectl apply`ing YAML to your cluster:
+expected format is to use `glooctl`, but you can also provide it by `kubectl apply`ing YAML to your cluster. {{% notice note %}}In Gloo Edge versions 1.10 and earlier, you must specify a secret of `type: Opaque`. Other types are not supported. To ensure that you create an `Opaque` secret, either make sure that you [`glooctl` runs version 1.10 or earlier]({{< versioned_link_path fromRoot="/installation/preparation/#update-glooctl" >}}) before using `glooctl create secret`, or use the `kubectl` tabs.{{% /notice %}}
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell">}}
 glooctl create secret oauth --namespace gloo-system --name oidc --client-secret secretvalue
 {{< /tab >}}
-{{< tab name="kubectl" codelang="yaml">}}
+{{< tab name="kubectl apply" codelang="yaml">}}
 apiVersion: v1
 kind: Secret
 type: Opaque
