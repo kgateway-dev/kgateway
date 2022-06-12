@@ -131,6 +131,8 @@ message ListenerReport {
         TcpListenerReport tcp_listener_report = 4;
         //report for the hybrid listener
         HybridListenerReport hybrid_listener_report = 5;
+
+        AggregateListenerReport aggregate_listener_report = 6;
     }
 }
 
@@ -258,4 +260,8 @@ message MatchedListenerReport {
         HttpListenerReport http_listener_report = 1;
         TcpListenerReport tcp_listener_report = 2;
     }
+}
+
+message AggregateListenerReport {
+    map<string, HttpListenerReport> http_listener_reports = 1;
 }

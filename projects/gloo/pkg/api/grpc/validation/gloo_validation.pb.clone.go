@@ -335,6 +335,18 @@ func (m *ListenerReport) Clone() proto.Message {
 			}
 		}
 
+	case *ListenerReport_AggregateListenerReport:
+
+		if h, ok := interface{}(m.GetAggregateListenerReport()).(clone.Cloner); ok {
+			target.ListenerTypeReport = &ListenerReport_AggregateListenerReport{
+				AggregateListenerReport: h.Clone().(*AggregateListenerReport),
+			}
+		} else {
+			target.ListenerTypeReport = &ListenerReport_AggregateListenerReport{
+				AggregateListenerReport: proto.Clone(m.GetAggregateListenerReport()).(*AggregateListenerReport),
+			}
+		}
+
 	}
 
 	return target
@@ -570,6 +582,30 @@ func (m *MatchedListenerReport) Clone() proto.Message {
 			}
 		}
 
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AggregateListenerReport) Clone() proto.Message {
+	var target *AggregateListenerReport
+	if m == nil {
+		return target
+	}
+	target = &AggregateListenerReport{}
+
+	if m.GetHttpListenerReports() != nil {
+		target.HttpListenerReports = make(map[string]*HttpListenerReport, len(m.GetHttpListenerReports()))
+		for k, v := range m.GetHttpListenerReports() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HttpListenerReports[k] = h.Clone().(*HttpListenerReport)
+			} else {
+				target.HttpListenerReports[k] = proto.Clone(v).(*HttpListenerReport)
+			}
+
+		}
 	}
 
 	return target
