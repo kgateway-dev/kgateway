@@ -217,6 +217,21 @@ func (m *Listener) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Listener_AggregateListener:
+		if _, ok := target.ListenerType.(*Listener_AggregateListener); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAggregateListener()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAggregateListener()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAggregateListener(), target.GetAggregateListener()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.ListenerType != target.ListenerType {
@@ -597,6 +612,57 @@ func (m *Matcher) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(v, target.GetSourcePrefixRanges()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AggregateListener) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AggregateListener)
+	if !ok {
+		that2, ok := that.(AggregateListener)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetHttpResources()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttpResources()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttpResources(), target.GetHttpResources()) {
+			return false
+		}
+	}
+
+	if len(m.GetHttpFilterChains()) != len(target.GetHttpFilterChains()) {
+		return false
+	}
+	for idx, v := range m.GetHttpFilterChains() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHttpFilterChains()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetHttpFilterChains()[idx]) {
 				return false
 			}
 		}
@@ -1555,6 +1621,113 @@ func (m *TcpHost_TcpAction) Equal(that interface{}) bool {
 		if m.Destination != target.Destination {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AggregateListener_HttpResources) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AggregateListener_HttpResources)
+	if !ok {
+		that2, ok := that.(AggregateListener_HttpResources)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetVirtualHosts()) != len(target.GetVirtualHosts()) {
+		return false
+	}
+	for k, v := range m.GetVirtualHosts() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetVirtualHosts()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetVirtualHosts()[k]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetHttpOptions()) != len(target.GetHttpOptions()) {
+		return false
+	}
+	for k, v := range m.GetHttpOptions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHttpOptions()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetHttpOptions()[k]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AggregateListener_HttpFilterChain) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AggregateListener_HttpFilterChain)
+	if !ok {
+		that2, ok := that.(AggregateListener_HttpFilterChain)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetMatcher()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMatcher()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMatcher(), target.GetMatcher()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetHttpOptionsRef(), target.GetHttpOptionsRef()) != 0 {
+		return false
+	}
+
+	if len(m.GetVirtualHostRefs()) != len(target.GetVirtualHostRefs()) {
+		return false
+	}
+	for idx, v := range m.GetVirtualHostRefs() {
+
+		if strings.Compare(v, target.GetVirtualHostRefs()[idx]) != 0 {
+			return false
+		}
+
 	}
 
 	return true

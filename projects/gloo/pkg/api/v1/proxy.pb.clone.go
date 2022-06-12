@@ -162,6 +162,18 @@ func (m *Listener) Clone() proto.Message {
 			}
 		}
 
+	case *Listener_AggregateListener:
+
+		if h, ok := interface{}(m.GetAggregateListener()).(clone.Cloner); ok {
+			target.ListenerType = &Listener_AggregateListener{
+				AggregateListener: h.Clone().(*AggregateListener),
+			}
+		} else {
+			target.ListenerType = &Listener_AggregateListener{
+				AggregateListener: proto.Clone(m.GetAggregateListener()).(*AggregateListener),
+			}
+		}
+
 	}
 
 	switch m.OpaqueMetadata.(type) {
@@ -388,6 +400,36 @@ func (m *Matcher) Clone() proto.Message {
 				target.SourcePrefixRanges[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
 			} else {
 				target.SourcePrefixRanges[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AggregateListener) Clone() proto.Message {
+	var target *AggregateListener
+	if m == nil {
+		return target
+	}
+	target = &AggregateListener{}
+
+	if h, ok := interface{}(m.GetHttpResources()).(clone.Cloner); ok {
+		target.HttpResources = h.Clone().(*AggregateListener_HttpResources)
+	} else {
+		target.HttpResources = proto.Clone(m.GetHttpResources()).(*AggregateListener_HttpResources)
+	}
+
+	if m.GetHttpFilterChains() != nil {
+		target.HttpFilterChains = make([]*AggregateListener_HttpFilterChain, len(m.GetHttpFilterChains()))
+		for idx, v := range m.GetHttpFilterChains() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HttpFilterChains[idx] = h.Clone().(*AggregateListener_HttpFilterChain)
+			} else {
+				target.HttpFilterChains[idx] = proto.Clone(v).(*AggregateListener_HttpFilterChain)
 			}
 
 		}
@@ -988,6 +1030,71 @@ func (m *TcpHost_TcpAction) Clone() proto.Message {
 			}
 		}
 
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AggregateListener_HttpResources) Clone() proto.Message {
+	var target *AggregateListener_HttpResources
+	if m == nil {
+		return target
+	}
+	target = &AggregateListener_HttpResources{}
+
+	if m.GetVirtualHosts() != nil {
+		target.VirtualHosts = make(map[string]*VirtualHost, len(m.GetVirtualHosts()))
+		for k, v := range m.GetVirtualHosts() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.VirtualHosts[k] = h.Clone().(*VirtualHost)
+			} else {
+				target.VirtualHosts[k] = proto.Clone(v).(*VirtualHost)
+			}
+
+		}
+	}
+
+	if m.GetHttpOptions() != nil {
+		target.HttpOptions = make(map[string]*HttpListenerOptions, len(m.GetHttpOptions()))
+		for k, v := range m.GetHttpOptions() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HttpOptions[k] = h.Clone().(*HttpListenerOptions)
+			} else {
+				target.HttpOptions[k] = proto.Clone(v).(*HttpListenerOptions)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AggregateListener_HttpFilterChain) Clone() proto.Message {
+	var target *AggregateListener_HttpFilterChain
+	if m == nil {
+		return target
+	}
+	target = &AggregateListener_HttpFilterChain{}
+
+	if h, ok := interface{}(m.GetMatcher()).(clone.Cloner); ok {
+		target.Matcher = h.Clone().(*Matcher)
+	} else {
+		target.Matcher = proto.Clone(m.GetMatcher()).(*Matcher)
+	}
+
+	target.HttpOptionsRef = m.GetHttpOptionsRef()
+
+	if m.GetVirtualHostRefs() != nil {
+		target.VirtualHostRefs = make([]string, len(m.GetVirtualHostRefs()))
+		for idx, v := range m.GetVirtualHostRefs() {
+
+			target.VirtualHostRefs[idx] = v
+
+		}
 	}
 
 	return target
