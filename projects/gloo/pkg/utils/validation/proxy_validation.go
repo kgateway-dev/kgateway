@@ -67,6 +67,30 @@ func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {
 					},
 				},
 			}
+		case *v1.Listener_AggregateListener:
+			httpListenerReports := make(map[string]*validation.HttpListenerReport)
+			httpResources := listenerType.AggregateListener.GetHttpResources()
+			for _, httpFilterChain := range listenerType.AggregateListener.GetHttpFilterChains() {
+				var virtualHosts []*v1.VirtualHost
+				for _, vhostRef := range httpFilterChain.GetVirtualHostRefs() {
+					virtualHosts = append(virtualHosts, httpResources.GetVirtualHosts()[vhostRef])
+				}
+
+				httListenerReport := &validation.HttpListenerReport{
+					VirtualHostReports: makeVhostReports(virtualHosts),
+				}
+				httpListenerReports[utils.MatchedRouteConfigName(listener, httpFilterChain.GetMatcher())] = httListenerReport
+			}
+
+			listenerReports[i] = &validation.ListenerReport{
+				ListenerTypeReport: &validation.ListenerReport_AggregateListenerReport{
+					AggregateListenerReport: &validation.AggregateListenerReport{
+						HttpListenerReports: httpListenerReports,
+					},
+				},
+			}
+
+
 		}
 	}
 
