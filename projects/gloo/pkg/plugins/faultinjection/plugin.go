@@ -20,6 +20,7 @@ var (
 	_ plugins.RoutePlugin      = new(plugin)
 )
 
+// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/fault_filter
 const (
 	ExtensionName = "fault_injection"
 )
@@ -45,17 +46,19 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
+// HttpFilters addes the fault injection listener which can then be configured at a reoute level.
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	_, ok := p.filterRequiredForListener[listener]
 	if !ok && p.removeUnused {
 		return []plugins.StagedHttpFilter{}, nil
 	}
 	// put the filter in the chain, but the actual faults will be configured on the routes
-	return []plugins.StagedHttpFilter{
-		plugins.NewStagedFilter(wellknown.Fault, pluginStage),
-	}, nil
+	return []plugins.StagedHttpFilter{plugins.MustNewStagedFilter(wellknown.Fault, &envoyhttpfault.HTTPFault{}, pluginStage)}, nil
 }
 
+// ProcessRoute will add the desired fault parameters on each given route.
+// There is no higher level configuration of the fault filter so this is where
+// actual functional configuration takes place.
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	markFilterConfigFunc := func(spec *v1.Destination) (proto.Message, error) {
 		if in.GetOptions() == nil {

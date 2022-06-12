@@ -1,6 +1,7 @@
 package grpcweb_test
 
 import (
+	envoygrpcweb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_web/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -10,15 +11,22 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpcweb"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 var _ = Describe("Grpcweb", func() {
+	any, _ := utils.MessageToAny(&envoygrpcweb.GrpcWeb{})
 	var (
 		initParams     plugins.InitParams
 		expectedFilter = []plugins.StagedHttpFilter{
 			{
-				HttpFilter: &envoyhttp.HttpFilter{Name: wellknown.GRPCWeb},
-				Stage:      plugins.AfterStage(plugins.AuthZStage),
+				HttpFilter: &envoyhttp.HttpFilter{
+					Name: wellknown.GRPCWeb,
+					ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+						TypedConfig: any,
+					},
+				},
+				Stage: plugins.AfterStage(plugins.AuthZStage),
 			},
 		}
 	)

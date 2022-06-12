@@ -61,7 +61,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		}},
 	}
 
-	healthCheckFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HealthCheck, hc, pluginStage)
+	healthCheckFilter, err := plugins.NewStagedFilter(wellknown.HealthCheck, hc, pluginStage)
 	if err != nil {
 		return nil, errors.Wrapf(err, "generating filter config")
 	}

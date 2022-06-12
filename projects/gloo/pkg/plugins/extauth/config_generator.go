@@ -203,7 +203,7 @@ func BuildStagedHttpFilters(configurationGenerator func() ([]*envoyauth.ExtAuthz
 	}
 
 	for _, extAuthCfg := range configurations {
-		stagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HTTPExternalAuthorization, extAuthCfg, stage)
+		stagedFilter, err := plugins.NewStagedFilter(wellknown.HTTPExternalAuthorization, extAuthCfg, stage)
 		if err != nil {
 			return nil, err
 		}

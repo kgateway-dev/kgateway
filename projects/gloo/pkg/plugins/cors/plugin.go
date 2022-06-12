@@ -8,6 +8,7 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_config_cors_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -155,7 +156,5 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return []plugins.StagedHttpFilter{}, nil
 	}
 
-	return []plugins.StagedHttpFilter{
-		plugins.NewStagedFilter(wellknown.CORS, pluginStage),
-	}, nil
+	return []plugins.StagedHttpFilter{plugins.MustNewStagedFilter(wellknown.CORS, &envoy_config_cors_v3.Cors{}, pluginStage)}, nil
 }
