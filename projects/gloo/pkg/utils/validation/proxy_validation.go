@@ -90,7 +90,6 @@ func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {
 				},
 			}
 
-
 		}
 	}
 
