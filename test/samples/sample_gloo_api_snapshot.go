@@ -235,57 +235,6 @@ func SimpleRoute(us *core.ResourceRef) []*gwv1.Route {
 	}}
 }
 
-// This used to be called SimpleGatewaySnapshot because it returned a gateway snapshot
-// The gateway snapshot has been removed but this function is kept because it takes an upstream instead of creating one to create routes
-//
-func SimpleGlooSnapshotExistingUpstream(us *core.ResourceRef, namespace string) *v1snap.ApiSnapshot {
-	routes := SimpleRoute(us)
-	return &v1snap.ApiSnapshot{
-		Gateways: []*gwv1.Gateway{
-			defaults.DefaultGateway(namespace),
-			defaults.DefaultSslGateway(namespace),
-			defaults.DefaultHybridGateway(namespace),
-			{
-				Metadata: &core.Metadata{
-					Name:      "tcp-gateway",
-					Namespace: namespace,
-				},
-				ProxyNames: []string{defaults.GatewayProxyName},
-				GatewayType: &gwv1.Gateway_TcpGateway{
-					TcpGateway: &gwv1.TcpGateway{
-						TcpHosts: []*v1.TcpHost{
-							{
-								Name: "tcp-dest",
-								Destination: &v1.TcpHost_TcpAction{
-									Destination: &v1.TcpHost_TcpAction_Single{
-										Single: &v1.Destination{
-											DestinationType: &v1.Destination_Upstream{
-												Upstream: us,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				BindAddress:   "::",
-				BindPort:      12345,
-				UseProxyProto: &wrappers.BoolValue{Value: false},
-			},
-		},
-		VirtualServices: []*gwv1.VirtualService{
-			{
-				Metadata: &core.Metadata{Namespace: namespace, Name: "virtualservice"},
-				VirtualHost: &gwv1.VirtualHost{
-					Domains: []string{"*"},
-					Routes:  routes,
-				},
-			},
-		},
-	}
-}
-
 func AddVsToSnap(snap *v1snap.ApiSnapshot, us *core.ResourceRef, namespace string) *v1snap.ApiSnapshot {
 	snap.VirtualServices = append(snap.VirtualServices, &gwv1.VirtualService{
 		Metadata: &core.Metadata{Namespace: namespace, Name: "secondary-vs"},
@@ -307,7 +256,8 @@ func AddVsToGwSnap(snap *v1snap.ApiSnapshot, us *core.ResourceRef, namespace str
 	})
 	return snap
 }
-func GlooSnapshotWithDelegates(us *core.ResourceRef, namespace string) *v1snap.ApiSnapshot {
+func GlooSnapshotWithDelegates(namespace string) *v1snap.ApiSnapshot {
+	us := SimpleUpstream()
 	rtRoutes := []*gwv1.Route{
 		{
 			Action: &gwv1.Route_RouteAction{
@@ -315,7 +265,7 @@ func GlooSnapshotWithDelegates(us *core.ResourceRef, namespace string) *v1snap.A
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: us,
+								Upstream: us.Metadata.Ref(),
 							},
 						},
 					},
@@ -340,7 +290,7 @@ func GlooSnapshotWithDelegates(us *core.ResourceRef, namespace string) *v1snap.A
 			},
 		},
 	}
-	snap := SimpleGlooSnapshotExistingUpstream(us, namespace)
+	snap := SimpleGlooSnapshot(namespace)
 	snap.VirtualServices.Each(func(element *gwv1.VirtualService) {
 		element.GetVirtualHost().Routes = append(element.GetVirtualHost().GetRoutes(), vsRoutes...)
 	})
@@ -348,16 +298,16 @@ func GlooSnapshotWithDelegates(us *core.ResourceRef, namespace string) *v1snap.A
 	return snap
 }
 
-func GatewaySnapshotWithDelegateChain(us *core.ResourceRef, namespace string) *v1snap.ApiSnapshot {
+func GatewaySnapshotWithDelegateChain(namespace string) *v1snap.ApiSnapshot {
 	vs, rtList := LinkedRouteTablesWithVirtualService("vs", namespace)
 
-	snap := SimpleGlooSnapshotExistingUpstream(us, namespace)
+	snap := SimpleGlooSnapshot(namespace)
 	snap.VirtualServices = gwv1.VirtualServiceList{vs}
 	snap.RouteTables = rtList
 	return snap
 }
 
-func GatewaySnapshotWithDelegateSelector(us *core.ResourceRef, namespace string) *v1snap.ApiSnapshot {
+func GatewaySnapshotWithDelegateSelector(namespace string) *v1snap.ApiSnapshot {
 	vsRoutes := []*gwv1.Route{
 		{
 			Matchers: []*matchers.Matcher{
@@ -379,7 +329,7 @@ func GatewaySnapshotWithDelegateSelector(us *core.ResourceRef, namespace string)
 			},
 		},
 	}
-	snap := SimpleGlooSnapshotExistingUpstream(us, namespace)
+	snap := SimpleGlooSnapshot(namespace)
 	snap.VirtualServices.Each(func(element *gwv1.VirtualService) {
 		element.GetVirtualHost().Routes = append(element.GetVirtualHost().GetRoutes(), vsRoutes...)
 	})

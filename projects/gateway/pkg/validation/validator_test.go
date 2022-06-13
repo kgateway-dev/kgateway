@@ -281,8 +281,7 @@ var _ = Describe("Validator", func() {
 		Context("proxy validation accepted", func() {
 			It("accepts the rt", func() {
 				v.validationFunc = acceptProxy
-				us := samples.SimpleUpstream()
-				snap := samples.GlooSnapshotWithDelegates(us.Metadata.Ref(), ns)
+				snap := samples.GlooSnapshotWithDelegates(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				reports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
@@ -292,8 +291,7 @@ var _ = Describe("Validator", func() {
 
 			It("accepts the rt and returns proxies each time", func() {
 				v.validationFunc = acceptProxy
-				us := samples.SimpleUpstream()
-				snap := samples.GlooSnapshotWithDelegates(us.Metadata.Ref(), ns)
+				snap := samples.GlooSnapshotWithDelegates(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				reports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
@@ -317,8 +315,7 @@ var _ = Describe("Validator", func() {
 		Context("proxy validation returns error", func() {
 			It("rejects the rt", func() {
 				v.validationFunc = failProxy
-				us := samples.SimpleUpstream()
-				snap := samples.GlooSnapshotWithDelegates(us.Metadata.Ref(), ns)
+				snap := samples.GlooSnapshotWithDelegates(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -337,8 +334,7 @@ var _ = Describe("Validator", func() {
 				})
 				It("rejects a vs with missing route table ref", func() {
 					v.validationFunc = warnProxy
-					us := samples.SimpleUpstream()
-					snap := samples.GlooSnapshotWithDelegates(us.Metadata.Ref(), ns)
+					snap := samples.GlooSnapshotWithDelegates(ns)
 					err := v.Sync(context.TODO(), snap)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -370,8 +366,7 @@ var _ = Describe("Validator", func() {
 
 				// validate proxy should never be called
 				v.validationFunc = nil
-				us := samples.SimpleUpstream()
-				snap := samples.GlooSnapshotWithDelegates(us.Metadata.Ref(), ns)
+				snap := samples.GlooSnapshotWithDelegates(ns)
 				rt := snap.RouteTables[0].DeepCopyObject().(*gatewayv1.RouteTable)
 				rt.Routes = append(rt.Routes, badRoute)
 				err := v.Sync(context.TODO(), snap)
@@ -386,8 +381,7 @@ var _ = Describe("Validator", func() {
 		Context("route table delegation with selectors", func() {
 			It("accepts route table with valid prefix", func() {
 				v.validationFunc = acceptProxy
-				us := samples.SimpleUpstream()
-				snap := samples.GatewaySnapshotWithDelegateSelector(us.Metadata.Ref(), ns)
+				snap := samples.GatewaySnapshotWithDelegateSelector(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -398,8 +392,7 @@ var _ = Describe("Validator", func() {
 
 			It("rejects route table with invalid prefix", func() {
 				v.validationFunc = acceptProxy
-				us := samples.SimpleUpstream()
-				snap := samples.GatewaySnapshotWithDelegateSelector(us.Metadata.Ref(), ns)
+				snap := samples.GatewaySnapshotWithDelegateSelector(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -415,8 +408,7 @@ var _ = Describe("Validator", func() {
 		Context("has parents", func() {
 			It("rejects deletion", func() {
 				v.validationFunc = acceptProxy
-				us := samples.SimpleUpstream()
-				snap := samples.GatewaySnapshotWithDelegateChain(us.Metadata.Ref(), ns)
+				snap := samples.GatewaySnapshotWithDelegateChain(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[1].Metadata.Ref(), false)
@@ -429,8 +421,7 @@ var _ = Describe("Validator", func() {
 		Context("has no parents", func() {
 			It("deletes safely", func() {
 				v.validationFunc = acceptProxy
-				us := samples.SimpleUpstream()
-				snap := samples.GatewaySnapshotWithDelegateChain(us.Metadata.Ref(), ns)
+				snap := samples.GatewaySnapshotWithDelegateChain(ns)
 				// break the parent chain
 				snap.RouteTables[1].Routes = nil
 				err := v.Sync(context.TODO(), snap)
@@ -478,8 +469,7 @@ var _ = Describe("Validator", func() {
 
 			It("accepts the vs and returns proxies each time", func() {
 				v.validationFunc = acceptProxy
-				us := samples.SimpleUpstream()
-				snap := samples.GlooSnapshotWithDelegates(us.Metadata.Ref(), ns)
+				snap := samples.GlooSnapshotWithDelegates(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				reports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
@@ -812,8 +802,7 @@ var _ = Describe("Validator", func() {
 
 			It("accepts the gateway and returns proxies each time", func() {
 				v.validationFunc = acceptProxy
-				us := samples.SimpleUpstream()
-				snap := samples.GlooSnapshotWithDelegates(us.Metadata.Ref(), ns)
+				snap := samples.GlooSnapshotWithDelegates(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				reports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0], false)
@@ -955,8 +944,7 @@ var _ = Describe("Validator", func() {
 
 			It("accepts the vs list and returns proxies each time", func() {
 				v.validationFunc = acceptProxy
-				us := samples.SimpleUpstream()
-				snap := samples.GlooSnapshotWithDelegates(us.Metadata.Ref(), ns)
+				snap := samples.GlooSnapshotWithDelegates(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				reports, merr := v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]), false)

@@ -10,7 +10,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/test/samples"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	. "github.com/solo-io/gloo/projects/gateway/pkg/reporting"
@@ -25,7 +24,7 @@ var _ = Describe("CheckSourceReports", func() {
 		ignored = "ignored"
 	)
 	BeforeEach(func() {
-		snap = samples.SimpleGlooSnapshotExistingUpstream(&core.ResourceRef{Name: ignored, Namespace: ignored}, ignored)
+		snap = samples.SimpleGlooSnapshot(ignored)
 		tx := translator.NewDefaultTranslator(translator.Opts{})
 		proxy, reports = tx.Translate(context.TODO(), ignored, ignored, snap, snap.Gateways)
 	})

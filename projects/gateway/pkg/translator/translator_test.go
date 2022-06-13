@@ -228,8 +228,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 
-			us := samples.SimpleUpstream()
-			snap := samples.GlooSnapshotWithDelegates(us.Metadata.Ref(), ns)
+			snap := samples.GlooSnapshotWithDelegates(ns)
 			rt := snap.RouteTables[0]
 			rt.Routes = append(rt.Routes, badRoute)
 
