@@ -21,7 +21,7 @@ Below is a list of all the required components and common utilities for use with
 
 You will also want some type of text editor that understands *YAML*. For real, there is going to be **a lot** of *YAML* and getting the spacing wrong is a huge pain. There are many great tools out there including, but not limited to Visual Studio Code, Sublime Text, and the venerable Vim.
 
-### glooctl
+## glooctl
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
