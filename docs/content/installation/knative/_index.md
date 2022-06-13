@@ -22,9 +22,9 @@ This guide walks you through installing Gloo Edge and Knative using either `gloo
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster can be found [here]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" >}}). You can install Gloo Edge Knative Ingress using using `glooctl` or through Helm. Helm is the recommended method for installing in a Production environment.
 
-{{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
-
 ### Installing on Kubernetes with `glooctl`
+
+Before you begin, make sure that you [install `glooctl`]({{< versioned_link_path fromRoot="/installation/preparation/" >}}), the Gloo Edge command line tool (CLI).
 
 Using `glooctl` will install Knative Serving components to the `knative-serving` namespace if it does not already exist in your cluster and install Gloo Edge's Knative Ingress. The Knative installation is a modified version of the Knative Serving manifest with the dependencies on Istio removed. 
 
