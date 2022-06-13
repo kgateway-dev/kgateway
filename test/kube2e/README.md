@@ -1,8 +1,23 @@
-# Regression tests
-This directory contains tests that install each of the 3 Gloo Edge flavors (`gateway`, `ingress`, and `knative`) and run
-regression tests against them.
+# Kubernetes End-to-End tests
+This directory contains tests that install each of the 3 Gloo Edge flavors (`gateway`, `ingress`, and `knative`) in a Kubernetes cluster, and run
+end-to-end tests against them.
 
 *Note: All commands should be run from the root directory of the Gloo repository*
+
+## Background
+Kubernetes may be relied on for scheduling, persistence or security. These tests validate that Gloo Edge can successfully operate within a Kubernetes cluster.
+
+### How do the tests work?
+1. Install Gloo Edge in Kubernetes cluster [using Helm](https://github.com/solo-io/gloo/blob/1f457f4ef5f32aedabc58ef164aeea92acbf481e/test/kube2e/gateway/gateway_suite_test.go#L84)
+1. Apply Gloo resources using Kubernetes resource clients
+1. Execute requests against the Envoy proxy and confirm the expected response. This validates that the Gloo resources have been picked up by the controllers, were been translated correctly into Envoy configuration, the configuration was sent to the Envoy proxy, and the proxy behaves appropriately.
+
+## CI
+These tests are run by a [GitHub action](https://github.com/solo-io/gloo/blob/master/.github/workflows/regression-tests.yaml) as part of our CI pipeline.
+
+If a test fails, you can retry it from a [browser window](https://docs.github.com/en/actions/managing-workflow-runs/re-running-workflows-and-jobs#reviewing-previous-workflow-runs). If you do this, please make sure to comment on the Pull Request with a link to the failed logs for debugging purposes.
+
+## Local Development
 
 ## Setup
 For these tests to run, we require the following conditions:
@@ -11,7 +26,6 @@ For these tests to run, we require the following conditions:
   - kind cluster set up and loaded with the images to be installed by the helm chart
 
 #### (Option A) - Use the CI Install Script (preferred)
-
 [ci/deploy-to-kind-cluster.sh](`https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh`) gets run in CI to setup the test environment for the above requirements.
 It accepts a number of environment variables, to control the creation of a kind cluster and deployment of Gloo resources to that kind cluster.
 
@@ -28,7 +42,6 @@ CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.22.4 VERSION=v1.0.0-solo-
 ```
 
 #### (Option B) - Manually Run Make Targets
-
 The CI install script executes a series of make targets.
 
 Create a kind cluster: `kind create cluster --name kind`\
@@ -54,7 +67,6 @@ In newer versions of helm (>3.5), the version used to build the helm chart (ie t
 Prepend a valid semver to avoid the error. (ie `kind` can become `0.0.0-kind`)
 
 ## Run Tests
-
 To run the regression tests, your kubeconfig file must point to a running Kubernetes cluster.
 `kubectl config current-context` should run `kind-<CLUSTER_NAME>`
 

@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/envoy-gloo-ee/issues/260
+    resolvesIssue: false
+    description: Breaking change from envoy 1.22 typedurl needed in all filters

@@ -56,7 +56,7 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	if err != nil {
 		return nil, eris.Wrapf(err, "converting gzip config")
 	}
-	gzipFilter, err := plugins.NewStagedFilterWithConfig(CompressorFilterName, envoyGzipConfig, pluginStage)
+	gzipFilter, err := plugins.NewStagedFilter(CompressorFilterName, envoyGzipConfig, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}

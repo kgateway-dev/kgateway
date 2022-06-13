@@ -744,7 +744,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	gwValidationSyncer := gwvalidation.NewValidator(gwvalidation.NewValidatorConfig(
 		gatewayTranslator,
 		validator.Validate,
-		gwOpts.WriteNamespace,
 		ignoreProxyValidationFailure,
 		allowWarnings,
 	))

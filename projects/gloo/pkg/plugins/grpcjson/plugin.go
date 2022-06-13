@@ -46,7 +46,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, err
 	}
 
-	grpcJsonFilter, err := plugins.NewStagedFilterWithConfig(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
+	grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}
