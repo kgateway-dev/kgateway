@@ -702,6 +702,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		ReadGatewaysFromAllNamespaces: opts.ReadGatwaysFromAllNamespaces,
 		Validation:                    opts.ValidationOpts,
 		ConfigStatusMetricOpts:        nil,
+		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
 	}
 	var (
 		ignoreProxyValidationFailure bool

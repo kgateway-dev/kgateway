@@ -44,6 +44,7 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 
 	httpTranslator := &HttpTranslator{
 		WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting,
+		IsolateVirtualHostsBySslConfig: opts.IsolateVirtualHostsBySslConfig,
 	}
 	tcpTranslator := &TcpTranslator{}
 	hybridTranslator := &HybridTranslator{
