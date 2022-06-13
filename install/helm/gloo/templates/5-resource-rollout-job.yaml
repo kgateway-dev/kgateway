@@ -7,8 +7,8 @@ kind: Job
 metadata:
   labels:
     app: gloo
-    gloo: validation-service-rollout
-  name: gloo-validation-service-rollout
+    gloo: resource-rollout
+  name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
@@ -18,10 +18,10 @@ spec:
   template:
     metadata:
       labels:
-        gloo: validation-service-rollout
+        gloo: resource-rollout
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
-      serviceAccountName: gloo-validation-service-rollout
+      serviceAccountName: gloo-resource-rollout
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
@@ -52,13 +52,13 @@ metadata:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0" # must be created before rollout job
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
-  name: gloo-validation-service-rollout
+  name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-validation-service-rollout
+  name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
@@ -81,7 +81,7 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-validation-service-rollout
+  name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
@@ -92,9 +92,9 @@ metadata:
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
 roleRef:
   kind: Role
-  name: gloo-validation-service-rollout
+  name: gloo-resource-rollout
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
-  name: gloo-validation-service-rollout
+  name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
