@@ -1,5 +1,3 @@
-{{- $customResourceLifecycle := include "gloo.customResourceLifecycle" .Values }}
-{{- if $customResourceLifecycle }}
 {{- $image := .Values.gateway.rolloutJob.image }}
 {{- if .Values.global }}
 {{- $image = merge .Values.gateway.rolloutJob.image .Values.global.image }}
@@ -37,7 +35,9 @@ spec:
           - /bin/sh
           - -c
           - |
+            {{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled }}
             kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
+            {{- end }}
             kubectl apply -f - <<EOF{{- include "gloo.customResources" . | indent 12}}EOF
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
@@ -98,4 +98,3 @@ subjects:
 - kind: ServiceAccount
   name: gloo-validation-service-rollout
   namespace: {{ .Release.Namespace }}
-{{- end }} {{/* if $customResourceLifecycle */}}

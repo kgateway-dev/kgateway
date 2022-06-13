@@ -1,5 +1,3 @@
-{{- $customResourceLifecycle := include "gloo.customResourceLifecycle" .Values }}
-{{- if $customResourceLifecycle }}
 {{- $image := .Values.gateway.cleanupJob.image }}
 {{- if .Values.global }}
 {{- $image = merge .Values.gateway.cleanupJob.image .Values.global.image }}
@@ -132,4 +130,3 @@ subjects:
 - kind: ServiceAccount
   name: gloo-resource-cleanup
   namespace: {{ .Release.Namespace }}
-{{- end }} {{/* if $customResourceLifecycle */}}
