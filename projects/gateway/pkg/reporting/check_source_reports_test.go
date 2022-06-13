@@ -25,8 +25,10 @@ var _ = Describe("CheckSourceReports", func() {
 	)
 	BeforeEach(func() {
 		snap = samples.SimpleGlooSnapshot(ignored)
-		tx := translator.NewDefaultTranslator(translator.Opts{})
-		proxy, reports = tx.Translate(context.TODO(), ignored, ignored, snap, snap.Gateways)
+		tx := translator.NewDefaultTranslator(translator.Opts{
+			WriteNamespace: ignored,
+		})
+		proxy, reports = tx.Translate(context.TODO(), ignored, snap, snap.Gateways)
 	})
 	It("returns true when all the sources for the config object are error-free", func() {
 		accepted, err := AllSourcesAccepted(reports, proxy.Listeners[0])

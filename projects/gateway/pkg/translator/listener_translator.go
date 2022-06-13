@@ -14,6 +14,7 @@ var _ ListenerTranslator = new(InvalidGatewayTypeTranslator)
 
 var MissingGatewayTypeErr = errors.New("invalid gateway: gateway must contain gatewayType")
 
+// ListenerTranslator converts a Gateway into a Listener
 type ListenerTranslator interface {
 	Name() string
 	ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener

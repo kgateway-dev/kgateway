@@ -100,7 +100,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should translate proxy with default name", func() {
-			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, snap.Gateways)
 
 			Expect(errs).To(HaveLen(4))
 			Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
@@ -134,10 +134,11 @@ var _ = Describe("Translator", func() {
 				Waf: waf,
 			}
 
-			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, snap.Gateways)
 
 			Expect(errs).To(HaveLen(4))
 			Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+			Expect(proxy).NotTo(BeNil())
 			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
 			Expect(proxy.Metadata.Namespace).To(Equal(ns))
 			Expect(proxy.Listeners).To(HaveLen(1))
@@ -173,7 +174,7 @@ var _ = Describe("Translator", func() {
 				},
 			)
 
-			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, snap.Gateways)
 
 			Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
@@ -192,7 +193,7 @@ var _ = Describe("Translator", func() {
 				},
 			)
 
-			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, snap.Gateways)
 
 			Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
@@ -207,7 +208,7 @@ var _ = Describe("Translator", func() {
 			}
 			snap.Gateways = append(snap.Gateways, &dupeGateway)
 
-			_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+			_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, snap.Gateways)
 			err := errs.ValidateStrict()
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("bind-address :2 is not unique in a proxy. gateways: gloo-system.name,gloo-system.name2"))
@@ -232,7 +233,7 @@ var _ = Describe("Translator", func() {
 			rt := snap.RouteTables[0]
 			rt.Routes = append(rt.Routes, badRoute)
 
-			_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+			_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, snap.Gateways)
 			err := reports.Validate()
 			Expect(err).NotTo(HaveOccurred())
 			err = reports.ValidateStrict()
@@ -308,7 +309,7 @@ var _ = Describe("Translator", func() {
 			})
 
 			It("should have the same number of listeners as gateways in the cluster", func() {
-				proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+				proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, snap.Gateways)
 
 				Expect(errs).To(HaveLen(4))
 				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
@@ -327,7 +328,7 @@ var _ = Describe("Translator", func() {
 			}
 			snap.Gateways = []*v1.Gateway{gatewayWithoutType}
 
-			_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+			_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, snap.Gateways)
 			err := errs.ValidateStrict()
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(MissingGatewayTypeErr.Error()))

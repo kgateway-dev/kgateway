@@ -105,7 +105,6 @@ type validator struct {
 	validationFunc               ValidatorFunc
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
-	writeNamespace               string
 }
 
 type ValidatorConfig struct {
@@ -119,13 +118,11 @@ type ValidatorConfig struct {
 func NewValidatorConfig(
 	translator translator.Translator,
 	validatorFunc ValidatorFunc,
-	writeNamespace string,
 	ignoreProxyValidationFailure, allowWarnings bool,
 ) ValidatorConfig {
 	return ValidatorConfig{
 		translator:                   translator,
 		validatorFunc:                validatorFunc,
-		writeNamespace:               writeNamespace,
 		ignoreProxyValidationFailure: ignoreProxyValidationFailure,
 		allowWarnings:                allowWarnings,
 	}
@@ -135,7 +132,6 @@ func NewValidator(cfg ValidatorConfig) *validator {
 	return &validator{
 		translator:                   cfg.translator,
 		validationFunc:               cfg.validatorFunc,
-		writeNamespace:               cfg.writeNamespace,
 		ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure,
 		allowWarnings:                cfg.allowWarnings,
 	}
@@ -153,7 +149,7 @@ func (v *validator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) erro
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 	var errs error
 	for proxyName, gatewayList := range gatewaysByProxy {
-		_, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, snap, gatewayList)
+		_, reports := v.translator.Translate(ctx, proxyName, snap, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
 			validate = reports.Validate
@@ -289,7 +285,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	)
 	for _, proxyName := range proxyNames {
 		gatewayList := gatewaysByProxy[proxyName]
-		proxy, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, &snapshotClone, gatewayList)
+		proxy, reports := v.translator.Translate(ctx, proxyName, &snapshotClone, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
 			validate = reports.Validate

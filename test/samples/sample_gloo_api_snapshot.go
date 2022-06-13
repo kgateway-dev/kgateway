@@ -265,7 +265,7 @@ func GlooSnapshotWithDelegates(namespace string) *v1snap.ApiSnapshot {
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: us.Metadata.Ref(),
+								Upstream: us.GetMetadata().Ref(),
 							},
 						},
 					},
