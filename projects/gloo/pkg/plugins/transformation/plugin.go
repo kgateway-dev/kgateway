@@ -192,13 +192,18 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		earlyStageConfig := &envoytransformation.FilterTransformations{
 			Stage: EarlyStageNumber,
 		}
-		earlyFilter, err := plugins.NewStagedFilterWithConfig(FilterName, earlyStageConfig, earlyPluginStage)
+		earlyFilter, err := plugins.NewStagedFilter(FilterName, earlyStageConfig, earlyPluginStage)
 		if err != nil {
 			return nil, err
 		}
 		filters = append(filters, earlyFilter)
 	}
-	filters = append(filters, plugins.NewStagedFilter(FilterName, pluginStage))
+
+	filters = append(filters,
+		plugins.MustNewStagedFilter(FilterName,
+			&envoytransformation.FilterTransformations{},
+			pluginStage),
+	)
 
 	return filters, nil
 }

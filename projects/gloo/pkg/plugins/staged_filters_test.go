@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Plugin", func() {
+var _ = Describe("Staged Filters", func() {
 
 	It("should order http filter stages correctly", func() {
 		By("base case")
