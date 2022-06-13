@@ -12,6 +12,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -25,7 +26,7 @@ const (
 var _ = Describe("Translator", func() {
 
 	var (
-		snap       *v1.ApiSnapshot
+		snap       *gloov1snap.ApiSnapshot
 		translator Translator
 	)
 
@@ -33,7 +34,7 @@ var _ = Describe("Translator", func() {
 
 		BeforeEach(func() {
 			translator = NewDefaultTranslator(Opts{})
-			snap = &v1.ApiSnapshot{
+			snap = &gloov1snap.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
 						Metadata: &core.Metadata{Namespace: ns, Name: "name"},
@@ -228,7 +229,7 @@ var _ = Describe("Translator", func() {
 			}
 
 			us := samples.SimpleUpstream()
-			snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
+			snap := samples.GlooSnapshotWithDelegates(us.Metadata.Ref(), ns)
 			rt := snap.RouteTables[0]
 			rt.Routes = append(rt.Routes, badRoute)
 
@@ -245,7 +246,7 @@ var _ = Describe("Translator", func() {
 				translator = NewDefaultTranslator(Opts{
 					ReadGatewaysFromAllNamespaces: true,
 				})
-				snap = &v1.ApiSnapshot{
+				snap = &gloov1snap.ApiSnapshot{
 					Gateways: v1.GatewayList{
 						{
 							Metadata: &core.Metadata{Namespace: ns, Name: "name"},

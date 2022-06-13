@@ -5,10 +5,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -19,13 +19,13 @@ import (
 
 var _ = Describe("AddProxyValidationResult", func() {
 	var (
-		snap    *v1.ApiSnapshot
+		snap    *gloov1snap.ApiSnapshot
 		proxy   *gloov1.Proxy
 		reports reporter.ResourceReports
 		ignored = "ignored"
 	)
 	BeforeEach(func() {
-		snap = samples.SimpleGatewaySnapshot(&core.ResourceRef{Name: ignored, Namespace: ignored}, ignored)
+		snap = samples.SimpleGlooSnapshotExistingUpstream(&core.ResourceRef{Name: ignored, Namespace: ignored}, ignored)
 		tx := translator.NewDefaultTranslator(translator.Opts{})
 		proxy, reports = tx.Translate(context.TODO(), ignored, ignored, snap, snap.Gateways)
 	})
