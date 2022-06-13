@@ -1,5 +1,8 @@
 # Consul/Vault Tests
 
+## Setup
+The consul vault test downloads and runs vault and is disabled by default. To enable, set `RUN_VAULT_TESTS=1` and `RUN_CONSUL_TESTS=1` in your local environment.
+
 ## Note to developers:
 These tests set up and run Gloo with a different than normal path for generating the runtime options.
 

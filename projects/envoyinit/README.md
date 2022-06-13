@@ -47,7 +47,7 @@ Envoy is configured with [Bootstrap configuration](https://www.envoyproxy.io/doc
 In Gloo Edge, Envoy configuration is processed in the following order:
 
 1. The bootstrap configuration is defined in a [ConfigMap](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml)
-2. The ConfigMap is mounted as a volume on the Pod.
+2. The ConfigMap is mounted as a volume on the Pod
 3. At [initialization](./cmd/main.go), the container reads the configuration, and transforms it using the [Kubernetes Downward API](https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/#the-downward-api)
 4. The transformed configuration is provided to the Envoy executable
 
@@ -89,6 +89,7 @@ To discover further information about Envoy, there are a number of great sources
  - [Envoy slack](https://envoyproxy.io/slack)
  - [Envoy getting started](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/index.html)
  - [Envoy best practices](https://www.envoyproxy.io/docs/envoy/latest/configuration/best_practices/edge)
+ - [Envoy Life of a Request](https://www.envoyproxy.io/docs/envoy/latest/intro/life_of_a_request)
 
 ### Determine the underlying version of Envoy
 ```shell
