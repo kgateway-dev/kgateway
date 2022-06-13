@@ -2,6 +2,7 @@ package translator
 
 import (
 	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -13,7 +14,7 @@ func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) map[*
 	groupedVirtualServices := map[string][]*v1.VirtualService{}
 
 	for _, virtualService := range virtualServices {
-		sslConfig := virtualService.SslConfig
+		sslConfig := virtualService.GetSslConfig()
 		sslConfigHash := hashSslConfig(sslConfig)
 
 		if matchingCfg, ok := mergedSslConfig[sslConfigHash]; ok {
