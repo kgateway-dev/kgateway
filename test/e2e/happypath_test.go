@@ -522,7 +522,6 @@ var _ = Describe("Happy path", func() {
 						upstream, err := getUpstream()
 						Expect(err).NotTo(HaveOccurred())
 						Expect(int(upstream.GetInitialStreamWindowSize().GetValue())).To(Equal(2048))
-						Expect(int(upstream.GetMaxConcurrentStreams().GetValue())).To(Equal(64))
 					})
 
 					It("correctly routes requests to a service destination", func() {
