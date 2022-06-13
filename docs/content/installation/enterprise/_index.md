@@ -16,7 +16,12 @@ Review how to install Gloo Edge Enterprise.
    {{% notice info %}}
    You must provide the license key during the installation process. When you install Gloo Edge, a Kubernetes secret is created to store the license key. Note that each trial license key is typically valid for **30 days**. When the license key expires, you can request a new license key by contacting your Account Representative or filling out [this form](https://lp.solo.io/request-trial). For more information, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).
    {{% /notice %}}
-3. Install or upgrade `glooctl` with the following instructions.
+3. Check whether `glooctl`, the Gloo Edge command line tool (CLI), is installed.
+   ```bash
+   glooctl version
+   ```
+   * If `glooctl` is not installed, [install it](#install-glooctl).
+   * If `glooctl` is installed, [update it to the latest version](#update-glooctl).
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
