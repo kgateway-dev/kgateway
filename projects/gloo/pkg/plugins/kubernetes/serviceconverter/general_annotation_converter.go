@@ -31,7 +31,8 @@ func (s *GeneralServiceConverter) ConvertService(ctx context.Context, svc *kubev
 	return applyAnnotations(svc.Annotations, us)
 }
 
-// applyAnnotations will only return an error if annotations are provided but cannot be applied
+// Applies annotations to the created upstream, overriding configuration provided in earlier calls.
+// Will only return an error if annotations are provided but cannot be applied
 // (typically a marshalling error due to an incorrect setting key)
 func applyAnnotations(annotations map[string]string, us *v1.Upstream) error {
 	upstreamConfigJson, ok := annotations[GlooAnnotationPrefix]

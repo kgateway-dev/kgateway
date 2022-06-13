@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	kubev1 "k8s.io/api/core/v1"
@@ -34,14 +32,9 @@ const GlooSslRootCaAnnotation = "gloo.solo.io/sslService.rootCa"
 // sets UseSsl on the upstream if the service has the relevant port name
 type UseSslConverter struct{}
 
-func (u *UseSslConverter) ConvertService(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
+func (u *UseSslConverter) ConvertService(_ context.Context, svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
 
-	upstreamSslConfig := upstreamSslConfigFromAnnotations(svc.Annotations, svc, port)
-
-	if upstreamSslConfig == nil {
-		globalAnnotations := settingsutil.MaybeFromContext(ctx).GetUpstreamOptions().GetGlobalAnnotations()
-		upstreamSslConfig = upstreamSslConfigFromAnnotations(globalAnnotations, svc, port)
-	}
+	upstreamSslConfig := upstreamSslConfigFromService(svc, port)
 
 	if upstreamSslConfig != nil {
 		us.SslConfig = upstreamSslConfig
@@ -50,15 +43,15 @@ func (u *UseSslConverter) ConvertService(ctx context.Context, svc *kubev1.Servic
 	return nil
 }
 
-func upstreamSslConfigFromAnnotations(annotations map[string]string, svc *kubev1.Service, svcPort kubev1.ServicePort) *v1.UpstreamSslConfig {
+func upstreamSslConfigFromService(svc *kubev1.Service, svcPort kubev1.ServicePort) *v1.UpstreamSslConfig {
 
-	if annotations == nil {
+	if svc.Annotations == nil {
 		return nil
 	}
 
 	// returns empty string if the target port is specified and it's not equal to the serve port
 	getAnnotationValue := func(key string) string {
-		valWithPort := annotations[key]
+		valWithPort := svc.Annotations[key]
 
 		val, port := splitPortFromValue(valWithPort)
 		if port == 0 || port == svcPort.Port {
