@@ -602,6 +602,10 @@ spec:
                 type: string
               upstreamOptions:
                 properties:
+                  globalAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   sslParameters:
                     properties:
                       cipherSuites:

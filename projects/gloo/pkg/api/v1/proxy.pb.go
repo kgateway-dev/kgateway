@@ -2251,8 +2251,10 @@ type AggregateListener_HttpFilterChain struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Matcher         *Matcher `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
-	HttpOptionsRef  string   `protobuf:"bytes,2,opt,name=http_options_ref,json=httpOptionsRef,proto3" json:"http_options_ref,omitempty"`
+	Matcher *Matcher `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
+	//HttpListenerOptions options = 4;
+	HttpOptionsRef string `protobuf:"bytes,2,opt,name=http_options_ref,json=httpOptionsRef,proto3" json:"http_options_ref,omitempty"`
+	//repeated VirtualHost hosts = 5;
 	VirtualHostRefs []string `protobuf:"bytes,3,rep,name=virtual_host_refs,json=virtualHostRefs,proto3" json:"virtual_host_refs,omitempty"`
 }
 

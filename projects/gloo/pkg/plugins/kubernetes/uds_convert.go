@@ -66,7 +66,7 @@ func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1
 	}
 
 	for _, sc := range uc.serviceConverters {
-		if err := sc.ConvertService(svc, port, us); err != nil {
+		if err := sc.ConvertService(ctx, svc, port, us); err != nil {
 			contextutils.LoggerFrom(ctx).Errorf("error: failed to process service options with err %v", err)
 		}
 	}

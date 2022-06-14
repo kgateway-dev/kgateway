@@ -3,6 +3,9 @@ package translator
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -14,8 +17,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"regexp"
-	"strings"
 )
 
 var (

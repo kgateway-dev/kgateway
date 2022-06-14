@@ -450,6 +450,9 @@ message Settings {
 message UpstreamOptions {
     // Default ssl parameter configuration to use for upstreams
     SslParameters ssl_parameters = 1;
+
+    // Annotations to apply to all upstreams
+    map<string, string> global_annotations = 2;
 }
 
 // Settings specific to the gloo (Envoy xDS server) controller

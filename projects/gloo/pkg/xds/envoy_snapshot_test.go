@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 )
 
 var _ = Describe("EnvoySnapshot", func() {
@@ -43,7 +44,7 @@ var _ = Describe("EnvoySnapshot", func() {
 
 		// Mutate the clone
 		clone.GetResources(
-			resource.EndpointTypeV3,
+			types.EndpointTypeV3,
 		).Items[""].(*resource.EnvoyResource).ResourceProto().(*envoy_config_endpoint_v3.ClusterLoadAssignment).ClusterName = "new_endpoint"
 
 		// Verify that original snapshot was not mutated

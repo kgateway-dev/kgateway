@@ -1,8 +1,11 @@
 package serviceconverter
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
+
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
 	"github.com/imdario/mergo"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -16,12 +19,36 @@ const DeepMergeAnnotationPrefix = "gloo.solo.io/upstream_config.deep_merge"
 
 type GeneralServiceConverter struct{}
 
-func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
-	upstreamConfigJson, ok := svc.Annotations[GlooAnnotationPrefix]
+func (s *GeneralServiceConverter) ConvertService(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
+	// Global upstream configuration settings
+	if globalAnnotations := settingsutil.MaybeFromContext(ctx).GetUpstreamOptions().GetGlobalAnnotations(); globalAnnotations != nil {
+		if err := applyAnnotations(globalAnnotations, us); err != nil {
+			return err
+		}
+	}
+
+	// Service-specific annotation are applied afterwards to override global annotations
+	return applyAnnotations(svc.Annotations, us)
+}
+
+// Applies annotations to the created upstream, overriding configuration provided in earlier calls.
+// Will only return an error if annotations are provided but cannot be applied
+// (typically a marshalling error due to an incorrect setting key)
+func applyAnnotations(annotations map[string]string, us *v1.Upstream) error {
+	upstreamConfigJson, ok := annotations[GlooAnnotationPrefix]
 	if !ok {
 		return nil
 	}
 
+	deepMerge, ok := annotations[DeepMergeAnnotationPrefix]
+	performShallowMerge := !ok || deepMerge != "true"
+
+	if err := applyUpstreamConfig(upstreamConfigJson, performShallowMerge, us); err != nil {
+		return err
+	}
+	return nil
+}
+func applyUpstreamConfig(upstreamConfigJson string, performShallowMerge bool, us *v1.Upstream) error {
 	var upstreamConfigMap map[string]interface{}
 	if err := json.Unmarshal([]byte(upstreamConfigJson), &upstreamConfigMap); err != nil {
 		return err
@@ -32,9 +59,8 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 		return err
 	}
 
-	deepMerge, ok := svc.Annotations[DeepMergeAnnotationPrefix]
 	var err error
-	if !ok || deepMerge != "true" {
+	if performShallowMerge {
 		err = shallowMergeUpstreams(&upstreamConfig, us)
 	} else {
 		err = deepMergeUpstreams(&upstreamConfig, us)
@@ -43,7 +69,6 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

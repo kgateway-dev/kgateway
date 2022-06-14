@@ -328,8 +328,8 @@ Some traffic policies can be configured to work both on the listener and virtual
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk/#matcher) |  |
-| `httpOptionsRef` | `string` |  |
-| `virtualHostRefs` | `[]string` |  |
+| `httpOptionsRef` | `string` | HttpListenerOptions options = 4;. |
+| `virtualHostRefs` | `[]string` | repeated VirtualHost hosts = 5;. |
 
 
 

@@ -12,7 +12,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
-	github.com/fsnotify/fsnotify v1.5.3
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.6
@@ -54,7 +54,7 @@ require (
 	github.com/solo-io/skv2 v0.21.6
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
-	github.com/solo-io/solo-kit v0.27.2
+	github.com/solo-io/solo-kit v0.28.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
@@ -272,7 +272,7 @@ require (
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/net v0.0.0-20211205041911-012df41ee64c // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
+	golang.org/x/sys v0.0.0-20220608164250-635b8c9b7f68 // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
