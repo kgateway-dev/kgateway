@@ -334,6 +334,15 @@ func (m *UpstreamOptions) Clone() proto.Message {
 		target.SslParameters = proto.Clone(m.GetSslParameters()).(*SslParameters)
 	}
 
+	if m.GetGlobalAnnotations() != nil {
+		target.GlobalAnnotations = make(map[string]string, len(m.GetGlobalAnnotations()))
+		for k, v := range m.GetGlobalAnnotations() {
+
+			target.GlobalAnnotations[k] = v
+
+		}
+	}
+
 	return target
 }
 

@@ -105,3 +105,11 @@ As you can see, the configuration set `spec.initialStreamWindowSize` to `2048` o
 By default, discovered upstreams configured via the `gloo.solo.io/upstream_config` annotation will completely overwrite top-level upstream fields for which configuration has been specified.
 
 By setting the `gloo.solo.io/upstream_config.deep_merge` annotation to `true` on the service for which an upstream is to be discovered, you can configure Gloo Edge to merge the provided configuration with the default upstream config. This can be useful if you rely on certain default values present when a new upstream is discovered.
+
+## Global annotations for upstreams
+
+Upstream configuration can be centralized by applying annotations in `Settings.UpstreamOptions.globalAnnotations`. Globally-defined annotations will be overridden by annotations defined on a service.
+
+The merge strategy annotation `gloo.solo.io/upstream_config.deep_merge` is supported for these annotations.
+
+The SSL annotations prefixed with `gloo.solo.io/sslService.` are not supported globally.
