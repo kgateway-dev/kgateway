@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"context"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -38,6 +39,7 @@ type InitParams struct {
 type Params struct {
 	Ctx      context.Context
 	Snapshot *v1snap.ApiSnapshot
+	Messages map[*core.ResourceRef][]string
 }
 
 type VirtualHostParams struct {
