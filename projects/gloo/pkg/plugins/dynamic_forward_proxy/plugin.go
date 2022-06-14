@@ -325,7 +325,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	}
 	p.filterHashMap[getHashString(cpDfp)] = cpDfp
 
-	c, err := plugins.NewStagedFilterWithConfig(FilterName, dfp, pluginStage)
+	c, err := plugins.NewStagedFilter(FilterName, dfp, pluginStage)
 	if err != nil {
 		return []plugins.StagedHttpFilter{}, err
 	}

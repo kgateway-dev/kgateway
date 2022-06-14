@@ -322,7 +322,7 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 	filterconfig.CredentialRefreshDelay = p.settings.GetCredentialRefreshDelay()
 	filterconfig.PropagateOriginalRouting = p.settings.GetPropagateOriginalRouting().GetValue()
 
-	f, err := plugins.NewStagedFilterWithConfig(FilterName, filterconfig, pluginStage)
+	f, err := plugins.NewStagedFilter(FilterName, filterconfig, pluginStage)
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +334,7 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 		awsStageConfig := &envoy_transform.FilterTransformations{
 			Stage: transformation.AwsStageNumber,
 		}
-		tf, err := plugins.NewStagedFilterWithConfig(transformation.FilterName, awsStageConfig, transformPluginStage)
+		tf, err := plugins.NewStagedFilter(transformation.FilterName, awsStageConfig, transformPluginStage)
 		if err != nil {
 			return nil, err
 		}

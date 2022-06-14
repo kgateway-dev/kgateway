@@ -1,7 +1,9 @@
 package grpcweb
 
 import (
+	envoygrpcweb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_web/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
@@ -52,11 +54,12 @@ func (p *plugin) isDisabled(httplistener *v1.HttpListener) bool {
 	return grpcWeb.GetDisable()
 }
 
+// HttpFilters will add an empty version of the grpcweb filter to a listener
+// if it is not explicitly set.
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	if p.isDisabled(listener) {
 		return nil, nil
 	}
-	return []plugins.StagedHttpFilter{
-		plugins.NewStagedFilter(wellknown.GRPCWeb, pluginStage),
-	}, nil
+
+	return []plugins.StagedHttpFilter{plugins.MustNewStagedFilter(wellknown.GRPCWeb, &envoygrpcweb.GrpcWeb{}, pluginStage)}, nil
 }
