@@ -11,10 +11,6 @@ const TcpTranslatorName = "tcp"
 
 type TcpTranslator struct{}
 
-func (t *TcpTranslator) Name() string {
-	return TcpTranslatorName
-}
-
 func (t *TcpTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener {
 	tcpGateway := gateway.GetTcpGateway()
 	if tcpGateway == nil {

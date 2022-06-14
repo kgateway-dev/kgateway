@@ -19,12 +19,8 @@ var (
 )
 
 type HybridTranslator struct {
-	HttpTranslator *HttpTranslator
-	TcpTranslator  *TcpTranslator
-}
-
-func (t *HybridTranslator) Name() string {
-	return HybridTranslatorName
+	VirtualServiceTranslator *VirtualServiceTranslator
+	TcpTranslator            *TcpTranslator
 }
 
 func (t *HybridTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener {
@@ -108,7 +104,10 @@ func (t *HybridTranslator) computeHybridListenerFromMatchedGateways(
 			virtualServices := getVirtualServicesForHttpGateway(params, gateway, httpGateway, sslGateway)
 
 			matchedListener.ListenerType = &gloov1.MatchedListener_HttpListener{
-				HttpListener: t.HttpTranslator.ComputeHttpListener(params, gateway, httpGateway, virtualServices, proxyName),
+				HttpListener: &gloov1.HttpListener{
+					VirtualHosts: t.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServices, proxyName),
+					Options:      httpGateway.GetOptions(),
+				},
 			}
 
 			if sslGateway {
@@ -236,7 +235,10 @@ func (t *HybridTranslator) computeMatchedListener(
 	virtualServices := getVirtualServicesForHttpGateway(params, parentGateway, httpGateway, sslGateway)
 
 	matchedListener.ListenerType = &gloov1.MatchedListener_HttpListener{
-		HttpListener: t.HttpTranslator.ComputeHttpListener(params, parentGateway, httpGateway, virtualServices, proxyName),
+		HttpListener: &gloov1.HttpListener{
+			VirtualHosts: t.VirtualServiceTranslator.ComputeVirtualHosts(params, parentGateway, virtualServices, proxyName),
+			Options:      httpGateway.GetOptions(),
+		},
 	}
 
 	if sslGateway {

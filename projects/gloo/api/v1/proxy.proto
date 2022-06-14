@@ -225,8 +225,10 @@ message AggregateListener {
     message HttpFilterChain {
         Matcher matcher = 1;
 
+        //HttpListenerOptions options = 4;
         string http_options_ref = 2;
 
+        //repeated VirtualHost hosts = 5;
         repeated string virtual_host_refs = 3;
     }
 

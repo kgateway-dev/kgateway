@@ -40,7 +40,7 @@ var _ = Describe("Hybrid Translator", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
 		hybridTranslator = &HybridTranslator{
-			HttpTranslator: &HttpTranslator{
+			VirtualServiceTranslator: &VirtualServiceTranslator{
 				WarnOnRouteShortCircuiting: false,
 			},
 			TcpTranslator: &TcpTranslator{},

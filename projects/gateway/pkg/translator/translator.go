@@ -37,24 +37,38 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 	if opts.Validation != nil {
 		warnOnRouteShortCircuiting = opts.Validation.WarnOnRouteShortCircuiting
 	}
-
-	httpTranslator := &HttpTranslator{
+	virtualServiceTranslator := &VirtualServiceTranslator{
 		WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting,
-		IsolateVirtualHostsBySslConfig: opts.IsolateVirtualHostsBySslConfig,
+	}
+
+	// Define the available translators which convert a Gateway into a Listener
+	//	- httpTranslator produces an HttpListener
+	//	- tcpTranslator produces a TcpListener
+	//	- hybridTranslator produces a HybridListener
+	//	- aggregateTranslator produces an AggregateListener
+	httpTranslator := &HttpTranslator{
+		VirtualServiceTranslator: virtualServiceTranslator,
 	}
 	tcpTranslator := &TcpTranslator{}
 	hybridTranslator := &HybridTranslator{
-		HttpTranslator: httpTranslator,
-		TcpTranslator:  tcpTranslator,
+		VirtualServiceTranslator: virtualServiceTranslator,
+		TcpTranslator:            tcpTranslator,
 	}
+	aggregateTranslator := &AggregateTranslator{}
 
-	return NewTranslator([]ListenerTranslator{httpTranslator, tcpTranslator, hybridTranslator}, opts)
-}
-
-func NewTranslator(listenerTranslators []ListenerTranslator, opts Opts) *GwTranslator {
+	// Define the mapping between GatewayType -> ListenerTranslator
+	// This allows us to ensure that the AggregateTranslator will only
+	// be executed if users opt into the behavior. This will reduce the
+	// surface area of affected users, if there is a bug in the implementation
 	translatorsByName := make(map[string]ListenerTranslator)
-	for _, t := range listenerTranslators {
-		translatorsByName[t.Name()] = t
+	if opts.IsolateVirtualHostsBySslConfig {
+		translatorsByName[HttpTranslatorName] = aggregateTranslator
+		translatorsByName[TcpTranslatorName] = tcpTranslator
+		translatorsByName[HybridTranslatorName] = aggregateTranslator
+	} else {
+		translatorsByName[HttpTranslatorName] = httpTranslator
+		translatorsByName[TcpTranslatorName] = tcpTranslator
+		translatorsByName[HybridTranslatorName] = hybridTranslator
 	}
 
 	return &GwTranslator{
