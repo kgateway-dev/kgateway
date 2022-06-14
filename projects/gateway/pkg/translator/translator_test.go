@@ -2,7 +2,6 @@ package translator_test
 
 import (
 	"context"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -335,6 +334,123 @@ var _ = Describe("Translator", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(MissingGatewayTypeErr.Error()))
 		})
+
+
+		Context("TranslatorOpts", func() {
+
+			var (
+				httpGateway, tcpGateway, hybridGateway *v1.Gateway
+			)
+
+			BeforeEach(func() {
+				httpGateway = &v1.Gateway{
+					Metadata: &core.Metadata{Namespace: ns, Name: "http-gateway"},
+					GatewayType: &v1.Gateway_HttpGateway{
+						HttpGateway: &v1.HttpGateway{},
+					},
+				}
+				tcpGateway = &v1.Gateway{
+					Metadata: &core.Metadata{Namespace: ns, Name: "tcp-gateway"},
+					GatewayType: &v1.Gateway_TcpGateway{
+						TcpGateway: &v1.TcpGateway{},
+					},
+				}
+				hybridGateway = &v1.Gateway{
+					Metadata: &core.Metadata{Namespace: ns, Name: "hybrid-gateway"},
+					GatewayType: &v1.Gateway_HybridGateway{
+						HybridGateway: &v1.HybridGateway{
+							MatchedGateways: []*v1.MatchedGateway{
+								{
+									GatewayType: &v1.MatchedGateway_HttpGateway{
+										HttpGateway: &v1.HttpGateway{},
+									},
+								},
+							},
+						},
+					},
+					BindPort: 3,
+				}
+
+				snap.Gateways = append(
+					snap.Gateways,
+					httpGateway,
+					tcpGateway,
+					hybridGateway,
+				)
+			})
+
+
+			When("IsolateVirtualHostsBySslConfig is false", func() {
+
+				BeforeEach(func() {
+					translator = NewDefaultTranslator(Opts{
+						IsolateVirtualHostsBySslConfig: false,
+						WriteNamespace: ns,
+					})
+				})
+
+				It("Should translate HttpGateway into HttpListener", func() {
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, v1.GatewayList{httpGateway})
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					Expect(proxy.Listeners[0].GetHttpListener()).NotTo(BeNil())
+				})
+
+				It("Should translate TcpGateway into TcpListener", func() {
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, v1.GatewayList{tcpGateway})
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					Expect(proxy.Listeners[0].GetTcpListener()).NotTo(BeNil())
+				})
+
+				It("Should translate HybridGateway into HybridListener", func() {
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, v1.GatewayList{hybridGateway})
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					Expect(proxy.Listeners[0].GetHybridListener()).NotTo(BeNil())
+				})
+
+			})
+
+			When("IsolateVirtualHostsBySslConfig is true", func() {
+
+				BeforeEach(func() {
+					translator = NewDefaultTranslator(Opts{
+						IsolateVirtualHostsBySslConfig: true,
+						WriteNamespace:                 ns,
+					})
+				})
+
+				It("Should translate HttpGateway into AggregateListener", func() {
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, v1.GatewayList{httpGateway})
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					Expect(proxy.Listeners[0].GetAggregateListener()).NotTo(BeNil())
+				})
+
+				It("Should translate TcpGateway into TcpListener", func() {
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, v1.GatewayList{tcpGateway})
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					Expect(proxy.Listeners[0].GetTcpListener()).NotTo(BeNil())
+				})
+
+				It("Should translate HybridGateway into AggregateListener", func() {
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, v1.GatewayList{hybridGateway})
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					Expect(proxy.Listeners[0].GetAggregateListener()).NotTo(BeNil())
+				})
+
+			})
+		})
+
 	})
 
 })

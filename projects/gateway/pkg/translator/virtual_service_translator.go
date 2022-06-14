@@ -73,8 +73,8 @@ var (
 	}
 )
 
-// VirtualServiceTranslator converts a set of VirtualServices for a particular Gateway, into a
-// corresponding set of VirtualHosts
+// VirtualServiceTranslator converts a set of VirtualServices for a particular Gateway
+// into a corresponding set of VirtualHosts
 type VirtualServiceTranslator struct {
 	WarnOnRouteShortCircuiting bool
 }
