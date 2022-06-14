@@ -546,12 +546,14 @@ When these properties are defined on a specific upstream, this configuration wil
 
 ```yaml
 "sslParameters": .gloo.solo.io.SslParameters
+"globalAnnotations": map<string, string>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `sslParameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) | Default ssl parameter configuration to use for upstreams. |
+| `globalAnnotations` | `map<string, string>` | Annotations to apply to all upstreams. |
 
 
 

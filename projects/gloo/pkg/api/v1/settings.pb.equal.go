@@ -482,6 +482,17 @@ func (m *UpstreamOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetGlobalAnnotations()) != len(target.GetGlobalAnnotations()) {
+		return false
+	}
+	for k, v := range m.GetGlobalAnnotations() {
+
+		if strings.Compare(v, target.GetGlobalAnnotations()[k]) != 0 {
+			return false
+		}
+
+	}
+
 	return true
 }
 
