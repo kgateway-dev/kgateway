@@ -108,8 +108,25 @@ By setting the `gloo.solo.io/upstream_config.deep_merge` annotation to `true` on
 
 ## Global annotations for upstreams
 
-Upstream configuration can be centralized by applying annotations in `Settings.UpstreamOptions.globalAnnotations`. Globally-defined annotations will be overridden by annotations defined on a service.
+You can apply the same annotations across all of your upstream resources with the global annotations setting (`Settings.UpstreamOptions.globalAnnotations`).
 
-The merge strategy annotation `gloo.solo.io/upstream_config.deep_merge` is supported for these annotations.
+Keep in mind a few things about how global annotations work:
+* You can overwrite global annotations for an upstream by defining the same annotation on the Kubernetes service.
+* You can use the merge strategy annotation `gloo.solo.io/upstream_config.deep_merge` for global annotations.
+* You cannot set an SSL global annotation with the prefix `gloo.solo.io/sslService`.
 
-The SSL annotations prefixed with `gloo.solo.io/sslService.` are not supported globally.
+The following example sets two global annotations:
+* `additionalProperties`: An annotation that consists of a mapping of `key:value` pairs in the `type: string` format.
+* `type:object`
+
+
+For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#upstreamoptions" >}}).
+
+```yaml
+              upstreamOptions:
+                properties:
+                  globalAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
+```
