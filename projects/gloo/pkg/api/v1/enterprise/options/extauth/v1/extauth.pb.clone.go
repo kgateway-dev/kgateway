@@ -602,6 +602,19 @@ func (m *JwksOnDemandCacheRefreshPolicy) Clone() proto.Message {
 }
 
 // Clone function
+func (m *AutoMapFromMetadata) Clone() proto.Message {
+	var target *AutoMapFromMetadata
+	if m == nil {
+		return target
+	}
+	target = &AutoMapFromMetadata{}
+
+	target.Namespace = m.GetNamespace()
+
+	return target
+}
+
+// Clone function
 func (m *OidcAuthorizationCode) Clone() proto.Message {
 	var target *OidcAuthorizationCode
 	if m == nil {
@@ -687,6 +700,12 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
 
 	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
+
+	if h, ok := interface{}(m.GetAutoMapFromMetadata()).(clone.Cloner); ok {
+		target.AutoMapFromMetadata = h.Clone().(*AutoMapFromMetadata)
+	} else {
+		target.AutoMapFromMetadata = proto.Clone(m.GetAutoMapFromMetadata()).(*AutoMapFromMetadata)
+	}
 
 	return target
 }
@@ -1730,6 +1749,12 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
 
 	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
+
+	if h, ok := interface{}(m.GetAutoMapFromMetadata()).(clone.Cloner); ok {
+		target.AutoMapFromMetadata = h.Clone().(*AutoMapFromMetadata)
+	} else {
+		target.AutoMapFromMetadata = proto.Clone(m.GetAutoMapFromMetadata()).(*AutoMapFromMetadata)
+	}
 
 	return target
 }

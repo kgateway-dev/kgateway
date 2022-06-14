@@ -477,6 +477,11 @@ message JwksOnDemandCacheRefreshPolicy {
     }
 }
 
+message AutoMapFromMetadata {
+    // The namespace from which to map metadata
+    string namespace = 1;
+}
+
 
 message OidcAuthorizationCode {
     // your client id as registered with the issuer
@@ -572,6 +577,12 @@ message OidcAuthorizationCode {
 
     // If set, CallbackPath will be evaluated as a regular expression
     bool parse_callback_path_as_regex = 17;
+
+    // If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values.
+    // By default parameters will be extracted from the solo_authconfig_oidc namespace
+    // this behavior can be overridden by explicitly specifying a namespace
+    AutoMapFromMetadata auto_map_from_metadata = 18;
+    
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -1068,6 +1079,11 @@ message ExtAuthConfig {
 
         // If set, CallbackPath will be evaluated as a regular expression
         bool parse_callback_path_as_regex = 17;
+    
+        // If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values.
+        // By default parameters will be extracted from the solo_authconfig_oidc namespace
+        // this behavior can be overridden by explicitly specifying a namespace
+        AutoMapFromMetadata auto_map_from_metadata = 18;
     }
 
     message AccessTokenValidationConfig {

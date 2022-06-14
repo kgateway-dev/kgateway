@@ -196,6 +196,11 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
+                            autoMapFromMetadata:
+                              properties:
+                                namespace:
+                                  type: string
+                              type: object
                             callbackPath:
                               type: string
                             clientId:
