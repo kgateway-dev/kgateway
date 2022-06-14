@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -160,13 +162,57 @@ var _ = Describe("UdsConvert", func() {
 
 			CreateUpstreamWithSpec := func(uc *KubeUpstreamConverter, ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, upstream *v1.Upstream) (*v1.Upstream, error) {
 				for _, sc := range uc.serviceConverters {
-					if err := sc.ConvertService(svc, port, upstream); err != nil {
+					if err := sc.ConvertService(context.TODO(), svc, port, upstream); err != nil {
 						return nil, err
 					}
 				}
 
 				return upstream, nil
 			}
+
+			Describe("Global config Annotation from Gloo settings", func() {
+
+				It("Should have config from settings annotation but override these with service-specified values", func() {
+
+					// In this test we will apply four unique annotation-based upstream configuration values,
+					// between the two possible configuration sources:
+					// - At service-level, we'll define: use_http2
+					// - At the global scope, we'll define: max_concurrent_streams
+					// - And at both we also populate GlooSslTlsKeyAnnotation, and initial_stream_window_size
+					// All four unique settings are expected to be configured, while those appearing twice are
+					// expected to get their value from service-level configuration which takes precedence.
+
+					svc := &kubev1.Service{
+						Spec:       kubev1.ServiceSpec{},
+						ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test-ns"},
+					}
+					svc.Annotations = make(map[string]string)
+					svc.Annotations[serviceconverter.GlooH2Annotation] = "true"
+					svc.Annotations[serviceconverter.GlooAnnotationPrefix] = `{"use_http2": false, "initial_stream_window_size": 2048}`
+					svc.Annotations[serviceconverter.GlooSslTlsKeyAnnotation] = "ServiceTLSKey"
+
+					// Global-level upstream configuration values applied in Gloo Settings.UpstreamOptions
+					ctx := settingsutil.WithSettings(
+						context.TODO(),
+						&v1.Settings{
+							UpstreamOptions: &v1.UpstreamOptions{
+								GlobalAnnotations: map[string]string{
+									serviceconverter.GlooAnnotationPrefix:    "{\"initial_stream_window_size\": 1024, \"max_concurrent_streams\": 64}",
+									serviceconverter.GlooSslTlsKeyAnnotation: "GlobalTLSKey",
+								},
+							},
+						})
+
+					port := kubev1.ServicePort{
+						Port: 123,
+					}
+					up := uc.CreateUpstream(ctx, svc, port)
+					Expect(up.GetUseHttp2().GetValue()).To(BeFalse())
+					Expect(up.GetInitialStreamWindowSize().GetValue()).To(Equal(uint32(2048)))
+					Expect(up.GetMaxConcurrentStreams().GetValue()).To(Equal(uint32(64)))
+					Expect(up.GetSslConfig().GetSslFiles().GetTlsKey()).To(BeEquivalentTo("ServiceTLSKey"))
+				})
+			})
 
 			Describe("deep merge", func() {
 				var (
