@@ -171,12 +171,23 @@ Generating a 2048 bit RSA private key
 writing new private key to 'tls.key'
 ```
 
-Second, we'll create a Kubernetes secret containing this certificate.
+Second, we'll create a Kubernetes secret containing this certificate.{{% notice note %}}In Gloo Edge versions 1.11 and later, specify a secret of `type: extauth.solo.io/oauth`.{{% /notice %}}
 
-```shell
-% kubectl create secret tls upstream-tls --key tls.key --cert tls.crt --namespace gloo-system
-secret/upstream-tls created
-```
+{{< tabs >}}
+{{< tab name="kubectl create secret" codelang="shell">}}
+kubectl create secret tls upstream-tls --key tls.key --cert tls.crt --namespace gloo-system
+{{< /tab >}}
+{{< tab name="kubectl apply" codelang="yaml">}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: okta-client-secret
+  namespace: gloo-system
+type: extauth.solo.io/oauth
+data:
+  client-secret: <base64secret>
+{{< /tab >}}
+{{< /tabs >}} 
 
 Third, we enable HTTPS for our Virtual Service by using `kubectl` to apply the following change.
 
