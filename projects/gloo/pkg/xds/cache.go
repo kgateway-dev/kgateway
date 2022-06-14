@@ -63,5 +63,10 @@ func SnapshotCacheKeys(proxies v1.ProxyList) []string {
 
 // NewAdsSnapshotCache returns a snapshot-based cache, used to serve xDS requests
 func NewAdsSnapshotCache(ctx context.Context) cache.SnapshotCache {
-	return cache.NewSnapshotCache(true, NewNodeRoleHasher(), contextutils.LoggerFrom(ctx))
+	settings := cache.CacheSettings{
+		Ads:    true,
+		Hash:   NewNodeRoleHasher(),
+		Logger: contextutils.LoggerFrom(ctx),
+	}
+	return cache.NewSnapshotCache(settings)
 }
