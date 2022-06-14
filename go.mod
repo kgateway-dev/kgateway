@@ -54,7 +54,7 @@ require (
 	github.com/solo-io/skv2 v0.21.6
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
-	github.com/solo-io/solo-kit v0.27.3-0.20220610000945-f1d38af16d1b
+	github.com/solo-io/solo-kit v0.28.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
@@ -320,7 +320,6 @@ replace (
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
-	// github.com/solo-io/solo-kit => ../solo-kit
 
 	// version upgrade to 1.40.2 fails a specific unit test
 	// see https://github.com/solo-io/gloo/issues/5719
