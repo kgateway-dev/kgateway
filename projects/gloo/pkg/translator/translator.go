@@ -149,6 +149,13 @@ func (t *translatorInstance) Translate(
 		}
 	}
 
+	messagesMap := params.Messages
+	if len(messagesMap) > 0 {
+		for _, messages := range messagesMap {
+			reports.AddMessages(proxy, messages...)
+		}
+	}
+
 	return xdsSnapshot, reports, proxyReport, nil
 }
 

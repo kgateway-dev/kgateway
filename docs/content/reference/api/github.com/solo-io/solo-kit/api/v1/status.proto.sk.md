@@ -58,6 +58,7 @@ Statuses are meant to be read-only by users
 "reportedBy": string
 "subresourceStatuses": map<string, .core.solo.io.Status>
 "details": .google.protobuf.Struct
+"messages": []string
 
 ```
 
@@ -68,6 +69,7 @@ Statuses are meant to be read-only by users
 | `reportedBy` | `string` | Reference to the reporter who wrote this status. |
 | `subresourceStatuses` | `map<string, .core.solo.io.Status>` | Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource. |
 | `details` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Opaque details about status results. |
+| `messages` | `[]string` | Additional information about the current state of the resource. |
 
 
 
