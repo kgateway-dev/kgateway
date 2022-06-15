@@ -2,9 +2,11 @@ package translator_test
 
 import (
 	"context"
+
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -12,11 +14,15 @@ import (
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/buffer"
+	corsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
+	hcmplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -54,7 +60,8 @@ var _ = Describe("Listener Subsystem", func() {
 		// Create a pluginRegistry with a minimal number of plugins
 		// This test is not concerned with the functionality of individual plugins
 		pluginRegistry := registry.NewPluginRegistry([]plugins.Plugin{
-			buffer.NewPlugin(),
+			hcmplugin.NewPlugin(),
+			corsplugin.NewPlugin(),
 		})
 
 		// The translatorFactory expects each of the plugins to be initialized
@@ -332,7 +339,7 @@ var _ = Describe("Listener Subsystem", func() {
 				listenerReport)
 
 			params := plugins.Params{
-				Ctx: ctx,
+				Ctx:      ctx,
 				Snapshot: &gloov1snap.ApiSnapshot{},
 			}
 			_ = listenerTranslator.ComputeListener(params)
@@ -342,7 +349,7 @@ var _ = Describe("Listener Subsystem", func() {
 			assertionHandler(proxyReport)
 		},
 		Entry(
-			"listener error",
+			"ListenerError",
 			&v1.AggregateListener{
 				HttpResources: &v1.AggregateListener_HttpResources{
 					HttpOptions: map[string]*v1.HttpListenerOptions{
@@ -361,7 +368,7 @@ var _ = Describe("Listener Subsystem", func() {
 						SslConfig: &v1.SslConfig{
 							SslSecrets: &v1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
-									Name: "secret-that-is-not-in-snapshot",
+									Name:      "secret-that-is-not-in-snapshot",
 									Namespace: defaults.GlooSystem,
 								},
 							},
@@ -375,6 +382,126 @@ var _ = Describe("Listener Subsystem", func() {
 				proxyErr := gloovalidation.GetProxyError(proxyReport)
 				Expect(proxyErr).To(HaveOccurred())
 				Expect(proxyErr.Error()).To(ContainSubstring(validation.ListenerReport_Error_SSLConfigError.String()))
+			},
+		),
+		Entry(
+			"HttpListenerError",
+			&v1.AggregateListener{
+				HttpResources: &v1.AggregateListener_HttpResources{
+					HttpOptions: map[string]*v1.HttpListenerOptions{
+						"http-options-ref": {
+							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
+								// Multiple Upgrades that overlap should produce an error when processing the HCM plugin
+								Upgrades: []*protocol_upgrade.ProtocolUpgradeConfig{
+									{
+										UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+											Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+												Enabled: &wrappers.BoolValue{
+													Value: true,
+												},
+											},
+										},
+									},
+									{
+										UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+											Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+												Enabled: &wrappers.BoolValue{
+													Value: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					VirtualHosts: map[string]*v1.VirtualHost{
+						"vhost-ref": {
+							Name: "virtual-host",
+						},
+					},
+				},
+				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+					Matcher:         nil,
+					HttpOptionsRef:  "http-options-ref",
+					VirtualHostRefs: []string{"vhost-ref"},
+				}},
+			},
+			func(proxyReport *validation.ProxyReport) {
+				proxyErr := gloovalidation.GetProxyError(proxyReport)
+				Expect(proxyErr).To(HaveOccurred())
+				Expect(proxyErr.Error()).To(ContainSubstring(validation.HttpListenerReport_Error_ProcessingError.String()))
+				Expect(proxyErr.Error()).To(ContainSubstring("upgrade config websocket is not unique"))
+			},
+		),
+		Entry(
+			"VirtualHostError",
+			&v1.AggregateListener{
+				HttpResources: &v1.AggregateListener_HttpResources{
+					HttpOptions: map[string]*v1.HttpListenerOptions{
+						"http-options-ref": {
+							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
+						},
+					},
+					VirtualHosts: map[string]*v1.VirtualHost{
+						"vhost-ref": {
+							Name: "virtual-host",
+							Options: &v1.VirtualHostOptions{
+								Cors: &cors.CorsPolicy{
+									// Empty AllowOrigin and AllowOriginRegex should produce an error when processing the CORS plugin
+									AllowOrigin:      []string{},
+									AllowOriginRegex: []string{},
+								},
+							},
+						},
+					},
+				},
+				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+					Matcher:         nil,
+					HttpOptionsRef:  "http-options-ref",
+					VirtualHostRefs: []string{"vhost-ref"},
+				}},
+			},
+			func(proxyReport *validation.ProxyReport) {
+				proxyErr := gloovalidation.GetProxyError(proxyReport)
+				Expect(proxyErr).To(HaveOccurred())
+				Expect(proxyErr.Error()).To(ContainSubstring(validation.VirtualHostReport_Error_ProcessingError.String()))
+				Expect(proxyErr.Error()).To(ContainSubstring("must provide at least one of AllowOrigin or AllowOriginRegex"))
+			},
+		),
+		Entry(
+			"RouteError",
+			&v1.AggregateListener{
+				HttpResources: &v1.AggregateListener_HttpResources{
+					HttpOptions: map[string]*v1.HttpListenerOptions{
+						"http-options-ref": {
+							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
+						},
+					},
+					VirtualHosts: map[string]*v1.VirtualHost{
+						"vhost-ref": {
+							Name: "virtual-host",
+							Routes: []*v1.Route{{
+								Name: "route",
+								Matchers: []*matchers.Matcher{{
+									// A nil PathSpecifier should produce an error when initializing the route
+									PathSpecifier: nil,
+								}},
+							}},
+						},
+					},
+				},
+				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+					Matcher:         nil,
+					HttpOptionsRef:  "http-options-ref",
+					VirtualHostRefs: []string{"vhost-ref"},
+				}},
+			},
+			func(proxyReport *validation.ProxyReport) {
+				proxyErr := gloovalidation.GetProxyError(proxyReport)
+				Expect(proxyErr).To(HaveOccurred())
+				Expect(proxyErr.Error()).To(ContainSubstring(validation.RouteReport_Error_InvalidMatcherError.String()))
+				Expect(proxyErr.Error()).To(ContainSubstring("no path specifier provided"))
 			},
 		),
 	)

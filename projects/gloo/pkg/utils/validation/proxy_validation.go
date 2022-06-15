@@ -211,6 +211,11 @@ func GetProxyError(proxyRpt *validation.ProxyReport) error {
 					errs = append(errs, getTcpListenerReportErrs(lrt.TcpListenerReport)...)
 				}
 			}
+
+		case *validation.ListenerReport_AggregateListenerReport:
+			for _, httpListenerReport := range listenerType.AggregateListenerReport.GetHttpListenerReports() {
+				errs = append(errs, getHttpListenerReportErrs(httpListenerReport)...)
+			}
 		}
 	}
 

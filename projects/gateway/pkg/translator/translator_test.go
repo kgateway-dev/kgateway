@@ -2,6 +2,7 @@ package translator_test
 
 import (
 	"context"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
