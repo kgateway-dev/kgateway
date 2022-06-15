@@ -3,14 +3,15 @@
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{ $data := dict "release" .Release "values" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}
   namespace: {{ $spec.namespace | default .Release.Namespace }}
-{{- include "gloo.customResourceLabelsAndAnnotations" $data }}
+  labels:
+    app: gloo
+    created_by: gloo-install
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -59,14 +60,15 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{ $data := dict "release" .Release "values" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}-ssl
   namespace: {{ .Release.Namespace }}
-{{- include "gloo.customResourceLabelsAndAnnotations" $data }}
+  labels:
+    app: gloo
+    created_by: gloo-install
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -114,14 +116,15 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{ $data := dict "release" .Release "values" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}-failover
   namespace: {{ $spec.namespace | default .Release.Namespace }}
-{{- include "gloo.customResourceLabelsAndAnnotations" $data }}
+  labels:
+    app: gloo
+    created_by: gloo-install
 spec:
 {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"

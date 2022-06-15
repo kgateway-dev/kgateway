@@ -98,31 +98,3 @@ version, which merges two named templates.
 {{- toYaml $merged -}} {{/* render source with overrides as YAML */}}
 {{- end -}}
 {{- end -}}
-
-{{/*
-This snippet should be included under the metadata for any Gloo custom resources.
-
-It is used to ensure that CRs that we validate are only installed after the validation service is running,
-and that the CRs are cleaned up on uninstall.
-
-When the resource is applied as part of post-install/post-upgrade, we also need to explicitly add the helm
-labels/annotations, since by default Helm does not manage hook resources and won't add the annotations.
-
-The input to the function should be a dict with the following key/value mappings:
-- "release": the helm release object
-- "values": the gloo helm values object (this is provided as an argument so that other charts such as the
-  GlooEE chart can also use this function and pass in the appropriate values from its subchart)
-- "labels": (optional) additional labels to include (a dict of key/value pairs)
-*/}}
-{{- define "gloo.customResourceLabelsAndAnnotations" }}
-  labels:
-    app: gloo
-{{- range $k, $v := .labels }}
-    {{$k}}: {{$v}}
-{{- end }}
-    created_by: gloo-install
-#    app.kubernetes.io/managed-by: Helm
-#  annotations:
-#    "meta.helm.sh/release-name": {{ .release.Name }}
-#    "meta.helm.sh/release-namespace": {{ .release.Namespace }}
-{{- end -}}

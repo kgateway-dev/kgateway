@@ -36,8 +36,22 @@ spec:
           - -c
           - |
             {{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled }}
+            # if validation webhook is enabled, wait for deployment rollout so validation service will be available
             kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
-            {{- end }}
+            {{- end -}}
+
+            {{- if .Release.IsUpgrade }}
+            # remove existing helm labels/annotations since the custom resources are no longer managed by helm
+            {{- range list "gateways.gateway.solo.io" "upstreams.gloo.solo.io" }}
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} --all helm.sh/hook-
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} --all helm.sh/hook-weight-
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} --all meta.helm.sh/release-name-
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} --all meta.helm.sh/release-namespace-
+            kubectl label {{ . }} -n {{ $.Release.Namespace }} -l app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by-
+            {{- end -}}
+            {{- end -}}{{/* if .Release.IsUpgrade */}}
+
+            # apply Gloo Edge custom resources
             kubectl apply -f - <<EOF{{- include "gloo.customResources" . | indent 12}}EOF
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
@@ -73,10 +87,10 @@ rules:
   verbs: ["get", "list", "watch"]
 - apiGroups: ["gateway.solo.io"]
   resources: ["*"]
-  verbs: ["get", "create", "update", "patch"]
+  verbs: ["get", "list", "create", "update", "patch"]
 - apiGroups: ["gloo.solo.io"]
   resources: ["*"]
-  verbs: ["get", "create", "update", "patch"]
+  verbs: ["get", "list", "create", "update", "patch"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
