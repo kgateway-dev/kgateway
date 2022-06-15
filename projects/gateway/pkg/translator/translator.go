@@ -66,7 +66,7 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 	if opts.IsolateVirtualHostsBySslConfig {
 		translatorsByName[HttpTranslatorName] = aggregateTranslator
 		translatorsByName[TcpTranslatorName] = tcpTranslator
-		translatorsByName[HybridTranslatorName] = aggregateTranslator
+		translatorsByName[HybridTranslatorName] = hybridTranslator // TODO
 	} else {
 		translatorsByName[HttpTranslatorName] = httpTranslator
 		translatorsByName[TcpTranslatorName] = tcpTranslator

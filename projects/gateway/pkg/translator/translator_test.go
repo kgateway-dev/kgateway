@@ -439,12 +439,13 @@ var _ = Describe("Translator", func() {
 					Expect(proxy.Listeners[0].GetTcpListener()).NotTo(BeNil())
 				})
 
-				It("Should translate HybridGateway into AggregateListener", func() {
+				It("Should translate HybridGateway into HybridListener", func() {
+					// TODO: We'll need to update this test once we've added support or HybridGateway -> AggregateListener
 					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, snap, v1.GatewayList{hybridGateway})
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 					Expect(proxy.Listeners).To(HaveLen(1))
-					Expect(proxy.Listeners[0].GetAggregateListener()).NotTo(BeNil())
+					Expect(proxy.Listeners[0].GetHybridListener()).NotTo(BeNil())
 				})
 
 			})
