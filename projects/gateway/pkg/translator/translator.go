@@ -93,6 +93,13 @@ func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gl
 		if listener != nil {
 			listeners = append(listeners, listener)
 		}
+
+		messagesMap := params.Messages
+		if len(messagesMap) > 0 {
+			for _, messages := range messagesMap {
+				reports.AddMessages(gateway, messages...)
+			}
+		}
 	}
 
 	if len(listeners) == 0 {
