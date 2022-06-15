@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	glootransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -19,7 +20,7 @@ import (
 
 var _ = Describe("Route converter", func() {
 	var (
-		snapshot *v1.ApiSnapshot
+		snapshot *gloov1snap.ApiSnapshot
 	)
 	gw := &v1.Gateway{
 		Metadata: &core.Metadata{

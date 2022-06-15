@@ -17,6 +17,7 @@ import (
 	gatewaymocks "github.com/solo-io/gloo/projects/gateway/pkg/translator/mocks"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloomocks "github.com/solo-io/gloo/projects/gloo/pkg/mocks"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -350,7 +351,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			settings *gloov1.Settings
 
 			ts    *TranslatorSyncer
-			snap  *gatewayv1.ApiSnapshot
+			snap  *gloov1snap.ApiSnapshot
 			proxy *gloov1.Proxy
 		)
 		BeforeEach(func() {
@@ -367,7 +368,7 @@ var _ = Describe("TranslatorSyncer", func() {
 				writeNamespace: "gloo-system",
 				translator:     mockTranslator,
 			}
-			snap = &gatewayv1.ApiSnapshot{
+			snap = &gloov1snap.ApiSnapshot{
 				Gateways: gatewayv1.GatewayList{
 					&gatewayv1.Gateway{},
 				},
