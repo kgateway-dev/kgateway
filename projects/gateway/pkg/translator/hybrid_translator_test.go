@@ -20,6 +20,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	hcm "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -32,7 +33,7 @@ var _ = Describe("Hybrid Translator", func() {
 		ctx              context.Context
 		cancel           context.CancelFunc
 		hybridTranslator *HybridTranslator
-		snap             *v1.ApiSnapshot
+		snap             *gloov1snap.ApiSnapshot
 		reports          reporter.ResourceReports
 	)
 
@@ -62,7 +63,7 @@ var _ = Describe("Hybrid Translator", func() {
 	Context("no sub-gateways", func() {
 
 		BeforeEach(func() {
-			snap = &v1.ApiSnapshot{
+			snap = &gloov1snap.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
 						Metadata: &core.Metadata{Namespace: ns, Name: "name"},
@@ -91,7 +92,7 @@ var _ = Describe("Hybrid Translator", func() {
 			Context("non-ssl", func() {
 
 				BeforeEach(func() {
-					snap = &v1.ApiSnapshot{
+					snap = &gloov1snap.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
 								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
@@ -146,7 +147,7 @@ var _ = Describe("Hybrid Translator", func() {
 			Context("ssl", func() {
 
 				BeforeEach(func() {
-					snap = &v1.ApiSnapshot{
+					snap = &gloov1snap.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
 								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
@@ -235,7 +236,7 @@ var _ = Describe("Hybrid Translator", func() {
 					},
 				}
 
-				snap = &v1.ApiSnapshot{
+				snap = &gloov1snap.ApiSnapshot{
 					Gateways: v1.GatewayList{
 						{
 							Metadata: &core.Metadata{Namespace: ns, Name: "name"},
@@ -316,7 +317,7 @@ var _ = Describe("Hybrid Translator", func() {
 				)
 
 				BeforeEach(func() {
-					snap = &v1.ApiSnapshot{
+					snap = &gloov1snap.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
 								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
@@ -439,7 +440,7 @@ var _ = Describe("Hybrid Translator", func() {
 			Context("non-ssl", func() {
 
 				BeforeEach(func() {
-					snap = &v1.ApiSnapshot{
+					snap = &gloov1snap.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
 								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
@@ -502,7 +503,7 @@ var _ = Describe("Hybrid Translator", func() {
 			Context("ssl", func() {
 
 				BeforeEach(func() {
-					snap = &v1.ApiSnapshot{
+					snap = &gloov1snap.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
 								Metadata: &core.Metadata{Namespace: ns, Name: "name"},

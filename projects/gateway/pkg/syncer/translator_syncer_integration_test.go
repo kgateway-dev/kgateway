@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -29,11 +30,11 @@ import (
 var _ = Describe("TranslatorSyncer integration test", func() {
 
 	var (
-		ts                       v1.ApiSyncer
+		ts                       gloov1snap.ApiSyncer
 		baseVirtualServiceClient v1.VirtualServiceClient
 		proxyClient              gloov1.ProxyClient
 		vs                       *v1.VirtualService
-		snapshot                 func() *v1.ApiSnapshot
+		snapshot                 func() *gloov1snap.ApiSnapshot
 		statusClient             resources.StatusClient
 
 		ctx    context.Context
@@ -124,12 +125,12 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		}
 		_, err = gatewayClient.Write(gw, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		snapshot = func() *v1.ApiSnapshot {
+		snapshot = func() *gloov1snap.ApiSnapshot {
 			vss, err := baseVirtualServiceClient.List("gloo-system", clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			gws, err := gatewayClient.List("gloo-system", clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
-			return &v1.ApiSnapshot{
+			return &gloov1snap.ApiSnapshot{
 				VirtualServices: vss,
 				Gateways:        gws,
 			}
