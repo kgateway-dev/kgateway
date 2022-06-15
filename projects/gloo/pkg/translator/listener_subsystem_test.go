@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
@@ -26,9 +27,12 @@ import (
 
 // Allow each test to define its own set of assertions
 // based on the envoy types returned by executing the ListenerTranslator and RouteConfigurationTranslator
-type AssertionHandler func(
+type ResourceAssertionHandler func(
 	listener *envoy_config_listener_v3.Listener,
 	routeConfigurations []*envoy_config_route_v3.RouteConfiguration)
+
+type ReportAssertionHandler func(
+	proxyReport *validation.ProxyReport)
 
 var _ = Describe("Listener Subsystem", func() {
 
@@ -71,8 +75,8 @@ var _ = Describe("Listener Subsystem", func() {
 		cancel()
 	})
 
-	DescribeTable("GetAggregateListenerTranslators",
-		func(aggregateListener *v1.AggregateListener, assertionHandler AssertionHandler) {
+	DescribeTable("GetAggregateListenerTranslators (success)",
+		func(aggregateListener *v1.AggregateListener, assertionHandler ResourceAssertionHandler) {
 			listener := &v1.Listener{
 				Name:        "aggregate-listener",
 				BindAddress: gatewaydefaults.GatewayBindAddress,
@@ -111,7 +115,7 @@ var _ = Describe("Listener Subsystem", func() {
 			// Validate that no Errors were encountered during translation
 			Expect(gloovalidation.GetProxyError(proxyReport)).NotTo(HaveOccurred())
 
-			// Validate the AssertionHandler defined by each test
+			// Validate the ResourceAssertionHandler defined by each test
 			assertionHandler(envoyListener, envoyRouteConfigs)
 		},
 		Entry(
@@ -215,7 +219,6 @@ var _ = Describe("Listener Subsystem", func() {
 				ExpectWithOffset(1, routeConfig.GetName()).To(Equal(hcmRouteConfigName))
 			},
 		),
-
 		Entry(
 			"multiple secure filter chains",
 			&v1.AggregateListener{
@@ -297,6 +300,81 @@ var _ = Describe("Listener Subsystem", func() {
 				By("route config name matches HCM")
 				routeConfig = routeConfigs[1]
 				ExpectWithOffset(1, routeConfig.GetName()).To(Equal(hcmRouteConfigName))
+			},
+		),
+	)
+
+	DescribeTable("GetAggregateListenerTranslators (failure)",
+		func(aggregateListener *v1.AggregateListener, assertionHandler ReportAssertionHandler) {
+			listener := &v1.Listener{
+				Name:        "aggregate-listener",
+				BindAddress: gatewaydefaults.GatewayBindAddress,
+				BindPort:    defaults.HttpPort,
+				ListenerType: &v1.Listener_AggregateListener{
+					AggregateListener: aggregateListener,
+				},
+			}
+			proxy := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name:      "proxy",
+					Namespace: defaults.GlooSystem,
+				},
+				Listeners: []*v1.Listener{listener},
+			}
+
+			proxyReport := gloovalidation.MakeReport(proxy)
+			listenerReport := proxyReport.GetListenerReports()[0] // 1 Listener -> 1 ListenerReport
+
+			listenerTranslator, routeConfigurationTranslator := translatorFactory.GetAggregateListenerTranslators(
+				ctx,
+				proxy,
+				listener,
+				listenerReport)
+
+			params := plugins.Params{
+				Ctx: ctx,
+				Snapshot: &gloov1snap.ApiSnapshot{},
+			}
+			_ = listenerTranslator.ComputeListener(params)
+			_ = routeConfigurationTranslator.ComputeRouteConfiguration(params)
+
+			// Validate the ReportAssertionHandler defined by each test
+			assertionHandler(proxyReport)
+		},
+		Entry(
+			"listener error",
+			&v1.AggregateListener{
+				HttpResources: &v1.AggregateListener_HttpResources{
+					HttpOptions: map[string]*v1.HttpListenerOptions{
+						"http-options-ref": {
+							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
+						},
+					},
+					VirtualHosts: map[string]*v1.VirtualHost{
+						"vhost-ref": {
+							Name: "virtual-host",
+						},
+					},
+				},
+				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+					Matcher: &v1.Matcher{
+						SslConfig: &v1.SslConfig{
+							SslSecrets: &v1.SslConfig_SecretRef{
+								SecretRef: &core.ResourceRef{
+									Name: "secret-that-is-not-in-snapshot",
+									Namespace: defaults.GlooSystem,
+								},
+							},
+						},
+					},
+					HttpOptionsRef:  "http-options-ref",
+					VirtualHostRefs: []string{"vhost-ref"},
+				}},
+			},
+			func(proxyReport *validation.ProxyReport) {
+				proxyErr := gloovalidation.GetProxyError(proxyReport)
+				Expect(proxyErr).To(HaveOccurred())
+				Expect(proxyErr.Error()).To(ContainSubstring(validation.ListenerReport_Error_SSLConfigError.String()))
 			},
 		),
 	)
