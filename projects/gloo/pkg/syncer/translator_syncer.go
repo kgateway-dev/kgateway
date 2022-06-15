@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/rotisserie/eris"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
@@ -140,15 +139,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 	return multiErr.ErrorOrNil()
 }
 func (s *translatorSyncer) translateProxies(ctx context.Context, snap *v1snap.ApiSnapshot) error {
-	gwSnap := &gatewayv1.ApiSnapshot{
-		VirtualServices:    snap.VirtualServices,
-		Gateways:           snap.Gateways,
-		RouteTables:        snap.RouteTables,
-		RouteOptions:       snap.RouteOptions,
-		VirtualHostOptions: snap.VirtualHostOptions,
-		HttpGateways:       snap.HttpGateways,
-	}
-	err := s.gatewaySyncer.Sync(ctx, gwSnap)
+	err := s.gatewaySyncer.Sync(ctx, snap)
 	proxyList, err := s.proxyClient.List(s.writeNamespace, clients.ListOpts{})
 	snap.Proxies = proxyList
 	return err
