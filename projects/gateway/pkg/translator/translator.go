@@ -54,7 +54,9 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 		VirtualServiceTranslator: virtualServiceTranslator,
 		TcpTranslator:            tcpTranslator,
 	}
-	aggregateTranslator := &AggregateTranslator{}
+	aggregateTranslator := &AggregateTranslator{
+		VirtualServiceTranslator: virtualServiceTranslator,
+	}
 
 	// Define the mapping between GatewayType -> ListenerTranslator
 	// This allows us to ensure that the AggregateTranslator will only

@@ -265,21 +265,21 @@ func ExpectHttpStatusWithOffset(offset int, body []byte, rootca *string, envoyPo
 		},
 		CurlResponse{
 			Message: response,
-			Status: status,
+			Status:  status,
 		})
 }
 
 type CurlRequest struct {
-	RootCA *string
-	Port uint32
-	Path string
-	Body []byte
-	Host string
+	RootCA  *string
+	Port    uint32
+	Path    string
+	Body    []byte
+	Host    string
 	Headers map[string]string
 }
 
 type CurlResponse struct {
-	Status int
+	Status  int
 	Message string
 }
 
@@ -302,11 +302,12 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, response CurlResponse
 				return fmt.Errorf("ca cert is not OK")
 			}
 
+			tlsConfig := &tls.Config{
+				RootCAs:            caCertPool,
+				InsecureSkipVerify: true,
+			}
 			client.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs:            caCertPool,
-					InsecureSkipVerify: true,
-				},
+				TLSClientConfig: tlsConfig,
 			}
 		}
 

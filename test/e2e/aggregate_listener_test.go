@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,10 +19,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"net/http"
 )
 
-var _ = FDescribe("Aggregate Listener", func() {
+var _ = Describe("Aggregate Listener", func() {
 
 	// An AggregateListener is a type of Listener supported on a Proxy
 	// Proxies only contain this type of Listener by configuring the
@@ -36,7 +37,7 @@ var _ = FDescribe("Aggregate Listener", func() {
 		cancel        context.CancelFunc
 		envoyInstance *services.EnvoyInstance
 		testClients   services.TestClients
-		testUpstream *v1helpers.TestUpstream
+		testUpstream  *v1helpers.TestUpstream
 
 		isolateVirtualHostsBySslConfig bool
 
@@ -59,7 +60,7 @@ var _ = FDescribe("Aggregate Listener", func() {
 
 		// The set of resources that these tests will generate
 		resourcesToCreate = &gloosnapshot.ApiSnapshot{
-			Gateways: v1.GatewayList{},
+			Gateways:        v1.GatewayList{},
 			VirtualServices: v1.VirtualServiceList{},
 			Upstreams: gloov1.UpstreamList{
 				testUpstream.Upstream,
@@ -157,14 +158,14 @@ var _ = FDescribe("Aggregate Listener", func() {
 			v1helpers.ExpectCurlWithOffset(
 				1,
 				v1helpers.CurlRequest{
-					RootCA:  nil,
-					Port:    defaults.HttpPort,
-					Host: host,
-					Path:    path,
-					Body:    []byte("solo.io test"),
+					RootCA: nil,
+					Port:   defaults.HttpPort,
+					Host:   host,
+					Path:   path,
+					Body:   []byte("solo.io test"),
 				},
 				v1helpers.CurlResponse{
-					Status: http.StatusOK,
+					Status:  http.StatusOK,
 					Message: "",
 				})
 		}
@@ -242,25 +243,25 @@ var _ = FDescribe("Aggregate Listener", func() {
 	Context("Secure HttpGateway", func() {
 
 		var (
-			eastCert, eastPK  = gloohelpers.Certificate(), gloohelpers.PrivateKey()
+			eastCert, eastPK = gloohelpers.Certificate(), gloohelpers.PrivateKey()
 			westCert, westPK = gloohelpers.GetCerts(gloohelpers.Params{
-				Hosts:      "other-host",
-				IsCA:       false,
+				Hosts: "other-host",
+				IsCA:  false,
 			})
 		)
 
-		TestUpstreamReachable := func(host, path, cert string) {
+		TestUpstreamReturns := func(host, path, cert string, responseStatus int) {
 			v1helpers.ExpectCurlWithOffset(
 				1,
 				v1helpers.CurlRequest{
-					RootCA:  &cert,
-					Port:    defaults.HttpsPort,
-					Host: host,
-					Path:    path,
-					Body:    []byte("solo.io test"),
+					RootCA: &cert,
+					Port:   defaults.HttpsPort,
+					Host:   host,
+					Path:   path,
+					Body:   []byte("solo.io test"),
 				},
 				v1helpers.CurlResponse{
-					Status: http.StatusOK,
+					Status:  responseStatus,
 					Message: "",
 				})
 		}
@@ -333,7 +334,7 @@ var _ = FDescribe("Aggregate Listener", func() {
 			}
 		})
 
-		FContext("IsolateVirtualHostsBySslConfig = false", func() {
+		Context("IsolateVirtualHostsBySslConfig = false", func() {
 
 			BeforeEach(func() {
 				isolateVirtualHostsBySslConfig = false
@@ -355,8 +356,8 @@ var _ = FDescribe("Aggregate Listener", func() {
 				//
 				// This is due to the fact that an HttpListener creates an aggregate set of RouteConfiguration
 				// and then produces duplicate FilterChains, based on all available SslConfig's from VirtualServices
-				TestUpstreamReachable("east.com", "/east/1", eastCert)
-				TestUpstreamReachable("west.com", "/west/1", eastCert)
+				TestUpstreamReturns("east.com", "/east/1", eastCert, http.StatusOK)
+				TestUpstreamReturns("west.com", "/west/1", eastCert, http.StatusOK)
 			})
 
 		})
@@ -364,7 +365,7 @@ var _ = FDescribe("Aggregate Listener", func() {
 		Context("IsolateVirtualHostsBySslConfig = true", func() {
 
 			BeforeEach(func() {
-				isolateVirtualHostsBySslConfig = false
+				isolateVirtualHostsBySslConfig = true
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
@@ -377,9 +378,9 @@ var _ = FDescribe("Aggregate Listener", func() {
 
 			It("routes requests to all routes on gateway", func() {
 				// This test demonstrates the solution with AggregateListeners:
-				//	The West VirtualService is now only routable with the westCert.
-				TestUpstreamReachable("east.com", "/east/1", eastCert)
-				TestUpstreamReachable("west.com", "/west/1", westCert)
+				//	The West VirtualService is no longer routable with the eastCert.
+				TestUpstreamReturns("east.com", "/east/1", eastCert, http.StatusOK)
+				TestUpstreamReturns("west.com", "/west/1", eastCert, http.StatusNotFound)
 			})
 
 		})

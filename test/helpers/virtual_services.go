@@ -10,12 +10,12 @@ import (
 
 // virtualServiceBuilder simplifies the process of generating VirtualServices in tests
 type virtualServiceBuilder struct {
-	name string
+	name      string
 	namespace string
 
-	domains []string
+	domains      []string
 	routesByName map[string]*v1.Route
-	sslConfig *gloov1.SslConfig
+	sslConfig    *gloov1.SslConfig
 }
 
 func NewVirtualServiceBuilder() *virtualServiceBuilder {
@@ -100,15 +100,15 @@ func (b *virtualServiceBuilder) Build() *v1.VirtualService {
 
 	vs := &v1.VirtualService{
 		Metadata: &core.Metadata{
-			Name:            b.name,
-			Namespace:       b.namespace,
+			Name:      b.name,
+			Namespace: b.namespace,
 		},
-		VirtualHost:        &v1.VirtualHost{
-			Domains:        b.domains,
-			Routes:         routes,
-			Options:        nil,
+		VirtualHost: &v1.VirtualHost{
+			Domains: b.domains,
+			Routes:  routes,
+			Options: nil,
 		},
-		SslConfig:          b.sslConfig,
+		SslConfig: b.sslConfig,
 	}
 	return proto.Clone(vs).(*v1.VirtualService)
 }
