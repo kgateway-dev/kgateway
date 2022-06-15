@@ -25,6 +25,7 @@ import (
 
 	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 )
 
 var _ = Describe("ReconcileGatewayProxies", func() {
@@ -43,7 +44,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 	var (
 		ctx = context.TODO()
 
-		snap         *v1.ApiSnapshot
+		snap         *gloov1snap.ApiSnapshot
 		proxy        *gloov1.Proxy
 		reports      reporter.ResourceReports
 		proxyToWrite GeneratedProxies
@@ -86,7 +87,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
 		reconciler = NewProxyReconciler(validationClient, proxyClient, statusClient)
 
-		snap = samples.SimpleGatewaySnapshot(us, ns)
+		snap = samples.SimpleGlooSnapshot(ns)
 
 		genProxy()
 	})

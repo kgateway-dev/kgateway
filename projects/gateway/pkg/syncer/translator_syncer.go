@@ -20,11 +20,11 @@ import (
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -78,7 +78,7 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 }
 
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
-func (s *TranslatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
+func (s *TranslatorSyncer) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "TranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -104,7 +104,7 @@ func (s *TranslatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 func (s *TranslatorSyncer) UpdateProxies(ctx context.Context) {
 	s.statusSyncer.handleUpdatedProxies(ctx)
 }
-func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *v1.ApiSnapshot) (reconciler.GeneratedProxies, reconciler.InvalidProxies) {
+func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *gloov1snap.ApiSnapshot) (reconciler.GeneratedProxies, reconciler.InvalidProxies) {
 	logger := contextutils.LoggerFrom(ctx)
 	gatewaysByProxyName := utils.GatewaysByProxyName(snap.Gateways)
 
