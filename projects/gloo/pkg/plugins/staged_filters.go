@@ -2,7 +2,7 @@ package plugins
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -179,7 +179,7 @@ func NewStagedFilter(name string, config proto.Message, stage FilterStage) (Stag
 	}
 
 	if config == nil {
-		return s, errors.New("filters must have a config specified to derive its type")
+		return s, fmt.Errorf("filters must have a config specified to derive its type filtername:%s", name)
 	}
 
 	marshalledConf, err := utils.MessageToAny(config)
