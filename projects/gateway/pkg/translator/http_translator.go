@@ -13,6 +13,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
@@ -324,7 +325,7 @@ func (t *HttpTranslator) computeHttpListenerVirtualHosts(params Params, parentGa
 	return virtualHosts
 }
 
-func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, gateway *v1.Gateway, proxyName string, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
+func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, gateway *v1.Gateway, proxyName string, snapshot *gloov1snap.ApiSnapshot, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
 	converter := NewRouteConverter(NewRouteTableSelector(snapshot.RouteTables), NewRouteTableIndexer())
 	t.mergeDelegatedVirtualHostOptions(vs, snapshot.VirtualHostOptions, reports)
 	routes := converter.ConvertVirtualService(vs, gateway, proxyName, snapshot, reports)

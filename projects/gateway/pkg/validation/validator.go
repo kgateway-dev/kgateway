@@ -98,7 +98,7 @@ type ValidatorFunc = func(
 
 type validator struct {
 	lock              sync.RWMutex
-	latestSnapshot    *v1.ApiSnapshot
+	latestSnapshot    *gloov1snap.ApiSnapshot
 	latestSnapshotErr error
 	translator        translator.Translator
 	//This function replaces a grpc client from when gloo and gateway pods were separate.
@@ -141,8 +141,7 @@ func (v *validator) ready() bool {
 	return v.latestSnapshot != nil
 }
 
-func (v *validator) Sync(ctx context.Context, glooSnap *gloov1snap.ApiSnapshot) error {
-	snap := convertSnapshot(glooSnap)
+func (v *validator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) error {
 	if !v.gatewayUpdate(snap) {
 		return nil
 	}
@@ -185,25 +184,15 @@ func (v *validator) Sync(ctx context.Context, glooSnap *gloov1snap.ApiSnapshot) 
 	return nil
 }
 
-type applyResource func(snap *v1.ApiSnapshot) (proxyNames []string, resource resources.Resource, ref *core.ResourceRef)
+type applyResource func(snap *gloov1snap.ApiSnapshot) (proxyNames []string, resource resources.Resource, ref *core.ResourceRef)
 
-func convertSnapshot(glooSnap *gloov1snap.ApiSnapshot) *v1.ApiSnapshot {
-	return &v1.ApiSnapshot{
-		VirtualServices:    glooSnap.VirtualServices,
-		RouteTables:        glooSnap.RouteTables,
-		Gateways:           glooSnap.Gateways,
-		VirtualHostOptions: glooSnap.VirtualHostOptions,
-		RouteOptions:       glooSnap.RouteOptions,
-		HttpGateways:       glooSnap.HttpGateways,
-	}
-}
-func (v *validator) gatewayUpdate(snap *v1.ApiSnapshot) bool {
+func (v *validator) gatewayUpdate(snap *gloov1snap.ApiSnapshot) bool {
 
 	if v.latestSnapshot == nil {
 		return true
 	}
 	//look at the hash of resources that affect the gateway snapshot
-	hashFunc := func(snap *v1.ApiSnapshot) uint64 {
+	hashFunc := func(snap *gloov1snap.ApiSnapshot) uint64 {
 		toHash := append([]interface{}{}, snap.VirtualHostOptions.AsInterfaces()...)
 		toHash = append(toHash, snap.VirtualServices.AsInterfaces()...)
 		toHash = append(toHash, snap.Gateways.AsInterfaces()...)
@@ -473,7 +462,7 @@ func (v *validator) validateVirtualServiceInternal(
 	vs *v1.VirtualService,
 	dryRun, acquireLock bool,
 ) (*Reports, error) {
-	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, *core.ResourceRef) {
+	apply := func(snap *gloov1snap.ApiSnapshot) ([]string, resources.Resource, *core.ResourceRef) {
 		vsRef := vs.GetMetadata().Ref()
 
 		// TODO: move this to a function when generics become a thing
@@ -559,7 +548,7 @@ func (v *validator) validateRouteTableInternal(
 	rt *v1.RouteTable,
 	dryRun, acquireLock bool,
 ) (*Reports, error) {
-	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, *core.ResourceRef) {
+	apply := func(snap *gloov1snap.ApiSnapshot) ([]string, resources.Resource, *core.ResourceRef) {
 		rtRef := rt.GetMetadata().Ref()
 
 		// TODO: move this to a function when generics become a thing
@@ -646,7 +635,7 @@ func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway,
 	*Reports,
 	error,
 ) {
-	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, *core.ResourceRef) {
+	apply := func(snap *gloov1snap.ApiSnapshot) ([]string, resources.Resource, *core.ResourceRef) {
 		gwRef := gw.GetMetadata().Ref()
 
 		// TODO: move this to a function when generics become a thing
@@ -821,7 +810,7 @@ func proxiesForVirtualService(ctx context.Context, gwList v1.GatewayList, httpGw
 	return proxiesToConsider
 }
 
-func virtualServicesForGateway(ctx context.Context, snap v1.ApiSnapshot, gateway *v1.Gateway) []*core.ResourceRef {
+func virtualServicesForGateway(ctx context.Context, snap gloov1snap.ApiSnapshot, gateway *v1.Gateway) []*core.ResourceRef {
 	var virtualServices []*core.ResourceRef
 
 	switch gatewayType := gateway.GetGatewayType().(type) {
@@ -854,7 +843,7 @@ func virtualServicesForGateway(ctx context.Context, snap v1.ApiSnapshot, gateway
 	return virtualServices
 }
 
-func proxiesForRouteTable(ctx context.Context, snap *v1.ApiSnapshot, rt *v1.RouteTable) []string {
+func proxiesForRouteTable(ctx context.Context, snap *gloov1snap.ApiSnapshot, rt *v1.RouteTable) []string {
 	affectedVirtualServices := virtualServicesForRouteTable(rt, snap.VirtualServices, snap.RouteTables)
 
 	affectedProxies := make(map[string]struct{})

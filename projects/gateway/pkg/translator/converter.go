@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	matchersv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -68,7 +69,7 @@ type RouteConverter interface {
 	// Converts a VirtualService to a set of Gloo API routes (i.e. routes on a Proxy resource).
 	// Since virtual services and route tables are often owned by different teams, it breaks multitenancy if
 	// this function cannot return successfully; thus ALL ERRORS are added to the resource reports
-	ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gatewayv1.ApiSnapshot, reports reporter.ResourceReports) []*gloov1.Route
+	ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gloov1snap.ApiSnapshot, reports reporter.ResourceReports) []*gloov1.Route
 }
 
 func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer) RouteConverter {
@@ -132,7 +133,7 @@ type routeInfo struct {
 type reporterHelper struct {
 	reports                reporter.ResourceReports
 	topLevelVirtualService *gatewayv1.VirtualService
-	snapshot               *gatewayv1.ApiSnapshot
+	snapshot               *gloov1snap.ApiSnapshot
 }
 
 func (r *reporterHelper) addError(resource resources.InputResource, err error) {
@@ -155,7 +156,7 @@ func (r *reporterHelper) addWarning(resource resources.InputResource, err error)
 
 // Since virtual services and route tables are often owned by different teams, it breaks multitenancy if
 // this function cannot return successfully; thus ALL ERRORS are added to the resource reports
-func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gatewayv1.ApiSnapshot, reports reporter.ResourceReports) []*gloov1.Route {
+func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gloov1snap.ApiSnapshot, reports reporter.ResourceReports) []*gloov1.Route {
 	wrapper := &visitableVirtualService{VirtualService: virtualService}
 	return rv.visit(
 		wrapper,
