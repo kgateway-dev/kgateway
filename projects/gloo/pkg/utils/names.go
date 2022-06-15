@@ -12,17 +12,12 @@ func RouteConfigName(listener *v1.Listener) string {
 	return listener.GetName() + "-routes"
 }
 
+// MatchedRouteConfigName returns a unique RouteConfiguration name
 func MatchedRouteConfigName(listener *v1.Listener, matcher *v1.Matcher) string {
-	hybridListener := listener.GetHybridListener()
-	if hybridListener == nil {
-		return RouteConfigName(listener)
-	}
+	namePrefix := RouteConfigName(listener)
 
-	for i, mg := range hybridListener.GetMatchedListeners() {
-		if mg.GetMatcher().Equal(matcher) {
-			return fmt.Sprintf("%s-%d", RouteConfigName(listener), i)
-		}
+	if matcher == nil {
+		return namePrefix
 	}
-
-	return fmt.Sprintf("%s-%s", RouteConfigName(listener), matcher.String())
+	return fmt.Sprintf("%s-%s", namePrefix, matcher.String())
 }

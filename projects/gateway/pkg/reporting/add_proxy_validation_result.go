@@ -18,6 +18,8 @@ var (
 	missingReportForSourceErr          = errors.Errorf("internal err: missing resource report for source resource")
 )
 
+// SAM TODO, support AggregateListener
+
 // Update a set of ResourceReports with the results of a proxy validation
 // Using the sources from Listener.Metadata, VirtualHost.Metadata, and Route.Metadata,
 // we can extrapolate the errors
@@ -81,6 +83,9 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 					}
 				}
 			}
+
+		case *validation.ListenerReport_AggregateListenerReport:
+			return nil
 		}
 	}
 

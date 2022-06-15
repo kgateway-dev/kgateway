@@ -335,7 +335,6 @@ var _ = Describe("Translator", func() {
 			Expect(err.Error()).To(ContainSubstring(MissingGatewayTypeErr.Error()))
 		})
 
-
 		Context("TranslatorOpts", func() {
 
 			var (
@@ -379,13 +378,12 @@ var _ = Describe("Translator", func() {
 				)
 			})
 
-
 			When("IsolateVirtualHostsBySslConfig is false", func() {
 
 				BeforeEach(func() {
 					translator = NewDefaultTranslator(Opts{
 						IsolateVirtualHostsBySslConfig: false,
-						WriteNamespace: ns,
+						WriteNamespace:                 ns,
 					})
 				})
 
