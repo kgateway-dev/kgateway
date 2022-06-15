@@ -466,7 +466,7 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 		}
 	}
 
-	//Enovy has a default total weight of 100 and requires all weights to equal the current value of total weight
+	//Envoy has a default total weight of 100 and requires all weights to equal the current value of total weight
 	//This overrides the default of 100 to the sum of all passed weights both satisfying the requirements
 	// - that all weights equal total weight
 	// - the passed weights are weighted proportional to each other
