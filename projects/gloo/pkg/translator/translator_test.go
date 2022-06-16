@@ -2262,7 +2262,7 @@ var _ = Describe("Translator", func() {
 			multiActionRouteWithZeroWeightDest = createMultiActionRoute("NegativeWeightDest", matcher, []*v1.WeightedDestination{weightedDestWeightOfZero, weightedDestValidWeight})
 			multiActionRouteWithOneValidDest = createMultiActionRoute("OneValidDest", matcher, []*v1.WeightedDestination{weightedDestValidWeight})
 
-			expectedErrorString = fmt.Sprintf("Incorrect configuration for Weighted Destination for upstream: %s - Weighted Destinations require a weight that is greater than 1", "test1")
+			expectedErrorString = fmt.Sprintf("Incorrect configuration for Weighted Destination for upstream: %s - Weighted Destinations require a weight that is greater than 0", "test1")
 		})
 
 		//Positive Tests
