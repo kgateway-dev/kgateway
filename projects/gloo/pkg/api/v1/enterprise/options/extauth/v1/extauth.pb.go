@@ -1280,7 +1280,7 @@ type HeaderConfiguration struct {
 	IdTokenHeader string `protobuf:"bytes,1,opt,name=id_token_header,json=idTokenHeader,proto3" json:"id_token_header,omitempty"`
 	// If set, the access token will be forward upstream using this header name.
 	AccessTokenHeader string `protobuf:"bytes,2,opt,name=access_token_header,json=accessTokenHeader,proto3" json:"access_token_header,omitempty"`
-	// If true, adds the "Bearer" prefix to the upstream access token header value
+	// If true, adds the "Bearer" prefix to the upstream access token header value.
 	UseBearerSchemaForAuthorization *wrappers.BoolValue `protobuf:"bytes,3,opt,name=use_bearer_schema_for_authorization,json=useBearerSchemaForAuthorization,proto3" json:"use_bearer_schema_for_authorization,omitempty"`
 }
 
