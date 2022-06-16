@@ -44,6 +44,7 @@ spec:
             kubectl apply -f - <<EOF{{- include "gloo.customResources" . | indent 12}}EOF
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
+{{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -101,3 +102,4 @@ subjects:
 - kind: ServiceAccount
   name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
+{{- end }} {{/* if .Values.global.glooRbac.create */}}
