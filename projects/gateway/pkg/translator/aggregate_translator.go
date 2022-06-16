@@ -9,6 +9,8 @@ import (
 
 var _ ListenerTranslator = new(AggregateTranslator)
 
+const AggregateTranslatorName = "aggregate"
+
 type AggregateTranslator struct {
 	VirtualServiceTranslator *VirtualServiceTranslator
 }

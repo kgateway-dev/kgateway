@@ -3,10 +3,11 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"net"
 	"sync/atomic"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
@@ -72,7 +73,7 @@ func (c TestClients) WriteSnapshot(ctx context.Context, snapshot *gloosnapshot.A
 	// the parent resource
 
 	writeOptions := clients.WriteOpts{
-		Ctx: ctx,
+		Ctx:               ctx,
 		OverwriteExisting: false,
 	}
 	for _, secret := range snapshot.Secrets {
@@ -110,7 +111,7 @@ func (c TestClients) DeleteSnapshot(ctx context.Context, snapshot *gloosnapshot.
 	// If we delete child resources first, the validation webhook may reject the change
 
 	deleteOptions := clients.DeleteOpts{
-		Ctx: ctx,
+		Ctx:            ctx,
 		IgnoreNotExist: true,
 	}
 
