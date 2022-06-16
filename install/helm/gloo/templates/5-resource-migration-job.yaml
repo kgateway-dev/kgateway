@@ -7,21 +7,21 @@ kind: Job
 metadata:
   labels:
     app: gloo
-    gloo: resource-rollout
-  name: gloo-resource-rollout
+    gloo: resource-migration
+  name: gloo-resource-migration
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "3" # run this job after the role/rolebinding is created, and before the validation webhook is upgraded
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
 spec:
   template:
     metadata:
       labels:
-        gloo: resource-rollout
+        gloo: resource-migration
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
-      serviceAccountName: gloo-resource-rollout
+      serviceAccountName: gloo-resource-migration
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
@@ -35,13 +35,14 @@ spec:
           - /bin/sh
           - -c
           - |
-            {{ if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled -}}
-            # if validation webhook is enabled, wait for deployment rollout so validation service will be available
-            kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
+            # remove existing helm labels/annotations since the custom resources are no longer managed by helm
+            {{- range list "gateways.gateway.solo.io" "upstreams.gloo.solo.io" }}
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} --all helm.sh/hook-
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} --all helm.sh/hook-weight-
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} --all meta.helm.sh/release-name-
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} --all meta.helm.sh/release-namespace-
+            kubectl label {{ . }} -n {{ $.Release.Namespace }} -l app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by-
             {{- end }}
-
-            # apply Gloo Edge custom resources
-            kubectl apply -f - <<EOF{{- include "gloo.customResources" . | indent 12}}EOF
       restartPolicy: Never
   ttlSecondsAfterFinished: 0
 ---
@@ -52,52 +53,49 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0" # must be created before rollout job
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "0" # must be created before job
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
-  name: gloo-resource-rollout
+  name: gloo-resource-migration
   namespace: {{ .Release.Namespace }}
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-resource-rollout
+  name: gloo-resource-migration
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0" # must be created before rollout job
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "0" # must be created before job
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
 rules:
-- apiGroups: ["apps"]
-  resources: ["deployments"]
-  verbs: ["get", "list", "watch"]
 - apiGroups: ["gateway.solo.io"]
   resources: ["*"]
-  verbs: ["get", "list", "create", "update", "patch"]
+  verbs: ["get", "list", "update", "patch"]
 - apiGroups: ["gloo.solo.io"]
   resources: ["*"]
-  verbs: ["get", "list", "create", "update", "patch"]
+  verbs: ["get", "list", "update", "patch"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-resource-rollout
+  name: gloo-resource-migration
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0" # must be created before rollout job
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "0" # must be created before job
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
 roleRef:
   kind: Role
-  name: gloo-resource-rollout
+  name: gloo-resource-migration
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
-  name: gloo-resource-rollout
+  name: gloo-resource-migration
   namespace: {{ .Release.Namespace }}
