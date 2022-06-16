@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/3338
-    description: Add messages to status proto (for the immediate purpose of writing the stitched schema to the status field of gateway schema resources)
