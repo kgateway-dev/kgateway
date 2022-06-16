@@ -98,22 +98,8 @@ var _ = Describe("Aggregate Listener", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create Resources
-		for _, secret := range resourcesToCreate.Secrets {
-			_, writeErr := testClients.SecretClient.Write(secret, clients.WriteOpts{Ctx: ctx})
-			Expect(writeErr).NotTo(HaveOccurred())
-		}
-		for _, us := range resourcesToCreate.Upstreams {
-			_, writeErr := testClients.UpstreamClient.Write(us, clients.WriteOpts{Ctx: ctx})
-			Expect(writeErr).NotTo(HaveOccurred())
-		}
-		for _, vs := range resourcesToCreate.VirtualServices {
-			_, writeErr := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
-			Expect(writeErr).NotTo(HaveOccurred())
-		}
-		for _, gw := range resourcesToCreate.Gateways {
-			_, writeErr := testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx})
-			Expect(writeErr).NotTo(HaveOccurred())
-		}
+		err = testClients.WriteSnapshot(ctx, resourcesToCreate)
+		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for a proxy to be accepted
 		gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
@@ -123,26 +109,8 @@ var _ = Describe("Aggregate Listener", func() {
 
 	JustAfterEach(func() {
 		// Cleanup Resources
-		for _, gw := range resourcesToCreate.Gateways {
-			gwNamespace, gwName := gw.GetMetadata().Ref().Strings()
-			deleteErr := testClients.GatewayClient.Delete(gwNamespace, gwName, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-			Expect(deleteErr).NotTo(HaveOccurred())
-		}
-		for _, vs := range resourcesToCreate.VirtualServices {
-			vsNamespace, vsName := vs.GetMetadata().Ref().Strings()
-			deleteErr := testClients.VirtualServiceClient.Delete(vsNamespace, vsName, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-			Expect(deleteErr).NotTo(HaveOccurred())
-		}
-		for _, us := range resourcesToCreate.Upstreams {
-			usNamespace, usName := us.GetMetadata().Ref().Strings()
-			deleteErr := testClients.VirtualServiceClient.Delete(usNamespace, usName, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-			Expect(deleteErr).NotTo(HaveOccurred())
-		}
-		for _, secret := range resourcesToCreate.Upstreams {
-			secretNamespace, secretName := secret.GetMetadata().Ref().Strings()
-			deleteErr := testClients.VirtualServiceClient.Delete(secretNamespace, secretName, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-			Expect(deleteErr).NotTo(HaveOccurred())
-		}
+		err := testClients.DeleteSnapshot(ctx, resourcesToCreate)
+		Expect(err).NotTo(HaveOccurred())
 
 		// Cleanup the Proxy
 		deleteErr := testClients.ProxyClient.Delete(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
