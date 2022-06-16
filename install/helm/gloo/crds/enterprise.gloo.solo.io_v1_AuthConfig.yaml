@@ -253,6 +253,8 @@ spec:
                                   type: string
                                 idTokenHeader:
                                   type: string
+                                useBearerSchemaForAuthorization:
+                                  type: boolean
                               type: object
                             issuerUrl:
                               type: string

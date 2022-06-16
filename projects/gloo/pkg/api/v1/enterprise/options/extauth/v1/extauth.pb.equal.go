@@ -797,6 +797,10 @@ func (m *HeaderConfiguration) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetUseBearerSchemaForAuthorization() != target.GetUseBearerSchemaForAuthorization() {
+		return false
+	}
+
 	return true
 }
 
