@@ -80,17 +80,17 @@ message Listener {
     // Listeners can listen for HTTP, TCP (unsupported), and UDP (unsupported) connections
     oneof ListenerType {
         // contains configuration options for Gloo's HTTP-level features including request-based routing
-        HttpListener http_listener = 4;
+        gloo.solo.io.HttpListener http_listener = 4;
 
         // contains configuration options for Gloo's TCP-level features
-        TcpListener tcp_listener = 5;
+        gloo.solo.io.TcpListener tcp_listener = 5;
 
         // contains any number of configuration options for Gloo's HTTP and/or TCP-level features
-        HybridListener hybrid_listener = 11;
+        gloo.solo.io.HybridListener hybrid_listener = 11;
 
         // contains any number of configuration options for Gloo's HTTP and/or TCP-level features
         // avoids duplicating definitions by separating resources and relationships between resources
-        AggregateListener aggregate_listener = 13;
+        gloo.solo.io.AggregateListener aggregate_listener = 13;
     }
 
     // SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port.

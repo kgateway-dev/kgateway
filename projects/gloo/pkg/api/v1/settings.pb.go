@@ -1010,6 +1010,8 @@ type GatewayOptions struct {
 	// If set, group virtual hosts by matching ssl config, and isolate them on separate filter chains
 	// The default behavior is to aggregate all virtual hosts, and expose them on identical filter chains,
 	// each with a FilterChainMatch that corresponds to the ssl config.
+	// Individual Gateways can override this behavior by configuring the "gateway.solo.io/isolate_vhost" annotation
+	// to be a truthy ("true", "false") value
 	IsolateVirtualHostsBySslConfig *wrappers.BoolValue `protobuf:"bytes,10,opt,name=isolate_virtual_hosts_by_ssl_config,json=isolateVirtualHostsBySslConfig,proto3" json:"isolate_virtual_hosts_by_ssl_config,omitempty"`
 }
 

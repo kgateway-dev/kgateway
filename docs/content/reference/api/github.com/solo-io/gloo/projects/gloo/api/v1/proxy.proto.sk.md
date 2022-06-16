@@ -278,7 +278,8 @@ Some traffic policies can be configured to work both on the listener and virtual
 ---
 ### AggregateListener
 
-
+ 
+An AggregateListener defines a set of Gloo configuration which will map to a unique set of FilterChains on a Listener
 
 ```yaml
 "httpResources": .gloo.solo.io.AggregateListener.HttpResources
@@ -288,8 +289,8 @@ Some traffic policies can be configured to work both on the listener and virtual
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `httpResources` | [.gloo.solo.io.AggregateListener.HttpResources](../proxy.proto.sk/#httpresources) |  |
-| `httpFilterChains` | [[]gloo.solo.io.AggregateListener.HttpFilterChain](../proxy.proto.sk/#httpfilterchain) |  |
+| `httpResources` | [.gloo.solo.io.AggregateListener.HttpResources](../proxy.proto.sk/#httpresources) | The aggregate set of resources available on this listener. |
+| `httpFilterChains` | [[]gloo.solo.io.AggregateListener.HttpFilterChain](../proxy.proto.sk/#httpfilterchain) | The set of HttpFilterChains to create on this listener. |
 
 
 
@@ -307,8 +308,8 @@ Some traffic policies can be configured to work both on the listener and virtual
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `virtualHosts` | `map<string, .gloo.solo.io.VirtualHost>` |  |
-| `httpOptions` | `map<string, .gloo.solo.io.HttpListenerOptions>` |  |
+| `virtualHosts` | `map<string, .gloo.solo.io.VirtualHost>` | Set of VirtualHosts available on this Listener, indexed by name. |
+| `httpOptions` | `map<string, .gloo.solo.io.HttpListenerOptions>` | Set of HttpListenerOptions available on this Listener, indexed by hash. |
 
 
 
@@ -327,9 +328,9 @@ Some traffic policies can be configured to work both on the listener and virtual
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk/#matcher) |  |
-| `httpOptionsRef` | `string` | HttpListenerOptions options = 4;. |
-| `virtualHostRefs` | `[]string` | repeated VirtualHost hosts = 5;. |
+| `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk/#matcher) | Matching criteria used to generate both the FilterChainMatch and TransportSocket for the Envoy FilterChain. |
+| `httpOptionsRef` | `string` | The ref pointing to HttpListenerOptions which are used to configure the HCM on this HttpFilterChain Corresponds to an entry in the HttpResources.HttpOptions map. |
+| `virtualHostRefs` | `[]string` | The set of refs pointing to VirtualHosts which are available on this HttpFilterChain Each ref corresponds to an entry in the HttpResources.VirtualHosts map. |
 
 
 

@@ -830,12 +830,15 @@ func (x *Matcher) GetSourcePrefixRanges() []*v3.CidrRange {
 	return nil
 }
 
+// An AggregateListener defines a set of Gloo configuration which will map to a unique set of FilterChains on a Listener
 type AggregateListener struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	HttpResources    *AggregateListener_HttpResources     `protobuf:"bytes,1,opt,name=http_resources,json=httpResources,proto3" json:"http_resources,omitempty"`
+	// The aggregate set of resources available on this listener
+	HttpResources *AggregateListener_HttpResources `protobuf:"bytes,1,opt,name=http_resources,json=httpResources,proto3" json:"http_resources,omitempty"`
+	// The set of HttpFilterChains to create on this listener
 	HttpFilterChains []*AggregateListener_HttpFilterChain `protobuf:"bytes,2,rep,name=http_filter_chains,json=httpFilterChains,proto3" json:"http_filter_chains,omitempty"`
 }
 
@@ -2196,8 +2199,10 @@ type AggregateListener_HttpResources struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	VirtualHosts map[string]*VirtualHost         `protobuf:"bytes,1,rep,name=virtual_hosts,json=virtualHosts,proto3" json:"virtual_hosts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	HttpOptions  map[string]*HttpListenerOptions `protobuf:"bytes,2,rep,name=http_options,json=httpOptions,proto3" json:"http_options,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Set of VirtualHosts available on this Listener, indexed by name
+	VirtualHosts map[string]*VirtualHost `protobuf:"bytes,1,rep,name=virtual_hosts,json=virtualHosts,proto3" json:"virtual_hosts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Set of HttpListenerOptions available on this Listener, indexed by hash
+	HttpOptions map[string]*HttpListenerOptions `protobuf:"bytes,2,rep,name=http_options,json=httpOptions,proto3" json:"http_options,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *AggregateListener_HttpResources) Reset() {
@@ -2251,10 +2256,13 @@ type AggregateListener_HttpFilterChain struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Matching criteria used to generate both the FilterChainMatch and TransportSocket for the Envoy FilterChain
 	Matcher *Matcher `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
-	//HttpListenerOptions options = 4;
+	// The ref pointing to HttpListenerOptions which are used to configure the HCM on this HttpFilterChain
+	// Corresponds to an entry in the HttpResources.HttpOptions map
 	HttpOptionsRef string `protobuf:"bytes,2,opt,name=http_options_ref,json=httpOptionsRef,proto3" json:"http_options_ref,omitempty"`
-	//repeated VirtualHost hosts = 5;
+	// The set of refs pointing to VirtualHosts which are available on this HttpFilterChain
+	// Each ref corresponds to an entry in the HttpResources.VirtualHosts map
 	VirtualHostRefs []string `protobuf:"bytes,3,rep,name=virtual_host_refs,json=virtualHostRefs,proto3" json:"virtual_host_refs,omitempty"`
 }
 
