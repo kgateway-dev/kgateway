@@ -18,19 +18,13 @@ import (
 )
 
 var _ = Describe("AddProxyValidationResult", func() {
+
 	var (
 		snap    *gloov1snap.ApiSnapshot
 		proxy   *gloov1.Proxy
 		reports reporter.ResourceReports
 		ignored = "ignored"
 	)
-	BeforeEach(func() {
-		snap = samples.SimpleGlooSnapshot(ignored)
-		tx := translator.NewDefaultTranslator(translator.Opts{
-			WriteNamespace: ignored,
-		})
-		proxy, reports = tx.Translate(context.TODO(), ignored, snap, snap.Gateways)
-	})
 
 	table.DescribeTable("Adds ProxyValidation errors to ResourceReports",
 		func(translatorOptions translator.Opts) {
@@ -44,7 +38,7 @@ var _ = Describe("AddProxyValidationResult", func() {
 				validation.AppendListenerError(lis,
 					validationapi.ListenerReport_Error_ProcessingError,
 					"bad listener")
-				
+
 				availableVirtualHostReports := lis.GetHttpListenerReport().GetVirtualHostReports()
 				for _, httpReport := range lis.GetAggregateListenerReport().GetHttpListenerReports() {
 					availableVirtualHostReports = append(availableVirtualHostReports, httpReport.GetVirtualHostReports()...)
