@@ -35,7 +35,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var _ = Describe("ValidationOpts Server", func() {
+var _ = Describe("Validation Server", func() {
 	var (
 		ctrl              *gomock.Controller
 		settings          *v1.Settings

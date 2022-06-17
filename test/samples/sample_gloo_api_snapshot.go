@@ -157,7 +157,7 @@ func SimpleGlooSnapshot(namespace string) *v1snap.ApiSnapshot {
 	aggregateListener := &v1.Listener{
 		Name:        "aggregate-listener",
 		BindAddress: "127.0.0.1",
-		BindPort:    8081,
+		BindPort:    8082,
 		ListenerType: &v1.Listener_AggregateListener{
 			AggregateListener: &v1.AggregateListener{
 				HttpResources: &v1.AggregateListener_HttpResources{
