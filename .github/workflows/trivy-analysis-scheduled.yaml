@@ -55,7 +55,7 @@ jobs:
           SCAN_DIR: _output/scans
           IMAGE_REPO: quay.io/solo-io
           MIN_SCANNED_VERSION: 'v1.7.0'
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.UMBRELLA_TOKEN }}
         run: |
           mkdir -p $SCAN_DIR
           make run-security-scan
