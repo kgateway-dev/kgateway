@@ -36,7 +36,7 @@ spec:
 {{- else }}
   httpGateway: {}
 {{- end }}
-{{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
+{{- if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
 {{- end }}
   {{- if $gatewaySettings.options }}
@@ -93,7 +93,7 @@ spec:
 {{- else }}
   httpGateway: {}
 {{- end }}{{/* if $gatewaySettings.customHttpsGateway */}}
-{{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
+{{- if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
 {{- end }}
   {{- if $gatewaySettings.options }}

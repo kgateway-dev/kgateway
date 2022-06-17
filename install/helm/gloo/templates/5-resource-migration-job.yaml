@@ -13,7 +13,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-upgrade
     "helm.sh/hook-weight": "3" # run this job after the role/rolebinding is created, and before the validation webhook is upgraded
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
   template:
     metadata:
@@ -56,7 +56,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-upgrade
     "helm.sh/hook-weight": "0" # must be created before job
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
   name: gloo-resource-migration
   namespace: {{ .Release.Namespace }}
 ---
@@ -71,7 +71,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-upgrade
     "helm.sh/hook-weight": "0" # must be created before job
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 rules:
 - apiGroups: ["gateway.solo.io"]
   resources: ["*"]
@@ -91,7 +91,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-upgrade
     "helm.sh/hook-weight": "0" # must be created before job
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 roleRef:
   kind: Role
   name: gloo-resource-migration
@@ -100,4 +100,4 @@ subjects:
 - kind: ServiceAccount
   name: gloo-resource-migration
   namespace: {{ .Release.Namespace }}
-{{- end }} {{/* if .Values.global.glooRbac.create */}}
+{{- end }}{{/* if .Values.global.glooRbac.create */}}

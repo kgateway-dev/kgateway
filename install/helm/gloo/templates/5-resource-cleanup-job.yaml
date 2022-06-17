@@ -13,7 +13,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
   template:
     metadata:
@@ -51,7 +51,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "0" # must be created before cleanup job
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
   name: gloo-resource-cleanup
   namespace: {{ .Release.Namespace }}
 ---
@@ -66,7 +66,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "0" # must be created before cleanup job
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 rules:
 - apiGroups: ["gateway.solo.io"]
   resources: ["*"]
@@ -86,7 +86,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "0" # must be created before cleanup job
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 roleRef:
   kind: Role
   name: gloo-resource-cleanup
@@ -99,14 +99,14 @@ subjects:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-resource-cleanup
+  name: gloo-resource-cleanup{{ include "gloo.rbacNameSuffix" . }}
   labels:
     app: gloo
     gloo: rbac
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "0" # must be created before cleanup job
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 rules:
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["validatingwebhookconfigurations"]
@@ -115,20 +115,20 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-resource-cleanup
+  name: gloo-resource-cleanup{{ include "gloo.rbacNameSuffix" . }}
   labels:
     app: gloo
     gloo: rbac
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "0" # must be created before cleanup job
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 roleRef:
   kind: ClusterRole
-  name: gloo-resource-cleanup
+  name: gloo-resource-cleanup{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
   name: gloo-resource-cleanup
   namespace: {{ .Release.Namespace }}
-{{- end }} {{/* if .Values.global.glooRbac.create */}}
+{{- end }}{{/* if .Values.global.glooRbac.create */}}
