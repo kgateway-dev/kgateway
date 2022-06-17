@@ -18,8 +18,6 @@ var (
 	missingReportForSourceErr          = errors.Errorf("internal err: missing resource report for source resource")
 )
 
-// SAM TODO, support AggregateListener
-
 // Update a set of ResourceReports with the results of a proxy validation
 // Using the sources from Listener.Metadata, VirtualHost.Metadata, and Route.Metadata,
 // we can extrapolate the errors
@@ -85,7 +83,31 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 			}
 
 		case *validation.ListenerReport_AggregateListenerReport:
-			return nil
+			aggregateListener := listener.GetAggregateListener()
+			availableVirtualHosts := aggregateListener.GetHttpResources().GetVirtualHosts()
+
+			mappedVirtualHostRefs := map[string][]string{}
+			for _, httpFilterChain := range aggregateListener.GetHttpFilterChains() {
+				mappedVirtualHostRefs[utils.MatchedRouteConfigName(listener, httpFilterChain.GetMatcher())] = httpFilterChain.GetVirtualHostRefs()
+			}
+
+			for reportKey, httpListenerReport := range listenerReportType.AggregateListenerReport.GetHttpListenerReports() {
+				vhReports := httpListenerReport.GetVirtualHostReports()
+				virtualHostRefs := mappedVirtualHostRefs[reportKey]
+
+				if len(vhReports) != len(virtualHostRefs) {
+					return invalidReportsVirtualHostsErr
+				}
+
+				for j, vhReport := range vhReports {
+					virtualHostRef := virtualHostRefs[j]
+					virtualHost := availableVirtualHosts[virtualHostRef]
+
+					if err := addVirtualHostResult(resourceReports, virtualHost, vhReport); err != nil {
+						return err
+					}
+				}
+			}
 		}
 	}
 
@@ -149,6 +171,10 @@ func getListenerLevelErrors(listenerReport *validation.ListenerReport) []error {
 					listenerErrs = append(listenerErrs, validationutils.GetTcpHostErr(hostReport)...)
 				}
 			}
+		}
+	case *validation.ListenerReport_AggregateListenerReport:
+		for _, httpListenerReport := range listenerType.AggregateListenerReport.GetHttpListenerReports() {
+			listenerErrs = append(listenerErrs, validationutils.GetHttpListenerErr(httpListenerReport)...)
 		}
 	}
 
