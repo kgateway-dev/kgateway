@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6098
+    description: Added failed resource validation if no / weights less than 1 are passed for Weighted Destinations
+    resolvesIssue: false
