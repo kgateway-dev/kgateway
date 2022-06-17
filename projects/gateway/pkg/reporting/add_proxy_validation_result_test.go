@@ -76,11 +76,11 @@ var _ = Describe("AddProxyValidationResult", func() {
 			}
 		},
 		table.Entry("default translators", translator.Opts{
-			WriteNamespace: ignored,
+			WriteNamespace:                 ignored,
 			IsolateVirtualHostsBySslConfig: false,
 		}),
 		table.Entry("isolated virtual hosts translators", translator.Opts{
-			WriteNamespace: ignored,
+			WriteNamespace:                 ignored,
 			IsolateVirtualHostsBySslConfig: true,
 		}),
 	)
