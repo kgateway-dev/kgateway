@@ -2,6 +2,7 @@ package reporting_test
 
 import (
 	"context"
+
 	"github.com/onsi/ginkgo/extensions/table"
 
 	. "github.com/onsi/ginkgo"
