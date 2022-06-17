@@ -58,7 +58,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	. "github.com/solo-io/solo-kit/test/matchers"
 	k8scorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -1904,6 +1903,83 @@ var _ = Describe("Translator", func() {
 
 	})
 
+	Context("when translating a multi-route action with differing passed weights", func() {
+
+		var (
+			multiActionRouteWithNoWeightPassedDest *v1.Route
+			multiActionRouteWithZeroWeightDest     *v1.Route
+			multiActionRouteWithOneValidDest       *v1.Route
+			expectedErrorString                    string
+			weightedDestValidWeight                *v1.WeightedDestination
+		)
+
+		BeforeEach(func() {
+			testUpstream1 := createStaticUpstream("test1", "gloo-system")
+			testUpstream2 := createStaticUpstream("test2", "gloo-system")
+
+			weightedDestNoWeightPassed := createWeightedDestination(false, 0, testUpstream1)
+			weightedDestWeightOfZero := createWeightedDestination(true, 0, testUpstream1)
+			weightedDestValidWeight = createWeightedDestination(true, 5, testUpstream2)
+
+			multiActionRouteWithNoWeightPassedDest = createMultiActionRoute("NoWeightPassedDest", matcher, []*v1.WeightedDestination{weightedDestNoWeightPassed, weightedDestValidWeight})
+			multiActionRouteWithZeroWeightDest = createMultiActionRoute("NegativeWeightDest", matcher, []*v1.WeightedDestination{weightedDestWeightOfZero, weightedDestValidWeight})
+			multiActionRouteWithOneValidDest = createMultiActionRoute("OneValidDest", matcher, []*v1.WeightedDestination{weightedDestValidWeight})
+
+			expectedErrorString = fmt.Sprintf("Incorrect configuration for Weighted Destination for upstream: %s - Weighted Destinations require a weight that is greater than 0", "test1")
+		})
+
+		//Positive Tests
+		It("Should translate single routes when multiRoute is passed and only one destination is specified", func() {
+			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteWithOneValidDest}
+			snap, resourceReport, _, _ := translator.Translate(params, proxy)
+			Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
+
+			// A weighted route to the service has been configured
+			routes := snap.GetResources(types.RouteTypeV3)
+			Expect(routes.Items).To(HaveKey("http-listener-routes"))
+			routeResource := routes.Items["http-listener-routes"]
+			routeConfiguration = routeResource.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
+			Expect(routeConfiguration).NotTo(BeNil())
+			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains[0]).To(Equal("*"))
+			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
+			routeAction, ok := routeConfiguration.VirtualHosts[0].Routes[0].Action.(*envoy_config_route_v3.Route_Route)
+			Expect(ok).To(BeTrue())
+			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoy_config_route_v3.RouteAction_WeightedClusters)
+			Expect(ok).To(BeTrue())
+
+			//DataFromWeightedCluster
+			totalWeight := weightedDestValidWeight.Weight
+			expectedClusterName := weightedDestValidWeight.Destination.GetUpstream().Name + "_" + weightedDestValidWeight.Destination.GetUpstream().Namespace
+
+			//There is only one route with a weight of 5 so total weight for the cluster should be 5
+			Expect(clusterAction.WeightedClusters.TotalWeight.GetValue()).To(Equal(totalWeight))
+			clusters := clusterAction.WeightedClusters.Clusters
+			Expect(clusters).To(HaveLen(1))
+			Expect(clusters[0].Weight.GetValue()).To(Equal(totalWeight))
+			Expect(clusters[0].Name).To(Equal(expectedClusterName))
+		})
+
+		//Negative Tests
+		It("Should report an error when a weighted destination is passed with no weight", func() {
+			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteWithNoWeightPassedDest}
+			_, errs, _, err := translator.Translate(params, proxy)
+			Expect(err).To(BeNil())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring(expectedErrorString))
+		})
+
+		It("Should report an error when a weighted destination is passed with weight less than 1", func() {
+			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteWithZeroWeightDest}
+			_, errs, _, err := translator.Translate(params, proxy)
+			Expect(err).To(BeNil())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring(expectedErrorString))
+		})
+
+	})
+
 	Context("Route plugin", func() {
 		var (
 			routePlugin *routePluginMock
@@ -2813,4 +2889,65 @@ func (e *endpointPluginMock) ProcessEndpoints(params plugins.Params, in *v1.Upst
 
 func (e *endpointPluginMock) Init(params plugins.InitParams) error {
 	return nil
+}
+
+func createStaticUpstream(name, namespace string) *v1.Upstream {
+	return &v1.Upstream{
+		Metadata: &core.Metadata{
+			Name:      name,
+			Namespace: namespace,
+		},
+		UpstreamType: &v1.Upstream_Static{
+			Static: &v1static.UpstreamSpec{
+				Hosts: []*v1static.Host{
+					{
+						Addr: "Test" + name,
+						Port: 124,
+					},
+				},
+			},
+		},
+	}
+}
+
+func createWeightedDestination(isWeightIncluded bool, weight uint32, upstream *v1.Upstream) *v1.WeightedDestination {
+	if isWeightIncluded {
+		return &v1.WeightedDestination{
+			Weight: weight,
+			Destination: &v1.Destination{
+				DestinationType: &v1.Destination_Upstream{
+					Upstream: &core.ResourceRef{
+						Name:      upstream.Metadata.Name,
+						Namespace: upstream.Metadata.Namespace,
+					},
+				},
+			},
+		}
+	}
+	return &v1.WeightedDestination{
+		Destination: &v1.Destination{
+			DestinationType: &v1.Destination_Upstream{
+				Upstream: &core.ResourceRef{
+					Name:      upstream.Metadata.Name,
+					Namespace: upstream.Metadata.Namespace,
+				},
+			},
+		},
+	}
+}
+
+func createMultiActionRoute(routeName string, matcher *matchers.Matcher, destinations []*v1.WeightedDestination) *v1.Route {
+	return &v1.Route{
+		Name:     routeName,
+		Matchers: []*matchers.Matcher{matcher},
+		Action: &v1.Route_RouteAction{
+			RouteAction: &v1.RouteAction{
+				Destination: &v1.RouteAction_Multi{
+					Multi: &v1.MultiDestination{
+						Destinations: destinations,
+					},
+				},
+			},
+		},
+	}
 }
