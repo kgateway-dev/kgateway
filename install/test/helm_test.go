@@ -1295,7 +1295,7 @@ metadata:
     app: gloo
     created_by: gloo-install
 spec:
-  bindAddress: "` + defaults.GatewayBindAddress + `::"
+  bindAddress: "` + defaults.GatewayBindAddress + `"
   bindPort: 8080
   httpGateway: {}
   useProxyProto: false
@@ -1312,7 +1312,7 @@ metadata:
     app: gloo
     created_by: gloo-install
 spec:
-  bindAddress: "` + defaults.GatewayBindAddress + `::"
+  bindAddress: "` + defaults.GatewayBindAddress + `"
   bindPort: 8443
   httpGateway: {}
   useProxyProto: false
@@ -1413,106 +1413,106 @@ spec:
 						name := defaults.GatewayProxyName
 						bindPort := "8080"
 						ssl := "false"
-						gw := makeUnstructured(`
+						gwYaml := `apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  labels:
-    app: gloo
   name: ` + name + `
   namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
 spec:
-  bindAddress: '::'
+  bindAddress: "::"
   bindPort: ` + bindPort + `
   hybridGateway:
     matchedGateways:
     - httpGateway:
         virtualServices:
-          - name: default
-            namespace: gloo-system
+        - name: default
+          namespace: gloo-system
       matcher:
         sourcePrefixRanges:
-          - addressPrefix: 0.0.0.0
-            prefixLen: 1
+        - addressPrefix: 0.0.0.0
+          prefixLen: 1
     - httpGateway:
         virtualServices:
-          - name: client-ip-reject
-            namespace: gloo-system
+        - name: client-ip-reject
+          namespace: gloo-system
       matcher: {}
+  httpGateway: {}
+  useProxyProto: false
+  ssl: ` + ssl + `
   proxyNames:
   - gateway-proxy
-  httpGateway: {}
-  ssl: ` + ssl + `
-  useProxyProto: false
-apiVersion: gateway.solo.io/v1
-`)
+`
 						prepareMakefileFromValuesFile("values/val_gwp_http_hybrid_gateway.yaml")
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
 					})
 
 					It("sets https hybrid gateway", func() {
 						name := defaults.GatewayProxyName + "-ssl"
 						bindPort := "8443"
 						ssl := "true"
-						gw := makeUnstructured(`
+						gwYaml := `apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  labels:
-    app: gloo
   name: ` + name + `
   namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
 spec:
-  bindAddress: '::'
+  bindAddress: "::"
   bindPort: ` + bindPort + `
   hybridGateway:
     matchedGateways:
     - httpGateway:
         virtualServices:
-          - name: default
-            namespace: gloo-system
+        - name: default
+          namespace: gloo-system
       matcher:
         sourcePrefixRanges:
-          - addressPrefix: 0.0.0.0
-            prefixLen: 1
+        - addressPrefix: 0.0.0.0
+          prefixLen: 1
         sslConfig:
           secretRef:
             name: gloo-cert
             namespace: gloo-system
     - httpGateway:
         virtualServices:
-          - name: client-ip-reject
-            namespace: gloo-system
+        - name: client-ip-reject
+          namespace: gloo-system
       matcher:
         sslConfig:
           secretRef:
             name: gloo-cert
-            namespace: gloo-system  
-  proxyNames:
-  - gateway-proxy
+            namespace: gloo-system
   httpGateway: {}
-  ssl: ` + ssl + `
   useProxyProto: false
-apiVersion: gateway.solo.io/v1
-`)
+  ssl: ` + ssl + `
+  proxyNames:
+  - gateway-proxy`
 						prepareMakefileFromValuesFile("values/val_gwp_https_hybrid_gateway.yaml")
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gw))
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
 					})
 
 					It("can set accessLoggingService", func() {
 						name := defaults.GatewayProxyName
 						bindPort := "8080"
 						ssl := "false"
-						gw := makeUnstructured(`
+						gwYaml := `apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  labels:
-    app: gloo
   name: ` + name + `
   namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
 spec:
-  bindAddress: '::'
+  bindAddress: "::"
   bindPort: ` + bindPort + `
-  proxyNames:
-  - gateway-proxy
   httpGateway: {}
   options:
     accessLoggingService:
@@ -1520,28 +1520,28 @@ spec:
       - fileSink:
           path: /dev/stdout
           stringFormat: ""
-  ssl: ` + ssl + `
   useProxyProto: false
-apiVersion: gateway.solo.io/v1
-`)
+  ssl: ` + ssl + `
+  proxyNames:
+  - gateway-proxy`
 						prepareMakefileFromValuesFile("values/val_default_gateway_access_logging_service.yaml")
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
 
 						name = defaults.GatewayProxyName + "-ssl"
 						bindPort = "8443"
 						ssl = "true"
-						gw = makeUnstructured(`
+						gwSslYaml := `apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  labels:
-    app: gloo
   name: ` + name + `
   namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
 spec:
-  bindAddress: '::'
+  bindAddress: "::"
   bindPort: ` + bindPort + `
-  proxyNames:
-  - gateway-proxy
   httpGateway: {}
   options:
     accessLoggingService:
@@ -1549,31 +1549,28 @@ spec:
       - fileSink:
           path: /dev/stdout
           stringFormat: ""
-  ssl: ` + ssl + `
   useProxyProto: false
-apiVersion: gateway.solo.io/v1
-`)
-
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gw))
+  ssl: ` + ssl + `
+  proxyNames:
+  - gateway-proxy`
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml))
 					})
 
 					It("can set tracing provider", func() {
 						name := defaults.GatewayProxyName
 						bindPort := "8080"
 						ssl := "false"
-						gw := makeUnstructured(`
-apiVersion: gateway.solo.io/v1
+						gwYaml := `apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  labels:
-    app: gloo
   name: ` + name + `
   namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
 spec:
-  bindAddress: '::'
+  bindAddress: "::"
   bindPort: ` + bindPort + `
-  proxyNames:
-  - gateway-proxy
   httpGateway:
     options:
       httpConnectionManagerSettings:
@@ -1581,28 +1578,28 @@ spec:
           zipkinConfig:
             collector_cluster: zipkin
             collector_endpoint: /api/v2/spans
-  ssl: ` + ssl + `
   useProxyProto: false
-`)
+  ssl: ` + ssl + `
+  proxyNames:
+  - gateway-proxy`
 						prepareMakefileFromValuesFile("values/val_tracing_provider_cluster.yaml")
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
 
 						name = defaults.GatewayProxyName + "-ssl"
 						bindPort = "8443"
 						ssl = "true"
-						gw = makeUnstructured(`
-apiVersion: gateway.solo.io/v1
+						gwSslYaml := `apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  labels:
-    app: gloo
   name: ` + name + `
   namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
 spec:
-  bindAddress: '::'
+  bindAddress: "::"
   bindPort: ` + bindPort + `
-  proxyNames:
-  - gateway-proxy
   httpGateway:
     options:
       httpConnectionManagerSettings:
@@ -1610,11 +1607,11 @@ spec:
           zipkinConfig:
             collector_cluster: zipkin
             collector_endpoint: /api/v2/spans
-  ssl: ` + ssl + `
   useProxyProto: false
-`)
-
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gw))
+  ssl: ` + ssl + `
+  proxyNames:
+  - gateway-proxy`
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml))
 					})
 
 					It("gwp hpa disabled by default", func() {

@@ -44,7 +44,7 @@ spec:
   {{- end }}
   {{- if $gatewaySettings.accessLoggingService }}
     accessLoggingService:
-  {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
+  {{- toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
   {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: false
@@ -101,7 +101,7 @@ spec:
   {{- end }}
   {{- if $gatewaySettings.accessLoggingService }}
     accessLoggingService:
-  {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
+  {{- toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
   {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: true
