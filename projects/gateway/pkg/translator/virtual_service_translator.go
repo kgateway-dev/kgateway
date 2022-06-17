@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -277,7 +279,7 @@ func (v *VirtualServiceTranslator) computeHttpListenerVirtualHosts(params Params
 	return virtualHosts
 }
 
-func (v *VirtualServiceTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, gateway *v1.Gateway, proxyName string, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
+func (v *VirtualServiceTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, gateway *v1.Gateway, proxyName string, snapshot *gloosnapshot.ApiSnapshot, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
 	converter := NewRouteConverter(NewRouteTableSelector(snapshot.RouteTables), NewRouteTableIndexer())
 	v.mergeDelegatedVirtualHostOptions(vs, snapshot.VirtualHostOptions, reports)
 	routes := converter.ConvertVirtualService(vs, gateway, proxyName, snapshot, reports)

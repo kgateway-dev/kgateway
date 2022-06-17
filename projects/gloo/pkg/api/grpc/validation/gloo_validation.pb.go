@@ -985,11 +985,12 @@ type ListenerReport_TcpListenerReport struct {
 }
 
 type ListenerReport_HybridListenerReport struct {
-	//report for the hybrid listener
+	// report for the hybrid listener
 	HybridListenerReport *HybridListenerReport `protobuf:"bytes,5,opt,name=hybrid_listener_report,json=hybridListenerReport,proto3,oneof"`
 }
 
 type ListenerReport_AggregateListenerReport struct {
+	// report for the aggregate listener
 	AggregateListenerReport *AggregateListenerReport `protobuf:"bytes,6,opt,name=aggregate_listener_report,json=aggregateListenerReport,proto3,oneof"`
 }
 
@@ -1402,6 +1403,7 @@ func (*MatchedListenerReport_HttpListenerReport) isMatchedListenerReport_Listene
 
 func (*MatchedListenerReport_TcpListenerReport) isMatchedListenerReport_ListenerReportType() {}
 
+// the report for an AggregateListener
 type AggregateListenerReport struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -243,7 +243,7 @@ If the report contains no errors, the (sub-)resource is valid.
 | `httpListenerReport` | [.gloo.solo.io.HttpListenerReport](../gloo_validation.proto.sk/#httplistenerreport) | report for the http listener. Only one of `httpListenerReport`, `tcpListenerReport`, `hybridListenerReport`, or `aggregateListenerReport` can be set. |
 | `tcpListenerReport` | [.gloo.solo.io.TcpListenerReport](../gloo_validation.proto.sk/#tcplistenerreport) | report for the tcp listener. Only one of `tcpListenerReport`, `httpListenerReport`, `hybridListenerReport`, or `aggregateListenerReport` can be set. |
 | `hybridListenerReport` | [.gloo.solo.io.HybridListenerReport](../gloo_validation.proto.sk/#hybridlistenerreport) | report for the hybrid listener. Only one of `hybridListenerReport`, `httpListenerReport`, `tcpListenerReport`, or `aggregateListenerReport` can be set. |
-| `aggregateListenerReport` | [.gloo.solo.io.AggregateListenerReport](../gloo_validation.proto.sk/#aggregatelistenerreport) |  Only one of `aggregateListenerReport`, `httpListenerReport`, `tcpListenerReport`, or `hybridListenerReport` can be set. |
+| `aggregateListenerReport` | [.gloo.solo.io.AggregateListenerReport](../gloo_validation.proto.sk/#aggregatelistenerreport) | report for the aggregate listener. Only one of `aggregateListenerReport`, `httpListenerReport`, `tcpListenerReport`, or `hybridListenerReport` can be set. |
 
 
 
@@ -616,7 +616,8 @@ error types for tcp host config
 ---
 ### AggregateListenerReport
 
-
+ 
+the report for an AggregateListener
 
 ```yaml
 "httpListenerReports": map<string, .gloo.solo.io.HttpListenerReport>

@@ -3,6 +3,9 @@ package translator
 import (
 	"errors"
 
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/hashutils"
+
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
@@ -16,6 +19,13 @@ type AggregateTranslator struct {
 }
 
 func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener {
+	snap := params.snapshot
+	if len(snap.VirtualServices) == 0 {
+		snapHash := hashutils.MustHash(snap)
+		contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services", snapHash)
+		return nil
+	}
+
 	var aggregateListener *gloov1.AggregateListener
 	switch gateway.GetGatewayType().(type) {
 	case *v1.Gateway_HttpGateway:
@@ -23,9 +33,8 @@ func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, g
 
 	case *v1.Gateway_HybridGateway:
 		aggregateListener = a.computeAggregateListenerForHybridGateway(params, proxyName, gateway)
-	}
 
-	if aggregateListener == nil {
+	default:
 		return nil
 	}
 
