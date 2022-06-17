@@ -21,7 +21,7 @@ func installCrdsToRemote(context string) error {
 
 	chartObj, err := helmClient.DownloadChart("https://storage.googleapis.com/solo-public-helm/charts/gloo-" + linkedversion.Version + ".tgz")
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "\nGloo failed to install CRDs! Detailed logs available at %s.\n", cliutil.GetLogsPath())
+		_, _ = fmt.Fprintf(os.Stderr, "\nGloo failed to download gloo-%s\n", linkedversion.Version)
 		return err
 	}
 	chartObj.Templates = nil // explicitly remove teamplates, since we only care about installing CRDs
@@ -58,7 +58,7 @@ func Register(opts *options.Options) error {
 		return err
 	}
 	if serverVersion == nil {
-		fmt.Printf("No `gloo` install detected on %s.  Installing OSS CRDs.", registerOpts.RemoteContext)
+		fmt.Printf("No `gloo` install detected on %s.  Installing OSS CRDs.\n", registerOpts.RemoteContext)
 		installCrdsToRemote(registerOpts.RemoteContext)
 	}
 
