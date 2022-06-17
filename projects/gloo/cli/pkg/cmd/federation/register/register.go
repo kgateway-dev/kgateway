@@ -9,6 +9,7 @@ import (
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/skv2/pkg/multicluster/kubeconfig"
 	"github.com/solo-io/skv2/pkg/multicluster/register"
 	v1 "k8s.io/api/rbac/v1"
@@ -23,7 +24,7 @@ func installCrdsToRemote(context string) error {
 		_, _ = fmt.Fprintf(os.Stderr, "\nGloo failed to install CRDs! Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
 	}
-	chartObj.Templates = nil
+	chartObj.Templates = nil // explicitly remove teamplates, since we only care about installing CRDs
 
 	helmInstall, _, err := helmClient.NewInstall("default", "gloo-automatic-crd-application", false, context)
 	if err != nil {
@@ -50,9 +51,16 @@ func Register(opts *options.Options) error {
 		return err
 	}
 
-	// always apply CRDs when registering a cluster to prevent gloo-fed crash loops when registering empty cluster:
+	// check to see if Gloo is installed onto RemoteContext.  If not, install CRDs to prevent a gloo-fed crash, per
 	// https://github.com/solo-io/gloo/issues/5832
-	installCrdsToRemote(registerOpts.RemoteContext)
+	serverVersion, err := version.NewKube(opts.Metadata.GetNamespace(), registerOpts.RemoteContext).Get(ctx)
+	if err != nil {
+		return err
+	}
+	if serverVersion == nil {
+		fmt.Printf("No `gloo` install detected on %s.  Installing OSS CRDs.", registerOpts.RemoteContext)
+		installCrdsToRemote(registerOpts.RemoteContext)
+	}
 
 	clusterRegisterOpts := register.RegistrationOptions{
 		KubeCfg:          mgmtKubeCfg,
