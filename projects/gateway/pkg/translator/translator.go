@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/go-utils/hashutils"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -19,7 +20,7 @@ import (
 
 // Translator converts a set of Gateways into a Proxy, with the provided proxyName
 type Translator interface {
-	Translate(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
+	Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
 }
 
 // IsolateVirtualHostsAnnotation is the annotation that can be applied to a Gateway resource to determine
@@ -86,7 +87,7 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 }
 
 // Translate converts a set of Gateways into a Proxy, with the provided proxyName
-func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, gateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
+func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, gateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
 	reports := make(reporter.ResourceReports)

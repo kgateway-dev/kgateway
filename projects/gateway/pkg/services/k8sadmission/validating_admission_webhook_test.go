@@ -354,19 +354,9 @@ func parseReviewResponse(resp *http.Response) (*AdmissionReviewWithProxies, erro
 	}
 	return &review, nil
 }
-func convertSnapshot(glooSnap *gloov1snap.ApiSnapshot) *v1.ApiSnapshot {
-	return &v1.ApiSnapshot{
-		VirtualServices:    glooSnap.VirtualServices,
-		RouteTables:        glooSnap.RouteTables,
-		Gateways:           glooSnap.Gateways,
-		VirtualHostOptions: glooSnap.VirtualHostOptions,
-		RouteOptions:       glooSnap.RouteOptions,
-		HttpGateways:       glooSnap.HttpGateways,
-	}
-}
 
 type mockValidator struct {
-	fSync                         func(context.Context, *v1.ApiSnapshot) error
+	fSync                         func(context.Context, *gloov1snap.ApiSnapshot) error
 	fValidateList                 func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*validation.Reports, *multierror.Error)
 	fValidateGateway              func(ctx context.Context, gw *v1.Gateway, dryRun bool) (*validation.Reports, error)
 	fValidateVirtualService       func(ctx context.Context, vs *v1.VirtualService, dryRun bool) (*validation.Reports, error)
@@ -382,8 +372,7 @@ func (v *mockValidator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) 
 	if v.fSync == nil {
 		return nil
 	}
-	gwsnap := convertSnapshot(snap)
-	return v.fSync(ctx, gwsnap)
+	return v.fSync(ctx, snap)
 }
 
 func (v *mockValidator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*validation.Reports, *multierror.Error) {

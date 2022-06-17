@@ -19,6 +19,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
@@ -33,7 +34,7 @@ var _ = Describe("Http Translator", func() {
 		ctx        context.Context
 		cancel     context.CancelFunc
 		translator *HttpTranslator
-		snap       *v1.ApiSnapshot
+		snap       *gloov1snap.ApiSnapshot
 		reports    reporter.ResourceReports
 
 		labelSet = map[string]string{"a": "b"}
@@ -64,7 +65,7 @@ var _ = Describe("Http Translator", func() {
 	Context("all-in-one virtual service", func() {
 
 		BeforeEach(func() {
-			snap = &v1.ApiSnapshot{
+			snap = &gloov1snap.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
 						Metadata: &core.Metadata{Namespace: ns, Name: "name"},
@@ -740,7 +741,7 @@ var _ = Describe("Http Translator", func() {
 			mergedLeafLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &wrappers.StringValue{Value: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
 
 			BeforeEach(func() {
-				snap = &v1.ApiSnapshot{
+				snap = &gloov1snap.ApiSnapshot{
 					Gateways: v1.GatewayList{
 						{
 							Metadata: &core.Metadata{Namespace: ns, Name: "name"},
@@ -1222,7 +1223,7 @@ var _ = Describe("Http Translator", func() {
 		Context("delegation cycle", func() {
 
 			BeforeEach(func() {
-				snap = &v1.ApiSnapshot{
+				snap = &gloov1snap.ApiSnapshot{
 					Gateways: v1.GatewayList{
 						{
 							Metadata: &core.Metadata{Namespace: ns, Name: "name"},
@@ -1314,7 +1315,7 @@ var _ = Describe("Http Translator", func() {
 	Context("generating unique route names", func() {
 
 		It("should generate unique names for multiple gateways", func() {
-			snap = &v1.ApiSnapshot{
+			snap = &gloov1snap.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
 						Metadata: &core.Metadata{Namespace: ns, Name: "gw1"},
@@ -1384,7 +1385,7 @@ var _ = Describe("Http Translator", func() {
 		})
 
 		It("should generate unique names for multiple proxies", func() {
-			snap = &v1.ApiSnapshot{
+			snap = &gloov1snap.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
 						Metadata: &core.Metadata{Namespace: ns, Name: "gw1"},
@@ -1446,7 +1447,7 @@ var _ = Describe("Http Translator", func() {
 		})
 
 		It("should generate unique names for virtual services in different namespaces", func() {
-			snap = &v1.ApiSnapshot{
+			snap = &gloov1snap.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
 						Metadata: &core.Metadata{Namespace: ns, Name: "gw1"},
@@ -1532,7 +1533,7 @@ var _ = Describe("Http Translator", func() {
 		})
 
 		It("should generate unique names for multiple unnamed routes", func() {
-			snap = &v1.ApiSnapshot{
+			snap = &gloov1snap.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
 						Metadata: &core.Metadata{Namespace: ns, Name: "gw1"},
