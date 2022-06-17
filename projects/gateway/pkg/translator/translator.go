@@ -168,8 +168,8 @@ func (t *GwTranslator) getListenerTranslatorForGateway(gateway *v1.Gateway) List
 // shouldIsolateVirtualHostsForGateway returns true if the Gateway should be converted into
 // a Listener with distinct VirtualHosts for unique Ssl configurations.
 // It makes a decision in the following order:
-// 	1. Prefer the Gateway annotation, if defined and valid
-//  2. Fallback to the global settin
+//  1. Prefer the Gateway annotation, if defined and valid
+//  2. Fallback to the global setting
 func (t *GwTranslator) shouldIsolateVirtualHostsForGateway(gateway *v1.Gateway) bool {
 	gatewayAnnotation := gateway.GetMetadata().GetAnnotations()
 	if isolateVhostsVal, ok := gatewayAnnotation[IsolateVirtualHostsAnnotation]; ok {
