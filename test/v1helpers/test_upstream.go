@@ -283,7 +283,7 @@ type CurlResponse struct {
 	Message string
 }
 
-func ExpectCurlWithOffset(offset int, request CurlRequest, response CurlResponse) {
+func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse CurlResponse) {
 
 	var res *http.Response
 	EventuallyWithOffset(offset+1, func() error {
@@ -328,18 +328,18 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, response CurlResponse
 			return err
 		}
 
-		if res.StatusCode != response.Status {
-			return fmt.Errorf("received status code (%v) is not expected status code (%v)", res.StatusCode, response.Status)
+		if res.StatusCode != expectedResponse.Status {
+			return fmt.Errorf("received status code (%v) is not expected status code (%v)", res.StatusCode, expectedResponse.Status)
 		}
 
 		return nil
 	}, "30s", "1s").Should(BeNil())
 
-	if response.Message != "" {
+	if expectedResponse.Message != "" {
 		body, err := ioutil.ReadAll(res.Body)
 		ExpectWithOffset(offset, err).NotTo(HaveOccurred())
 		defer res.Body.Close()
-		ExpectWithOffset(offset, string(body)).To(Equal(response))
+		ExpectWithOffset(offset, string(body)).To(Equal(expectedResponse.Message))
 	}
 }
 
