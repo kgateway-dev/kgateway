@@ -409,6 +409,17 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 			return err
 		}
 
+		//Catch when Customers pass weights less than 1 or forget to pass weights - this leads to envoy errors
+		if weightedDest.GetWeight() < 1 {
+			weightedDestUpstream := weightedDest.GetDestination().GetUpstream()
+
+			validation.AppendRouteError(routeReport,
+				validationapi.RouteReport_Error_ProcessingError,
+				fmt.Sprintf("Incorrect configuration for Weighted Destination for upstream: %s - Weighted Destinations require a weight that is greater than 0", weightedDestUpstream.GetName()),
+				routeName,
+			)
+		}
+
 		totalWeight += weightedDest.GetWeight()
 
 		weightedCluster := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
@@ -439,6 +450,10 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 		}
 	}
 
+	//Envoy has a default total weight of 100 and requires all weights to equal the current value of total weight
+	//This overrides the default of 100 to the sum of all passed weights both satisfying the requirements
+	// - that all weights equal total weight
+	// - the passed weights are weighted proportional to each other
 	clusterSpecifier.WeightedClusters.TotalWeight = &wrappers.UInt32Value{Value: totalWeight}
 
 	return nil
