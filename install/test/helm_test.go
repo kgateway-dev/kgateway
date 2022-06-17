@@ -3550,7 +3550,7 @@ spec:
 						testManifest.ExpectUnstructured(gwDeployment.GetKind(), gwDeployment.GetNamespace(), gwDeployment.GetName()).To(BeEquivalentTo(gwDeployment))
 					})
 
-					FContext("gloo rollout and cleanup jobs", func() {
+					Context("gloo rollout and cleanup jobs", func() {
 						rolloutJob := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
@@ -5486,12 +5486,14 @@ metadata:
 			// more descriptive fail message that prints out the manifest that includes the trailing whitespace
 			manifestStartingLine := 0
 			for idx, line := range lines {
-				if strings.Contains(line, "---") {
-					manifestStartingLine = idx
-				}
-				// ignore kubectl commands
+				// ignore kubectl commands, since the one in the rollout job has trailing space from the indent
+				// on the next line, that seemingly can't be removed
 				if strings.Contains(line, "kubectl apply") {
 					continue
+				}
+
+				if strings.Contains(line, "---") {
+					manifestStartingLine = idx
 				}
 				if strings.TrimRightFunc(line, unicode.IsSpace) != line {
 					Fail(strings.Join(lines[manifestStartingLine:idx+1], "\n") + "\n last line has whitespace")
