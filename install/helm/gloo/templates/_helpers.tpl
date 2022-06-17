@@ -92,7 +92,7 @@ version, which merges two named templates.
 {{- $overrides := (index . 1) -}}
 {{- $tpl := fromYaml (include (index . 2) $top) -}}
 {{- if or (empty $overrides) (empty $tpl) -}}
-{{ include (index . 2) $top }} {{/* render source as is */}}
+{{- include (index . 2) $top -}}{{/* render source as is */}}
 {{- else -}}
 {{- $merged := mergeOverwrite $tpl $overrides -}}
 {{- toYaml $merged -}} {{/* render source with overrides as YAML */}}
