@@ -15,6 +15,7 @@ import (
 const (
 	tempChartFilePermissions = 0644
 	helmNamespaceEnvVar      = "HELM_NAMESPACE"
+	helmKubecontextEnvVar    = "HELM_KUBECONTEXT"
 )
 
 var verbose bool
@@ -28,7 +29,7 @@ func setVerbose(b bool) {
 // This interface implements the Helm CLI actions. The implementation relies on the Helm 3 libraries.
 type HelmClient interface {
 	// Prepare an installation object that can then be .Run() with a chart object
-	NewInstall(namespace, releaseName string, dryRun bool) (HelmInstallation, *cli.EnvSettings, error)
+	NewInstall(namespace, releaseName string, dryRun bool, context string) (HelmInstallation, *cli.EnvSettings, error)
 
 	// Prepare an un-installation object that can then be .Run() with a release name
 	NewUninstall(namespace string) (HelmUninstallation, error)
@@ -73,8 +74,8 @@ func DefaultHelmClient() HelmClient {
 type defaultHelmClient struct {
 }
 
-func (d *defaultHelmClient) NewInstall(namespace, releaseName string, dryRun bool) (HelmInstallation, *cli.EnvSettings, error) {
-	actionConfig, settings, err := newActionConfig(namespace)
+func (d *defaultHelmClient) NewInstall(namespace, releaseName string, dryRun bool, context string) (HelmInstallation, *cli.EnvSettings, error) {
+	actionConfig, settings, err := newActionConfig(namespace, context)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -93,7 +94,7 @@ func (d *defaultHelmClient) NewInstall(namespace, releaseName string, dryRun boo
 }
 
 func (d *defaultHelmClient) NewUninstall(namespace string) (HelmUninstallation, error) {
-	actionConfig, _, err := newActionConfig(namespace)
+	actionConfig, _, err := newActionConfig(namespace, "")
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +114,7 @@ func (h *helmReleaseListRunner) SetFilter(filter string) {
 }
 
 func (d *defaultHelmClient) ReleaseList(namespace string) (HelmReleaseListRunner, error) {
-	actionConfig, _, err := newActionConfig(namespace)
+	actionConfig, _, err := newActionConfig(namespace, "")
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +179,7 @@ func (d *defaultHelmClient) ReleaseExists(namespace, releaseName string) (releas
 
 // Build a Helm EnvSettings struct
 // basically, abstracted cli.New() into our own function call because of the weirdness described in the big comment below
-func NewCLISettings(namespace string) *cli.EnvSettings {
+func NewCLISettings(namespace, context string) *cli.EnvSettings {
 	// The installation namespace is expressed as a "config override" in the Helm internals
 	// It's normally set by the --namespace flag when invoking the Helm binary, which ends up
 	// setting a non-exported field in the Helm settings struct (https://github.com/helm/helm/blob/v3.0.1/pkg/cli/environment.go#L77)
@@ -191,6 +192,10 @@ func NewCLISettings(namespace string) *cli.EnvSettings {
 		os.Setenv(helmNamespaceEnvVar, namespace)
 		defer os.Setenv(helmNamespaceEnvVar, "")
 	}
+	if os.Getenv(helmKubecontextEnvVar) == "" && context != "" {
+		os.Setenv(helmKubecontextEnvVar, context)
+		defer os.Setenv(helmKubecontextEnvVar, "")
+	}
 
 	return cli.New()
 }
@@ -199,8 +204,8 @@ func noOpDebugLog(_ string, _ ...interface{}) {}
 
 // Returns an action configuration that can be used to create Helm actions and the Helm env settings.
 // We currently get the Helm storage driver from the standard HELM_DRIVER env (defaults to 'secret').
-func newActionConfig(namespace string) (*action.Configuration, *cli.EnvSettings, error) {
-	settings := NewCLISettings(namespace)
+func newActionConfig(namespace, context string) (*action.Configuration, *cli.EnvSettings, error) {
+	settings := NewCLISettings(namespace, context)
 	actionConfig := new(action.Configuration)
 
 	if err := actionConfig.Init(settings.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"), noOpDebugLog); err != nil {
