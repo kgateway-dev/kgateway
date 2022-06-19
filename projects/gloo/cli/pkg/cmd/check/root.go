@@ -933,7 +933,7 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 }
 
 func CheckVersionsMatch(opts *options.Options) {
-	vrs, err := version.GetClientServerVersions(opts.Top.Ctx, version.NewKube(opts.Metadata.GetNamespace()))
+	vrs, err := version.GetClientServerVersions(opts.Top.Ctx, version.NewKube(opts.Metadata.GetNamespace(), ""))
 
 	if err != nil {
 		return
