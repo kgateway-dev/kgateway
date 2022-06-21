@@ -43,6 +43,20 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if in.GetUseHttp2() == nil || !in.GetUseHttp2().GetValue() {
 		return nil
 	}
+
+	//check if both http1 and http2 are being passed with protocol options set to USE_CONFIGURED
+	//Both can be passed if protocol option is set to USE_DOWNSTREAM
+	//Envoy enums - https://github.com/envoyproxy/envoy/blob/8259b33fea720672835d5c46722f0b97dfd69470/api/envoy/config/cluster/v3/cluster.proto#L152
+	//Where the envoy error will be thrown - https://github.com/envoyproxy/envoy/blob/8259b33fea720672835d5c46722f0b97dfd69470/source/common/upstream/upstream_impl.cc#L771
+
+	//At this point we know that we are passing the Http2 settings - check to make sure we aren't incorrectly passing http1 at the same time
+	if in.GetProtocolSelection() == v1.Upstream_USE_CONFIGURED_PROTOCOL {
+		if in.GetConnectionConfig() != nil {
+			return errors.Errorf(
+				"Both HTTP1 and HTTP2 options may only be configured with non-default 'Upstream_USE_DOWNSTREAM_PROTOCOL' specified for Protocol Selection")
+		}
+	}
+
 	// Both these values default to 268435456 if unset.
 	sws := in.GetInitialStreamWindowSize()
 	if sws != nil {
