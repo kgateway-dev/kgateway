@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -26,7 +24,6 @@ type Params struct {
 	ctx      context.Context
 	snapshot *gloov1snap.ApiSnapshot
 	reports  reporter.ResourceReports
-	Messages map[*core.ResourceRef][]string
 }
 
 func NewTranslatorParams(ctx context.Context, snapshot *gloov1snap.ApiSnapshot, reports reporter.ResourceReports) Params {
