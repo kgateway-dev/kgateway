@@ -34,7 +34,6 @@ func TestGloo(t *testing.T) {
 	skhelpers.SetupLog()
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, "Gloo Suite", []Reporter{junitReporter})
-	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 }
 
 var (
@@ -70,6 +69,8 @@ var _ = BeforeSuite(func() {
 	// Install Gloo
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valuesOverrideFile))
 	Expect(err).NotTo(HaveOccurred())
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 })
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {
