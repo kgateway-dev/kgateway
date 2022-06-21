@@ -5603,27 +5603,28 @@ spec:
 		})
 
 		// Lines ending with whitespace causes malformatted config map (https://github.com/solo-io/gloo/issues/4645)
-		It("Should not containing trailing whitespace", func() {
+		It("ConfigMaps should not containing trailing whitespace", func() {
 			out, err := exec.Command("helm", "template", "../helm/gloo").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 
 			lines := strings.Split(string(out), "\n")
 			// more descriptive fail message that prints out the manifest that includes the trailing whitespace
 			manifestStartingLine := 0
+			// only check ConfigMaps
+			isConfigMap := false
 			for idx, line := range lines {
-				// ignore kubectl commands, since the one in the rollout job has trailing space from the indent
-				// on the next line, that seemingly can't be removed
-				if strings.Contains(line, "kubectl apply") {
+				if strings.Contains(line, "kind: ConfigMap") {
+					isConfigMap = true
 					continue
 				}
-
 				if strings.Contains(line, "---") {
 					manifestStartingLine = idx
+					isConfigMap = false
+					continue
 				}
-				if strings.TrimRightFunc(line, unicode.IsSpace) != line {
+				if isConfigMap && strings.TrimRightFunc(line, unicode.IsSpace) != line {
 					Fail(strings.Join(lines[manifestStartingLine:idx+1], "\n") + "\n last line has whitespace")
 				}
-				Expect(strings.TrimRightFunc(line, unicode.IsSpace)).To(Equal(line))
 			}
 		})
 	}
