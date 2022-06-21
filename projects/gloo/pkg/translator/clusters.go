@@ -96,6 +96,8 @@ func (t *translatorInstance) initializeCluster(
 		LbSubsetConfig:   createLbConfig(upstream),
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,
+		//defaults to Cluster_USE_CONFIGURED_PROTOCOL
+		ProtocolSelection: envoy_config_cluster_v3.Cluster_ClusterProtocolSelection(upstream.GetProtocolSelection()),
 		// this field can be overridden by plugins
 		ConnectTimeout:            ptypes.DurationProto(ClusterConnectionTimeout),
 		Http2ProtocolOptions:      getHttp2options(upstream),
