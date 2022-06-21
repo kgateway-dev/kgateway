@@ -2,6 +2,7 @@ package gloo_test
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/log"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
@@ -40,13 +40,16 @@ var (
 	testHelper *helper.SoloTestHelper
 	ctx        context.Context
 	cancel     context.CancelFunc
-	namespace  = defaults.GlooSystem
+	namespace  string
 )
 
 var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 	ctx, cancel = context.WithCancel(context.Background())
+
+	randomNumber := time.Now().Unix() % 10000
+	namespace = "gloo-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
 
 	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())

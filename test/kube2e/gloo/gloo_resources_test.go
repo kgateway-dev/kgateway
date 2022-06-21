@@ -174,11 +174,11 @@ var _ = Describe("GlooResourcesTest", func() {
 			defaultNamespace = "default"
 			podServicePort   = 8080
 			secretName       = "api-ssl"
-			systemNamespace  = "gloo-system"
 		)
-		var virtualServiceYAML, upstreamYAML string
+		var systemNamespace, virtualServiceYAML, upstreamYAML string
 
 		BeforeEach(func() {
+			systemNamespace = namespace
 			createTLSPod(kubeClient, tlsName, defaultNamespace, systemNamespace, secretName, podServicePort)
 			upstreamName := fmt.Sprintf("%s-upstream", tlsName)
 			upstreamYAML = fmt.Sprintf(`
@@ -225,7 +225,7 @@ spec:
 
 			Expect(err).ToNot(HaveOccurred())
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				return upstreamClient.Read(systemNamespace, upstreamName, clients.ReadOpts{})
+				return virtualServiceClient.Read(systemNamespace, tlsName, clients.ReadOpts{})
 			}, "15s", "5s")
 		})
 
