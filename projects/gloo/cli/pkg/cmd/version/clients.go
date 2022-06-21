@@ -20,7 +20,8 @@ type ServerVersion interface {
 }
 
 type kube struct {
-	namespace string
+	namespace   string
+	kubeContext string
 }
 
 var (
@@ -29,14 +30,19 @@ var (
 	GlooEUniqueContainers   = []string{"gloo-ee"}
 )
 
-func NewKube(namespace string) *kube {
+func NewKube(namespace, kubeContext string) *kube {
 	return &kube{
-		namespace: namespace,
+		namespace:   namespace,
+		kubeContext: kubeContext,
 	}
 }
 
 func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 	cfg, err := kubeutils.GetConfig("", "")
+	if k.kubeContext != "" {
+		cfg, err = kubeutils.GetConfigWithContext("", "", k.kubeContext)
+	}
+
 	if err != nil {
 		// kubecfg is missing, therefore no cluster is present, only print client version
 		return nil, nil
