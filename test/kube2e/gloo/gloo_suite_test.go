@@ -2,23 +2,24 @@ package gloo_test
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/log"
 
-	"github.com/solo-io/gloo/test/helpers"
-
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -39,6 +40,7 @@ var (
 	testHelper *helper.SoloTestHelper
 	ctx        context.Context
 	cancel     context.CancelFunc
+	namespace  = defaults.GlooSystem
 )
 
 var _ = BeforeSuite(func() {
@@ -46,11 +48,13 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	ctx, cancel = context.WithCancel(context.Background())
 
-	randomNumber := time.Now().Unix() % 10000
+	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
+	Expect(err).NotTo(HaveOccurred())
+
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = "gloo-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
+		defaults.InstallNamespace = namespace
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -65,6 +69,8 @@ var _ = BeforeSuite(func() {
 	// Install Gloo
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valuesOverrideFile))
 	Expect(err).NotTo(HaveOccurred())
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 })
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {
