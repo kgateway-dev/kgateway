@@ -3,6 +3,7 @@ package gloo_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -20,6 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -50,9 +52,11 @@ var _ = Describe("GlooResourcesTest", func() {
 		proxyClient             gloov1.ProxyClient
 	)
 	BeforeEach(func() {
+		var err error
+		err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
+		Expect(err).NotTo(HaveOccurred())
 		ctx, cancel = context.WithCancel(context.Background())
 
-		var err error
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
