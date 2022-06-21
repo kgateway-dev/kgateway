@@ -3374,6 +3374,99 @@ var _ = Describe("Translator", func() {
 			table.Entry("When value=nil", nil, false))
 	})
 
+	//TODO: We could split this into a test file for clusters.go
+	Context("Protocol Options", func() {
+		It("when no value passed in upstream - cluster has default", func() {
+			name := "ProtocolOptionsTest2"
+			namespace := "gloo-system"
+			upstreamNoProtocol := &v1.Upstream{
+				Metadata: &core.Metadata{
+					Name:      name,
+					Namespace: namespace,
+				},
+				UpstreamType: &v1.Upstream_Static{
+					Static: &v1static.UpstreamSpec{
+						Hosts: []*v1static.Host{
+							{
+								Addr: "poTest1",
+								Port: 124,
+							},
+						},
+					},
+				},
+			}
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, upstreamNoProtocol)
+			translate()
+			clusters := snapshot.GetResources(types.ClusterTypeV3)
+			clusterResource := clusters.Items[fmt.Sprintf("%s_%s", name, namespace)]
+			Expect(clusterResource).ToNot(BeNil())
+			createdCluster := clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+			Expect(createdCluster).ToNot(BeNil())
+			Expect(createdCluster.ProtocolSelection).To(Equal(envoy_config_cluster_v3.Cluster_USE_CONFIGURED_PROTOCOL))
+		})
+
+		It("USE_CONFIGURED_PROTOCOL is passed and set on cluster", func() {
+			name := "ProtocolOptionsTest2"
+			namespace := "gloo-system"
+
+			upstreamConfiguredProtocol := &v1.Upstream{
+				Metadata: &core.Metadata{
+					Name:      name,
+					Namespace: namespace,
+				},
+				UpstreamType: &v1.Upstream_Static{
+					Static: &v1static.UpstreamSpec{
+						Hosts: []*v1static.Host{
+							{
+								Addr: "poTest2",
+								Port: 124,
+							},
+						},
+					},
+				},
+				ProtocolSelection: v1.Upstream_USE_CONFIGURED_PROTOCOL,
+			}
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, upstreamConfiguredProtocol)
+			translate()
+			clusters := snapshot.GetResources(types.ClusterTypeV3)
+			clusterResource := clusters.Items[fmt.Sprintf("%s_%s", name, namespace)]
+			Expect(clusterResource).ToNot(BeNil())
+			createdCluster := clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+			Expect(createdCluster).ToNot(BeNil())
+			Expect(createdCluster.ProtocolSelection).To(Equal(envoy_config_cluster_v3.Cluster_USE_CONFIGURED_PROTOCOL))
+		})
+
+		It("USE_DOWNSTREAM_PROTOCOL is passed and set on cluster", func() {
+			name := "ProtocolOptionsTest2"
+			namespace := "gloo-system"
+			upstreamDownstreamProtocol := &v1.Upstream{
+				Metadata: &core.Metadata{
+					Name:      name,
+					Namespace: namespace,
+				},
+				UpstreamType: &v1.Upstream_Static{
+					Static: &v1static.UpstreamSpec{
+						Hosts: []*v1static.Host{
+							{
+								Addr: "poTest3",
+								Port: 124,
+							},
+						},
+					},
+				},
+				ProtocolSelection: v1.Upstream_USE_DOWNSTREAM_PROTOCOL,
+			}
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, upstreamDownstreamProtocol)
+			translate()
+			clusters := snapshot.GetResources(types.ClusterTypeV3)
+			clusterResource := clusters.Items[fmt.Sprintf("%s_%s", name, namespace)]
+			Expect(clusterResource).ToNot(BeNil())
+			createdCluster := clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+			Expect(createdCluster).ToNot(BeNil())
+			Expect(createdCluster.ProtocolSelection).To(Equal(envoy_config_cluster_v3.Cluster_USE_DOWNSTREAM_PROTOCOL))
+		})
+	})
+
 })
 
 // The endpoint Cluster is now the UpstreamToClusterName-<hash of upstream> to facilitate
