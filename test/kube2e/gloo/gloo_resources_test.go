@@ -37,6 +37,7 @@ var _ = Describe("GlooResourcesTest", func() {
 	)
 	var (
 		ctx        context.Context
+		cancel     context.CancelFunc
 		cfg        *rest.Config
 		kubeClient kubernetes.Interface
 		cache      kube.SharedCache
@@ -161,6 +162,10 @@ var _ = Describe("GlooResourcesTest", func() {
 
 		_ = gloostatusutils.GetStatusClientForNamespace(testHelper.InstallNamespace)
 	})
+	AfterEach(func() {
+		cancel()
+	})
+
 	Context("rotating secrets on upstream sslConfig", func() {
 		const (
 			tlsName          = "tls-server"
@@ -169,10 +174,11 @@ var _ = Describe("GlooResourcesTest", func() {
 			secretName       = "api-ssl"
 			systemNamespace  = "gloo-system"
 		)
+		var virtualServiceYAML, upstreamYAML string
 
 		BeforeEach(func() {
 			createTLSPod(kubeClient, upstreamClient, tlsName, defaultNamespace, systemNamespace, secretName, podServicePort)
-			upstreamYAML := fmt.Sprintf(`
+			upstreamYAML = fmt.Sprintf(`
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
@@ -192,7 +198,7 @@ spec:
 `, tlsName, systemNamespace, podServicePort, secretName)
 			_, err := install.KubectlApplyOut([]byte(upstreamYAML))
 			Expect(err).ToNot(HaveOccurred())
-			virtualServiceYAML := fmt.Sprintf(`
+			virtualServiceYAML = fmt.Sprintf(`
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -214,19 +220,47 @@ spec:
 			_, err = install.KubectlApplyOut([]byte(virtualServiceYAML))
 			Expect(err).ToNot(HaveOccurred())
 		})
+
+		deleteResources := func() {
+			err := kubeClient.CoreV1().Pods(defaultNamespace).Delete(ctx, tlsName, metav1.DeleteOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			err = kubeClient.CoreV1().Secrets(systemNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			err = kubeClient.CoreV1().Services(defaultNamespace).Delete(ctx, tlsName, metav1.DeleteOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			err = kubeClient.CoreV1().ServiceAccounts(defaultNamespace).Delete(ctx, tlsName, metav1.DeleteOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			err = install.KubectlDelete([]byte(upstreamYAML))
+			Expect(err).ToNot(HaveOccurred())
+			err = install.KubectlDelete([]byte(virtualServiceYAML))
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		AfterEach(func() {
+			deleteResources()
+		})
+
 		It("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
+			// this test will call the upstream multiple times and confirm that the response from the upstream is not `no healthy upstream`
+			// the sslConfig should be rotated and given time to rotate in the upstream. There is a 15 second delay, that sometimes takes longer,
+			// for the upstream to fail. The fail happens randomly so the curl must happen multiple times.
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created so we can curl it
 			Eventually(func() (*gatewayv1.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 			rotateSecret(kubeClient, secretName, systemNamespace, false)
-			// sleep for rotating the first secret
-			time.Sleep(2 * time.Second)
+			// sleep for rotating the first secret, without this there could still be a `no healthy upstream`
+			time.Sleep(5 * time.Second)
 			// 22 seconds between rotation with the offset added as well
 			secondsForCurling := 22 * time.Second
+			// offset to add for longer curls, this might make the number of times performed increase
 			offset := 2 * time.Second
+			// time given for a single curl
 			timeForCurling := 5 * time.Second
+			// the number of times to perform the curl
+			timesToPerform := time.Duration(10)
+
 			curlPod := func() bool {
 				res, err := testHelper.Curl(helper.CurlOpts{
 					Protocol:          "http",
@@ -246,7 +280,7 @@ spec:
 			}
 			timeInBetweenRotation := secondsForCurling + timeForCurling + offset
 			// test it 10 time to ensure that the rotation works properly
-			ConsistentlyWithOffset(2, curlPod, timeInBetweenRotation*10, timeInBetweenRotation).Should(Equal(true))
+			ConsistentlyWithOffset(2, curlPod, timeInBetweenRotation*timesToPerform, timeInBetweenRotation).Should(Equal(true))
 		})
 	})
 })
