@@ -3841,7 +3841,7 @@ metadata:
         app: gloo
         gloo: rbac
     annotations:
-      "helm.sh/hook": pre-install
+      "helm.sh/hook": "pre-install,pre-upgrade"
       "helm.sh/hook-weight": "5"
 rules:
 - apiGroups: [""]
@@ -3863,7 +3863,7 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": "pre-install"
+    "helm.sh/hook": "pre-install,pre-upgrade"
     "helm.sh/hook-weight": "5"
 subjects:
 - kind: ServiceAccount
@@ -3886,7 +3886,7 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": "pre-install"
+    "helm.sh/hook": "pre-install,pre-upgrade"
     "helm.sh/hook-weight": "5"
   name: certgen
   namespace: ` + namespace + `
