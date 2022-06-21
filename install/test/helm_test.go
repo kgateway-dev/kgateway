@@ -13,24 +13,18 @@ import (
 	"github.com/onsi/gomega/format"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	values "github.com/solo-io/gloo/install/helm/gloo/generate"
-	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	"github.com/solo-io/k8s-utils/manifesttestutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-	test_matchers "github.com/solo-io/solo-kit/test/matchers"
 	appsv1 "k8s.io/api/apps/v1"
 	jobsv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -1776,49 +1770,91 @@ spec:
 					})
 
 					It("can render with custom listener yaml", func() {
-						newGatewayProxyName := "test-name"
-						vsList := []*core.ResourceRef{
-							{
-								Name:      "one",
-								Namespace: "one",
-							},
-						}
 						prepareMakefileFromValuesFile("values/val_custom_gateways.yaml")
-						for _, name := range []string{newGatewayProxyName, defaults.GatewayProxyName} {
-							name := name
-							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, name)
-							var gateway1 gwv1.Gateway
-							ConvertKubeResource(gatewayUns, &gateway1)
-							Expect(gateway1.UseProxyProto).To(test_matchers.MatchProto(&wrappers.BoolValue{
-								Value: true,
-							}))
-							httpGateway := gateway1.GetHttpGateway()
-							Expect(httpGateway).NotTo(BeNil())
-							var msgList []proto.Message
-							for _, v := range vsList {
-								msgList = append(msgList, v)
-							}
-							Expect(httpGateway.VirtualServices).To(test_matchers.ConsistOfProtos(msgList...))
-							gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, name+"-ssl")
-							ConvertKubeResource(gatewayUns, &gateway1)
-							Expect(gateway1.UseProxyProto).To(test_matchers.MatchProto(&wrappers.BoolValue{
-								Value: true,
-							}))
-							msgList = []proto.Message{}
-							for _, v := range vsList {
-								msgList = append(msgList, v)
-							}
-							Expect(httpGateway.VirtualServices).To(test_matchers.ConsistOfProtos(msgList...))
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						gwYamls := []string{`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
+spec:
+  bindAddress: "::"
+  bindPort: 8080
+  httpGateway:
+    virtualServices:
+    - name: one
+      namespace: one
+  useProxyProto: true
+  ssl: false
+  proxyNames:
+  - gateway-proxy`,
+							`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy-ssl
+  namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
+spec:
+  bindAddress: "::"
+  bindPort: 8443
+  httpGateway:
+    virtualServices:
+    - name: one
+      namespace: one
+  useProxyProto: true
+  ssl: true
+  proxyNames:
+  - gateway-proxy`,
+							`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: test-name
+  namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
+spec:
+  bindAddress: "::"
+  bindPort: 8081
+  httpGateway:
+    virtualServices:
+    - name: one
+      namespace: one
+  useProxyProto: true
+  ssl: false
+  proxyNames:
+  - test-name`,
+							`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: test-name-ssl
+  namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
+spec:
+  bindAddress: "::"
+  bindPort: 8444
+  httpGateway:
+    virtualServices:
+    - name: one
+      namespace: one
+  useProxyProto: true
+  ssl: true
+  proxyNames:
+  - test-name`}
+						for _, gwYaml := range gwYamls {
+							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
 						}
-
 					})
 				})
 
 				Context("Failover Gateway", func() {
-
-					var (
-						proxyNames = []string{defaults.GatewayProxyName}
-					)
 
 					It("renders with http/https gateways by default", func() {
 						prepareMakefile(namespace, helmValues{
@@ -1827,30 +1863,36 @@ spec:
 								"gatewayProxies.gatewayProxy.failover.port=15444",
 							},
 						})
-						gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName+"-failover")
-						var gateway1 gwv1.Gateway
-						ConvertKubeResource(gatewayUns, &gateway1)
-						Expect(gateway1.BindPort).To(Equal(uint32(15444)))
-						Expect(gateway1.ProxyNames).To(Equal(proxyNames))
-						Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
-						tcpGateway := gateway1.GetTcpGateway()
-						Expect(tcpGateway).NotTo(BeNil())
-						Expect(tcpGateway.GetTcpHosts()).To(HaveLen(1))
-						host := tcpGateway.GetTcpHosts()[0]
-						Expect(host.GetSslConfig()).To(test_matchers.MatchProto(&gloov1.SslConfig{
-							SslSecrets: &gloov1.SslConfig_SecretRef{
-								SecretRef: &core.ResourceRef{
-									Name:      "failover-downstream",
-									Namespace: namespace,
-								},
-							},
-						}))
-						Expect(host.GetDestination().GetForwardSniClusterName()).To(test_matchers.MatchProto(&empty.Empty{}))
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						gwYaml := `apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: ` + defaults.GatewayProxyName + "-failover" + `
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+    created_by: gloo-install
+spec:
+  bindAddress: "` + defaults.GatewayBindAddress + `"
+  bindPort: 15444
+  tcpGateway:
+    tcpHosts:
+    - name: failover
+      sslConfig:
+        secretRef:
+          name: failover-downstream
+          namespace: gloo-system
+      destination:
+        forwardSniClusterName: {}
+  proxyNames:
+  - ` + defaults.GatewayProxyName
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
 					})
 
 					It("by default will not render failover gateway", func() {
 						prepareMakefile(namespace, helmValues{})
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-failover").To(BeNil())
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(defaults.GatewayProxyName + "-failover"))
 					})
 
 				})
@@ -1866,10 +1908,18 @@ spec:
 							})
 						})
 						It("uses default values for the gateway", func() {
-							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
-							var customGateway gwv1.Gateway
-							ConvertKubeResource(gatewayUns, &customGateway)
-							Expect(customGateway.BindPort).To(Equal(defaults.DefaultGateway(namespace).BindPort))
+							job := getJob(testManifest, namespace, "gloo-resource-rollout")
+							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: another-gateway-proxy
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+    created_by: gloo-install
+spec:
+  bindAddress: "` + defaults.GatewayBindAddress + `"
+  bindPort: 8080`))
 						})
 						It("uses default values for the deployment", func() {
 							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
@@ -1909,10 +1959,18 @@ spec:
 							})
 						})
 						It("uses merged values for the gateway", func() {
-							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
-							var customGateway gwv1.Gateway
-							ConvertKubeResource(gatewayUns, &customGateway)
-							Expect(customGateway.BindPort).To(Equal(uint32(9999)))
+							job := getJob(testManifest, namespace, "gloo-resource-rollout")
+							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: another-gateway-proxy
+  namespace: ` + namespace + `
+  labels:
+    app: gloo
+    created_by: gloo-install
+spec:
+  bindAddress: "` + defaults.GatewayBindAddress + `"
+  bindPort: 9999`))
 						})
 						It("uses merged values for the deployment", func() {
 							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
@@ -1978,18 +2036,61 @@ spec:
 						})
 					})
 					It("correctly merges custom gatewayproxy values", func() {
-						testManifest.Expect("Gateway", namespace, "gateway-proxy").To(BeNil())
-						testManifest.Expect("Gateway", namespace, "first-gateway-proxy").To(BeNil())
-						firstGatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, "first-gateway-proxy-ssl")
-						var firstGateway gwv1.Gateway
-						ConvertKubeResource(firstGatewayUns, &firstGateway)
-						Expect(firstGateway.GetHttpGateway().VirtualServiceSelector).To(HaveKeyWithValue("gateway", "first"))
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: ` + namespace))
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: first-gateway-proxy
+  namespace: ` + namespace))
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: second-gateway-proxy
+  namespace: ` + namespace))
 
-						testManifest.Expect("Gateway", namespace, "second-gateway-proxy").To(BeNil())
-						secondGatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, "second-gateway-proxy-ssl")
-						var secondGateway gwv1.Gateway
-						ConvertKubeResource(secondGatewayUns, &secondGateway)
-						Expect(secondGateway.GetHttpGateway().VirtualServiceSelector).To(HaveKeyWithValue("gateway", "second"))
+						gwSslYaml1 := `apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: first-gateway-proxy-ssl
+  namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
+spec:
+  bindAddress: "::"
+  bindPort: 8443
+  httpGateway:
+    virtualServiceSelector:
+      gateway: first
+  useProxyProto: false
+  ssl: true
+  proxyNames:
+  - first-gateway-proxy`
+						gwSslYaml2 := `apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: second-gateway-proxy-ssl
+  namespace: gloo-system
+  labels:
+    app: gloo
+    created_by: gloo-install
+spec:
+  bindAddress: "::"
+  bindPort: 8443
+  httpGateway:
+    virtualServiceSelector:
+      gateway: second
+  useProxyProto: false
+  ssl: true
+  proxyNames:
+  - second-gateway-proxy`
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml1))
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml2))
 					})
 				})
 
