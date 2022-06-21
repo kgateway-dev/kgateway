@@ -64,9 +64,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
@@ -909,7 +909,7 @@ func startRestXdsServer(opts bootstrap.Opts) {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx),
 		opts.ControlPlane.XDSServer,
 		map[string]string{
-			resource.FetchEndpointsV3: resource.EndpointTypeV3,
+			types.FetchEndpointsV3: types.EndpointTypeV3,
 		},
 	)
 	restXdsAddr := opts.Settings.GetGloo().GetRestXdsBindAddr()

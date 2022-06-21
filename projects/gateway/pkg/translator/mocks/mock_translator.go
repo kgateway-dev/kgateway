@@ -11,6 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v10 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloosnapshot "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	reporter "github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
@@ -38,7 +39,7 @@ func (m *MockTranslator) EXPECT() *MockTranslatorMockRecorder {
 }
 
 // Translate mocks base method.
-func (m *MockTranslator) Translate(arg0 context.Context, arg1 string, arg2 *v1.ApiSnapshot, arg3 v1.GatewayList) (*v10.Proxy, reporter.ResourceReports) {
+func (m *MockTranslator) Translate(arg0 context.Context, arg1 string, arg2 *gloosnapshot.ApiSnapshot, arg3 v1.GatewayList) (*v10.Proxy, reporter.ResourceReports) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Translate", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*v10.Proxy)

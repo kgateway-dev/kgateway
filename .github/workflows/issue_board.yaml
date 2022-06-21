@@ -14,7 +14,7 @@ jobs:
         with:
           project-url: https://github.com/orgs/solo-io/projects/22
           github-token: ${{ secrets.ORG_CROSS_REPO }}
-          labeled: "Type: Enhancement", "Type: Bug"
+          labeled: "Type: Enhancement,Type: Bug"
           label-operator: OR
       - uses: actions/add-to-project@main
         with:
