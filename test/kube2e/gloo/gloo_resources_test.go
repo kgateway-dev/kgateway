@@ -16,11 +16,13 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
+	soloKube "github.com/solo-io/k8s-utils/testutils/kube"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -177,25 +179,26 @@ var _ = Describe("GlooResourcesTest", func() {
 		var virtualServiceYAML, upstreamYAML string
 
 		BeforeEach(func() {
-			createTLSPod(kubeClient, upstreamClient, tlsName, defaultNamespace, systemNamespace, secretName, podServicePort)
+			createTLSPod(kubeClient, tlsName, defaultNamespace, systemNamespace, secretName, podServicePort)
+			upstreamName := fmt.Sprintf("%s-upstream", tlsName)
 			upstreamYAML = fmt.Sprintf(`
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
-  name: %[1]s-upstream
-  namespace: %[2]s
+  name: %[1]s
+  namespace: %[3]s
 spec:
   kube:
     selector:
-      app: %[1]s
-    serviceName: %[1]s
+      app: %[2]s
+    serviceName: %[2]s
     serviceNamespace: default
-    servicePort: %[3]d
+    servicePort: %[4]d
   sslConfig:
     secretRef:
-      name: %[4]s
-      namespace: %[2]s
-`, tlsName, systemNamespace, podServicePort, secretName)
+      name: %[5]s
+      namespace: %[3]s
+`, upstreamName, tlsName, systemNamespace, podServicePort, secretName)
 			_, err := install.KubectlApplyOut([]byte(upstreamYAML))
 			Expect(err).ToNot(HaveOccurred())
 			virtualServiceYAML = fmt.Sprintf(`
@@ -218,7 +221,11 @@ spec:
             namespace: %s
 `, tlsName, systemNamespace, tlsName, systemNamespace)
 			_, err = install.KubectlApplyOut([]byte(virtualServiceYAML))
+
 			Expect(err).ToNot(HaveOccurred())
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				return upstreamClient.Read(systemNamespace, upstreamName, clients.ReadOpts{})
+			}, "15s", "5s")
 		})
 
 		deleteResources := func() {
@@ -240,7 +247,7 @@ spec:
 			deleteResources()
 		})
 
-		It("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
+		FIt("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
 			// this test will call the upstream multiple times and confirm that the response from the upstream is not `no healthy upstream`
 			// the sslConfig should be rotated and given time to rotate in the upstream. There is a 15 second delay, that sometimes takes longer,
 			// for the upstream to fail. The fail happens randomly so the curl must happen multiple times.
@@ -249,16 +256,14 @@ spec:
 			Eventually(func() (*gatewayv1.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
-			rotateSecret(kubeClient, secretName, systemNamespace, false)
-			// sleep for rotating the first secret, without this there could still be a `no healthy upstream`
-			time.Sleep(5 * time.Second)
+
 			// 22 seconds between rotation with the offset added as well
 			secondsForCurling := 22 * time.Second
 			// offset to add for longer curls, this might make the number of times performed increase
 			offset := 2 * time.Second
 			// time given for a single curl
 			timeForCurling := 5 * time.Second
-			// the number of times to perform the curl
+			// eventually the `no healthy upstream` will occur
 			timesToPerform := time.Duration(10)
 
 			curlPod := func() bool {
@@ -279,13 +284,12 @@ spec:
 				return true
 			}
 			timeInBetweenRotation := secondsForCurling + timeForCurling + offset
-			// test it 10 time to ensure that the rotation works properly
-			ConsistentlyWithOffset(2, curlPod, timeInBetweenRotation*timesToPerform, timeInBetweenRotation).Should(Equal(true))
+			Consistently(curlPod, timeInBetweenRotation*timesToPerform, timeInBetweenRotation).Should(Equal(true))
 		})
 	})
 })
 
-func createTLSPod(kubeClient kubernetes.Interface, upstreamClient gloov1.UpstreamClient, tlsName, defaultNamespace, secretNamespace, secretName string, podServicePort int) {
+func createTLSPod(kubeClient kubernetes.Interface, tlsName, defaultNamespace, secretNamespace, secretName string, podServicePort int) {
 	tlsPodSchema := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      tlsName,
@@ -339,8 +343,7 @@ func createTLSPod(kubeClient kubernetes.Interface, upstreamClient gloov1.Upstrea
 	_, err = kubeClient.CoreV1().Pods(defaultNamespace).Create(ctx, &tlsPodSchema, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	rotateSecret(kubeClient, secretName, secretNamespace, true)
-	// sleep to allow the pod to be registered
-	time.Sleep(10 * time.Second)
+	soloKube.WaitUntilPodsRunning(ctx, 15*time.Second, defaultNamespace, tlsName)
 }
 
 func rotateSecret(kubeClient kubernetes.Interface, secretName, secretNamespace string, create bool) {
