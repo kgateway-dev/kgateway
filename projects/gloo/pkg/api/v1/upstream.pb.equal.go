@@ -106,16 +106,6 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetConnectionConfig()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetConnectionConfig()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetConnectionConfig(), target.GetConnectionConfig()) {
-			return false
-		}
-	}
-
 	if len(m.GetHealthChecks()) != len(target.GetHealthChecks()) {
 		return false
 	}
@@ -143,22 +133,36 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetUseHttp2()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetUseHttp2()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetUseHttp2(), target.GetUseHttp2()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetFailover()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetFailover()) {
 			return false
 		}
 	} else {
 		if !proto.Equal(m.GetFailover(), target.GetFailover()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetConnectionConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConnectionConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetConnectionConfig(), target.GetConnectionConfig()) {
+			return false
+		}
+	}
+
+	if m.GetProtocolSelection() != target.GetProtocolSelection() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetUseHttp2()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUseHttp2()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUseHttp2(), target.GetUseHttp2()) {
 			return false
 		}
 	}
