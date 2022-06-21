@@ -1319,15 +1319,29 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways=true"},
 						})
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: ` + defaults.GatewayProxyName + `
+  namespace: ` + namespace))
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: ` + defaults.GatewayProxyName + `-ssl
+  namespace: ` + namespace))
 					})
 
 					It("can disable http gateway", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway=true"},
 						})
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: ` + defaults.GatewayProxyName + `
+  namespace: ` + namespace))
 					})
 
 					It("disabling http gateway disables corresponding service port", func() {
@@ -1367,7 +1381,12 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpsGateway=true"},
 						})
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
+						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: ` + defaults.GatewayProxyName + `-ssl
+  namespace: ` + namespace))
 					})
 
 					It("disabling https gateway disables corresponding service port", func() {
@@ -5484,15 +5503,23 @@ metadata:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.spec.ssl=false"},
 					})
-					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-						if u.GetKind() == "Gateway" && u.GetName() == "gateway-proxy-ssl" {
-							a := getFieldFromUnstructured(u, "spec", "ssl")
-							Expect(a).To(Equal(false))
-							return true
-						}
-						return false
-					})
-					Expect(resources.NumResources()).To(Equal(1))
+					job := getJob(testManifest, namespace, "gloo-resource-rollout")
+					Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+    created_by: gloo-install
+  name: gateway-proxy-ssl
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8443
+  httpGateway: {}
+  proxyNames:
+  - gateway-proxy
+  ssl: false
+  useProxyProto: false`))
 				})
 			})
 
