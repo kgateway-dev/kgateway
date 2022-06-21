@@ -46,7 +46,7 @@ var _ = Describe("Kube2e: helm", func() {
 	It("uses helm to upgrade to this gloo version without errors", func() {
 
 		By("should start with gloo version 1.3.0")
-		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal("1.3.0"))
+		Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal("1.3.0"))
 
 		By("apply new `RateLimitConfig` CRD")
 		runAndCleanCommand("kubectl", "apply", "-f", rlcCrdTemplateName)
@@ -75,7 +75,7 @@ var _ = Describe("Kube2e: helm", func() {
 			"-n", testHelper.InstallNamespace)
 
 		By("should have upgraded to the gloo version being tested")
-		Expect(GetGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
+		Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
 
 		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "180s")
 	})
@@ -95,7 +95,7 @@ var _ = Describe("Kube2e: helm", func() {
 				"-n", testHelper.InstallNamespace,
 				"--set", "settings.replaceInvalidRoutes=true",
 				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400",
-				"--version", GetGlooServerVersion(ctx, testHelper.InstallNamespace))
+				"--version", getGlooServerVersion(ctx, testHelper.InstallNamespace))
 		} else { // has already upgraded to the chart being tested- use it
 			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
 				"-n", testHelper.InstallNamespace,
@@ -125,7 +125,7 @@ var _ = Describe("Kube2e: helm", func() {
 			runAndCleanCommand("helm", "upgrade", "gloo", "gloo/gloo",
 				"-n", testHelper.InstallNamespace,
 				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000",
-				"--version", GetGlooServerVersion(ctx, testHelper.InstallNamespace))
+				"--version", getGlooServerVersion(ctx, testHelper.InstallNamespace))
 		} else { // has already upgraded to the chart being tested- use it
 			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
 				"-n", testHelper.InstallNamespace,
