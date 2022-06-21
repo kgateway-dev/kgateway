@@ -4,3 +4,4 @@ changelog:
     dependencyTag: v0.28.3
     description: Update solo-kit to version v0.28.3
     type: DEPENDENCY_BUMP
+
