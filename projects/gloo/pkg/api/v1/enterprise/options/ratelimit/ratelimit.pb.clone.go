@@ -76,6 +76,8 @@ func (m *Settings) Clone() proto.Message {
 
 	target.DenyOnFail = m.GetDenyOnFail()
 
+	target.EnableXRatelimitHeaders = m.GetEnableXRatelimitHeaders()
+
 	target.RateLimitBeforeAuth = m.GetRateLimitBeforeAuth()
 
 	return target

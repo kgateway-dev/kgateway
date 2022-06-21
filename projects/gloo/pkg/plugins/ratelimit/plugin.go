@@ -144,7 +144,8 @@ func GenerateEnvoyHttpFilterConfig(serverSettings *ratelimit.Settings) *envoy_ex
 		CustomDomain,
 		rateLimitStage,
 		serverSettings.GetRequestTimeout(),
-		serverSettings.GetDenyOnFail())
+		serverSettings.GetDenyOnFail(),
+		serverSettings.GetEnableXRatelimitHeaders())
 }
 
 func GetRateLimitStageForServerSettings(serverSettings *ratelimit.Settings) uint32 {

@@ -15,6 +15,7 @@ func GenerateEnvoyConfigForFilterWith(
 	stage uint32,
 	timeout *duration.Duration,
 	denyOnFail bool,
+	enableXRatelimitHeaders bool,
 ) *envoyratelimit.RateLimit {
 	var svc *envoycore.GrpcService
 	svc = &envoycore.GrpcService{TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
@@ -27,12 +28,17 @@ func GenerateEnvoyConfigForFilterWith(
 	if timeout != nil {
 		curtimeout = timeout
 	}
+	xrlHeaders := envoyratelimit.RateLimit_OFF
+	if enableXRatelimitHeaders {
+		xrlHeaders = envoyratelimit.RateLimit_DRAFT_VERSION_03
+	}
 	envoyrl := envoyratelimit.RateLimit{
-		Domain:          domain,
-		Stage:           stage,
-		RequestType:     RequestType,
-		Timeout:         curtimeout,
-		FailureModeDeny: denyOnFail,
+		Domain:                  domain,
+		Stage:                   stage,
+		RequestType:             RequestType,
+		Timeout:                 curtimeout,
+		FailureModeDeny:         denyOnFail,
+		EnableXRatelimitHeaders: xrlHeaders,
 
 		RateLimitService: &rlconfig.RateLimitServiceConfig{
 			TransportApiVersion: envoycore.ApiVersion_V3,

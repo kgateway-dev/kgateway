@@ -721,6 +721,8 @@ spec:
                               properties:
                                 denyOnFail:
                                   type: boolean
+                                enableXRatelimitHeaders:
+                                  type: boolean
                                 rateLimitBeforeAuth:
                                   type: boolean
                                 ratelimitServerRef:
@@ -6824,6 +6826,8 @@ spec:
                                       ratelimitServer:
                                         properties:
                                           denyOnFail:
+                                            type: boolean
+                                          enableXRatelimitHeaders:
                                             type: boolean
                                           rateLimitBeforeAuth:
                                             type: boolean

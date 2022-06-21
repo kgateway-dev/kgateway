@@ -114,6 +114,10 @@ func (m *Settings) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetEnableXRatelimitHeaders() != target.GetEnableXRatelimitHeaders() {
+		return false
+	}
+
 	if m.GetRateLimitBeforeAuth() != target.GetRateLimitBeforeAuth() {
 		return false
 	}
