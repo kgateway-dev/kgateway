@@ -110,25 +110,12 @@ By setting the `gloo.solo.io/upstream_config.deep_merge` annotation to `true` on
 
 You can consistently configure upstreams with the global annotations setting (`Settings.UpstreamOptions.globalAnnotations`).
 
-Keep in mind a few things about how global annotations work:
+When using global annotations, keep in mind the following considerations:
 * To overwrite global annotations for an upstream, define the same annotation key with a different value on the Kubernetes service. For possible upstream annotations to set, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/" >}}).
 * You can use the merge strategy annotation `gloo.solo.io/upstream_config.deep_merge` for global annotations.
 * You cannot set an [SSL global annotation]({{< versioned_link_path fromRoot="/guides/security/tls/client_tls_service_annotations/" >}}) with the prefix `gloo.solo.io/sslService`.
 
-Review the following example configuration. For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#upstreamoptions" >}}).
-
-In the Gloo Edge settings, two global annotations are defined:
-* `"initial_stream_window_size": 1024`
-* `"max_concurrent_streams": 64`
-
-In the Kubernetes service, two annotations are defined:
-* `"initial_stream_window_size": 2048`
-* `"use_http2": false`
-
-The resulting upstream for the service has the following annotations configured:
-* `"initial_stream_window_size": 2048`, the value in the service overwrites the global value.
-* `"use_http2": false`, the annotation from the service.
-* `"max_concurrent_streams": 64`, the global annotation set across upstreams.
+Review the following example configuration and description. For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#upstreamoptions" >}}).
 
 ```yaml
 # Gloo Edge Settings configuration
@@ -142,3 +129,16 @@ metadata:
   annotations:
     gloo.solo.io/upstream_config: '{"use_http2": false, "initial_stream_window_size": 2048}'
 ```
+
+In the Gloo Edge settings, two global annotations are defined:
+* `"initial_stream_window_size": 1024`
+* `"max_concurrent_streams": 64`
+
+In the Kubernetes service, two annotations are defined:
+* `"initial_stream_window_size": 2048`
+* `"use_http2": false`
+
+The resulting upstream for the service has the following annotations configured:
+* `"initial_stream_window_size": 2048`, the value in the service overwrites the global value.
+* `"use_http2": false`, the annotation from the service.
+* `"max_concurrent_streams": 64`, the global annotation set across upstreams.
