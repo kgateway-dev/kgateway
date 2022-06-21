@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6521
+    resolvesIssue: false
+    description: Add protocol selection to upstream crd with validation
