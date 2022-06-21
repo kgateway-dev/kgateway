@@ -201,25 +201,26 @@ spec:
 `, upstreamName, tlsName, systemNamespace, podServicePort, secretName)
 			_, err := install.KubectlApplyOut([]byte(upstreamYAML))
 			Expect(err).ToNot(HaveOccurred())
+			hostName := defaults.GatewayProxyName
 			virtualServiceYAML = fmt.Sprintf(`
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: %s
-  namespace: %s
+  name: %[1]s
+  namespace: %[2]s
 spec:
   virtualHost:
     domains:
-    - "*"
+    - "%[3]s"
     routes:
     - matchers:
       - prefix: /
       routeAction:
         single:
           upstream:
-            name: %s-upstream 
-            namespace: %s
-`, tlsName, systemNamespace, tlsName, systemNamespace)
+            name: %[4]s 
+            namespace: %[2]s
+`, tlsName, systemNamespace, hostName, upstreamName)
 			_, err = install.KubectlApplyOut([]byte(virtualServiceYAML))
 
 			Expect(err).ToNot(HaveOccurred())
@@ -247,7 +248,7 @@ spec:
 			deleteResources()
 		})
 
-		FIt("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
+		It("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
 			// this test will call the upstream multiple times and confirm that the response from the upstream is not `no healthy upstream`
 			// the sslConfig should be rotated and given time to rotate in the upstream. There is a 15 second delay, that sometimes takes longer,
 			// for the upstream to fail. The fail happens randomly so the curl must happen multiple times.
