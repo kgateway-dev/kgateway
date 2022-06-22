@@ -52,6 +52,10 @@ func main() {
 			JsonSchemaTool:               "protoc",
 			RemoveDescriptionsFromSchema: true,
 			EnumAsIntOrString:            true,
+			MessagesWithEmptySchema: []string{
+				"core.solo.io.Status",
+				"ratelimit.api.solo.io.Descriptor",
+			},
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {
