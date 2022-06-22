@@ -121,6 +121,7 @@ func (t *translatorInstance) Translate(
 	proxyReport := validation.MakeReport(proxy)
 
 	// execute translation of listener and cluster subsystems
+	// during these translations, params.messages is side effected for the reports to use later in this loop
 	clusters, endpoints := t.translateClusterSubsystemComponents(params, proxy, reports)
 	routeConfigs, listeners := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
 
