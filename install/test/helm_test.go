@@ -5480,11 +5480,15 @@ metadata:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append(args, extraArgs...),
 					})
+					job := getJob(testManifest, namespace, "gloo-resource-rollout")
 					// We are overriding the generated yaml by adding our own label to the metadata
 					resources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetLabels()["overriddenLabel"] == "label" && resource.GetKind() != ""
 					})
-					Expect(resources.NumResources()).To(Equal(len(proxies)))
+					countFromResources := resources.NumResources()
+					// gloo custom resources are applied by a job so don't appear in the resources count.
+					countFromJob := strings.Count(job.Spec.Template.Spec.Containers[0].Command[2], "overriddenLabel: label")
+					Expect(countFromResources + countFromJob).To(Equal(len(proxies)))
 				},
 					Entry("7-gateway-proxy-deployment", "kubeResourceOverride", nil),
 					Entry("8-default-gateways httpGateway", "gatewaySettings.httpGatewayKubeOverride", nil),
@@ -5603,26 +5607,30 @@ spec:
 		})
 
 		// Lines ending with whitespace causes malformatted config map (https://github.com/solo-io/gloo/issues/4645)
-		It("ConfigMaps should not containing trailing whitespace", func() {
+		It("should not contain trailing whitespace", func() {
 			out, err := exec.Command("helm", "template", "../helm/gloo").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 
 			lines := strings.Split(string(out), "\n")
 			// more descriptive fail message that prints out the manifest that includes the trailing whitespace
 			manifestStartingLine := 0
-			// only check ConfigMaps
-			isConfigMap := false
+			skip := false
 			for idx, line := range lines {
-				if strings.Contains(line, "kind: ConfigMap") {
-					isConfigMap = true
-					continue
-				}
 				if strings.Contains(line, "---") {
 					manifestStartingLine = idx
-					isConfigMap = false
 					continue
 				}
-				if isConfigMap && strings.TrimRightFunc(line, unicode.IsSpace) != line {
+				// skip all the content within kubectl apply commands (used in the rollout job)
+				// since there is extra whitespace that can't be removed
+				if strings.Contains(line, "kubectl apply -f - <<EOF") {
+					skip = true
+					continue
+				}
+				if strings.TrimSpace(line) == "EOF" {
+					skip = false
+					continue
+				}
+				if !skip && strings.TrimRightFunc(line, unicode.IsSpace) != line {
 					Fail(strings.Join(lines[manifestStartingLine:idx+1], "\n") + "\n last line has whitespace")
 				}
 			}
