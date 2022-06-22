@@ -50,11 +50,11 @@ require (
 	github.com/solo-io/go-utils v0.21.26
 	github.com/solo-io/k8s-utils v0.1.0
 	github.com/solo-io/protoc-gen-ext v0.0.16
-	github.com/solo-io/protoc-gen-openapi v0.0.5-0.20220616214016-c23629b699a4
+	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.21.6
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
-	github.com/solo-io/solo-kit v0.28.2-0.20220616231721-a2b8e752cb31
+	github.com/solo-io/solo-kit v0.29.1
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
