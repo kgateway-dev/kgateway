@@ -121,6 +121,7 @@ func (t *translatorInstance) Translate(
 	proxyReport := validation.MakeReport(proxy)
 
 	// execute translation of listener and cluster subsystems
+	// during these translations, params.messages is side effected for the reports to use later in this loop
 	clusters, endpoints := t.translateClusterSubsystemComponents(params, proxy, reports)
 	routeConfigs, listeners := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
 
@@ -146,6 +147,13 @@ func (t *translatorInstance) Translate(
 	if warnings := validation.GetProxyWarning(proxyReport); len(warnings) > 0 {
 		for _, warning := range warnings {
 			reports.AddWarning(proxy, warning)
+		}
+	}
+
+	messagesMap := params.Messages
+	if len(messagesMap) > 0 {
+		for _, messages := range messagesMap {
+			reports.AddMessages(proxy, messages...)
 		}
 	}
 
