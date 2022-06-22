@@ -3667,230 +3667,25 @@ spec:
 						testManifest.ExpectUnstructured(gwDeployment.GetKind(), gwDeployment.GetNamespace(), gwDeployment.GetName()).To(BeEquivalentTo(gwDeployment))
 					})
 
-					Context("gloo rollout and cleanup jobs", func() {
-						rolloutJob := makeUnstructured(`
-apiVersion: batch/v1
-kind: Job
-metadata:
-  labels:
-    app: gloo
-    gloo: resource-rollout
-  name: gloo-resource-rollout
-  namespace: ` + namespace + `
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "5"
-    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
-spec:
-  template:
-    metadata:
-      labels:
-        gloo: resource-rollout
-    spec:
-      serviceAccountName: gloo-resource-rollout
-      containers:
-        - name: kubectl
-          image: bitnami/kubectl:1.2.3
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 10101
-          command:
-          - /bin/sh
-          - -c
-          - |
-            kubectl rollout status deployment -n ` + namespace + ` gloo
+					Context("custom resource lifecycle", func() {
+						It("creates migration, rollout, and cleanup jobs", func() {
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{}})
 
-            kubectl apply -f - <<EOF
-            ---
-            apiVersion: gateway.solo.io/v1
-            kind: Gateway
-            metadata:
-              name: gateway-proxy
-              namespace: gloo-system
-              labels:
-                app: gloo
-                created_by: gloo-install
-            spec:
-              bindAddress: "::"
-              bindPort: 8080
-              httpGateway: {}
-              useProxyProto: false
-              ssl: false
-              proxyNames:
-              - gateway-proxy
-            ---
-            apiVersion: gateway.solo.io/v1
-            kind: Gateway
-            metadata:
-              name: gateway-proxy-ssl
-              namespace: gloo-system
-              labels:
-                app: gloo
-                created_by: gloo-install
-            spec:
-              bindAddress: "::"
-              bindPort: 8443
-              httpGateway: {}
-              useProxyProto: false
-              ssl: true
-              proxyNames:
-              - gateway-proxy
-            EOF
-      restartPolicy: Never
-  ttlSecondsAfterFinished: 0
-`)
-						cleanupJob := makeUnstructured(`
-apiVersion: batch/v1
-kind: Job
-metadata:
-  labels:
-    app: gloo
-    gloo: resource-cleanup
-  name: gloo-resource-cleanup
-  namespace: ` + namespace + `
-  annotations:
-    "helm.sh/hook": post-delete
-    "helm.sh/hook-weight": "5"
-    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
-spec:
-  template:
-    metadata:
-      labels:
-        gloo: resource-cleanup
-    spec:
-      serviceAccountName: gloo-resource-cleanup
-      containers:
-        - name: kubectl
-          image: bitnami/kubectl:1.22.9
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 10101
-          command:
-          - /bin/sh
-          - -c
-          - |
-            kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-` + namespace + `
-            kubectl delete gateways.gateway.solo.io -n ` + namespace + ` -l created_by=gloo-install
-            kubectl delete upstreams.gloo.solo.io -n ` + namespace + ` -l created_by=gloo-install
-      restartPolicy: Never
-  ttlSecondsAfterFinished: 0
-`)
-						It("creates jobs when failurePolicy=Fail", func() {
-							prepareMakefile(namespace, helmValues{valuesArgs: []string{
-								"gateway.validation.failurePolicy=Fail",
-								"gateway.rolloutJob.image.tag=1.2.3",
-							}})
+							// getJob will fail if the job doesn't exist
+							_ = getJob(testManifest, namespace, "gloo-resource-migration")
+							_ = getJob(testManifest, namespace, "gloo-resource-cleanup")
 
-							// when gateway validation is enabled and failurePolicy is Fail, rollout and cleanup jobs should be created
-							testManifest.ExpectUnstructured(rolloutJob.GetKind(), rolloutJob.GetNamespace(), rolloutJob.GetName()).To(BeEquivalentTo(rolloutJob))
-							testManifest.ExpectUnstructured(cleanupJob.GetKind(), cleanupJob.GetNamespace(), cleanupJob.GetName()).To(BeEquivalentTo(cleanupJob))
-
-							// additionally, the default gateways should have a post-install/post-upgrade annotation
-							// so that they get created after the rollout job completes
-							gateway := makeUnstructured(`
-apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: gateway-proxy
-  namespace: ` + namespace + `
-  labels:
-    app: gloo
-    created_by: gloo-install
-    "app.kubernetes.io/managed-by": Helm
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "10"
-    "meta.helm.sh/release-name": gloo
-    "meta.helm.sh/release-namespace": gloo-system
-spec:
-  bindAddress: "::"
-  bindPort: 8080
-  httpGateway: {}
-  useProxyProto: false
-  ssl: false
-  proxyNames:
-  - gateway-proxy
-`)
-							testManifest.ExpectUnstructured(gateway.GetKind(), gateway.GetNamespace(), gateway.GetName()).To(BeEquivalentTo(gateway))
-
-							sslGateway := makeUnstructured(`
-apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: gateway-proxy-ssl
-  namespace: ` + namespace + `
-  labels:
-    app: gloo
-    created_by: gloo-install
-    "app.kubernetes.io/managed-by": Helm
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "10"
-    "meta.helm.sh/release-name": gloo
-    "meta.helm.sh/release-namespace": gloo-system
-spec:
-  bindAddress: "::"
-  bindPort: 8443
-  httpGateway: {}
-  useProxyProto: false
-  ssl: true
-  proxyNames:
-  - gateway-proxy
-`)
-							testManifest.ExpectUnstructured(sslGateway.GetKind(), sslGateway.GetNamespace(), sslGateway.GetName()).To(BeEquivalentTo(sslGateway))
+							// rollout job should wait for deployment
+							rolloutJob := getJob(testManifest, namespace, "gloo-resource-rollout")
+							Expect(rolloutJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("kubectl rollout"))
 						})
 
-						It("does not create job when failurePolicy=Ignore", func() {
+						It("does not wait for deployment when validation webhook is disabled", func() {
 							prepareMakefile(namespace, helmValues{valuesArgs: []string{
-								"gateway.validation.failurePolicy=Ignore",
+								"gateway.validation.webhook.enabled=false",
 							}})
-
-							// when failurePolicy=Ignore, we do not need to wait on the validation service being ready before applying custom resources,
-							// so the rollout job should not exist
-							testManifest.ExpectUnstructured(rolloutJob.GetKind(), rolloutJob.GetNamespace(), rolloutJob.GetName()).To(BeNil())
-							testManifest.ExpectUnstructured(cleanupJob.GetKind(), cleanupJob.GetNamespace(), cleanupJob.GetName()).To(BeNil())
-
-							// the default gateways should not have the helm hook annotations because they don't need to be applied in a specific order
-							// in relation to the rollout job
-							gateway := makeUnstructured(`
-apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: gateway-proxy
-  namespace: ` + namespace + `
-  labels:
-    app: gloo
-spec:
-  bindAddress: "::"
-  bindPort: 8080
-  httpGateway: {}
-  useProxyProto: false
-  ssl: false
-  proxyNames:
-  - gateway-proxy
-`)
-							testManifest.ExpectUnstructured(gateway.GetKind(), gateway.GetNamespace(), gateway.GetName()).To(BeEquivalentTo(gateway))
-
-							sslGateway := makeUnstructured(`
-apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: gateway-proxy-ssl
-  namespace: ` + namespace + `
-  labels:
-    app: gloo
-spec:
-  bindAddress: "::"
-  bindPort: 8443
-  httpGateway: {}
-  useProxyProto: false
-  ssl: true
-  proxyNames:
-  - gateway-proxy
-`)
-							testManifest.ExpectUnstructured(sslGateway.GetKind(), sslGateway.GetNamespace(), sslGateway.GetName()).To(BeEquivalentTo(sslGateway))
+							job := getJob(testManifest, namespace, "gloo-resource-rollout")
+							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("kubectl rollout"))
 						})
 					})
 
