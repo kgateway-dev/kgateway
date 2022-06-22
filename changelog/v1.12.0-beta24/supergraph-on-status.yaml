@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/3338
+    description: Add messages to status proto (for the immediate purpose of writing the stitched schema to the status field of gateway schema resources)
+  - type: DEPENDENCY_BUMP
+    description: Bumped the version of protoc-gen-openapi due to bumping solo-kit to pick up status struct changes
+    dependencyOwner: solo-io
+    dependencyRepo: protoc-gen-openapi
+    dependencyTag: v0.1.0
