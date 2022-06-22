@@ -970,6 +970,9 @@ spec:
                         type: object
                     type: object
                 type: object
+              protocolSelection:
+                type: string
+                x-kubernetes-int-or-string: true
               sslConfig:
                 properties:
                   alpnProtocols:

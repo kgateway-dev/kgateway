@@ -91,12 +91,6 @@ func (m *Upstream) Clone() proto.Message {
 		target.LoadBalancerConfig = proto.Clone(m.GetLoadBalancerConfig()).(*LoadBalancerConfig)
 	}
 
-	if h, ok := interface{}(m.GetConnectionConfig()).(clone.Cloner); ok {
-		target.ConnectionConfig = h.Clone().(*ConnectionConfig)
-	} else {
-		target.ConnectionConfig = proto.Clone(m.GetConnectionConfig()).(*ConnectionConfig)
-	}
-
 	if m.GetHealthChecks() != nil {
 		target.HealthChecks = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_core.HealthCheck, len(m.GetHealthChecks()))
 		for idx, v := range m.GetHealthChecks() {
@@ -116,16 +110,24 @@ func (m *Upstream) Clone() proto.Message {
 		target.OutlierDetection = proto.Clone(m.GetOutlierDetection()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_cluster.OutlierDetection)
 	}
 
-	if h, ok := interface{}(m.GetUseHttp2()).(clone.Cloner); ok {
-		target.UseHttp2 = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
-	} else {
-		target.UseHttp2 = proto.Clone(m.GetUseHttp2()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
-	}
-
 	if h, ok := interface{}(m.GetFailover()).(clone.Cloner); ok {
 		target.Failover = h.Clone().(*Failover)
 	} else {
 		target.Failover = proto.Clone(m.GetFailover()).(*Failover)
+	}
+
+	if h, ok := interface{}(m.GetConnectionConfig()).(clone.Cloner); ok {
+		target.ConnectionConfig = h.Clone().(*ConnectionConfig)
+	} else {
+		target.ConnectionConfig = proto.Clone(m.GetConnectionConfig()).(*ConnectionConfig)
+	}
+
+	target.ProtocolSelection = m.GetProtocolSelection()
+
+	if h, ok := interface{}(m.GetUseHttp2()).(clone.Cloner); ok {
+		target.UseHttp2 = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.UseHttp2 = proto.Clone(m.GetUseHttp2()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetInitialStreamWindowSize()).(clone.Cloner); ok {
