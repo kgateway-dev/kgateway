@@ -7,11 +7,8 @@
 package v3
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any1 "github.com/golang/protobuf/ptypes/any"
+	any "github.com/golang/protobuf/ptypes/any"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	_struct "github.com/golang/protobuf/ptypes/struct"
@@ -20,6 +17,8 @@ import (
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -912,7 +911,7 @@ func (m *GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin) G
 	return nil
 }
 
-func (x *GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin) GetTypedConfig() *any1.Any {
+func (x *GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin) GetTypedConfig() *any.Any {
 	if x, ok := x.GetConfigType().(*GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig); ok {
 		return x.TypedConfig
 	}
@@ -924,7 +923,7 @@ type isGrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_Conf
 }
 
 type GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig struct {
-	TypedConfig *any1.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
+	TypedConfig *any.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
 }
 
 func (*GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig) isGrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_ConfigType() {
@@ -1506,7 +1505,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3
 	(*wrappers.UInt32Value)(nil), // 17: google.protobuf.UInt32Value
 	(*DataSource)(nil),           // 18: solo.io.envoy.config.core.v3.DataSource
 	(*empty.Empty)(nil),          // 19: google.protobuf.Empty
-	(*any1.Any)(nil),             // 20: google.protobuf.Any
+	(*any.Any)(nil),              // 20: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_grpc_service_proto_depIdxs = []int32{
 	1,  // 0: solo.io.envoy.config.core.v3.GrpcService.envoy_grpc:type_name -> solo.io.envoy.config.core.v3.GrpcService.EnvoyGrpc
