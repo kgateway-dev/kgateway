@@ -3,9 +3,10 @@ package validation
 import (
 	"context"
 	"fmt"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"net"
 	"time"
+
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/rotisserie/eris"
 
@@ -189,7 +190,7 @@ var _ = Describe("RobustClient", func() {
 		robustClient, _ := NewConnectionRefreshingValidationClient(func() (client validation.GlooValidationServiceClient, e error) {
 			return original, nil
 		}, []grpc.CallOption{grpc.MaxCallRecvMsgSize(0)})
-		defer func(){res = &validation.GlooValidationServiceResponse{}}()
+		defer func() { res = &validation.GlooValidationServiceResponse{} }()
 
 		rootCtx := context.Background()
 
