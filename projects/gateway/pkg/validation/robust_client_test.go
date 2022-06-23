@@ -3,6 +3,7 @@ package validation
 import (
 	"context"
 	"fmt"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"net"
 	"time"
 
@@ -17,6 +18,15 @@ import (
 )
 
 var res = &validation.GlooValidationServiceResponse{}
+var optRes = &validation.GlooValidationServiceResponse{
+	ValidationReports: []*validation.ValidationReport{
+		{
+			Proxy: &v1.Proxy{
+				CompressedSpec: "option detected!",
+			},
+		},
+	},
+}
 
 type mockValidationService struct {
 	err error
@@ -107,6 +117,9 @@ func (c *mockWrappedValidationClient) NotifyOnResync(ctx context.Context, in *va
 }
 
 func (c *mockWrappedValidationClient) Validate(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
+	if len(opts) > 0 {
+		return optRes, c.err
+	}
 	return res, c.err
 }
 
@@ -116,7 +129,7 @@ var _ = Describe("RobustClient", func() {
 		original := &mockWrappedValidationClient{name: "original"}
 		robustClient, _ := NewConnectionRefreshingValidationClient(func() (client validation.GlooValidationServiceClient, e error) {
 			return original, nil
-		})
+		}, []grpc.CallOption{})
 
 		rootCtx := context.Background()
 
@@ -146,7 +159,7 @@ var _ = Describe("RobustClient", func() {
 		original := &mockWrappedValidationClient{name: "original"}
 		robustClient, _ := NewConnectionRefreshingValidationClient(func() (client validation.GlooValidationServiceClient, e error) {
 			return original, nil
-		})
+		}, []grpc.CallOption{})
 
 		rootCtx := context.Background()
 
@@ -169,5 +182,19 @@ var _ = Describe("RobustClient", func() {
 		robustClient.lock.RLock()
 		Expect(robustClient.validationClient).To(Equal(original))
 		robustClient.lock.RUnlock()
+	})
+
+	It("makes call with default call options", func() {
+		original := &mockWrappedValidationClient{name: "original"}
+		robustClient, _ := NewConnectionRefreshingValidationClient(func() (client validation.GlooValidationServiceClient, e error) {
+			return original, nil
+		}, []grpc.CallOption{grpc.MaxCallRecvMsgSize(0)})
+		defer func(){res = &validation.GlooValidationServiceResponse{}}()
+
+		rootCtx := context.Background()
+
+		resp, err := robustClient.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp).To(Equal(optRes))
 	})
 })
