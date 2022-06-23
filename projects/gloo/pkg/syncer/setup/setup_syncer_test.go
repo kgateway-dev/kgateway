@@ -11,7 +11,6 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 
-
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"

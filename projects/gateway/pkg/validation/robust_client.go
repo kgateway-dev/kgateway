@@ -23,7 +23,7 @@ type connectionRefreshingValidationClient struct {
 	lock                      sync.RWMutex
 	validationClient          validation.GlooValidationServiceClient
 	constructValidationClient ClientConstructor
-	defaultOpts []grpc.CallOption
+	defaultOpts               []grpc.CallOption
 }
 
 // the constructor returned here is not threadsafe; call from a lock
@@ -54,7 +54,7 @@ func NewConnectionRefreshingValidationClient(constructValidationClient func() (v
 	return &connectionRefreshingValidationClient{
 		constructValidationClient: constructValidationClient,
 		validationClient:          vc,
-		defaultOpts: defaultOpts,
+		defaultOpts:               defaultOpts,
 	}, nil
 }
 

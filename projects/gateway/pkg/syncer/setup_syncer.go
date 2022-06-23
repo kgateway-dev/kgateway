@@ -2,11 +2,12 @@ package syncer
 
 import (
 	"context"
-	"google.golang.org/grpc"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"google.golang.org/grpc"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
