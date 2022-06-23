@@ -24,7 +24,7 @@ import (
 	envoy_service_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
 	envoy_service_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
 	envoy_service_route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -52,31 +52,31 @@ func NewEnvoyServerV3(genericServer server.Server) EnvoyServerV3 {
 func (s *envoyServerV3) StreamAggregatedResources(
 	stream envoy_service_discovery_v3.AggregatedDiscoveryService_StreamAggregatedResourcesServer,
 ) error {
-	return s.Server.StreamEnvoyV3(stream, resource.AnyType)
+	return s.Server.StreamEnvoyV3(stream, types.AnyType)
 }
 
 func (s *envoyServerV3) StreamEndpoints(
 	stream envoy_service_endpoint_v3.EndpointDiscoveryService_StreamEndpointsServer,
 ) error {
-	return s.Server.StreamEnvoyV3(stream, resource.EndpointTypeV3)
+	return s.Server.StreamEnvoyV3(stream, types.EndpointTypeV3)
 }
 
 func (s *envoyServerV3) StreamClusters(
 	stream envoy_service_cluster_v3.ClusterDiscoveryService_StreamClustersServer,
 ) error {
-	return s.Server.StreamEnvoyV3(stream, resource.ClusterTypeV3)
+	return s.Server.StreamEnvoyV3(stream, types.ClusterTypeV3)
 }
 
 func (s *envoyServerV3) StreamRoutes(
 	stream envoy_service_route_v3.RouteDiscoveryService_StreamRoutesServer,
 ) error {
-	return s.Server.StreamEnvoyV3(stream, resource.RouteTypeV3)
+	return s.Server.StreamEnvoyV3(stream, types.RouteTypeV3)
 }
 
 func (s *envoyServerV3) StreamListeners(
 	stream envoy_service_listener_v3.ListenerDiscoveryService_StreamListenersServer,
 ) error {
-	return s.Server.StreamEnvoyV3(stream, resource.ListenerTypeV3)
+	return s.Server.StreamEnvoyV3(stream, types.ListenerTypeV3)
 }
 
 func (s *envoyServerV3) FetchEndpoints(
@@ -86,7 +86,7 @@ func (s *envoyServerV3) FetchEndpoints(
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = resource.EndpointTypeV3
+	req.TypeUrl = types.EndpointTypeV3
 	return s.Server.FetchEnvoyV3(ctx, req)
 }
 
@@ -97,7 +97,7 @@ func (s *envoyServerV3) FetchClusters(
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = resource.ClusterTypeV3
+	req.TypeUrl = types.ClusterTypeV3
 	return s.Server.FetchEnvoyV3(ctx, req)
 }
 
@@ -108,7 +108,7 @@ func (s *envoyServerV3) FetchRoutes(
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = resource.RouteTypeV3
+	req.TypeUrl = types.RouteTypeV3
 	return s.Server.FetchEnvoyV3(ctx, req)
 }
 
@@ -119,7 +119,7 @@ func (s *envoyServerV3) FetchListeners(
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = resource.ListenerTypeV3
+	req.TypeUrl = types.ListenerTypeV3
 	return s.Server.FetchEnvoyV3(ctx, req)
 }
 

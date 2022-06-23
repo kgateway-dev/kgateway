@@ -20,6 +20,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/test/matchers"
@@ -250,9 +251,9 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 		Expect(err).NotTo(HaveOccurred())
 
-		routeCfgs := snap.GetResources(resource.RouteTypeV3)
-		listeners := snap.GetResources(resource.ListenerTypeV3)
-		clusters := snap.GetResources(resource.ClusterTypeV3)
+		routeCfgs := snap.GetResources(types.RouteTypeV3)
+		listeners := snap.GetResources(types.ListenerTypeV3)
+		clusters := snap.GetResources(types.ClusterTypeV3)
 
 		sanitizedRoutes := routeCfgs.Items[routeCfg.GetName()]
 		listenersWithFallback := listeners.Items[fallbackListenerName]
@@ -318,9 +319,9 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 		Expect(err).NotTo(HaveOccurred())
 
-		routeCfgs := snap.GetResources(resource.RouteTypeV3)
-		listeners := snap.GetResources(resource.ListenerTypeV3)
-		clusters := snap.GetResources(resource.ClusterTypeV3)
+		routeCfgs := snap.GetResources(types.RouteTypeV3)
+		listeners := snap.GetResources(types.ListenerTypeV3)
+		clusters := snap.GetResources(types.ClusterTypeV3)
 
 		sanitizedRoutes := routeCfgs.Items[routeCfg.GetName()]
 		listenersWithFallback := listeners.Items[fallbackListenerName]

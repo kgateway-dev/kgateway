@@ -26,6 +26,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
@@ -183,16 +184,16 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 
 	replacedRouteConfigs, needsListener := s.replaceRoutes(ctx, validClusters, routeConfigs, erroredRouteNames)
 
-	clusters := xdsSnapshot.GetResources(resource.ClusterTypeV3)
-	listeners := xdsSnapshot.GetResources(resource.ListenerTypeV3)
+	clusters := xdsSnapshot.GetResources(types.ClusterTypeV3)
+	listeners := xdsSnapshot.GetResources(types.ListenerTypeV3)
 
 	if needsListener {
 		s.insertFallbackListener(&listeners)
 		s.insertFallbackCluster(&clusters)
 	}
 
-	xdsSnapshot = xds.NewSnapshotFromResources(
-		xdsSnapshot.GetResources(resource.EndpointTypeV3),
+	newXdsSnapshot := xds.NewSnapshotFromResources(
+		xdsSnapshot.GetResources(types.EndpointTypeV3),
 		clusters,
 		translator.MakeRdsResources(replacedRouteConfigs),
 		listeners,
@@ -207,7 +208,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 }
 
 func getRoutes(snap envoycache.Snapshot) ([]*envoy_config_route_v3.RouteConfiguration, error) {
-	routeConfigProtos := snap.GetResources(resource.RouteTypeV3)
+	routeConfigProtos := snap.GetResources(types.RouteTypeV3)
 	var routeConfigs []*envoy_config_route_v3.RouteConfiguration
 
 	for _, routeConfigProto := range routeConfigProtos.Items {
@@ -228,7 +229,7 @@ func getRoutes(snap envoycache.Snapshot) ([]*envoy_config_route_v3.RouteConfigur
 func getClusters(glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot) map[string]struct{} {
 	// mark all valid destination clusters, i.e. those that are in both the gloo snapshot and xds snapshot
 	validClusters := make(map[string]struct{})
-	xdsClusters := xdsSnapshot.GetResources(resource.ClusterTypeV3)
+	xdsClusters := xdsSnapshot.GetResources(types.ClusterTypeV3)
 	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
 		clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
 		if xdsClusters.Items[clusterName] != nil {

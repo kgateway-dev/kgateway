@@ -68,7 +68,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -360,12 +360,12 @@ var _ = Describe("Translator", func() {
 		ExpectWithOffset(1, snap).NotTo(BeNil())
 		ExpectWithOffset(1, report).To(Equal(validationutils.MakeReport(proxy)))
 
-		clusters := snap.GetResources(resource.ClusterTypeV3)
+		clusters := snap.GetResources(types.ClusterTypeV3)
 		clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
 		cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
 		ExpectWithOffset(1, cluster).NotTo(BeNil())
 
-		listeners := snap.GetResources(resource.ListenerTypeV3)
+		listeners := snap.GetResources(types.ListenerTypeV3)
 		listenerResource := listeners.Items["http-listener"]
 		listener = listenerResource.ResourceProto().(*envoy_config_listener_v3.Listener)
 		ExpectWithOffset(1, listener).NotTo(BeNil())
@@ -375,13 +375,13 @@ var _ = Describe("Translator", func() {
 		err = ParseTypedConfig(hcmFilter, hcmCfg)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		routes := snap.GetResources(resource.RouteTypeV3)
+		routes := snap.GetResources(types.RouteTypeV3)
 		ExpectWithOffset(1, routes.Items).To(HaveKey("http-listener-routes"))
 		routeResource := routes.Items["http-listener-routes"]
 		routeConfiguration = routeResource.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
 		ExpectWithOffset(1, routeConfiguration).NotTo(BeNil())
 
-		endpoints = snap.GetResources(resource.EndpointTypeV3)
+		endpoints = snap.GetResources(types.EndpointTypeV3)
 
 		snapshot = snap
 
@@ -398,7 +398,7 @@ var _ = Describe("Translator", func() {
 		Expect(snap).NotTo(BeNil())
 		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
-		routes := snap.GetResources(resource.RouteTypeV3)
+		routes := snap.GetResources(types.RouteTypeV3)
 		Expect(routes.Items).To(HaveKey("http-listener-routes"))
 		routeResource := routes.Items["http-listener-routes"]
 		routeConfiguration = routeResource.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
@@ -418,7 +418,7 @@ var _ = Describe("Translator", func() {
 		Expect(snap).NotTo(BeNil())
 		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
-		routes := snap.GetResources(resource.RouteTypeV3)
+		routes := snap.GetResources(types.RouteTypeV3)
 		expRouteConfigName := glooutils.MatchedRouteConfigName(proxyClone.GetListeners()[2], proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())
 		Expect(routes.Items).To(HaveKey(expRouteConfigName))
 		routeResource := routes.Items[expRouteConfigName]
@@ -440,7 +440,7 @@ var _ = Describe("Translator", func() {
 		Expect(snap).NotTo(BeNil())
 		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
-		listeners := snap.GetResources(resource.ListenerTypeV3)
+		listeners := snap.GetResources(types.ListenerTypeV3)
 		Expect(listeners.Items).To(HaveKey("http-listener"))
 		listenerResource := listeners.Items["http-listener"]
 		listenerConfiguration := listenerResource.ResourceProto().(*envoy_config_listener_v3.Listener)
@@ -489,7 +489,7 @@ var _ = Describe("Translator", func() {
 	Context("service spec", func() {
 		It("changes in service spec should create a different snapshot", func() {
 			translate()
-			oldVersion := snapshot.GetResources(resource.ClusterTypeV3).Version
+			oldVersion := snapshot.GetResources(types.ClusterTypeV3).Version
 
 			svcSpec := &v1plugins.ServiceSpec{
 				PluginType: &v1plugins.ServiceSpec_Grpc{
@@ -498,7 +498,7 @@ var _ = Describe("Translator", func() {
 			}
 			upstream.UpstreamType.(*v1.Upstream_Static).SetServiceSpec(svcSpec)
 			translate()
-			newVersion := snapshot.GetResources(resource.ClusterTypeV3).Version
+			newVersion := snapshot.GetResources(types.ClusterTypeV3).Version
 			Expect(oldVersion).ToNot(Equal(newVersion))
 		})
 	})
@@ -1054,7 +1054,7 @@ var _ = Describe("Translator", func() {
 			Expect(snap).NotTo(BeNil())
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
-			clusters := snap.GetResources(resource.ClusterTypeV3)
+			clusters := snap.GetResources(types.ClusterTypeV3)
 			clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
 			cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
 			Expect(cluster).NotTo(BeNil())
@@ -1222,7 +1222,7 @@ var _ = Describe("Translator", func() {
 			By("get the original version and http filters")
 
 			// get version
-			originalVersion := snapshot.GetResources(resource.ListenerTypeV3).Version
+			originalVersion := snapshot.GetResources(types.ListenerTypeV3).Version
 
 			// get http filters
 			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
@@ -1240,7 +1240,7 @@ var _ = Describe("Translator", func() {
 			translate()
 
 			// get and compare version
-			upstreamsVersion := snapshot.GetResources(resource.ListenerTypeV3).Version
+			upstreamsVersion := snapshot.GetResources(types.ListenerTypeV3).Version
 			Expect(upstreamsVersion).ToNot(Equal(originalVersion))
 
 			// get and compare http filters
@@ -1263,7 +1263,7 @@ var _ = Describe("Translator", func() {
 			translate()
 
 			// get and compare version
-			flipOrderVersion := snapshot.GetResources(resource.ListenerTypeV3).Version
+			flipOrderVersion := snapshot.GetResources(types.ListenerTypeV3).Version
 			Expect(flipOrderVersion).To(Equal(upstreamsVersion))
 
 			// get and compare http filters
@@ -1461,7 +1461,7 @@ var _ = Describe("Translator", func() {
 			snap, _, _, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
 
-			routes := snap.GetResources(resource.RouteTypeV3)
+			routes := snap.GetResources(types.RouteTypeV3)
 			routesProto := routes.Items["http-listener-routes"]
 
 			routeConfig := routesProto.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
@@ -1502,7 +1502,7 @@ var _ = Describe("Translator", func() {
 		It("should transfer annotations to snapshot", func() {
 			translate()
 
-			endpoints := snapshot.GetResources(resource.EndpointTypeV3)
+			endpoints := snapshot.GetResources(types.EndpointTypeV3)
 
 			clusterName := getEndpointClusterName(upstream)
 
@@ -1581,7 +1581,7 @@ var _ = Describe("Translator", func() {
 		translateWithEndpoints := func() {
 			translate()
 
-			endpoints := snapshot.GetResources(resource.EndpointTypeV3)
+			endpoints := snapshot.GetResources(types.EndpointTypeV3)
 			clusterName := getEndpointClusterName(upstream)
 			Expect(endpoints.Items).To(HaveKey(clusterName))
 			endpointsResource := endpoints.Items[clusterName]
@@ -1817,7 +1817,7 @@ var _ = Describe("Translator", func() {
 			translate()
 
 			// Clusters have been created for the two "fake" upstreams
-			clusters := snapshot.GetResources(resource.ClusterTypeV3)
+			clusters := snapshot.GetResources(types.ClusterTypeV3)
 			clusterResource := clusters.Items[UpstreamToClusterName(fakeUsList[0].Metadata.Ref())]
 			cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
 			Expect(cluster).NotTo(BeNil())
@@ -1826,7 +1826,7 @@ var _ = Describe("Translator", func() {
 			Expect(cluster).NotTo(BeNil())
 
 			// A route to the kube service has been configured
-			routes := snapshot.GetResources(resource.RouteTypeV3)
+			routes := snapshot.GetResources(types.RouteTypeV3)
 			Expect(routes.Items).To(HaveKey("http-listener-routes"))
 			routeResource := routes.Items["http-listener-routes"]
 			routeConfiguration = routeResource.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
@@ -1975,7 +1975,7 @@ var _ = Describe("Translator", func() {
 			translate()
 
 			// A cluster has been created for the "fake" upstream and has the expected subset config
-			clusters := snapshot.GetResources(resource.ClusterTypeV3)
+			clusters := snapshot.GetResources(types.ClusterTypeV3)
 			clusterResource := clusters.Items[UpstreamToClusterName(fakeUsList[0].Metadata.Ref())]
 			cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
 			Expect(cluster).NotTo(BeNil())
@@ -1995,7 +1995,7 @@ var _ = Describe("Translator", func() {
 			))
 
 			// A route to the kube service has been configured
-			routes := snapshot.GetResources(resource.RouteTypeV3)
+			routes := snapshot.GetResources(types.RouteTypeV3)
 			Expect(routes.Items).To(HaveKey("http-listener-routes"))
 			routeResource := routes.Items["http-listener-routes"]
 			routeConfiguration = routeResource.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
@@ -2304,7 +2304,7 @@ var _ = Describe("Translator", func() {
 			translate()
 
 			// A route to the kube service has been configured
-			routes := snapshot.GetResources(resource.RouteTypeV3)
+			routes := snapshot.GetResources(types.RouteTypeV3)
 			Expect(routes.Items).To(HaveKey("http-listener-routes"))
 			routeResource := routes.Items["http-listener-routes"]
 			routeConfiguration = routeResource.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
@@ -2333,7 +2333,7 @@ var _ = Describe("Translator", func() {
 	Context("TCP", func() {
 		It("can properly create a tcp listener", func() {
 			translate()
-			listeners := snapshot.GetResources(resource.ListenerTypeV3).Items
+			listeners := snapshot.GetResources(types.ListenerTypeV3).Items
 			Expect(listeners).NotTo(HaveLen(0))
 			val, found := listeners["tcp-listener"]
 			Expect(found).To(BeTrue())
@@ -2359,7 +2359,7 @@ var _ = Describe("Translator", func() {
 
 		It("can properly create a hybrid listener", func() {
 			translate()
-			listeners := snapshot.GetResources(resource.ListenerTypeV3).Items
+			listeners := snapshot.GetResources(types.ListenerTypeV3).Items
 			Expect(listeners).NotTo(HaveLen(0))
 			val, found := listeners["hybrid-listener"]
 			Expect(found).To(BeTrue())
@@ -2397,7 +2397,7 @@ var _ = Describe("Translator", func() {
 		It("can properly create a hybrid listeners without unused filters", func() {
 			settings.Gloo = &v1.GlooOptions{RemoveUnusedFilters: &wrappers.BoolValue{Value: true}}
 			translate()
-			listeners := snapshot.GetResources(resource.ListenerTypeV3).Items
+			listeners := snapshot.GetResources(types.ListenerTypeV3).Items
 			Expect(listeners).NotTo(HaveLen(0))
 			val, found := listeners["hybrid-listener"]
 			Expect(found).To(BeTrue())
@@ -2488,7 +2488,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		tlsContext := func() *envoyauth.UpstreamTlsContext {
-			clusters := snapshot.GetResources(resource.ClusterTypeV3)
+			clusters := snapshot.GetResources(types.ClusterTypeV3)
 			clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
 			cluster := clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
 
@@ -2633,7 +2633,7 @@ var _ = Describe("Translator", func() {
 			prepSsl(s)
 			translate()
 
-			listeners := snapshot.GetResources(resource.ListenerTypeV3).Items
+			listeners := snapshot.GetResources(types.ListenerTypeV3).Items
 			Expect(listeners).To(HaveLen(1))
 			val, found := listeners["http-listener"]
 			Expect(found).To(BeTrue())
@@ -3204,7 +3204,7 @@ var _ = Describe("Translator", func() {
 		snap, resourceReport, _, _ := translator.Translate(params, proxy)
 		Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
 
-		routes := snap.GetResources(resource.RouteTypeV3)
+		routes := snap.GetResources(types.RouteTypeV3)
 		routesProto := routes.Items["http-listener-routes"]
 		routeConfig := routesProto.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
 		clusterSpecifier := routeConfig.VirtualHosts[0].Routes[0].GetRoute().GetClusterSpecifier()
@@ -3223,7 +3223,7 @@ var _ = Describe("Translator", func() {
 			Expect(snap).NotTo(BeNil())
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
-			clusters := snap.GetResources(resource.ClusterTypeV3)
+			clusters := snap.GetResources(types.ClusterTypeV3)
 			clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
 			cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
 			Expect(cluster).NotTo(BeNil())
