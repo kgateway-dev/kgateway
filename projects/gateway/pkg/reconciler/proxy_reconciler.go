@@ -117,7 +117,7 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 
 		// if maxCallRecvMsgSize is set, use a call option to override the default
 		if s.maxCallRecvMsgSize > 0 {
-			opts = append(opts, grpc.MaxCallSendMsgSize(s.maxCallRecvMsgSize))
+			opts = append(opts, grpc.MaxCallRecvMsgSize(s.maxCallRecvMsgSize))
 		}
 		glooValidationResponse, err := s.proxyValidator.Validate(ctx, &validation.GlooValidationServiceRequest{
 			Proxy: proxy,
