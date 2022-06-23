@@ -192,7 +192,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 		s.insertFallbackCluster(&clusters)
 	}
 
-	newXdsSnapshot := xds.NewSnapshotFromResources(
+	xdsSnapshot = xds.NewSnapshotFromResources(
 		xdsSnapshot.GetResources(types.EndpointTypeV3),
 		clusters,
 		translator.MakeRdsResources(replacedRouteConfigs),
