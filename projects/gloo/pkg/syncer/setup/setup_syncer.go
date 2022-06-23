@@ -125,6 +125,8 @@ func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) s
 	return s.Setup
 }
 
+// grpcServer contains grpc server configuration fields we will need to persist after starting a server
+// to later check if they changed and we need to trigger a server restart
 type grpcServer struct {
 	addr            string
 	maxGrpcRecvSize int

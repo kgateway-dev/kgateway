@@ -2,11 +2,13 @@ package gloo_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"net"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -90,7 +92,9 @@ var _ = Describe("SetupSyncer", func() {
 			Gateway: &v1.GatewayOptions{
 				EnableGatewayController: &wrapperspb.BoolValue{Value: true},
 				PersistProxySpec:        &wrapperspb.BoolValue{Value: false},
-				Validation:              nil,
+				Validation: &v1.GatewayOptions_ValidationOptions{
+					ValidationServerGrpcMaxSizeBytes: &wrappers.Int32Value{Value: 4000000},
+				},
 			},
 		}
 		memcache = memory.NewInMemoryResourceCache()
@@ -102,32 +106,72 @@ var _ = Describe("SetupSyncer", func() {
 	})
 
 	Context("Setup", func() {
-		setupTestGrpcClient := func() func() error {
-			cc, err := grpc.DialContext(ctx, settings.Gloo.XdsBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
-			Expect(err).NotTo(HaveOccurred())
-			// setup a gRPC client to make sure connection is persistent across invocations
-			client := reflectpb.NewServerReflectionClient(cc)
-			req := &reflectpb.ServerReflectionRequest{
-				MessageRequest: &reflectpb.ServerReflectionRequest_ListServices{
-					ListServices: "*",
-				},
+		Context("xds", func() {
+			setupTestGrpcClient := func() func() error {
+				cc, err := grpc.DialContext(ctx, settings.Gloo.XdsBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
+				Expect(err).NotTo(HaveOccurred())
+				// setup a gRPC client to make sure connection is persistent across invocations
+				client := reflectpb.NewServerReflectionClient(cc)
+				req := &reflectpb.ServerReflectionRequest{
+					MessageRequest: &reflectpb.ServerReflectionRequest_ListServices{
+						ListServices: "*",
+					},
+				}
+				clientstream, err := client.ServerReflectionInfo(context.Background())
+				Expect(err).NotTo(HaveOccurred())
+				err = clientstream.Send(req)
+				go func() {
+					for {
+						_, err := clientstream.Recv()
+						if err != nil {
+							return
+						}
+					}
+				}()
+				Expect(err).NotTo(HaveOccurred())
+				return func() error { return clientstream.Send(req) }
 			}
-			clientstream, err := client.ServerReflectionInfo(context.Background())
-			Expect(err).NotTo(HaveOccurred())
-			err = clientstream.Send(req)
-			go func() {
-				for {
-					_, err := clientstream.Recv()
-					if err != nil {
-						return
+			Context("validation", func() {
+				setupTestGrpcClient := func() func() error {
+					cc, err := grpc.DialContext(ctx, settings.Gloo.ValidationBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
+					Expect(err).NotTo(HaveOccurred())
+					// setup a gRPC client to make sure connection is persistent across invocations
+					client := validation.NewGlooValidationServiceClient(cc)
+					req := &validation.GlooValidationServiceRequest{Proxy: &v1.Proxy{Listeners: []*v1.Listener{{Name: "test-listener"}}}}
+					return func() error {
+						_, err := client.Validate(ctx, req)
+						return err
 					}
 				}
-			}()
-			Expect(err).NotTo(HaveOccurred())
-			return func() error { return clientstream.Send(req) }
-		}
 
-		Context("XDS tests", func() {
+				FIt("restarts validation grpc server when validationServerGrpcMaxSizeBytes setting is changed", func() {
+					setup := newSynchronizedSetupFunc()
+
+					err := setup(ctx, nil, memcache, settings)
+					Expect(err).NotTo(HaveOccurred())
+
+					// make sure happy path works
+					testFunc := setupTestGrpcClient()
+					err = testFunc()
+					Expect(err).NotTo(HaveOccurred())
+
+					newContext()
+					settings.Gateway.Validation.ValidationServerGrpcMaxSizeBytes = &wrappers.Int32Value{Value: 1}
+					err = setup(ctx, nil, memcache, settings)
+					Expect(err).NotTo(HaveOccurred())
+
+					// make sure that validation server rejects request with appropriate error
+					// in order to verify that new ValidationServerGrpcMaxSizeBytes value was accepted and
+					// grpc server was restarted configured with new value
+					Eventually(func() string {
+						if err := testFunc(); err != nil {
+							return err.Error()
+						}
+						return ""
+					}, "10s", "0.5s").Should(ContainSubstring("received message larger than max"))
+
+				})
+			})
 
 			It("setup can be called twice", func() {
 				setup := newSynchronizedSetupFunc()
