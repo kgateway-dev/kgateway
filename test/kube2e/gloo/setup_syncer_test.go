@@ -183,8 +183,9 @@ var _ = Describe("SetupSyncer", func() {
 				err = setup(ctx, nil, memcache, settings)
 				Expect(err).NotTo(HaveOccurred())
 
-				// make sure that validation server was restarted with new value
-				// it should now reject the request
+				// make sure that validation server rejects request with appropriate error
+				// in order to verify that new ValidationServerGrpcMaxSizeBytes value was accepted and
+				// grpc server was restarted configured with new value
 				Eventually(func() string {
 					if err := testFunc(); err != nil {
 						return err.Error()
