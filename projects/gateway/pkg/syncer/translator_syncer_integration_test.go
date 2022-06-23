@@ -71,7 +71,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 
 		proxyClient, err = gloov1.NewProxyClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
-		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient, statusClient, 0)
+		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient, statusClient)
 		rpt := reporter.NewReporter("gateway", statusClient, gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
 		xlator := translator.NewDefaultTranslator(translator.Opts{})
 		ts = NewTranslatorSyncer(ctx, "gloo-system", proxyClient, proxyReconciler, rpt, xlator, statusClient)

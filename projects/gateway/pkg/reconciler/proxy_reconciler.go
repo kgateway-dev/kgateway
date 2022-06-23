@@ -4,8 +4,6 @@ import (
 	"context"
 	"sort"
 
-	"google.golang.org/grpc"
-
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -25,15 +23,13 @@ type ProxyReconciler interface {
 }
 
 type proxyReconciler struct {
-	maxCallRecvMsgSize int // maximum size to be allowed for validation response
 	statusClient       resources.StatusClient
 	proxyValidator     validation.GlooValidationServiceClient
 	baseReconciler     gloov1.ProxyReconciler
 }
 
-func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient, maxCallRecvMsgSize int) *proxyReconciler {
+func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient) *proxyReconciler {
 	return &proxyReconciler{
-		maxCallRecvMsgSize: maxCallRecvMsgSize,
 		statusClient:       statusClient,
 		proxyValidator:     proxyValidator,
 		baseReconciler:     gloov1.NewProxyReconciler(proxyClient, statusClient),
@@ -113,15 +109,9 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 	}
 
 	for proxy, reports := range proxiesToWrite {
-		opts := []grpc.CallOption{}
-
-		// if maxCallRecvMsgSize is set, use a call option to override the default
-		if s.maxCallRecvMsgSize > 0 {
-			opts = append(opts, grpc.MaxCallRecvMsgSize(s.maxCallRecvMsgSize))
-		}
 		glooValidationResponse, err := s.proxyValidator.Validate(ctx, &validation.GlooValidationServiceRequest{
 			Proxy: proxy,
-		}, opts...)
+		})
 		if err != nil {
 			return errors.Wrapf(err, proxyValidationErrMsg)
 		}

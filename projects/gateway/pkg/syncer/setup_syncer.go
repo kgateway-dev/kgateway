@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"google.golang.org/grpc"
 	"net/http"
 	"os"
 	"strings"
@@ -248,8 +249,13 @@ func RunGateway(opts translator.Opts) error {
 	notifications := make(<-chan struct{})
 
 	if opts.Validation != nil {
+		var grpcOpts []grpc.CallOption
+		if opts.Validation.GrpcMaxSizeBytes > 0 {
+			grpcOpts = append(grpcOpts, grpc.MaxCallRecvMsgSize(opts.Validation.GrpcMaxSizeBytes))
+		}
 		validationClient, err = gatewayvalidation.NewConnectionRefreshingValidationClient(
 			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.ProxyValidationServerAddress),
+			grpcOpts,
 		)
 		if err != nil {
 			return errors.Wrapf(err, "failed to initialize grpc connection to validation server.")
@@ -274,7 +280,7 @@ func RunGateway(opts translator.Opts) error {
 		allowWarnings,
 	))
 
-	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient, statusClient, opts.Validation.GrpcMaxSizeBytes)
+	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient, statusClient)
 
 	translatorSyncer := NewTranslatorSyncer(
 		ctx,
