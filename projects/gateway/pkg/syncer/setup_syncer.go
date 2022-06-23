@@ -2,7 +2,6 @@ package syncer
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -145,8 +144,6 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		}
 	}
 
-	fmt.Printf("Setup validation: %#v\n", validation)
-
 	opts := translator.Opts{
 		GlooNamespace:           settings.GetMetadata().GetNamespace(),
 		WriteNamespace:          writeNamespace,
@@ -172,8 +169,6 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 // the need for the namespace is limited to this function, whereas the opts struct's use is more widespread.
 func RunGateway(opts translator.Opts) error {
-	fmt.Printf("RunGateway opts: %#v\n", opts)
-
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 	ctx := opts.WatchOpts.Ctx

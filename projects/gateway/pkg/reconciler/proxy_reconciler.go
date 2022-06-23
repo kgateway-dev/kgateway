@@ -2,7 +2,6 @@ package reconciler
 
 import (
 	"context"
-	"fmt"
 	"sort"
 
 	"google.golang.org/grpc"
@@ -26,15 +25,13 @@ type ProxyReconciler interface {
 }
 
 type proxyReconciler struct {
-	maxCallRecvMsgSize int
+	maxCallRecvMsgSize int // maximum size to be allowed for validation response
 	statusClient       resources.StatusClient
 	proxyValidator     validation.GlooValidationServiceClient
 	baseReconciler     gloov1.ProxyReconciler
 }
 
 func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient, maxCallRecvMsgSize int) *proxyReconciler {
-	fmt.Printf("NewProxyReconciler maxCallRecvMsgSize: %#v\n", maxCallRecvMsgSize)
-
 	return &proxyReconciler{
 		maxCallRecvMsgSize: maxCallRecvMsgSize,
 		statusClient:       statusClient,
@@ -116,8 +113,9 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 	}
 
 	for proxy, reports := range proxiesToWrite {
-		fmt.Printf("addProxyValidationResults s: %#v\n", s)
 		opts := []grpc.CallOption{}
+
+		// if maxCallRecvMsgSize is set, use a call option to override the default
 		if s.maxCallRecvMsgSize > 0 {
 			opts = append(opts, grpc.MaxCallSendMsgSize(s.maxCallRecvMsgSize))
 		}
