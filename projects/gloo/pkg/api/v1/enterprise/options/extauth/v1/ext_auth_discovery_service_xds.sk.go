@@ -14,13 +14,13 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/client"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 )
 
 // Type Definitions:
 
-const ExtAuthConfigType = resource.TypePrefix + "/enterprise.gloo.solo.io.ExtAuthConfig"
+const ExtAuthConfigType = types.TypePrefix + "/enterprise.gloo.solo.io.ExtAuthConfig"
 
 /* Defined a resource - to be used by snapshot */
 type ExtAuthConfigXdsResourceWrapper struct {

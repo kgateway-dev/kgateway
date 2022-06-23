@@ -1,0 +1,10 @@
+changelog:
+  - dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.20.7
+    description: Update solo-kit to version v0.20.7
+    type: DEPENDENCY_BUMP
+  - issueLink: https://github.com/solo-io/gloo/issues/6337
+    description: Envoy Requests are now ordered by priority.
+    type: FIX
+    resolvesIssue: false

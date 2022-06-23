@@ -21,6 +21,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 )
 
 // Snapshot is an internally consistent snapshot of xDS resources.
@@ -117,13 +118,13 @@ func (s *EnvoySnapshot) GetResources(typ string) cache.Resources {
 		return cache.Resources{}
 	}
 	switch typ {
-	case resource.EndpointTypeV3:
+	case types.EndpointTypeV3:
 		return s.Endpoints
-	case resource.ClusterTypeV3:
+	case types.ClusterTypeV3:
 		return s.Clusters
-	case resource.RouteTypeV3:
+	case types.RouteTypeV3:
 		return s.Routes
-	case resource.ListenerTypeV3:
+	case types.ListenerTypeV3:
 		return s.Listeners
 	}
 	return cache.Resources{}
