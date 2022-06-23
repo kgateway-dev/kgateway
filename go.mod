@@ -73,7 +73,9 @@ require (
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
 	github.com/solo-io/solo-kit v0.24.5 // indirect
 	github.com/spf13/afero v1.6.0
+	github.com/spf13/cobra v1.1.3 // indirect
 	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.7.0 // indirect
 	go.opencensus.io v0.23.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.19.1
