@@ -255,49 +255,91 @@ func ExpectHttpUnavailableWithOffset(offset int, body []byte, rootca *string, en
 }
 
 func ExpectHttpStatusWithOffset(offset int, body []byte, rootca *string, envoyPort uint32, response string, status int) {
+	ExpectCurlWithOffset(
+		offset+1,
+		CurlRequest{
+			RootCA: rootca,
+			Port:   envoyPort,
+			Path:   "/1",
+			Body:   body,
+		},
+		CurlResponse{
+			Message: response,
+			Status:  status,
+		})
+}
+
+type CurlRequest struct {
+	RootCA  *string
+	Port    uint32
+	Path    string
+	Body    []byte
+	Host    string
+	Headers map[string]string
+}
+
+type CurlResponse struct {
+	Status  int
+	Message string
+}
+
+func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse CurlResponse) {
 
 	var res *http.Response
-	EventuallyWithOffset(2, func() error {
+	EventuallyWithOffset(offset+1, func() error {
 		// send a request with a body
 		var buf bytes.Buffer
-		buf.Write(body)
+		buf.Write(request.Body)
 
 		var client http.Client
 
 		scheme := "http"
-		if rootca != nil {
+		if request.RootCA != nil {
 			scheme = "https"
 			caCertPool := x509.NewCertPool()
-			ok := caCertPool.AppendCertsFromPEM([]byte(*rootca))
+			ok := caCertPool.AppendCertsFromPEM([]byte(*request.RootCA))
 			if !ok {
 				return fmt.Errorf("ca cert is not OK")
 			}
 
+			tlsConfig := &tls.Config{
+				RootCAs:            caCertPool,
+				InsecureSkipVerify: true,
+			}
 			client.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs:            caCertPool,
-					InsecureSkipVerify: true,
-				},
+				TLSClientConfig: tlsConfig,
 			}
 		}
 
-		var err error
-		res, err = client.Post(fmt.Sprintf("%s://%s:%d/1", scheme, "localhost", envoyPort), "application/octet-stream", &buf)
+		requestUrl := fmt.Sprintf("%s://%s:%d%s", scheme, "localhost", request.Port, request.Path)
+		req, err := http.NewRequest("POST", requestUrl, &buf)
 		if err != nil {
 			return err
 		}
-		if res.StatusCode != status {
-			return fmt.Errorf("received status code (%v) is not expected status code (%v)", res.StatusCode, status)
+		if request.Host != "" {
+			req.Host = request.Host
+		}
+		req.Header.Set("Content-Type", "application/octet-stream")
+		for headerName, headerValue := range request.Headers {
+			req.Header.Set(headerName, headerValue)
+		}
+		res, err = client.Do(req)
+		if err != nil {
+			return err
+		}
+
+		if res.StatusCode != expectedResponse.Status {
+			return fmt.Errorf("received status code (%v) is not expected status code (%v)", res.StatusCode, expectedResponse.Status)
 		}
 
 		return nil
 	}, "30s", "1s").Should(BeNil())
 
-	if response != "" {
+	if expectedResponse.Message != "" {
 		body, err := ioutil.ReadAll(res.Body)
 		ExpectWithOffset(offset, err).NotTo(HaveOccurred())
 		defer res.Body.Close()
-		ExpectWithOffset(offset, string(body)).To(Equal(response))
+		ExpectWithOffset(offset, string(body)).To(Equal(expectedResponse.Message))
 	}
 }
 
