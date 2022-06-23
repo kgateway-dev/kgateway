@@ -2,6 +2,8 @@ package reconciler
 
 import (
 	"context"
+	"fmt"
+	"google.golang.org/grpc"
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
@@ -23,13 +25,17 @@ type ProxyReconciler interface {
 }
 
 type proxyReconciler struct {
+	maxCallRecvMsgSize int
 	statusClient   resources.StatusClient
 	proxyValidator validation.GlooValidationServiceClient
 	baseReconciler gloov1.ProxyReconciler
 }
 
-func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient) *proxyReconciler {
+func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient, maxCallRecvMsgSize int) *proxyReconciler {
+	fmt.Printf("NewProxyReconciler maxCallRecvMsgSize: %#v\n", maxCallRecvMsgSize)
+
 	return &proxyReconciler{
+		maxCallRecvMsgSize: maxCallRecvMsgSize,
 		statusClient:   statusClient,
 		proxyValidator: proxyValidator,
 		baseReconciler: gloov1.NewProxyReconciler(proxyClient, statusClient),
@@ -109,10 +115,14 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 	}
 
 	for proxy, reports := range proxiesToWrite {
-
+		fmt.Printf("addProxyValidationResults s: %#v\n", s)
+		opts := []grpc.CallOption{}
+		if s.maxCallRecvMsgSize > 0 {
+			opts = append(opts, grpc.MaxCallSendMsgSize(s.maxCallRecvMsgSize))
+		}
 		glooValidationResponse, err := s.proxyValidator.Validate(ctx, &validation.GlooValidationServiceRequest{
 			Proxy: proxy,
-		})
+		}, opts...)
 		if err != nil {
 			return errors.Wrapf(err, proxyValidationErrMsg)
 		}

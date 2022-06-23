@@ -2,6 +2,8 @@ package setup_test
 
 import (
 	"context"
+	"github.com/alecthomas/units"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"net"
 	"os"
 	"sync"
@@ -80,6 +82,11 @@ var _ = Describe("SetupSyncer", func() {
 			Gloo: &v1.GlooOptions{
 				XdsBindAddr:        getRandomAddr(),
 				ValidationBindAddr: getRandomAddr(),
+			},
+			Gateway: &v1.GatewayOptions{
+				Validation: &v1.GatewayOptions_ValidationOptions{
+					ValidationServerGrpcMaxSizeBytes: &wrappers.Int32Value{Value: int32(5*units.MiB)},
+				},
 			},
 			DiscoveryNamespace: "non-existent-namespace",
 			WatchNamespaces:    []string{"non-existent-namespace"},

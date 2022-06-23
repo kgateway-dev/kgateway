@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -123,6 +124,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			AlwaysAcceptResources:        alwaysAcceptResources,
 			AllowWarnings:                allowWarnings,
 			WarnOnRouteShortCircuiting:   validationCfg.GetWarnRouteShortCircuiting().GetValue(),
+			GrpcMaxSizeBytes: int(validationCfg.GetValidationServerGrpcMaxSizeBytes().GetValue()),
 		}
 		if validation.ProxyValidationServerAddress == "" {
 			validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr
@@ -142,6 +144,8 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 				"Ensure the v1.Settings %v contains the spec.gateway.validation config", settings.GetMetadata().Ref())
 		}
 	}
+
+	fmt.Printf("Setup validation: %#v\n", validation)
 
 	opts := translator.Opts{
 		GlooNamespace:           settings.GetMetadata().GetNamespace(),
@@ -168,6 +172,8 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 // the need for the namespace is limited to this function, whereas the opts struct's use is more widespread.
 func RunGateway(opts translator.Opts) error {
+	fmt.Printf("RunGateway opts: %#v\n", opts)
+
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 	ctx := opts.WatchOpts.Ctx
@@ -273,7 +279,7 @@ func RunGateway(opts translator.Opts) error {
 		allowWarnings,
 	))
 
-	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient, statusClient)
+	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient, statusClient, opts.Validation.GrpcMaxSizeBytes)
 
 	translatorSyncer := NewTranslatorSyncer(
 		ctx,

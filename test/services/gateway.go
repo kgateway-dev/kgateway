@@ -227,8 +227,12 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 		if runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept() != nil {
 			validation.AlwaysAcceptResources = runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue()
 		}
-
+		if grpcMaxSizeBytes := runOptions.Settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); grpcMaxSizeBytes != nil {
+			fmt.Printf("defaultTestConstructOpts grpcMaxSizeBytes: %#v\n", grpcMaxSizeBytes)
+			validation.GrpcMaxSizeBytes = int(grpcMaxSizeBytes.GetValue())
+		}
 	}
+	fmt.Printf("defaultTestConstructOpts validation: %#v\n", validation)
 
 	return translator.Opts{
 		GlooNamespace:           meta.GetNamespace(),
