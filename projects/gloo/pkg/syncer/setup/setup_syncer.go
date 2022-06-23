@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 
@@ -50,6 +49,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
@@ -128,8 +128,8 @@ type setupSyncer struct {
 func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, callbacks xdsserver.Callbacks, start bool) bootstrap.ControlPlane {
 	hasher := &xds.ProxyKeyHasher{}
 	settings := cache.CacheSettings{
-		Ads:    true,
 		Hash:   hasher,
+		Ads:    true,
 		Logger: contextutils.LoggerFrom(ctx),
 	}
 	snapshotCache := cache.NewSnapshotCache(settings)
