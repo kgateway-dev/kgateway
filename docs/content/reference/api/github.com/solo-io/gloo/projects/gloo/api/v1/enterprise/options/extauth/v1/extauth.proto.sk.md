@@ -475,6 +475,7 @@ Deprecated: Prefer OAuth2
 "host": string
 "db": int
 "poolSize": int
+"tlsCertMountPath": string
 
 ```
 
@@ -483,6 +484,7 @@ Deprecated: Prefer OAuth2
 | `host` | `string` | address of the redis. can be address:port or unix://path/to/unix.sock. |
 | `db` | `int` | db to use. can leave unset for db 0. |
 | `poolSize` | `int` | size of the connection pool. can leave unset for default. defaults to 10 connections per every CPU. |
+| `tlsCertMountPath` | `string` | the tls cert mount path for this particular host. this will require the matching secret certs added to the helm userSessionCerts mountpaths values. this does not need to include '/tls.crt' just the matching mountPath used in the userSessionCerts helm values. setting this value enabled TLS for redis. |
 
 
 
