@@ -18,10 +18,10 @@ package xds
 import (
 	"errors"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	discovery_service "github.com/solo-io/solo-kit/pkg/api/xds"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 )
 
 // Server includes handlers for streaming aggregate discovery requests via the SoloDiscoveryService.
@@ -40,7 +40,7 @@ func NewGlooXdsServer(genericServer server.Server) GlooXdsServer {
 func (s *glooXdsServer) StreamAggregatedResources(
 	stream discovery_service.SoloDiscoveryService_StreamAggregatedResourcesServer,
 ) error {
-	return s.Server.StreamSolo(stream, resource.AnyType)
+	return s.Server.StreamSolo(stream, types.AnyType)
 }
 
 func (s *glooXdsServer) DeltaAggregatedResources(
