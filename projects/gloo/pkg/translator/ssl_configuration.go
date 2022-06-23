@@ -13,6 +13,9 @@ func ConsolidateSslConfigurations(sslConfigurations []*v1.SslConfig) []*v1.SslCo
 	mergedSslSecrets := map[string]*v1.SslConfig{}
 
 	for _, sslConfig := range sslConfigurations {
+		if sslConfig == nil {
+			continue
+		}
 		// make sure ssl configs are only different by sni domains
 		sslConfigCopy := proto.Clone(sslConfig).(*v1.SslConfig)
 		sslConfigCopy.SniDomains = nil

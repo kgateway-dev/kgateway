@@ -20,6 +20,9 @@ weight: 5
 - [HybridListener](#hybridlistener)
 - [MatchedListener](#matchedlistener)
 - [Matcher](#matcher)
+- [AggregateListener](#aggregatelistener)
+- [HttpResources](#httpresources)
+- [HttpFilterChain](#httpfilterchain)
 - [VirtualHost](#virtualhost)
 - [Route](#route)
 - [RouteAction](#routeaction)
@@ -93,6 +96,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 "httpListener": .gloo.solo.io.HttpListener
 "tcpListener": .gloo.solo.io.TcpListener
 "hybridListener": .gloo.solo.io.HybridListener
+"aggregateListener": .gloo.solo.io.AggregateListener
 "sslConfigurations": []gloo.solo.io.SslConfig
 "useProxyProto": .google.protobuf.BoolValue
 "options": .gloo.solo.io.ListenerOptions
@@ -107,9 +111,10 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `name` | `string` | the name of the listener. names must be unique for each listener within a proxy. |
 | `bindAddress` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported. |
 | `bindPort` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy. |
-| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk/#httplistener) | contains configuration options for Gloo's HTTP-level features including request-based routing. Only one of `httpListener`, `tcpListener`, or `hybridListener` can be set. |
-| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | contains configuration options for Gloo's TCP-level features. Only one of `tcpListener`, `httpListener`, or `hybridListener` can be set. |
-| `hybridListener` | [.gloo.solo.io.HybridListener](../proxy.proto.sk/#hybridlistener) | contains any number of configuration options for Gloo's HTTP and/or TCP-level features. Only one of `hybridListener`, `httpListener`, or `tcpListener` can be set. |
+| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk/#httplistener) | contains configuration options for Gloo's HTTP-level features including request-based routing. Only one of `httpListener`, `tcpListener`, `hybridListener`, or `aggregateListener` can be set. |
+| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | contains configuration options for Gloo's TCP-level features. Only one of `tcpListener`, `httpListener`, `hybridListener`, or `aggregateListener` can be set. |
+| `hybridListener` | [.gloo.solo.io.HybridListener](../proxy.proto.sk/#hybridlistener) | contains any number of configuration options for Gloo's HTTP and/or TCP-level features. Only one of `hybridListener`, `httpListener`, `tcpListener`, or `aggregateListener` can be set. |
+| `aggregateListener` | [.gloo.solo.io.AggregateListener](../proxy.proto.sk/#aggregatelistener) | contains any number of configuration options for Gloo's HTTP and/or TCP-level features avoids duplicating definitions by separating resources and relationships between resources. Only one of `aggregateListener`, `httpListener`, `tcpListener`, or `hybridListener` can be set. |
 | `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port. Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config. This is set to the aggregated list of SslConfigs that are defined on the selected VirtualServices. |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. Deprecated: prefer setting the listener option. If configured, the listener option (filter config) overrides any setting here. |
 | `options` | [.gloo.solo.io.ListenerOptions](../options.proto.sk/#listeneroptions) | top level options. |
@@ -266,6 +271,66 @@ Some traffic policies can be configured to work both on the listener and virtual
 | ----- | ---- | ----------- | 
 | `sslConfig` | [.gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) |  |
 | `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
+
+
+
+
+---
+### AggregateListener
+
+ 
+An AggregateListener defines a set of Gloo configuration which will map to a unique set of FilterChains on a Listener
+
+```yaml
+"httpResources": .gloo.solo.io.AggregateListener.HttpResources
+"httpFilterChains": []gloo.solo.io.AggregateListener.HttpFilterChain
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `httpResources` | [.gloo.solo.io.AggregateListener.HttpResources](../proxy.proto.sk/#httpresources) | The aggregate set of resources available on this listener. |
+| `httpFilterChains` | [[]gloo.solo.io.AggregateListener.HttpFilterChain](../proxy.proto.sk/#httpfilterchain) | The set of HttpFilterChains to create on this listener. |
+
+
+
+
+---
+### HttpResources
+
+
+
+```yaml
+"virtualHosts": map<string, .gloo.solo.io.VirtualHost>
+"httpOptions": map<string, .gloo.solo.io.HttpListenerOptions>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `virtualHosts` | `map<string, .gloo.solo.io.VirtualHost>` | Set of VirtualHosts available on this Listener, indexed by name. |
+| `httpOptions` | `map<string, .gloo.solo.io.HttpListenerOptions>` | Set of HttpListenerOptions available on this Listener, indexed by hash. |
+
+
+
+
+---
+### HttpFilterChain
+
+
+
+```yaml
+"matcher": .gloo.solo.io.Matcher
+"httpOptionsRef": string
+"virtualHostRefs": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk/#matcher) | Matching criteria used to generate both the FilterChainMatch and TransportSocket for the Envoy FilterChain. |
+| `httpOptionsRef` | `string` | The ref pointing to HttpListenerOptions which are used to configure the HCM on this HttpFilterChain Corresponds to an entry in the HttpResources.HttpOptions map. |
+| `virtualHostRefs` | `[]string` | The set of refs pointing to VirtualHosts which are available on this HttpFilterChain Each ref corresponds to an entry in the HttpResources.VirtualHosts map. |
 
 
 
