@@ -2,10 +2,14 @@ package setup_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"net"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
@@ -35,10 +39,11 @@ import (
 var _ = Describe("SetupSyncer", func() {
 
 	var (
-		settings *v1.Settings
-		ctx      context.Context
-		cancel   context.CancelFunc
-		memcache memory.InMemoryResourceCache
+		settings  *v1.Settings
+		ctx       context.Context
+		cancel    context.CancelFunc
+		memcache  memory.InMemoryResourceCache
+		setupLock sync.RWMutex
 	)
 
 	newContext := func() {
@@ -49,12 +54,36 @@ var _ = Describe("SetupSyncer", func() {
 		ctx = settingsutil.WithSettings(ctx, settings)
 	}
 
+	// SetupFunc is used to configure Gloo with appropriate configuration
+	// It is assumed to run once at construction time, and therefore it executes directives that
+	// are also assumed to only run at construction time.
+	// One of those, is the construction of schemes: https://github.com/kubernetes/kubernetes/pull/89019#issuecomment-600278461
+	// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
+	// we ensure that only 1 SetupFunc is ever called at a time
+	newSynchronizedSetupFunc := func() setuputils.SetupFunc {
+		setupFunc := NewSetupFunc()
+
+		var synchronizedSetupFunc setuputils.SetupFunc
+		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+			setupLock.Lock()
+			defer setupLock.Unlock()
+			return setupFunc(ctx, kubeCache, inMemoryCache, settings)
+		}
+
+		return synchronizedSetupFunc
+	}
+
 	BeforeEach(func() {
 		settings = &v1.Settings{
 			RefreshRate: prototime.DurationToProto(time.Hour),
 			Gloo: &v1.GlooOptions{
 				XdsBindAddr:        getRandomAddr(),
 				ValidationBindAddr: getRandomAddr(),
+			},
+			Gateway: &v1.GatewayOptions{
+				Validation: &v1.GatewayOptions_ValidationOptions{
+					ValidationServerGrpcMaxSizeBytes: &wrappers.Int32Value{Value: 4000000},
+				},
 			},
 			DiscoveryNamespace: "non-existent-namespace",
 			WatchNamespaces:    []string{"non-existent-namespace"},
@@ -68,32 +97,31 @@ var _ = Describe("SetupSyncer", func() {
 	})
 
 	Context("Setup", func() {
-		setupTestGrpcClient := func() func() error {
-			cc, err := grpc.DialContext(ctx, settings.Gloo.XdsBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
-			Expect(err).NotTo(HaveOccurred())
-			// setup a gRPC client to make sure connection is persistent across invocations
-			client := reflectpb.NewServerReflectionClient(cc)
-			req := &reflectpb.ServerReflectionRequest{
-				MessageRequest: &reflectpb.ServerReflectionRequest_ListServices{
-					ListServices: "*",
-				},
-			}
-			clientstream, err := client.ServerReflectionInfo(context.Background())
-			Expect(err).NotTo(HaveOccurred())
-			err = clientstream.Send(req)
-			go func() {
-				for {
-					_, err := clientstream.Recv()
-					if err != nil {
-						return
-					}
+		Context("xds", func() {
+			setupTestGrpcClient := func() func() error {
+				cc, err := grpc.DialContext(ctx, settings.Gloo.XdsBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
+				Expect(err).NotTo(HaveOccurred())
+				// setup a gRPC client to make sure connection is persistent across invocations
+				client := reflectpb.NewServerReflectionClient(cc)
+				req := &reflectpb.ServerReflectionRequest{
+					MessageRequest: &reflectpb.ServerReflectionRequest_ListServices{
+						ListServices: "*",
+					},
 				}
-			}()
-			Expect(err).NotTo(HaveOccurred())
-			return func() error { return clientstream.Send(req) }
-		}
-
-		Context("XDS tests", func() {
+				clientstream, err := client.ServerReflectionInfo(context.Background())
+				Expect(err).NotTo(HaveOccurred())
+				err = clientstream.Send(req)
+				go func() {
+					for {
+						_, err := clientstream.Recv()
+						if err != nil {
+							return
+						}
+					}
+				}()
+				Expect(err).NotTo(HaveOccurred())
+				return func() error { return clientstream.Send(req) }
+			}
 
 			It("setup can be called twice", func() {
 				setup := NewSetupFunc()
@@ -113,6 +141,51 @@ var _ = Describe("SetupSyncer", func() {
 				// make sure that xds snapshot was not restarted
 				err = testFunc()
 				Expect(err).NotTo(HaveOccurred())
+			})
+
+		})
+		Context("validation", func() {
+			setupTestGrpcClient := func() func() error {
+				cc, err := grpc.DialContext(ctx, settings.Gloo.ValidationBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
+				Expect(err).NotTo(HaveOccurred())
+				// setup a gRPC client to make sure connection is persistent across invocations
+				client := validation.NewProxyValidationServiceClient(cc)
+				req := &validation.ProxyValidationServiceRequest{Proxy: &v1.Proxy{Listeners: []*v1.Listener{{Name: "test-listener"}}}}
+				return func() error {
+					_, err := client.ValidateProxy(ctx, req)
+					if err != nil {
+						return err
+					}
+					return nil
+				}
+			}
+
+			It("restarts validation grpc server when validationServerGrpcMaxSizeBytes setting is changed", func() {
+				setup := newSynchronizedSetupFunc()
+
+				err := setup(ctx, nil, memcache, settings)
+				Expect(err).NotTo(HaveOccurred())
+
+				// make sure happy path works
+				testFunc := setupTestGrpcClient()
+				err = testFunc()
+				Expect(err).NotTo(HaveOccurred())
+
+				newContext()
+				settings.Gateway.Validation.ValidationServerGrpcMaxSizeBytes = &wrappers.Int32Value{Value: 1}
+				err = setup(ctx, nil, memcache, settings)
+				Expect(err).NotTo(HaveOccurred())
+
+				// make sure that validation server rejects request with appropriate error
+				// in order to verify that new ValidationServerGrpcMaxSizeBytes value was accepted and
+				// grpc server was restarted configured with new value
+				Eventually(func() string {
+					if err := testFunc(); err != nil {
+						return err.Error()
+					}
+					return ""
+				}, "10s", "0.5s").Should(ContainSubstring("received message larger than max"))
+
 			})
 		})
 
