@@ -231,6 +231,10 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 			validation = &translator.ValidationOpts{}
 		}
 		validation.AlwaysAcceptResources = runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue()
+
+		if grpcMaxSizeBytes := runOptions.Settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); grpcMaxSizeBytes != nil {
+			validation.GrpcMaxSizeBytes = int(grpcMaxSizeBytes.GetValue())
+		}
 	}
 	return translator.Opts{
 		GlooNamespace:           meta.GetNamespace(),

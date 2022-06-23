@@ -23,6 +23,7 @@ type connectionRefreshingValidationClient struct {
 	lock                      sync.RWMutex
 	validationClient          validation.GlooValidationServiceClient
 	constructValidationClient ClientConstructor
+	defaultOpts               []grpc.CallOption
 }
 
 // the constructor returned here is not threadsafe; call from a lock
@@ -45,7 +46,7 @@ func RetryOnUnavailableClientConstructor(ctx context.Context, serverAddress stri
 	}
 }
 
-func NewConnectionRefreshingValidationClient(constructValidationClient func() (validation.GlooValidationServiceClient, error)) (*connectionRefreshingValidationClient, error) {
+func NewConnectionRefreshingValidationClient(constructValidationClient func() (validation.GlooValidationServiceClient, error), defaultOpts []grpc.CallOption) (*connectionRefreshingValidationClient, error) {
 	vc, err := constructValidationClient()
 	if err != nil {
 		return nil, err
@@ -53,6 +54,7 @@ func NewConnectionRefreshingValidationClient(constructValidationClient func() (v
 	return &connectionRefreshingValidationClient{
 		constructValidationClient: constructValidationClient,
 		validationClient:          vc,
+		defaultOpts:               defaultOpts,
 	}, nil
 }
 
@@ -63,7 +65,7 @@ func (c *connectionRefreshingValidationClient) Validate(ctx context.Context, pro
 
 	return proxyReport, c.retryWithNewClient(ctx, func(validationClient validation.GlooValidationServiceClient) error {
 		var err error
-		proxyReport, err = validationClient.Validate(ctx, proxy, opts...)
+		proxyReport, err = validationClient.Validate(ctx, proxy, append(c.defaultOpts, opts...)...)
 		return err
 	})
 }

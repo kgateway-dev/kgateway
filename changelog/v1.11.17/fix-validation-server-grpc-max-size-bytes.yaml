@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6596
+    resolvesIssue: false
+    description: Fix bug that caused `ValidationServerGrpcMaxSizeBytes` setting not to be honored if set >4MB.
