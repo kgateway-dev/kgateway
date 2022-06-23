@@ -580,6 +580,7 @@ The SameSite options. The default value is LaxMode.
 ```yaml
 "idTokenHeader": string
 "accessTokenHeader": string
+"useBearerSchemaForAuthorization": .google.protobuf.BoolValue
 
 ```
 
@@ -587,6 +588,7 @@ The SameSite options. The default value is LaxMode.
 | ----- | ---- | ----------- | 
 | `idTokenHeader` | `string` | If set, the id token will be forward upstream using this header name. |
 | `accessTokenHeader` | `string` | If set, the access token will be forward upstream using this header name. |
+| `useBearerSchemaForAuthorization` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, adds the "Bearer" prefix to the upstream access token header value. |
 
 
 

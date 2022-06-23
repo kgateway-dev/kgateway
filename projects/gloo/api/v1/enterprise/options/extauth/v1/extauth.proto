@@ -373,6 +373,8 @@ message HeaderConfiguration {
     string id_token_header = 1;
     // If set, the access token will be forward upstream using this header name.
     string access_token_header = 2;
+    // If true, adds the "Bearer" prefix to the upstream access token header value.
+    google.protobuf.BoolValue use_bearer_schema_for_authorization = 3;
 }
 
 // OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
