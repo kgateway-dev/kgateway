@@ -86,7 +86,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 			}).AnyTimes()
 
 		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
-		reconciler = NewProxyReconciler(validationClient, proxyClient, statusClient)
+		reconciler = NewProxyReconciler(validationClient, proxyClient, statusClient, 0)
 
 		snap = samples.SimpleGatewaySnapshot(us, ns)
 
