@@ -2,11 +2,12 @@ package setup_test
 
 import (
 	"context"
-	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"net"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/setuputils"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
