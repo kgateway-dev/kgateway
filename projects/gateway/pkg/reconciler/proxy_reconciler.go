@@ -3,8 +3,9 @@ package reconciler
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
 	"sort"
+
+	"google.golang.org/grpc"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
@@ -26,9 +27,9 @@ type ProxyReconciler interface {
 
 type proxyReconciler struct {
 	maxCallRecvMsgSize int
-	statusClient   resources.StatusClient
-	proxyValidator validation.GlooValidationServiceClient
-	baseReconciler gloov1.ProxyReconciler
+	statusClient       resources.StatusClient
+	proxyValidator     validation.GlooValidationServiceClient
+	baseReconciler     gloov1.ProxyReconciler
 }
 
 func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient, maxCallRecvMsgSize int) *proxyReconciler {
@@ -36,9 +37,9 @@ func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, p
 
 	return &proxyReconciler{
 		maxCallRecvMsgSize: maxCallRecvMsgSize,
-		statusClient:   statusClient,
-		proxyValidator: proxyValidator,
-		baseReconciler: gloov1.NewProxyReconciler(proxyClient, statusClient),
+		statusClient:       statusClient,
+		proxyValidator:     proxyValidator,
+		baseReconciler:     gloov1.NewProxyReconciler(proxyClient, statusClient),
 	}
 }
 

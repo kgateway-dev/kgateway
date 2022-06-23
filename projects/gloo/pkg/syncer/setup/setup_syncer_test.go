@@ -2,12 +2,13 @@ package setup_test
 
 import (
 	"context"
-	"github.com/alecthomas/units"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"net"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/alecthomas/units"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 
@@ -85,7 +86,7 @@ var _ = Describe("SetupSyncer", func() {
 			},
 			Gateway: &v1.GatewayOptions{
 				Validation: &v1.GatewayOptions_ValidationOptions{
-					ValidationServerGrpcMaxSizeBytes: &wrappers.Int32Value{Value: int32(5*units.MiB)},
+					ValidationServerGrpcMaxSizeBytes: &wrappers.Int32Value{Value: int32(5 * units.MiB)},
 				},
 			},
 			DiscoveryNamespace: "non-existent-namespace",

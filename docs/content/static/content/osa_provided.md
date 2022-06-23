@@ -2,6 +2,7 @@ Name|Version|License
 ---|---|---
 [semver/v3](https://github.com/Masterminds/semver)|v3.1.1|MIT License
 [Netflix/go-expect](https://github.com/Netflix/go-expect)|v0.0.0-20180928190340-9d1f4485533b|Apache License 2.0
+[alecthomas/units](https://github.com/alecthomas/units)|v0.0.0-20190924025748-f65c72e2690d|MIT License
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
 [udpa/go](https://github.com/cncf/udpa)|v0.0.0-20201120205902-5459f2c99403|Apache License 2.0

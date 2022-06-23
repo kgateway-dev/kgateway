@@ -124,7 +124,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			AlwaysAcceptResources:        alwaysAcceptResources,
 			AllowWarnings:                allowWarnings,
 			WarnOnRouteShortCircuiting:   validationCfg.GetWarnRouteShortCircuiting().GetValue(),
-			GrpcMaxSizeBytes: int(validationCfg.GetValidationServerGrpcMaxSizeBytes().GetValue()),
+			GrpcMaxSizeBytes:             int(validationCfg.GetValidationServerGrpcMaxSizeBytes().GetValue()),
 		}
 		if validation.ProxyValidationServerAddress == "" {
 			validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr
