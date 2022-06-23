@@ -132,47 +132,6 @@ var _ = Describe("SetupSyncer", func() {
 				Expect(err).NotTo(HaveOccurred())
 				return func() error { return clientstream.Send(req) }
 			}
-			Context("validation", func() {
-				setupTestGrpcClient := func() func() error {
-					cc, err := grpc.DialContext(ctx, settings.Gloo.ValidationBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
-					Expect(err).NotTo(HaveOccurred())
-					// setup a gRPC client to make sure connection is persistent across invocations
-					client := validation.NewGlooValidationServiceClient(cc)
-					req := &validation.GlooValidationServiceRequest{Proxy: &v1.Proxy{Listeners: []*v1.Listener{{Name: "test-listener"}}}}
-					return func() error {
-						_, err := client.Validate(ctx, req)
-						return err
-					}
-				}
-
-				FIt("restarts validation grpc server when validationServerGrpcMaxSizeBytes setting is changed", func() {
-					setup := newSynchronizedSetupFunc()
-
-					err := setup(ctx, nil, memcache, settings)
-					Expect(err).NotTo(HaveOccurred())
-
-					// make sure happy path works
-					testFunc := setupTestGrpcClient()
-					err = testFunc()
-					Expect(err).NotTo(HaveOccurred())
-
-					newContext()
-					settings.Gateway.Validation.ValidationServerGrpcMaxSizeBytes = &wrappers.Int32Value{Value: 1}
-					err = setup(ctx, nil, memcache, settings)
-					Expect(err).NotTo(HaveOccurred())
-
-					// make sure that validation server rejects request with appropriate error
-					// in order to verify that new ValidationServerGrpcMaxSizeBytes value was accepted and
-					// grpc server was restarted configured with new value
-					Eventually(func() string {
-						if err := testFunc(); err != nil {
-							return err.Error()
-						}
-						return ""
-					}, "10s", "0.5s").Should(ContainSubstring("received message larger than max"))
-
-				})
-			})
 
 			It("setup can be called twice", func() {
 				setup := newSynchronizedSetupFunc()
@@ -192,6 +151,47 @@ var _ = Describe("SetupSyncer", func() {
 				// make sure that xds snapshot was not restarted
 				err = testFunc()
 				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("validation", func() {
+			setupTestGrpcClient := func() func() error {
+				cc, err := grpc.DialContext(ctx, settings.Gloo.ValidationBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
+				Expect(err).NotTo(HaveOccurred())
+				// setup a gRPC client to make sure connection is persistent across invocations
+				client := validation.NewGlooValidationServiceClient(cc)
+				req := &validation.GlooValidationServiceRequest{Proxy: &v1.Proxy{Listeners: []*v1.Listener{{Name: "test-listener"}}}}
+				return func() error {
+					_, err := client.Validate(ctx, req)
+					return err
+				}
+			}
+			It("restarts validation grpc server when validationServerGrpcMaxSizeBytes setting is changed", func() {
+				setup := newSynchronizedSetupFunc()
+
+				err := setup(ctx, nil, memcache, settings)
+				Expect(err).NotTo(HaveOccurred())
+
+				// make sure happy path works
+				testFunc := setupTestGrpcClient()
+				err = testFunc()
+				Expect(err).NotTo(HaveOccurred())
+
+				newContext()
+				settings.Gateway.Validation.ValidationServerGrpcMaxSizeBytes = &wrappers.Int32Value{Value: 1}
+				err = setup(ctx, nil, memcache, settings)
+				Expect(err).NotTo(HaveOccurred())
+
+				// make sure that validation server rejects request with appropriate error
+				// in order to verify that new ValidationServerGrpcMaxSizeBytes value was accepted and
+				// grpc server was restarted configured with new value
+				Eventually(func() string {
+					if err := testFunc(); err != nil {
+						return err.Error()
+					}
+					return ""
+				}, "10s", "0.5s").Should(ContainSubstring("received message larger than max"))
+
 			})
 		})
 
