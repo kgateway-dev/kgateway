@@ -20,6 +20,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -153,13 +154,13 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(sanitizer.Called).To(BeTrue())
 		Expect(xdsCache.Called).To(BeTrue())
 
-		oldListeners := oldXdsSnap.GetResources(resource.ListenerTypeV3)
-		newListeners := xdsCache.SetSnap.GetResources(resource.ListenerTypeV3)
+		oldListeners := oldXdsSnap.GetResources(types.ListenerTypeV3)
+		newListeners := xdsCache.SetSnap.GetResources(types.ListenerTypeV3)
 
 		Expect(oldListeners).To(Equal(newListeners))
 
-		oldRoutes := oldXdsSnap.GetResources(resource.RouteTypeV3)
-		newRoutes := xdsCache.SetSnap.GetResources(resource.RouteTypeV3)
+		oldRoutes := oldXdsSnap.GetResources(types.RouteTypeV3)
+		newRoutes := xdsCache.SetSnap.GetResources(types.RouteTypeV3)
 
 		Expect(oldRoutes).To(Equal(newRoutes))
 	})
@@ -263,16 +264,16 @@ var _ = Describe("Empty cache", func() {
 		Expect(xdsCache.Called).To(BeTrue())
 
 		// Don't update listener and routes
-		newListeners := xdsCache.SetSnap.GetResources(resource.ListenerTypeV3)
+		newListeners := xdsCache.SetSnap.GetResources(types.ListenerTypeV3)
 		Expect(newListeners.Items).To(BeNil())
-		newRoutes := xdsCache.SetSnap.GetResources(resource.RouteTypeV3)
+		newRoutes := xdsCache.SetSnap.GetResources(types.RouteTypeV3)
 		Expect(newRoutes.Items).To(BeNil())
 
 		// update endpoints and clusters
-		newEndpoints := xdsCache.SetSnap.GetResources(resource.EndpointTypeV3)
-		Expect(newEndpoints).To(Equal(snapshot.GetResources(resource.EndpointTypeV3)))
-		newClusters := xdsCache.SetSnap.GetResources(resource.ClusterTypeV3)
-		Expect(newClusters).To(Equal(snapshot.GetResources(resource.ClusterTypeV3)))
+		newEndpoints := xdsCache.SetSnap.GetResources(types.EndpointTypeV3)
+		Expect(newEndpoints).To(Equal(snapshot.GetResources(types.EndpointTypeV3)))
+		newClusters := xdsCache.SetSnap.GetResources(types.ClusterTypeV3)
+		Expect(newClusters).To(Equal(snapshot.GetResources(types.ClusterTypeV3)))
 
 		proxies, err := proxyClient.List(proxy.GetMetadata().Namespace, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
