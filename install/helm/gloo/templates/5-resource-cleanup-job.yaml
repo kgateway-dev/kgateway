@@ -35,10 +35,10 @@ spec:
           - /bin/sh
           - -c
           - |
-            kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-{{ .Release.Namespace }}
-            kubectl delete gateways.gateway.solo.io -n {{ .Release.Namespace }} -l created_by=gloo-install
-            kubectl delete upstreams.gloo.solo.io -n {{ .Release.Namespace }} -l created_by=gloo-install
-      restartPolicy: Never
+            kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-{{ .Release.Namespace }} || exit $?
+            kubectl delete gateways.gateway.solo.io -n {{ .Release.Namespace }} -l created_by=gloo-install || exit $?
+            kubectl delete upstreams.gloo.solo.io -n {{ .Release.Namespace }} -l created_by=gloo-install || exit $?
+      restartPolicy: OnFailure
   ttlSecondsAfterFinished: 0
 {{- if .Values.global.glooRbac.create }}
 ---

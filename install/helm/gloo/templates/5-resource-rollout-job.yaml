@@ -41,10 +41,10 @@ spec:
             {{- end }}
 
             # apply Gloo Edge custom resources
-            kubectl apply -f - <<EOF
+            kubectl apply -f - <<EOF || exit $?
             {{- include "gloo.customResources" . | indent 12 -}}
             EOF
-      restartPolicy: Never
+      restartPolicy: OnFailure
   ttlSecondsAfterFinished: 0
 {{- if .Values.global.glooRbac.create }}
 ---

@@ -37,13 +37,13 @@ spec:
           - |
             # remove existing helm labels/annotations since the custom resources are no longer managed by helm
             {{- range list "gateways.gateway.solo.io" "upstreams.gloo.solo.io" }}
-            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} -l created_by=gloo-install helm.sh/hook-
-            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} -l created_by=gloo-install helm.sh/hook-weight-
-            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} -l created_by=gloo-install meta.helm.sh/release-name-
-            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} -l created_by=gloo-install meta.helm.sh/release-namespace-
-            kubectl label {{ . }} -n {{ $.Release.Namespace }} -l created_by=gloo-install,app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by-
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} -l created_by=gloo-install helm.sh/hook- || exit $?
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} -l created_by=gloo-install helm.sh/hook-weight- || exit $?
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} -l created_by=gloo-install meta.helm.sh/release-name- || exit $?
+            kubectl annotate {{ . }} -n {{ $.Release.Namespace }} -l created_by=gloo-install meta.helm.sh/release-namespace- || exit $?
+            kubectl label {{ . }} -n {{ $.Release.Namespace }} -l created_by=gloo-install,app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by- || exit $?
             {{- end }}
-      restartPolicy: Never
+      restartPolicy: OnFailure
   ttlSecondsAfterFinished: 0
 {{- if .Values.global.glooRbac.create }}
 ---
