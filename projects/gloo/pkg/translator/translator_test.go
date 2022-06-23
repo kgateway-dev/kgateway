@@ -2494,8 +2494,10 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
-	const expectedHybridListeners = 6
 	Context("Hybrid", func() {
+
+		// The number of HttpFilters that we expect to be generated on the HttpConnectionManager by default
+		var defaultHttpFilters = 6
 
 		It("can properly create a hybrid listener", func() {
 			translate()
@@ -2531,7 +2533,7 @@ var _ = Describe("Translator", func() {
 			Expect(ParseTypedConfig(hcmFilter, &hcmTypedCfg)).NotTo(HaveOccurred())
 			Expect(hcmTypedCfg.GetRds()).NotTo(BeNil())
 			Expect(hcmTypedCfg.GetRds().RouteConfigName).To(Equal(glooutils.MatchedRouteConfigName(proxy.GetListeners()[2], proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())))
-			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(expectedHybridListeners)) // TODO: is this the right number? is there more we can/should do to ensure correctness?
+			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(defaultHttpFilters))
 		})
 
 		It("can properly create a hybrid listeners without unused filters", func() {
@@ -2569,7 +2571,7 @@ var _ = Describe("Translator", func() {
 			Expect(ParseTypedConfig(hcmFilter, &hcmTypedCfg)).NotTo(HaveOccurred())
 			Expect(hcmTypedCfg.GetRds()).NotTo(BeNil())
 			Expect(hcmTypedCfg.GetRds().RouteConfigName).To(Equal(glooutils.MatchedRouteConfigName(proxy.GetListeners()[2], proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())))
-			Expect(hcmTypedCfg.GetHttpFilters()).ToNot(HaveLen(expectedHybridListeners)) // check that its lower. Actual list/ number handled at registery test
+			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(1)) // only the router filter should be configured
 		})
 
 		It("skips listeners with invalid downstream ssl config", func() {

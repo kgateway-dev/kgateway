@@ -87,6 +87,10 @@ message Listener {
 
         // contains any number of configuration options for Gloo's HTTP and/or TCP-level features
         HybridListener hybrid_listener = 11;
+
+        // contains any number of configuration options for Gloo's HTTP and/or TCP-level features
+        // avoids duplicating definitions by separating resources and relationships between resources
+        AggregateListener aggregate_listener = 13;
     }
 
     // SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port.
@@ -208,6 +212,37 @@ message Matcher {
     gloo.solo.io.SslConfig ssl_config = 1;
 
     repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 2;
+}
+
+// An AggregateListener defines a set of Gloo configuration which will map to a unique set of FilterChains on a Listener
+message AggregateListener {
+
+    message HttpResources {
+        // Set of VirtualHosts available on this Listener, indexed by name
+        map<string, VirtualHost> virtual_hosts = 1;
+
+        // Set of HttpListenerOptions available on this Listener, indexed by hash
+        map<string, HttpListenerOptions> http_options = 2;
+    }
+
+    message HttpFilterChain {
+        // Matching criteria used to generate both the FilterChainMatch and TransportSocket for the Envoy FilterChain
+        Matcher matcher = 1;
+
+        // The ref pointing to HttpListenerOptions which are used to configure the HCM on this HttpFilterChain
+        // Corresponds to an entry in the HttpResources.HttpOptions map
+        string http_options_ref = 2;
+
+        // The set of refs pointing to VirtualHosts which are available on this HttpFilterChain
+        // Each ref corresponds to an entry in the HttpResources.VirtualHosts map
+        repeated string virtual_host_refs = 3;
+    }
+
+    // The aggregate set of resources available on this listener
+    HttpResources http_resources = 1;
+
+    // The set of HttpFilterChains to create on this listener
+    repeated HttpFilterChain http_filter_chains = 2;
 }
 
 /*
