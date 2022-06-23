@@ -14,4 +14,9 @@
 ## [Regression Tests](./regression-tests.yaml)
 Regression tests run the suite of [Kubernetes End-To-End Tests](https://github.com/solo-io/gloo/tree/master/test).
 
-**These tests will not execute on Draft PRs**
+**This action will not execute on Draft PRs**
+
+## [Docs Generation](./docs-gen.yaml)
+Build the docs that power https://docs.solo.io/gloo-edge/latest/, and on pushes to the main branch, deploy those changes to Firebase.
+
+**This action will not execute on Draft PRs**

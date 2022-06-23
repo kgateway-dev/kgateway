@@ -18,6 +18,11 @@ jobs:
     name: Generate versioned docs site
     runs-on: ubuntu-18.04
     steps:
+    - name: Fail if Draft PR
+      if: github.event.pull_request.draft == true
+      run: |
+        echo "Docs generation does not run on Draft PRs"
+        exit 1
     - name: Free disk space
       run: |
         echo "Before clearing disk space:"
