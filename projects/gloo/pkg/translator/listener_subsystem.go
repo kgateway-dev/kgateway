@@ -16,7 +16,7 @@ import (
 // Gloo sends resources to Envoy via xDS. The components of the Listener subsystem that Gloo configures are:
 // 1. Listeners
 // 2. RouteConfiguration
-// Given that Gloo exposes a variety of ListenerTypes (HttpListener, TcpListener, HybridListener), and each of these types
+// Given that Gloo exposes a variety of ListenerTypes (HttpListener, TcpListener, HybridListener, AggregateListener), and each of these types
 // affect how resources are generated, we abstract those implementation details behind abstract translators.
 // The ListenerSubsystemTranslatorFactory returns a ListenerTranslator and RouteConfigurationTranslator for a given Gloo Listener
 type ListenerSubsystemTranslatorFactory struct {
@@ -47,6 +47,9 @@ func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context,
 
 	case *v1.Listener_HybridListener:
 		return l.GetHybridListenerTranslators(ctx, proxy, listener, listenerReport)
+
+	case *v1.Listener_AggregateListener:
+		return l.GetAggregateListenerTranslators(ctx, proxy, listener, listenerReport)
 	default:
 		// This case should never occur
 		return &emptyListenerTranslator{}, &emptyRouteConfigurationTranslator{}
@@ -236,6 +239,99 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 
 			// A TcpListener does not produce any RouteConfiguration
 			routeConfigurationTranslator = &emptyRouteConfigurationTranslator{}
+		}
+
+		filterChainTranslators = append(filterChainTranslators, filterChainTranslator)
+		routeConfigurationTranslators = append(routeConfigurationTranslators, routeConfigurationTranslator)
+	}
+
+	listenerTranslator := &listenerTranslatorInstance{
+		listener: listener,
+		report:   listenerReport,
+		plugins:  l.pluginRegistry.GetListenerPlugins(),
+		filterChainTranslator: &multiFilterChainTranslator{
+			translators: filterChainTranslators,
+		},
+	}
+
+	routeConfigurationTranslator := &multiRouteConfigurationTranslator{
+		translators: routeConfigurationTranslators,
+	}
+
+	return listenerTranslator, routeConfigurationTranslator
+}
+
+func (l *ListenerSubsystemTranslatorFactory) GetAggregateListenerTranslators(ctx context.Context, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
+	ListenerTranslator,
+	RouteConfigurationTranslator,
+) {
+	aggregateListenerReport := listenerReport.GetAggregateListenerReport()
+	if aggregateListenerReport == nil {
+		contextutils.LoggerFrom(ctx).DPanic("internal error: listener report was not aggregate type")
+		return nil, nil
+	}
+
+	var routeConfigurationTranslators []RouteConfigurationTranslator
+	var filterChainTranslators []FilterChainTranslator
+
+	httpResources := listener.GetAggregateListener().GetHttpResources()
+
+	for _, httpFilterChain := range listener.GetAggregateListener().GetHttpFilterChains() {
+		var (
+			routeConfigurationTranslator RouteConfigurationTranslator
+			filterChainTranslator        FilterChainTranslator
+		)
+
+		// The routeConfigurationName is used to match the RouteConfiguration
+		// to an implementation of the HttpConnectionManager NetworkFilter
+		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/rds#config-http-conn-man-rds
+		routeConfigurationName := utils.MatchedRouteConfigName(listener, httpFilterChain.GetMatcher())
+
+		// Build the HttpListener from the refs defined on the HttpFilterChain
+		httpListener := &v1.HttpListener{
+			Options: httpResources.GetHttpOptions()[httpFilterChain.GetHttpOptionsRef()],
+		}
+		for _, vhostRef := range httpFilterChain.GetVirtualHostRefs() {
+			httpListener.VirtualHosts = append(httpListener.GetVirtualHosts(), httpResources.GetVirtualHosts()[vhostRef])
+		}
+
+		httpListenerReport := aggregateListenerReport.GetHttpListenerReports()[routeConfigurationName]
+
+		// This translator produces NetworkFilters
+		// Most notably, this includes the HttpConnectionManager NetworkFilter
+		networkFilterTranslator := NewHttpListenerNetworkFilterTranslator(
+			listener,
+			httpListener,
+			httpListenerReport,
+			l.pluginRegistry.GetHttpFilterPlugins(),
+			l.pluginRegistry.GetHttpConnectionManagerPlugins(),
+			routeConfigurationName)
+
+		// This translator produces FilterChains
+		// For an HttpGateway we first build a set of NetworkFilters.
+		// Then, for each SslConfiguration that was found on that HttpGateway,
+		// we create a replica of the FilterChain, just with a different FilterChainMatcher
+		filterChainTranslator = &httpFilterChainTranslator{
+			parentReport:            listenerReport,
+			networkFilterTranslator: networkFilterTranslator,
+			sslConfigTranslator:     l.sslConfigTranslator,
+			sslConfigurations:       []*v1.SslConfig{httpFilterChain.GetMatcher().GetSslConfig()},
+			defaultSslConfig:        nil,
+			sourcePrefixRanges:      httpFilterChain.GetMatcher().GetSourcePrefixRanges(),
+		}
+
+		// This translator produces a single RouteConfiguration
+		// We produce the same number of RouteConfigurations as we do
+		// unique instances of the HttpConnectionManager NetworkFilter
+		routeConfigurationTranslator = &httpRouteConfigurationTranslator{
+			pluginRegistry:           l.pluginRegistry,
+			proxy:                    proxy,
+			parentListener:           listener,
+			listener:                 httpListener,
+			parentReport:             listenerReport,
+			report:                   httpListenerReport,
+			routeConfigName:          routeConfigurationName,
+			requireTlsOnVirtualHosts: httpFilterChain.GetMatcher().GetSslConfig() != nil,
 		}
 
 		filterChainTranslators = append(filterChainTranslators, filterChainTranslator)

@@ -27,6 +27,9 @@ import (
 
 var _ = Describe("Http Translator", func() {
 
+	// This file contains the tests both for the HttpTranslator and VirtualServiceTranslator
+	// It would be ideal to split the VirtualServiceTranslator tests into a distinct file
+
 	var (
 		ctx        context.Context
 		cancel     context.CancelFunc
@@ -40,7 +43,11 @@ var _ = Describe("Http Translator", func() {
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
-		translator = &HttpTranslator{}
+		translator = &HttpTranslator{
+			VirtualServiceTranslator: &VirtualServiceTranslator{
+				WarnOnRouteShortCircuiting: false,
+			},
+		}
 	})
 
 	JustBeforeEach(func() {
@@ -548,7 +555,9 @@ var _ = Describe("Http Translator", func() {
 
 			BeforeEach(func() {
 				translator = &HttpTranslator{
-					WarnOnRouteShortCircuiting: true,
+					VirtualServiceTranslator: &VirtualServiceTranslator{
+						WarnOnRouteShortCircuiting: true,
+					},
 				}
 			})
 
