@@ -75,7 +75,7 @@ type httpFilterChainTranslator struct {
 	sslConfigurations       []*v1.SslConfig
 	sslConfigTranslator     utils.SslConfigTranslator
 
-	// These values are optional (currently only available for HybridGateways)
+	// These values are optional (currently only available for HybridListeners or AggregateListeners)
 	defaultSslConfig   *v1.SslConfig
 	sourcePrefixRanges []*v3.CidrRange
 }

@@ -687,21 +687,22 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		opts.ProxyDebugServer.StartGrpcServer = false
 	}
 	gwOpts := gwtranslator.Opts{
-		GlooNamespace:                 opts.WriteNamespace,
-		WriteNamespace:                opts.WriteNamespace,
-		StatusReporterNamespace:       opts.StatusReporterNamespace,
-		WatchNamespaces:               opts.WatchNamespaces,
-		Gateways:                      opts.Gateways,
-		VirtualServices:               opts.VirtualServices,
-		RouteTables:                   opts.RouteTables,
-		Proxies:                       opts.Proxies,
-		RouteOptions:                  opts.RouteOptions,
-		VirtualHostOptions:            opts.VirtualHostOptions,
-		WatchOpts:                     opts.WatchOpts,
-		DevMode:                       opts.DevMode,
-		ReadGatewaysFromAllNamespaces: opts.ReadGatwaysFromAllNamespaces,
-		Validation:                    opts.ValidationOpts,
-		ConfigStatusMetricOpts:        nil,
+		GlooNamespace:                  opts.WriteNamespace,
+		WriteNamespace:                 opts.WriteNamespace,
+		StatusReporterNamespace:        opts.StatusReporterNamespace,
+		WatchNamespaces:                opts.WatchNamespaces,
+		Gateways:                       opts.Gateways,
+		VirtualServices:                opts.VirtualServices,
+		RouteTables:                    opts.RouteTables,
+		Proxies:                        opts.Proxies,
+		RouteOptions:                   opts.RouteOptions,
+		VirtualHostOptions:             opts.VirtualHostOptions,
+		WatchOpts:                      opts.WatchOpts,
+		DevMode:                        opts.DevMode,
+		ReadGatewaysFromAllNamespaces:  opts.ReadGatwaysFromAllNamespaces,
+		Validation:                     opts.ValidationOpts,
+		ConfigStatusMetricOpts:         nil,
+		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
 	}
 	var (
 		ignoreProxyValidationFailure bool
