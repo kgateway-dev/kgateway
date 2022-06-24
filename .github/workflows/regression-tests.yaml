@@ -2,10 +2,7 @@ name: CI
 on:
   push:
     branches:
-      - 'master'
-  pull_request:
-  issue_comment:
-    types: [ created, edited ]
+      - master
 jobs:
   prepare_env:
     name: Prepare Environment
@@ -14,6 +11,10 @@ jobs:
       should-run-regression-tests: ${{ steps.regression-tests.outputs.run_value }}
       should-pass-regression-tests: ${{ steps.regression-tests.outputs.pass_value }}
     steps:
+    - name: Cancel Previous Actions
+      uses: styfle/cancel-workflow-action@0.4.1
+      with:
+        access_token: ${{ github.token }}
     - id: is-draft-pr
       name: Process draft Pull Requests
       if: ${{ github.event.pull_request.draft }}
@@ -21,7 +22,10 @@ jobs:
     - id: signal-ci-comment
       name: Process comments on Pull Request to signal CI
       if:  ${{ github.event.issue.pull_request }}
-      run: echo "::set-output name=value::$(echo ${{ contains(github.event.comment.body, '/sig-ci') }})"
+      run: |
+        echo toJSON(github.event.issue.pull_request)
+        echo toJSON(github.event.comment)
+        echo "::set-output name=value::$(echo ${{ contains(github.event.comment.body, '/sig-ci') }})"
     - id: skip-ci-comment
       name: Process comments on Pull Request to skip CI
       if: ${{ github.event.issue.pull_request }}
@@ -31,6 +35,9 @@ jobs:
       run: |
         should_run=true
         should_pass=false
+
+        echo toJSON(github.event.issue.pull_request)
+        echo toJSON(github.event.comment)
 
         is_draft_pr=${{ steps.is-draft-pr.outputs.value }}
         if [[ ! -z $is_draft_pr && $is_draft_pr = true ]] ; then
