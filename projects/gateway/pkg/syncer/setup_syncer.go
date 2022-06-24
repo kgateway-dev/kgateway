@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/grpc"
+
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -129,6 +131,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			AlwaysAcceptResources:        alwaysAcceptResources,
 			AllowWarnings:                allowWarnings,
 			WarnOnRouteShortCircuiting:   validationCfg.GetWarnRouteShortCircuiting().GetValue(),
+			GrpcMaxSizeBytes:             int(validationCfg.GetValidationServerGrpcMaxSizeBytes().GetValue()),
 		}
 		if validation.ProxyValidationServerAddress == "" {
 			validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr
@@ -268,8 +271,13 @@ func RunGateway(opts translator.Opts) error {
 	notifications := make(<-chan struct{})
 
 	if opts.Validation != nil {
+		var grpcOpts []grpc.CallOption
+		if opts.Validation.GrpcMaxSizeBytes > 0 {
+			grpcOpts = append(grpcOpts, grpc.MaxCallRecvMsgSize(opts.Validation.GrpcMaxSizeBytes))
+		}
 		validationClient, err = gatewayvalidation.NewConnectionRefreshingValidationClient(
 			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.ProxyValidationServerAddress),
+			grpcOpts,
 		)
 		if err != nil {
 			return errors.Wrapf(err, "failed to initialize grpc connection to validation server.")
