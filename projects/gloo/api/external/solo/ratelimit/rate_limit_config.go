@@ -43,8 +43,8 @@ func (r *RateLimitConfig) UnmarshalSpec(spec skres.Spec) error {
 	return protoutils.UnmarshalMapToProto(spec, &r.Spec)
 }
 
-func (r *RateLimitConfig) UnmarshalStatus(status skres.Status, unmarshaler resources.StatusUnmarshaler) error {
-	return protoutils.UnmarshalMapToProto(status, &r.Status)
+func (r *RateLimitConfig) UnmarshalStatus(status skres.Status, unmarshaler resources.StatusUnmarshaler) {
+	protoutils.UnmarshalMapToProto(status, &r.Status)
 }
 
 func (r *RateLimitConfig) MarshalSpec() (skres.Spec, error) {

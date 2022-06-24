@@ -1366,8 +1366,8 @@ github.com/solo-io/skv2 v0.21.6/go.mod h1:8jNcMWuAkBxdGhlRFMSgsK94q/jZGPEas8VHTr
 github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c h1:4/yTroUmyUJonldE5EyC3AinNG4KVLgG0FVMrI2SQ04=
 github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c/go.mod h1:4HQsQO4Cy/4V7ZZxWncvnMvIq7pYnb66jAT5hvDJBgQ=
 github.com/solo-io/solo-kit v0.23.0/go.mod h1:uCOi8RQ3MetHXsRFvVKPzafYySUvFuPxB+gvo7ScRR8=
-github.com/solo-io/solo-kit v0.29.1 h1:ewW+b4vZoAAHgFp5NircznveOHcQC1LOxUPmxvZX8qM=
-github.com/solo-io/solo-kit v0.29.1/go.mod h1:F3Jd/1+2XWfMObGRn5o3FzbQPdU5VtEZHA9wJDNudeI=
+github.com/solo-io/solo-kit v0.29.2-0.20220622131824-8b1b54cfcfb0 h1:bleY0DSuH0xzy7dgmh+JtbyYW4hxaP81ZCZzmCkmRKg=
+github.com/solo-io/solo-kit v0.29.2-0.20220622131824-8b1b54cfcfb0/go.mod h1:F3Jd/1+2XWfMObGRn5o3FzbQPdU5VtEZHA9wJDNudeI=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
