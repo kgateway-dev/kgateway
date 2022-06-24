@@ -135,6 +135,8 @@ func convertHttp1ProtocolOptions(hpo *v1.ConnectionConfig_Http1ProtocolOptions) 
 		out.EnableTrailers = hpo.GetEnableTrailers()
 	}
 
+	out.OverrideStreamErrorOnInvalidHttpMessage = hpo.GetOverrideStreamErrorOnInvalidHttpMessage()
+
 	if hpo.GetProperCaseHeaderKeyFormat() {
 		out.HeaderKeyFormat = &envoy_config_core_v3.Http1ProtocolOptions_HeaderKeyFormat{
 			HeaderFormat: &envoy_config_core_v3.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{

@@ -17,6 +17,8 @@ option (extproto.equal_all) = true;
 
 // Contains various settings for Envoy's http connection manager.
 // See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man
+// Now contains v3 fields as well
+// v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#extensions-filters-network-http-connection-manager-v3-httpconnectionmanager
 message HttpConnectionManagerSettings {
     enum ForwardClientCertDetails {
         SANITIZE = 0;
@@ -53,6 +55,10 @@ message HttpConnectionManagerSettings {
     google.protobuf.Duration idle_timeout = 8;
     google.protobuf.UInt32Value max_request_headers_kb = 9;
     google.protobuf.Duration request_timeout = 10;
+    // The amount of time that Envoy will wait for the request headers to be received. The timer is
+    // activated when the first byte of the headers is received, and is disarmed when the last byte of
+    // the headers has been received. If not specified or set to 0, this timeout is disabled.
+    google.protobuf.Duration request_headers_timeout = 11;
     google.protobuf.Duration drain_timeout = 12;
     google.protobuf.Duration delayed_close_timeout = 13;
     string server_name = 14;
