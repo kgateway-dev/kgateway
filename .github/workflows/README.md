@@ -14,9 +14,23 @@
 ## [Regression Tests](./regression-tests.yaml)
 Regression tests run the suite of [Kubernetes End-To-End Tests](https://github.com/solo-io/gloo/tree/master/test).
 
-**This action will not execute on Draft PRs**
+### Issue Comment Directives
+There are several directives that can be used to interact with this Github Action via a comment on the github pull request. The comments must be made by a member of the organization that owns the repo.
+
+- A comment containing `/sig-ci` will clear the status and trigger a new build. This is useful for when the CI build has a flake.
+- A comment containing `/skip-ci` will mark the status as successful and bypass the CI build. This should be used sparingly in situations where CI is not needed (i.e. a readme update).
+
+### Draft Pull Requests
+This Github Action will not run by default on a Draft Pull Request. However, you can use the above issue comment directives to signal CI.
 
 ## [Docs Generation](./docs-gen.yaml)
-Build the docs that power https://docs.solo.io/gloo-edge/latest/, and on pushes to the main branch, deploy those changes to Firebase.
+Docs generation builds the docs that power https://docs.solo.io/gloo-edge/latest/, and on pushes to the main branch, deploys those changes to Firebase.
 
-**This action will not execute on Draft PRs**
+### Issue Comment Directives
+There are several directives that can be used to interact with this Github Action via a comment on the github pull request. The comments must be made by a member of the organization that owns the repo.
+
+- A comment containing `/sig-docs` will clear the status and trigger a new build. This is useful for when the CI build has a flake.
+- A comment containing `/skip-docs` will mark the status as successful and bypass the CI build. This should be used sparingly in situations where CI is not needed (i.e. a readme update).
+
+### Draft Pull Requests
+This Github Action will not run by default on a Draft Pull Request. However, you can use the above issue comment directives to signal a build.
