@@ -4,10 +4,6 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/imdario/mergo"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
-
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -152,13 +148,13 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 				// for an ssl gateway, create an HttpFilterChain per unique SslConfig
 				virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
 				for vsSslConfig, virtualServiceList := range virtualServicesBySslConfig {
+					// SslConfig is evaluated by having the VS definition merged into the Gateway, and overriding
+					// any shared fields. The Gateway is purely used to define default values.
+					reconciledSslConfig := mergeSslConfig(gatewaySsl, vsSslConfig, false)
 					virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServiceList, proxyName)
 					httpOptions := gt.HttpGateway.GetOptions()
 					matcher := &gloov1.Matcher{
-						// we intentionally respect the VirtualService SSL configuration
-						// the Gateway SSL configuration is solely used as a boolean to flag a Gateway as
-						// requiring SSL
-						SslConfig:          vsSslConfig,
+						SslConfig:          reconciledSslConfig,
 						SourcePrefixRanges: matchedGateway.GetMatcher().GetSourcePrefixRanges(),
 					}
 
@@ -218,56 +214,6 @@ func (a *AggregateTranslator) processMatchableGateway(
 ) {
 	// TODO
 	return
-}
-
-func reconcileSslConfig(parent, child *gloov1.SslConfig, preventChildOverrides bool) *gloov1.SslConfig {
-	// Clone to be safe, since we will mutate it
-	parentClone := proto.Clone(parent).(*gloov1.SslConfig)
-	childClone := proto.Clone(child).(*gloov1.SslConfig)
-
-	if childClone == nil {
-		// use parent exactly as-is
-		return parentClone
-	}
-	if parent == nil {
-		// use child exactly as-is
-		return childClone
-	}
-
-	if preventChildOverrides {
-		// merge, preferring parent
-		mergo.Merge(childClone, parentClone, mergo.WithOverride)
-	} else {
-		// merge, preferring child
-		mergo.Merge(childClone, parentClone)
-	}
-
-	return childClone
-}
-
-func reconcileHCMSettings(parent, child *hcm.HttpConnectionManagerSettings, preventChildOverrides bool) *hcm.HttpConnectionManagerSettings {
-	// Clone to be safe, since we will mutate it
-	parentClone := proto.Clone(parent).(*hcm.HttpConnectionManagerSettings)
-	childClone := proto.Clone(child).(*hcm.HttpConnectionManagerSettings)
-
-	if childClone == nil {
-		// use parent exactly as-is
-		return parentClone
-	}
-	if parentClone == nil {
-		// use child exactly as-is
-		return childClone
-	}
-
-	if preventChildOverrides {
-		// merge, preferring parent
-		mergo.Merge(childClone, parentClone, mergo.WithOverride)
-	} else {
-		// merge, preferring child
-		mergo.Merge(childClone, parentClone)
-	}
-
-	return childClone
 }
 
 // aggregateListenerBuilder is a utility used to build the listener

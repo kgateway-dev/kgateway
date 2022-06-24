@@ -169,7 +169,7 @@ func (t *HybridTranslator) computeMatchedListener(
 	if matchableHttpGateway.GetMatcher() != nil {
 		childSslConfig = matchableHttpGateway.GetMatcher().GetSslConfig()
 	}
-	reconciledSslConfig := reconcileSslConfig(parentSslConfig, childSslConfig, preventChildOverrides)
+	reconciledSslConfig := mergeSslConfig(parentSslConfig, childSslConfig, preventChildOverrides)
 
 	// HcmOptions
 	parentHcmOptions := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetHttpConnectionManagerSettings()
@@ -177,7 +177,7 @@ func (t *HybridTranslator) computeMatchedListener(
 	if matchableHttpGateway.GetHttpGateway().GetOptions() != nil {
 		childHcmOptions = matchableHttpGateway.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
 	}
-	reconciledHCMSettings := reconcileHCMSettings(parentHcmOptions, childHcmOptions, preventChildOverrides)
+	reconciledHCMSettings := mergeHCMSettings(parentHcmOptions, childHcmOptions, preventChildOverrides)
 
 	httpGateway := matchableHttpGateway.GetHttpGateway()
 	listenerOptions := httpGateway.GetOptions()

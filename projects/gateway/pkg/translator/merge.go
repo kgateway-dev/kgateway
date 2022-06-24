@@ -3,6 +3,9 @@ package translator
 import (
 	"reflect"
 
+	"github.com/imdario/mergo"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+
 	"github.com/golang/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
@@ -86,4 +89,54 @@ func isEmptyValue(v reflect.Value) bool {
 		return true
 	}
 	return false
+}
+
+func mergeSslConfig(parent, child *v1.SslConfig, preventChildOverrides bool) *v1.SslConfig {
+	// Clone to be safe, since we will mutate it
+	parentClone := proto.Clone(parent).(*v1.SslConfig)
+	childClone := proto.Clone(child).(*v1.SslConfig)
+
+	if childClone == nil {
+		// use parent exactly as-is
+		return parentClone
+	}
+	if parent == nil {
+		// use child exactly as-is
+		return childClone
+	}
+
+	if preventChildOverrides {
+		// merge, preferring parent
+		mergo.Merge(childClone, parentClone, mergo.WithOverride)
+	} else {
+		// merge, preferring child
+		mergo.Merge(childClone, parentClone)
+	}
+
+	return childClone
+}
+
+func mergeHCMSettings(parent, child *hcm.HttpConnectionManagerSettings, preventChildOverrides bool) *hcm.HttpConnectionManagerSettings {
+	// Clone to be safe, since we will mutate it
+	parentClone := proto.Clone(parent).(*hcm.HttpConnectionManagerSettings)
+	childClone := proto.Clone(child).(*hcm.HttpConnectionManagerSettings)
+
+	if childClone == nil {
+		// use parent exactly as-is
+		return parentClone
+	}
+	if parentClone == nil {
+		// use child exactly as-is
+		return childClone
+	}
+
+	if preventChildOverrides {
+		// merge, preferring parent
+		mergo.Merge(childClone, parentClone, mergo.WithOverride)
+	} else {
+		// merge, preferring child
+		mergo.Merge(childClone, parentClone)
+	}
+
+	return childClone
 }
