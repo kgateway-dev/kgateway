@@ -14,20 +14,23 @@
 ## [Regression Tests](./regression-tests.yaml)
 Regression tests run the suite of [Kubernetes End-To-End Tests](https://github.com/solo-io/gloo/tree/master/test).
 
+### Issue Comment Directives
+There are several directives that can be used to interact with this Github Action via a comment on the github pull request. The comments must be made by a member of the organization that owns the repo.
+
+- A comment containing `/sig-ci` will clear the status and trigger a new build. This is useful for when the CI build has a flake.
+- A comment containing `/skip-ci` will mark the status as successful and bypass the CI build. This should be used sparingly in situations where CI is not needed (i.e. a readme update).
+
 ### Draft Pull Requests
-This Github Action will not run by default on a Draft Pull Request. If you would like to run this, you need to:
-1. Mark the PR as `Ready for Review`
-1. Push an empty commit to run the jobs: `git commit --allow-empty -m "Trigger CI"` 
+This Github Action will not run by default on a Draft Pull Request. However, you can use the above issue comment directives to signal CI.
 
 ## [Docs Generation](./docs-gen.yaml)
 Docs generation builds the docs that power https://docs.solo.io/gloo-edge/latest/, and on pushes to the main branch, deploys those changes to Firebase.
 
+### Issue Comment Directives
+There are several directives that can be used to interact with this Github Action via a comment on the github pull request. The comments must be made by a member of the organization that owns the repo.
+
+- A comment containing `/sig-docs` will clear the status and trigger a new build. This is useful for when the CI build has a flake.
+- A comment containing `/skip-docs` will mark the status as successful and bypass the CI build. This should be used sparingly in situations where CI is not needed (i.e. a readme update).
+
 ### Draft Pull Requests
-This Github Action will not run by default on a Draft Pull Request. If you would like to run this, you need to:
-1. Mark the PR as `Ready for Review`
-1. Push an empty commit to run the jobs: `git commit --allow-empty -m "Trigger CI"`
-
-## Future Work
-It would be great to add support for issue comment directives. This would mean that commenting `/sig-ci` would signal CI to run, or `/skip-ci` would auto-succeed CI.
-
-This was attempted, and the challenge is that Github workflows were kicked off, but not associated with the PR that contained the comment. Therefore, the PR status never changed, even if the job that was kicked off passed all the tests.
+This Github Action will not run by default on a Draft Pull Request. However, you can use the above issue comment directives to signal a build.
