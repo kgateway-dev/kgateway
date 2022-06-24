@@ -364,24 +364,32 @@ var _ = Describe("Hybrid Translator", func() {
 					child = snap.HttpGateways[0]
 				})
 
-				DescribeTable("anscestry override tests", func(child_ssl *gloov1.SslConfig, parent_ssl *gloov1.SslConfig, child_hcm *hcm.HttpConnectionManagerSettings, parent_hcm *hcm.HttpConnectionManagerSettings, prevent_child_overrides bool) {
+				DescribeTable("anscestry override tests", func(childSsl *gloov1.SslConfig, parentSsl *gloov1.SslConfig, childHcm *hcm.HttpConnectionManagerSettings, parentHcm *hcm.HttpConnectionManagerSettings, prevent_child_overrides bool) {
 					parent.PreventChildOverrides = prevent_child_overrides
 					// config setting
-					child.GetMatcher().SslConfig = child_ssl
-					parent.SslConfig = parent_ssl
-					child.GetHttpGateway().GetOptions().HttpConnectionManagerSettings = child_hcm
-					parent.HttpConnectionManagerSettings = parent_hcm
+					child.GetMatcher().SslConfig = childSsl
+					parent.SslConfig = parentSsl
+					child.GetHttpGateway().GetOptions().HttpConnectionManagerSettings = childHcm
+					parent.HttpConnectionManagerSettings = parentHcm
 
 					// perform translation
 					params := NewTranslatorParams(ctx, snap, reports)
-					hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 
 					// evaluate results
-					hcm_after := child.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
-					ssl_after := child.GetMatcher().GetSslConfig()
+					Expect(listener).NotTo(BeNil())
 
-					Expect(hcm_after.GetSkipXffAppend()).To(Equal(true))
-					Expect(ssl_after.GetOneWayTls().GetValue()).To(Equal(true))
+					matchedListeners := listener.GetHybridListener().GetMatchedListeners()
+					Expect(matchedListeners).To(HaveLen(1))
+
+					singleMatchedListener := matchedListeners[0]
+					Expect(singleMatchedListener).NotTo(BeNil())
+
+					sslAfter := singleMatchedListener.GetMatcher().GetSslConfig()
+					hcmAfter := singleMatchedListener.GetHttpListener().GetOptions().GetHttpConnectionManagerSettings()
+
+					Expect(hcmAfter.GetSkipXffAppend()).To(Equal(true))
+					Expect(sslAfter.GetOneWayTls().GetValue()).To(Equal(true))
 				},
 					Entry("PreventChildOverrides, child == nil", // should prefer parent fields
 						nil, ssl_true, nil, hcm_true, true),
@@ -412,11 +420,19 @@ var _ = Describe("Hybrid Translator", func() {
 
 					// perform transformation
 					params := NewTranslatorParams(ctx, snap, reports)
-					hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 
 					// evaluate results
-					hcm_after := child.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
-					Expect(hcm_after.GetSkipXffAppend()).To(Equal(true))
+					Expect(listener).NotTo(BeNil())
+
+					matchedListeners := listener.GetHybridListener().GetMatchedListeners()
+					Expect(matchedListeners).To(HaveLen(1))
+
+					singleMatchedListener := matchedListeners[0]
+					Expect(singleMatchedListener).NotTo(BeNil())
+
+					hcmAfter := singleMatchedListener.GetHttpListener().GetOptions().GetHttpConnectionManagerSettings()
+					Expect(hcmAfter.GetSkipXffAppend()).To(Equal(true))
 				})
 
 				It("Should overwrite nested nil child fields", func() {
@@ -429,11 +445,20 @@ var _ = Describe("Hybrid Translator", func() {
 
 					// perform transformation
 					params := NewTranslatorParams(ctx, snap, reports)
-					hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 
 					// evaluate results
-					ssl_after := child.GetMatcher().GetSslConfig()
-					Expect(ssl_after.GetTransportSocketConnectTimeout().GetSeconds()).To(Equal(int64(10)))
+					// evaluate results
+					Expect(listener).NotTo(BeNil())
+
+					matchedListeners := listener.GetHybridListener().GetMatchedListeners()
+					Expect(matchedListeners).To(HaveLen(1))
+
+					singleMatchedListener := matchedListeners[0]
+					Expect(singleMatchedListener).NotTo(BeNil())
+
+					sslAfter := singleMatchedListener.GetMatcher().GetSslConfig()
+					Expect(sslAfter.GetTransportSocketConnectTimeout().GetSeconds()).To(Equal(int64(10)))
 				})
 			})
 
