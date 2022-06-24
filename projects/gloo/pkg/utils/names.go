@@ -12,17 +12,16 @@ func RouteConfigName(listener *v1.Listener) string {
 	return listener.GetName() + "-routes"
 }
 
+// MatchedRouteConfigName returns a unique RouteConfiguration name
+// This name is commonly used for 2 purposes:
+//  1. to associate the RouteConfigurationName between RDS and the HttpConnectionManager NetworkFilter
+//  2. To provide a consistent key function for a map of ListenerReports
 func MatchedRouteConfigName(listener *v1.Listener, matcher *v1.Matcher) string {
-	hybridListener := listener.GetHybridListener()
-	if hybridListener == nil {
-		return RouteConfigName(listener)
-	}
+	namePrefix := RouteConfigName(listener)
 
-	for i, mg := range hybridListener.GetMatchedListeners() {
-		if mg.GetMatcher().Equal(matcher) {
-			return fmt.Sprintf("%s-%d", RouteConfigName(listener), i)
-		}
+	if matcher == nil {
+		return namePrefix
 	}
-
-	return fmt.Sprintf("%s-%s", RouteConfigName(listener), matcher.String())
+	nameSuffix, _ := matcher.Hash(nil)
+	return fmt.Sprintf("%s-%d", namePrefix, nameSuffix)
 }
