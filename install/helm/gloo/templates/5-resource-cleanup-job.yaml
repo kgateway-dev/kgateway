@@ -36,8 +36,12 @@ spec:
           - -c
           - |
             kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-{{ .Release.Namespace }} || exit $?
-            kubectl delete gateways.gateway.solo.io -n {{ .Release.Namespace }} -l created_by=gloo-install || exit $?
             kubectl delete upstreams.gloo.solo.io -n {{ .Release.Namespace }} -l created_by=gloo-install || exit $?
+
+            # gateways can be in multiple namespaces
+            {{- range include "gloo.gatewayNamespaces" . | fromJsonArray }}
+            kubectl delete gateways.gateway.solo.io -n {{ . }} -l created_by=gloo-install || exit $?
+            {{- end }}
       restartPolicy: OnFailure
   ttlSecondsAfterFinished: 0
 {{- if .Values.global.glooRbac.create }}

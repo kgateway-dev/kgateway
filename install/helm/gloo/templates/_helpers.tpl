@@ -98,3 +98,16 @@ version, which merges two named templates.
 {{- toYaml $merged -}} {{/* render source with overrides as YAML */}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Returns the unique Gateway namespaces as defined by the helm values.
+*/}}
+{{- define "gloo.gatewayNamespaces" -}}
+{{- $proxyNamespaces := list -}}
+{{- range $key, $gatewaySpec := .Values.gatewayProxies -}}
+  {{- $ns := $gatewaySpec.namespace | default $.Release.Namespace -}}
+  {{- $proxyNamespaces = append $proxyNamespaces $ns -}}
+{{- end -}}
+{{- $proxyNamespaces = $proxyNamespaces | uniq -}}
+{{ toJson $proxyNamespaces }}
+{{- end -}}

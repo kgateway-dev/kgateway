@@ -65,7 +65,7 @@ apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}-ssl
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
     app: gloo
     created_by: gloo-install
