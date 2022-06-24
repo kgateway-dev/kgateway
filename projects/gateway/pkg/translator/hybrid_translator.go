@@ -1,7 +1,6 @@
 package translator
 
 import (
-	"github.com/imdario/mergo"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -161,7 +160,7 @@ func (t *HybridTranslator) computeMatchedListener(
 	parentGateway *v1.Gateway,
 	matchableHttpGateway *v1.MatchableHttpGateway,
 ) *gloov1.MatchedListener {
-	// v ---- inheritence logic ---- v
+	// v ---- inheritance logic ---- v
 	preventChildOverrides := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetPreventChildOverrides()
 
 	// SslConfig
@@ -170,26 +169,7 @@ func (t *HybridTranslator) computeMatchedListener(
 	if matchableHttpGateway.GetMatcher() != nil {
 		childSslConfig = matchableHttpGateway.GetMatcher().GetSslConfig()
 	}
-
-	if childSslConfig == nil {
-		// use parentSslConfig exactly as-is
-		childSslConfig = parentSslConfig
-	} else if parentSslConfig == nil {
-		// use childSslConfig exactly as-is
-	} else if childSslConfig != nil && parentSslConfig != nil {
-		if preventChildOverrides {
-			// merge, preferring parentSslConfig
-			mergo.Merge(childSslConfig, parentSslConfig, mergo.WithOverride)
-		} else {
-			// merge, preferring childSslConfig
-			mergo.Merge(childSslConfig, parentSslConfig)
-		}
-	}
-
-	if matchableHttpGateway.GetMatcher() != nil {
-		matchableHttpGateway.GetMatcher().SslConfig = childSslConfig
-	}
-	parentGateway.GetHybridGateway().GetDelegatedHttpGateways().SslConfig = childSslConfig
+	reconciledSslConfig := reconcileSslConfig(parentSslConfig, childSslConfig, preventChildOverrides)
 
 	// HcmOptions
 	parentHcmOptions := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetHttpConnectionManagerSettings()
@@ -197,47 +177,32 @@ func (t *HybridTranslator) computeMatchedListener(
 	if matchableHttpGateway.GetHttpGateway().GetOptions() != nil {
 		childHcmOptions = matchableHttpGateway.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
 	}
+	reconciledHCMSettings := reconcileHCMSettings(parentHcmOptions, childHcmOptions, preventChildOverrides)
 
-	if childHcmOptions == nil {
-		// use parentHcmOptions exactly as-is
-		childHcmOptions = parentHcmOptions
-	} else if parentHcmOptions == nil {
-		// use childHcmOptions exactly as-is
-	} else if childHcmOptions != nil && parentHcmOptions != nil {
-		if preventChildOverrides {
-			// merge, preferring parentHcmOptions
-			mergo.Merge(childHcmOptions, parentHcmOptions, mergo.WithOverride)
-		} else {
-			// merge, preferring childHcmOptions
-			mergo.Merge(childHcmOptions, parentHcmOptions)
-		}
-	}
-
-	if matchableHttpGateway.GetHttpGateway().GetOptions() != nil {
-		matchableHttpGateway.GetHttpGateway().GetOptions().HttpConnectionManagerSettings = childHcmOptions
+	httpGateway := matchableHttpGateway.GetHttpGateway()
+	listenerOptions := httpGateway.GetOptions()
+	if listenerOptions != nil {
+		listenerOptions.HttpConnectionManagerSettings = reconciledHCMSettings
 	} else {
-		matchableHttpGateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
-			HttpConnectionManagerSettings: childHcmOptions,
+		listenerOptions = &gloov1.HttpListenerOptions{
+			HttpConnectionManagerSettings: reconciledHCMSettings,
 		}
 	}
-	parentGateway.GetHybridGateway().GetDelegatedHttpGateways().HttpConnectionManagerSettings = childHcmOptions
-	// ^ ---- inheritence logic ---- ^
-
+	// ^ ---- inheritance logic ---- ^
 	matchedListener := &gloov1.MatchedListener{
 		Matcher: &gloov1.Matcher{
-			SslConfig:          matchableHttpGateway.GetMatcher().GetSslConfig(),
+			SslConfig:          reconciledSslConfig,
 			SourcePrefixRanges: matchableHttpGateway.GetMatcher().GetSourcePrefixRanges(),
 		},
 	}
 
-	httpGateway := matchableHttpGateway.GetHttpGateway()
 	sslGateway := matchableHttpGateway.GetMatcher().GetSslConfig() != nil
 	virtualServices := getVirtualServicesForHttpGateway(params, parentGateway, httpGateway, sslGateway)
 
 	matchedListener.ListenerType = &gloov1.MatchedListener_HttpListener{
 		HttpListener: &gloov1.HttpListener{
 			VirtualHosts: t.VirtualServiceTranslator.ComputeVirtualHosts(params, parentGateway, virtualServices, proxyName),
-			Options:      httpGateway.GetOptions(),
+			Options:      listenerOptions,
 		},
 	}
 

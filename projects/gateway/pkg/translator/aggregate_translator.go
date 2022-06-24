@@ -2,6 +2,11 @@ package translator
 
 import (
 	"errors"
+	"strconv"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/imdario/mergo"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
@@ -20,6 +25,11 @@ type AggregateTranslator struct {
 
 func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener {
 	snap := params.snapshot
+
+	// currently the AggregateListener only support HTTP features (and not TCP)
+	// therefore, we are safe to guard against empty VirtualServices first, since all HTTP features
+	// require VirtualServices to function. If TCP support is added later, this guard will need
+	// to be moved
 	if len(snap.VirtualServices) == 0 {
 		snapHash := hashutils.MustHash(snap)
 		contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services", snapHash)
@@ -33,8 +43,11 @@ func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, g
 
 	case *v1.Gateway_HybridGateway:
 		aggregateListener = a.computeAggregateListenerForHybridGateway(params, proxyName, gateway)
+	}
 
-	default:
+	if aggregateListener == nil {
+		// there are cases where a Gateway may have no configuration and we want to ensure
+		// that we do not generate an empty listener
 		return nil
 	}
 
@@ -52,80 +65,254 @@ func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, g
 }
 
 func (a *AggregateTranslator) computeAggregateListenerForHttpGateway(params Params, proxyName string, gateway *v1.Gateway) *gloov1.AggregateListener {
-	var httpFilterChains []*gloov1.AggregateListener_HttpFilterChain
-	availableHttpListenerOptionsByName := make(map[string]*gloov1.HttpListenerOptions)
-	availableVirtualHostsByName := make(map[string]*gloov1.VirtualHost)
-
 	sslGateway := gateway.GetSsl()
 	httpGateway := gateway.GetHttpGateway()
 	virtualServices := getVirtualServicesForHttpGateway(params, gateway, httpGateway, sslGateway)
 
+	builder := newBuilder()
 	if gateway.GetSsl() {
 		// for an ssl gateway, create an HttpFilterChain per unique SslConfig
 		virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
 		for sslConfig, virtualServiceList := range virtualServicesBySslConfig {
-			httpListener := &gloov1.HttpListener{
-				VirtualHosts: a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServiceList, proxyName),
-				Options:      httpGateway.GetOptions(),
+			virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServiceList, proxyName)
+			httpOptions := httpGateway.GetOptions()
+			matcher := &gloov1.Matcher{
+				SslConfig:          sslConfig,
+				SourcePrefixRanges: nil, // not supported for HttpListener
 			}
 
-			httpOptionsRef := gateway.GetMetadata().Ref().Key()
-			httpOptions := httpListener.GetOptions()
-			availableHttpListenerOptionsByName[httpOptionsRef] = httpOptions
-
-			var virtualHostRefs []string
-			for _, virtualHost := range httpListener.GetVirtualHosts() {
-				virtualHostRef := virtualHost.GetName()
-				virtualHostRefs = append(virtualHostRefs, virtualHostRef)
-				availableVirtualHostsByName[virtualHostRef] = virtualHost
-			}
-
-			httpFilterChain := &gloov1.AggregateListener_HttpFilterChain{
-				Matcher: &gloov1.Matcher{
-					SslConfig:          sslConfig,
-					SourcePrefixRanges: nil, // not supported for HttpListener
-				},
-				HttpOptionsRef:  httpOptionsRef,
-				VirtualHostRefs: virtualHostRefs,
-			}
-			httpFilterChains = append(httpFilterChains, httpFilterChain)
+			builder.addHttpFilterChain(virtualHosts, httpOptions, matcher)
 		}
 	} else {
 		// for a non-ssl gateway, create a single HttpFilterChain
-		httpListener := &gloov1.HttpListener{
-			VirtualHosts: a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServices, proxyName),
-			Options:      httpGateway.GetOptions(),
-		}
+		virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServices, proxyName)
+		httpOptions := httpGateway.GetOptions()
 
-		httpOptionsRef := gateway.GetMetadata().Ref().Key()
-		httpOptions := httpListener.GetOptions()
-		availableHttpListenerOptionsByName[httpOptionsRef] = httpOptions
-
-		var virtualHostRefs []string
-		for _, virtualHost := range httpListener.GetVirtualHosts() {
-			virtualHostRef := virtualHost.GetName()
-			virtualHostRefs = append(virtualHostRefs, virtualHostRef)
-			availableVirtualHostsByName[virtualHostRef] = virtualHost
-		}
-
-		httpFilterChain := &gloov1.AggregateListener_HttpFilterChain{
-			Matcher:         nil,
-			HttpOptionsRef:  httpOptionsRef,
-			VirtualHostRefs: virtualHostRefs,
-		}
-		httpFilterChains = append(httpFilterChains, httpFilterChain)
+		builder.addHttpFilterChain(virtualHosts, httpOptions, nil)
 	}
 
-	return &gloov1.AggregateListener{
-		HttpResources: &gloov1.AggregateListener_HttpResources{
-			VirtualHosts: availableVirtualHostsByName,
-			HttpOptions:  availableHttpListenerOptionsByName,
-		},
-		HttpFilterChains: httpFilterChains,
-	}
+	return builder.build()
 }
 
 func (a *AggregateTranslator) computeAggregateListenerForHybridGateway(params Params, proxyName string, gateway *v1.Gateway) *gloov1.AggregateListener {
-	params.reports.AddError(gateway, errors.New("not implemented"))
-	return nil
+	hybridGateway := gateway.GetHybridGateway()
+
+	matchedGateways := hybridGateway.GetMatchedGateways()
+	delegatedGateways := hybridGateway.GetDelegatedHttpGateways()
+	if matchedGateways == nil && delegatedGateways == nil {
+		return nil
+	}
+
+	var aggregateListener *gloov1.AggregateListener
+
+	// MatchedGateways take precedence over DelegatedHttpGateways
+	if matchedGateways != nil {
+		aggregateListener = a.computeListenerFromMatchedGateways(params, proxyName, gateway, matchedGateways)
+		if len(aggregateListener.GetHttpFilterChains()) == 0 {
+			// matched gateways are defined inline, and therefore if they don't produce
+			// any filter chains, there is an error on the gateway resource
+			params.reports.AddError(gateway, errors.New(EmptyHybridGatewayMessage))
+			return nil
+		}
+	} else {
+		// DelegatedHttpGateways is only processed if there are no MatchedGateways defined
+		aggregateListener = a.computeListenerFromDelegatedGateway(params, proxyName, gateway, delegatedGateways)
+		if len(aggregateListener.GetHttpFilterChains()) == 0 {
+			// missing refs should only result in a warning
+			// this allows resources to be applied asynchronously
+			params.reports.AddWarning(gateway, EmptyHybridGatewayMessage)
+			return nil
+		}
+	}
+
+	return aggregateListener
+}
+
+func (a *AggregateTranslator) computeListenerFromMatchedGateways(
+	params Params,
+	proxyName string,
+	gateway *v1.Gateway,
+	matchedGateways []*v1.MatchedGateway,
+) *gloov1.AggregateListener {
+
+	builder := newBuilder()
+
+	for _, matchedGateway := range matchedGateways {
+
+		switch gt := matchedGateway.GetGatewayType().(type) {
+		case *v1.MatchedGateway_TcpGateway:
+			params.reports.AddError(gateway, errors.New("AggregateListener does not support TCP features (yet)"))
+			continue
+
+		case *v1.MatchedGateway_HttpGateway:
+			gatewaySsl := matchedGateway.GetMatcher().GetSslConfig()
+			virtualServices := getVirtualServicesForHttpGateway(params, gateway, gt.HttpGateway, gatewaySsl != nil)
+
+			if gatewaySsl != nil {
+				// for an ssl gateway, create an HttpFilterChain per unique SslConfig
+				virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+				for vsSslConfig, virtualServiceList := range virtualServicesBySslConfig {
+					virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServiceList, proxyName)
+					httpOptions := gt.HttpGateway.GetOptions()
+					matcher := &gloov1.Matcher{
+						// we intentionally respect the VirtualService SSL configuration
+						// the Gateway SSL configuration is solely used as a boolean to flag a Gateway as
+						// requiring SSL
+						SslConfig:          vsSslConfig,
+						SourcePrefixRanges: matchedGateway.GetMatcher().GetSourcePrefixRanges(),
+					}
+
+					builder.addHttpFilterChain(virtualHosts, httpOptions, matcher)
+				}
+			} else {
+				// for a non-ssl gateway, create a single HttpFilterChain
+				virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServices, proxyName)
+				httpOptions := gt.HttpGateway.GetOptions()
+				matcher := &gloov1.Matcher{
+					SslConfig:          nil,
+					SourcePrefixRanges: matchedGateway.GetMatcher().GetSourcePrefixRanges(),
+				}
+
+				builder.addHttpFilterChain(virtualHosts, httpOptions, matcher)
+			}
+		}
+	}
+
+	return builder.build()
+}
+
+func (a *AggregateTranslator) computeListenerFromDelegatedGateway(
+	params Params,
+	proxyName string,
+	gateway *v1.Gateway,
+	delegatedGateway *v1.DelegatedHttpGateway,
+) *gloov1.AggregateListener {
+	// 1. Select the HttpGateways
+	httpGatewaySelector := NewHttpGatewaySelector(params.snapshot.HttpGateways)
+	onSelectionError := func(err error) {
+		params.reports.AddError(gateway, err)
+	}
+	matchableHttpGateways := httpGatewaySelector.SelectMatchableHttpGateways(delegatedGateway, onSelectionError)
+	if len(matchableHttpGateways) == 0 {
+		return nil
+	}
+
+	// 2. Initialize the builder, used to aggregate resources
+	builder := newBuilder()
+
+	// 3. Process each MatchableHttpGateway, which may create 1 or more distinct filter chains
+	matchableHttpGateways.Each(func(element *v1.MatchableHttpGateway) {
+		a.processMatchableGateway(params, proxyName, gateway, element, builder)
+	})
+
+	// 4. Build the listener
+	return builder.build()
+}
+
+func (a *AggregateTranslator) processMatchableGateway(
+	params Params,
+	proxyName string,
+	parentGateway *v1.Gateway,
+	matchableHttpGateway *v1.MatchableHttpGateway,
+	builder *aggregateListenerBuilder,
+) {
+	// TODO
+	return
+}
+
+func reconcileSslConfig(parent, child *gloov1.SslConfig, preventChildOverrides bool) *gloov1.SslConfig {
+	// Clone to be safe, since we will mutate it
+	parentClone := proto.Clone(parent).(*gloov1.SslConfig)
+	childClone := proto.Clone(child).(*gloov1.SslConfig)
+
+	if childClone == nil {
+		// use parent exactly as-is
+		return parentClone
+	}
+	if parent == nil {
+		// use child exactly as-is
+		return childClone
+	}
+
+	if preventChildOverrides {
+		// merge, preferring parent
+		mergo.Merge(childClone, parentClone, mergo.WithOverride)
+	} else {
+		// merge, preferring child
+		mergo.Merge(childClone, parentClone)
+	}
+
+	return childClone
+}
+
+func reconcileHCMSettings(parent, child *hcm.HttpConnectionManagerSettings, preventChildOverrides bool) *hcm.HttpConnectionManagerSettings {
+	// Clone to be safe, since we will mutate it
+	parentClone := proto.Clone(parent).(*hcm.HttpConnectionManagerSettings)
+	childClone := proto.Clone(child).(*hcm.HttpConnectionManagerSettings)
+
+	if childClone == nil {
+		// use parent exactly as-is
+		return parentClone
+	}
+	if parentClone == nil {
+		// use child exactly as-is
+		return childClone
+	}
+
+	if preventChildOverrides {
+		// merge, preferring parent
+		mergo.Merge(childClone, parentClone, mergo.WithOverride)
+	} else {
+		// merge, preferring child
+		mergo.Merge(childClone, parentClone)
+	}
+
+	return childClone
+}
+
+// aggregateListenerBuilder is a utility used to build the listener
+type aggregateListenerBuilder struct {
+	virtualHostsByName map[string]*gloov1.VirtualHost
+	httpOptionsByName  map[string]*gloov1.HttpListenerOptions
+	httpFilterChains   []*gloov1.AggregateListener_HttpFilterChain
+}
+
+func newBuilder() *aggregateListenerBuilder {
+	return &aggregateListenerBuilder{
+		virtualHostsByName: make(map[string]*gloov1.VirtualHost),
+		httpOptionsByName:  make(map[string]*gloov1.HttpListenerOptions),
+		httpFilterChains:   nil,
+	}
+}
+
+func (b *aggregateListenerBuilder) addHttpFilterChain(virtualHosts []*gloov1.VirtualHost, httpOptions *gloov1.HttpListenerOptions, matcher *gloov1.Matcher) {
+	// store HttpListenerOptions, indexed by a hash of the httpOptions
+	httpOptionsHash, _ := httpOptions.Hash(nil)
+	httpOptionsRef := strconv.Itoa(int(httpOptionsHash))
+	b.httpOptionsByName[httpOptionsRef] = httpOptions
+
+	// store VirtualHosts, indexed by the name of the VirtualHost
+	var virtualHostRefs []string
+	for _, virtualHost := range virtualHosts {
+		virtualHostRef := virtualHost.GetName()
+		virtualHostRefs = append(virtualHostRefs, virtualHostRef)
+		b.virtualHostsByName[virtualHostRef] = virtualHost
+	}
+
+	httpFilterChain := &gloov1.AggregateListener_HttpFilterChain{
+		Matcher:         matcher,
+		HttpOptionsRef:  httpOptionsRef,
+		VirtualHostRefs: virtualHostRefs,
+	}
+	b.httpFilterChains = append(b.httpFilterChains, httpFilterChain)
+}
+
+func (b *aggregateListenerBuilder) build() *gloov1.AggregateListener {
+	return &gloov1.AggregateListener{
+		HttpResources: &gloov1.AggregateListener_HttpResources{
+			VirtualHosts: b.virtualHostsByName,
+			HttpOptions:  b.httpOptionsByName,
+		},
+		HttpFilterChains: b.httpFilterChains,
+	}
 }

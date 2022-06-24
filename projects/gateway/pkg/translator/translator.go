@@ -151,8 +151,7 @@ func (t *GwTranslator) getListenerTranslatorForGateway(gateway *v1.Gateway) List
 
 	case *v1.Gateway_HybridGateway:
 		if shouldIsolateVirtualHosts {
-			// TODO (sam-heilbron) Add support for HybridGateway
-			listenerTranslatorImpl = t.listenerTranslators[HybridTranslatorName]
+			listenerTranslatorImpl = t.listenerTranslators[AggregateTranslatorName]
 		} else {
 			listenerTranslatorImpl = t.listenerTranslators[HybridTranslatorName]
 		}
