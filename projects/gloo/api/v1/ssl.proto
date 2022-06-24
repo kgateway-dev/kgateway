@@ -84,7 +84,8 @@ message UpstreamSslConfig {
     // If empty, it is not set.
     repeated string alpn_protocols = 8;
 
-    // Allow Tls renegotiation
+    // Allow Tls renegotiation, the default value is false.
+    // TLS renegotiation is considered insecure and shouldn’t be used unless absolutely necessary.
     google.protobuf.BoolValue allow_renegotiation = 10;
 }
 
