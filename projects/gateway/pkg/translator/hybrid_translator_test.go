@@ -3,8 +3,9 @@ package translator_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"google.golang.org/protobuf/types/known/wrapperspb"

@@ -201,7 +201,7 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 						virtualHosts = append(virtualHosts, httpResources.VirtualHosts[vhostRef])
 					}
 					httpListener := &gloov1.HttpListener{
-						Options: httpResources.HttpOptions[httpFilterChain.GetHttpOptionsRef()],
+						Options:      httpResources.HttpOptions[httpFilterChain.GetHttpOptionsRef()],
 						VirtualHosts: virtualHosts,
 					}
 					validVhosts, err := validHostsFromHttpListener(httpListener, reports, proxy, lis, logger)
