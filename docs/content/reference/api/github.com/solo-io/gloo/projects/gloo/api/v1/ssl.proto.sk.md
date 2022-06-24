@@ -101,6 +101,7 @@ SslConfig contains the options necessary to configure an upstream to use TLS ori
 "verifySubjectAltName": []string
 "parameters": .gloo.solo.io.SslParameters
 "alpnProtocols": []string
+"allowRenegotiation": .google.protobuf.BoolValue
 
 ```
 
@@ -113,6 +114,7 @@ SslConfig contains the options necessary to configure an upstream to use TLS ori
 | `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |
 | `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) |  |
 | `alpnProtocols` | `[]string` | Set Application Level Protocol Negotiation. If empty, it is not set. |
+| `allowRenegotiation` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Allow Tls renegotiation. |
 
 
 

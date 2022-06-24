@@ -347,6 +347,9 @@ spec:
                                       type: integer
                                     upstreamSslConfig:
                                       properties:
+                                        allowRenegotiation:
+                                          nullable: true
+                                          type: boolean
                                         alpnProtocols:
                                           items:
                                             type: string
@@ -981,6 +984,9 @@ spec:
                 x-kubernetes-int-or-string: true
               sslConfig:
                 properties:
+                  allowRenegotiation:
+                    nullable: true
+                    type: boolean
                   alpnProtocols:
                     items:
                       type: string

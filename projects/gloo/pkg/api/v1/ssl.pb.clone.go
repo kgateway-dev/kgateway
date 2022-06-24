@@ -184,6 +184,12 @@ func (m *UpstreamSslConfig) Clone() proto.Message {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAllowRenegotiation()).(clone.Cloner); ok {
+		target.AllowRenegotiation = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.AllowRenegotiation = proto.Clone(m.GetAllowRenegotiation()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	switch m.SslSecrets.(type) {
 
 	case *UpstreamSslConfig_SecretRef:
