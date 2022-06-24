@@ -26,7 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("Hybrid", func() {
+var _ = FDescribe("Hybrid", func() {
 
 	var (
 		err error
