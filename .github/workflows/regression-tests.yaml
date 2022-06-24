@@ -4,9 +4,57 @@ on:
     branches:
       - 'master'
   pull_request:
+  issue_comment:
+    types: [ created, edited ]
 jobs:
+  prepare_env:
+    name: Prepare Environment
+    runs-on: ubuntu-18.04
+    outputs:
+      should-run-regression-tests: ${{ steps.regression-tests.outputs.run_value }}
+      should-pass-regression-tests: ${{ steps.regression-tests.outputs.pass_value }}
+    steps:
+    - id: is-draft-pr
+      name: Process draft Pull Requests
+      if: ${{ github.event.pull_request.draft }}
+      run: echo "::set-output name=value::$(echo true)"
+    - id: signal-ci-comment
+      name: Process comments on Pull Request to signal CI
+      if:  ${{ github.event.issue.pull_request }}
+      run: echo "::set-output name=value::$(echo ${{ contains(github.event.comment.body, '/sig-ci') }})"
+    - id: skip-ci-comment
+      name: Process comments on Pull Request to skip CI
+      if: ${{ github.event.issue.pull_request }}
+      run: echo "::set-output name=value::$(echo ${{ contains(github.event.comment.body, '/skip-ci') }})"
+    - id: regression-tests
+      name: Determine how to run regression tests
+      run: |
+        should_run=true
+        should_pass=false
+
+        is_draft_pr=${{ steps.is-draft-pr.outputs.value }}
+        if [[ ! -z $is_draft_pr && $is_draft_pr = true ]] ; then
+          should_run=false
+        fi
+
+        pr_comment_signal=${{ steps.signal-ci-comment.outputs.value }}
+        if [[ ! -z $pr_comment_signal && $pr_comment_signal = true ]] ; then
+          should_run=true
+        fi
+
+        pr_comment_skip=${{ steps.skip-ci-comment.outputs.value }}
+        if [[ ! -z $pr_comment_skip && $pr_comment_skip = true ]] ; then
+          should_pass=true
+        fi
+
+        echo "Should run regression tests? $should_run"
+        echo "Should auto-pass regression tests? $should_pass"
+        echo "::set-output name=run_value::$(echo $should_run)"
+        echo "::set-output name=pass_value::$(echo $should_pass)"
   regression_tests:
     name: k8s regression tests
+    needs: prepare_env
+    if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
     runs-on: ubuntu-18.04
     strategy:
       matrix:
@@ -22,12 +70,8 @@ jobs:
       uses: styfle/cancel-workflow-action@0.4.1
       with:
         access_token: ${{ github.token }}
-    - name: Fail if Draft PR
-      if: github.event.pull_request.draft == true
-      run: |
-        echo "Regresssion tests do not run on Draft PRs"
-        exit 1
     - name: Free disk space
+      if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       run: |
         echo "Before clearing disk space:"
         df -h
@@ -45,33 +89,40 @@ jobs:
         echo "After clearing disk space:"
         df -h
     - name: Set up Go
+      if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       uses: actions/setup-go@v2
       with:
         go-version: 1.18.2
       id: go
     - name: Check out code into the Go module directory
+      if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
     - uses: actions/cache@v1
+      if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
     - uses: engineerd/setup-kind@v0.5.0
+      if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       with:
         # We rely on the `deploy-to-kind-cluster` script to create a kind cluster
         skipClusterCreation: true
         version: v0.11.1
     - uses: azure/setup-kubectl@v1
+      if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       id: kubectl
       with:
         version: 'v1.22.4'
     - uses: azure/setup-helm@v1
+      if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       with:
         version: v3.6.3
     - name: Setup test env
+      if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
         USE_XDS_RELAY: ${{ matrix.xds-relay }}
@@ -81,6 +132,7 @@ jobs:
       run: |
         ./ci/deploy-to-kind-cluster.sh
     - name: Testing - kube e2e regression tests
+      if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
         ACK_GINKGO_RC: true
