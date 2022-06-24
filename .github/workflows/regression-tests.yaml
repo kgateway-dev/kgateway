@@ -23,8 +23,6 @@ jobs:
       name: Process comments on Pull Request to signal CI
       if:  ${{ github.event.issue.pull_request }}
       run: |
-        echo toJSON(github.event.issue.pull_request)
-        echo toJSON(github.event.comment)
         echo "::set-output name=value::$(echo ${{ contains(github.event.comment.body, '/sig-ci') }})"
     - id: skip-ci-comment
       name: Process comments on Pull Request to skip CI
@@ -35,9 +33,6 @@ jobs:
       run: |
         should_run=true
         should_pass=false
-
-        echo toJSON(github.event.issue.pull_request)
-        echo toJSON(github.event.comment)
 
         is_draft_pr=${{ steps.is-draft-pr.outputs.value }}
         if [[ ! -z $is_draft_pr && $is_draft_pr = true ]] ; then
