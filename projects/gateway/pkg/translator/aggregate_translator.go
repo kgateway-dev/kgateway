@@ -133,7 +133,6 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 ) *gloov1.AggregateListener {
 
 	builder := newBuilder()
-
 	for _, matchedGateway := range matchedGateways {
 
 		switch gt := matchedGateway.GetGatewayType().(type) {
@@ -224,21 +223,32 @@ func (a *AggregateTranslator) processMatchableGateway(
 		sslConfig = reconcileGatewayLevelSslConfig(parentGateway, matchableHttpGateway)
 	}
 
-	matchedListener := &gloov1.MatchedListener{
-		Matcher: &gloov1.Matcher{
-			SslConfig:          sslConfig,
+	virtualServices := getVirtualServicesForHttpGateway(params, parentGateway, matchableHttpGateway.GetHttpGateway(), sslGateway)
+
+	if sslGateway {
+		// for an ssl gateway, create an HttpFilterChain per unique SslConfig
+		virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+		for vsSslConfig, virtualServiceList := range virtualServicesBySslConfig {
+			// SslConfig is evaluated by having the VS definition merged into the Gateway, and overriding
+			// any shared fields. The Gateway is purely used to define default values.
+			reconciledSslConfig := mergeSslConfig(sslConfig, vsSslConfig, false)
+			virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, parentGateway, virtualServiceList, proxyName)
+			matcher := &gloov1.Matcher{
+				SslConfig:          reconciledSslConfig,
+				SourcePrefixRanges: matchableHttpGateway.GetMatcher().GetSourcePrefixRanges(),
+			}
+
+			builder.addHttpFilterChain(virtualHosts, listenerOptions, matcher)
+		}
+	} else {
+		// for a non-ssl gateway, create a single HttpFilterChain
+		virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, parentGateway, virtualServices, proxyName)
+		matcher := &gloov1.Matcher{
+			SslConfig:          nil,
 			SourcePrefixRanges: matchableHttpGateway.GetMatcher().GetSourcePrefixRanges(),
-		},
-	}
+		}
 
-	httpGateway := matchableHttpGateway.GetHttpGateway()
-	virtualServices := getVirtualServicesForHttpGateway(params, parentGateway, httpGateway, sslGateway)
-
-	matchedListener.ListenerType = &gloov1.MatchedListener_HttpListener{
-		HttpListener: &gloov1.HttpListener{
-			VirtualHosts: a.VirtualServiceTranslator.ComputeVirtualHosts(params, parentGateway, virtualServices, proxyName),
-			Options:      listenerOptions,
-		},
+		builder.addHttpFilterChain(virtualHosts, listenerOptions, matcher)
 	}
 }
 
