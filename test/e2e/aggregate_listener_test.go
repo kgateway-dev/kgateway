@@ -355,4 +355,239 @@ var _ = Describe("Aggregate Listener", func() {
 
 	})
 
+	Context("Insecure HybridGateway", func() {
+
+		TestUpstreamReachable := func(host, path string) {
+			v1helpers.ExpectCurlWithOffset(
+				1,
+				v1helpers.CurlRequest{
+					RootCA: nil,
+					Port:   defaults.HybridPort,
+					Host:   host,
+					Path:   path,
+					Body:   []byte("solo.io test"),
+				},
+				v1helpers.CurlResponse{
+					Status:  http.StatusOK,
+					Message: "",
+				})
+		}
+
+		BeforeEach(func() {
+			simpleRouteName := "simple-route"
+			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(defaults.GlooSystem)
+
+			vsEast := vsBuilder.
+				WithName("vs-east").
+				WithDomain("east.com").
+				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithPrefixMatcher(simpleRouteName, "/east").
+				Build()
+
+			vsWest := vsBuilder.
+				WithName("vs-west").
+				WithDomain("west.com").
+				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithPrefixMatcher(simpleRouteName, "/west").
+				Build()
+
+			resourcesToCreate.Gateways = v1.GatewayList{
+				gatewaydefaults.DefaultHybridGateway(defaults.GlooSystem),
+			}
+			resourcesToCreate.VirtualServices = v1.VirtualServiceList{
+				vsEast, vsWest,
+			}
+		})
+
+		Context("IsolateVirtualHostsBySslConfig = false", func() {
+
+			BeforeEach(func() {
+				isolateVirtualHostsBySslConfig = false
+			})
+
+			It("produces a Proxy with a single HybridListener", func() {
+				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(proxy.GetListeners()).To(HaveLen(1))
+				Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+			})
+
+			It("routes requests to all routes on gateway", func() {
+				TestUpstreamReachable("east.com", "/east/1")
+				TestUpstreamReachable("west.com", "/west/1")
+			})
+
+		})
+
+		Context("IsolateVirtualHostsBySslConfig = true", func() {
+
+			BeforeEach(func() {
+				isolateVirtualHostsBySslConfig = true
+			})
+
+			It("produces a Proxy with a single AggregateListener", func() {
+				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(proxy.GetListeners()).To(HaveLen(1))
+				Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+			})
+
+			It("routes requests to all routes on gateway", func() {
+				TestUpstreamReachable("east.com", "/east/1")
+				TestUpstreamReachable("west.com", "/west/1")
+			})
+
+		})
+
+	})
+
+	Context("Secure HybridGateway", func() {
+
+		var (
+			eastCert, eastPK = gloohelpers.Certificate(), gloohelpers.PrivateKey()
+			westCert, westPK = gloohelpers.GetCerts(gloohelpers.Params{
+				Hosts: "other-host",
+				IsCA:  false,
+			})
+		)
+
+		TestUpstreamReturns := func(host, path, cert string, responseStatus int) {
+			v1helpers.ExpectCurlWithOffset(
+				1,
+				v1helpers.CurlRequest{
+					RootCA: &cert,
+					Port:   defaults.HybridPort,
+					Host:   host,
+					Path:   path,
+					Body:   []byte("solo.io test"),
+				},
+				v1helpers.CurlResponse{
+					Status:  responseStatus,
+					Message: "",
+				})
+		}
+
+		BeforeEach(func() {
+			simpleRouteName := "simple-route"
+			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(defaults.GlooSystem)
+
+			eastTLSSecret := &gloov1.Secret{
+				Metadata: &core.Metadata{
+					Name:      "east-tls-secret",
+					Namespace: defaults.GlooSystem,
+				},
+				Kind: &gloov1.Secret_Tls{
+					Tls: &gloov1.TlsSecret{
+						CertChain:  eastCert,
+						PrivateKey: eastPK,
+					},
+				},
+			}
+			westTLSSecret := &gloov1.Secret{
+				Metadata: &core.Metadata{
+					Name:      "west-tls-secret",
+					Namespace: defaults.GlooSystem,
+				},
+				Kind: &gloov1.Secret_Tls{
+					Tls: &gloov1.TlsSecret{
+						CertChain:  westCert,
+						PrivateKey: westPK,
+					},
+				},
+			}
+
+			vsEast := vsBuilder.
+				WithName("vs-east").
+				WithDomain("east.com").
+				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithPrefixMatcher(simpleRouteName, "/east").
+				WithSslConfig(&gloov1.SslConfig{
+					SslSecrets: &gloov1.SslConfig_SecretRef{
+						SecretRef: eastTLSSecret.GetMetadata().Ref(),
+					},
+				}).
+				Build()
+
+			vsWest := vsBuilder.
+				WithName("vs-west").
+				WithDomain("west.com").
+				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithPrefixMatcher(simpleRouteName, "/west").
+				WithSslConfig(&gloov1.SslConfig{
+					OneWayTls: &wrappers.BoolValue{
+						Value: false,
+					},
+					SniDomains: []string{"west.com"},
+					SslSecrets: &gloov1.SslConfig_SecretRef{
+						SecretRef: westTLSSecret.GetMetadata().Ref(),
+					},
+				}).
+				Build()
+
+			resourcesToCreate.Gateways = v1.GatewayList{
+				gatewaydefaults.DefaultHybridSslGateway(defaults.GlooSystem),
+			}
+			resourcesToCreate.VirtualServices = v1.VirtualServiceList{
+				vsEast, vsWest,
+			}
+			resourcesToCreate.Secrets = gloov1.SecretList{
+				eastTLSSecret, westTLSSecret,
+			}
+		})
+
+		Context("IsolateVirtualHostsBySslConfig = false", func() {
+
+			BeforeEach(func() {
+				isolateVirtualHostsBySslConfig = false
+			})
+
+			It("produces a Proxy with a single HybridListener", func() {
+				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(proxy.GetListeners()).To(HaveLen(1))
+				Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+			})
+
+			It("routes requests to all routes on gateway", func() {
+				// This test demonstrates the flaw with HttpListeners:
+				//	The West VirtualService should only be exposing routes if the westCert is provided,
+				//	but in this test we can successfully execute requests against the west routes,
+				//	by providing an east certificate.
+				//
+				// This is due to the fact that an HttpListener creates an aggregate set of RouteConfiguration
+				// and then produces duplicate FilterChains, based on all available SslConfig's from VirtualServices
+				TestUpstreamReturns("east.com", "/east/1", eastCert, http.StatusOK)
+				TestUpstreamReturns("west.com", "/west/1", eastCert, http.StatusOK)
+			})
+
+		})
+
+		Context("IsolateVirtualHostsBySslConfig = true", func() {
+
+			BeforeEach(func() {
+				isolateVirtualHostsBySslConfig = true
+			})
+
+			It("produces a Proxy with a single AggregateListener", func() {
+				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(proxy.GetListeners()).To(HaveLen(1))
+				Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+			})
+
+			It("routes requests to all routes on gateway", func() {
+				// This test demonstrates the solution with AggregateListeners:
+				//	The West VirtualService is no longer routable with the eastCert.
+				TestUpstreamReturns("east.com", "/east/1", eastCert, http.StatusOK)
+				TestUpstreamReturns("west.com", "/west/1", eastCert, http.StatusNotFound)
+			})
+
+		})
+
+	})
+
 })
