@@ -58,6 +58,7 @@ import (
 
 type TestClients struct {
 	GatewayClient        gatewayv1.GatewayClient
+	HttpGatewayClient    gatewayv1.MatchableHttpGatewayClient
 	VirtualServiceClient gatewayv1.VirtualServiceClient
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
@@ -91,6 +92,11 @@ func (c TestClients) WriteSnapshot(ctx context.Context, snapshot *gloosnapshot.A
 			return writeErr
 		}
 	}
+	for _, hgw := range snapshot.HttpGateways {
+		if _, writeErr := c.HttpGatewayClient.Write(hgw, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
 	for _, gw := range snapshot.Gateways {
 		if _, writeErr := c.GatewayClient.Write(gw, writeOptions); writeErr != nil {
 			return writeErr
@@ -118,6 +124,12 @@ func (c TestClients) DeleteSnapshot(ctx context.Context, snapshot *gloosnapshot.
 	for _, gw := range snapshot.Gateways {
 		gwNamespace, gwName := gw.GetMetadata().Ref().Strings()
 		if deleteErr := c.GatewayClient.Delete(gwNamespace, gwName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, hgw := range snapshot.HttpGateways {
+		hgwNamespace, hgwName := hgw.GetMetadata().Ref().Strings()
+		if deleteErr := c.HttpGatewayClient.Delete(hgwNamespace, hgwName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
@@ -265,6 +277,8 @@ func getTestClients(ctx context.Context, cache memory.InMemoryResourceCache, ser
 
 	gatewayClient, err := gatewayv1.NewGatewayClient(ctx, memFactory)
 	Expect(err).NotTo(HaveOccurred())
+	httpGatewayClient, err := gatewayv1.NewMatchableHttpGatewayClient(ctx, memFactory)
+	Expect(err).NotTo(HaveOccurred())
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, memFactory)
 	Expect(err).NotTo(HaveOccurred())
 	upstreamClient, err := gloov1.NewUpstreamClient(ctx, memFactory)
@@ -276,6 +290,7 @@ func getTestClients(ctx context.Context, cache memory.InMemoryResourceCache, ser
 
 	return TestClients{
 		GatewayClient:        gatewayClient,
+		HttpGatewayClient:    httpGatewayClient,
 		VirtualServiceClient: virtualServiceClient,
 		UpstreamClient:       upstreamClient,
 		SecretClient:         secretClient,

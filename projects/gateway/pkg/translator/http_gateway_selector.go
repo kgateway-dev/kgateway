@@ -60,6 +60,12 @@ func (s *gatewaySelector) isSelected(matchableHttpGateway *v1.MatchableHttpGatew
 		return false, nil
 	}
 
+	selectorDefinesSSL := selector.GetSslConfig() != nil
+	gwDefinesSSL := matchableHttpGateway.GetMatcher().GetSslConfig() != nil
+	if selectorDefinesSSL != gwDefinesSSL {
+		return false, nil
+	}
+
 	refSelector := selector.GetRef()
 	if refSelector != nil {
 		return refSelector.Equal(matchableHttpGateway.GetMetadata().Ref()), nil
