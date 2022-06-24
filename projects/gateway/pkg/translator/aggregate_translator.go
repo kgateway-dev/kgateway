@@ -2,6 +2,7 @@ package translator
 
 import (
 	"errors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"strconv"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -212,8 +213,76 @@ func (a *AggregateTranslator) processMatchableGateway(
 	matchableHttpGateway *v1.MatchableHttpGateway,
 	builder *aggregateListenerBuilder,
 ) {
-	// TODO
-	return
+	sslGateway := matchableHttpGateway.GetMatcher().GetSslConfig() != nil
+
+	// reconcile the hcm configuration that is shared by Gateway and MatchableHttpGateways
+	listenerOptions := reconcileGatewayLevelHCMConfig(parentGateway, matchableHttpGateway)
+
+	// reconcile the ssl configuration that is shared by Gateway and MatchableHttpGateways
+	var sslConfig *gloov1.SslConfig
+	if sslGateway {
+		sslConfig = reconcileGatewayLevelSslConfig(parentGateway, matchableHttpGateway)
+	}
+
+	matchedListener := &gloov1.MatchedListener{
+		Matcher: &gloov1.Matcher{
+			SslConfig:          sslConfig,
+			SourcePrefixRanges: matchableHttpGateway.GetMatcher().GetSourcePrefixRanges(),
+		},
+	}
+
+	httpGateway := matchableHttpGateway.GetHttpGateway()
+	virtualServices := getVirtualServicesForHttpGateway(params, parentGateway, httpGateway, sslGateway)
+
+	matchedListener.ListenerType = &gloov1.MatchedListener_HttpListener{
+		HttpListener: &gloov1.HttpListener{
+			VirtualHosts: a.VirtualServiceTranslator.ComputeVirtualHosts(params, parentGateway, virtualServices, proxyName),
+			Options:      listenerOptions,
+		},
+	}
+}
+
+// A Gateway and MatchableHttpGateway share configuration
+// reconcileGatewayLevelConfig establishes the reconciled set of options
+func reconcileGatewayLevelHCMConfig(parentGateway *v1.Gateway, matchableHttpGateway *v1.MatchableHttpGateway) *gloov1.HttpListenerOptions {
+	// v ---- inheritance logic ---- v
+	preventChildOverrides := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetPreventChildOverrides()
+
+	// HcmOptions
+	parentHcmOptions := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetHttpConnectionManagerSettings()
+	var childHcmOptions *hcm.HttpConnectionManagerSettings
+	if matchableHttpGateway.GetHttpGateway().GetOptions() != nil {
+		childHcmOptions = matchableHttpGateway.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
+	}
+	reconciledHCMSettings := mergeHCMSettings(parentHcmOptions, childHcmOptions, preventChildOverrides)
+
+	listenerOptions := matchableHttpGateway.GetHttpGateway().GetOptions()
+	if listenerOptions != nil {
+		listenerOptions.HttpConnectionManagerSettings = reconciledHCMSettings
+	} else {
+		listenerOptions = &gloov1.HttpListenerOptions{
+			HttpConnectionManagerSettings: reconciledHCMSettings,
+		}
+	}
+
+	return listenerOptions
+}
+
+// A Gateway and MatchableHttpGateway share configuration
+// reconcileGatewayLevelConfig establishes the reconciled set of options
+func reconcileGatewayLevelSslConfig(parentGateway *v1.Gateway, matchableHttpGateway *v1.MatchableHttpGateway) *gloov1.SslConfig {
+	// v ---- inheritance logic ---- v
+	preventChildOverrides := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetPreventChildOverrides()
+
+	// SslConfig
+	parentSslConfig := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetSslConfig()
+	var childSslConfig *gloov1.SslConfig
+	if matchableHttpGateway.GetMatcher() != nil {
+		childSslConfig = matchableHttpGateway.GetMatcher().GetSslConfig()
+	}
+	reconciledSslConfig := mergeSslConfig(parentSslConfig, childSslConfig, preventChildOverrides)
+
+	return reconciledSslConfig
 }
 
 // aggregateListenerBuilder is a utility used to build the listener

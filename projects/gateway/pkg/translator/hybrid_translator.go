@@ -4,7 +4,6 @@ import (
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	hcm "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 )
@@ -160,43 +159,25 @@ func (t *HybridTranslator) computeMatchedListener(
 	parentGateway *v1.Gateway,
 	matchableHttpGateway *v1.MatchableHttpGateway,
 ) *gloov1.MatchedListener {
-	// v ---- inheritance logic ---- v
-	preventChildOverrides := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetPreventChildOverrides()
+	sslGateway := matchableHttpGateway.GetMatcher().GetSslConfig() != nil
 
-	// SslConfig
-	parentSslConfig := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetSslConfig()
-	var childSslConfig *gloov1.SslConfig
-	if matchableHttpGateway.GetMatcher() != nil {
-		childSslConfig = matchableHttpGateway.GetMatcher().GetSslConfig()
-	}
-	reconciledSslConfig := mergeSslConfig(parentSslConfig, childSslConfig, preventChildOverrides)
+	// reconcile the hcm configuration that is shared by Gateway and MatchableHttpGateways
+	listenerOptions := reconcileGatewayLevelHCMConfig(parentGateway, matchableHttpGateway)
 
-	// HcmOptions
-	parentHcmOptions := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetHttpConnectionManagerSettings()
-	var childHcmOptions *hcm.HttpConnectionManagerSettings
-	if matchableHttpGateway.GetHttpGateway().GetOptions() != nil {
-		childHcmOptions = matchableHttpGateway.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
+	// reconcile the ssl configuration that is shared by Gateway and MatchableHttpGateways
+	var sslConfig *gloov1.SslConfig
+	if sslGateway {
+		sslConfig = reconcileGatewayLevelSslConfig(parentGateway, matchableHttpGateway)
 	}
-	reconciledHCMSettings := mergeHCMSettings(parentHcmOptions, childHcmOptions, preventChildOverrides)
 
-	httpGateway := matchableHttpGateway.GetHttpGateway()
-	listenerOptions := httpGateway.GetOptions()
-	if listenerOptions != nil {
-		listenerOptions.HttpConnectionManagerSettings = reconciledHCMSettings
-	} else {
-		listenerOptions = &gloov1.HttpListenerOptions{
-			HttpConnectionManagerSettings: reconciledHCMSettings,
-		}
-	}
-	// ^ ---- inheritance logic ---- ^
 	matchedListener := &gloov1.MatchedListener{
 		Matcher: &gloov1.Matcher{
-			SslConfig:          reconciledSslConfig,
+			SslConfig:          sslConfig,
 			SourcePrefixRanges: matchableHttpGateway.GetMatcher().GetSourcePrefixRanges(),
 		},
 	}
 
-	sslGateway := matchableHttpGateway.GetMatcher().GetSslConfig() != nil
+	httpGateway := matchableHttpGateway.GetHttpGateway()
 	virtualServices := getVirtualServicesForHttpGateway(params, parentGateway, httpGateway, sslGateway)
 
 	matchedListener.ListenerType = &gloov1.MatchedListener_HttpListener{
