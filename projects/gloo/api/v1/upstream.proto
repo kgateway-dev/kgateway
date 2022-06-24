@@ -111,14 +111,26 @@ message Upstream {
     // watermark callbacks will fire to stop the flow of data to the codec buffers.
     // Requires UseHttp2 to be true to be acknowledged.
     google.protobuf.UInt32Value initial_stream_window_size = 19;
+
     // (UInt32Value) Similar to initial_stream_window_size, but for connection-level flow-control window.
     // Currently, this has the same minimum/maximum/default as initial_stream_window_size.
     // Requires UseHttp2 to be true to be acknowledged.
     google.protobuf.UInt32Value initial_connection_window_size = 20;
+
     // (UInt32Value) Maximum concurrent streams allowed for peer on one HTTP/2 connection.
     // Valid values range from 1 to 2147483647 (2^31 - 1) and defaults to 2147483647.
     // Requires UseHttp2 to be true to be acknowledged.
     google.protobuf.UInt32Value max_concurrent_streams = 24;
+
+    // Allows invalid HTTP messaging and headers. When this option is disabled (default), then
+    // the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame. However,
+    // when this option is enabled, only the offending stream is terminated.
+    //
+    // This overrides any HCM :ref:`stream_error_on_invalid_http_messaging
+    // <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.stream_error_on_invalid_http_message>`
+    //
+    // See `RFC7540, sec. 8.1 <https://tools.ietf.org/html/rfc7540#section-8.1>`_ for details.
+    google.protobuf.BoolValue override_stream_error_on_invalid_http_message = 26;
 
     // Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect.
     // This configuration sets the hostname used as part of the HTTP Connect request.
