@@ -2,8 +2,9 @@ package translator
 
 import (
 	"errors"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"strconv"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"

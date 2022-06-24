@@ -122,6 +122,22 @@ func DefaultHybridSslGateway(writeNamespace string) *v1.Gateway {
 	return gw
 }
 
+func DefaultMatchableHttpGateway(writeNamespace string, sslConfigMatch *gloov1.SslConfig) *v1.MatchableHttpGateway {
+	return &v1.MatchableHttpGateway{
+		Metadata: &core.Metadata{
+			Name:        "matchable-http-gateway",
+			Namespace:   writeNamespace,
+			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
+		},
+		Matcher: &v1.MatchableHttpGateway_Matcher{
+			SslConfig: sslConfigMatch,
+		},
+		HttpGateway: &v1.HttpGateway{
+			// select all virtual services
+		},
+	}
+}
+
 func DefaultVirtualService(namespace, name string) *v1.VirtualService {
 	return &v1.VirtualService{
 		Metadata: &core.Metadata{
