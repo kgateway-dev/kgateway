@@ -552,12 +552,12 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("routes requests to all routes on gateway", func() {
-				// This test demonstrates the flaw with HttpListeners:
+				// This test demonstrates the flaw with HybridListeners:
 				//	The West VirtualService should only be exposing routes if the westCert is provided,
 				//	but in this test we can successfully execute requests against the west routes,
 				//	by providing an east certificate.
 				//
-				// This is due to the fact that an HttpListener creates an aggregate set of RouteConfiguration
+				// This is due to the fact that a HybridListener creates an aggregate set of RouteConfiguration
 				// and then produces duplicate FilterChains, based on all available SslConfig's from VirtualServices
 				TestUpstreamReturns("east.com", "/east/1", eastCert, http.StatusOK)
 				TestUpstreamReturns("west.com", "/west/1", eastCert, http.StatusOK)
