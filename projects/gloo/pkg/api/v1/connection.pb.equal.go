@@ -228,6 +228,16 @@ func (m *ConnectionConfig_Http1ProtocolOptions) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetOverrideStreamErrorOnInvalidHttpMessage()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOverrideStreamErrorOnInvalidHttpMessage()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOverrideStreamErrorOnInvalidHttpMessage(), target.GetOverrideStreamErrorOnInvalidHttpMessage()) {
+			return false
+		}
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *ConnectionConfig_Http1ProtocolOptions_ProperCaseHeaderKeyFormat:

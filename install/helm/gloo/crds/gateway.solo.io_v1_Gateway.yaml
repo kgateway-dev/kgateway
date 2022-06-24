@@ -556,6 +556,8 @@ spec:
                             type: boolean
                           proxy100Continue:
                             type: boolean
+                          requestHeadersTimeout:
+                            type: string
                           requestTimeout:
                             type: string
                           serverHeaderTransformation:
@@ -907,6 +909,8 @@ spec:
                             type: boolean
                           proxy100Continue:
                             type: boolean
+                          requestHeadersTimeout:
+                            type: string
                           requestTimeout:
                             type: string
                           serverHeaderTransformation:
@@ -1683,6 +1687,8 @@ spec:
                                       type: boolean
                                     proxy100Continue:
                                       type: boolean
+                                    requestHeadersTimeout:
+                                      type: string
                                     requestTimeout:
                                       type: string
                                     serverHeaderTransformation:

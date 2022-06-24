@@ -134,6 +134,12 @@ func (m *ConnectionConfig_Http1ProtocolOptions) Clone() proto.Message {
 
 	target.EnableTrailers = m.GetEnableTrailers()
 
+	if h, ok := interface{}(m.GetOverrideStreamErrorOnInvalidHttpMessage()).(clone.Cloner); ok {
+		target.OverrideStreamErrorOnInvalidHttpMessage = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.OverrideStreamErrorOnInvalidHttpMessage = proto.Clone(m.GetOverrideStreamErrorOnInvalidHttpMessage()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *ConnectionConfig_Http1ProtocolOptions_ProperCaseHeaderKeyFormat:
