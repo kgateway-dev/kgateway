@@ -408,6 +408,10 @@ func (m *RedisOptions) Clone() proto.Message {
 
 	target.TlsCertMountPath = m.GetTlsCertMountPath()
 
+	target.SocketType = m.GetSocketType()
+
+	target.UsernamePasswordSuffix = m.GetUsernamePasswordSuffix()
+
 	return target
 }
 

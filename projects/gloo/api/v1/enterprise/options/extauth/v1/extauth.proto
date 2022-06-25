@@ -316,6 +316,18 @@ message RedisOptions {
     // this does not need to include '/tls.crt' just the matching mountPath used in the userSessionCerts helm values.
     // setting this value enabled TLS for redis.
     string tls_cert_mount_path = 4;
+    // redis socket types
+    enum SocketType {
+        // TCP connection socket, this is the default.
+        TCP = 0;
+        // TLS connection socket.
+        TLS = 1;
+    } 
+    // the socket type, default is TCP.
+    SocketType socket_type = 5;
+    // the username password suffix for this particular host.
+    // referenced to identify the suffix used in the helm redis usernamesPasswordRef values.
+    string username_password_suffix = 6;
 }
 
 message UserSession {

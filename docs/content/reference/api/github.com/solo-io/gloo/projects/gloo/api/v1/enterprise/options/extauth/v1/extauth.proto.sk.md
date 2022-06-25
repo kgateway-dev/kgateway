@@ -29,6 +29,7 @@ weight: 5
 - [OAuth](#oauth)
 - [OAuth2](#oauth2)
 - [RedisOptions](#redisoptions)
+- [SocketType](#sockettype)
 - [UserSession](#usersession)
 - [InternalSession](#internalsession)
 - [RedisSession](#redissession)
@@ -476,6 +477,8 @@ Deprecated: Prefer OAuth2
 "db": int
 "poolSize": int
 "tlsCertMountPath": string
+"socketType": .enterprise.gloo.solo.io.RedisOptions.SocketType
+"usernamePasswordSuffix": string
 
 ```
 
@@ -485,6 +488,22 @@ Deprecated: Prefer OAuth2
 | `db` | `int` | db to use. can leave unset for db 0. |
 | `poolSize` | `int` | size of the connection pool. can leave unset for default. defaults to 10 connections per every CPU. |
 | `tlsCertMountPath` | `string` | the tls cert mount path for this particular host. this will require the matching secret certs added to the helm userSessionCerts mountpaths values. this does not need to include '/tls.crt' just the matching mountPath used in the userSessionCerts helm values. setting this value enabled TLS for redis. |
+| `socketType` | [.enterprise.gloo.solo.io.RedisOptions.SocketType](../extauth.proto.sk/#sockettype) | the socket type, default is TCP. |
+| `usernamePasswordSuffix` | `string` | the username password suffix for this particular host. referenced to identify the suffix used in the helm redis usernamesPasswordRef values. |
+
+
+
+
+---
+### SocketType
+
+ 
+redis socket types
+
+| Name | Description |
+| ----- | ----------- | 
+| `TCP` | TCP connection socket, this is the default. |
+| `TLS` | TLS connection socket. |
 
 
 

@@ -325,7 +325,12 @@ spec:
                                         poolSize:
                                           format: int32
                                           type: integer
+                                        socketType:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
                                         tlsCertMountPath:
+                                          type: string
+                                        usernamePasswordSuffix:
                                           type: string
                                       type: object
                                     preExpiryBuffer:
