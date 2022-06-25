@@ -269,6 +269,16 @@ func (m *UpstreamSslConfig) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetAllowRenegotiation()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAllowRenegotiation()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAllowRenegotiation(), target.GetAllowRenegotiation()) {
+			return false
+		}
+	}
+
 	switch m.SslSecrets.(type) {
 
 	case *UpstreamSslConfig_SecretRef:

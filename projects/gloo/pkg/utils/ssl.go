@@ -71,10 +71,12 @@ func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc
 		return nil, err
 	}
 	return &envoyauth.UpstreamTlsContext{
-		CommonTlsContext: common,
-		Sni:              uc.GetSni(),
+		CommonTlsContext:   common,
+		Sni:                uc.GetSni(),
+		AllowRenegotiation: uc.GetAllowRenegotiation().GetValue(),
 	}, nil
 }
+
 func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
 	common, err := s.ResolveCommonSslConfig(dc, secrets, true)
 	if err != nil {
