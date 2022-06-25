@@ -62,19 +62,20 @@ var _ = Describe("Plugin", func() {
 
 	It("copy all settings to hcm filter", func() {
 		settings = &hcm.HttpConnectionManagerSettings{
-			UseRemoteAddress:    &wrappers.BoolValue{Value: false},
-			XffNumTrustedHops:   5,
-			SkipXffAppend:       true,
-			Via:                 "Via",
-			GenerateRequestId:   &wrappers.BoolValue{Value: false},
-			Proxy_100Continue:   true,
-			StreamIdleTimeout:   prototime.DurationToProto(time.Hour),
-			IdleTimeout:         prototime.DurationToProto(time.Hour),
-			MaxRequestHeadersKb: &wrappers.UInt32Value{Value: 5},
-			RequestTimeout:      prototime.DurationToProto(time.Hour),
-			DrainTimeout:        prototime.DurationToProto(time.Hour),
-			DelayedCloseTimeout: prototime.DurationToProto(time.Hour),
-			ServerName:          "ServerName",
+			UseRemoteAddress:      &wrappers.BoolValue{Value: false},
+			XffNumTrustedHops:     5,
+			SkipXffAppend:         true,
+			Via:                   "Via",
+			GenerateRequestId:     &wrappers.BoolValue{Value: false},
+			Proxy_100Continue:     true,
+			StreamIdleTimeout:     prototime.DurationToProto(time.Hour),
+			IdleTimeout:           prototime.DurationToProto(time.Hour),
+			MaxRequestHeadersKb:   &wrappers.UInt32Value{Value: 5},
+			RequestTimeout:        prototime.DurationToProto(time.Hour),
+			RequestHeadersTimeout: prototime.DurationToProto(time.Hour),
+			DrainTimeout:          prototime.DurationToProto(time.Hour),
+			DelayedCloseTimeout:   prototime.DurationToProto(time.Hour),
+			ServerName:            "ServerName",
 
 			AcceptHttp_10: true,
 			HeaderFormat: &hcm.HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat{

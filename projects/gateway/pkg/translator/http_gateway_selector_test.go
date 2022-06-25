@@ -1,11 +1,13 @@
 package translator_test
 
 import (
+	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -250,6 +252,49 @@ var _ = Describe("HttpGatewaySelector", func() {
 
 	})
 
+	Context("ssl", func() {
+
+		var sslConfig = &gloov1.SslConfig{
+			TransportSocketConnectTimeout: &duration.Duration{
+				Seconds: 30,
+			},
+		}
+
+		BeforeEach(func() {
+			availableHttpGateways = v1.MatchableHttpGatewayList{
+				createSecureMatchableHttpGateway("name", "ns", sslConfig),
+			}
+		})
+
+		It("selects gw with matching ns if ssl", func() {
+			selector := &v1.DelegatedHttpGateway{
+				SslConfig: sslConfig,
+				SelectionType: &v1.DelegatedHttpGateway_Ref{
+					Ref: &core.ResourceRef{
+						Name:      "name",
+						Namespace: "ns",
+					},
+				},
+			}
+			selected := httpGatewaySelector.SelectMatchableHttpGateways(selector, onSelectionError)
+			Expect(selected).To(HaveLen(1))
+		})
+
+		It("does not select gw with matching ns if ssl not defined", func() {
+			selector := &v1.DelegatedHttpGateway{
+				SslConfig: nil,
+				SelectionType: &v1.DelegatedHttpGateway_Ref{
+					Ref: &core.ResourceRef{
+						Name:      "name",
+						Namespace: "ns",
+					},
+				},
+			}
+			selected := httpGatewaySelector.SelectMatchableHttpGateways(selector, onSelectionError)
+			Expect(selected).To(HaveLen(0))
+		})
+	})
+
 })
 
 func createMatchableHttpGateway(name, namespace string, labels map[string]string) *v1.MatchableHttpGateway {
@@ -260,6 +305,19 @@ func createMatchableHttpGateway(name, namespace string, labels map[string]string
 			Labels:    labels,
 		},
 		Matcher:     &v1.MatchableHttpGateway_Matcher{},
+		HttpGateway: &v1.HttpGateway{},
+	}
+}
+
+func createSecureMatchableHttpGateway(name, namespace string, sslConfig *gloov1.SslConfig) *v1.MatchableHttpGateway {
+	return &v1.MatchableHttpGateway{
+		Metadata: &core.Metadata{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Matcher: &v1.MatchableHttpGateway_Matcher{
+			SslConfig: sslConfig,
+		},
 		HttpGateway: &v1.HttpGateway{},
 	}
 }

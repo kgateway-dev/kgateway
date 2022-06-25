@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 )
 
-var _ = Describe("MergeOptions", func() {
+var _ = Describe("Merge", func() {
 	It("merges top-level route options fields", func() {
 		dst := &v1.RouteOptions{
 			PrefixRewrite: &wrappers.StringValue{Value: "preserve-me"},
