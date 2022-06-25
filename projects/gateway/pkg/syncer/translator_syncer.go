@@ -83,10 +83,9 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
-	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
-
+	ctx = contextutils.WithLogger(ctx, "TranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Debugw("begin sync", zap.Any("snapshot", snap.Stringer()))
+
 	snapHash := hashutils.MustHash(snap)
 	logger.Infof("begin sync %v (%v virtual services, %v gateways, %v route tables)", snapHash,
 		len(snap.VirtualServices), len(snap.Gateways), len(snap.RouteTables))
@@ -105,13 +104,12 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 
 func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1.ApiSnapshot) (reconciler.GeneratedProxies, reconciler.InvalidProxies) {
 	logger := contextutils.LoggerFrom(ctx)
-	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
+	gatewaysByProxyName := utils.GatewaysByProxyName(snap.Gateways)
 
 	desiredProxies := make(reconciler.GeneratedProxies)
 	invalidProxies := make(reconciler.InvalidProxies)
-
-	for proxyName, gatewayList := range gatewaysByProxy {
-		proxy, reports := s.translator.Translate(ctx, proxyName, s.writeNamespace, snap, gatewayList)
+	for proxyName, gatewayList := range gatewaysByProxyName {
+		proxy, reports := s.translator.Translate(ctx, proxyName, snap, gatewayList)
 		if proxy != nil {
 
 			if s.shouldCompresss(ctx) {

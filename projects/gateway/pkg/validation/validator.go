@@ -93,22 +93,23 @@ type validator struct {
 	validationClient             validation.GlooValidationServiceClient
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
-	writeNamespace               string
 }
 
 type ValidatorConfig struct {
 	translator                   translator.Translator
 	validationClient             validation.GlooValidationServiceClient
-	writeNamespace               string
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
 }
 
-func NewValidatorConfig(translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool) ValidatorConfig {
+func NewValidatorConfig(
+	translator translator.Translator,
+	validationClient  validation.GlooValidationServiceClient,
+	ignoreProxyValidationFailure, allowWarnings bool,
+) ValidatorConfig {
 	return ValidatorConfig{
 		translator:                   translator,
-		validationClient:             validationClient,
-		writeNamespace:               writeNamespace,
+		validationClient:                validationClient,
 		ignoreProxyValidationFailure: ignoreProxyValidationFailure,
 		allowWarnings:                allowWarnings,
 	}
@@ -118,7 +119,6 @@ func NewValidator(cfg ValidatorConfig) *validator {
 	return &validator{
 		translator:                   cfg.translator,
 		validationClient:             cfg.validationClient,
-		writeNamespace:               cfg.writeNamespace,
 		ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure,
 		allowWarnings:                cfg.allowWarnings,
 	}
@@ -133,7 +133,7 @@ func (v *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 	var errs error
 	for proxyName, gatewayList := range gatewaysByProxy {
-		_, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, snap, gatewayList)
+		_, reports := v.translator.Translate(ctx, proxyName, snap, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
 			validate = reports.Validate
@@ -241,7 +241,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	)
 	for _, proxyName := range proxyNames {
 		gatewayList := gatewaysByProxy[proxyName]
-		proxy, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, &snapshotClone, gatewayList)
+		proxy, reports := v.translator.Translate(ctx, proxyName, &snapshotClone, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
 			validate = reports.Validate

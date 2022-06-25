@@ -15,25 +15,21 @@ import (
 )
 
 //go:generate mockgen -destination mocks/mock_translator.go -package mocks github.com/solo-io/gloo/projects/gateway/pkg/translator Translator
+
+// Translator converts a set of Gateways into a Proxy, with the provided proxyName
 type Translator interface {
-	Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
+	Translate(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
 }
 
 type translator struct {
+	// listenerTranslators is the set of available translators that convert Gloo Gateways into Listeners
 	listenerTranslators map[string]ListenerTranslator
-	opts                Opts
-}
 
-func NewTranslator(listenerTranslators []ListenerTranslator, opts Opts) *translator {
-	translatorsByName := make(map[string]ListenerTranslator)
-	for _, t := range listenerTranslators {
-		translatorsByName[t.Name()] = t
-	}
+	// writeNamespace is the namespace that all Proxy CRs will be written to
+	writeNamespace string
 
-	return &translator{
-		listenerTranslators: translatorsByName,
-		opts:                opts,
-	}
+	// predicate is used to determine which Gateways to process during translation
+	predicate Predicate
 }
 
 func NewDefaultTranslator(opts Opts) *translator {
@@ -54,7 +50,21 @@ func NewDefaultTranslator(opts Opts) *translator {
 	return NewTranslator([]ListenerTranslator{httpTranslator, tcpTranslator, hybridTranslator}, opts)
 }
 
-func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
+func NewTranslator(listenerTranslators []ListenerTranslator, opts Opts) *translator {
+	translatorsByName := make(map[string]ListenerTranslator)
+	for _, t := range listenerTranslators {
+		translatorsByName[t.Name()] = t
+	}
+
+	return &translator{
+		listenerTranslators: translatorsByName,
+		writeNamespace:      opts.WriteNamespace,
+		predicate:           GetPredicate(opts.WriteNamespace, opts.ReadGatewaysFromAllNamespaces),
+	}
+}
+
+// Translate converts a set of Gateways into a Proxy, with the provided proxyNamek
+func (t *translator) Translate(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, gateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
 	reports := make(reporter.ResourceReports)
@@ -62,10 +72,13 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	reports.Accept(snap.VirtualServices.AsInputResources()...)
 	reports.Accept(snap.RouteTables.AsInputResources()...)
 
-	filteredGateways := t.filterGateways(gatewaysByProxy, namespace)
+	// NOTE: At the moment the predicate is applied once per Proxy, but we could
+	//	optimize this by moving it out of the Translator and into the Syncer, ensuring
+	//	it runs once per translation run instead.
+	filteredGateways := FilterGateways(gateways, t.predicate)
 	if len(filteredGateways) == 0 {
 		snapHash := hashutils.MustHash(snap)
-		logger.Infof("%v had no gateways", snapHash)
+		logger.Infof("Snapshot %v had no gateways for proxyName=%v", snapHash, proxyName)
 		return nil, reports
 	}
 
@@ -88,12 +101,15 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	return &gloov1.Proxy{
 		Metadata: &core.Metadata{
 			Name:      proxyName,
-			Namespace: namespace,
+			Namespace: t.writeNamespace,
 		},
 		Listeners: listeners,
 	}, reports
 }
 
+// getListenerTranslatorForGateway returns the translator responsible for converting the Gloo Gateway
+// into a Listener. If there is no available translator for the Gateway type, return
+// a placeholder translator that produces a MissingGatewayTypeErr
 func (t *translator) getListenerTranslatorForGateway(gateway *v1.Gateway) ListenerTranslator {
 	var listenerTranslatorImpl ListenerTranslator
 
@@ -131,6 +147,11 @@ func ListenerName(gateway *v1.Gateway) string {
 	return fmt.Sprintf("listener-%s-%d", gateway.GetBindAddress(), gateway.GetBindPort())
 }
 
+// validateGateways validates a set of Gateways that will be aggregated on a Proxy
+// and writes errors to the ResourceReports.
+// Gateways must meet the following criteria:
+//	1. All bind addresses are unique
+//	2. All VirtualServices that are referenced by a Gateway are available in the API Snapshot
 func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
 	bindAddresses := map[string]v1.GatewayList{}
 	// if two gateway (=listener) that belong to the same proxy share the same bind address,
@@ -173,18 +194,4 @@ func gatewaysRefsToString(gateways v1.GatewayList) []string {
 		ret = append(ret, gw.GetMetadata().Ref().Key())
 	}
 	return ret
-}
-
-// Get the gateways that should be processed in this sync execution
-func (t *translator) filterGateways(gateways v1.GatewayList, namespace string) v1.GatewayList {
-	var filteredGateways v1.GatewayList
-	for _, gateway := range gateways {
-		// Normally, Gloo should only pay attention to Gateways it creates, i.e. in its write
-		// namespace, to support handling multiple gloo installations. However, we may want to
-		// configure the controller to read all the Gateway CRDs it can find.
-		if t.opts.ReadGatewaysFromAllNamespaces || gateway.GetMetadata().GetNamespace() == namespace {
-			filteredGateways = append(filteredGateways, gateway)
-		}
-	}
-	return filteredGateways
 }

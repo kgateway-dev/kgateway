@@ -385,7 +385,7 @@ var _ = Describe("TranslatorSyncer", func() {
 
 			ctx = settingsutil.WithSettings(ctx, settings)
 
-			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", "gloo-system", snap, gomock.Any()).
+			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", snap, gomock.Any()).
 				Return(proxy, nil)
 
 			ts.generatedDesiredProxies(ctx, snap)
@@ -394,7 +394,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		})
 
 		It("should not compress proxy spec when setttings are not set", func() {
-			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", "gloo-system", snap, gomock.Any()).
+			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", snap, gomock.Any()).
 				Return(proxy, nil)
 
 			ts.generatedDesiredProxies(ctx, snap)
@@ -403,7 +403,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		})
 		It("should truncate proxy status when limit is set", func() {
 
-			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", "gloo-system", snap, gomock.Any()).
+			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", snap, gomock.Any()).
 				Return(proxy, nil)
 			ts.proxyStatusMaxSize = "5"
 			ts.generatedDesiredProxies(ctx, snap)
@@ -411,7 +411,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		})
 		It("should not truncate proxy status when limit is not set", func() {
 
-			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", "gloo-system", snap, gomock.Any()).
+			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", snap, gomock.Any()).
 				Return(proxy, nil)
 			ts.generatedDesiredProxies(ctx, snap)
 			Expect(proxy.Metadata.Annotations).NotTo(HaveKey(compress.ShortenKey))

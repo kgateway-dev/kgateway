@@ -305,7 +305,6 @@ func RunGateway(opts translator.Opts) error {
 	validationSyncer := gatewayvalidation.NewValidator(gatewayvalidation.NewValidatorConfig(
 		txlator,
 		validationClient,
-		opts.WriteNamespace,
 		ignoreProxyValidationFailure,
 		allowWarnings,
 	))

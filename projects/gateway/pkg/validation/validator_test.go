@@ -36,10 +36,12 @@ var _ = Describe("Validator", func() {
 	)
 
 	BeforeEach(func() {
-		t = translator.NewDefaultTranslator(translator.Opts{})
-		vc = &mockValidationClient{}
 		ns = "my-namespace"
-		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))
+		t = translator.NewDefaultTranslator(translator.Opts{
+			WriteNamespace: ns,
+		})
+		vc = &mockValidationClient{}
+		v = NewValidator(NewValidatorConfig(t, vc, false, false))
 		mValidConfig = utils.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
 	})
 
@@ -339,7 +341,7 @@ var _ = Describe("Validator", func() {
 
 			Context("allowWarnings=false", func() {
 				BeforeEach(func() {
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
+					v = NewValidator(NewValidatorConfig(t, vc, true, false))
 				})
 				It("rejects a vs with missing route table ref", func() {
 					vc.validate = warnProxy

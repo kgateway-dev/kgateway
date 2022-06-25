@@ -65,8 +65,10 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 	)
 
 	genProxy := func() {
-		tx := translator.NewDefaultTranslator(translator.Opts{})
-		proxy, reports = tx.Translate(context.TODO(), "proxy-name", ns, snap, snap.Gateways)
+		tx := translator.NewDefaultTranslator(translator.Opts{
+			WriteNamespace: ns,
+		})
+		proxy, reports = tx.Translate(context.TODO(), "proxy-name", snap, snap.Gateways)
 
 		proxyToWrite = GeneratedProxies{proxy: reports}
 	}
