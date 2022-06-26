@@ -382,7 +382,7 @@ var _ = Describe("Validator", func() {
 			Context("ignoreProxyValidation=true", func() {
 				It("accepts the rt", func() {
 					vc.validate = communicationErr
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
+					v = NewValidator(NewValidatorConfig(t, vc, true, false))
 					us := samples.SimpleUpstream()
 					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 					err := v.Sync(context.TODO(), snap)
@@ -394,7 +394,7 @@ var _ = Describe("Validator", func() {
 			})
 			Context("allowWarnings=true", func() {
 				BeforeEach(func() {
-					v = NewValidator(NewValidatorConfig(t, vc, ns, true, true))
+					v = NewValidator(NewValidatorConfig(t, vc, true, true))
 				})
 				It("accepts a vs with missing route table ref", func() {
 					vc.validate = communicationErr
