@@ -168,10 +168,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
 		},
-		DevMode:                       true,
-		ReadGatewaysFromAllNamespaces: settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
-		Validation:                    validation,
-		ConfigStatusMetricOpts:        settings.GetObservabilityOptions().GetConfigStatusMetricLabels(),
+		DevMode:                        true,
+		ReadGatewaysFromAllNamespaces:  settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
+		Validation:                     validation,
+		ConfigStatusMetricOpts:         settings.GetObservabilityOptions().GetConfigStatusMetricLabels(),
+		IsolateVirtualHostsBySslConfig: settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
 	}
 
 	return RunGateway(opts)
