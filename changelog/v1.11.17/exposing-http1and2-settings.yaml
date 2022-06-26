@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6466
+    resolvesIssue: false
+    description: Expose more http1 and http2 envoy configurations to the end user

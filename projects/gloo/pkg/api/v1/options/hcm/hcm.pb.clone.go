@@ -85,6 +85,12 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 		target.RequestTimeout = proto.Clone(m.GetRequestTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
+	if h, ok := interface{}(m.GetRequestHeadersTimeout()).(clone.Cloner); ok {
+		target.RequestHeadersTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.RequestHeadersTimeout = proto.Clone(m.GetRequestHeadersTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
 	if h, ok := interface{}(m.GetDrainTimeout()).(clone.Cloner); ok {
 		target.DrainTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
 	} else {

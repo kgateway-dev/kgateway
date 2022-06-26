@@ -147,6 +147,9 @@ spec:
                     properties:
                       enableTrailers:
                         type: boolean
+                      overrideStreamErrorOnInvalidHttpMessage:
+                        nullable: true
+                        type: boolean
                       preserveCaseHeaderKeyFormat:
                         type: boolean
                       properCaseHeaderKeyFormat:
@@ -861,6 +864,9 @@ spec:
                     nullable: true
                     type: integer
                 type: object
+              overrideStreamErrorOnInvalidHttpMessage:
+                nullable: true
+                type: boolean
               pipe:
                 properties:
                   path:
