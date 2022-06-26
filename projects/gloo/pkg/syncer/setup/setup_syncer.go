@@ -864,21 +864,27 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
+	matchableHttpGatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.MatchableHttpGatewayCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	return bootstrap.Opts{
-		Upstreams:          upstreamFactory,
-		KubeServiceClient:  kubeServiceClient,
-		Proxies:            proxyFactory,
-		UpstreamGroups:     upstreamGroupFactory,
-		Secrets:            secretFactory,
-		Artifacts:          artifactFactory,
-		AuthConfigs:        authConfigFactory,
-		RateLimitConfigs:   rateLimitConfigFactory,
-		GraphQLApis:        graphqlApiFactory,
-		VirtualServices:    virtualServiceFactory,
-		RouteTables:        routeTableFactory,
-		VirtualHostOptions: virtualHostOptionFactory,
-		RouteOptions:       routeOptionFactory,
-		Gateways:           gatewayFactory,
-		KubeCoreCache:      kubeCoreCache,
+		Upstreams:             upstreamFactory,
+		KubeServiceClient:     kubeServiceClient,
+		Proxies:               proxyFactory,
+		UpstreamGroups:        upstreamGroupFactory,
+		Secrets:               secretFactory,
+		Artifacts:             artifactFactory,
+		AuthConfigs:           authConfigFactory,
+		RateLimitConfigs:      rateLimitConfigFactory,
+		GraphQLApis:           graphqlApiFactory,
+		VirtualServices:       virtualServiceFactory,
+		RouteTables:           routeTableFactory,
+		VirtualHostOptions:    virtualHostOptionFactory,
+		RouteOptions:          routeOptionFactory,
+		Gateways:              gatewayFactory,
+		MatchableHttpGateways: matchableHttpGatewayFactory,
+		KubeCoreCache:         kubeCoreCache,
 	}, nil
 }
