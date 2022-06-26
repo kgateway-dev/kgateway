@@ -1,6 +1,7 @@
 package defaults
 
 import (
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -93,6 +94,47 @@ func DefaultHybridGateway(writeNamespace string) *v1.Gateway {
 		BindAddress:   GatewayBindAddress,
 		BindPort:      defaults.HybridPort,
 		UseProxyProto: &wrappers.BoolValue{Value: false},
+	}
+}
+
+func DefaultHybridSslGateway(writeNamespace string) *v1.Gateway {
+	gw := DefaultHybridGateway(writeNamespace)
+	gw.GatewayType = &v1.Gateway_HybridGateway{
+		HybridGateway: &v1.HybridGateway{
+			MatchedGateways: []*v1.MatchedGateway{
+				{
+					Matcher: &v1.Matcher{
+						// Define a non-nil SslConfig
+						SslConfig: &gloov1.SslConfig{
+							TransportSocketConnectTimeout: &duration.Duration{
+								Seconds: 30,
+							},
+						},
+					},
+					GatewayType: &v1.MatchedGateway_HttpGateway{
+						HttpGateway: &v1.HttpGateway{},
+					},
+				},
+			},
+		},
+	}
+
+	return gw
+}
+
+func DefaultMatchableHttpGateway(writeNamespace string, sslConfigMatch *gloov1.SslConfig) *v1.MatchableHttpGateway {
+	return &v1.MatchableHttpGateway{
+		Metadata: &core.Metadata{
+			Name:        "matchable-http-gateway",
+			Namespace:   writeNamespace,
+			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
+		},
+		Matcher: &v1.MatchableHttpGateway_Matcher{
+			SslConfig: sslConfigMatch,
+		},
+		HttpGateway: &v1.HttpGateway{
+			// select all virtual services
+		},
 	}
 }
 

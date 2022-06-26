@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6621
+    resolvesIssue: false
+    description: Expose Allow TLS Renegotiation in the Upstream SSL config

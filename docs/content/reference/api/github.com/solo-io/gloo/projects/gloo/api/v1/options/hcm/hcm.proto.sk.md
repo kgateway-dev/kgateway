@@ -35,6 +35,8 @@ weight: 5
  
 Contains various settings for Envoy's http connection manager.
 See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man
+Now contains v3 fields as well
+v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#extensions-filters-network-http-connection-manager-v3-httpconnectionmanager
 
 ```yaml
 "skipXffAppend": bool
@@ -47,6 +49,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "idleTimeout": .google.protobuf.Duration
 "maxRequestHeadersKb": .google.protobuf.UInt32Value
 "requestTimeout": .google.protobuf.Duration
+"requestHeadersTimeout": .google.protobuf.Duration
 "drainTimeout": .google.protobuf.Duration
 "delayedCloseTimeout": .google.protobuf.Duration
 "serverName": string
@@ -88,6 +91,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
 | `maxRequestHeadersKb` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) |  |
 | `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
+| `requestHeadersTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The amount of time that Envoy will wait for the request headers to be received. The timer is activated when the first byte of the headers is received, and is disarmed when the last byte of the headers has been received. If not specified or set to 0, this timeout is disabled. |
 | `drainTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
 | `delayedCloseTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
 | `serverName` | `string` |  |

@@ -265,6 +265,19 @@ var _ = Describe("Ssl", func() {
 			Expect(cfg.Sni).To(Equal("test.com"))
 		})
 
+		It("should not set allow negotiation by default for upstream config", func() {
+			cfg, err := configTranslator.ResolveUpstreamSslConfig(secrets, upstreamCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.AllowRenegotiation).To(BeFalse())
+		})
+
+		It("should set allow negotiation if configured for upstream config", func() {
+			upstreamCfg.AllowRenegotiation = &wrappers.BoolValue{Value: true}
+			cfg, err := configTranslator.ResolveUpstreamSslConfig(secrets, upstreamCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.AllowRenegotiation).To(BeTrue())
+		})
+
 		Context("san", func() {
 			It("should error with san and not rootca", func() {
 				tlsSecret.RootCa = ""

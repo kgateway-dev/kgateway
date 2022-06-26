@@ -106,6 +106,14 @@ message ConnectionConfig {
             // affect the output of encoding headers. Specifically: preserving REQUEST HEADER case during proxying.
             bool preserve_case_header_key_format = 31;
         }
+
+        // Allows invalid HTTP messaging. When this option is false, then Envoy will terminate
+        // HTTP/1.1 connections upon receiving an invalid HTTP message. However,
+        // when this option is true, then Envoy will leave the HTTP/1.1 connection
+        // open where possible.
+        // If set, this overrides any HCM :ref:`stream_error_on_invalid_http_messaging
+        // <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.stream_error_on_invalid_http_message>`.
+        google.protobuf.BoolValue override_stream_error_on_invalid_http_message = 2;
     }
 
     // Additional Options when handling HTTP requests upstream. These options will be applicable only to HTTP1 requests.

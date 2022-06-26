@@ -81,12 +81,13 @@ var _ = Describe("Plugin", func() {
 			Expect(err).To(HaveOccurred())
 		})
 
-		It("should accept connection streams/max concurrent streams that are within the correct range", func() {
+		It("should accept valid values for all http2 connection settings", func() {
 			validUpstream := &v1.Upstream{
-				MaxConcurrentStreams:        &wrappers.UInt32Value{Value: 1234},
-				InitialStreamWindowSize:     &wrappers.UInt32Value{Value: 268435457},
-				InitialConnectionWindowSize: &wrappers.UInt32Value{Value: 65535},
-				UseHttp2:                    &wrappers.BoolValue{Value: true},
+				UseHttp2:                                &wrappers.BoolValue{Value: true},
+				MaxConcurrentStreams:                    &wrappers.UInt32Value{Value: 1234},
+				InitialStreamWindowSize:                 &wrappers.UInt32Value{Value: 268435457},
+				InitialConnectionWindowSize:             &wrappers.UInt32Value{Value: 65535},
+				OverrideStreamErrorOnInvalidHttpMessage: &wrappers.BoolValue{Value: true},
 			}
 
 			err := p.ProcessUpstream(params, validUpstream, out)
@@ -102,6 +103,8 @@ var _ = Describe("Plugin", func() {
 				To(Equal(&wrappers.UInt32Value{Value: 268435457}))
 			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions().GetInitialConnectionWindowSize()).
 				To(Equal(&wrappers.UInt32Value{Value: 65535}))
+			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions().GetOverrideStreamErrorOnInvalidHttpMessage()).
+				To(Equal(&wrappers.BoolValue{Value: true}))
 		})
 
 		It("Should be rejected if Http2 is true and protocol options is passed as USE_CONFIGURED_PROTOCOL and http1 settings are not nil", func() {

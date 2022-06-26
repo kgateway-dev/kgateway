@@ -119,7 +119,8 @@ var _ = Describe("Plugin", func() {
 	It("Should set Http1ProtocolOptions", func() {
 		upstream.ConnectionConfig = &v1.ConnectionConfig{
 			Http1ProtocolOptions: &v1.ConnectionConfig_Http1ProtocolOptions{
-				EnableTrailers: true,
+				EnableTrailers:                          true,
+				OverrideStreamErrorOnInvalidHttpMessage: &wrappers.BoolValue{Value: true},
 			},
 		}
 
@@ -127,7 +128,8 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		outHpo := out.GetHttpProtocolOptions()
 		expectedValue := envoy_config_core_v3.Http1ProtocolOptions{
-			EnableTrailers: true,
+			EnableTrailers:                          true,
+			OverrideStreamErrorOnInvalidHttpMessage: &wrappers.BoolValue{Value: true},
 		}
 
 		Expect(*outHpo).To(Equal(expectedValue))

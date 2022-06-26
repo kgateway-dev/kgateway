@@ -50,6 +50,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 	out.StreamIdleTimeout = in.GetStreamIdleTimeout()
 	out.MaxRequestHeadersKb = in.GetMaxRequestHeadersKb()
 	out.RequestTimeout = in.GetRequestTimeout()
+	out.RequestHeadersTimeout = in.GetRequestHeadersTimeout()
 	out.DrainTimeout = in.GetDrainTimeout()
 	out.DelayedCloseTimeout = in.GetDelayedCloseTimeout()
 	out.ServerName = in.GetServerName()
