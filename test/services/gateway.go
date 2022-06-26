@@ -354,9 +354,10 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 			Ctx:         ctx,
 			RefreshRate: time.Minute,
 		},
-		Validation:             validation,
-		DevMode:                false,
-		ConfigStatusMetricOpts: runOptions.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels(),
+		Validation:                     validation,
+		DevMode:                        false,
+		ConfigStatusMetricOpts:         runOptions.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels(),
+		IsolateVirtualHostsBySslConfig: runOptions.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
 	}
 }
 
