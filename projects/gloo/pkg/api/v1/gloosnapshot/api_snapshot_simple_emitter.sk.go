@@ -120,6 +120,8 @@ func (c *apiSimpleEmitter) Snapshots(ctx context.Context) (<-chan *ApiSnapshot, 
 						currentSnapshot.VirtualHostOptions = append(currentSnapshot.VirtualHostOptions, typed)
 					case *gateway_solo_io.RouteOption:
 						currentSnapshot.RouteOptions = append(currentSnapshot.RouteOptions, typed)
+					case *gateway_solo_io.MatchableHttpGateway:
+						currentSnapshot.HttpGateways = append(currentSnapshot.HttpGateways, typed)
 					case *graphql_gloo_solo_io.GraphQLApi:
 						currentSnapshot.GraphqlApis = append(currentSnapshot.GraphqlApis, typed)
 					default:

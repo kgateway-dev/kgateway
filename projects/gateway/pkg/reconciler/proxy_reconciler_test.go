@@ -163,7 +163,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 			})
 
 			It("only creates the valid virtual hosts (using IsolateVirtualHosts Feature)", func() {
-				samples.AddVsToGwSnap(snap, us, ns)
+				samples.AddVsToSnap(snap, us, ns)
 				genProxyWithIsolatedVirtualHosts()
 
 				addErr(snap.VirtualServices[1])
@@ -333,7 +333,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 			})
 
 			It("removes the virtual host (using IsolateVirtualHosts Feature)", func() {
-				samples.AddVsToGwSnap(snap, us, ns)
+				samples.AddVsToSnap(snap, us, ns)
 				genProxyWithIsolatedVirtualHosts()
 				reconcile()
 

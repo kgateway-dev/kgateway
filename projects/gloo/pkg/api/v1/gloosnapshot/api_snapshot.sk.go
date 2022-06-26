@@ -33,6 +33,7 @@ type ApiSnapshot struct {
 	Gateways           gateway_solo_io.GatewayList
 	VirtualHostOptions gateway_solo_io.VirtualHostOptionList
 	RouteOptions       gateway_solo_io.RouteOptionList
+	HttpGateways       gateway_solo_io.MatchableHttpGatewayList
 	GraphqlApis        graphql_gloo_solo_io.GraphQLApiList
 }
 
@@ -51,6 +52,7 @@ func (s ApiSnapshot) Clone() ApiSnapshot {
 		Gateways:           s.Gateways.Clone(),
 		VirtualHostOptions: s.VirtualHostOptions.Clone(),
 		RouteOptions:       s.RouteOptions.Clone(),
+		HttpGateways:       s.HttpGateways.Clone(),
 		GraphqlApis:        s.GraphqlApis.Clone(),
 	}
 }
@@ -96,6 +98,9 @@ func (s ApiSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	if _, err := s.hashRouteOptions(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashHttpGateways(hasher); err != nil {
 		return 0, err
 	}
 	if _, err := s.hashGraphqlApis(hasher); err != nil {
@@ -162,6 +167,10 @@ func (s ApiSnapshot) hashVirtualHostOptions(hasher hash.Hash64) (uint64, error) 
 
 func (s ApiSnapshot) hashRouteOptions(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.RouteOptions.AsInterfaces()...)
+}
+
+func (s ApiSnapshot) hashHttpGateways(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.HttpGateways.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) hashGraphqlApis(hasher hash.Hash64) (uint64, error) {
@@ -236,6 +245,11 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("routeOptions", RouteOptionsHash))
+	HttpGatewaysHash, err := s.hashHttpGateways(hasher)
+	if err != nil {
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("httpGateways", HttpGatewaysHash))
 	GraphqlApisHash, err := s.hashGraphqlApis(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
@@ -263,6 +277,7 @@ type ApiSnapshotStringer struct {
 	Gateways           []string
 	VirtualHostOptions []string
 	RouteOptions       []string
+	HttpGateways       []string
 	GraphqlApis        []string
 }
 
@@ -334,6 +349,11 @@ func (ss ApiSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
+	s += fmt.Sprintf("  HttpGateways %v\n", len(ss.HttpGateways))
+	for _, name := range ss.HttpGateways {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
 	s += fmt.Sprintf("  GraphqlApis %v\n", len(ss.GraphqlApis))
 	for _, name := range ss.GraphqlApis {
 		s += fmt.Sprintf("    %v\n", name)
@@ -362,6 +382,7 @@ func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 		Gateways:           s.Gateways.NamespacesDotNames(),
 		VirtualHostOptions: s.VirtualHostOptions.NamespacesDotNames(),
 		RouteOptions:       s.RouteOptions.NamespacesDotNames(),
+		HttpGateways:       s.HttpGateways.NamespacesDotNames(),
 		GraphqlApis:        s.GraphqlApis.NamespacesDotNames(),
 	}
 }

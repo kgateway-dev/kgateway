@@ -478,6 +478,14 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		return err
 	}
 
+	matchableHttpGatewayClient, err := gateway.NewMatchableHttpGatewayClient(watchOpts.Ctx, opts.MatchableHttpGateways)
+	if err != nil {
+		return err
+	}
+	if err := matchableHttpGatewayClient.Register(); err != nil {
+		return err
+	}
+
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
@@ -550,6 +558,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		gatewayClient,
 		virtualHostOptionClient,
 		routeOptionClient,
+		matchableHttpGatewayClient,
 		graphqlApiClient,
 		apiEmitterChan,
 	)
