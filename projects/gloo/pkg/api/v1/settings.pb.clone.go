@@ -447,6 +447,12 @@ func (m *GatewayOptions) Clone() proto.Message {
 		target.VirtualServiceOptions = proto.Clone(m.GetVirtualServiceOptions()).(*VirtualServiceOptions)
 	}
 
+	if h, ok := interface{}(m.GetIsolateVirtualHostsBySslConfig()).(clone.Cloner); ok {
+		target.IsolateVirtualHostsBySslConfig = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.IsolateVirtualHostsBySslConfig = proto.Clone(m.GetIsolateVirtualHostsBySslConfig()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

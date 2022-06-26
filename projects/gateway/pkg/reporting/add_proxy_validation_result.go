@@ -81,6 +81,33 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 					}
 				}
 			}
+
+		case *validation.ListenerReport_AggregateListenerReport:
+			aggregateListener := listener.GetAggregateListener()
+			availableVirtualHosts := aggregateListener.GetHttpResources().GetVirtualHosts()
+
+			mappedVirtualHostRefs := map[string][]string{}
+			for _, httpFilterChain := range aggregateListener.GetHttpFilterChains() {
+				mappedVirtualHostRefs[utils.MatchedRouteConfigName(listener, httpFilterChain.GetMatcher())] = httpFilterChain.GetVirtualHostRefs()
+			}
+
+			for reportKey, httpListenerReport := range listenerReportType.AggregateListenerReport.GetHttpListenerReports() {
+				vhReports := httpListenerReport.GetVirtualHostReports()
+				virtualHostRefs := mappedVirtualHostRefs[reportKey]
+
+				if len(vhReports) != len(virtualHostRefs) {
+					return invalidReportsVirtualHostsErr
+				}
+
+				for j, vhReport := range vhReports {
+					virtualHostRef := virtualHostRefs[j]
+					virtualHost := availableVirtualHosts[virtualHostRef]
+
+					if err := addVirtualHostResult(resourceReports, virtualHost, vhReport); err != nil {
+						return err
+					}
+				}
+			}
 		}
 	}
 
@@ -144,6 +171,10 @@ func getListenerLevelErrors(listenerReport *validation.ListenerReport) []error {
 					listenerErrs = append(listenerErrs, validationutils.GetTcpHostErr(hostReport)...)
 				}
 			}
+		}
+	case *validation.ListenerReport_AggregateListenerReport:
+		for _, httpListenerReport := range listenerType.AggregateListenerReport.GetHttpListenerReports() {
+			listenerErrs = append(listenerErrs, validationutils.GetHttpListenerErr(httpListenerReport)...)
 		}
 	}
 

@@ -641,6 +641,13 @@ message GatewayOptions {
     // Default configuration to use for VirtualServices, when not provided by a specific virtual service
     // When these properties are defined on a specific VirtualService, this configuration will be ignored
     VirtualServiceOptions virtual_service_options = 7;
+
+    // If set, group virtual hosts by matching ssl config, and isolate them on separate filter chains
+    // The default behavior is to aggregate all virtual hosts, and expose them on identical filter chains,
+    // each with a FilterChainMatch that corresponds to the ssl config.
+    // Individual Gateways can override this behavior by configuring the "gateway.solo.io/isolate_vhost" annotation
+    // to be a truthy ("true", "false") value
+    google.protobuf.BoolValue isolate_virtual_hosts_by_ssl_config = 10;
 }
 
 // Settings used by the Enterprise Console (UI)

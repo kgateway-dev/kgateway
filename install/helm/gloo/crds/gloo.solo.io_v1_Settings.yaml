@@ -223,6 +223,9 @@ spec:
                     type: boolean
                   compressedProxySpec:
                     type: boolean
+                  isolateVirtualHostsBySslConfig:
+                    nullable: true
+                    type: boolean
                   readGatewaysFromAllNamespaces:
                     type: boolean
                   validation:

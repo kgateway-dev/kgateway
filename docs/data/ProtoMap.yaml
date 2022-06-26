@@ -539,6 +539,12 @@ apis:
   gateway.solo.io.VirtualServiceSelectorExpressions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#VirtualServiceSelectorExpressions
     package: gateway.solo.io
+  gloo.solo.io.AggregateListener:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#AggregateListener
+    package: gloo.solo.io
+  gloo.solo.io.AggregateListenerReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#AggregateListenerReport
+    package: gloo.solo.io
   gloo.solo.io.Artifact:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/artifact.proto.sk/#Artifact
     package: gloo.solo.io

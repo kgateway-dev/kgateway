@@ -7,6 +7,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -153,6 +154,34 @@ func SimpleGlooSnapshot() *v1snap.ApiSnapshot {
 		},
 	}
 
+	aggregateListener := &v1.Listener{
+		Name:        "aggregate-listener",
+		BindAddress: "127.0.0.1",
+		BindPort:    8082,
+		ListenerType: &v1.Listener_AggregateListener{
+			AggregateListener: &v1.AggregateListener{
+				HttpResources: &v1.AggregateListener_HttpResources{
+					VirtualHosts: map[string]*v1.VirtualHost{
+						"virt1": {
+							Name:    "virt1",
+							Domains: []string{"*"},
+							Routes:  routes,
+						},
+					},
+					HttpOptions: map[string]*v1.HttpListenerOptions{
+						"opts1": {
+							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
+						},
+					},
+				},
+				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+					HttpOptionsRef:  "opts1",
+					VirtualHostRefs: []string{"virt1"},
+				}},
+			},
+		},
+	}
+
 	proxy := &v1.Proxy{
 		Metadata: &core.Metadata{
 			Name:      "test",
@@ -162,6 +191,7 @@ func SimpleGlooSnapshot() *v1snap.ApiSnapshot {
 			httpListener,
 			tcpListener,
 			hybridListener,
+			aggregateListener,
 		},
 	}
 

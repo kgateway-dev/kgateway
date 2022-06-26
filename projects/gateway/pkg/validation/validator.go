@@ -104,12 +104,12 @@ type ValidatorConfig struct {
 
 func NewValidatorConfig(
 	translator translator.Translator,
-	validationClient  validation.GlooValidationServiceClient,
+	validationClient validation.GlooValidationServiceClient,
 	ignoreProxyValidationFailure, allowWarnings bool,
 ) ValidatorConfig {
 	return ValidatorConfig{
 		translator:                   translator,
-		validationClient:                validationClient,
+		validationClient:             validationClient,
 		ignoreProxyValidationFailure: ignoreProxyValidationFailure,
 		allowWarnings:                allowWarnings,
 	}
