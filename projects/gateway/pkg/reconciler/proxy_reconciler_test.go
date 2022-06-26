@@ -64,13 +64,25 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		reconciler ProxyReconciler
 	)
 
-	genProxy := func() {
-		tx := translator.NewDefaultTranslator(translator.Opts{
-			WriteNamespace: ns,
-		})
+	genProxyWithTranslatorOpts := func(opts translator.Opts) {
+		tx := translator.NewDefaultTranslator(opts)
 		proxy, reports = tx.Translate(context.TODO(), "proxy-name", snap, snap.Gateways)
 
 		proxyToWrite = GeneratedProxies{proxy: reports}
+	}
+
+	genProxy := func() {
+		genProxyWithTranslatorOpts(translator.Opts{
+			WriteNamespace:                 ns,
+			IsolateVirtualHostsBySslConfig: false,
+		})
+	}
+
+	genProxyWithIsolatedVirtualHosts := func() {
+		genProxyWithTranslatorOpts(translator.Opts{
+			WriteNamespace:                 ns,
+			IsolateVirtualHostsBySslConfig: true,
+		})
 	}
 
 	BeforeEach(func() {
@@ -126,6 +138,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 			})
 		})
 		Context("a virtual service has a reported error", func() {
+
 			It("only creates the valid virtual hosts", func() {
 				samples.AddVsToSnap(snap, us, ns)
 				genProxy()
@@ -147,6 +160,24 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				vhosts = px.Listeners[2].GetHybridListener().GetMatchedListeners()[0].GetHttpListener().GetVirtualHosts()
 				Expect(vhosts).To(HaveLen(1))
 				Expect(vhosts).To(ContainName(translator.VirtualHostName(goodVs)))
+			})
+
+			It("only creates the valid virtual hosts (using IsolateVirtualHosts Feature)", func() {
+				samples.AddVsToGwSnap(snap, us, ns)
+				genProxyWithIsolatedVirtualHosts()
+
+				addErr(snap.VirtualServices[1])
+
+				reconcile()
+
+				px := getProxy()
+
+				goodVs := snap.VirtualServices[0]
+
+				// aggregate listener
+				vhostRefs := px.Listeners[1].GetAggregateListener().GetHttpFilterChains()[0].GetVirtualHostRefs()
+				Expect(vhostRefs).To(HaveLen(1))
+				Expect(vhostRefs).To(ContainElement(translator.VirtualHostName(goodVs)))
 			})
 		})
 	})
@@ -280,6 +311,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		})
 
 		Context("a virtual service has been removed", func() {
+
 			It("removes the virtual host", func() {
 				samples.AddVsToSnap(snap, us, ns)
 				genProxy()
@@ -298,6 +330,26 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 
 				Expect(vhosts).To(HaveLen(1))
 				Expect(vhosts).To(ContainName(translator.VirtualHostName(vs)))
+			})
+
+			It("removes the virtual host (using IsolateVirtualHosts Feature)", func() {
+				samples.AddVsToGwSnap(snap, us, ns)
+				genProxyWithIsolatedVirtualHosts()
+				reconcile()
+
+				vs := snap.VirtualServices[0]
+
+				snap.VirtualServices = v1.VirtualServiceList{vs}
+				genProxyWithIsolatedVirtualHosts()
+
+				reconcile()
+
+				px := getProxy()
+
+				vhostRefs := px.Listeners[1].GetAggregateListener().GetHttpFilterChains()[0].GetVirtualHostRefs()
+
+				Expect(vhostRefs).To(HaveLen(1))
+				Expect(vhostRefs).To(ContainElement(translator.VirtualHostName(vs)))
 			})
 		})
 	})
