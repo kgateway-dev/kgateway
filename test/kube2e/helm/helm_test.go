@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -157,7 +158,6 @@ var _ = Describe("Kube2e: helm", func() {
 				"gatewayProxies.proxyExternal.service.httpsPort":     "32500",
 				"gatewayProxies.proxyExternal.service.httpNodePort":  "31500",
 				"gatewayProxies.proxyExternal.service.httpsNodePort": "32500",
-				//settings.watchNamespaces={}
 			}
 
 			var settings []string
@@ -225,9 +225,8 @@ var _ = Describe("Kube2e: helm", func() {
 		})
 
 		// Below are tests with different combinations of upgrades with failurePolicy=Ignore/Fail.
-		// (It couldn't be easily written as a DescribeTable since the fromRelease and strictValidation
-		// variables need to be set in a BeforeEach)
 		Context("failurePolicy upgrades", func() {
+
 			var webhookConfigClient admission_v1_types.ValidatingWebhookConfigurationInterface
 
 			BeforeEach(func() {
@@ -245,10 +244,7 @@ var _ = Describe("Kube2e: helm", func() {
 				if newFailurePolicy == admission_v1.Fail {
 					newStrictValue = true
 				}
-				upgradeGloo(testHelper, chartUri, crdDir, fromRelease, newStrictValue, []string{
-					// set some arbitrary value on the gateway, just to ensure the validation webhook is called
-					"--set", "gatewayProxies.gatewayProxy.gatewaySettings.ipv4Only=true",
-				})
+				upgradeGloo(testHelper, chartUri, crdDir, fromRelease, newStrictValue, []string{})
 
 				By(fmt.Sprintf("should have updated to gateway.validation.failurePolicy=%v", newFailurePolicy))
 				webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
@@ -256,39 +252,28 @@ var _ = Describe("Kube2e: helm", func() {
 				Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(newFailurePolicy))
 			}
 
-			Context("upgrading from previous release, starting from failurePolicy=Ignore", func() {
+			Context("starting from before the gloo/gateway merge, with failurePolicy=Ignore", func() {
 				BeforeEach(func() {
 					fromRelease = versionBeforeGlooGatewayMerge
 					strictValidation = false
 				})
-				It("can upgrade to failurePolicy=Ignore", func() {
+				It("can upgrade to current release, with failurePolicy=Ignore", func() {
 					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Ignore)
 				})
-				It("can upgrade to failurePolicy=Fail", func() {
+				It("can upgrade to current release, with failurePolicy=Fail", func() {
 					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Fail)
 				})
 			})
-			Context("upgrading within same release, starting from failurePolicy=Ignore", func() {
+			Context("starting from helm hook release, with failurePolicy=Fail", func() {
 				BeforeEach(func() {
-					fromRelease = ""
-					strictValidation = false
-				})
-				It("can upgrade to failurePolicy=Ignore", func() {
-					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Ignore)
-				})
-				It("can upgrade to failurePolicy=Fail", func() {
-					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Fail)
-				})
-			})
-			Context("upgrading within same release, starting from failurePolicy=Fail", func() {
-				BeforeEach(func() {
-					fromRelease = ""
+					// The original fix for installing with failurePolicy=Fail (https://github.com/solo-io/gloo/issues/6213)
+					// went into gloo v1.11.10. It turned the Gloo custom resources into helm hooks to guarantee ordering,
+					// however it caused additional issues so we moved away from using helm hooks. This test is to ensure
+					// we can successfully upgrade from the helm hook release to the current release.
+					fromRelease = "1.11.10"
 					strictValidation = true
 				})
-				It("can upgrade to failurePolicy=Ignore", func() {
-					testFailurePolicyUpgrade(admission_v1.Fail, admission_v1.Ignore)
-				})
-				It("can upgrade to failurePolicy=Fail", func() {
+				It("can upgrade to current release, with failurePolicy=Fail", func() {
 					testFailurePolicyUpgrade(admission_v1.Fail, admission_v1.Fail)
 				})
 			})
@@ -465,7 +450,7 @@ func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir s
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, strictValidation bool, additionalArgs []string) {
 	upgradeCrds(testHelper, fromRelease, crdDir)
 
-	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
+	valueOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
 	defer cleanupFunc()
 
 	var args = []string{"upgrade", testHelper.HelmChartName, chartUri,
@@ -490,6 +475,52 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	cancel()
+}
+
+func getHelmValuesOverrideFile() (filename string, cleanup func()) {
+	values, err := ioutil.TempFile("", "values-*.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	// disabling usage statistics is not important to the functionality of the tests,
+	// but we don't want to report usage in CI since we only care about how our users are actually using Gloo.
+	// install to a single namespace so we can run multiple invocations of the regression tests against the
+	// same cluster in CI.
+	_, err = values.Write([]byte(`
+global:
+  image:
+    pullPolicy: IfNotPresent
+  glooRbac:
+    namespaced: true
+    nameSuffix: e2e-test-rbac-suffix
+settings:
+  singleNamespace: true
+  create: true
+  replaceInvalidRoutes: true
+gateway:
+  persistProxySpec: true
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
+    gatewaySettings:
+      # the KEYVALUE action type was first available in v1.11.11 (within the v1.11.x branch); this is a sanity check to
+      # ensure we can upgrade without errors from an older version to a version with these new fields (i.e. we can set
+      # the new fields on the Gateway CR during the helm upgrade, and that it will pass validation)
+      customHttpGateway:
+        options:
+          dlp:
+            dlpRules:
+            - actions:
+              - actionType: KEYVALUE
+                keyValueAction:
+                  keyToMask: test
+                  name: test
+`))
+	Expect(err).NotTo(HaveOccurred())
+
+	err = values.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	return values.Name(), func() { _ = os.Remove(values.Name()) }
 }
 
 var strictValidationArgs = []string{
