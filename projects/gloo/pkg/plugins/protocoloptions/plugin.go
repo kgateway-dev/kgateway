@@ -85,14 +85,17 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 	}
 
+	ose := in.GetOverrideStreamErrorOnInvalidHttpMessage()
+
 	protobuf := &envoy_extensions_upstreams_http_v3.HttpProtocolOptions{
 		UpstreamProtocolOptions: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
 				ProtocolConfig: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
 					Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{
-						InitialStreamWindowSize:     sws,
-						InitialConnectionWindowSize: cws,
-						MaxConcurrentStreams:        mcs,
+						InitialStreamWindowSize:                 sws,
+						InitialConnectionWindowSize:             cws,
+						MaxConcurrentStreams:                    mcs,
+						OverrideStreamErrorOnInvalidHttpMessage: ose,
 					},
 				},
 			},

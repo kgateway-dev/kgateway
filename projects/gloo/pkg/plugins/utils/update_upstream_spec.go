@@ -14,24 +14,31 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 	if desired.GetSslConfig() == nil {
 		desired.SslConfig = original.GetSslConfig()
 	}
+
 	if desired.GetCircuitBreakers() == nil {
 		desired.CircuitBreakers = original.GetCircuitBreakers()
 	}
+
 	if desired.GetLoadBalancerConfig() == nil {
 		desired.LoadBalancerConfig = original.GetLoadBalancerConfig()
 	}
+
 	if desired.GetConnectionConfig() == nil {
 		desired.ConnectionConfig = original.GetConnectionConfig()
 	}
+
 	if desired.GetFailover() == nil {
 		desired.Failover = original.GetFailover()
 	}
+
 	if len(desired.GetHealthChecks()) == 0 {
 		desired.HealthChecks = original.GetHealthChecks()
 	}
+
 	if desired.GetOutlierDetection() == nil {
 		desired.OutlierDetection = original.GetOutlierDetection()
 	}
+
 	if desired.GetUseHttp2() == nil {
 		desired.UseHttp2 = original.GetUseHttp2()
 	}
@@ -42,6 +49,10 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 
 	if desired.GetInitialStreamWindowSize() == nil {
 		desired.InitialStreamWindowSize = original.GetInitialStreamWindowSize()
+	}
+
+	if desired.GetOverrideStreamErrorOnInvalidHttpMessage() == nil {
+		desired.OverrideStreamErrorOnInvalidHttpMessage = original.GetOverrideStreamErrorOnInvalidHttpMessage()
 	}
 
 	if desired.GetHttpProxyHostname() == nil {

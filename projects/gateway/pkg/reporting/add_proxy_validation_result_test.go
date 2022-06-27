@@ -44,6 +44,9 @@ var _ = Describe("AddProxyValidationResult", func() {
 				for _, httpReport := range lis.GetAggregateListenerReport().GetHttpListenerReports() {
 					availableVirtualHostReports = append(availableVirtualHostReports, httpReport.GetVirtualHostReports()...)
 				}
+				for _, matchedReport := range lis.GetHybridListenerReport().GetMatchedListenerReports() {
+					availableVirtualHostReports = append(availableVirtualHostReports, matchedReport.GetHttpListenerReport().GetVirtualHostReports()...)
+				}
 
 				for _, vHost := range availableVirtualHostReports {
 					validation.AppendVirtualHostError(vHost,
@@ -71,7 +74,8 @@ var _ = Describe("AddProxyValidationResult", func() {
 
 			for _, vs := range snap.VirtualServices {
 				Expect(reports[vs].Errors).To(HaveOccurred())
-				Expect(reports[vs].Errors.Error()).To(ContainSubstring(`2 errors occurred:
+				// These VirtualServices are now used by multiple listeners, and each listener adds 2 errors
+				Expect(reports[vs].Errors.Error()).To(ContainSubstring(`4 errors occurred:
 	* VirtualHost Error: DomainsNotUniqueError. Reason: bad vhost
 	* Route Error: InvalidMatcherError. Reason: bad route. Route Name: route-0`))
 			}

@@ -147,6 +147,9 @@ spec:
                     properties:
                       enableTrailers:
                         type: boolean
+                      overrideStreamErrorOnInvalidHttpMessage:
+                        nullable: true
+                        type: boolean
                       preserveCaseHeaderKeyFormat:
                         type: boolean
                       properCaseHeaderKeyFormat:
@@ -344,6 +347,9 @@ spec:
                                       type: integer
                                     upstreamSslConfig:
                                       properties:
+                                        allowRenegotiation:
+                                          nullable: true
+                                          type: boolean
                                         alpnProtocols:
                                           items:
                                             type: string
@@ -864,6 +870,9 @@ spec:
                     nullable: true
                     type: integer
                 type: object
+              overrideStreamErrorOnInvalidHttpMessage:
+                nullable: true
+                type: boolean
               pipe:
                 properties:
                   path:
@@ -975,6 +984,9 @@ spec:
                 x-kubernetes-int-or-string: true
               sslConfig:
                 properties:
+                  allowRenegotiation:
+                    nullable: true
+                    type: boolean
                   alpnProtocols:
                     items:
                       type: string
