@@ -1330,10 +1330,6 @@ github.com/solo-io/skv2 v0.17.2/go.mod h1:8Mo/EqmRGTu3UWb6ldnbN/9QyzI788MyG3SSpP
 github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10 h1:Qbq966MqBQ2hlvrg0RuoB2rWXJOwSJq+kT5z4P3Nk50=
 github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10/go.mod h1:pAKKsh7pWK1nkzSfSV67RlmiynYzZlu+IWAylvEqkUI=
 github.com/solo-io/solo-kit v0.16.0/go.mod h1:zf+vof9HAavbFKRgL80jJ24SeE9PvoB8ooQ7DACtK8I=
-github.com/solo-io/solo-kit v0.20.7 h1:xLbb9slaF3UXFS2bZ2E9d3iuBgHmv0NSQ5q2E7Gz9hk=
-github.com/solo-io/solo-kit v0.20.7/go.mod h1:+JfPzBF4iSwiAdxOHB18eGSA06JHEb0T2/HvYJ8HSxU=
-github.com/solo-io/solo-kit v0.20.8-0.20220624213159-1a541f8e67d4 h1:8Ii1Ha32BU3N9mFRkTp7jXP+pR9VWCI3dNESzKjAZeQ=
-github.com/solo-io/solo-kit v0.20.8-0.20220624213159-1a541f8e67d4/go.mod h1:+JfPzBF4iSwiAdxOHB18eGSA06JHEb0T2/HvYJ8HSxU=
 github.com/solo-io/solo-kit v0.20.8 h1:2jEEgAXx7T45/ygUtot9jPCRJrnt2hWYa1IL0rh5ZGg=
 github.com/solo-io/solo-kit v0.20.8/go.mod h1:+JfPzBF4iSwiAdxOHB18eGSA06JHEb0T2/HvYJ8HSxU=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3 h1:Am1RMaWH7jOug0ys4gUeBCgwR/94NSfZqu90j9u8eTA=
