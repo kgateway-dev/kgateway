@@ -35,4 +35,5 @@ type ValidationOpts struct {
 	AlwaysAcceptResources        bool
 	AllowWarnings                bool
 	WarnOnRouteShortCircuiting   bool
+	GrpcMaxSizeBytes             int
 }

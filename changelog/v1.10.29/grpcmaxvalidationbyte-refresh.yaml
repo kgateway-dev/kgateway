@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6564
+    description: Allow for validation bytes to be updated by settings without a manual roll
+    resolvesIssue: false

@@ -6,6 +6,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/Masterminds/squirrel v1.5.2 // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
+	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.34.9
 	github.com/bshuster-repo/logrus-logstash-hook v1.0.0 // indirect
