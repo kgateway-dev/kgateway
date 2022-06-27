@@ -2,4 +2,4 @@ changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/6496
     resolvesIssue: false
-    description: Add TLS to redis connection for User Sessions.
+    description: Add TLS to redis connection for User Sessions. Added UsernamePassword suffix, socket type, and tls cert path.
