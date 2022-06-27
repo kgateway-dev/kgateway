@@ -36,13 +36,12 @@ spec:
           - -c
           - |
             # remove existing helm labels/annotations since the custom resources are no longer managed by helm.
-            # also add resource-policy so helm doesn't delete resource during upgrade
-            kubectl annotate upstreams.gloo.solo.io -n {{ $.Release.Namespace }} -l created_by=gloo-install helm.sh/hook- helm.sh/hook-weight- meta.helm.sh/release-name- meta.helm.sh/release-namespace- helm.sh/resource-policy=keep || exit $?
+            kubectl annotate upstreams.gloo.solo.io -n {{ $.Release.Namespace }} -l created_by=gloo-install helm.sh/hook- helm.sh/hook-weight- meta.helm.sh/release-name- meta.helm.sh/release-namespace- || exit $?
             kubectl label upstreams.gloo.solo.io -n {{ $.Release.Namespace }} -l created_by=gloo-install,app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by- || exit $?
 
             # gateways can be in multiple namespaces
             {{- range include "gloo.gatewayNamespaces" $ | fromJsonArray }}
-            kubectl annotate gateways.gateway.solo.io -n {{ . }} -l created_by=gloo-install helm.sh/hook- helm.sh/hook-weight- meta.helm.sh/release-name- meta.helm.sh/release-namespace- helm.sh/resource-policy=keep || exit $?
+            kubectl annotate gateways.gateway.solo.io -n {{ . }} -l created_by=gloo-install helm.sh/hook- helm.sh/hook-weight- meta.helm.sh/release-name- meta.helm.sh/release-namespace- || exit $?
             kubectl label gateways.gateway.solo.io -n {{ . }} -l created_by=gloo-install,app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by- || exit $?
             {{- end }}
       restartPolicy: OnFailure
