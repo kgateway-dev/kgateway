@@ -350,7 +350,8 @@ spec:
 {{- end }}
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
-        image: {{ $global.glooMtls.envoySidecarImage }}
+        {{- $istioProxyImage := merge $global.glooMtls.istioProxy.image $global.image }}
+        image: {{ template "gloo.image" $istioProxyImage }}
         {{- if $global.glooMtls.envoySidecarResources }}
         resources:
 {{ toYaml $global.glooMtls.envoySidecarResources | indent 10}}
@@ -430,7 +431,7 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: {{ $istioProxyImage.pullPolicy }}
         readinessProbe:
           failureThreshold: 3
           httpGet:

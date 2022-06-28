@@ -216,7 +216,11 @@ global:
     sds:
       image:
         repository: sds
-    envoySidecarImage: docker.io/istio/proxyv2:1.9.5
+    istioProxy:
+      image:
+        repository: proxyv2
+        registry: docker.io/istio
+        tag: 1.9.5
     envoy:
       image:
         repository: gloo-envoy-wrapper
