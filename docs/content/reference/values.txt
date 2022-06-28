@@ -955,7 +955,7 @@
 |global.glooMtls.envoy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.envoy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.envoy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
-|global.glooMtls.envoySidecarImage|string|docker.io/istio/proxyv2:1.9.5|Istio sidecar image to inject to gateway proxy|
+|global.glooMtls.envoySidecarImage|string|docker.io/istio/proxyv2:1.9.5|Sets the Istio-proxy container image to use for mTLS|
 |global.glooMtls.envoySidecarResources.limits.memory|string||amount of memory|
 |global.glooMtls.envoySidecarResources.limits.cpu|string||amount of CPUs|
 |global.glooMtls.envoySidecarResources.requests.memory|string||amount of memory|
