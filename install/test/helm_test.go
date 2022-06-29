@@ -1287,7 +1287,6 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "` + defaults.GatewayBindAddress + `"
   bindPort: 8080
@@ -1304,7 +1303,6 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "` + defaults.GatewayBindAddress + `"
   bindPort: 8443
@@ -1433,7 +1431,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: ` + bindPort + `
@@ -1474,7 +1471,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: ` + bindPort + `
@@ -1522,7 +1518,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: ` + bindPort + `
@@ -1551,7 +1546,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: ` + bindPort + `
@@ -1580,7 +1574,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: ` + bindPort + `
@@ -1609,7 +1602,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: ` + bindPort + `
@@ -1798,7 +1790,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: 8080
@@ -1817,7 +1808,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: 8443
@@ -1836,7 +1826,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: 8081
@@ -1855,7 +1844,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: 8444
@@ -1890,7 +1878,6 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "` + defaults.GatewayBindAddress + `"
   bindPort: 15444
@@ -1935,7 +1922,6 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "` + defaults.GatewayBindAddress + `"
   bindPort: 8080`))
@@ -1986,7 +1972,6 @@ metadata:
   namespace: ` + namespace + `
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "` + defaults.GatewayBindAddress + `"
   bindPort: 9999`))
@@ -2079,7 +2064,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: 8443
@@ -2097,7 +2081,6 @@ metadata:
   namespace: gloo-system
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   bindAddress: "::"
   bindPort: 8443
@@ -5308,7 +5291,6 @@ kind: Gateway
 metadata:
   labels:
     app: gloo
-    created_by: gloo-install
   name: gateway-proxy-ssl
   namespace: gloo-system
 spec:

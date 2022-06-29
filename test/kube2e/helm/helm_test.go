@@ -10,10 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	gatewayv1kube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -228,9 +230,12 @@ var _ = Describe("Kube2e: helm", func() {
 		Context("failurePolicy upgrades", func() {
 
 			var webhookConfigClient admission_v1_types.ValidatingWebhookConfigurationInterface
+			var gatewayV1Client gatewayv1kube.GatewayV1Interface
 
 			BeforeEach(func() {
 				webhookConfigClient = kubeClientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
+				gatewayV1Client, err = gatewayv1kube.NewForConfig(cfg)
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			testFailurePolicyUpgrade := func(oldFailurePolicy admission_v1.FailurePolicyType, newFailurePolicy admission_v1.FailurePolicyType) {
@@ -238,6 +243,14 @@ var _ = Describe("Kube2e: helm", func() {
 				webhookConfig, err := webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(oldFailurePolicy))
+
+				// to ensure the default Gateways were not deleted during upgrade, compare their creation timestamps before and after the upgrade
+				gw, err := gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				gwTimestampBefore := gw.GetCreationTimestamp().String()
+				gwSsl, err := gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy-ssl", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				gwSslTimestampBefore := gwSsl.GetCreationTimestamp().String()
 
 				// upgrade to the new failurePolicy type
 				var newStrictValue = false
@@ -250,6 +263,16 @@ var _ = Describe("Kube2e: helm", func() {
 				webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(newFailurePolicy))
+
+				By("Gateway creation timestamps should not have changed")
+				gw, err = gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				gwTimestampAfter := gw.GetCreationTimestamp().String()
+				Expect(gwTimestampBefore).To(Equal(gwTimestampAfter))
+				gwSsl, err = gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy-ssl", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				gwSslTimestampAfter := gwSsl.GetCreationTimestamp().String()
+				Expect(gwSslTimestampBefore).To(Equal(gwSslTimestampAfter))
 			}
 
 			Context("starting from before the gloo/gateway merge, with failurePolicy=Ignore", func() {
@@ -434,17 +457,10 @@ func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir s
 		return
 	}
 
-	// delete all solo crds from the previous release
-	dir, err := os.MkdirTemp("", "old-gloo-chart")
-	Expect(err).NotTo(HaveOccurred())
-	defer os.RemoveAll(dir)
-
-	runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName, "https://storage.googleapis.com/solo-public-helm", "--force-update")
-	runAndCleanCommand("helm", "pull", testHelper.HelmChartName+"/gloo", "--version", fromRelease, "--untar", "--untardir", dir)
-	runAndCleanCommand("kubectl", "delete", "-f", dir+"/gloo/crds")
-
 	// apply crds from the release we're upgrading to
 	runAndCleanCommand("kubectl", "apply", "-f", crdDir)
+	// allow some time for the new crds to take effect
+	time.Sleep(time.Second * 5)
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, strictValidation bool, additionalArgs []string) {

@@ -11,7 +11,6 @@ metadata:
   namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -68,7 +67,6 @@ metadata:
   namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -124,7 +122,6 @@ metadata:
   namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
     app: gloo
-    created_by: gloo-install
 spec:
 {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
