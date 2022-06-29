@@ -466,7 +466,7 @@ func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir s
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, strictValidation bool, additionalArgs []string) {
 	upgradeCrds(testHelper, fromRelease, crdDir)
 
-	valueOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
+	valueOverrideFile, cleanupFunc := getHelmUpgradeValuesOverrideFile()
 	defer cleanupFunc()
 
 	var args = []string{"upgrade", testHelper.HelmChartName, chartUri,
@@ -493,7 +493,7 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 	cancel()
 }
 
-func getHelmValuesOverrideFile() (filename string, cleanup func()) {
+func getHelmUpgradeValuesOverrideFile() (filename string, cleanup func()) {
 	values, err := ioutil.TempFile("", "values-*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
