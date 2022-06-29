@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	//envoy_extensions_upstreams_http_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-	//"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"io/ioutil"
 	"os"
 	"reflect"
