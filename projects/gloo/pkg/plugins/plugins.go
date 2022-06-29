@@ -3,6 +3,8 @@ package plugins
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -174,4 +176,4 @@ type PluginRegistry interface {
 
 // A PluginRegistryFactory generates a PluginRegistry
 // It is executed each translation loop, ensuring we have up to date configuration of all plugins
-type PluginRegistryFactory func(ctx context.Context) PluginRegistry
+type PluginRegistryFactory func(ctx context.Context, opts bootstrap.Opts) PluginRegistry

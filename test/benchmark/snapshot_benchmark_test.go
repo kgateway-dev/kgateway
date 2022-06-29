@@ -160,11 +160,10 @@ var _ = Describe("SnapshotBenchmark", func() {
 		BeforeEach(beforeEach)
 
 		JustBeforeEach(func() {
-			pluginRegistryFactory := func(ctx context.Context) plugins.PluginRegistry {
-				return registry.NewPluginRegistry(registeredPlugins)
-			}
-			fnvTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistryFactory, translator.EnvoyCacheResourcesListToFnvHash)
-			hashstructureTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistryFactory, translator.EnvoyCacheResourcesListToHash)
+			pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
+
+			fnvTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, translator.EnvoyCacheResourcesListToFnvHash)
+			hashstructureTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, translator.EnvoyCacheResourcesListToHash)
 
 			httpListener := &v1.Listener{
 				Name:        "http-listener",

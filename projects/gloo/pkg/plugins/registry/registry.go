@@ -108,8 +108,8 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	return glooPlugins
 }
 
-func GetPluginRegistryFactory(opts bootstrap.Opts) plugins.PluginRegistryFactory {
-	return func(ctx context.Context) plugins.PluginRegistry {
+func GetPluginRegistryFactory() plugins.PluginRegistryFactory {
+	return func(ctx context.Context, opts bootstrap.Opts) plugins.PluginRegistry {
 		availablePlugins := Plugins(opts)
 
 		// To improve the UX, load a plugin that warns users if they are attempting to use enterprise configuration

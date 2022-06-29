@@ -539,10 +539,10 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 
 	pluginRegistryFactory := extensions.PluginRegistryFactory
 	if pluginRegistryFactory == nil {
-		pluginRegistryFactory = registry.GetPluginRegistryFactory(opts)
+		pluginRegistryFactory = registry.GetPluginRegistryFactory()
 	}
 
-	pluginRegistry := pluginRegistryFactory(watchOpts.Ctx)
+	pluginRegistry := pluginRegistryFactory(watchOpts.Ctx, opts)
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range pluginRegistry.GetPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
@@ -713,7 +713,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		allowWarnings = gwOpts.Validation.AllowWarnings
 	}
 
-	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistryFactory)
+	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistry)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {

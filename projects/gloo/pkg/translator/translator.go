@@ -40,44 +40,45 @@ type Translator interface {
 func NewTranslator(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
-	pluginRegistryFactory plugins.PluginRegistryFactory,
+	pluginRegistry plugins.PluginRegistry,
 ) Translator {
-	return NewTranslatorWithHasher(sslConfigTranslator, settings, pluginRegistryFactory, EnvoyCacheResourcesListToFnvHash)
+	return NewTranslatorWithHasher(sslConfigTranslator, settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)
 }
 
 func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
-	pluginRegistryFactory plugins.PluginRegistryFactory,
+	pluginRegistry plugins.PluginRegistry,
 	hasher func(resources []envoycache.Resource) uint64,
 ) Translator {
 	return &translatorFactory{
-		pluginRegistryFactory: pluginRegistryFactory,
-		settings:              settings,
-		sslConfigTranslator:   sslConfigTranslator,
-		hasher:                hasher,
+		pluginRegistry:            pluginRegistry,
+		settings:                  settings,
+		sslConfigTranslator:       sslConfigTranslator,
+		hasher:                    hasher,
+		listenerTranslatorFactory: NewListenerSubsystemTranslatorFactory(pluginRegistry, sslConfigTranslator),
 	}
 }
 
 type translatorFactory struct {
-	pluginRegistryFactory plugins.PluginRegistryFactory
-	settings              *v1.Settings
-	sslConfigTranslator   utils.SslConfigTranslator
-	hasher                func(resources []envoycache.Resource) uint64
+	pluginRegistry            plugins.PluginRegistry
+	settings                  *v1.Settings
+	sslConfigTranslator       utils.SslConfigTranslator
+	hasher                    func(resources []envoycache.Resource) uint64
+	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
 }
 
 func (t *translatorFactory) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
-	pluginRegistry := t.pluginRegistryFactory(params.Ctx)
-	listenerTranslatorFactory := NewListenerSubsystemTranslatorFactory(pluginRegistry, t.sslConfigTranslator)
 
+	// TODO - can we just remove this since a factory and instance are the same?
 	instance := &translatorInstance{
-		pluginRegistry:            pluginRegistry,
+		pluginRegistry:            t.pluginRegistry,
 		settings:                  t.settings,
 		hasher:                    t.hasher,
-		listenerTranslatorFactory: listenerTranslatorFactory,
+		listenerTranslatorFactory: t.listenerTranslatorFactory,
 	}
 
 	return instance.Translate(params, proxy)

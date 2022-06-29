@@ -182,11 +182,9 @@ var _ = Describe("Translator", func() {
 	BeforeEach(beforeEach)
 
 	JustBeforeEach(func() {
-		pluginRegistryFactory := func(ctx context.Context) plugins.PluginRegistry {
-			return registry.NewPluginRegistry(registeredPlugins)
-		}
+		pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 
-		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, pluginRegistryFactory)
+		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, pluginRegistry)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",
