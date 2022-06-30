@@ -20,7 +20,6 @@ import (
 // Compile-time assertion
 var (
 	_ syncer.TranslatorSyncerExtension            = new(TranslatorSyncerExtension)
-	_ syncer.UpgradeableTranslatorSyncerExtension = new(TranslatorSyncerExtension)
 )
 
 const (
@@ -31,32 +30,28 @@ const (
 type TranslatorSyncerExtension struct {
 }
 
-func (s *TranslatorSyncerExtension) ExtensionName() string {
-	return Name
-}
-
-func (s *TranslatorSyncerExtension) IsUpgrade() bool {
-	return false
-}
-
 func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
 	return &TranslatorSyncerExtension{}, nil
+}
+
+func (s *TranslatorSyncerExtension) ID() string {
+	return ServerRole
 }
 
 func (s *TranslatorSyncerExtension) Sync(
 	ctx context.Context,
 	snap *gloov1snap.ApiSnapshot,
-	settings *gloov1.Settings,
-	xdsCache envoycache.SnapshotCache,
-	reports reporter.ResourceReports,
-) (string, error) {
+	_ *gloov1.Settings,
+	_ envoycache.SnapshotCache,
+	_ reporter.ResourceReports,
+) error {
 	ctx = contextutils.WithLogger(ctx, "rateLimitTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	enterpriseOnlyError := func(enterpriseFeature string) (string, error) {
+	enterpriseOnlyError := func(enterpriseFeature string) error {
 		errorMsg := createErrorMsg(enterpriseFeature)
 		logger.Errorf(errorMsg)
-		return ServerRole, eris.New(errorMsg)
+		return eris.New(errorMsg)
 	}
 
 	for _, proxy := range snap.Proxies {
@@ -120,7 +115,7 @@ func (s *TranslatorSyncerExtension) Sync(
 		}
 	}
 
-	return ServerRole, nil
+	return nil
 }
 
 func createErrorMsg(feature string) string {

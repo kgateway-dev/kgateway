@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 
@@ -172,6 +173,7 @@ type PluginRegistry interface {
 	GetRoutePlugins() []RoutePlugin
 	GetRouteActionPlugins() []RouteActionPlugin
 	GetWeightedDestinationPlugins() []WeightedDestinationPlugin
+	GetDiscoveryPlugins() []discovery.DiscoveryPlugin
 }
 
 // A PluginRegistryFactory generates a PluginRegistry

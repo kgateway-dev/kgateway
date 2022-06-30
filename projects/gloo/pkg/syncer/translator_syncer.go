@@ -28,8 +28,6 @@ type translatorSyncer struct {
 	// used for debugging purposes only
 	latestSnap *v1snap.ApiSnapshot
 	extensions []TranslatorSyncerExtension
-	// used to track which envoy node IDs exist without belonging to a proxy
-	extensionKeys  map[string]struct{}
 	settings       *v1.Settings
 	statusMetrics  metrics.ConfigStatusMetrics
 	gatewaySyncer  *gwsyncer.TranslatorSyncer
@@ -43,22 +41,14 @@ type TranslatorSyncerExtensionParams struct {
 
 type TranslatorSyncerExtensionFactory func(context.Context, TranslatorSyncerExtensionParams) (TranslatorSyncerExtension, error)
 
-type UpgradeableTranslatorSyncerExtension interface {
-	ExtensionName() string
-	IsUpgrade() bool
-}
-
-// TODO(kdorosh) in follow up PR, update this interface so it can never error
-// It is logically invalid for us to return an error here (translation of resources always needs to
-// result in a xds snapshot, so we are resilient to pod restarts)
 type TranslatorSyncerExtension interface {
+	ID() string
 	Sync(
 		ctx context.Context,
 		snap *v1snap.ApiSnapshot,
 		settings *v1.Settings,
 		xdsCache envoycache.SnapshotCache,
-		reports reporter.ResourceReports,
-	) (string, error)
+		reports reporter.ResourceReports)
 }
 
 func NewTranslatorSyncer(
@@ -113,16 +103,13 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
-	s.extensionKeys = map[string]struct{}{}
+
 	for _, extension := range s.extensions {
 		intermediateReports := make(reporter.ResourceReports)
-		nodeID, err := extension.Sync(ctx, snap, s.settings, s.xdsCache, intermediateReports)
-		if err != nil {
-			multiErr = multierror.Append(multiErr, err)
-		}
+		extension.Sync(ctx, snap, s.settings, s.xdsCache, intermediateReports)
 		reports.Merge(intermediateReports)
-		s.extensionKeys[nodeID] = struct{}{}
 	}
+
 	if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
 		logger.Debugf("Failed writing report for proxies: %v", err)
 		multiErr = multierror.Append(multiErr, eris.Wrapf(err, "writing reports"))

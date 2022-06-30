@@ -3,6 +3,7 @@ package registry
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
 
@@ -131,6 +132,7 @@ type pluginRegistry struct {
 	routePlugins                 []plugins.RoutePlugin
 	routeActionPlugins           []plugins.RouteActionPlugin
 	weightedDestinationPlugins   []plugins.WeightedDestinationPlugin
+	discoveryPlugins []discovery.DiscoveryPlugin
 }
 
 // NewPluginRegistry creates a plugin registry and places all registered plugins
@@ -148,6 +150,7 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 	var routePlugins []plugins.RoutePlugin
 	var routeActionPlugins []plugins.RouteActionPlugin
 	var weightedDestinationPlugins []plugins.WeightedDestinationPlugin
+	var discoveryPlugins []discovery.DiscoveryPlugin
 
 	// Process registered plugins once
 	for _, plugin := range registeredPlugins {
@@ -205,6 +208,11 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		if ok {
 			weightedDestinationPlugins = append(weightedDestinationPlugins, weightedDestinationPlugin)
 		}
+
+		discoveryPlugin, ok := plugin.(discovery.DiscoveryPlugin)
+		if ok {
+			discoveryPlugins = append(discoveryPlugins, discoveryPlugin)
+		}
 	}
 
 	return &pluginRegistry{
@@ -220,6 +228,7 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		routePlugins:                 routePlugins,
 		routeActionPlugins:           routeActionPlugins,
 		weightedDestinationPlugins:   weightedDestinationPlugins,
+		discoveryPlugins: discoveryPlugins,
 	}
 }
 
@@ -281,4 +290,9 @@ func (p *pluginRegistry) GetRouteActionPlugins() []plugins.RouteActionPlugin {
 // GetWeightedDestinationPlugins returns the plugins that were registered which act on WeightedDestination.
 func (p *pluginRegistry) GetWeightedDestinationPlugins() []plugins.WeightedDestinationPlugin {
 	return p.weightedDestinationPlugins
+}
+
+// GetDiscoveryPlugins returns the plugins that were registered which acts on Upstreams and Endpoints.
+func (p *pluginRegistry) GetDiscoveryPlugins() []discovery.DiscoveryPlugin {
+	return p.discoveryPlugins
 }

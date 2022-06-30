@@ -17,12 +17,10 @@ import (
 
 // Compile-time assertion
 var (
-	_ syncer.TranslatorSyncerExtension            = new(TranslatorSyncerExtension)
-	_ syncer.UpgradeableTranslatorSyncerExtension = new(TranslatorSyncerExtension)
+	_ syncer.TranslatorSyncerExtension = new(TranslatorSyncerExtension)
 )
 
 const (
-	Name       = "extauth"
 	ServerRole = "extauth"
 )
 
@@ -32,34 +30,27 @@ var (
 
 type TranslatorSyncerExtension struct{}
 
-func (s *TranslatorSyncerExtension) ExtensionName() string {
-	return Name
-}
-
-func (s *TranslatorSyncerExtension) IsUpgrade() bool {
-	return false
-}
-
-func NewTranslatorSyncerExtension(
-	_ context.Context,
-	params syncer.TranslatorSyncerExtensionParams,
-) (syncer.TranslatorSyncerExtension, error) {
+func NewTranslatorSyncerExtension(_ context.Context, _ syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
 	return &TranslatorSyncerExtension{}, nil
+}
+
+func (s *TranslatorSyncerExtension) ID() string {
+	return ServerRole
 }
 
 func (s *TranslatorSyncerExtension) Sync(
 	ctx context.Context,
 	snap *gloov1snap.ApiSnapshot,
 	settings *gloov1.Settings,
-	xdsCache envoycache.SnapshotCache,
+	_ envoycache.SnapshotCache,
 	reports reporter.ResourceReports,
-) (string, error) {
+) {
 	ctx = contextutils.WithLogger(ctx, "extAuthTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	getEnterpriseOnlyErr := func() (string, error) {
+	getEnterpriseOnlyErr := func() error {
 		logger.Error(ErrEnterpriseOnly.Error())
-		return ServerRole, ErrEnterpriseOnly
+		return ErrEnterpriseOnly
 	}
 
 	if settings.GetNamedExtauth() != nil {
@@ -76,7 +67,7 @@ func (s *TranslatorSyncerExtension) Sync(
 				}
 
 				if virtualHost.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
-					return getEnterpriseOnlyErr()
+					reports.AddError(proxy, getEnterpriseOnlyErr())
 				}
 
 				for _, route := range virtualHost.GetRoutes() {
@@ -102,6 +93,4 @@ func (s *TranslatorSyncerExtension) Sync(
 			}
 		}
 	}
-
-	return ServerRole, nil
 }

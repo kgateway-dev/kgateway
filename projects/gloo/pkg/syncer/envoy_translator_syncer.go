@@ -107,8 +107,8 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			allKeys[key] = true
 		}
 		// Get all valid node ID keys for extensions (rate-limit, ext-auth)
-		for key := range s.extensionKeys {
-			allKeys[key] = true
+		for _, extension := range s.extensions {
+			allKeys[extension.ID()] = true
 		}
 
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
