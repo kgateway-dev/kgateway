@@ -216,6 +216,6 @@ message HttpConnectionManagerSettings {
     UuidRequestIdConfigSettings uuid_request_id_config = 37;
 
     // Additional HTTP/2 settings that are passed directly to the HTTP/2 codec.
-    protocol.options.gloo.solo.io.Http2ProtocolOptions http2_protocol_options = 39;
+    optional protocol.options.gloo.solo.io.Http2ProtocolOptions http2_protocol_options = 39;
 
 }
