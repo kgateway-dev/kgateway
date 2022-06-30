@@ -1381,8 +1381,6 @@ github.com/solo-io/skv2 v0.17.17/go.mod h1:nYjANLlL1SLPV/7Gr2mKgfxO3Jta/yNAxKnAH
 github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c h1:4/yTroUmyUJonldE5EyC3AinNG4KVLgG0FVMrI2SQ04=
 github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c/go.mod h1:4HQsQO4Cy/4V7ZZxWncvnMvIq7pYnb66jAT5hvDJBgQ=
 github.com/solo-io/solo-kit v0.23.0/go.mod h1:uCOi8RQ3MetHXsRFvVKPzafYySUvFuPxB+gvo7ScRR8=
-github.com/solo-io/solo-kit v0.24.6-0.20220630190915-e2772006570e h1:ssxchq6QuOqA2tTwEaaFR/JcWIHsfKUeTiZUgS2+uj4=
-github.com/solo-io/solo-kit v0.24.6-0.20220630190915-e2772006570e/go.mod h1:y/A2Lr12jMPf9vyP5cuLYNumTYVCDinm4ZbbDULfHBo=
 github.com/solo-io/solo-kit v0.24.6 h1:7it801gRA//jmyJKO5tqCrFLE1R86G9QYzQGiQ2f9PI=
 github.com/solo-io/solo-kit v0.24.6/go.mod h1:y/A2Lr12jMPf9vyP5cuLYNumTYVCDinm4ZbbDULfHBo=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3 h1:Am1RMaWH7jOug0ys4gUeBCgwR/94NSfZqu90j9u8eTA=
