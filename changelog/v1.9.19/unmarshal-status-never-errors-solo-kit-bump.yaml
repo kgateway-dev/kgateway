@@ -1,0 +1,8 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.24.6
+    issueLink: https://github.com/solo-io/solo-kit/issues/484
+    resolvesIssue: false
+    description: Never error when unmarshalling status.
