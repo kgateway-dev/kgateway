@@ -3,3 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/6496
     resolvesIssue: false
     description: Add TLS to redis connection for User Sessions. Added only socket types.
+
