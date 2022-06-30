@@ -406,6 +406,8 @@ func (m *RedisOptions) Clone() proto.Message {
 
 	target.PoolSize = m.GetPoolSize()
 
+	target.SocketType = m.GetSocketType()
+
 	return target
 }
 
