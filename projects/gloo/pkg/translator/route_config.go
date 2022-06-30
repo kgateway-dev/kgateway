@@ -450,7 +450,7 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 		// Envoy errors with:`WeightedClusterValidationError.TotalWeight: value must be greater than or equal to 1`
 		validation.AppendRouteError(routeReport,
 			validationapi.RouteReport_Error_ProcessingError,
-			fmt.Sprintf("Incorrect configuration for Weighted Destination for route: %s - Weighted Destinations require a total weight that is greater than 0", routeName),
+			fmt.Sprintf("Incorrect configuration for Weighted Destination for route - Weighted Destinations require a total weight that is greater than 0"),
 			routeName,
 		)
 	}
