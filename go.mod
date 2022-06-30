@@ -13,6 +13,7 @@ require (
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/docker/cli v20.10.10+incompatible // indirect
 	github.com/docker/docker v20.10.3+incompatible // indirect
+	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e // indirect
 	github.com/envoyproxy/go-control-plane v0.10.1
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
@@ -72,7 +73,7 @@ require (
 	github.com/solo-io/skv2 v0.21.6
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
-	github.com/solo-io/solo-kit v0.24.5
+	github.com/solo-io/solo-kit v0.24.6
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
