@@ -66,7 +66,25 @@ spec:
   ignoreHealthOnHostRemoval: true
 {{< /highlight >}}
 
-Retries are set at the route level:
+In the previous example, `Upstream` pings are issued every 2 seconds. You might find that this active health check setting is too frequent and generates excessive traffic. If so, consider a health check with a longer interval, such as the following example.
+
+{{< highlight yaml "hl_lines=6-9" >}}
+  # ----- Health Check (a.k.a. active health checks) -------
+  healthChecks:
+    - healthyThreshold: 1
+      httpHealthCheck:
+        path: /status/200
+      interval: 15s
+      noTrafficInterval: 10s
+      timeout: 5s
+      unhealthyThreshold: 3
+      reuseConnection: false
+```
+{{< /highlight >}}
+
+For more information, see the [health check API documentation]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto.sk/#healthcheck" %}}).
+
+[Retries]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/retries/" %}}) are configured on `VirtualServices` at the route level:
 
 {{< highlight yaml "hl_lines=17" >}}
 apiVersion: gateway.solo.io/v1
