@@ -1332,6 +1332,8 @@ github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10/go.mod h1:pAKKsh
 github.com/solo-io/solo-kit v0.16.0/go.mod h1:zf+vof9HAavbFKRgL80jJ24SeE9PvoB8ooQ7DACtK8I=
 github.com/solo-io/solo-kit v0.20.8 h1:2jEEgAXx7T45/ygUtot9jPCRJrnt2hWYa1IL0rh5ZGg=
 github.com/solo-io/solo-kit v0.20.8/go.mod h1:+JfPzBF4iSwiAdxOHB18eGSA06JHEb0T2/HvYJ8HSxU=
+github.com/solo-io/solo-kit v0.20.9 h1:6JEk8DqHa1F+I9NlPRD13IPEg2ROKvBAjN0UTPwx8PA=
+github.com/solo-io/solo-kit v0.20.9/go.mod h1:+JfPzBF4iSwiAdxOHB18eGSA06JHEb0T2/HvYJ8HSxU=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3 h1:Am1RMaWH7jOug0ys4gUeBCgwR/94NSfZqu90j9u8eTA=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3/go.mod h1:3lckq1wF8I6I2a1Jx5IsEG+PQArE57Jp3wBE2rQnKmw=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
