@@ -208,6 +208,11 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	var initialRouteOptionList RouteOptionList
 
 	currentSnapshot := ApiSnapshot{}
+	virtualServicesByNamespace := make(map[string]VirtualServiceList)
+	routeTablesByNamespace := make(map[string]RouteTableList)
+	gatewaysByNamespace := make(map[string]GatewayList)
+	virtualHostOptionsByNamespace := make(map[string]VirtualHostOptionList)
+	routeOptionsByNamespace := make(map[string]RouteOptionList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for VirtualService */
@@ -217,6 +222,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial VirtualService list")
 			}
 			initialVirtualServiceList = append(initialVirtualServiceList, virtualServices...)
+			virtualServicesByNamespace[namespace] = virtualServices
 		}
 		virtualServiceNamespacesChan, virtualServiceErrs, err := c.virtualService.Watch(namespace, opts)
 		if err != nil {
@@ -235,6 +241,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial RouteTable list")
 			}
 			initialRouteTableList = append(initialRouteTableList, routeTables...)
+			routeTablesByNamespace[namespace] = routeTables
 		}
 		routeTableNamespacesChan, routeTableErrs, err := c.routeTable.Watch(namespace, opts)
 		if err != nil {
@@ -253,6 +260,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial Gateway list")
 			}
 			initialGatewayList = append(initialGatewayList, gateways...)
+			gatewaysByNamespace[namespace] = gateways
 		}
 		gatewayNamespacesChan, gatewayErrs, err := c.gateway.Watch(namespace, opts)
 		if err != nil {
@@ -271,6 +279,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial VirtualHostOption list")
 			}
 			initialVirtualHostOptionList = append(initialVirtualHostOptionList, virtualHostOptions...)
+			virtualHostOptionsByNamespace[namespace] = virtualHostOptions
 		}
 		virtualHostOptionNamespacesChan, virtualHostOptionErrs, err := c.virtualHostOption.Watch(namespace, opts)
 		if err != nil {
@@ -289,6 +298,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial RouteOption list")
 			}
 			initialRouteOptionList = append(initialRouteOptionList, routeOptions...)
+			routeOptionsByNamespace[namespace] = routeOptions
 		}
 		routeOptionNamespacesChan, routeOptionErrs, err := c.routeOption.Watch(namespace, opts)
 		if err != nil {
@@ -397,11 +407,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				stats.Record(ctx, mApiSnapshotMissed.M(1))
 			}
 		}
-		virtualServicesByNamespace := make(map[string]VirtualServiceList)
-		routeTablesByNamespace := make(map[string]RouteTableList)
-		gatewaysByNamespace := make(map[string]GatewayList)
-		virtualHostOptionsByNamespace := make(map[string]VirtualHostOptionList)
-		routeOptionsByNamespace := make(map[string]RouteOptionList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
