@@ -88,7 +88,7 @@ func getHelmValuesOverrideFile() (filename string, cleanup func()) {
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
-	envoyLogLevel: debug
+    envoyLogLevel: debug
 `))
 	Expect(err).NotTo(HaveOccurred())
 
