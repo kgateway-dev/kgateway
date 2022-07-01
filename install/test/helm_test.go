@@ -2805,6 +2805,39 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("can overwrite sds and istioProxy images", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true",
+								"global.istioSDS.enabled=true",
+								"global.glooMtls.sds.image.tag=my-sds-tag",
+								"global.glooMtls.sds.image.repository=my-sds-repo",
+								"global.glooMtls.sds.image.registry=my-sds-reg",
+								"global.glooMtls.istioProxy.image.tag=my-istio-tag",
+								"global.glooMtls.istioProxy.image.repository=my-istio-repo",
+								"global.glooMtls.istioProxy.image.registry=my-istio-reg",
+								"global.glooMtls.istioProxy.image.pullPolicy=Always",
+							},
+						})
+
+						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "gateway-proxy")
+						gwpObj, err := kuberesource.ConvertUnstructured(gwpUns)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(gwpObj).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
+						gwpDepl := *gwpObj.(*appsv1.Deployment)
+						Expect(gwpDepl.Spec.Template.Spec.Containers).To(HaveLen(3))
+
+						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
+						Expect(sdsContainer.Name).To(Equal("sds"))
+						Expect(sdsContainer.Image).To(Equal("my-sds-reg/my-sds-repo:my-sds-tag"))
+						Expect(sdsContainer.ImagePullPolicy).To(Equal(v1.PullIfNotPresent))
+
+						istioProxyContainer := gwpDepl.Spec.Template.Spec.Containers[2]
+						Expect(istioProxyContainer.Name).To(Equal("istio-proxy"))
+						Expect(istioProxyContainer.Image).To(Equal("my-istio-reg/my-istio-repo:my-istio-tag"))
+						Expect(istioProxyContainer.ImagePullPolicy).To(Equal(v1.PullAlways))
+					})
+
 					It("adds readConfig annotations", func() {
 						gatewayProxyDeployment.Spec.Template.Annotations["readconfig-stats"] = "/stats"
 						gatewayProxyDeployment.Spec.Template.Annotations["readconfig-ready"] = "/ready"
