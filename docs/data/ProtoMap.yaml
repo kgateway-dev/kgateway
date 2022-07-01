@@ -1145,6 +1145,15 @@ apis:
   pipe.options.gloo.solo.io.UpstreamSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/pipe/pipe.proto.sk/#UpstreamSpec
     package: pipe.options.gloo.solo.io
+  protocol.options.gloo.solo.io.Http1ProtocolOptions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol/protocol.proto.sk/#Http1ProtocolOptions
+    package: protocol.options.gloo.solo.io
+  protocol.options.gloo.solo.io.Http2ProtocolOptions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol/protocol.proto.sk/#Http2ProtocolOptions
+    package: protocol.options.gloo.solo.io
+  protocol.options.gloo.solo.io.HttpProtocolOptions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol/protocol.proto.sk/#HttpProtocolOptions
+    package: protocol.options.gloo.solo.io
   protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto.sk/#ProtocolUpgradeConfig
     package: protocol_upgrade.options.gloo.solo.io

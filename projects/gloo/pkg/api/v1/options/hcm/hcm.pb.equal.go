@@ -301,6 +301,16 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetHttp2ProtocolOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttp2ProtocolOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttp2ProtocolOptions(), target.GetHttp2ProtocolOptions()) {
+			return false
+		}
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
