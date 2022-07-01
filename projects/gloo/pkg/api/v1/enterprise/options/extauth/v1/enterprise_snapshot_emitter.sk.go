@@ -136,6 +136,7 @@ func (c *enterpriseEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	var initialAuthConfigList AuthConfigList
 
 	currentSnapshot := EnterpriseSnapshot{}
+	authConfigsByNamespace := make(map[string]AuthConfigList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for AuthConfig */
@@ -145,6 +146,7 @@ func (c *enterpriseEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				return nil, nil, errors.Wrapf(err, "initial AuthConfig list")
 			}
 			initialAuthConfigList = append(initialAuthConfigList, authConfigs...)
+			authConfigsByNamespace[namespace] = authConfigs
 		}
 		authConfigNamespacesChan, authConfigErrs, err := c.authConfig.Watch(namespace, opts)
 		if err != nil {
@@ -209,7 +211,7 @@ func (c *enterpriseEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				stats.Record(ctx, mEnterpriseSnapshotMissed.M(1))
 			}
 		}
-		authConfigsByNamespace := make(map[string]AuthConfigList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,

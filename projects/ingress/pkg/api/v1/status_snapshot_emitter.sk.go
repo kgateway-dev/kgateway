@@ -154,6 +154,8 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 	var initialIngressList IngressList
 
 	currentSnapshot := StatusSnapshot{}
+	servicesByNamespace := make(map[string]KubeServiceList)
+	ingressesByNamespace := make(map[string]IngressList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for KubeService */
@@ -163,6 +165,7 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 				return nil, nil, errors.Wrapf(err, "initial KubeService list")
 			}
 			initialKubeServiceList = append(initialKubeServiceList, services...)
+			servicesByNamespace[namespace] = services
 		}
 		kubeServiceNamespacesChan, kubeServiceErrs, err := c.kubeService.Watch(namespace, opts)
 		if err != nil {
@@ -181,6 +184,7 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 				return nil, nil, errors.Wrapf(err, "initial Ingress list")
 			}
 			initialIngressList = append(initialIngressList, ingresses...)
+			ingressesByNamespace[namespace] = ingresses
 		}
 		ingressNamespacesChan, ingressErrs, err := c.ingress.Watch(namespace, opts)
 		if err != nil {
@@ -256,8 +260,7 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 				stats.Record(ctx, mStatusSnapshotMissed.M(1))
 			}
 		}
-		servicesByNamespace := make(map[string]KubeServiceList)
-		ingressesByNamespace := make(map[string]IngressList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
