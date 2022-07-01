@@ -1,5 +1,5 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/6466
     resolvesIssue: false
     description: Add Http2 downstream settings to HCM - refactor of protocol messages to protocol.proto
