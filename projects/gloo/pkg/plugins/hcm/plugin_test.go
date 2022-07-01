@@ -17,6 +17,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
@@ -120,6 +121,12 @@ var _ = Describe("Plugin", func() {
 				UseRequestIdForTraceSampling: &wrappers.BoolValue{Value: true},
 				PackTraceReason:              &wrappers.BoolValue{Value: true},
 			},
+			Http2ProtocolOptions: &protocol.Http2ProtocolOptions{
+				MaxConcurrentStreams:                    &wrappers.UInt32Value{Value: 1234},
+				InitialStreamWindowSize:                 &wrappers.UInt32Value{Value: 268435457},
+				InitialConnectionWindowSize:             &wrappers.UInt32Value{Value: 65535},
+				OverrideStreamErrorOnInvalidHttpMessage: &wrappers.BoolValue{Value: true},
+			},
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
@@ -182,6 +189,10 @@ var _ = Describe("Plugin", func() {
 		Expect(ccd.Dns).To(BeTrue())
 		Expect(ccd.Uri).To(BeTrue())
 
+		Expect(cfg.Http2ProtocolOptions.MaxConcurrentStreams).To(Equal(&wrappers.UInt32Value{Value: 1234}))
+		Expect(cfg.Http2ProtocolOptions.InitialStreamWindowSize).To(Equal(&wrappers.UInt32Value{Value: 268435457}))
+		Expect(cfg.Http2ProtocolOptions.InitialConnectionWindowSize).To(Equal(&wrappers.UInt32Value{Value: 65535}))
+		Expect(cfg.Http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage).To(Equal(&wrappers.BoolValue{Value: true}))
 	})
 
 	It("should copy stateful_formatter setting to hcm filter", func() {
@@ -209,6 +220,33 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_PASS_THROUGH))
+	})
+
+	Context("Http2 passed", func() {
+		//validation uses the same shared code so no need to validate large and small for all fields
+		It(" should not accept connection streams that are too small", func() {
+			settings = &hcm.HttpConnectionManagerSettings{
+				Http2ProtocolOptions: &protocol.Http2ProtocolOptions{
+					InitialConnectionWindowSize: &wrappers.UInt32Value{Value: 65534},
+				},
+			}
+
+			cfg := &envoyhttp.HttpConnectionManager{}
+			err := processHcmNetworkFilter(cfg)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should not accept connection streams that are too large", func() {
+			settings = &hcm.HttpConnectionManagerSettings{
+				Http2ProtocolOptions: &protocol.Http2ProtocolOptions{
+					InitialStreamWindowSize: &wrappers.UInt32Value{Value: 2147483648},
+				},
+			}
+
+			cfg := &envoyhttp.HttpConnectionManager{}
+			err := processHcmNetworkFilter(cfg)
+			Expect(err).To(HaveOccurred())
+		})
 	})
 
 	Context("upgrades", func() {

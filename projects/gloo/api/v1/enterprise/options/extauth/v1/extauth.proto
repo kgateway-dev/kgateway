@@ -311,6 +311,15 @@ message RedisOptions {
     // size of the connection pool. can leave unset for default.
     // defaults to 10 connections per every CPU
     int32 pool_size = 3;
+    // redis socket types
+    enum SocketType {
+        // TCP connection socket, this is the default.
+        TCP = 0;
+        // TLS connection socket.
+        TLS = 1;
+    } 
+    // the socket type, default is TCP.
+    SocketType socket_type = 5;
 }
 
 message UserSession {
