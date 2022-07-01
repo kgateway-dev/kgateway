@@ -92,53 +92,9 @@ version, which merges two named templates.
 {{- $overrides := (index . 1) -}}
 {{- $tpl := fromYaml (include (index . 2) $top) -}}
 {{- if or (empty $overrides) (empty $tpl) -}}
-{{ include (index . 2) $top }} {{/* render source as is */}}
+{{- include (index . 2) $top -}}{{/* render source as is */}}
 {{- else -}}
 {{- $merged := mergeOverwrite $tpl $overrides -}}
 {{- toYaml $merged -}} {{/* render source with overrides as YAML */}}
 {{- end -}}
-{{- end -}}
-
-{{/*
-Whether we need to wait for the validation service to be up and running before applying custom resources,
-and whether we need to clean up custom resources on uninstall.
-This is true if the validation webhook is enabled with a failurePolicy of Fail.
-
-The input to this function should be the gloo helm values object.
-*/}}
-{{- define "gloo.customResourceLifecycle" -}}
-{{- if and .gateway.enabled .gateway.validation.enabled .gateway.validation.webhook.enabled (eq .gateway.validation.failurePolicy "Fail") }}
-true
-{{- end }}{{/* if and .gateway.enabled .gateway.validation.enabled .gateway.validation.webhook.enabled (eq .gateway.validation.failurePolicy "Fail") */}}
-{{- end -}}
-
-{{/*
-This snippet should be included under the metadata for any Gloo custom resources.
-
-It is used to ensure that CRs that we validate are only installed after the validation service is running.
-When the resource is applied as part of post-install/post-upgrade, we also need to explicitly add the helm
-labels/annotations, since by default Helm does not manage hook resources and won't add the annotations.
-
-The input to the function should be a dict with the following key/value mappings:
-- "release": the helm release object
-- "values": the gloo helm values object (this is provided as an argument so that other charts such as the
-  GlooEE chart can also use this function and pass in the appropriate values from its subchart)
-- "labels": (optional) additional labels to include (a dict of key/value pairs)
-*/}}
-{{- define "gloo.customResourceLabelsAndAnnotations" -}}
-{{- $customResourceLifecycle := include "gloo.customResourceLifecycle" .values }}
-  labels:
-    app: gloo
-{{- range $k, $v := .labels }}
-    {{$k}}: {{$v}}
-{{- end }}
-{{- if $customResourceLifecycle }}
-    created_by: gloo-install
-    app.kubernetes.io/managed-by: Helm
-  annotations:
-    "meta.helm.sh/release-name": {{ .release.Name }}
-    "meta.helm.sh/release-namespace": {{ .release.Namespace }}
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "10" # must be installed after the gateway rollout job completes
-{{- end -}}{{/* if $customResourceLifecycle */}}
 {{- end -}}

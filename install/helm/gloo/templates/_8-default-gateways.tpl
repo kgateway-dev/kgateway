@@ -3,14 +3,14 @@
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{ $data := dict "release" .Release "values" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}
   namespace: {{ .Release.Namespace }}
-{{- include "gloo.customResourceLabelsAndAnnotations" $data }}
+  labels:
+    app: gloo
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -35,7 +35,7 @@ spec:
 {{- else }}
   httpGateway: {}
 {{- end }}
-{{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
+{{- if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
 {{- end }}
   {{- if $gatewaySettings.options }}
@@ -43,7 +43,7 @@ spec:
   {{- end }}
   {{- if $gatewaySettings.accessLoggingService }}
     accessLoggingService:
-  {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
+  {{- toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
   {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: false
@@ -59,14 +59,14 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{ $data := dict "release" .Release "values" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}-ssl
-  namespace: {{ .Release.Namespace }}
-{{- include "gloo.customResourceLabelsAndAnnotations" $data }}
+  namespace: {{ $spec.namespace | default .Release.Namespace }}
+  labels:
+    app: gloo
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -91,7 +91,7 @@ spec:
 {{- else }}
   httpGateway: {}
 {{- end }}{{/* if $gatewaySettings.customHttpsGateway */}}
-{{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
+{{- if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
 {{- end }}
   {{- if $gatewaySettings.options }}
@@ -99,7 +99,7 @@ spec:
   {{- end }}
   {{- if $gatewaySettings.accessLoggingService }}
     accessLoggingService:
-  {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
+  {{- toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
   {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: true
@@ -114,14 +114,14 @@ spec:
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{ $data := dict "release" .Release "values" .Values }}
 {{- if $gatewaySettings.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}-failover
   namespace: {{ .Release.Namespace }}
-{{- include "gloo.customResourceLabelsAndAnnotations" $data }}
+  labels:
+    app: gloo
 spec:
 {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -144,6 +144,7 @@ spec:
 {{- end }}{{/* with */}}
 {{- end }}{{/* define "defaultGateway.failoverGateway" */}}
 
+{{- define "gloo.customResources.defaultGateways" -}}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy ) -}}
@@ -154,20 +155,21 @@ spec:
 {{- if not $gatewaySettings.disableHttpGateway }}
 {{- $defaultGatewayOverride := $spec.gatewaySettings.httpGatewayKubeOverride }}
 ---
-{{- include "gloo.util.merge" (list $ctx $defaultGatewayOverride "defaultGateway.gateway") -}}
+{{ include "gloo.util.merge" (list $ctx $defaultGatewayOverride "defaultGateway.gateway") -}}
 {{- end }}{{/* if not $gatewaySettings.disableHttpGateway */}}
 {{- if not $gatewaySettings.disableHttpsGateway }}
 {{- $sslGatewayOverride := $spec.gatewaySettings.httpsGatewayKubeOverride }}
 ---
-{{- include "gloo.util.merge" (list $ctx $sslGatewayOverride "defaultGateway.sslGateway") -}}
+{{ include "gloo.util.merge" (list $ctx $sslGatewayOverride "defaultGateway.sslGateway") -}}
 {{- end }}{{/* if not $gatewaySettings.disableHttpsGateway  */}}
 {{- end }}{{/* if not $gatewaySettings.disableGeneratedGateways */}}
 {{- if $spec.failover }}
 {{- if $spec.failover.enabled }}
 {{- $failoverGatewayOverride := $spec.failover.kubeResourceOverride }}
 ---
-{{- include "gloo.util.merge" (list $ctx $failoverGatewayOverride "defaultGateway.failoverGateway") -}}
+{{ include "gloo.util.merge" (list $ctx $failoverGatewayOverride "defaultGateway.failoverGateway") -}}
 {{- end }}{{/* if $spec.failover.enabled */}}
 {{- end }}{{/* if $spec.failover */}}
 {{- end }}{{/* if $spec.gatewaySettings and (not $spec.disabled) */}}
 {{- end }}{{/* range gateways */}}
+{{- end }}{{/* define "gloo.customResources.defaultGateways" */}}
