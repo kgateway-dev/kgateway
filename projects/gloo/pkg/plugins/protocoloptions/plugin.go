@@ -9,6 +9,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/httpprotocolvalidation"
 )
 
 var (
@@ -17,11 +18,7 @@ var (
 )
 
 const (
-	ExtensionName        = "protocol_options"
-	MinWindowSize        = 65535
-	MaxWindowSize        = 2147483647
-	MinConcurrentStreams = 1
-	MaxConcurrentStreams = 2147483647
+	ExtensionName = "protocol_options"
 )
 
 type plugin struct{}
@@ -60,7 +57,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	// Both these values default to 268435456 if unset.
 	sws := in.GetInitialStreamWindowSize()
 	if sws != nil {
-		if !validateWindowSize(sws.GetValue()) {
+		if !httpprotocolvalidation.ValidateWindowSize(sws.GetValue()) {
 			return errors.Errorf("Invalid Initial Stream Window Size: %d", sws.GetValue())
 		} else {
 			sws = &wrappers.UInt32Value{Value: sws.GetValue()}
@@ -69,7 +66,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	cws := in.GetInitialConnectionWindowSize()
 	if cws != nil {
-		if !validateWindowSize(cws.GetValue()) {
+		if !httpprotocolvalidation.ValidateWindowSize(cws.GetValue()) {
 			return errors.Errorf("Invalid Initial Connection Window Size: %d", cws.GetValue())
 		} else {
 			cws = &wrappers.UInt32Value{Value: cws.GetValue()}
@@ -78,7 +75,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	mcs := in.GetMaxConcurrentStreams()
 	if mcs != nil {
-		if !validateConcurrentStreams(mcs.GetValue()) {
+		if !httpprotocolvalidation.ValidateConcurrentStreams(mcs.GetValue()) {
 			return errors.Errorf("Invalid Max Concurrent Streams Size: %d", mcs.GetValue())
 		} else {
 			mcs = &wrappers.UInt32Value{Value: mcs.GetValue()}
@@ -108,18 +105,4 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	return nil
-}
-
-func validateWindowSize(size uint32) bool {
-	if size < MinWindowSize || size > MaxWindowSize {
-		return false
-	}
-	return true
-}
-
-func validateConcurrentStreams(size uint32) bool {
-	if size < MinConcurrentStreams || size > MaxConcurrentStreams {
-		return false
-	}
-	return true
 }
