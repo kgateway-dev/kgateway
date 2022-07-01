@@ -165,9 +165,8 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 		}
 
 		// First time - sync the current state
-		syncFunc()
+		needsSync := syncFunc()
 		timer := time.NewTicker(time.Second * 1)
-		var needsSync bool
 
 		for {
 			select {
