@@ -45,6 +45,7 @@ const earliestVersionWithV1CRDs = "1.9.0"
 
 // for testing upgrades from a gloo version before the gloo/gateway merge and
 // before https://github.com/solo-io/gloo/pull/6349 was fixed
+// TODO delete tests once this version is no longer supported https://github.com/solo-io/gloo/issues/6661
 const versionBeforeGlooGatewayMerge = "1.11.0"
 
 const namespace = defaults.GlooSystem
@@ -293,6 +294,7 @@ var _ = Describe("Kube2e: helm", func() {
 					// went into gloo v1.11.10. It turned the Gloo custom resources into helm hooks to guarantee ordering,
 					// however it caused additional issues so we moved away from using helm hooks. This test is to ensure
 					// we can successfully upgrade from the helm hook release to the current release.
+					// TODO delete tests once this version is no longer supported https://github.com/solo-io/gloo/issues/6661
 					fromRelease = "1.11.10"
 					strictValidation = true
 				})

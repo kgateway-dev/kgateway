@@ -1124,7 +1124,8 @@ var _ = Describe("Helm Test", func() {
 					// them via kubectl. In these tests, to confirm their existence we look for parts of the gateway
 					// yaml in the text of the job's command.
 
-					It("does not render when disabled", func() {
+					It("does not render when gatewaySettings is disabled", func() {
+						// by default, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{})
 						job := getJob(testManifest, namespace, "gloo-resource-rollout")
 						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
@@ -1133,6 +1134,7 @@ metadata:
   name: ` + defaults.GatewayProxyName + `
   namespace: ` + namespace))
 
+						// if explicitly setting enabled=true, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true"},
 						})
@@ -1143,6 +1145,7 @@ metadata:
   name: ` + defaults.GatewayProxyName + `
   namespace: ` + namespace))
 
+						// if explicitly setting enabled=false, gateway-proxy should not render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=false"},
 						})
@@ -1151,6 +1154,7 @@ metadata:
 					})
 
 					It("does not render when gatewayProxy is disabled", func() {
+						// by default, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{})
 						job := getJob(testManifest, namespace, "gloo-resource-rollout")
 						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
@@ -1159,6 +1163,7 @@ metadata:
   name: ` + defaults.GatewayProxyName + `
   namespace: ` + namespace))
 
+						// if explicitly setting disabled=false, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
 						})
@@ -1169,6 +1174,7 @@ metadata:
   name: ` + defaults.GatewayProxyName + `
   namespace: ` + namespace))
 
+						// if explicitly setting disabled=true, gateway-proxy should not render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=true"},
 						})
@@ -1177,6 +1183,7 @@ metadata:
 					})
 
 					It("renders custom gateway when gatewayProxy is disabled", func() {
+						// when explicitly disabling both gateways, neither should render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.disabled=true",
@@ -1187,6 +1194,7 @@ metadata:
 						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
 						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + "another-gateway-proxy"))
 
+						// when disabling default gateway and enabling custom gateway, only custom gateway should render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.disabled=true",
@@ -1280,6 +1288,7 @@ metadata:
 					It("renders with http/https gateways by default", func() {
 						prepareMakefile(namespace, helmValues{})
 						job := getJob(testManifest, namespace, "gloo-resource-rollout")
+						// gateway-proxy and gateway-proxy-ssl should both render
 						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
