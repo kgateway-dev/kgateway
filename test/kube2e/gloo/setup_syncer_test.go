@@ -2,6 +2,7 @@ package gloo_test
 
 import (
 	"context"
+	"log"
 	"net"
 	"os"
 	"sync"
@@ -134,9 +135,15 @@ var _ = Describe("SetupSyncer", func() {
 			}
 
 			It("setup can be called twice", func() {
+				des, err := os.ReadDir("/etc/gateway/validation-certs/")
+				Expect(err).NotTo(HaveOccurred())
+				log.Println("Contents of /etc/gateway/validation-certs/:")
+				for _, de := range des {
+					log.Println(de.Name())
+				}
 				setup := newSynchronizedSetupFunc()
 
-				err := setup(ctx, nil, memcache, settings)
+				err = setup(ctx, nil, memcache, settings)
 				Expect(err).NotTo(HaveOccurred())
 
 				testFunc := setupTestGrpcClient()

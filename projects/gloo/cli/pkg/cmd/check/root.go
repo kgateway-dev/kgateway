@@ -870,14 +870,10 @@ func checkSecrets(opts *options.Options, namespaces []string) error {
 		printer.AppendStatus("secrets", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	var allSecrets string
 	for _, ns := range namespaces {
-		sl, err := client.List(ns, clients.ListOpts{})
+		_, err := client.List(ns, clients.ListOpts{})
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
-		}
-		for _, sec := range sl {
-			allSecrets += sec.String() + "\n"
 		}
 		// currently this would only find syntax errors
 	}
@@ -885,7 +881,7 @@ func checkSecrets(opts *options.Options, namespaces []string) error {
 		printer.AppendStatus("secrets", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printer.AppendStatus("secrets", "OK\n"+allSecrets)
+	printer.AppendStatus("secrets", "OK")
 	return nil
 }
 
