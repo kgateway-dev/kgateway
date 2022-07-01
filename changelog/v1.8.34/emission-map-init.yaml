@@ -11,3 +11,5 @@ changelog:
   - type: FIX
     description: >-
       minor sync issue in hybrid upstreams
+    issueLink: https://github.com/solo-io/solo-kit/pull/497
+    resolvesIssue: false
