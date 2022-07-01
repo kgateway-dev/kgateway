@@ -191,6 +191,30 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 
 					httpListener.VirtualHosts = validVhosts
 				}
+
+			case *gloov1.Listener_AggregateListener:
+				httpResources := listenerType.AggregateListener.GetHttpResources()
+				for _, httpFilterChain := range listenerType.AggregateListener.GetHttpFilterChains() {
+
+					var virtualHosts []*gloov1.VirtualHost
+					for _, vhostRef := range httpFilterChain.GetVirtualHostRefs() {
+						virtualHosts = append(virtualHosts, httpResources.GetVirtualHosts()[vhostRef])
+					}
+					httpListener := &gloov1.HttpListener{
+						Options:      httpResources.GetHttpOptions()[httpFilterChain.GetHttpOptionsRef()],
+						VirtualHosts: virtualHosts,
+					}
+					validVhosts, err := validHostsFromHttpListener(httpListener, reports, proxy, lis, logger)
+					if err != nil {
+						return nil, err
+					}
+
+					var validVhostRefs []string
+					for _, validVhost := range validVhosts {
+						validVhostRefs = append(validVhostRefs, validVhost.GetName())
+					}
+					httpFilterChain.VirtualHostRefs = validVhostRefs
+				}
 			}
 		}
 

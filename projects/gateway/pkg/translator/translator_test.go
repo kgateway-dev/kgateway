@@ -474,13 +474,13 @@ var _ = Describe("Translator", func() {
 				table.Entry(
 					"HybridGateway - true,no annotation", hybridGateway, true, "",
 					func(l *gloov1.Listener) {
-						Expect(l.GetHybridListener()).NotTo(BeNil())
+						Expect(l.GetAggregateListener()).NotTo(BeNil())
 					},
 				),
 				table.Entry(
 					"HybridGateway - false,annotation override", hybridGateway, false, "true",
 					func(l *gloov1.Listener) {
-						Expect(l.GetHybridListener()).NotTo(BeNil())
+						Expect(l.GetAggregateListener()).NotTo(BeNil())
 					},
 				),
 				table.Entry(

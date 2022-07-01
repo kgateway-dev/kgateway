@@ -122,6 +122,16 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetRequestHeadersTimeout()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRequestHeadersTimeout()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRequestHeadersTimeout(), target.GetRequestHeadersTimeout()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetDrainTimeout()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetDrainTimeout()) {
 			return false
@@ -287,6 +297,16 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetUuidRequestIdConfig(), target.GetUuidRequestIdConfig()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetHttp2ProtocolOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttp2ProtocolOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttp2ProtocolOptions(), target.GetHttp2ProtocolOptions()) {
 			return false
 		}
 	}

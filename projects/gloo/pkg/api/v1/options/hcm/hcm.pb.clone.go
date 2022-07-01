@@ -17,6 +17,8 @@ import (
 
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol_upgrade "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tracing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
@@ -83,6 +85,12 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 		target.RequestTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
 	} else {
 		target.RequestTimeout = proto.Clone(m.GetRequestTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetRequestHeadersTimeout()).(clone.Cloner); ok {
+		target.RequestHeadersTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.RequestHeadersTimeout = proto.Clone(m.GetRequestHeadersTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
 	if h, ok := interface{}(m.GetDrainTimeout()).(clone.Cloner); ok {
@@ -182,6 +190,12 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 		target.UuidRequestIdConfig = h.Clone().(*HttpConnectionManagerSettings_UuidRequestIdConfigSettings)
 	} else {
 		target.UuidRequestIdConfig = proto.Clone(m.GetUuidRequestIdConfig()).(*HttpConnectionManagerSettings_UuidRequestIdConfigSettings)
+	}
+
+	if h, ok := interface{}(m.GetHttp2ProtocolOptions()).(clone.Cloner); ok {
+		target.Http2ProtocolOptions = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol.Http2ProtocolOptions)
+	} else {
+		target.Http2ProtocolOptions = proto.Clone(m.GetHttp2ProtocolOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol.Http2ProtocolOptions)
 	}
 
 	switch m.HeaderFormat.(type) {

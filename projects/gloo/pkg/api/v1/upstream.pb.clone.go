@@ -148,6 +148,12 @@ func (m *Upstream) Clone() proto.Message {
 		target.MaxConcurrentStreams = proto.Clone(m.GetMaxConcurrentStreams()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
+	if h, ok := interface{}(m.GetOverrideStreamErrorOnInvalidHttpMessage()).(clone.Cloner); ok {
+		target.OverrideStreamErrorOnInvalidHttpMessage = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.OverrideStreamErrorOnInvalidHttpMessage = proto.Clone(m.GetOverrideStreamErrorOnInvalidHttpMessage()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	if h, ok := interface{}(m.GetHttpProxyHostname()).(clone.Cloner); ok {
 		target.HttpProxyHostname = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	} else {
