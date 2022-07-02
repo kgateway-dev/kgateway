@@ -597,7 +597,8 @@ type Mtls struct {
 	Enabled               *bool                 `json:"enabled,omitempty" desc:"Enables internal mtls authentication"`
 	Sds                   SdsContainer          `json:"sds,omitempty"`
 	EnvoySidecar          EnvoySidecarContainer `json:"envoy,omitempty"`
-	EnvoySidecarResources *ResourceRequirements `json:"envoySidecarResources,omitempty" desc:"Sets default resource requirements for all envoy sidecar containers."`
+	IstioProxy            IstioProxyContainer   `json:"istioProxy,omitempty" desc:"Istio-proxy container"`
+	EnvoySidecarResources *ResourceRequirements `json:"envoySidecarResources,omitempty" desc:"Sets default resource requirements for all Envoy sidecar containers."`
 	SdsResources          *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
 }
 
@@ -607,6 +608,10 @@ type SdsContainer struct {
 
 type EnvoySidecarContainer struct {
 	Image *Image `json:"image,omitempty"`
+}
+
+type IstioProxyContainer struct {
+	Image *Image `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
 }
 
 type IstioSDS struct {
