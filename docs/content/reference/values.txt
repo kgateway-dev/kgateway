@@ -955,6 +955,13 @@
 |global.glooMtls.envoy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.envoy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.envoy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.glooMtls.istioProxy.image.tag|string|1.9.5|The image tag for the container.|
+|global.glooMtls.istioProxy.image.repository|string|proxyv2|The image repository (name) for the container.|
+|global.glooMtls.istioProxy.image.registry|string|docker.io/istio|The image hostname prefix and registry, such as quay.io/solo-io.|
+|global.glooMtls.istioProxy.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|global.glooMtls.istioProxy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|global.glooMtls.istioProxy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
+|global.glooMtls.istioProxy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
 |global.glooMtls.envoySidecarResources.limits.memory|string||amount of memory|
 |global.glooMtls.envoySidecarResources.limits.cpu|string||amount of CPUs|
 |global.glooMtls.envoySidecarResources.requests.memory|string||amount of memory|

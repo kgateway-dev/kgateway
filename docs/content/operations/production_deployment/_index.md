@@ -40,6 +40,7 @@ gloo:
       allowWarnings: false # reject if warning status or rejected status
       alwaysAcceptResources: false # reject invalid resources
       warnRouteShortCircuiting: true
+      failurePolicy: Fail # failure policy mode for the validation webhook (default is "Ignore")
 ```
 
 ## Performance tips

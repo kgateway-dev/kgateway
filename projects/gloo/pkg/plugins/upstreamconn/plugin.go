@@ -10,6 +10,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
@@ -66,7 +67,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.GetCommonHttpProtocolOptions() != nil {
-		commonHttpProtocolOptions, err := convertHttpProtocolOptions(cfg.GetCommonHttpProtocolOptions())
+		commonHttpProtocolOptions, err := convertHttpProtocolOptions(*cfg.GetCommonHttpProtocolOptions())
 		if err != nil {
 			return err
 		}
@@ -74,7 +75,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.GetHttp1ProtocolOptions() != nil {
-		http1ProtocolOptions, err := convertHttp1ProtocolOptions(cfg.GetHttp1ProtocolOptions())
+		http1ProtocolOptions, err := convertHttp1ProtocolOptions(*cfg.GetHttp1ProtocolOptions())
 		if err != nil {
 			return err
 		}
@@ -98,7 +99,7 @@ func convertTcpKeepAlive(tcp *v1.ConnectionConfig_TcpKeepAlive) *envoy_config_co
 	}
 }
 
-func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*envoy_config_core_v3.HttpProtocolOptions, error) {
+func convertHttpProtocolOptions(hpo protocol.HttpProtocolOptions) (*envoy_config_core_v3.HttpProtocolOptions, error) {
 	out := &envoy_config_core_v3.HttpProtocolOptions{}
 
 	if hpo.GetIdleTimeout() != nil {
@@ -114,11 +115,11 @@ func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*
 	}
 
 	switch hpo.GetHeadersWithUnderscoresAction() {
-	case v1.ConnectionConfig_HttpProtocolOptions_ALLOW:
+	case protocol.HttpProtocolOptions_ALLOW:
 		out.HeadersWithUnderscoresAction = envoy_config_core_v3.HttpProtocolOptions_ALLOW
-	case v1.ConnectionConfig_HttpProtocolOptions_REJECT_REQUEST:
+	case protocol.HttpProtocolOptions_REJECT_REQUEST:
 		out.HeadersWithUnderscoresAction = envoy_config_core_v3.HttpProtocolOptions_REJECT_REQUEST
-	case v1.ConnectionConfig_HttpProtocolOptions_DROP_HEADER:
+	case protocol.HttpProtocolOptions_DROP_HEADER:
 		out.HeadersWithUnderscoresAction = envoy_config_core_v3.HttpProtocolOptions_DROP_HEADER
 	default:
 		return &envoy_config_core_v3.HttpProtocolOptions{},
@@ -128,7 +129,7 @@ func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*
 	return out, nil
 }
 
-func convertHttp1ProtocolOptions(hpo *v1.ConnectionConfig_Http1ProtocolOptions) (*envoy_config_core_v3.Http1ProtocolOptions, error) {
+func convertHttp1ProtocolOptions(hpo protocol.Http1ProtocolOptions) (*envoy_config_core_v3.Http1ProtocolOptions, error) {
 	out := &envoy_config_core_v3.Http1ProtocolOptions{}
 
 	if hpo.GetEnableTrailers() {
