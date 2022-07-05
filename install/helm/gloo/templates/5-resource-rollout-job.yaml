@@ -40,10 +40,15 @@ spec:
             kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
             {{- end }}
 
+            {{- $cr := include "gloo.customResources" . | indent 12 -}}
+            {{- if contains "kind:" $cr -}}{{/* only render if not empty */}}
             # apply Gloo Edge custom resources
             kubectl apply -f - <<EOF || exit $?
-            {{- include "gloo.customResources" . | indent 12 -}}
+            {{- $cr -}}
             EOF
+            {{- else }}
+            echo "no custom resources to apply"
+            {{- end }}
 
             # remove the resource-policy annotations that were added temporarily by the gloo-resource-migration job during upgrade
             kubectl annotate upstreams.gloo.solo.io -n {{ $.Release.Namespace }} -l app=gloo helm.sh/resource-policy- || exit $?
