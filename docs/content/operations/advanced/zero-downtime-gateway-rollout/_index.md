@@ -84,7 +84,7 @@ In the previous example, `Upstream` pings are issued every 2 seconds. You might 
 
 For more information, see the [health check API documentation]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto.sk/#healthcheck" %}}).
 
-[Retries](({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/retries/" %}})) are configured on `VirtualServices` at the route level:
+[Retries]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/retries/" %}}) are configured on `VirtualServices` at the route level:
 
 {{< highlight yaml "hl_lines=17" >}}
 apiVersion: gateway.solo.io/v1

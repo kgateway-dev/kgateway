@@ -514,6 +514,27 @@ spec:
                           headersWithUnderscoresAction:
                             type: string
                             x-kubernetes-int-or-string: true
+                          http2ProtocolOptions:
+                            properties:
+                              initialConnectionWindowSize:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                              initialStreamWindowSize:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                              maxConcurrentStreams:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                              overrideStreamErrorOnInvalidHttpMessage:
+                                nullable: true
+                                type: boolean
+                            type: object
                           idleTimeout:
                             type: string
                           maxConnectionDuration:
