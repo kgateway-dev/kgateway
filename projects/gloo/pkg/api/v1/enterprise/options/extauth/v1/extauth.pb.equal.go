@@ -696,10 +696,6 @@ func (m *RedisOptions) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetUsernamePasswordSuffix(), target.GetUsernamePasswordSuffix()) != 0 {
-		return false
-	}
-
 	return true
 }
 

@@ -330,8 +330,6 @@ spec:
                                           x-kubernetes-int-or-string: true
                                         tlsCertMountPath:
                                           type: string
-                                        usernamePasswordSuffix:
-                                          type: string
                                       type: object
                                     preExpiryBuffer:
                                       type: string

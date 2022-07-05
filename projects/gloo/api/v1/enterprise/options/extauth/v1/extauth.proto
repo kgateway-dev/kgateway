@@ -325,9 +325,6 @@ message RedisOptions {
     } 
     // the socket type, default is TCP.
     SocketType socket_type = 5;
-    // the username password suffix for this particular host.
-    // referenced to identify the suffix used in the helm redis usernamesPasswordRef values.
-    string username_password_suffix = 6;
 }
 
 message UserSession {
