@@ -1167,7 +1167,6 @@ type RedisOptions struct {
 	// the tls cert mount path for this particular host. this will require the matching secret certs added to
 	// the helm userSessionCerts mountpaths values.
 	// this does not need to include '/tls.crt' just the matching mountPath used in the userSessionCerts helm values.
-	// setting this value enabled TLS for redis.
 	TlsCertMountPath string `protobuf:"bytes,4,opt,name=tls_cert_mount_path,json=tlsCertMountPath,proto3" json:"tls_cert_mount_path,omitempty"`
 	// the socket type, default is TCP.
 	SocketType RedisOptions_SocketType `protobuf:"varint,5,opt,name=socket_type,json=socketType,proto3,enum=enterprise.gloo.solo.io.RedisOptions_SocketType" json:"socket_type,omitempty"`
