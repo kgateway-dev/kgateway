@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6098
+    description: |
+      Validate that the total weight for a WeightedDestination is at least 1, even
+      if individual Destinations have a weight of less than 1.
+      This changes a previous behavior, which incorrectly would validate that each
+      Destination within a WeightedDestination was at least 1.
+    resolvesIssue: false

@@ -76,6 +76,7 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 "mergeSlashes": bool
 "normalizePath": .google.protobuf.BoolValue
 "uuidRequestIdConfig": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings
+"http2ProtocolOptions": .protocol.options.gloo.solo.io.Http2ProtocolOptions
 
 ```
 
@@ -118,6 +119,7 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 | `mergeSlashes` | `bool` | Determines if adjacent slashes in the path are merged into one before any processing of requests by HTTP filters or routing. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto. |
 | `normalizePath` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should paths be normalized according to RFC 3986 before any processing of requests by HTTP filters or routing? See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto. |
 | `uuidRequestIdConfig` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings](../hcm.proto.sk/#uuidrequestidconfigsettings) |  |
+| `http2ProtocolOptions` | [.protocol.options.gloo.solo.io.Http2ProtocolOptions](../../protocol/protocol.proto.sk/#http2protocoloptions) | Additional HTTP/2 settings that are passed directly to the HTTP/2 codec. |
 
 
 
