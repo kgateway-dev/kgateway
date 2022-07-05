@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6555
+    resolvesIssue: false
+    description: |
+      Fix helm install error when default gateways are disabled.

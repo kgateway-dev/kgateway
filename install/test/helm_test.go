@@ -3712,6 +3712,15 @@ spec:
 							job := getJob(testManifest, namespace, "gloo-resource-rollout")
 							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("kubectl rollout"))
 						})
+
+						It("does not call kubectl apply when default gateways are disabled", func() {
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.gatewaySettings.enabled=false",
+							}})
+							job := getJob(testManifest, namespace, "gloo-resource-rollout")
+							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("kubectl apply"))
+							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("no custom resources to apply"))
+						})
 					})
 
 					It("creates the certgen job, rbac, and service account", func() {
