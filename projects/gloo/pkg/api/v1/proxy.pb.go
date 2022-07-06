@@ -1685,8 +1685,8 @@ type MultiDestination struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// This list must contain at least one destination or the listener housing this route will be invalid,
-	// causing Gloo to error the parent proxy resource.
+	// This list must contain at least one destination with a weight greater than 0.
+	// Otherwise, the listener for this route becomes invalid, which causes an error for the parent proxy resource.
 	Destinations []*WeightedDestination `protobuf:"bytes,1,rep,name=destinations,proto3" json:"destinations,omitempty"`
 }
 
@@ -1736,8 +1736,11 @@ type WeightedDestination struct {
 	unknownFields protoimpl.UnknownFields
 
 	Destination *Destination `protobuf:"bytes,1,opt,name=destination,proto3" json:"destination,omitempty"`
-	// Weight must be greater than zero
-	// Routing to each destination will be balanced by the ratio of the destination's weight to the total weight on a route
+	// Weight must be zero or greater -
+	// Routing to each destination is balanced according to the ratio of the destination’s weight to the total
+	// weight on a route. For example, if the weight for one destination is 2, and the total weight of all
+	// destinations on the route is 6, the destination receives 2/6 of the traffic. Note that a weight of 0
+	// routes no traffic to the destination.
 	Weight uint32 `protobuf:"varint,2,opt,name=weight,proto3" json:"weight,omitempty"`
 	// Apply configuration to traffic that is sent to this weighted destination
 	Options *WeightedDestinationOptions `protobuf:"bytes,3,opt,name=options,proto3" json:"options,omitempty"`
