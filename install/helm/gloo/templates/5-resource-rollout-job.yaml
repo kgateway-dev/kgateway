@@ -37,7 +37,7 @@ spec:
           - |
             {{ if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled -}}
             # if validation webhook is enabled, wait for deployment rollout so validation service will be available
-            kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
+            kubectl rollout status deployment -n {{ .Release.Namespace }} gateway
             {{- end }}
 
             {{- $cr := include "gloo.customResources" . | indent 12 -}}
