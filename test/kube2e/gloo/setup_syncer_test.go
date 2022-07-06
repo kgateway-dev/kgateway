@@ -2,7 +2,6 @@ package gloo_test
 
 import (
 	"context"
-	"k8s.io/client-go/rest"
 	"log"
 	"net"
 	"os"
@@ -39,6 +38,7 @@ import (
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/client-go/rest"
 )
 
 var _ = Describe("SetupSyncer", func() {
