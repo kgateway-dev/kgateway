@@ -3,7 +3,6 @@ package printers
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -16,7 +15,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
 var _ = Describe("getAggregateVirtualServiceStatus", func() {
@@ -32,14 +30,12 @@ var _ = Describe("getAggregateVirtualServiceStatus", func() {
 	)
 
 	BeforeEach(func() {
-		Expect(os.Setenv(statusutils.PodNamespaceEnvName, defaults.GlooSystem)).NotTo(HaveOccurred())
 		ctx, cancel = context.WithCancel(context.Background())
 
 		statusClient = gloostatusutils.GetStatusClientForNamespace(defaults.GlooSystem)
 	})
 
 	AfterEach(func() {
-		Expect(os.Unsetenv(statusutils.PodNamespaceEnvName)).NotTo(HaveOccurred())
 		cancel()
 	})
 

@@ -2,11 +2,8 @@ package check_test
 
 import (
 	"context"
-	"os"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
-
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -33,7 +30,6 @@ var _ = Describe("Root", func() {
 	)
 
 	BeforeEach(func() {
-		Expect(os.Setenv(statusutils.PodNamespaceEnvName, defaults.GlooSystem)).NotTo(HaveOccurred())
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
 
@@ -41,7 +37,6 @@ var _ = Describe("Root", func() {
 	})
 
 	AfterEach(func() {
-		Expect(os.Unsetenv(statusutils.PodNamespaceEnvName)).NotTo(HaveOccurred())
 		cancel()
 	})
 
