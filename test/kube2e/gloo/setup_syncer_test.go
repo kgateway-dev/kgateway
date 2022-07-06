@@ -17,9 +17,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -270,14 +267,6 @@ var _ = Describe("SetupSyncer", func() {
 				// required Gloo having RBAC permissions that it should not have. CRD registration is now only supported
 				// by Helm. Therefore, this test needs to manually register CRDs to test setup.
 				registerCrdsOnce.Do(registerCRDs)
-
-				err := os.Setenv(statusutils.PodNamespaceEnvName, defaults.GlooSystem)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			AfterEach(func() {
-				err := os.Unsetenv(statusutils.PodNamespaceEnvName)
-				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("can be called with core cache", func() {

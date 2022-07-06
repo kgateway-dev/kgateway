@@ -25,7 +25,7 @@ var _ = Describe("Compress", func() {
 
 	BeforeEach(func() {
 		ns := gloostatusutils.GetStatusReporterNamespaceOrDefault("default")
-		statusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(ns, protoutils.UnmarshalMapToProto)
+		statusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(protoutils.UnmarshalMapToProto)
 		statusClient = gloostatusutils.GetStatusClientForNamespace(ns)
 	})
 
@@ -113,8 +113,7 @@ var _ = Describe("Compress", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			p2 := &v1.Proxy{}
-			err = UnmarshalStatus(p2, status, statusUnmarshaler)
-			Expect(err).NotTo(HaveOccurred())
+			UnmarshalStatus(p2, status, statusUnmarshaler)
 			Expect(p.GetNamespacedStatuses()).To(BeEquivalentTo(p2.GetNamespacedStatuses()))
 		})
 

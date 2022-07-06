@@ -17,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/k8s-utils/testutils/helper"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
 	. "github.com/onsi/ginkgo"
@@ -49,9 +48,6 @@ var _ = AfterSuite(TearDownTestHelper)
 
 func StartTestHelper() {
 	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred())
-
-	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
@@ -147,9 +143,6 @@ gatewayProxies:
 }
 
 func TearDownTestHelper() {
-	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
-	Expect(err).NotTo(HaveOccurred())
-
 	if os.Getenv("TEAR_DOWN") == "true" {
 		Expect(testHelper).ToNot(BeNil())
 		err := testHelper.UninstallGloo()
