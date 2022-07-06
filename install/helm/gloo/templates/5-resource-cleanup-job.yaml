@@ -71,6 +71,9 @@ rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["*"]
   verbs: ["list", "delete"]
+- apiGroups: ["gateway.solo.io"]
+  resources: ["*"]
+  verbs: ["list", "delete"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -108,9 +111,6 @@ rules:
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["validatingwebhookconfigurations"]
   verbs: ["delete"]
-- apiGroups: ["gateway.solo.io"]
-  resources: ["*"]
-  verbs: ["list", "delete"]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
