@@ -870,6 +870,7 @@ func checkSecrets(opts *options.Options, namespaces []string) error {
 		printer.AppendStatus("secrets", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
+
 	for _, ns := range namespaces {
 		_, err := client.List(ns, clients.ListOpts{})
 		if err != nil {

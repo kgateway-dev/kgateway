@@ -6,7 +6,7 @@ metadata:
   name: gloo-gateway-validation-webhook-{{ .Release.Namespace }}
   labels:
     app: gloo
-    gloo: gloo
+    gloo: gateway
   annotations:
     {{- if not .Values.gateway.validation.webhook.disableHelmHook }}
     "helm.sh/hook": pre-install, pre-upgrade
