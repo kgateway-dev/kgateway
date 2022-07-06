@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	any1 "github.com/golang/protobuf/ptypes/any"
+	any "github.com/golang/protobuf/ptypes/any"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -256,7 +256,7 @@ type WasmFilter struct {
 	// `google.protobuf.Struct` is serialized as JSON before
 	// passing it to the plugin. `google.protobuf.BytesValue` and
 	// `google.protobuf.StringValue` are passed directly without the wrapper.
-	Config *any1.Any `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
+	Config *any.Any `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
 	// the stage in the filter chain where this filter should be placed
 	FilterStage *FilterStage `protobuf:"bytes,4,opt,name=filter_stage,json=filterStage,proto3" json:"filter_stage,omitempty"`
 	// the name of the filter, used for logging
@@ -321,7 +321,7 @@ func (x *WasmFilter) GetFilePath() string {
 	return ""
 }
 
-func (x *WasmFilter) GetConfig() *any1.Any {
+func (x *WasmFilter) GetConfig() *any.Any {
 	if x != nil {
 		return x.Config
 	}
@@ -521,7 +521,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_wasm_wasm_proto_go
 	(*PluginSource)(nil),       // 3: wasm.options.gloo.solo.io.PluginSource
 	(*WasmFilter)(nil),         // 4: wasm.options.gloo.solo.io.WasmFilter
 	(*FilterStage)(nil),        // 5: wasm.options.gloo.solo.io.FilterStage
-	(*any1.Any)(nil),           // 6: google.protobuf.Any
+	(*any.Any)(nil),            // 6: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_wasm_wasm_proto_depIdxs = []int32{
 	4, // 0: wasm.options.gloo.solo.io.PluginSource.filters:type_name -> wasm.options.gloo.solo.io.WasmFilter
