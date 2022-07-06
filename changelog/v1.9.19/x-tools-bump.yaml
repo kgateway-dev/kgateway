@@ -1,0 +1,7 @@
+changelog:
+  - dependencyOwner: x
+    dependencyRepo: tools
+    dependencyTag: v0.1.11
+    description: Updated x/tools from v0.1.5 to v0.1.11 to eliminate vulnerable x/text v0.3.6 dependency
+    issueLink: https://github.com/solo-io/solo-projects/issues/6639
+    type: DEPENDENCY_BUMP
