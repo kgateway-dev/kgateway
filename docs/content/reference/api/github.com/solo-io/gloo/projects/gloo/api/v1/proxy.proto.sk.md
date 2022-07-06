@@ -534,7 +534,7 @@ route across multiple destinations according to their specified weights.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `destinations` | [[]gloo.solo.io.WeightedDestination](../proxy.proto.sk/#weighteddestination) | This list must contain at least one destination or the listener housing this route will be invalid, causing Gloo to error the parent proxy resource. |
+| `destinations` | [[]gloo.solo.io.WeightedDestination](../proxy.proto.sk/#weighteddestination) | This list must contain at least one destination with a weight greater than 0. Otherwise, the listener for this route becomes invalid, which causes an error for the parent proxy resource. |
 
 
 
@@ -555,7 +555,7 @@ WeightedDestination attaches a weight to a single destination.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `destination` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) |  |
-| `weight` | `int` | Weight must be greater than zero Routing to each destination will be balanced by the ratio of the destination's weight to the total weight on a route. |
+| `weight` | `int` | Weight must be zero or greater - Routing to each destination is balanced according to the ratio of the destination’s weight to the total weight on a route. For example, if the weight for one destination is 2, and the total weight of all destinations on the route is 6, the destination receives 2/6 of the traffic. Note that a weight of 0 routes no traffic to the destination. |
 | `options` | [.gloo.solo.io.WeightedDestinationOptions](../options.proto.sk/#weighteddestinationoptions) | Apply configuration to traffic that is sent to this weighted destination. |
 
 
