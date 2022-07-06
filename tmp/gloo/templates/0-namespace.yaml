@@ -1,0 +1,13 @@
+{{- if .Values.namespace.create -}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace }}
+  labels:
+    app: gloo
+    {{- if .Values.global.istioIntegration.labelInstallNamespace }}
+    istio-injection: enabled
+    {{- end}}
+  annotations:
+    "helm.sh/hook": pre-install
+{{- end}}

@@ -1,25 +1,25 @@
 {{- define "gateway.validationWebhookSpec" }}
-{{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled }}
+{{- if and (and .Values.gateway.enabled .Values.gateway.validation.enabled) .Values.gateway.validation.webhook.enabled }}
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: gloo-gateway-validation-webhook-{{ .Release.Namespace }}
   labels:
     app: gloo
-    gloo: gloo
+    gloo: gateway
   annotations:
     {{- if not .Values.gateway.validation.webhook.disableHelmHook }}
-    "helm.sh/hook": pre-install, pre-upgrade
+    "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
     {{- end }}
     {{- range $key, $value := .Values.gateway.validation.webhook.extraAnnotations }}
     {{ $key | quote }}: {{ $value | quote }}
     {{- end }}
 webhooks:
-- name: gloo.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
+- name: gateway.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
   clientConfig:
     service:
-      name: gloo
+      name: gateway
       namespace: {{ .Release.Namespace }}
       path: "/validation"
     caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
@@ -43,7 +43,7 @@ webhooks:
 {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
 {{- end }} {{/* if .Values.gateway.validation.failurePolicy */}}
-{{- end }} {{/* if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled */}}
+{{- end }} {{/* if and (and .Values.gateway.enabled .Values.gateway.validation.enabled) .Values.gateway.validation.webhook.enabled */}}
 {{- end }} {{/* define "gateway.validationWebhookSpec" */}}
 
 {{/* Render template with yaml overrides */}}

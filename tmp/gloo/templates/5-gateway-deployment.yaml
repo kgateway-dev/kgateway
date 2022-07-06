@@ -1,0 +1,124 @@
+{{- define "gateway.deploymentSpec"}}
+{{- $image := .Values.gateway.deployment.image }}
+{{- $statsConfig := coalesce .Values.gateway.deployment.stats .Values.global.glooStats -}}
+{{- if .Values.global  }}
+{{- $image = merge .Values.gateway.deployment.image .Values.global.image }}
+{{- end }}
+{{- if .Values.gateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway
+  name: gateway
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.gateway.deployment.replicas }}
+  selector:
+    matchLabels:
+      gloo: gateway
+  template:
+    metadata:
+      labels:
+        gloo: gateway
+        {{- if .Values.gateway.deployment.extraGatewayLabels }}
+        {{- range $key, $value := .Values.gateway.deployment.extraGatewayLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+      annotations:
+        {{- if $statsConfig.enabled }}
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9091"
+        prometheus.io/scrape: "true"
+        {{- end}}
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
+        sidecar.istio.io/inject: "false"
+        {{- end }}
+        {{- if .Values.gateway.deployment.extraGatewayAnnotations }}
+        {{- range $key, $value := .Values.gateway.deployment.extraGatewayAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+    spec:
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
+      serviceAccountName: gateway
+      {{- include "gloo.podSpecStandardFields" .Values.gateway.deployment | nindent 6 -}}
+      containers:
+      - image: {{template "gloo.image" $image}}
+        imagePullPolicy: {{ $image.pullPolicy }}
+        name: gateway
+{{- if .Values.gateway.deployment.resources }}
+        resources:
+{{ toYaml .Values.gateway.deployment.resources | indent 10}}
+{{- end}}
+
+{{- if or (.Values.gateway.validation.enabled) ($statsConfig.podMonitorEnabled) }}
+        ports:
+{{- end}}
+{{- if .Values.gateway.validation.enabled }}
+          - containerPort: 8443
+            name: https
+            protocol: TCP
+{{- end}}
+{{- if and $statsConfig.enabled $statsConfig.podMonitorEnabled }}
+          - name: http-monitoring
+            containerPort: 9091
+{{- end }}
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          {{- if and (not .Values.gateway.deployment.floatingUserId) (.Values.gateway.deployment.runAsUser) }}
+          runAsUser: {{ printf "%.0f" (float64 .Values.gateway.deployment.runAsUser) -}}
+          {{- end }}
+          capabilities:
+            drop:
+            - ALL
+        env:
+{{- if .Values.gateway.deployment.customEnv }}
+{{ toYaml .Values.gateway.deployment.customEnv | indent 10 }}
+{{- end }}
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        {{- if $statsConfig.enabled }}
+          - name: START_STATS_SERVER
+            value: "true"
+        {{- end}}
+        {{- if .Values.gateway.validation.enabled }}
+          - name: VALIDATION_MUST_START
+            value: "true"
+        {{- end}}
+        {{- if .Values.gateway.logLevel }}
+          - name: LOG_LEVEL
+            value: {{ .Values.gateway.logLevel }}
+        {{- end}}
+
+{{- if .Values.gateway.validation.enabled }}
+        volumeMounts:
+          - mountPath: /etc/gateway/validation-certs
+            name: validation-certs
+        readinessProbe:
+          tcpSocket:
+            port: 8443
+          initialDelaySeconds: 1
+          periodSeconds: 2
+          failureThreshold: 10
+      volumes:
+        - name: validation-certs
+          secret:
+            defaultMode: 420
+            secretName: {{ .Values.gateway.validation.secretName }}
+{{- end}} {{/* if .Values.gateway.validation.enabled */}}
+{{- end }} {{/* if .Values.gateway.enabled */}}
+{{- end }} {{/* define "gateway.deploymentSpec" */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.gateway.deployment -}}
+{{- $kubeResourceOverride = .Values.gateway.deployment.kubeResourceOverride  -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "gateway.deploymentSpec") -}}
