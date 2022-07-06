@@ -413,7 +413,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 // CRDs are applied to a cluster when performing a `helm install` operation
 // However, `helm upgrade` intentionally does not apply CRDs (https://helm.sh/docs/topics/charts/#limitations-on-crds)
 // Before performing the upgrade, we must manually apply any CRDs that were introduced since v1.9.0
-func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir string) {
+func upgradeCrds(fromRelease string, crdDir string) {
 	// if we're just upgrading within the same release, no need to reapply crds
 	if fromRelease == "" {
 		return
@@ -426,7 +426,7 @@ func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir s
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, strictValidation bool, additionalArgs []string) {
-	upgradeCrds(testHelper, fromRelease, crdDir)
+	upgradeCrds(fromRelease, crdDir)
 
 	valueOverrideFile, cleanupFunc := getHelmUpgradeValuesOverrideFile()
 	defer cleanupFunc()
@@ -470,8 +470,6 @@ settings:
   singleNamespace: true
   create: true
   replaceInvalidRoutes: true
-gateway:
-  persistProxySpec: true
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
