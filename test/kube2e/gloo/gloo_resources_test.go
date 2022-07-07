@@ -56,6 +56,8 @@ var _ = Describe("GlooResourcesTest", func() {
 	)
 	BeforeEach(func() {
 		var err error
+
+		// necessary for non-default namespace
 		err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 		Expect(err).NotTo(HaveOccurred())
 		ctx, cancel = context.WithCancel(context.Background())

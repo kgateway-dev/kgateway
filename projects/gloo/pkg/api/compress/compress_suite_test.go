@@ -14,6 +14,7 @@ var (
 	namespace = "compress-test-ns"
 
 	_ = BeforeSuite(func() {
+		// necessary for non-default namespace
 		err := os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
