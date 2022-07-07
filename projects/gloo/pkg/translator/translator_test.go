@@ -2244,7 +2244,7 @@ var _ = Describe("Translator", func() {
 
 		var (
 			multiActionRouteWithNoWeightPassedDest *v1.Route
-			multiActionRouteWithOneValidDest       *v1.Route
+			multiActionRouteOneDest                *v1.Route
 			multiActionRouteZeroAndFiveAsWeights   *v1.Route
 			expectedErrorString                    string
 			weightedDestFiveWeight                 *v1.WeightedDestination
@@ -2259,7 +2259,7 @@ var _ = Describe("Translator", func() {
 			weightedDestZeroWeight = createWeightedDestination(true, 0, testUpstream1)
 			weightedDestFiveWeight = createWeightedDestination(true, 5, testUpstream2)
 
-			multiActionRouteWithOneValidDest = createMultiActionRoute("OneValidDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight})
+			multiActionRouteOneDest = createMultiActionRoute("OneValidDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight})
 			multiActionRouteZeroAndFiveAsWeights = createMultiActionRoute("OneValidDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight, weightedDestZeroWeight})
 			multiActionRouteWithNoWeightPassedDest = createMultiActionRoute("NoWeightPassedDest", matcher, []*v1.WeightedDestination{weightedDestNoWeightPassed, weightedDestNoWeightPassed})
 
@@ -2268,7 +2268,7 @@ var _ = Describe("Translator", func() {
 
 		//Positive Tests
 		It("Should translate single routes when multiRoute is passed and only one destination is specified", func() {
-			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteWithOneValidDest}
+			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteOneDest}
 			snap, resourceReport, _, _ := translator.Translate(params, proxy)
 			Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
 
