@@ -2259,8 +2259,8 @@ var _ = Describe("Translator", func() {
 			weightedDestZeroWeight = createWeightedDestination(true, 0, testUpstream1)
 			weightedDestFiveWeight = createWeightedDestination(true, 5, testUpstream2)
 
-			multiActionRouteOneDest = createMultiActionRoute("OneValidDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight})
-			multiActionRouteZeroAndFiveAsWeights = createMultiActionRoute("OneValidDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight, weightedDestZeroWeight})
+			multiActionRouteOneDest = createMultiActionRoute("OneDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight})
+			multiActionRouteZeroAndFiveAsWeights = createMultiActionRoute("TwoDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight, weightedDestZeroWeight})
 			multiActionRouteWithNoWeightPassedDest = createMultiActionRoute("NoWeightPassedDest", matcher, []*v1.WeightedDestination{weightedDestNoWeightPassed, weightedDestNoWeightPassed})
 
 			expectedErrorString = fmt.Sprintf("Incorrect configuration for Weighted Destination for route - Weighted Destinations require a total weight that is greater than or equal to 1")
