@@ -125,6 +125,7 @@ var _ = Describe("SetupSyncer", func() {
 			}
 
 			It("setup can be called twice", func() {
+
 				setup := newSynchronizedSetupFunc()
 
 				err := setup(ctx, nil, memcache, settings)
@@ -309,7 +310,7 @@ var _ = Describe("SetupSyncer", func() {
 				}, namespace)
 
 				err = testFunc()
-				Expect(err.Error()).To(ContainSubstring("received message larger than max"))
+				Expect(err.Error()).To(ContainSubstring("received message larger than max (19 vs. 1)"))
 			})
 		})
 	})

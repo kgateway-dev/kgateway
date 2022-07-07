@@ -251,7 +251,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	// process grpcserver options to understand if any servers will need a restart
 
 	var maxGrpcRecvSize int
-	// Use the same maxGrpcMsgSize as validation as this is determined by the size of proxies.
+	// Use the same maxGrpcMsgSize for both validation server and proxy debug server as the message size is determined by the size of proxies.
 	if maxGrpcMsgSize := settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); maxGrpcMsgSize != nil {
 		if maxGrpcMsgSize.GetValue() < 0 {
 			return errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be non-negative, current value: %v", maxGrpcMsgSize.GetValue())
