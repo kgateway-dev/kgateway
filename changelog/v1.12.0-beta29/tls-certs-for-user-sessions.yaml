@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/6496
-    resolvesIssue: false
-    description: Add ability to mount certs to Ext-Auth for Redis TLS configuration.
