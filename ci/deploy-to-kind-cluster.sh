@@ -29,7 +29,7 @@ ISTIO_VERSION="${ISTIO_VERSION:-1.11.4}"
 
 # if user is running arm, these are configurations for the registry
 REGISTRY_NAME='kind-registry'
-REGISTRY_PORT='5000'
+REGISTRY_PORT="${REGISTRY_PORT:-5000}"
 
 function create_kind_registry() {
   # create registry container unless it already exists
@@ -138,7 +138,7 @@ else
 fi
 
 # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-RUNNING_REGRESSION_TESTS=true VERSION=$VERSION make build-test-chart
+RUNNING_REGRESSION_TESTS=true VERSION=$VERSION IMAGE_REPO="localhost:$REGISTRY_PORT" make build-test-chart
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
 make glooctl-$OS-$ARCH
