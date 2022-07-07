@@ -2,7 +2,12 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: solo-kit
-    dependencyTag: v0.30.0
+    dependencyTag: v0.30.1
+  - type: FIX
+    description: >-
+      Pre populate maps in emitter to ensure gloo watches function properly when watchNamespaces has multiple values.
+    issueLink: https://github.com/solo-io/solo-kit/pull/497
+    resolvesIssue: false
   - type: FIX
     issueLink: https://github.com/solo-io/solo-kit/issues/484
     resolvesIssue: false
