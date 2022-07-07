@@ -154,8 +154,12 @@ func readValuesTemplate() (*generate.HelmConfig, error) {
 	}
 	// adding in for arm64 registry work around
 	if runtime.GOARCH == "arm64" && os.Getenv("RUNNING_REGRESSION_TESTS") == "true" {
+		imageRepo := "localhost:5000"
+		if envImageRepo := os.Getenv("IMAGE_REPO"); envImageRepo != "" {
+			imageRepo = envImageRepo
+		}
 		configImage := config.Global.Image
-		reg := "localhost:5000"
+		reg := imageRepo
 		always := "Always"
 		configImage.Registry = &reg
 		configImage.PullPolicy = &always
