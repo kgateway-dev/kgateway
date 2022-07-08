@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6098
+    description: Add new tests to cover destinations with 0 and higher weights
+    resolvesIssue: false
