@@ -312,8 +312,7 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 
 	var securityScanRepos []*securityscanutils.SecurityScanRepo
 
-	// Scan the gloo repository if either: the gloo repo is defined or no repo is defined
-	if targetRepo == "" || targetRepo == glooDocGen {
+	if targetRepo == glooDocGen {
 		securityScanRepos = append(securityScanRepos, &securityscanutils.SecurityScanRepo{
 			Repo:  glooOpenSourceRepo,
 			Owner: repoOwner,
@@ -331,8 +330,7 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 		})
 	}
 
-	// Scan the gloo enterprise repository if either: the gloo enterprise repo is defined or no repo is defined
-	if targetRepo == "" || targetRepo == glooEDocGen {
+	if targetRepo == glooEDocGen {
 		securityScanRepos = append(securityScanRepos, &securityscanutils.SecurityScanRepo{
 			Repo:  glooEnterpriseRepo,
 			Owner: repoOwner,
@@ -349,6 +347,10 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 				CreateGithubIssueForLatestPatchVersion: true,
 			},
 		})
+	}
+
+	if securityScanRepos == nil {
+		logger.Fatalf("No repositories were targeted to be scanned")
 	}
 
 	scanner := &securityscanutils.SecurityScanner{
