@@ -266,7 +266,10 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if s.validationServer == emptyValidationServer {
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
-		validationGrpcServerOpts := []grpc.ServerOption{grpc.MaxRecvMsgSize(maxGrpcRecvSize)}
+		var validationGrpcServerOpts []grpc.ServerOption
+		if maxGrpcRecvSize > 0 {
+			validationGrpcServerOpts = append(validationGrpcServerOpts, grpc.MaxRecvMsgSize(maxGrpcRecvSize))
+		}
 		s.validationServer = NewValidationServer(ctx, s.makeGrpcServer(ctx, validationGrpcServerOpts...), validationTcpAddress, true)
 		s.previousValidationServer.cancel = cancel
 		s.previousValidationServer.addr = validationAddr
