@@ -77,7 +77,7 @@ require (
 	github.com/solo-io/skv2 v0.17.2
 	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10
-	github.com/solo-io/solo-kit v0.20.10-0.20220708173044-4d46a4a9bada
+	github.com/solo-io/solo-kit v0.20.10-0.20220712211907-5270fc154e4f
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
 	github.com/spf13/cobra v1.1.3
@@ -112,6 +112,8 @@ require (
 	sigs.k8s.io/yaml v1.2.0
 	vbom.ml/util v0.0.0-20180919145318-efcd4e0f9787 // indirect
 )
+
+replace github.com/solo-io/solo-kit => /Users/samheilbron/go/src/github.com/solo-io/solo-kit
 
 replace (
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2

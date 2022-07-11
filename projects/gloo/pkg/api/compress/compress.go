@@ -5,6 +5,7 @@ import (
 	"compress/zlib"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 	"io"
 	"strconv"
 
@@ -138,7 +139,7 @@ func UnmarshalSpec(in resources.Resource, spec v1.Spec) error {
 		// if we have a compressed spec, make sure the resource is marked for compression
 		SetShouldCompressed(in)
 	}
-	if err := protoutils.UnmarshalMap(spec, in); err != nil {
+	if err := specutils.UnmarshalSpecMapToResource(spec, in); err != nil {
 		return eris.Wrapf(err, "reading crd spec on resource %v in namespace %v into %T", in.GetMetadata().GetName(), in.GetMetadata().GetNamespace(), in)
 	}
 	return nil

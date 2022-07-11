@@ -274,6 +274,25 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	logger := contextutils.LoggerFrom(ctx)
 
 	req := review.Request
+	logger.Warnf("AdmissionReview")
+	logger.Warnf("RequestOptions: %+v", req.Options)
+
+	if req.Operation == v1beta1.Update {
+		var updateOpts metav1.UpdateOptions
+		if err := json.Unmarshal(req.Options.Raw, &updateOpts); err != nil {
+			logger.Warnf("ERROR PROCESSING RAW OPTS: %v", err)
+		}
+		logger.Warnf("RequestOptions: %+v", updateOpts)
+	}
+	if req.Operation == v1beta1.Create {
+		var createOpts metav1.CreateOptions
+		if err := json.Unmarshal(req.Options.Raw, &createOpts); err != nil {
+			logger.Warnf("ERROR PROCESSING RAW OPTS: %v", err)
+		}
+		logger.Warnf("RequestOptions: %+v", createOpts)
+	}
+
+	logger.Warnf("--------------------")
 
 	logger.Debugf("AdmissionReview for Kind=%v, Namespace=%v Name=%v UID=%v patchOperation=%v UserInfo=%v",
 		req.Kind, req.Namespace, req.Name, req.UID, req.Operation, req.UserInfo)
