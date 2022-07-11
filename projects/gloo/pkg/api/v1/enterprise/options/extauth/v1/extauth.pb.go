@@ -1166,7 +1166,7 @@ type RedisOptions struct {
 	PoolSize int32 `protobuf:"varint,3,opt,name=pool_size,json=poolSize,proto3" json:"pool_size,omitempty"`
 	// enabled with a socket type of TLS. this is the tls cert mount path for this particular host.
 	// the generic secret can include the keys 'ca.crt', 'tls.crt', and 'tls.key'.
-	// the secret can contain the root-ca ,'ca.crt', at minumim. If a
+	// the secret can contain the root-ca ,'ca.crt', at minimum. If a
 	// certificate is needed, both the 'tls.crt' and 'tls.key' need to be included.
 	// reference this to equal the 'mountPath' on the 'redis.certs[x].mountPath' in the helm chart values.
 	// an example of a mount path is '/certs'.
