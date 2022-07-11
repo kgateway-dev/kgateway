@@ -109,9 +109,6 @@ func enterpriseHelmValuesMdFromGithubCmd(opts *options) *cobra.Command {
 }
 
 // Command for running the actual security scan on the images
-// running this runs trivy on all images for versions greater than
-// MIN_SCANNED_VERSION.
-// Uploads scanning results to github security tab and google cloud bucket.
 func runSecurityScanCmd(opts *options) *cobra.Command {
 
 	app := &cobra.Command{
@@ -173,6 +170,7 @@ const (
 )
 
 const (
+	repoOwner          = "solo-io"
 	glooOpenSourceRepo = "gloo"
 	glooEnterpriseRepo = "solo-projects"
 )
@@ -239,13 +237,13 @@ func generateGlooEChangelog() error {
 	}
 	opts := changelogdocutils.Options{
 		NumVersions:           200,
-		MainRepo:              "solo-projects",
-		DependentRepo:         "gloo",
-		RepoOwner:             "solo-io",
+		MainRepo:              glooEnterpriseRepo,
+		DependentRepo:         glooOpenSourceRepo,
+		RepoOwner:             repoOwner,
 		MainRepoReleases:      getCachedReleases(glooeCachedReleasesFile),
 		DependentRepoReleases: getCachedReleases(glooCachedReleasesFile),
 	}
-	depFn, err := changelogdocutils.GetOSDependencyFunc("solo-io", "solo-projects", "gloo", ghToken)
+	depFn, err := changelogdocutils.GetOSDependencyFunc(repoOwner, glooEnterpriseRepo, glooOpenSourceRepo, ghToken)
 	if err != nil {
 		return err
 	}
@@ -317,8 +315,8 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 	// Scan the gloo repository if either: the gloo repo is defined or no repo is defined
 	if targetRepo == "" || targetRepo == glooDocGen {
 		securityScanRepos = append(securityScanRepos, &securityscanutils.SecurityScanRepo{
-			Repo:  "gloo",
-			Owner: "solo-io",
+			Repo:  glooOpenSourceRepo,
+			Owner: repoOwner,
 			Opts: &securityscanutils.SecurityScanOpts{
 				OutputDir: outputDir,
 				ImagesPerVersion: map[string][]string{
@@ -336,8 +334,8 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 	// Scan the gloo enterprise repository if either: the gloo enterprise repo is defined or no repo is defined
 	if targetRepo == "" || targetRepo == glooEDocGen {
 		securityScanRepos = append(securityScanRepos, &securityscanutils.SecurityScanRepo{
-			Repo:  "solo-projects",
-			Owner: "solo-io",
+			Repo:  glooEnterpriseRepo,
+			Owner: repoOwner,
 			Opts: &securityscanutils.SecurityScanOpts{
 				OutputDir: outputDir,
 				ImagesPerVersion: map[string][]string{
@@ -372,6 +370,7 @@ func getScannerVersionConstraint() (*semver.Constraints, error) {
 	return nil, nil
 }
 
+// getScannerOutputDir returns the local directory where scans will be accumulated
 func getScannerOutputDir() string {
 	if scanDir := os.Getenv("SCAN_DIR"); scanDir != "" {
 		return scanDir
@@ -389,7 +388,7 @@ func generateSecurityScanGloo(ctx context.Context) error {
 	if useCachedReleases() {
 		allReleases = getCachedReleases(glooCachedReleasesFile)
 	} else {
-		allReleases, err = githubutils.GetAllRepoReleases(ctx, client, "solo-io", glooOpenSourceRepo)
+		allReleases, err = githubutils.GetAllRepoReleases(ctx, client, repoOwner, glooOpenSourceRepo)
 		if err != nil {
 			return err
 		}
@@ -409,7 +408,7 @@ func generateSecurityScanGlooE(ctx context.Context) error {
 	if useCachedReleases() {
 		allReleases = getCachedReleases(glooeCachedReleasesFile)
 	} else {
-		allReleases, err = githubutils.GetAllRepoReleases(ctx, client, "solo-io", glooEnterpriseRepo)
+		allReleases, err = githubutils.GetAllRepoReleases(ctx, client, repoOwner, glooEnterpriseRepo)
 		if err != nil {
 			return err
 		}
@@ -438,7 +437,7 @@ func fetchEnterpriseHelmValues(args []string) error {
 		return err
 	}
 	minorReleaseTag := fmt.Sprintf("v%d.%d.x", version.Major(), version.Minor())
-	files, err := githubutils.GetFilesFromGit(ctx, client, "solo-io", glooEnterpriseRepo, minorReleaseTag, path)
+	files, err := githubutils.GetFilesFromGit(ctx, client, repoOwner, glooEnterpriseRepo, minorReleaseTag, path)
 	if err != nil {
 		return err
 	}
