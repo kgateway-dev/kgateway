@@ -136,6 +136,7 @@ func (c *edsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	var initialUpstreamList UpstreamList
 
 	currentSnapshot := EdsSnapshot{}
+	upstreamsByNamespace := make(map[string]UpstreamList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Upstream */
@@ -145,6 +146,7 @@ func (c *edsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial Upstream list")
 			}
 			initialUpstreamList = append(initialUpstreamList, upstreams...)
+			upstreamsByNamespace[namespace] = upstreams
 		}
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
@@ -209,7 +211,7 @@ func (c *edsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				stats.Record(ctx, mEdsSnapshotMissed.M(1))
 			}
 		}
-		upstreamsByNamespace := make(map[string]UpstreamList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,

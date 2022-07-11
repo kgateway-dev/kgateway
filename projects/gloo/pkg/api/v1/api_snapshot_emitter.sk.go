@@ -284,6 +284,15 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	var initialGraphQLSchemaList graphql_gloo_solo_io.GraphQLSchemaList
 
 	currentSnapshot := ApiSnapshot{}
+	artifactsByNamespace := make(map[string]ArtifactList)
+	endpointsByNamespace := make(map[string]EndpointList)
+	proxiesByNamespace := make(map[string]ProxyList)
+	upstreamGroupsByNamespace := make(map[string]UpstreamGroupList)
+	secretsByNamespace := make(map[string]SecretList)
+	upstreamsByNamespace := make(map[string]UpstreamList)
+	authConfigsByNamespace := make(map[string]enterprise_gloo_solo_io.AuthConfigList)
+	ratelimitconfigsByNamespace := make(map[string]github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList)
+	graphqlSchemasByNamespace := make(map[string]graphql_gloo_solo_io.GraphQLSchemaList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Artifact */
@@ -293,6 +302,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial Artifact list")
 			}
 			initialArtifactList = append(initialArtifactList, artifacts...)
+			artifactsByNamespace[namespace] = artifacts
 		}
 		artifactNamespacesChan, artifactErrs, err := c.artifact.Watch(namespace, opts)
 		if err != nil {
@@ -311,6 +321,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial Endpoint list")
 			}
 			initialEndpointList = append(initialEndpointList, endpoints...)
+			endpointsByNamespace[namespace] = endpoints
 		}
 		endpointNamespacesChan, endpointErrs, err := c.endpoint.Watch(namespace, opts)
 		if err != nil {
@@ -329,6 +340,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial Proxy list")
 			}
 			initialProxyList = append(initialProxyList, proxies...)
+			proxiesByNamespace[namespace] = proxies
 		}
 		proxyNamespacesChan, proxyErrs, err := c.proxy.Watch(namespace, opts)
 		if err != nil {
@@ -347,6 +359,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial UpstreamGroup list")
 			}
 			initialUpstreamGroupList = append(initialUpstreamGroupList, upstreamGroups...)
+			upstreamGroupsByNamespace[namespace] = upstreamGroups
 		}
 		upstreamGroupNamespacesChan, upstreamGroupErrs, err := c.upstreamGroup.Watch(namespace, opts)
 		if err != nil {
@@ -365,6 +378,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial Secret list")
 			}
 			initialSecretList = append(initialSecretList, secrets...)
+			secretsByNamespace[namespace] = secrets
 		}
 		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
 		if err != nil {
@@ -383,6 +397,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial Upstream list")
 			}
 			initialUpstreamList = append(initialUpstreamList, upstreams...)
+			upstreamsByNamespace[namespace] = upstreams
 		}
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
@@ -401,6 +416,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial AuthConfig list")
 			}
 			initialAuthConfigList = append(initialAuthConfigList, authConfigs...)
+			authConfigsByNamespace[namespace] = authConfigs
 		}
 		authConfigNamespacesChan, authConfigErrs, err := c.authConfig.Watch(namespace, opts)
 		if err != nil {
@@ -419,6 +435,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial RateLimitConfig list")
 			}
 			initialRateLimitConfigList = append(initialRateLimitConfigList, ratelimitconfigs...)
+			ratelimitconfigsByNamespace[namespace] = ratelimitconfigs
 		}
 		rateLimitConfigNamespacesChan, rateLimitConfigErrs, err := c.rateLimitConfig.Watch(namespace, opts)
 		if err != nil {
@@ -437,6 +454,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return nil, nil, errors.Wrapf(err, "initial GraphQLSchema list")
 			}
 			initialGraphQLSchemaList = append(initialGraphQLSchemaList, graphqlSchemas...)
+			graphqlSchemasByNamespace[namespace] = graphqlSchemas
 		}
 		graphQLSchemaNamespacesChan, graphQLSchemaErrs, err := c.graphQLSchema.Watch(namespace, opts)
 		if err != nil {
@@ -589,15 +607,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				stats.Record(ctx, mApiSnapshotMissed.M(1))
 			}
 		}
-		artifactsByNamespace := make(map[string]ArtifactList)
-		endpointsByNamespace := make(map[string]EndpointList)
-		proxiesByNamespace := make(map[string]ProxyList)
-		upstreamGroupsByNamespace := make(map[string]UpstreamGroupList)
-		secretsByNamespace := make(map[string]SecretList)
-		upstreamsByNamespace := make(map[string]UpstreamList)
-		authConfigsByNamespace := make(map[string]enterprise_gloo_solo_io.AuthConfigList)
-		ratelimitconfigsByNamespace := make(map[string]github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList)
-		graphqlSchemasByNamespace := make(map[string]graphql_gloo_solo_io.GraphQLSchemaList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,

@@ -1,0 +1,15 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.24.7
+    issueLink: https://github.com/solo-io/gloo/issues/5554
+    resolvesIssue: false
+    description: Solo-kit change that ensures the emitter namespaced map is hydrated with the initial list data.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.21.27
+    issueLink: https://github.com/solo-io/gloo/issues/6449
+    resolvesIssue: false
+    description: Go-utils change to ensure that the handler for the /logging endpoint of the stats server is never nil.

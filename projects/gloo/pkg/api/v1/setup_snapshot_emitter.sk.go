@@ -136,6 +136,7 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 	var initialSettingsList SettingsList
 
 	currentSnapshot := SetupSnapshot{}
+	settingsByNamespace := make(map[string]SettingsList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Settings */
@@ -145,6 +146,7 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 				return nil, nil, errors.Wrapf(err, "initial Settings list")
 			}
 			initialSettingsList = append(initialSettingsList, settings...)
+			settingsByNamespace[namespace] = settings
 		}
 		settingsNamespacesChan, settingsErrs, err := c.settings.Watch(namespace, opts)
 		if err != nil {
@@ -209,7 +211,7 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 				stats.Record(ctx, mSetupSnapshotMissed.M(1))
 			}
 		}
-		settingsByNamespace := make(map[string]SettingsList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
