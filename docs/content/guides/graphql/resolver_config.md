@@ -11,6 +11,7 @@ You can deploy your own GraphQL API, which might not leverage automatic service 
 Configure a REST resolver as a section within your `GraphQLApi` YAML file.
 
 ```yaml
+...
 resolutions:
   # Resolver name
   Query|nameOfResolver:
@@ -71,6 +72,7 @@ spec:
 Configure a gRPC resolver as a section within your `GraphQLApi` YAML file.
 
 ```yaml
+...
 resolutions:
   # Resolver name
   Query|nameOfResolver:
@@ -115,6 +117,41 @@ spec:
                 name: user-svc
                 namespace: product-app
         ...
+```
+
+## Executor configuration for existing GraphQL API upstreams
+
+If your upstream service is already a GraphQL API, do not define the resolver again in the `GraphQLApi` resource. Instead, you can define a `remote` executor to point to your upstream GraphQL API. The resolver defined in your upstream resolves the requests.
+
+```yaml
+...
+spec:
+  executableSchema:
+    executor:
+      remote:
+        upstreamRef:
+          # Name of the upstream GraphQL API  
+          name:
+          # The namespace the upstream API
+          namespace: 
+```
+
+Example in which a GraphQL API, `bookinfo-graphql`, is referenced as the upstream:
+
+```yaml
+apiVersion: graphql.gloo.solo.io/v1beta1
+kind: GraphQLApi
+metadata:
+  name: products-graphql
+  namespace: product-app
+spec:
+  executableSchema:
+    executor:
+      remote:
+        upstreamRef:
+          name: bookinfo-graphql
+          namespace: product-app
+  ...
 ```
 
 ## Schema definitions
