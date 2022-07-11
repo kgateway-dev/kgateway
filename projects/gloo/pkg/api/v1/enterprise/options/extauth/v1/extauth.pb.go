@@ -1164,10 +1164,12 @@ type RedisOptions struct {
 	// size of the connection pool. can leave unset for default.
 	// defaults to 10 connections per every CPU
 	PoolSize int32 `protobuf:"varint,3,opt,name=pool_size,json=poolSize,proto3" json:"pool_size,omitempty"`
-	// the tls cert mount path for this particular host. this will require the matching secret certs added to
-	// the helm userSessionCerts mountpaths values.
-	// this does not need to include '/tls.crt' just the matching mountPath used in the userSessionCerts helm values.
-	// setting this value enabled TLS for redis.
+	// enabled with a socket type of TLS. this is the tls cert mount path for this particular host.
+	// the generic secret can include the keys 'ca.crt', 'tls.crt', and 'tls.key'.
+	// the secret can contain the root-ca ,'ca.crt', at minumim. If a
+	// certificate is needed, both the 'tls.crt' and 'tls.key' need to be included.
+	// reference this to equal the 'mountPath' on the 'redis.certs[x].mountPath' in the helm chart values.
+	// an example of a mount path is '/certs'.
 	TlsCertMountPath string `protobuf:"bytes,4,opt,name=tls_cert_mount_path,json=tlsCertMountPath,proto3" json:"tls_cert_mount_path,omitempty"`
 	// the socket type, default is TCP.
 	SocketType RedisOptions_SocketType `protobuf:"varint,5,opt,name=socket_type,json=socketType,proto3,enum=enterprise.gloo.solo.io.RedisOptions_SocketType" json:"socket_type,omitempty"`

@@ -486,7 +486,7 @@ Deprecated: Prefer OAuth2
 | `host` | `string` | address of the redis. can be address:port or unix://path/to/unix.sock. |
 | `db` | `int` | db to use. can leave unset for db 0. |
 | `poolSize` | `int` | size of the connection pool. can leave unset for default. defaults to 10 connections per every CPU. |
-| `tlsCertMountPath` | `string` | the tls cert mount path for this particular host. this will require the matching secret certs added to the helm userSessionCerts mountpaths values. this does not need to include '/tls.crt' just the matching mountPath used in the userSessionCerts helm values. setting this value enabled TLS for redis. |
+| `tlsCertMountPath` | `string` | enabled with a socket type of TLS. this is the tls cert mount path for this particular host. the generic secret can include the keys 'ca.crt', 'tls.crt', and 'tls.key'. the secret can contain the root-ca ,'ca.crt', at minumim. If a certificate is needed, both the 'tls.crt' and 'tls.key' need to be included. reference this to equal the 'mountPath' on the 'redis.certs[x].mountPath' in the helm chart values. an example of a mount path is '/certs'. |
 | `socketType` | [.enterprise.gloo.solo.io.RedisOptions.SocketType](../extauth.proto.sk/#sockettype) | the socket type, default is TCP. |
 
 
