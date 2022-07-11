@@ -429,11 +429,11 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 			return err
 		}
 
-		totalWeight += weightedDest.GetWeight()
+		totalWeight += weightedDest.GetWeight().GetValue()
 
 		weightedCluster := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 			Name:          UpstreamToClusterName(usRef),
-			Weight:        &wrappers.UInt32Value{Value: weightedDest.GetWeight()},
+			Weight:        weightedDest.GetWeight(),
 			MetadataMatch: getSubsetMatch(weightedDest.GetDestination()),
 		}
 

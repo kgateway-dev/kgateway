@@ -2,6 +2,7 @@ package create
 
 import (
 	"context"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"strconv"
 	"strings"
 
@@ -138,7 +139,7 @@ func upstreamGroupDestinationsFromOpts(ctx context.Context, input options.InputU
 					Upstream: ussByKey[namespacedUpstream].GetMetadata().Ref(),
 				},
 			},
-			Weight: weight,
+			Weight: &wrappers.UInt32Value{Value: weight},
 		}
 		weightedDestinations = append(weightedDestinations, &wd)
 	}

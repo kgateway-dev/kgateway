@@ -453,7 +453,7 @@ message WeightedDestination {
     // weight on a route. For example, if the weight for one destination is 2, and the total weight of all
     // destinations on the route is 6, the destination receives 2/6 of the traffic. Note that a weight of 0
     // routes no traffic to the destination.
-    uint32 weight = 2;
+    google.protobuf.UInt32Value weight = 2;
 
     // Apply configuration to traffic that is sent to this weighted destination
     WeightedDestinationOptions options = 3;

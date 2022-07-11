@@ -3,6 +3,7 @@ package translator
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"sort"
 	"strconv"
 	"strings"
@@ -243,7 +244,7 @@ func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov
 			Destination: &gloov1.Destination{
 				DestinationType: serviceForSplit(split),
 			},
-			Weight:  weight,
+			Weight:  &wrappers.UInt32Value{Value: weight},
 			Options: weightedDestinationPlugins,
 		})
 	}
