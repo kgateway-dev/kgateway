@@ -52,9 +52,9 @@ func (mr *MockHelmClientMockRecorder) DownloadChart(arg0 interface{}) *gomock.Ca
 }
 
 // NewInstall mocks base method.
-func (m *MockHelmClient) NewInstall(arg0, arg1 string, arg2 bool) (install.HelmInstallation, *cli.EnvSettings, error) {
+func (m *MockHelmClient) NewInstall(arg0, arg1 string, arg2 bool, arg3 string) (install.HelmInstallation, *cli.EnvSettings, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewInstall", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "NewInstall", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(install.HelmInstallation)
 	ret1, _ := ret[1].(*cli.EnvSettings)
 	ret2, _ := ret[2].(error)
@@ -62,9 +62,9 @@ func (m *MockHelmClient) NewInstall(arg0, arg1 string, arg2 bool) (install.HelmI
 }
 
 // NewInstall indicates an expected call of NewInstall.
-func (mr *MockHelmClientMockRecorder) NewInstall(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockHelmClientMockRecorder) NewInstall(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewInstall", reflect.TypeOf((*MockHelmClient)(nil).NewInstall), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewInstall", reflect.TypeOf((*MockHelmClient)(nil).NewInstall), arg0, arg1, arg2, arg3)
 }
 
 // NewUninstall mocks base method.

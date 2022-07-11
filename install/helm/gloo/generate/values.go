@@ -263,8 +263,8 @@ type Gateway struct {
 	Validation                    GatewayValidation  `json:"validation,omitempty" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
 	Deployment                    *GatewayDeployment `json:"deployment,omitempty"`
 	CertGenJob                    *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
-	RolloutJob                    *RolloutJob        `json:"rolloutJob,omitempty" desc:"This job waits for the 'gloo' deployment to successfully roll out. It is used to ensure the gateway validation webhook is available before applying Gloo Edge custom resources. This job will only run if gateway validation is enabled and failurePolicy is 'Fail'."`
-	CleanupJob                    *CleanupJob        `json:"cleanupJob,omitempty" desc:"This job cleans up resources that are not deleted by Helm when Gloo Edge is uninstalled. This job will only run if gateway validation is enabled and failurePolicy is 'Fail'."`
+	RolloutJob                    *RolloutJob        `json:"rolloutJob,omitempty" desc:"This job waits for the 'gloo' deployment to successfully roll out (if the validation webhook is enabled), and then applies the Gloo Edge custom resources."`
+	CleanupJob                    *CleanupJob        `json:"cleanupJob,omitempty" desc:"This job cleans up resources that are not deleted by Helm when Gloo Edge is uninstalled."`
 	UpdateValues                  *bool              `json:"updateValues,omitempty" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
 	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount,omitempty" `
 	ServiceAccount                ServiceAccount     `json:"serviceAccount,omitempty" `
@@ -606,6 +606,7 @@ type Mtls struct {
 	Enabled               *bool                 `json:"enabled,omitempty" desc:"Enables internal mtls authentication"`
 	Sds                   SdsContainer          `json:"sds,omitempty"`
 	EnvoySidecar          EnvoySidecarContainer `json:"envoy,omitempty"`
+	IstioProxy            IstioProxyContainer   `json:"istioProxy,omitempty" desc:"Istio-proxy container"`
 	EnvoySidecarResources *ResourceRequirements `json:"envoySidecarResources,omitempty" desc:"Sets default resource requirements for all Envoy sidecar containers."`
 	SdsResources          *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
 }
@@ -616,6 +617,10 @@ type SdsContainer struct {
 
 type EnvoySidecarContainer struct {
 	Image *Image `json:"image,omitempty"`
+}
+
+type IstioProxyContainer struct {
+	Image *Image `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
 }
 
 type IstioSDS struct {

@@ -3,6 +3,7 @@ package translator
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -22,6 +23,13 @@ type Translator interface {
 	Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
 }
 
+// IsolateVirtualHostsAnnotation is the annotation that can be applied to a Gateway resource to determine
+// how a Gateway will be converted into a Listener
+// All truthy values are accepted, using `strconv.ParseBool` to determine the value
+// If the value of this annotation is invalid or not provided, the behavior will fallback to
+// the global configuration that is defined in Settings (gateway.isolateVirtualHostsBySslConfig)
+const IsolateVirtualHostsAnnotation = "gateway.solo.io/isolate_vhost"
+
 type GwTranslator struct {
 	// listenerTranslators is the set of available translators that convert Gloo Gateways into Listeners
 	listenerTranslators map[string]ListenerTranslator
@@ -31,6 +39,10 @@ type GwTranslator struct {
 
 	// predicate is used to determine which Gateways to process during translation
 	predicate Predicate
+
+	// isolateVirtualHostsBySslConfig is the global setting to determine how a Gateway should be translated into a Listener
+	// an individual Gateway may override this field by setting a value for the IsolateVirtualHostsAnnotation
+	isolateVirtualHostsBySslConfig bool
 }
 
 func NewDefaultTranslator(opts Opts) *GwTranslator {
@@ -38,29 +50,39 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 	if opts.Validation != nil {
 		warnOnRouteShortCircuiting = opts.Validation.WarnOnRouteShortCircuiting
 	}
-
-	httpTranslator := &HttpTranslator{
+	virtualServiceTranslator := &VirtualServiceTranslator{
 		WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting,
+	}
+
+	// Define the available translators which convert a Gateway into a Listener
+	//	- httpTranslator produces an HttpListener
+	//	- tcpTranslator produces a TcpListener
+	//	- hybridTranslator produces a HybridListener
+	//	- aggregateTranslator produces an AggregateListener
+	httpTranslator := &HttpTranslator{
+		VirtualServiceTranslator: virtualServiceTranslator,
 	}
 	tcpTranslator := &TcpTranslator{}
 	hybridTranslator := &HybridTranslator{
-		HttpTranslator: httpTranslator,
-		TcpTranslator:  tcpTranslator,
+		VirtualServiceTranslator: virtualServiceTranslator,
+		TcpTranslator:            tcpTranslator,
+	}
+	aggregateTranslator := &AggregateTranslator{
+		VirtualServiceTranslator: virtualServiceTranslator,
 	}
 
-	return NewTranslator([]ListenerTranslator{httpTranslator, tcpTranslator, hybridTranslator}, opts)
-}
-
-func NewTranslator(listenerTranslators []ListenerTranslator, opts Opts) *GwTranslator {
-	translatorsByName := make(map[string]ListenerTranslator)
-	for _, t := range listenerTranslators {
-		translatorsByName[t.Name()] = t
+	translatorsByName := map[string]ListenerTranslator{
+		HttpTranslatorName:      httpTranslator,
+		TcpTranslatorName:       tcpTranslator,
+		HybridTranslatorName:    hybridTranslator,
+		AggregateTranslatorName: aggregateTranslator,
 	}
 
 	return &GwTranslator{
-		listenerTranslators: translatorsByName,
-		writeNamespace:      opts.WriteNamespace,
-		predicate:           GetPredicate(opts.WriteNamespace, opts.ReadGatewaysFromAllNamespaces),
+		listenerTranslators:            translatorsByName,
+		writeNamespace:                 opts.WriteNamespace,
+		predicate:                      GetPredicate(opts.WriteNamespace, opts.ReadGatewaysFromAllNamespaces),
+		isolateVirtualHostsBySslConfig: opts.IsolateVirtualHostsBySslConfig,
 	}
 }
 
@@ -114,15 +136,25 @@ func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gl
 func (t *GwTranslator) getListenerTranslatorForGateway(gateway *v1.Gateway) ListenerTranslator {
 	var listenerTranslatorImpl ListenerTranslator
 
+	shouldIsolateVirtualHosts := t.shouldIsolateVirtualHostsForGateway(gateway)
+
 	switch gateway.GetGatewayType().(type) {
 	case *v1.Gateway_HttpGateway:
-		listenerTranslatorImpl = t.listenerTranslators[HttpTranslatorName]
+		if shouldIsolateVirtualHosts {
+			listenerTranslatorImpl = t.listenerTranslators[AggregateTranslatorName]
+		} else {
+			listenerTranslatorImpl = t.listenerTranslators[HttpTranslatorName]
+		}
 
 	case *v1.Gateway_TcpGateway:
 		listenerTranslatorImpl = t.listenerTranslators[TcpTranslatorName]
 
 	case *v1.Gateway_HybridGateway:
-		listenerTranslatorImpl = t.listenerTranslators[HybridTranslatorName]
+		if shouldIsolateVirtualHosts {
+			listenerTranslatorImpl = t.listenerTranslators[AggregateTranslatorName]
+		} else {
+			listenerTranslatorImpl = t.listenerTranslators[HybridTranslatorName]
+		}
 	}
 
 	if listenerTranslatorImpl == nil {
@@ -131,6 +163,25 @@ func (t *GwTranslator) getListenerTranslatorForGateway(gateway *v1.Gateway) List
 	}
 
 	return listenerTranslatorImpl
+}
+
+// shouldIsolateVirtualHostsForGateway returns true if the Gateway should be converted into
+// a Listener with distinct VirtualHosts for unique Ssl configurations.
+// It makes a decision in the following order:
+//  1. Prefer the Gateway annotation, if defined and valid
+//  2. Fallback to the global setting
+func (t *GwTranslator) shouldIsolateVirtualHostsForGateway(gateway *v1.Gateway) bool {
+	gatewayAnnotation := gateway.GetMetadata().GetAnnotations()
+	if isolateVhostsVal, ok := gatewayAnnotation[IsolateVirtualHostsAnnotation]; ok {
+		boolValue, err := strconv.ParseBool(isolateVhostsVal)
+		// in the case where a non-truthy string was provided, this will return an error
+		// in that case, we ignore the annotation
+		if err == nil {
+			return boolValue
+		}
+	}
+
+	return t.isolateVirtualHostsBySslConfig
 }
 
 func makeListener(gateway *v1.Gateway) *gloov1.Listener {

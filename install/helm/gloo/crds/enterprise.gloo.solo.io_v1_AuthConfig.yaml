@@ -253,6 +253,9 @@ spec:
                                   type: string
                                 idTokenHeader:
                                   type: string
+                                useBearerSchemaForAuthorization:
+                                  nullable: true
+                                  type: boolean
                               type: object
                             issuerUrl:
                               type: string
@@ -322,6 +325,9 @@ spec:
                                         poolSize:
                                           format: int32
                                           type: integer
+                                        socketType:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
                                       type: object
                                     preExpiryBuffer:
                                       type: string

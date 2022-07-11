@@ -29,6 +29,7 @@ weight: 5
 - [OAuth](#oauth)
 - [OAuth2](#oauth2)
 - [RedisOptions](#redisoptions)
+- [SocketType](#sockettype)
 - [UserSession](#usersession)
 - [InternalSession](#internalsession)
 - [RedisSession](#redissession)
@@ -475,6 +476,7 @@ Deprecated: Prefer OAuth2
 "host": string
 "db": int
 "poolSize": int
+"socketType": .enterprise.gloo.solo.io.RedisOptions.SocketType
 
 ```
 
@@ -483,6 +485,21 @@ Deprecated: Prefer OAuth2
 | `host` | `string` | address of the redis. can be address:port or unix://path/to/unix.sock. |
 | `db` | `int` | db to use. can leave unset for db 0. |
 | `poolSize` | `int` | size of the connection pool. can leave unset for default. defaults to 10 connections per every CPU. |
+| `socketType` | [.enterprise.gloo.solo.io.RedisOptions.SocketType](../extauth.proto.sk/#sockettype) | the socket type, default is TCP. |
+
+
+
+
+---
+### SocketType
+
+ 
+redis socket types
+
+| Name | Description |
+| ----- | ----------- | 
+| `TCP` | TCP connection socket, this is the default. |
+| `TLS` | TLS connection socket. |
 
 
 
@@ -601,6 +618,7 @@ The SameSite options. The default value is LaxMode.
 ```yaml
 "idTokenHeader": string
 "accessTokenHeader": string
+"useBearerSchemaForAuthorization": .google.protobuf.BoolValue
 
 ```
 
@@ -608,6 +626,7 @@ The SameSite options. The default value is LaxMode.
 | ----- | ---- | ----------- | 
 | `idTokenHeader` | `string` | If set, the id token will be forward upstream using this header name. |
 | `accessTokenHeader` | `string` | If set, the access token will be forward upstream using this header name. |
+| `useBearerSchemaForAuthorization` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, adds the "Bearer" prefix to the upstream access token header value. |
 
 
 

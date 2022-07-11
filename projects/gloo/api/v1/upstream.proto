@@ -36,6 +36,8 @@ import "google/protobuf/wrappers.proto";
  */
 message Upstream {
 
+
+
     option (core.solo.io.resource).short_name = "us";
     option (core.solo.io.resource).plural_name = "upstreams";
 
@@ -59,14 +61,9 @@ message Upstream {
     // will be used.
     CircuitBreakerConfig circuit_breakers = 5;
     LoadBalancerConfig load_balancer_config = 6;
-    ConnectionConfig connection_config = 7;
+
     repeated .solo.io.envoy.api.v2.core.HealthCheck health_checks = 8;
     .solo.io.envoy.api.v2.cluster.OutlierDetection outlier_detection = 9;
-
-    // Use http2 when communicating with this upstream
-    // this field is evaluated `true` for upstreams
-    // with a grpc service spec. otherwise defaults to `false`
-    google.protobuf.BoolValue use_http2 = 10;
 
     // Note to developers: new Upstream plugins must be added to this oneof field
     // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
@@ -83,6 +80,27 @@ message Upstream {
     // Failover endpoints for this upstream. If omitted (the default) no failovers will be applied.
     gloo.solo.io.Failover failover = 18;
 
+    //HTTP/1 connection configurations
+    ConnectionConfig connection_config = 7;
+
+    enum ClusterProtocolSelection {
+        // Cluster can only operate on one of the possible upstream protocols (HTTP1.1, HTTP2).
+        // If :ref:`http2_protocol_options <envoy_v3_api_field_config.cluster.v3.Cluster.http2_protocol_options>` are
+        // present, HTTP2 will be used, otherwise HTTP1.1 will be used.
+        USE_CONFIGURED_PROTOCOL = 0;
+
+        // Use HTTP1.1 or HTTP2, depending on which one is used on the downstream connection.
+        USE_DOWNSTREAM_PROTOCOL = 1;
+    }
+
+    // Determines how Envoy selects the protocol used to speak to upstream hosts.
+    ClusterProtocolSelection protocol_selection = 25;
+
+    // Use http2 when communicating with this upstream
+    // this field is evaluated `true` for upstreams
+    // with a grpc service spec. otherwise defaults to `false`
+    google.protobuf.BoolValue use_http2 = 10;
+
     // (UInt32Value) Initial stream-level flow-control window size.
     // Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum)
     // and defaults to 268435456 (256 * 1024 * 1024).
@@ -93,14 +111,26 @@ message Upstream {
     // watermark callbacks will fire to stop the flow of data to the codec buffers.
     // Requires UseHttp2 to be true to be acknowledged.
     google.protobuf.UInt32Value initial_stream_window_size = 19;
+
     // (UInt32Value) Similar to initial_stream_window_size, but for connection-level flow-control window.
     // Currently, this has the same minimum/maximum/default as initial_stream_window_size.
     // Requires UseHttp2 to be true to be acknowledged.
     google.protobuf.UInt32Value initial_connection_window_size = 20;
+
     // (UInt32Value) Maximum concurrent streams allowed for peer on one HTTP/2 connection.
     // Valid values range from 1 to 2147483647 (2^31 - 1) and defaults to 2147483647.
     // Requires UseHttp2 to be true to be acknowledged.
     google.protobuf.UInt32Value max_concurrent_streams = 24;
+
+    // Allows invalid HTTP messaging and headers. When this option is disabled (default), then
+    // the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame. However,
+    // when this option is enabled, only the offending stream is terminated.
+    //
+    // This overrides any HCM :ref:`stream_error_on_invalid_http_messaging
+    // <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.stream_error_on_invalid_http_message>`
+    //
+    // See `RFC7540, sec. 8.1 <https://tools.ietf.org/html/rfc7540#section-8.1>`_ for details.
+    google.protobuf.BoolValue override_stream_error_on_invalid_http_message = 26;
 
     // Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect.
     // This configuration sets the hostname used as part of the HTTP Connect request.

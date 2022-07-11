@@ -406,6 +406,8 @@ func (m *RedisOptions) Clone() proto.Message {
 
 	target.PoolSize = m.GetPoolSize()
 
+	target.SocketType = m.GetSocketType()
+
 	return target
 }
 
@@ -467,6 +469,12 @@ func (m *HeaderConfiguration) Clone() proto.Message {
 	target.IdTokenHeader = m.GetIdTokenHeader()
 
 	target.AccessTokenHeader = m.GetAccessTokenHeader()
+
+	if h, ok := interface{}(m.GetUseBearerSchemaForAuthorization()).(clone.Cloner); ok {
+		target.UseBearerSchemaForAuthorization = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.UseBearerSchemaForAuthorization = proto.Clone(m.GetUseBearerSchemaForAuthorization()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	return target
 }

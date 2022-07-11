@@ -1,0 +1,6 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/4152
+    resolvesIssue: false
+    description: Adds a new helm value `global.glooMtls.istioProxy.image` to override the istio proxy image in the gateway-proxy deployment.
+

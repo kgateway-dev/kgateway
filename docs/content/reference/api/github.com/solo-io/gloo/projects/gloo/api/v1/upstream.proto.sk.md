@@ -12,6 +12,7 @@ weight: 5
 
 
 - [Upstream](#upstream) **Top-Level Resource**
+- [ClusterProtocolSelection](#clusterprotocolselection)
 - [DiscoveryMetadata](#discoverymetadata)
   
 
@@ -39,10 +40,8 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "sslConfig": .gloo.solo.io.UpstreamSslConfig
 "circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "loadBalancerConfig": .gloo.solo.io.LoadBalancerConfig
-"connectionConfig": .gloo.solo.io.ConnectionConfig
 "healthChecks": []solo.io.envoy.api.v2.core.HealthCheck
 "outlierDetection": .solo.io.envoy.api.v2.cluster.OutlierDetection
-"useHttp2": .google.protobuf.BoolValue
 "kube": .kubernetes.options.gloo.solo.io.UpstreamSpec
 "static": .static.options.gloo.solo.io.UpstreamSpec
 "pipe": .pipe.options.gloo.solo.io.UpstreamSpec
@@ -51,9 +50,13 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "consul": .consul.options.gloo.solo.io.UpstreamSpec
 "awsEc2": .aws_ec2.options.gloo.solo.io.UpstreamSpec
 "failover": .gloo.solo.io.Failover
+"connectionConfig": .gloo.solo.io.ConnectionConfig
+"protocolSelection": .gloo.solo.io.Upstream.ClusterProtocolSelection
+"useHttp2": .google.protobuf.BoolValue
 "initialStreamWindowSize": .google.protobuf.UInt32Value
 "initialConnectionWindowSize": .google.protobuf.UInt32Value
 "maxConcurrentStreams": .google.protobuf.UInt32Value
+"overrideStreamErrorOnInvalidHttpMessage": .google.protobuf.BoolValue
 "httpProxyHostname": .google.protobuf.StringValue
 "ignoreHealthOnHostRemoval": .google.protobuf.BoolValue
 
@@ -67,10 +70,8 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `sslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk/#upstreamsslconfig) | SslConfig contains the options necessary to configure an upstream to use TLS origination. |
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk/#circuitbreakerconfig) | Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |
 | `loadBalancerConfig` | [.gloo.solo.io.LoadBalancerConfig](../load_balancer.proto.sk/#loadbalancerconfig) |  |
-| `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk/#connectionconfig) |  |
 | `healthChecks` | [[]solo.io.envoy.api.v2.core.HealthCheck](../../external/envoy/api/v2/core/health_check.proto.sk/#healthcheck) |  |
 | `outlierDetection` | [.solo.io.envoy.api.v2.cluster.OutlierDetection](../../external/envoy/api/v2/cluster/outlier_detection.proto.sk/#outlierdetection) |  |
-| `useHttp2` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec. otherwise defaults to `false`. |
 | `kube` | [.kubernetes.options.gloo.solo.io.UpstreamSpec](../options/kubernetes/kubernetes.proto.sk/#upstreamspec) |  Only one of `kube`, `static`, `pipe`, `aws`, `azure`, `consul`, or `awsEc2` can be set. |
 | `static` | [.static.options.gloo.solo.io.UpstreamSpec](../options/static/static.proto.sk/#upstreamspec) |  Only one of `static`, `kube`, `pipe`, `aws`, `azure`, `consul`, or `awsEc2` can be set. |
 | `pipe` | [.pipe.options.gloo.solo.io.UpstreamSpec](../options/pipe/pipe.proto.sk/#upstreamspec) |  Only one of `pipe`, `kube`, `static`, `aws`, `azure`, `consul`, or `awsEc2` can be set. |
@@ -79,11 +80,28 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `consul` | [.consul.options.gloo.solo.io.UpstreamSpec](../options/consul/consul.proto.sk/#upstreamspec) |  Only one of `consul`, `kube`, `static`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |
 | `awsEc2` | [.aws_ec2.options.gloo.solo.io.UpstreamSpec](../options/aws/ec2/aws_ec2.proto.sk/#upstreamspec) |  Only one of `awsEc2`, `kube`, `static`, `pipe`, `aws`, `azure`, or `consul` can be set. |
 | `failover` | [.gloo.solo.io.Failover](../failover.proto.sk/#failover) | Failover endpoints for this upstream. If omitted (the default) no failovers will be applied. |
+| `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk/#connectionconfig) | HTTP/1 connection configurations. |
+| `protocolSelection` | [.gloo.solo.io.Upstream.ClusterProtocolSelection](../upstream.proto.sk/#clusterprotocolselection) | Determines how Envoy selects the protocol used to speak to upstream hosts. |
+| `useHttp2` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec. otherwise defaults to `false`. |
 | `initialStreamWindowSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Initial stream-level flow-control window size. Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum) and defaults to 268435456 (256 * 1024 * 1024). NOTE: 65535 is the initial window size from HTTP/2 spec. We only support increasing the default window size now, so it’s also the minimum. This field also acts as a soft limit on the number of bytes Envoy will buffer per-stream in the HTTP/2 codec buffers. Once the buffer reaches this pointer, watermark callbacks will fire to stop the flow of data to the codec buffers. Requires UseHttp2 to be true to be acknowledged. |
 | `initialConnectionWindowSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Similar to initial_stream_window_size, but for connection-level flow-control window. Currently, this has the same minimum/maximum/default as initial_stream_window_size. Requires UseHttp2 to be true to be acknowledged. |
 | `maxConcurrentStreams` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Maximum concurrent streams allowed for peer on one HTTP/2 connection. Valid values range from 1 to 2147483647 (2^31 - 1) and defaults to 2147483647. Requires UseHttp2 to be true to be acknowledged. |
+| `overrideStreamErrorOnInvalidHttpMessage` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Allows invalid HTTP messaging and headers. When this option is disabled (default), then the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame. However, when this option is enabled, only the offending stream is terminated. This overrides any HCM :ref:`stream_error_on_invalid_http_messaging <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.stream_error_on_invalid_http_message>` See `RFC7540, sec. 8.1 <https://tools.ietf.org/html/rfc7540#section-8.1>`_ for details. |
 | `httpProxyHostname` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect. This configuration sets the hostname used as part of the HTTP Connect request. For example, setting to: host.com:443 and making a request routed to the upstream such as `curl <envoy>:<port>/v1` would result in the following request: CONNECT host.com:443 HTTP/1.1 host: host.com:443 GET /v1 HTTP/1.1 host: <envoy>:<port> user-agent: curl/7.64.1 accept: */* Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route. |
 | `ignoreHealthOnHostRemoval` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery. This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it. |
+
+
+
+
+---
+### ClusterProtocolSelection
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `USE_CONFIGURED_PROTOCOL` | Cluster can only operate on one of the possible upstream protocols (HTTP1.1, HTTP2). If :ref:`http2_protocol_options <envoy_v3_api_field_config.cluster.v3.Cluster.http2_protocol_options>` are present, HTTP2 will be used, otherwise HTTP1.1 will be used. |
+| `USE_DOWNSTREAM_PROTOCOL` | Use HTTP1.1 or HTTP2, depending on which one is used on the downstream connection. |
 
 
 

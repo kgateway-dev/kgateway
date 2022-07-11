@@ -13,9 +13,6 @@ weight: 5
 
 - [ConnectionConfig](#connectionconfig)
 - [TcpKeepAlive](#tcpkeepalive)
-- [HttpProtocolOptions](#httpprotocoloptions)
-- [HeadersWithUnderscoresAction](#headerswithunderscoresaction)
-- [Http1ProtocolOptions](#http1protocoloptions)
   
 
 
@@ -37,8 +34,8 @@ Fine tune the settings for connections to an upstream
 "connectTimeout": .google.protobuf.Duration
 "tcpKeepalive": .gloo.solo.io.ConnectionConfig.TcpKeepAlive
 "perConnectionBufferLimitBytes": .google.protobuf.UInt32Value
-"commonHttpProtocolOptions": .gloo.solo.io.ConnectionConfig.HttpProtocolOptions
-"http1ProtocolOptions": .gloo.solo.io.ConnectionConfig.Http1ProtocolOptions
+"commonHttpProtocolOptions": .protocol.options.gloo.solo.io.HttpProtocolOptions
+"http1ProtocolOptions": .protocol.options.gloo.solo.io.Http1ProtocolOptions
 
 ```
 
@@ -48,8 +45,8 @@ Fine tune the settings for connections to an upstream
 | `connectTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout for new network connections to hosts in the cluster. |
 | `tcpKeepalive` | [.gloo.solo.io.ConnectionConfig.TcpKeepAlive](../connection.proto.sk/#tcpkeepalive) | Configure OS-level tcp keepalive checks. |
 | `perConnectionBufferLimitBytes` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Soft limit on size of the cluster’s connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB). For more info, see the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/cluster.proto#cluster). |
-| `commonHttpProtocolOptions` | [.gloo.solo.io.ConnectionConfig.HttpProtocolOptions](../connection.proto.sk/#httpprotocoloptions) | Additional options when handling HTTP requests upstream. These options will be applicable to both HTTP1 and HTTP2 requests. |
-| `http1ProtocolOptions` | [.gloo.solo.io.ConnectionConfig.Http1ProtocolOptions](../connection.proto.sk/#http1protocoloptions) | Additional Options when handling HTTP requests upstream. These options will be applicable only to HTTP1 requests. |
+| `commonHttpProtocolOptions` | [.protocol.options.gloo.solo.io.HttpProtocolOptions](../options/protocol/protocol.proto.sk/#httpprotocoloptions) | Additional options when handling HTTP requests upstream. These options will be applicable to both HTTP1 and HTTP2 requests. |
+| `http1ProtocolOptions` | [.protocol.options.gloo.solo.io.Http1ProtocolOptions](../options/protocol/protocol.proto.sk/#http1protocoloptions) | Additional Options when handling HTTP requests upstream. These options will be applicable only to HTTP1 requests. |
 
 
 
@@ -73,69 +70,6 @@ see more info here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/co
 | `keepaliveProbes` | `int` | Maximum number of keepalive probes to send without response before deciding the connection is dead. |
 | `keepaliveTime` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The number of seconds a connection needs to be idle before keep-alive probes start being sent. This is rounded up to the second. |
 | `keepaliveInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The number of seconds between keep-alive probes. This is rounded up to the second. |
-
-
-
-
----
-### HttpProtocolOptions
-
-
-
-```yaml
-"idleTimeout": .google.protobuf.Duration
-"maxHeadersCount": int
-"maxStreamDuration": .google.protobuf.Duration
-"headersWithUnderscoresAction": .gloo.solo.io.ConnectionConfig.HttpProtocolOptions.HeadersWithUnderscoresAction
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The idle timeout for connections. The idle timeout is defined as the period in which there are no active requests. When the idle timeout is reached the connection will be closed. If the connection is an HTTP/2 downstream connection a drain sequence will occur prior to closing the connection, see :ref:`drain_timeout <envoy_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.drain_timeout>`. Note that request based timeouts mean that HTTP/2 PINGs will not keep the connection alive. If not specified, this defaults to 1 hour. To disable idle timeouts explicitly set this to 0. .. warning:: Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP FIN packets, etc. |
-| `maxHeadersCount` | `int` | The maximum number of headers. If unconfigured, the default maximum number of request headers allowed is 100. Requests that exceed this limit will receive a 431 response for HTTP/1.x and cause a stream reset for HTTP/2. |
-| `maxStreamDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be reset independent of any other timeouts. If not specified, this value is not set. |
-| `headersWithUnderscoresAction` | [.gloo.solo.io.ConnectionConfig.HttpProtocolOptions.HeadersWithUnderscoresAction](../connection.proto.sk/#headerswithunderscoresaction) | Action to take when a client request with a header name containing underscore characters is received. If this setting is not specified, the value defaults to ALLOW. Note: upstream responses are not affected by this setting. |
-
-
-
-
----
-### HeadersWithUnderscoresAction
-
- 
-Action to take when Envoy receives client request with header names containing underscore
-characters.
-Underscore character is allowed in header names by the RFC-7230 and this behavior is implemented
-as a security measure due to systems that treat '_' and '-' as interchangeable. Envoy by default allows client request headers with underscore
-characters.
-
-| Name | Description |
-| ----- | ----------- | 
-| `ALLOW` | Allow headers with underscores. This is the default behavior. |
-| `REJECT_REQUEST` | Reject client request. HTTP/1 requests are rejected with the 400 status. HTTP/2 requests end with the stream reset. The "httpN.requests_rejected_with_underscores_in_headers" counter is incremented for each rejected request. |
-| `DROP_HEADER` | Drop the header with name containing underscores. The header is dropped before the filter chain is invoked and as such filters will not see dropped headers. The "httpN.dropped_headers_with_underscores" is incremented for each dropped header. |
-
-
-
-
----
-### Http1ProtocolOptions
-
-
-
-```yaml
-"enableTrailers": bool
-"properCaseHeaderKeyFormat": bool
-"preserveCaseHeaderKeyFormat": bool
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `enableTrailers` | `bool` | Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers. Note: Trailers must also be enabled at the gateway level in order for this option to take effect. |
-| `properCaseHeaderKeyFormat` | `bool` | Formats the REQUEST HEADER by proper casing words: the first character and any character following a special character will be capitalized if it's an alpha character. For example, "content-type" becomes "Content-Type", and "foo$b#$are" becomes "Foo$B#$Are". Note that while this results in most headers following conventional casing, certain headers are not covered. For example, the "TE" header will be formatted as "Te". Only one of `properCaseHeaderKeyFormat` or `preserveCaseHeaderKeyFormat` can be set. |
-| `preserveCaseHeaderKeyFormat` | `bool` | Generates configuration for a stateful formatter extension that allows using received headers to affect the output of encoding headers. Specifically: preserving REQUEST HEADER case during proxying. Only one of `preserveCaseHeaderKeyFormat` or `properCaseHeaderKeyFormat` can be set. |
 
 
 

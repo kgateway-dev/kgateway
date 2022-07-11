@@ -4,11 +4,13 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_extensions_http_header_formatters_preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/httpprotocolvalidation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
@@ -50,6 +52,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 	out.StreamIdleTimeout = in.GetStreamIdleTimeout()
 	out.MaxRequestHeadersKb = in.GetMaxRequestHeadersKb()
 	out.RequestTimeout = in.GetRequestTimeout()
+	out.RequestHeadersTimeout = in.GetRequestHeadersTimeout()
 	out.DrainTimeout = in.GetDrainTimeout()
 	out.DelayedCloseTimeout = in.GetDelayedCloseTimeout()
 	out.ServerName = in.GetServerName()
@@ -163,6 +166,46 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		// No errors should occur when marshaling
 		if out.GetRequestIdExtension().TypedConfig, err = anypb.New(in.GetUuidRequestIdConfig()); err != nil {
 			return err
+		}
+	}
+
+	if in.GetHttp2ProtocolOptions() != nil {
+		http2po := in.GetHttp2ProtocolOptions()
+		// Both these values default to 268435456 if unset.
+		sws := http2po.GetInitialStreamWindowSize()
+		if sws != nil {
+			if !httpprotocolvalidation.ValidateWindowSize(sws.GetValue()) {
+				return errors.Errorf("Invalid Initial Stream Window Size: %d", sws.GetValue())
+			} else {
+				sws = &wrappers.UInt32Value{Value: sws.GetValue()}
+			}
+		}
+
+		cws := http2po.GetInitialConnectionWindowSize()
+		if cws != nil {
+			if !httpprotocolvalidation.ValidateWindowSize(cws.GetValue()) {
+				return errors.Errorf("Invalid Initial Connection Window Size: %d", cws.GetValue())
+			} else {
+				cws = &wrappers.UInt32Value{Value: cws.GetValue()}
+			}
+		}
+
+		mcs := http2po.GetMaxConcurrentStreams()
+		if mcs != nil {
+			if !httpprotocolvalidation.ValidateConcurrentStreams(mcs.GetValue()) {
+				return errors.Errorf("Invalid Max Concurrent Streams Size: %d", mcs.GetValue())
+			} else {
+				mcs = &wrappers.UInt32Value{Value: mcs.GetValue()}
+			}
+		}
+
+		ose := http2po.GetOverrideStreamErrorOnInvalidHttpMessage()
+
+		out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{
+			InitialStreamWindowSize:                 sws,
+			InitialConnectionWindowSize:             cws,
+			MaxConcurrentStreams:                    mcs,
+			OverrideStreamErrorOnInvalidHttpMessage: ose,
 		}
 	}
 

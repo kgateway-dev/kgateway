@@ -1,11 +1,9 @@
 package translator
 
 import (
-	"github.com/imdario/mergo"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	hcm "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 )
@@ -19,12 +17,8 @@ var (
 )
 
 type HybridTranslator struct {
-	HttpTranslator *HttpTranslator
-	TcpTranslator  *TcpTranslator
-}
-
-func (t *HybridTranslator) Name() string {
-	return HybridTranslatorName
+	VirtualServiceTranslator *VirtualServiceTranslator
+	TcpTranslator            *TcpTranslator
 }
 
 func (t *HybridTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener {
@@ -108,7 +102,10 @@ func (t *HybridTranslator) computeHybridListenerFromMatchedGateways(
 			virtualServices := getVirtualServicesForHttpGateway(params, gateway, httpGateway, sslGateway)
 
 			matchedListener.ListenerType = &gloov1.MatchedListener_HttpListener{
-				HttpListener: t.HttpTranslator.ComputeHttpListener(params, gateway, httpGateway, virtualServices, proxyName),
+				HttpListener: &gloov1.HttpListener{
+					VirtualHosts: t.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServices, proxyName),
+					Options:      httpGateway.GetOptions(),
+				},
 			}
 
 			if sslGateway {
@@ -162,81 +159,32 @@ func (t *HybridTranslator) computeMatchedListener(
 	parentGateway *v1.Gateway,
 	matchableHttpGateway *v1.MatchableHttpGateway,
 ) *gloov1.MatchedListener {
-	// v ---- inheritence logic ---- v
-	preventChildOverrides := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetPreventChildOverrides()
+	sslGateway := matchableHttpGateway.GetMatcher().GetSslConfig() != nil
 
-	// SslConfig
-	parentSslConfig := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetSslConfig()
-	var childSslConfig *gloov1.SslConfig
-	if matchableHttpGateway.GetMatcher() != nil {
-		childSslConfig = matchableHttpGateway.GetMatcher().GetSslConfig()
-	}
+	// reconcile the hcm configuration that is shared by Gateway and MatchableHttpGateways
+	listenerOptions := reconcileGatewayLevelHCMConfig(parentGateway, matchableHttpGateway)
 
-	if childSslConfig == nil {
-		// use parentSslConfig exactly as-is
-		childSslConfig = parentSslConfig
-	} else if parentSslConfig == nil {
-		// use childSslConfig exactly as-is
-	} else if childSslConfig != nil && parentSslConfig != nil {
-		if preventChildOverrides {
-			// merge, preferring parentSslConfig
-			mergo.Merge(childSslConfig, parentSslConfig, mergo.WithOverride)
-		} else {
-			// merge, preferring childSslConfig
-			mergo.Merge(childSslConfig, parentSslConfig)
-		}
+	// reconcile the ssl configuration that is shared by Gateway and MatchableHttpGateways
+	var sslConfig *gloov1.SslConfig
+	if sslGateway {
+		sslConfig = reconcileGatewayLevelSslConfig(parentGateway, matchableHttpGateway)
 	}
-
-	if matchableHttpGateway.GetMatcher() != nil {
-		matchableHttpGateway.GetMatcher().SslConfig = childSslConfig
-	}
-	parentGateway.GetHybridGateway().GetDelegatedHttpGateways().SslConfig = childSslConfig
-
-	// HcmOptions
-	parentHcmOptions := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetHttpConnectionManagerSettings()
-	var childHcmOptions *hcm.HttpConnectionManagerSettings
-	if matchableHttpGateway.GetHttpGateway().GetOptions() != nil {
-		childHcmOptions = matchableHttpGateway.GetHttpGateway().GetOptions().GetHttpConnectionManagerSettings()
-	}
-
-	if childHcmOptions == nil {
-		// use parentHcmOptions exactly as-is
-		childHcmOptions = parentHcmOptions
-	} else if parentHcmOptions == nil {
-		// use childHcmOptions exactly as-is
-	} else if childHcmOptions != nil && parentHcmOptions != nil {
-		if preventChildOverrides {
-			// merge, preferring parentHcmOptions
-			mergo.Merge(childHcmOptions, parentHcmOptions, mergo.WithOverride)
-		} else {
-			// merge, preferring childHcmOptions
-			mergo.Merge(childHcmOptions, parentHcmOptions)
-		}
-	}
-
-	if matchableHttpGateway.GetHttpGateway().GetOptions() != nil {
-		matchableHttpGateway.GetHttpGateway().GetOptions().HttpConnectionManagerSettings = childHcmOptions
-	} else {
-		matchableHttpGateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
-			HttpConnectionManagerSettings: childHcmOptions,
-		}
-	}
-	parentGateway.GetHybridGateway().GetDelegatedHttpGateways().HttpConnectionManagerSettings = childHcmOptions
-	// ^ ---- inheritence logic ---- ^
 
 	matchedListener := &gloov1.MatchedListener{
 		Matcher: &gloov1.Matcher{
-			SslConfig:          matchableHttpGateway.GetMatcher().GetSslConfig(),
+			SslConfig:          sslConfig,
 			SourcePrefixRanges: matchableHttpGateway.GetMatcher().GetSourcePrefixRanges(),
 		},
 	}
 
 	httpGateway := matchableHttpGateway.GetHttpGateway()
-	sslGateway := matchableHttpGateway.GetMatcher().GetSslConfig() != nil
 	virtualServices := getVirtualServicesForHttpGateway(params, parentGateway, httpGateway, sslGateway)
 
 	matchedListener.ListenerType = &gloov1.MatchedListener_HttpListener{
-		HttpListener: t.HttpTranslator.ComputeHttpListener(params, parentGateway, httpGateway, virtualServices, proxyName),
+		HttpListener: &gloov1.HttpListener{
+			VirtualHosts: t.VirtualServiceTranslator.ComputeVirtualHosts(params, parentGateway, virtualServices, proxyName),
+			Options:      listenerOptions,
+		},
 	}
 
 	if sslGateway {

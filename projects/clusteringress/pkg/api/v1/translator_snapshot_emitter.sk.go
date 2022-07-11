@@ -138,6 +138,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	var initialClusterIngressList github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList
 
 	currentSnapshot := TranslatorSnapshot{}
+	clusteringressesByNamespace := make(map[string]github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for ClusterIngress */
@@ -147,6 +148,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				return nil, nil, errors.Wrapf(err, "initial ClusterIngress list")
 			}
 			initialClusterIngressList = append(initialClusterIngressList, clusteringresses...)
+			clusteringressesByNamespace[namespace] = clusteringresses
 		}
 		clusterIngressNamespacesChan, clusterIngressErrs, err := c.clusterIngress.Watch(namespace, opts)
 		if err != nil {
@@ -211,7 +213,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				stats.Record(ctx, mTranslatorSnapshotMissed.M(1))
 			}
 		}
-		clusteringressesByNamespace := make(map[string]github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,

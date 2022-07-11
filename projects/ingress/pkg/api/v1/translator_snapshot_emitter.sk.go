@@ -174,6 +174,9 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	var initialIngressList IngressList
 
 	currentSnapshot := TranslatorSnapshot{}
+	upstreamsByNamespace := make(map[string]gloo_solo_io.UpstreamList)
+	servicesByNamespace := make(map[string]KubeServiceList)
+	ingressesByNamespace := make(map[string]IngressList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Upstream */
@@ -183,6 +186,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				return nil, nil, errors.Wrapf(err, "initial Upstream list")
 			}
 			initialUpstreamList = append(initialUpstreamList, upstreams...)
+			upstreamsByNamespace[namespace] = upstreams
 		}
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
@@ -201,6 +205,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				return nil, nil, errors.Wrapf(err, "initial KubeService list")
 			}
 			initialKubeServiceList = append(initialKubeServiceList, services...)
+			servicesByNamespace[namespace] = services
 		}
 		kubeServiceNamespacesChan, kubeServiceErrs, err := c.kubeService.Watch(namespace, opts)
 		if err != nil {
@@ -219,6 +224,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				return nil, nil, errors.Wrapf(err, "initial Ingress list")
 			}
 			initialIngressList = append(initialIngressList, ingresses...)
+			ingressesByNamespace[namespace] = ingresses
 		}
 		ingressNamespacesChan, ingressErrs, err := c.ingress.Watch(namespace, opts)
 		if err != nil {
@@ -305,9 +311,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				stats.Record(ctx, mTranslatorSnapshotMissed.M(1))
 			}
 		}
-		upstreamsByNamespace := make(map[string]gloo_solo_io.UpstreamList)
-		servicesByNamespace := make(map[string]KubeServiceList)
-		ingressesByNamespace := make(map[string]IngressList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,

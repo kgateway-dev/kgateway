@@ -126,7 +126,7 @@ rules:
 			Return(helmRelease, nil)
 
 		mockHelmClient.EXPECT().
-			NewInstall(helmInstallConfig.Namespace, helmInstallConfig.HelmReleaseName, installConfig.DryRun).
+			NewInstall(helmInstallConfig.Namespace, helmInstallConfig.HelmReleaseName, installConfig.DryRun, "").
 			Return(mockHelmInstallation, helmEnv, nil)
 
 		mockHelmClient.EXPECT().
@@ -241,7 +241,7 @@ rules:
 			Return(helmRelease, nil)
 
 		mockHelmClient.EXPECT().
-			NewInstall(defaults.GlooSystem, installConfig.Gloo.HelmReleaseName, installConfig.DryRun).
+			NewInstall(defaults.GlooSystem, installConfig.Gloo.HelmReleaseName, installConfig.DryRun, "").
 			Return(mockHelmInstallation, helmEnv, nil)
 
 		mockHelmClient.EXPECT().

@@ -265,6 +265,9 @@ spec:
                   enableGatewayController:
                     nullable: true
                     type: boolean
+                  isolateVirtualHostsBySslConfig:
+                    nullable: true
+                    type: boolean
                   persistProxySpec:
                     nullable: true
                     type: boolean

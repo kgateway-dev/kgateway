@@ -171,8 +171,8 @@ func MarshalSpec(in resources.Resource) (v1.Spec, error) {
 	return spec, nil
 }
 
-func UnmarshalStatus(in resources.InputResource, status v1.Status, unmarshaler resources.StatusUnmarshaler) error {
-	return unmarshaler.UnmarshalStatus(status, in)
+func UnmarshalStatus(in resources.InputResource, status v1.Status, unmarshaler resources.StatusUnmarshaler) {
+	unmarshaler.UnmarshalStatus(status, in)
 }
 
 func MarshalStatus(in resources.InputResource) (v1.Status, error) {

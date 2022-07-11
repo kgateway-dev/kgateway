@@ -4,15 +4,18 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	gatewayv1kube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -42,6 +45,7 @@ const earliestVersionWithV1CRDs = "1.9.0"
 
 // for testing upgrades from a gloo version before the gloo/gateway merge and
 // before https://github.com/solo-io/gloo/pull/6349 was fixed
+// TODO delete tests once this version is no longer supported https://github.com/solo-io/gloo/issues/6661
 const versionBeforeGlooGatewayMerge = "1.11.0"
 
 const namespace = defaults.GlooSystem
@@ -157,7 +161,6 @@ var _ = Describe("Kube2e: helm", func() {
 				"gatewayProxies.proxyExternal.service.httpsPort":     "32500",
 				"gatewayProxies.proxyExternal.service.httpNodePort":  "31500",
 				"gatewayProxies.proxyExternal.service.httpsNodePort": "32500",
-				//settings.watchNamespaces={}
 			}
 
 			var settings []string
@@ -225,13 +228,15 @@ var _ = Describe("Kube2e: helm", func() {
 		})
 
 		// Below are tests with different combinations of upgrades with failurePolicy=Ignore/Fail.
-		// (It couldn't be easily written as a DescribeTable since the fromRelease and strictValidation
-		// variables need to be set in a BeforeEach)
 		Context("failurePolicy upgrades", func() {
+
 			var webhookConfigClient admission_v1_types.ValidatingWebhookConfigurationInterface
+			var gatewayV1Client gatewayv1kube.GatewayV1Interface
 
 			BeforeEach(func() {
 				webhookConfigClient = kubeClientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
+				gatewayV1Client, err = gatewayv1kube.NewForConfig(cfg)
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			testFailurePolicyUpgrade := func(oldFailurePolicy admission_v1.FailurePolicyType, newFailurePolicy admission_v1.FailurePolicyType) {
@@ -240,55 +245,60 @@ var _ = Describe("Kube2e: helm", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(oldFailurePolicy))
 
+				// to ensure the default Gateways were not deleted during upgrade, compare their creation timestamps before and after the upgrade
+				gw, err := gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				gwTimestampBefore := gw.GetCreationTimestamp().String()
+				gwSsl, err := gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy-ssl", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				gwSslTimestampBefore := gwSsl.GetCreationTimestamp().String()
+
 				// upgrade to the new failurePolicy type
 				var newStrictValue = false
 				if newFailurePolicy == admission_v1.Fail {
 					newStrictValue = true
 				}
-				upgradeGloo(testHelper, chartUri, crdDir, fromRelease, newStrictValue, []string{
-					// set some arbitrary value on the gateway, just to ensure the validation webhook is called
-					"--set", "gatewayProxies.gatewayProxy.gatewaySettings.ipv4Only=true",
-				})
+				upgradeGloo(testHelper, chartUri, crdDir, fromRelease, newStrictValue, []string{})
 
 				By(fmt.Sprintf("should have updated to gateway.validation.failurePolicy=%v", newFailurePolicy))
 				webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(newFailurePolicy))
+
+				By("Gateway creation timestamps should not have changed")
+				gw, err = gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				gwTimestampAfter := gw.GetCreationTimestamp().String()
+				Expect(gwTimestampBefore).To(Equal(gwTimestampAfter))
+				gwSsl, err = gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy-ssl", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				gwSslTimestampAfter := gwSsl.GetCreationTimestamp().String()
+				Expect(gwSslTimestampBefore).To(Equal(gwSslTimestampAfter))
 			}
 
-			Context("upgrading from previous release, starting from failurePolicy=Ignore", func() {
+			Context("starting from before the gloo/gateway merge, with failurePolicy=Ignore", func() {
 				BeforeEach(func() {
 					fromRelease = versionBeforeGlooGatewayMerge
 					strictValidation = false
 				})
-				It("can upgrade to failurePolicy=Ignore", func() {
+				It("can upgrade to current release, with failurePolicy=Ignore", func() {
 					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Ignore)
 				})
-				It("can upgrade to failurePolicy=Fail", func() {
+				It("can upgrade to current release, with failurePolicy=Fail", func() {
 					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Fail)
 				})
 			})
-			Context("upgrading within same release, starting from failurePolicy=Ignore", func() {
+			Context("starting from helm hook release, with failurePolicy=Fail", func() {
 				BeforeEach(func() {
-					fromRelease = ""
-					strictValidation = false
-				})
-				It("can upgrade to failurePolicy=Ignore", func() {
-					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Ignore)
-				})
-				It("can upgrade to failurePolicy=Fail", func() {
-					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Fail)
-				})
-			})
-			Context("upgrading within same release, starting from failurePolicy=Fail", func() {
-				BeforeEach(func() {
-					fromRelease = ""
+					// The original fix for installing with failurePolicy=Fail (https://github.com/solo-io/gloo/issues/6213)
+					// went into gloo v1.11.10. It turned the Gloo custom resources into helm hooks to guarantee ordering,
+					// however it caused additional issues so we moved away from using helm hooks. This test is to ensure
+					// we can successfully upgrade from the helm hook release to the current release.
+					// TODO delete tests once this version is no longer supported https://github.com/solo-io/gloo/issues/6661
+					fromRelease = "1.11.10"
 					strictValidation = true
 				})
-				It("can upgrade to failurePolicy=Ignore", func() {
-					testFailurePolicyUpgrade(admission_v1.Fail, admission_v1.Ignore)
-				})
-				It("can upgrade to failurePolicy=Fail", func() {
+				It("can upgrade to current release, with failurePolicy=Fail", func() {
 					testFailurePolicyUpgrade(admission_v1.Fail, admission_v1.Fail)
 				})
 			})
@@ -382,7 +392,7 @@ var _ = Describe("Kube2e: helm", func() {
 })
 
 func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
-	glooVersion, err := version.GetClientServerVersions(ctx, version.NewKube(namespace))
+	glooVersion, err := version.GetClientServerVersions(ctx, version.NewKube(namespace, ""))
 	Expect(err).To(BeNil())
 	Expect(len(glooVersion.GetServer())).To(Equal(1))
 	for _, container := range glooVersion.GetServer()[0].GetKubernetes().GetContainers() {
@@ -449,23 +459,16 @@ func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir s
 		return
 	}
 
-	// delete all solo crds from the previous release
-	dir, err := os.MkdirTemp("", "old-gloo-chart")
-	Expect(err).NotTo(HaveOccurred())
-	defer os.RemoveAll(dir)
-
-	runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName, "https://storage.googleapis.com/solo-public-helm", "--force-update")
-	runAndCleanCommand("helm", "pull", testHelper.HelmChartName+"/gloo", "--version", fromRelease, "--untar", "--untardir", dir)
-	runAndCleanCommand("kubectl", "delete", "-f", dir+"/gloo/crds")
-
 	// apply crds from the release we're upgrading to
 	runAndCleanCommand("kubectl", "apply", "-f", crdDir)
+	// allow some time for the new crds to take effect
+	time.Sleep(time.Second * 5)
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, strictValidation bool, additionalArgs []string) {
 	upgradeCrds(testHelper, fromRelease, crdDir)
 
-	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
+	valueOverrideFile, cleanupFunc := getHelmUpgradeValuesOverrideFile()
 	defer cleanupFunc()
 
 	var args = []string{"upgrade", testHelper.HelmChartName, chartUri,
@@ -490,6 +493,48 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	cancel()
+}
+
+func getHelmUpgradeValuesOverrideFile() (filename string, cleanup func()) {
+	values, err := ioutil.TempFile("", "values-*.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = values.Write([]byte(`
+global:
+  image:
+    pullPolicy: IfNotPresent
+  glooRbac:
+    namespaced: true
+    nameSuffix: e2e-test-rbac-suffix
+settings:
+  singleNamespace: true
+  create: true
+  replaceInvalidRoutes: true
+gateway:
+  persistProxySpec: true
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
+    gatewaySettings:
+      # the KEYVALUE action type was first available in v1.11.11 (within the v1.11.x branch); this is a sanity check to
+      # ensure we can upgrade without errors from an older version to a version with these new fields (i.e. we can set
+      # the new fields on the Gateway CR during the helm upgrade, and that it will pass validation)
+      customHttpGateway:
+        options:
+          dlp:
+            dlpRules:
+            - actions:
+              - actionType: KEYVALUE
+                keyValueAction:
+                  keyToMask: test
+                  name: test
+`))
+	Expect(err).NotTo(HaveOccurred())
+
+	err = values.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	return values.Name(), func() { _ = os.Remove(values.Name()) }
 }
 
 var strictValidationArgs = []string{

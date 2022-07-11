@@ -2240,6 +2240,115 @@ var _ = Describe("Translator", func() {
 
 	})
 
+	Context("when translating a multi-route action with differing passed weights", func() {
+
+		var (
+			multiActionRouteWithNoWeightPassedDest *v1.Route
+			multiActionRouteOneDest                *v1.Route
+			multiActionRouteZeroAndFiveAsWeights   *v1.Route
+			expectedErrorString                    string
+			weightedDestFiveWeight                 *v1.WeightedDestination
+			weightedDestZeroWeight                 *v1.WeightedDestination
+		)
+
+		BeforeEach(func() {
+			testUpstream1 := createStaticUpstream("test1", "gloo-system")
+			testUpstream2 := createStaticUpstream("test2", "gloo-system")
+
+			weightedDestNoWeightPassed := createWeightedDestination(false, 0, testUpstream1)
+			weightedDestZeroWeight = createWeightedDestination(true, 0, testUpstream1)
+			weightedDestFiveWeight = createWeightedDestination(true, 5, testUpstream2)
+
+			multiActionRouteOneDest = createMultiActionRoute("OneDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight})
+			multiActionRouteZeroAndFiveAsWeights = createMultiActionRoute("TwoDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight, weightedDestZeroWeight})
+			multiActionRouteWithNoWeightPassedDest = createMultiActionRoute("NoWeightPassedDest", matcher, []*v1.WeightedDestination{weightedDestNoWeightPassed, weightedDestNoWeightPassed})
+
+			expectedErrorString = fmt.Sprintf("Incorrect configuration for Weighted Destination for route - Weighted Destinations require a total weight that is greater than or equal to 1")
+		})
+
+		//Positive Tests
+		It("Should translate single routes when multiRoute is passed and only one destination is specified", func() {
+			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteOneDest}
+			snap, resourceReport, _, _ := translator.Translate(params, proxy)
+			Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
+
+			// A weighted route to the service has been configured
+			routes := snap.GetResources(types.RouteTypeV3)
+			Expect(routes.Items).To(HaveKey("http-listener-routes"))
+			routeResource := routes.Items["http-listener-routes"]
+			routeConfiguration = routeResource.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
+			Expect(routeConfiguration).NotTo(BeNil())
+			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains[0]).To(Equal("*"))
+			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
+			routeAction, ok := routeConfiguration.VirtualHosts[0].Routes[0].Action.(*envoy_config_route_v3.Route_Route)
+			Expect(ok).To(BeTrue())
+			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoy_config_route_v3.RouteAction_WeightedClusters)
+			Expect(ok).To(BeTrue())
+
+			//DataFromWeightedCluster
+			totalWeight := weightedDestFiveWeight.Weight
+			expectedClusterName := weightedDestFiveWeight.Destination.GetUpstream().Name + "_" + weightedDestFiveWeight.Destination.GetUpstream().Namespace
+
+			//There is only one route with a weight of 5 so total weight for the cluster should be 5
+			Expect(clusterAction.WeightedClusters.TotalWeight.GetValue()).To(Equal(totalWeight))
+			clusters := clusterAction.WeightedClusters.Clusters
+			Expect(clusters).To(HaveLen(1))
+			Expect(clusters[0].Weight.GetValue()).To(Equal(totalWeight))
+			Expect(clusters[0].Name).To(Equal(expectedClusterName))
+		})
+
+		It("Should translate 0 weight destinations if there are other destinations with weights over 0", func() {
+			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteZeroAndFiveAsWeights}
+			snap, resourceReport, _, _ := translator.Translate(params, proxy)
+			Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
+
+			// A weighted route to the service has been configured
+			routes := snap.GetResources(types.RouteTypeV3)
+			Expect(routes.Items).To(HaveKey("http-listener-routes"))
+			routeResource := routes.Items["http-listener-routes"]
+			routeConfiguration = routeResource.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
+			Expect(routeConfiguration).NotTo(BeNil())
+			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains[0]).To(Equal("*"))
+			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
+			routeAction, ok := routeConfiguration.VirtualHosts[0].Routes[0].Action.(*envoy_config_route_v3.Route_Route)
+			Expect(ok).To(BeTrue())
+			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoy_config_route_v3.RouteAction_WeightedClusters)
+			Expect(ok).To(BeTrue())
+
+			totalWeight := weightedDestFiveWeight.Weight + weightedDestZeroWeight.Weight
+			clusterNameFiveWeight := weightedDestFiveWeight.Destination.GetUpstream().Name + "_" + weightedDestFiveWeight.Destination.GetUpstream().Namespace
+			clusterNameZeroWeight := weightedDestZeroWeight.Destination.GetUpstream().Name + "_" + weightedDestZeroWeight.Destination.GetUpstream().Namespace
+
+			//There is only one route with a weight of 5 so total weight for the cluster should be 5
+			Expect(clusterAction.WeightedClusters.TotalWeight.GetValue()).To(Equal(totalWeight))
+			clusters := clusterAction.WeightedClusters.Clusters
+			Expect(clusters).To(HaveLen(2))
+
+			for _, c := range clusters {
+				switch c.Name {
+				case clusterNameFiveWeight:
+					Expect(c.Weight.GetValue()).To(Equal(uint32(5)))
+				case clusterNameZeroWeight:
+					Expect(c.Weight.GetValue()).To(Equal(uint32(0)))
+				}
+			}
+		})
+
+		//Negative Tests
+		It("Should report an error when total weight is 0 - nil and 0 weights passed", func() {
+			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteWithNoWeightPassedDest}
+			_, errs, _, err := translator.Translate(params, proxy)
+			Expect(err).To(BeNil())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring(expectedErrorString))
+		})
+
+	})
+
 	Context("Route plugin", func() {
 		var (
 			routePlugin *routePluginMock
@@ -2417,8 +2526,10 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
-	const expectedHybridListeners = 6
 	Context("Hybrid", func() {
+
+		// The number of HttpFilters that we expect to be generated on the HttpConnectionManager by default
+		var defaultHttpFilters = 6
 
 		It("can properly create a hybrid listener", func() {
 			translate()
@@ -2454,7 +2565,7 @@ var _ = Describe("Translator", func() {
 			Expect(ParseTypedConfig(hcmFilter, &hcmTypedCfg)).NotTo(HaveOccurred())
 			Expect(hcmTypedCfg.GetRds()).NotTo(BeNil())
 			Expect(hcmTypedCfg.GetRds().RouteConfigName).To(Equal(glooutils.MatchedRouteConfigName(proxy.GetListeners()[2], proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())))
-			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(expectedHybridListeners)) // TODO: is this the right number? is there more we can/should do to ensure correctness?
+			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(defaultHttpFilters))
 		})
 
 		It("can properly create a hybrid listeners without unused filters", func() {
@@ -2492,7 +2603,7 @@ var _ = Describe("Translator", func() {
 			Expect(ParseTypedConfig(hcmFilter, &hcmTypedCfg)).NotTo(HaveOccurred())
 			Expect(hcmTypedCfg.GetRds()).NotTo(BeNil())
 			Expect(hcmTypedCfg.GetRds().RouteConfigName).To(Equal(glooutils.MatchedRouteConfigName(proxy.GetListeners()[2], proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetMatcher())))
-			Expect(hcmTypedCfg.GetHttpFilters()).ToNot(HaveLen(expectedHybridListeners)) // check that its lower. Actual list/ number handled at registery test
+			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(1)) // only the router filter should be configured
 		})
 
 		It("skips listeners with invalid downstream ssl config", func() {
@@ -3243,6 +3354,7 @@ var _ = Describe("Translator", func() {
 							Multi: &v1.MultiDestination{
 								Destinations: []*v1.WeightedDestination{
 									{
+										Weight: 1,
 										Destination: &v1.Destination{
 											DestinationType: &v1.Destination_Upstream{
 												Upstream: &core.ResourceRef{
@@ -3266,7 +3378,6 @@ var _ = Describe("Translator", func() {
 		}
 		snap, resourceReport, _, _ := translator.Translate(params, proxy)
 		Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
-
 		routes := snap.GetResources(types.RouteTypeV3)
 		routesProto := routes.Items["http-listener-routes"]
 		routeConfig := routesProto.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
@@ -3295,6 +3406,99 @@ var _ = Describe("Translator", func() {
 			table.Entry("When value=true", &wrappers.BoolValue{Value: true}, true),
 			table.Entry("When value=false", &wrappers.BoolValue{Value: false}, false),
 			table.Entry("When value=nil", nil, false))
+	})
+
+	//TODO: We could split this into a test file for clusters.go
+	Context("Protocol Options", func() {
+		It("when no value passed in upstream - cluster has default", func() {
+			name := "ProtocolOptionsTest2"
+			namespace := "gloo-system"
+			upstreamNoProtocol := &v1.Upstream{
+				Metadata: &core.Metadata{
+					Name:      name,
+					Namespace: namespace,
+				},
+				UpstreamType: &v1.Upstream_Static{
+					Static: &v1static.UpstreamSpec{
+						Hosts: []*v1static.Host{
+							{
+								Addr: "poTest1",
+								Port: 124,
+							},
+						},
+					},
+				},
+			}
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, upstreamNoProtocol)
+			translate()
+			clusters := snapshot.GetResources(types.ClusterTypeV3)
+			clusterResource := clusters.Items[fmt.Sprintf("%s_%s", name, namespace)]
+			Expect(clusterResource).ToNot(BeNil())
+			createdCluster := clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+			Expect(createdCluster).ToNot(BeNil())
+			Expect(createdCluster.ProtocolSelection).To(Equal(envoy_config_cluster_v3.Cluster_USE_CONFIGURED_PROTOCOL))
+		})
+
+		It("USE_CONFIGURED_PROTOCOL is passed and set on cluster", func() {
+			name := "ProtocolOptionsTest2"
+			namespace := "gloo-system"
+
+			upstreamConfiguredProtocol := &v1.Upstream{
+				Metadata: &core.Metadata{
+					Name:      name,
+					Namespace: namespace,
+				},
+				UpstreamType: &v1.Upstream_Static{
+					Static: &v1static.UpstreamSpec{
+						Hosts: []*v1static.Host{
+							{
+								Addr: "poTest2",
+								Port: 124,
+							},
+						},
+					},
+				},
+				ProtocolSelection: v1.Upstream_USE_CONFIGURED_PROTOCOL,
+			}
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, upstreamConfiguredProtocol)
+			translate()
+			clusters := snapshot.GetResources(types.ClusterTypeV3)
+			clusterResource := clusters.Items[fmt.Sprintf("%s_%s", name, namespace)]
+			Expect(clusterResource).ToNot(BeNil())
+			createdCluster := clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+			Expect(createdCluster).ToNot(BeNil())
+			Expect(createdCluster.ProtocolSelection).To(Equal(envoy_config_cluster_v3.Cluster_USE_CONFIGURED_PROTOCOL))
+		})
+
+		It("USE_DOWNSTREAM_PROTOCOL is passed and set on cluster", func() {
+			name := "ProtocolOptionsTest2"
+			namespace := "gloo-system"
+			upstreamDownstreamProtocol := &v1.Upstream{
+				Metadata: &core.Metadata{
+					Name:      name,
+					Namespace: namespace,
+				},
+				UpstreamType: &v1.Upstream_Static{
+					Static: &v1static.UpstreamSpec{
+						Hosts: []*v1static.Host{
+							{
+								Addr: "poTest3",
+								Port: 124,
+							},
+						},
+					},
+				},
+				ProtocolSelection: v1.Upstream_USE_DOWNSTREAM_PROTOCOL,
+			}
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, upstreamDownstreamProtocol)
+			translate()
+			clusters := snapshot.GetResources(types.ClusterTypeV3)
+			clusterResource := clusters.Items[fmt.Sprintf("%s_%s", name, namespace)]
+			Expect(clusterResource).ToNot(BeNil())
+			createdCluster := clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+			Expect(createdCluster).ToNot(BeNil())
+			Expect(createdCluster.ProtocolSelection).To(Equal(envoy_config_cluster_v3.Cluster_USE_DOWNSTREAM_PROTOCOL))
+		})
 	})
 
 })
@@ -3343,4 +3547,65 @@ func (e *endpointPluginMock) Name() string {
 
 func (e *endpointPluginMock) Init(params plugins.InitParams) error {
 	return nil
+}
+
+func createStaticUpstream(name, namespace string) *v1.Upstream {
+	return &v1.Upstream{
+		Metadata: &core.Metadata{
+			Name:      name,
+			Namespace: namespace,
+		},
+		UpstreamType: &v1.Upstream_Static{
+			Static: &v1static.UpstreamSpec{
+				Hosts: []*v1static.Host{
+					{
+						Addr: "Test" + name,
+						Port: 124,
+					},
+				},
+			},
+		},
+	}
+}
+
+func createWeightedDestination(isWeightIncluded bool, weight uint32, upstream *v1.Upstream) *v1.WeightedDestination {
+	if isWeightIncluded {
+		return &v1.WeightedDestination{
+			Weight: weight,
+			Destination: &v1.Destination{
+				DestinationType: &v1.Destination_Upstream{
+					Upstream: &core.ResourceRef{
+						Name:      upstream.Metadata.Name,
+						Namespace: upstream.Metadata.Namespace,
+					},
+				},
+			},
+		}
+	}
+	return &v1.WeightedDestination{
+		Destination: &v1.Destination{
+			DestinationType: &v1.Destination_Upstream{
+				Upstream: &core.ResourceRef{
+					Name:      upstream.Metadata.Name,
+					Namespace: upstream.Metadata.Namespace,
+				},
+			},
+		},
+	}
+}
+
+func createMultiActionRoute(routeName string, matcher *matchers.Matcher, destinations []*v1.WeightedDestination) *v1.Route {
+	return &v1.Route{
+		Name:     routeName,
+		Matchers: []*matchers.Matcher{matcher},
+		Action: &v1.Route_RouteAction{
+			RouteAction: &v1.RouteAction{
+				Destination: &v1.RouteAction_Multi{
+					Multi: &v1.MultiDestination{
+						Destinations: destinations,
+					},
+				},
+			},
+		},
+	}
 }

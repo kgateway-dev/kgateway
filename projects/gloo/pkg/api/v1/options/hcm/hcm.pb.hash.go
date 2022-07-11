@@ -177,6 +177,26 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		}
 	}
 
+	if h, ok := interface{}(m.GetRequestHeadersTimeout()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("RequestHeadersTimeout")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetRequestHeadersTimeout(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("RequestHeadersTimeout")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	if h, ok := interface{}(m.GetDrainTimeout()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("DrainTimeout")); err != nil {
 			return 0, err
@@ -456,6 +476,26 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 			return 0, err
 		} else {
 			if _, err = hasher.Write([]byte("UuidRequestIdConfig")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetHttp2ProtocolOptions()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Http2ProtocolOptions")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetHttp2ProtocolOptions(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Http2ProtocolOptions")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

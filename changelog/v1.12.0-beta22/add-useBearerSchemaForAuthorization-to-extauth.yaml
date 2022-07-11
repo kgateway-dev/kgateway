@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6501
+    resolvesIssue: false
+    description: | 
+      Add useBearerSchemaForAuthorization to toggle if Bearer prefix should be added to token Authorization header.

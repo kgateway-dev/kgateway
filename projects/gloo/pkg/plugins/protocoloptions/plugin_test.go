@@ -1,6 +1,8 @@
 package protocoloptions_test
 
 import (
+	"time"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_extensions_upstreams_http_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
@@ -12,19 +14,22 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
 var _ = Describe("Plugin", func() {
 
 	var (
-		p      plugins.UpstreamPlugin
-		params plugins.Params
-		out    *envoy_config_cluster_v3.Cluster
+		p                           plugins.UpstreamPlugin
+		params                      plugins.Params
+		out                         *envoy_config_cluster_v3.Cluster
+		expectedProtocolErrorString string
 	)
 
 	BeforeEach(func() {
 		p = protocoloptions.NewPlugin()
 		out = new(envoy_config_cluster_v3.Cluster)
+		expectedProtocolErrorString = "Both HTTP1 and HTTP2 options may only be configured with non-default 'Upstream_USE_DOWNSTREAM_PROTOCOL' specified for Protocol Selection"
 
 	})
 	Context("upstream", func() {
@@ -76,12 +81,13 @@ var _ = Describe("Plugin", func() {
 			Expect(err).To(HaveOccurred())
 		})
 
-		It("should accept connection streams/max concurrent streams that are within the correct range", func() {
+		It("should accept valid values for all http2 connection settings", func() {
 			validUpstream := &v1.Upstream{
-				MaxConcurrentStreams:        &wrappers.UInt32Value{Value: 1234},
-				InitialStreamWindowSize:     &wrappers.UInt32Value{Value: 268435457},
-				InitialConnectionWindowSize: &wrappers.UInt32Value{Value: 65535},
-				UseHttp2:                    &wrappers.BoolValue{Value: true},
+				UseHttp2:                                &wrappers.BoolValue{Value: true},
+				MaxConcurrentStreams:                    &wrappers.UInt32Value{Value: 1234},
+				InitialStreamWindowSize:                 &wrappers.UInt32Value{Value: 268435457},
+				InitialConnectionWindowSize:             &wrappers.UInt32Value{Value: 65535},
+				OverrideStreamErrorOnInvalidHttpMessage: &wrappers.BoolValue{Value: true},
 			}
 
 			err := p.ProcessUpstream(params, validUpstream, out)
@@ -97,6 +103,54 @@ var _ = Describe("Plugin", func() {
 				To(Equal(&wrappers.UInt32Value{Value: 268435457}))
 			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions().GetInitialConnectionWindowSize()).
 				To(Equal(&wrappers.UInt32Value{Value: 65535}))
+			Expect(explicitHttpConfig.GetExplicitHttpConfig().GetHttp2ProtocolOptions().GetOverrideStreamErrorOnInvalidHttpMessage()).
+				To(Equal(&wrappers.BoolValue{Value: true}))
+		})
+
+		It("Should be rejected if Http2 is true and protocol options is passed as USE_CONFIGURED_PROTOCOL and http1 settings are not nil", func() {
+			upstream := createTestUpstreamWithProtocolOptions(true, v1.Upstream_USE_CONFIGURED_PROTOCOL) //passed value won't be used
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(BeEquivalentTo(expectedProtocolErrorString))
+		})
+
+		It("Should be rejected if Http2 is true and protocol options not passed and default of Upstream_USE_CONFIGURED_PROTOCOL and http1 settings are not nil", func() {
+			upstream := createTestUpstreamWithProtocolOptions(false, v1.Upstream_USE_CONFIGURED_PROTOCOL) //passed value won't be used
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(BeEquivalentTo(expectedProtocolErrorString))
+		})
+
+		It("Should accept http2 setting if protocol options is passed as USE_DOWNSTREAM_PROTOCOL", func() {
+			upstream := createTestUpstreamWithProtocolOptions(true, v1.Upstream_USE_DOWNSTREAM_PROTOCOL)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			//further validation not added as the code logic is covered in previous tests
 		})
 	})
 })
+
+func createTestUpstreamWithProtocolOptions(includeProtocolSelection bool, protocolSelection v1.Upstream_ClusterProtocolSelection) *v1.Upstream {
+	upstream := &v1.Upstream{
+		MaxConcurrentStreams:        &wrappers.UInt32Value{Value: 1234},
+		InitialStreamWindowSize:     &wrappers.UInt32Value{Value: 268435457},
+		InitialConnectionWindowSize: &wrappers.UInt32Value{Value: 65535},
+		UseHttp2:                    &wrappers.BoolValue{Value: true},
+	}
+
+	if includeProtocolSelection {
+		upstream.ProtocolSelection = protocolSelection
+	}
+
+	minute := prototime.DurationToProto(time.Minute)
+	hour := prototime.DurationToProto(time.Hour)
+	upstream.ConnectionConfig = &v1.ConnectionConfig{
+		TcpKeepalive: &v1.ConnectionConfig_TcpKeepAlive{
+			KeepaliveInterval: minute,
+			KeepaliveTime:     hour,
+			KeepaliveProbes:   3,
+		},
+	}
+
+	return upstream
+}
