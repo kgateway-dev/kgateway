@@ -3,10 +3,11 @@ package translator
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 

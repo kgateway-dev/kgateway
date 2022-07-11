@@ -194,7 +194,7 @@ func (p *plugin) convertToWeightedCluster(multiDest *v1.MultiDestination) (*envo
 
 		wc[i] = &envoytcp.TcpProxy_WeightedCluster_ClusterWeight{
 			Name:   translatorutil.UpstreamToClusterName(usRef),
-			Weight: weightedDest.GetWeight().Value,
+			Weight: weightedDest.GetWeight().GetValue(),
 		}
 	}
 	return &envoytcp.TcpProxy_WeightedCluster{Clusters: wc}, nil

@@ -2,9 +2,10 @@ package create
 
 import (
 	"context"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"strconv"
 	"strings"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
