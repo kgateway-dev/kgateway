@@ -1,0 +1,9 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.21.27
+    description: >
+      Upgrade the go-utils dependency to ensure that the weekly trivy scanner runs against
+      all Gloo OSS and Gloo Enterprise Images, not just the latest for each long term support
+      branch.
