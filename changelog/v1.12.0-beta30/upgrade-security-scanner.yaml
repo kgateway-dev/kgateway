@@ -7,3 +7,7 @@ changelog:
       Upgrade the go-utils dependency to ensure that the weekly trivy scanner runs against
       all Gloo OSS and Gloo Enterprise Images, not just the latest for each long term support
       branch.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6449
+    resolvesIssue: false
+    description: Ensure that the handler for the /logging endpoint of the stats server is never nil.
