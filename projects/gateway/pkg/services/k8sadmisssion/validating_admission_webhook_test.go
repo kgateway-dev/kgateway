@@ -204,6 +204,65 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			Expect(review.Response.Result).To(BeNil())
 		})
 	})
+
+	DescribeTable(
+		"respects field manager in admission request",
+		func(requestFieldManager string, ignoredFieldManagers []string, expectedRequestAllowed bool) {
+			wh.ignoredFieldManagers = map[string]struct{}{}
+			for _, ignoredFieldManager := range ignoredFieldManagers {
+				wh.ignoredFieldManagers[ignoredFieldManager] = struct{}{}
+			}
+
+			gvk := v1.GatewayCrd.GroupVersionKind()
+
+			rawUpdateOptions, err := json.Marshal(metav1.UpdateOptions{
+				FieldManager: requestFieldManager,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			admissionReview := AdmissionReviewWithProxies{
+				AdmissionRequestWithProxies: AdmissionRequestWithProxies{
+					AdmissionReview: v1beta1.AdmissionReview{
+						Request: &v1beta1.AdmissionRequest{
+							UID: "1234",
+							Kind: metav1.GroupVersionKind{
+								Group:   gvk.Group,
+								Version: gvk.Version,
+								Kind:    gvk.Kind,
+							},
+							Name:      "name",
+							Namespace: "namespace",
+							Operation: v1beta1.Update,
+							Options: runtime.RawExtension{
+								Raw: rawUpdateOptions,
+							},
+						},
+					},
+					ReturnProxies: false,
+				},
+				AdmissionResponseWithProxies: AdmissionResponseWithProxies{},
+			}
+
+			req, err := convertAdmissionReviewIntoRequest(srv.URL, admissionReview, false)
+			Expect(err).NotTo(HaveOccurred())
+
+			res, err := srv.Client().Do(req)
+			Expect(err).NotTo(HaveOccurred())
+
+			review, err := parseReviewResponse(res)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(review.Response).NotTo(BeNil())
+
+			Expect(review.Response.Allowed).To(Equal(expectedRequestAllowed))
+		},
+
+		Entry("field manager in ignored list",
+			"requestManager", []string{"requestManager"}, true),
+		Entry("field manager not in ignored list",
+			"requestManager", []string{""}, false),
+		Entry("no field manager",
+			"", []string{"requestManager"}, false),
+	)
 })
 
 func makeReviewRequest(url string, crd crd.Crd, gvk schema.GroupVersionKind, operation v1beta1.Operation, resource interface{}) (*http.Request, error) {
@@ -264,6 +323,10 @@ func makeReviewRequestRaw(url string, gvk schema.GroupVersionKind, operation v1b
 		AdmissionResponseWithProxies: AdmissionResponseWithProxies{},
 	}
 
+	return convertAdmissionReviewIntoRequest(url, review, useYamlEncoding)
+}
+
+func convertAdmissionReviewIntoRequest(url string, review AdmissionReviewWithProxies, useYamlEncoding bool) (*http.Request, error) {
 	var (
 		contentType string
 		body        []byte
