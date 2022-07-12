@@ -250,7 +250,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	// process grpcserver options to understand if any servers will need a restart
 
-	var maxGrpcRecvSize int
+	maxGrpcRecvSize := -1
 	// Use the same maxGrpcMsgSize for both validation server and proxy debug server as the message size is determined by the size of proxies.
 	if maxGrpcMsgSize := settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); maxGrpcMsgSize != nil {
 		if maxGrpcMsgSize.GetValue() < 0 {
@@ -307,7 +307,11 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if s.validationServer == emptyValidationServer {
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
-		validationGrpcServerOpts := []grpc.ServerOption{grpc.MaxRecvMsgSize(maxGrpcRecvSize)}
+		var validationGrpcServerOpts []grpc.ServerOption
+		// if validationServerGrpcMaxSizeBytes was set this will be non-negative, otherwise use gRPC default
+		if maxGrpcRecvSize >= 0 {
+			validationGrpcServerOpts = append(validationGrpcServerOpts, grpc.MaxRecvMsgSize(maxGrpcRecvSize))
+		}
 		s.validationServer = NewValidationServer(ctx, s.makeGrpcServer(ctx, validationGrpcServerOpts...), validationTcpAddress, true)
 		s.previousValidationServer.cancel = cancel
 		s.previousValidationServer.addr = validationAddr
