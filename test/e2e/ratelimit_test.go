@@ -123,64 +123,6 @@ func (s *metadataCheckingRateLimitServer) getActionsForServer() []*rltypes.RateL
 	}
 }
 
-type timeBasedRateLimitServer struct {
-	descriptorKey          string
-	defaultDescriptorValue string
-	metadataKey            string
-	pathSegmentKey         string
-	expectedMetadataValue  string
-}
-
-func (s *timeBasedRateLimitServer) ShouldRateLimit(ctx context.Context, req *pb.RateLimitRequest) (*pb.RateLimitResponse, error) {
-	contextutils.LoggerFrom(ctx).Infow("rate limit request", zap.Any("req", req))
-
-	Expect(req.Descriptors).To(HaveLen(1))
-	Expect(req.Descriptors[0].Entries).To(HaveLen(1))
-
-	descriptorEntry := req.Descriptors[0].Entries[0]
-	Expect(descriptorEntry.GetKey()).To(Equal(s.descriptorKey))
-	Expect(descriptorEntry.GetValue()).To(Or(Equal(s.expectedMetadataValue), Equal(s.defaultDescriptorValue)))
-
-	if descriptorEntry.GetValue() == s.expectedMetadataValue {
-		return &pb.RateLimitResponse{
-			OverallCode: pb.RateLimitResponse_OVER_LIMIT,
-		}, nil
-	}
-
-	return &pb.RateLimitResponse{
-		OverallCode: pb.RateLimitResponse_OK,
-	}, nil
-}
-
-// Returns the actions that should be used to generate the descriptors expected by the server.
-func (s *timeBasedRateLimitServer) getActionsForServer() []*rltypes.RateLimitActions {
-	return []*rltypes.RateLimitActions{
-		{
-			Actions: []*rltypes.Action{
-				{
-					ActionSpecifier: &rltypes.Action_Metadata{
-						Metadata: &rltypes.Action_MetaData{
-							DescriptorKey: s.descriptorKey,
-							MetadataKey: &rltypes.Action_MetaData_MetadataKey{
-								Key: s.metadataKey,
-								Path: []*rltypes.Action_MetaData_MetadataKey_PathSegment{
-									{
-										Segment: &rltypes.Action_MetaData_MetadataKey_PathSegment_Key{
-											Key: s.pathSegmentKey,
-										},
-									},
-								},
-							},
-							DefaultValue: s.defaultDescriptorValue,
-							Source:       rltypes.Action_MetaData_ROUTE_ENTRY,
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 var _ = Describe("Rate Limit", func() {
 
 	var (
