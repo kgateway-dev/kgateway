@@ -2,6 +2,7 @@ package translator
 
 import (
 	"context"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -182,7 +183,7 @@ var _ = Describe("Translate", func() {
 																			},
 																		},
 																	},
-																	Weight: 0x00000064,
+																	Weight: &wrappers.UInt32Value{Value: 0x00000064},
 																},
 															},
 														},
@@ -231,7 +232,7 @@ var _ = Describe("Translate", func() {
 																			},
 																		},
 																	},
-																	Weight: 0x00000064,
+																	Weight: &wrappers.UInt32Value{Value: 0x00000064},
 																},
 															},
 														},
@@ -289,7 +290,7 @@ var _ = Describe("Translate", func() {
 																			},
 																		},
 																	},
-																	Weight: 0x00000064,
+																	Weight: &wrappers.UInt32Value{Value: 0x00000064},
 																},
 															},
 														},
