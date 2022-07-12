@@ -2,8 +2,9 @@ package create_test
 
 import (
 	"context"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"sort"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -69,7 +70,7 @@ var _ = Describe("UpstreamGroup", func() {
 						},
 					},
 				},
-				Weight: &wrappers.UInt32Value{Value: 1},
+				Weight: &wrappers.UInt32Value{Value: 3},
 			},
 		}
 	})
@@ -99,7 +100,7 @@ var _ = Describe("UpstreamGroup", func() {
 	})
 
 	Context("It works", func() {
-		It("should work", func() {
+		FIt("should work", func() {
 			err := testutils.Glooctl("create upstreamgroup test --namespace gloo-system --weighted-upstreams gloo-system.us1=1,gloo-system.us2=3")
 			Expect(err).NotTo(HaveOccurred())
 
