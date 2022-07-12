@@ -1,0 +1,6 @@
+CHANGELOG:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/2785
+    description: Add API options for enabling Envoy's X-RateLimit headers
+    resolvesIssue: false
+
