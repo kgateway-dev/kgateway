@@ -758,7 +758,8 @@ SCAN_BUCKET ?= solo-gloo-security-scans
 run-security-scan:
 	# Run security scan on gloo and solo-projects
 	# Generates scan files to _output/scans directory
-	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan
+	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo
+	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe
 
 .PHONY: publish-security-scan
 publish-security-scan:

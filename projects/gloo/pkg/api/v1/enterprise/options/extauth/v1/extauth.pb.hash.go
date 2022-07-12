@@ -744,6 +744,10 @@ func (m *RedisOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetTlsCertMountPath())); err != nil {
+		return 0, err
+	}
+
 	err = binary.Write(hasher, binary.LittleEndian, m.GetSocketType())
 	if err != nil {
 		return 0, err
