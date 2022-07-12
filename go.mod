@@ -113,8 +113,6 @@ require (
 	vbom.ml/util v0.0.0-20180919145318-efcd4e0f9787 // indirect
 )
 
-replace github.com/solo-io/solo-kit => /Users/samheilbron/go/src/github.com/solo-io/solo-kit
-
 replace (
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/apache/thrift => github.com/apache/thrift v0.14.0
