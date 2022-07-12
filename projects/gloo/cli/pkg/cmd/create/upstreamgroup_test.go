@@ -2,6 +2,7 @@ package create_test
 
 import (
 	"context"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"sort"
 
 	. "github.com/onsi/ginkgo"
@@ -57,7 +58,7 @@ var _ = Describe("UpstreamGroup", func() {
 						},
 					},
 				},
-				Weight: uint32(1),
+				Weight: &wrappers.UInt32Value{Value: 1},
 			},
 			{
 				Destination: &v1.Destination{
@@ -68,7 +69,7 @@ var _ = Describe("UpstreamGroup", func() {
 						},
 					},
 				},
-				Weight: uint32(3),
+				Weight: &wrappers.UInt32Value{Value: 1},
 			},
 		}
 	})
@@ -104,7 +105,7 @@ var _ = Describe("UpstreamGroup", func() {
 
 			ug := getUpstreamGroup("test")
 			sort.SliceStable(ug.Destinations, func(i, j int) bool {
-				return ug.Destinations[i].Weight < ug.Destinations[j].Weight
+				return ug.Destinations[i].Weight.GetValue() < ug.Destinations[j].Weight.GetValue()
 			})
 			Expect(ug.Destinations).To(Equal(expectedDest))
 		})
@@ -115,7 +116,7 @@ var _ = Describe("UpstreamGroup", func() {
 
 			ug := getUpstreamGroup("test")
 			sort.SliceStable(ug.Destinations, func(i, j int) bool {
-				return ug.Destinations[i].Weight < ug.Destinations[j].Weight
+				return ug.Destinations[i].Weight.GetValue() < ug.Destinations[j].Weight.GetValue()
 			})
 			Expect(ug.Destinations).To(Equal(expectedDest))
 		})
