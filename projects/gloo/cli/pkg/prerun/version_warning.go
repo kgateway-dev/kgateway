@@ -36,7 +36,7 @@ func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
 		nsToCheck = opts.Install.Gloo.Namespace
 	}
 
-	return WarnOnMismatch(opts.Top.Ctx, os.Args[0], versioncmd.NewKube(nsToCheck, ""), &defaultLogger{})
+	return WarnOnMismatch(opts.Top.Ctx, os.Args[0], versioncmd.NewKube(nsToCheck), &defaultLogger{})
 }
 
 // use this logger interface, so that in the unit test we can accumulate lines that were output

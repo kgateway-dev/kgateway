@@ -100,7 +100,7 @@ func (i *installer) installFromConfig(installerConfig *InstallerConfig) error {
 
 	preInstallMessage(installerConfig.InstallCliArgs, installerConfig.Mode)
 
-	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, installerConfig.InstallCliArgs.DryRun, "")
+	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, installerConfig.InstallCliArgs.DryRun)
 	if err != nil {
 		return err
 	}

@@ -245,7 +245,7 @@ func readValuesFile(filePath string) (map[string]interface{}, error) {
 }
 
 func buildRenderer(namespace string) (*action.Install, error) {
-	settings := install.NewCLISettings(namespace, "")
+	settings := install.NewCLISettings(namespace)
 	actionConfig := new(action.Configuration)
 	noOpDebugLog := func(format string, v ...interface{}) {}
 
