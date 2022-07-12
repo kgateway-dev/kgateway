@@ -294,7 +294,7 @@ var _ = Describe("Rate Limit", func() {
 			ConsistentlyNotRateLimited("host1", envoyPort)
 		})
 
-		FIt("should rate limit based on route metadata", func() {
+		It("should rate limit based on route metadata", func() {
 			rlService := &metadataCheckingRateLimitServer{
 				descriptorKey:          "md-desc",
 				defaultDescriptorValue: "default-value",
