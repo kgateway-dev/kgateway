@@ -91,7 +91,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 	}
 
 	reconcile := func() {
-		err := reconciler.ReconcileProxies(ctx, proxyToWrite, ns, map[string]string{})
+		err := reconciler.ReconcileProxies(ctx, proxyToWrite, ns, clients.ListOpts{Selector: map[string]string{}})
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	}
 

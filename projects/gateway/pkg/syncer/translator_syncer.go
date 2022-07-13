@@ -38,9 +38,30 @@ type translatorSyncer struct {
 	proxyReconciler    reconciler.ProxyReconciler
 	translator         translator.Translator
 	statusSyncer       statusSyncer
-	managedProxyLabels map[string]string
 	proxyStatusMaxSize string
 }
+
+var (
+	// labels used to uniquely identify Proxies that are managed by the Gloo controllers
+	proxyLabelsToWrite = map[string]string{
+		"created_by": "gloo-gateway-translator",
+	}
+
+	// Previously, proxies would be identified with:
+	//   created_by: gateway
+	// Now, proxies are identified with:
+	//   created_by: gloo-gateway-translator
+	//
+	// We need to ensure that users can successfully upgrade from versions
+	// where the previous labels were used, to versions with the new labels.
+	// Therefore, we watch Proxies with a superset of the old and new labels, and persist Proxies with new labels.
+	//
+	// This is only required for backwards compatibility.
+	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
+	proxyLabelSelectorOptions = clients.ListOpts{
+		ExpressionSelector: "created_by in (gloo-gateway-translator, gateway)",
+	}
+)
 
 func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator) v1.ApiSyncer {
 	t := &translatorSyncer{
@@ -50,9 +71,6 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
 		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter),
-		managedProxyLabels: map[string]string{
-			"created_by": "gateway",
-		},
 	}
 	go t.statusSyncer.watchProxies(ctx)
 	if pxStatusSizeEnv := os.Getenv("PROXY_STATUS_MAX_SIZE_BYTES"); pxStatusSizeEnv != "" {
@@ -104,7 +122,7 @@ func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1
 				}
 			}
 			logger.Infof("desired proxy %v", proxy.GetMetadata().Ref())
-			proxy.GetMetadata().Labels = s.managedProxyLabels
+			proxy.GetMetadata().Labels = proxyLabelsToWrite
 			desiredProxies[proxy] = reports
 		}
 	}
@@ -116,7 +134,7 @@ func (s *translatorSyncer) shouldCompresss(ctx context.Context) bool {
 }
 
 func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies) error {
-	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, s.managedProxyLabels); err != nil {
+	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, proxyLabelSelectorOptions); err != nil {
 		return err
 	}
 

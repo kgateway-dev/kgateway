@@ -28,6 +28,28 @@ type translatorSyncer struct {
 	customIngressClass string
 }
 
+var (
+	// labels used to uniquely identify Proxies that are managed by the Gloo controllers
+	proxyLabelsToWrite = map[string]string{
+		"created_by": "gloo-ingress",
+	}
+
+	// Previously, proxies would be identified with:
+	//   created_by: ingress
+	// Now, proxies are identified with:
+	//   created_by: gloo-ingress
+	//
+	// We need to ensure that users can successfully upgrade from versions
+	// where the previous labels were used, to versions with the new labels.
+	// Therefore, we watch Proxies with a superset of the old and new labels, and persist Proxies with new labels.
+	//
+	// This is only required for backwards compatibility.
+	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
+	proxyLabelSelectorOptions = clients.ListOpts{
+		ExpressionSelector: "created_by in (gloo-ingress, ingress)",
+	}
+)
+
 func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		writeNamespace:      writeNamespace,
@@ -58,20 +80,17 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 
 	proxy := translateProxy(ctx, s.writeNamespace, snap, s.requireIngressClass, s.customIngressClass)
 
-	labels := map[string]string{
-		"created_by": "ingress",
-	}
-
 	var desiredResources gloov1.ProxyList
 	if proxy != nil {
 		logger.Infof("creating proxy %v", proxy.GetMetadata().Ref())
-		proxy.GetMetadata().Labels = labels
+		proxy.GetMetadata().Labels = proxyLabelsToWrite
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
 	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, utils.TransitionFunction, clients.ListOpts{
-		Ctx:      ctx,
-		Selector: labels,
+		Ctx:                ctx,
+		Selector:           proxyLabelSelectorOptions.Selector,
+		ExpressionSelector: proxyLabelSelectorOptions.ExpressionSelector,
 	}); err != nil {
 		return err
 	}

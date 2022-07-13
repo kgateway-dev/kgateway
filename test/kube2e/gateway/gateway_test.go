@@ -188,6 +188,118 @@ var _ = Describe("Kube2e: gateway", func() {
 		cancel()
 	})
 
+	Context("Proxy reconciliation", func() {
+
+		var (
+			virtualService *gatewayv1.VirtualService
+		)
+
+		BeforeEach(func() {
+			// Create virtual service routing directly to the testrunner service
+			dest := &gloov1.Destination{
+				DestinationType: &gloov1.Destination_Kube{
+					Kube: &gloov1.KubernetesServiceDestination{
+						Ref: &core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      helper.TestrunnerName,
+						},
+						Port: uint32(helper.TestRunnerPort),
+					},
+				},
+			}
+			virtualService = getVirtualService(dest, nil)
+
+			_, err := virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			err := virtualServiceClient.Delete(
+				virtualService.GetMetadata().GetNamespace(),
+				virtualService.GetMetadata().GetName(),
+				clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		// This function parses a Proxy and determines how many routes are configured to point to the testrunner service
+		getRoutesToTestRunner := func(proxy *gloov1.Proxy) int {
+			routesToTestRunner := 0
+			for _, l := range proxy.Listeners {
+				for _, vh := range l.GetHttpListener().VirtualHosts {
+					for _, r := range vh.Routes {
+						if action := r.GetRouteAction(); action != nil {
+							if single := action.GetSingle(); single != nil {
+								if svcDest := single.GetKube(); svcDest != nil {
+									if svcDest.Ref.Name == helper.TestrunnerName &&
+										svcDest.Ref.Namespace == testHelper.InstallNamespace &&
+										svcDest.Port == uint32(helper.TestRunnerPort) {
+										routesToTestRunner += 1
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			return routesToTestRunner
+		}
+
+		It("should process proxy with deprecated label", func() {
+			// wait for the expected proxy configuration to be accepted
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				if err != nil {
+					return nil, err
+				}
+
+				expectedRoutesToTestRunner := 1 // we created a virtual service, with a single route to the testrunner service
+				actualRoutesToTestRunner := getRoutesToTestRunner(proxy)
+
+				if expectedRoutesToTestRunner != actualRoutesToTestRunner {
+					return nil, eris.Errorf("Expected %d routes to test runner service, but found %d", expectedRoutesToTestRunner, actualRoutesToTestRunner)
+				}
+				return proxy, nil
+			})
+
+			// modify the proxy to use the deprecated label
+			// this will simulate proxies that were persisted before the label change
+			proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			proxy.Metadata.Labels = map[string]string{
+				"created_by": "gateway",
+			}
+			_, err = proxyClient.Write(proxy, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			// modify the virtual service to trigger gateway reconciliation
+			// any modification will work, for simplicity we duplicate a route on the virtual host
+			vs, err := virtualServiceClient.Read(
+				virtualService.GetMetadata().GetNamespace(),
+				virtualService.GetMetadata().GetName(),
+				clients.ReadOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, vs.VirtualHost.Routes[0])
+			_, err = virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			// ensure that the changes from the virtual service are propagated to the proxy
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				if err != nil {
+					return nil, err
+				}
+
+				expectedRoutesToTestRunner := 2 // we duplicated the route to the testrunner service
+				actualRoutesToTestRunner := getRoutesToTestRunner(proxy)
+
+				if expectedRoutesToTestRunner != actualRoutesToTestRunner {
+					return nil, eris.Errorf("Expected %d routes to test runner service, but found %d", expectedRoutesToTestRunner, actualRoutesToTestRunner)
+				}
+				return proxy, nil
+			})
+		})
+	})
+
 	Context("tests with virtual service", func() {
 
 		AfterEach(func() {
