@@ -33,8 +33,7 @@ The gloo and discovery pods act as the control plane for Gloo Edge. The data pla
 
 The `gloo` deployment is responsible for:
 
-* Translating Proxy, Upstreams, UpstreamGroups, Secrets, AuthConfigs, ConfigMaps, and Endpoints into cached Envoy config
-* Translating Gateway, RouteTables, and Virtual Service Custom Resources into configuration and status on the Proxy CR
+* Translating Proxy, Upstreams, UpstreamGroups, Secrets, AuthConfigs, ConfigMaps, Endpoints, Gateway, RouteTables, and Virtual Service Custom Resources into cached Envoy config
 * Serving cached Envoy configurations via xDS
 * Validation webhooks hit the Gateway validation server to validate a configuration before application
 * Gloo Edge validation server is hit by the Gateway validation server to validate Proxy from Gloo Edge's point of view
