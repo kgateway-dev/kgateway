@@ -323,6 +323,8 @@ spec:
                                         socketType:
                                           type: string
                                           x-kubernetes-int-or-string: true
+                                        tlsCertMountPath:
+                                          type: string
                                       type: object
                                     preExpiryBuffer:
                                       type: string
