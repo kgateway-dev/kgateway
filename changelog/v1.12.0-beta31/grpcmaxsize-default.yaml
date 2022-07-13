@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6697
+    description: |
+      Fix bug where the validation server would get a max recieved message size of 0 instead of the gRPC default if
+      `validationServerGrpcMaxSizeBytes` was not set in the `Settings` CR
+    resolvesIssue: false
