@@ -2292,10 +2292,10 @@ var _ = Describe("Translator", func() {
 			expectedClusterName := weightedDestFiveWeight.Destination.GetUpstream().Name + "_" + weightedDestFiveWeight.Destination.GetUpstream().Namespace
 
 			//There is only one route with a weight of 5 so total weight for the cluster should be 5
-			Expect(clusterAction.WeightedClusters.TotalWeight.GetValue()).To(Equal(totalWeight))
+			Expect(clusterAction.WeightedClusters.TotalWeight.GetValue()).To(Equal(totalWeight.GetValue()))
 			clusters := clusterAction.WeightedClusters.Clusters
 			Expect(clusters).To(HaveLen(1))
-			Expect(clusters[0].Weight.GetValue()).To(Equal(totalWeight))
+			Expect(clusters[0].Weight.GetValue()).To(Equal(totalWeight.GetValue()))
 			Expect(clusters[0].Name).To(Equal(expectedClusterName))
 		})
 
