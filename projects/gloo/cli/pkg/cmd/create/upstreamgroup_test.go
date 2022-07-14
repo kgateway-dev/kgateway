@@ -100,7 +100,7 @@ var _ = Describe("UpstreamGroup", func() {
 	})
 
 	Context("It works", func() {
-		FIt("should work", func() {
+		It("should work", func() {
 			err := testutils.Glooctl("create upstreamgroup test --namespace gloo-system --weighted-upstreams gloo-system.us1=1,gloo-system.us2=3")
 			Expect(err).NotTo(HaveOccurred())
 
