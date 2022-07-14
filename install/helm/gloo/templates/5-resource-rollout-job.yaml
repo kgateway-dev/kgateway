@@ -43,7 +43,7 @@ spec:
             {{- $cr := include "gloo.customResources" . | indent 12 -}}
             {{- if contains "kind:" $cr -}}{{/* only render if not empty */}}
             # apply Gloo Edge custom resources
-            kubectl apply -f - <<EOF || exit $?
+            kubectl apply --server-side -f - <<EOF || exit $?
             {{- $cr -}}
             EOF
             {{- else }}

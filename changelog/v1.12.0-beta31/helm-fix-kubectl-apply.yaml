@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6732
+    resolvesIssue: false
+    description: |
+      Fix helm upgrade failure when resourceVersion exists in `kubectl.kubernetes.io/last-applied-configuration` annotation.
