@@ -88,7 +88,7 @@ require (
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
 	github.com/solo-io/solo-kit v0.24.6
-	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
+	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20220607211920-7e46f6622e26
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
@@ -141,6 +141,7 @@ replace (
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
+	github.com/solo-io/go-utils => github.com/solo-io/go-utils v0.21.24
 	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b
 
 	golang/x/text => golang/x/text v0.3.7
