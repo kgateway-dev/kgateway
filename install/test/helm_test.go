@@ -5450,7 +5450,7 @@ spec:
 				}
 				// skip all the content within kubectl apply commands (used in the rollout job)
 				// since there is extra whitespace that can't be removed
-				if strings.Contains(line, "kubectl apply -f - <<EOF") {
+				if strings.Contains(line, "kubectl apply --server-side -f - <<EOF") {
 					skip = true
 					continue
 				}
