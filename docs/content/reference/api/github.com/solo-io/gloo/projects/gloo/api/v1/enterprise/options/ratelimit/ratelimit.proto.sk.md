@@ -67,7 +67,7 @@ Basic rate-limiting API
 | `ratelimitServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
 | `denyOnFail` | `bool` |  |
-| `enableXRatelimitHeaders` | `bool` |  |
+| `enableXRatelimitHeaders` | `bool` | Set this to true to return Envoy's X-RateLimit headers to the downstream. reference docs here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ratelimit/v3/rate_limit.proto.html#envoy-v3-api-field-extensions-filters-http-ratelimit-v3-ratelimit-enable-x-ratelimit-headers. |
 | `rateLimitBeforeAuth` | `bool` | Set this is set to true if you would like to rate limit traffic before applying external auth to it. *Note*: When this is true, you will lose some features like being able to rate limit a request based on its auth state. |
 
 

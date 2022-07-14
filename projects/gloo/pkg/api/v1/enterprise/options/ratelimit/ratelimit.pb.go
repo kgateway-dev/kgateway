@@ -87,10 +87,12 @@ type Settings struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RatelimitServerRef      *core.ResourceRef  `protobuf:"bytes,1,opt,name=ratelimit_server_ref,json=ratelimitServerRef,proto3" json:"ratelimit_server_ref,omitempty"`
-	RequestTimeout          *duration.Duration `protobuf:"bytes,2,opt,name=request_timeout,json=requestTimeout,proto3" json:"request_timeout,omitempty"`
-	DenyOnFail              bool               `protobuf:"varint,3,opt,name=deny_on_fail,json=denyOnFail,proto3" json:"deny_on_fail,omitempty"`
-	EnableXRatelimitHeaders bool               `protobuf:"varint,4,opt,name=enable_x_ratelimit_headers,json=enableXRatelimitHeaders,proto3" json:"enable_x_ratelimit_headers,omitempty"`
+	RatelimitServerRef *core.ResourceRef  `protobuf:"bytes,1,opt,name=ratelimit_server_ref,json=ratelimitServerRef,proto3" json:"ratelimit_server_ref,omitempty"`
+	RequestTimeout     *duration.Duration `protobuf:"bytes,2,opt,name=request_timeout,json=requestTimeout,proto3" json:"request_timeout,omitempty"`
+	DenyOnFail         bool               `protobuf:"varint,3,opt,name=deny_on_fail,json=denyOnFail,proto3" json:"deny_on_fail,omitempty"`
+	// Set this to true to return Envoy's X-RateLimit headers to the downstream.
+	// reference docs here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ratelimit/v3/rate_limit.proto.html#envoy-v3-api-field-extensions-filters-http-ratelimit-v3-ratelimit-enable-x-ratelimit-headers
+	EnableXRatelimitHeaders bool `protobuf:"varint,4,opt,name=enable_x_ratelimit_headers,json=enableXRatelimitHeaders,proto3" json:"enable_x_ratelimit_headers,omitempty"`
 	// Set this is set to true if you would like to rate limit traffic before applying external auth to it.
 	// *Note*: When this is true, you will lose some features like being able to rate limit a request based on its auth state
 	RateLimitBeforeAuth bool `protobuf:"varint,9,opt,name=rate_limit_before_auth,json=rateLimitBeforeAuth,proto3" json:"rate_limit_before_auth,omitempty"`
