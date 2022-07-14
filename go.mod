@@ -19,6 +19,7 @@ require (
 	github.com/docker/cli v20.10.10+incompatible // indirect
 	github.com/docker/docker v20.10.3+incompatible // indirect
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e // indirect
+	github.com/emicklei/go-restful v2.16.0+incompatible // indirect
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210511190911-87d352569d55
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
 	github.com/fatih/color v1.10.0 // indirect
@@ -136,7 +137,7 @@ replace (
 	// to avoid error about it being used for two different module paths
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
 	github.com/docker/docker => github.com/moby/moby v20.10.14+incompatible
-	github.com/emicklei/go-restful => github.com/emicklei/go-restful/v3 v3.8.0
+	//github.com/emicklei/go-restful => github.com/emicklei/go-restful/v3 v3.8.0
 	github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
 	// skv2 uses a newer version than the imported solo-kit version which causes issues. Replaces the version with the solo-kit version
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0

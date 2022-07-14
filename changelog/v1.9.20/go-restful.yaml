@@ -1,0 +1,7 @@
+changelog:
+  - dependencyOwner: emicklei
+    dependencyRepo: go-restful
+    dependencyTag: v2.16.0
+    description: Trivy has this version listed as vulnerable but is awaiting NVD approval as per https://github.com/emicklei/go-restful/pull/503
+    issueLink: https://github.com/solo-io/gloo/issues/6714
+    type: DEPENDENCY_BUMP
