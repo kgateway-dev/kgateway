@@ -535,11 +535,13 @@ redis socket types
 
 
 ```yaml
+"keyPrefix": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `keyPrefix` | `string` | Prefix to append to cookie keys. |
 
 
 

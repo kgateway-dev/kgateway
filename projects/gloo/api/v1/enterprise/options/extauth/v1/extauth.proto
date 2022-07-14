@@ -331,6 +331,8 @@ message RedisOptions {
 
 message UserSession {
     message InternalSession {
+        // Prefix to append to cookie keys.
+        string key_prefix = 1;
     }
     message RedisSession {
         // Options to connect to redis
