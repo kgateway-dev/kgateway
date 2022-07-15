@@ -3,7 +3,11 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/6406
     resolvesIssue: false
     description: Ensure Proxies with deprecated `created_by` labels can be reconciled correctly.
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/issues/505
+    resolvesIssue: false
+    description: Unmarshalling resource specs allows unknown fields.
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: solo-kit
-    dependencyTag: v0.24.3
+    dependencyTag: v0.20.10
