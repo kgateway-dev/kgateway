@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -90,7 +91,7 @@ var _ = Describe("tunneling", func() {
 		// start http proxy and setup upstream that points to it
 		port := startHttpProxy(ctx)
 
-		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr())
+		tu := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
 
 		up = &gloov1.Upstream{
@@ -158,7 +159,7 @@ var _ = Describe("tunneling", func() {
 			defer res.Body.Close()
 			responseBody = p.String()
 			return nil
-		}, "10s", ".1s").Should(BeNil())
+		}, "1s", "0.8s").Should(BeNil())
 		return responseBody
 	}
 
@@ -206,6 +207,7 @@ var _ = Describe("tunneling", func() {
 			// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
 			// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
 			jsonStr := `{"value":"Hello, world!"}`
+			time.Sleep(time.Second * 5)
 			testReq := testRequest(jsonStr)
 			Expect(testReq).Should(ContainSubstring(jsonStr))
 		})
@@ -228,6 +230,22 @@ func startHttpProxy(ctx context.Context) int {
 	// 	Certificates: []tls.Certificate{clientCerts},
 	// 	RootCAs:      caCertPool,
 	// 	ClientCAs:    caCertPool,
+	// 	// MinVersion:   tls.VersionTLS11,
+	// 	// MaxVersion:   tls.VersionTLS11,
+	// }
+
+	// cert := []byte(gloohelpers.Certificate())
+	// key := []byte(gloohelpers.PrivateKey())
+	// cer, err := tls.X509KeyPair(cert, key)
+	// Expect(err).NotTo(HaveOccurred())
+
+	// tlsCfg := &tls.Config{
+	// 	GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	// 		// if cb != nil {
+	// 		// 	cb(chi)
+	// 		// }
+	// 		return &cer, nil
+	// 	},
 	// }
 
 	// listener, err := tls.Listen("tcp", ":0", tlsCfg)
@@ -244,9 +262,25 @@ func startHttpProxy(ctx context.Context) int {
 
 	fmt.Fprintln(GinkgoWriter, "go proxy addr", addr)
 
+	cstate := func(conn net.Conn, newState http.ConnState) {
+		switch newState {
+		case http.StateNew:
+			fmt.Fprintf(GinkgoWriter, "***** new state %s\n", "KDOROSH ******")
+		case http.StateClosed:
+			fmt.Fprintf(GinkgoWriter, "***** state closed %s\n", "KDOROSH ******")
+		case http.StateHijacked:
+			fmt.Fprintf(GinkgoWriter, "***** state hijacked %s\n", "KDOROSH ******")
+		case http.StateActive:
+			fmt.Fprintf(GinkgoWriter, "***** state active %s\n", "KDOROSH ******")
+		case http.StateIdle:
+			fmt.Fprintf(GinkgoWriter, "***** state idle %s\n", "KDOROSH ******")
+		}
+	}
+
 	go func() {
 		defer GinkgoRecover()
-		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy)} //, TLSConfig: tlsCfg}
+		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy), ConnState: cstate} //, TLSConfig: tlsCfg}
+		// tlsListener := tls.NewListener(listener, tlsCfg)
 		server.Serve(listener)
 		<-ctx.Done()
 		server.Close()
@@ -255,12 +289,62 @@ func startHttpProxy(ctx context.Context) int {
 	return port
 }
 
+func isEof(r *bufio.Reader) bool {
+	_, err := r.Peek(1)
+	if err == io.EOF {
+		return true
+	}
+	return false
+}
+
 func connectProxy(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(GinkgoWriter, "Accepting CONNECT to %s\n", "KDOROSH")
+	fmt.Fprintf(GinkgoWriter, "***** Accepting CONNECT to %s\n", "KDOROSH ******")
 	if r.Method != "CONNECT" {
 		http.Error(w, "not connect", 400)
 		return
 	}
+
+	// w.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	// w.Write([]byte("kdorosh manual\r\n\r\n"))
+
+	if r.TLS != nil {
+		fmt.Fprintf(GinkgoWriter, "***** handshake complete %v\n", r.TLS.HandshakeComplete)
+		fmt.Fprintf(GinkgoWriter, "***** tls version %v\n", r.TLS.Version)
+		fmt.Fprintf(GinkgoWriter, "***** cipher suite %v\n", r.TLS.CipherSuite)
+		fmt.Fprintf(GinkgoWriter, "***** negotiated protocol %v\n", r.TLS.NegotiatedProtocol)
+	}
+	fmt.Fprintf(GinkgoWriter, "***** entire tls %v\n", r.TLS)
+
+	// seems to be empty regardless...
+	// var body string
+	// if r.Body != nil {
+	// 	if data, err := ioutil.ReadAll(r.Body); err == nil {
+	// 		body = string(data)
+	// 	}
+	// 	defer r.Body.Close()
+	// }
+
+	// hij, ok := w.(http.Hijacker)
+	// if !ok {
+	// 	Fail("no hijacker")
+	// }
+	// conn, buf, err := hij.Hijack()
+	// if err != nil {
+	// 	Expect(err).ToNot(HaveOccurred())
+	// }
+	// defer conn.Close()
+
+	// ioutil.ReadAll(buf.Reader)
+	// // ioutil.ReadAll(buf.Writer)
+
+	// for !isEof(buf.Reader) {
+	// 	fmt.Fprintf(GinkgoWriter, "***** waiting for reader to be done %s\n", "KDOROSH ******")
+	// }
+
+	// conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	// conn.Write([]byte("kdorosh manual2\r\n\r\n"))
+	// fmt.Fprintf(GinkgoWriter, "***** Done writing CONNECT to %s\n", "KDOROSH ******")
+	// return
 
 	hij, ok := w.(http.Hijacker)
 	if !ok {
@@ -269,19 +353,21 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 	host := r.URL.Host
 
 	// clientCerts, err := tls.X509KeyPair([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
-	// Expect(err).NotTo(HaveOccurred())
+	// Expect(err).ToNot(HaveOccurred())
 
 	// caCertPool := x509.NewCertPool()
 	// ok = caCertPool.AppendCertsFromPEM([]byte(gloohelpers.Certificate())) // in prod this would not be the client cert
 	// if !ok {
 	// 	Fail("unable to append ca certs to cert pool")
 	// }
-	// targetConn, err := tls.Dial("tcp", host, &tls.Config{
+	// tlsCfg := &tls.Config{
 	// 	Certificates: []tls.Certificate{clientCerts},
 	// 	RootCAs:      caCertPool,
 	// 	ClientCAs:    caCertPool,
-	// })
+	// }
+
 	targetConn, err := net.Dial("tcp", host)
+	// targetConn, err := tls.Dial("tcp", host, tlsCfg)
 	if err != nil {
 		http.Error(w, "can't connect", 500)
 		return
@@ -293,6 +379,13 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	// tlsConn, ok := conn.(*tls.Conn)
+	// if !ok {
+	// 	Fail("connection was not a tls connection")
+	// }
+	// // need to call so peer certs are present
+	// err = tlsConn.Handshake()
+
 	fmt.Fprintf(GinkgoWriter, "Accepting CONNECT to %s\n", host)
 	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 
@@ -301,15 +394,22 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 	wg.Add(2)
 
 	go func() {
-		io.Copy(buf, targetConn)
-		buf.Flush()
+		defer GinkgoRecover()
+		numBytes, err := io.Copy(buf, targetConn)
+		Expect(err).NotTo(HaveOccurred())
+		fmt.Fprintf(GinkgoWriter, "***** copied %v bytes from targetConn to buf *****\n", numBytes)
+		err = buf.Flush()
+		Expect(err).NotTo(HaveOccurred())
 		wg.Done()
 	}()
 	go func() {
-		io.Copy(targetConn, buf)
+		defer GinkgoRecover()
+		numBytes, err := io.Copy(targetConn, buf)
+		Expect(err).NotTo(HaveOccurred())
+		fmt.Fprintf(GinkgoWriter, "***** copied %v bytes from buf to targetConn *****\n", numBytes)
 		wg.Done()
 	}()
 
 	wg.Wait()
-	fmt.Fprintf(GinkgoWriter, "done proxying\n")
+	fmt.Fprintf(GinkgoWriter, "***** done proxying *****\n")
 }

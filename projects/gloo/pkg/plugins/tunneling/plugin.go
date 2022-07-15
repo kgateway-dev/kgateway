@@ -88,7 +88,8 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
 					for _, inCluster := range inClusters {
 						if inCluster.GetName() == cluster {
-							originalTransportSocket = inCluster.GetTransportSocket()
+							tmp := *inCluster.GetTransportSocket()
+							originalTransportSocket = &tmp
 							// we copy the transport socket to the generated cluster.
 							// the generated cluster will use upstream TLS context to leverage TLS origination;
 							// when we encapsulate in HTTP Connect the tcp data being proxied will
@@ -130,7 +131,6 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 							break
 						}
 					}
-
 					generatedClusters = append(generatedClusters, generateSelfCluster(selfCluster, selfPipe, originalTransportSocket))
 					generatedListeners = append(generatedListeners, generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname))
 				}
@@ -152,9 +152,9 @@ func generateSelfCluster(selfCluster, selfPipe string, originalTransportSocket *
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
 			Type: envoy_config_cluster_v3.Cluster_STATIC,
 		},
-		ConnectTimeout:  &duration.Duration{Seconds: 5},
-		Name:            selfCluster,
-		TransportSocket: originalTransportSocket,
+		ConnectTimeout: &duration.Duration{Seconds: 5},
+		Name:           selfCluster,
+		// TransportSocket: originalTransportSocket,
 		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: selfCluster,
 			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
