@@ -99,7 +99,6 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20211117180635-dee7805ff2e1 // indirect
 	golang.org/x/tools v0.1.11
 	google.golang.org/genproto v0.0.0-20210312152112-fc591d9ea70f
 	google.golang.org/grpc v1.36.0
@@ -143,6 +142,7 @@ replace (
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
+	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b
 	golang/x/text => golang/x/text v0.3.7
 
 	// kube 0.19: redirects needed for most k8s.io dependencies because
