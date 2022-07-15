@@ -118,7 +118,11 @@ func ModifyPerFilterConfig(
 		return nil
 	}
 
-	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.GetDestination()).Name())
+	err = errors.New("unexpected destination type that is nil")
+	destination := inAction.GetDestination()
+	if destination != nil {
+		err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(destination).Name())
+	}
 	logger := contextutils.LoggerFrom(ctx)
 	logger.DPanic("error: %v", err)
 	return err
