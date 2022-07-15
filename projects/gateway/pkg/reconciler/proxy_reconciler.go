@@ -52,7 +52,6 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 		return allProxies[i].GetMetadata().Less(allProxies[j].GetMetadata())
 	})
 
-
 	proxyTransitionFunction := transitionFunc(proxiesToWrite)
 	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, proxyTransitionFunction, clients.ListOpts{
 		Ctx:                ctx,
