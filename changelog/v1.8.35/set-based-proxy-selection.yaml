@@ -10,4 +10,4 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: solo-kit
-    dependencyTag: v0.20.10
+    dependencyTag: v0.20.11
