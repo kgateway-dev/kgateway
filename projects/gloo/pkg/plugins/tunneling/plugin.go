@@ -7,10 +7,14 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/duration"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var (
@@ -89,8 +93,40 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 							// the generated cluster will use upstream TLS context to leverage TLS origination;
 							// when we encapsulate in HTTP Connect the tcp data being proxied will
 							// be encrypted (thus we don't need the original transport socket metadata here)
-							inCluster.TransportSocket = nil
-							inCluster.TransportSocketMatches = nil
+
+							secret := &v1.Secret{
+								Metadata: &core.Metadata{
+									Name:      "secret",
+									Namespace: "default",
+								},
+								Kind: &v1.Secret_Tls{
+									Tls: &v1.TlsSecret{
+										CertChain:  helpers.Certificate(),
+										PrivateKey: helpers.PrivateKey(),
+										RootCa:     helpers.Certificate(),
+									},
+								},
+							}
+							secrets := &v1.SecretList{secret}
+
+							sslConfig := &v1.UpstreamSslConfig{
+								SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+									SecretRef: &core.ResourceRef{Name: "secret", Namespace: "default"},
+								},
+							}
+							cfg, err := utils.NewSslConfigTranslator().ResolveUpstreamSslConfig(*secrets, sslConfig)
+							if err != nil {
+								// return what we have so far, so that any modified input resources can still route
+								// successfully to their generated targets
+								return generatedClusters, nil, nil, generatedListeners, nil
+							}
+
+							inCluster.TransportSocket = &envoy_config_core_v3.TransportSocket{
+								Name:       wellknown.TransportSocketTls,
+								ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
+							}
+							inCluster.TransportSocket = nil        // TODO(kdorosh)
+							inCluster.TransportSocketMatches = nil // TODO(kdorosh)
 							break
 						}
 					}

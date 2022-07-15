@@ -40,7 +40,7 @@ var _ = Describe("tunneling", func() {
 		envoyInstance *services.EnvoyInstance
 		up            *gloov1.Upstream
 		tuPort        uint32
-		sslPort       uint32
+		// sslPort       uint32
 
 		writeNamespace = defaults.GlooSystem
 	)
@@ -90,7 +90,7 @@ var _ = Describe("tunneling", func() {
 		// start http proxy and setup upstream that points to it
 		port := startHttpProxy(ctx)
 
-		tu := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr())
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
 
 		up = &gloov1.Upstream{
@@ -197,12 +197,12 @@ var _ = Describe("tunneling", func() {
 					SecretRef: &core.ResourceRef{Name: "secret", Namespace: "default"},
 				},
 			}
-			sslPort = v1helpers.StartSslProxy(ctx, tuPort)
-			up.HttpProxyHostname = &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), sslPort)} // enable HTTP tunneling,
+			// sslPort = v1helpers.StartSslProxy(ctx, tuPort)
+			up.HttpProxyHostname = &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tuPort)} // enable HTTP tunneling,
 		})
 
-		It("should proxy HTTPS", func() {
-			// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> local SSL proxy -> test upstream
+		FIt("should proxy HTTPS", func() {
+			// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test TLS upstream
 			// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
 			// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
 			jsonStr := `{"value":"Hello, world!"}`
@@ -214,6 +214,23 @@ var _ = Describe("tunneling", func() {
 })
 
 func startHttpProxy(ctx context.Context) int {
+
+	// clientCerts, err := tls.X509KeyPair([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
+	// Expect(err).ToNot(HaveOccurred())
+
+	// caCertPool := x509.NewCertPool()
+	// ok := caCertPool.AppendCertsFromPEM([]byte(gloohelpers.Certificate())) // in prod this would not be the client cert
+	// if !ok {
+	// 	Fail("unable to append ca certs to cert pool")
+	// }
+
+	// tlsCfg := &tls.Config{
+	// 	Certificates: []tls.Certificate{clientCerts},
+	// 	RootCAs:      caCertPool,
+	// 	ClientCAs:    caCertPool,
+	// }
+
+	// listener, err := tls.Listen("tcp", ":0", tlsCfg)
 
 	listener, err := net.Listen("tcp", ":0")
 	Expect(err).ToNot(HaveOccurred())
@@ -229,7 +246,7 @@ func startHttpProxy(ctx context.Context) int {
 
 	go func() {
 		defer GinkgoRecover()
-		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy)}
+		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy)} //, TLSConfig: tlsCfg}
 		server.Serve(listener)
 		<-ctx.Done()
 		server.Close()
@@ -239,6 +256,7 @@ func startHttpProxy(ctx context.Context) int {
 }
 
 func connectProxy(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(GinkgoWriter, "Accepting CONNECT to %s\n", "KDOROSH")
 	if r.Method != "CONNECT" {
 		http.Error(w, "not connect", 400)
 		return
@@ -249,6 +267,20 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 		Fail("no hijacker")
 	}
 	host := r.URL.Host
+
+	// clientCerts, err := tls.X509KeyPair([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
+	// Expect(err).NotTo(HaveOccurred())
+
+	// caCertPool := x509.NewCertPool()
+	// ok = caCertPool.AppendCertsFromPEM([]byte(gloohelpers.Certificate())) // in prod this would not be the client cert
+	// if !ok {
+	// 	Fail("unable to append ca certs to cert pool")
+	// }
+	// targetConn, err := tls.Dial("tcp", host, &tls.Config{
+	// 	Certificates: []tls.Certificate{clientCerts},
+	// 	RootCAs:      caCertPool,
+	// 	ClientCAs:    caCertPool,
+	// })
 	targetConn, err := net.Dial("tcp", host)
 	if err != nil {
 		http.Error(w, "can't connect", 500)

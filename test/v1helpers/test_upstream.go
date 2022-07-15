@@ -43,6 +43,11 @@ func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
+func NewTestHttpUpstreamWithTls(ctx context.Context, addr string) *TestUpstream {
+	backendPort, responses := runTestServer(ctx, "", true)
+	return newTestUpstream(addr, []uint32{backendPort}, responses)
+}
+
 func NewTestHttpUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
 	backendPort, responses := runTestServer(ctx, reply, false)
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
