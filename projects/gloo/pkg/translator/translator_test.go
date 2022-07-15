@@ -2339,7 +2339,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		//Negative Tests
-		It("Should report an error when total weight is 0 - nil and 0 weights passed", func() {
+		FIt("Should report an error when total weight is 0 - nil and 0 weights passed", func() {
 			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteWithNoWeightPassedDest}
 			_, errs, _, err := translator.Translate(params, proxy)
 			Expect(err).To(BeNil())

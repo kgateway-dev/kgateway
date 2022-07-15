@@ -429,11 +429,17 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 			return err
 		}
 
+		//Cluster weight can be nil so check if end user did not pass a weight for destination and set the default weight of 0
+		var clusterWeight uint32
+		if weightedDest.GetWeight() != nil {
+			clusterWeight = weightedDest.GetWeight().GetValue()
+		}
+
 		totalWeight += weightedDest.GetWeight().GetValue()
 
 		weightedCluster := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 			Name:          UpstreamToClusterName(usRef),
-			Weight:        weightedDest.GetWeight(),
+			Weight:        &wrappers.UInt32Value{Value: clusterWeight},
 			MetadataMatch: getSubsetMatch(weightedDest.GetDestination()),
 		}
 
