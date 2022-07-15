@@ -26,7 +26,7 @@ require (
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/frankban/quicktest v1.8.1 // indirect
-	github.com/fsnotify/fsnotify v1.4.9
+	github.com/fsnotify/fsnotify v1.5.3
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.6
@@ -65,7 +65,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/moby/term v0.0.0-20200915141129-7f0af18e79f2 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
-	github.com/onsi/ginkgo v1.14.2
+	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.10.5
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
@@ -81,7 +81,7 @@ require (
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/solo-io/anyvendor v0.0.4 // indirect
 	github.com/solo-io/go-list-licenses v0.1.0
-	github.com/solo-io/go-utils v0.21.24
+	github.com/solo-io/go-utils v0.21.25
 	github.com/solo-io/k8s-utils v0.1.0
 	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/protoc-gen-openapi v0.0.1
@@ -142,7 +142,6 @@ replace (
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 => golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b
 	golang/x/text => golang/x/text v0.3.7
 
 	// kube 0.19: redirects needed for most k8s.io dependencies because
