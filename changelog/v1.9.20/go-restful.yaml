@@ -5,9 +5,4 @@ changelog:
     dependencyRepo: go-restful
     dependencyTag: v2.16.0
     issueLink: https://github.com/solo-io/gloo/issues/6714
-  - type: DEPENDENCY_BUMP
-    description: Updated go to 1.18.0
-    dependencyOwner: golang
-    dependencyRepo: go
-    dependencyTag: v1.18.0
 

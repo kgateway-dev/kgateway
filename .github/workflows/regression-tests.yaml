@@ -37,10 +37,10 @@ jobs:
 
         echo "After clearing disk space:"
         df -h
-    - name: Set up Go 1.18.0
+    - name: Set up Go 1.16.3
       uses: actions/setup-go@v2
       with:
-        go-version: 1.18.0
+        go-version: 1.16.3
       id: go
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
@@ -60,7 +60,7 @@ jobs:
     - uses: azure/setup-kubectl@v1
       id: kubectl
       with:
-        version: 'v1.18.0'
+        version: 'v1.16.3'
     - uses: azure/setup-helm@v1
       with:
         version: v3.2.0
