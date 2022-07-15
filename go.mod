@@ -19,6 +19,7 @@ require (
 	github.com/docker/cli v20.10.10+incompatible // indirect
 	github.com/docker/docker v20.10.3+incompatible // indirect
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e // indirect
+	github.com/emicklei/go-restful v2.16.0+incompatible // indirect
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210511190911-87d352569d55
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
 	github.com/fatih/color v1.10.0 // indirect
