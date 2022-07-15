@@ -875,7 +875,11 @@ func (m *WeightedDestination) Clone() proto.Message {
 		target.Destination = proto.Clone(m.GetDestination()).(*Destination)
 	}
 
-	target.Weight = m.GetWeight()
+	if h, ok := interface{}(m.GetWeight()).(clone.Cloner); ok {
+		target.Weight = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.Weight = proto.Clone(m.GetWeight()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
 		target.Options = h.Clone().(*WeightedDestinationOptions)

@@ -3228,7 +3228,9 @@ spec:
                                                       type: object
                                                   type: object
                                                 weight:
-                                                  format: int32
+                                                  maximum: 4294967295
+                                                  minimum: 0
+                                                  nullable: true
                                                   type: integer
                                               type: object
                                             type: array
@@ -4784,7 +4786,9 @@ spec:
                                             type: object
                                         type: object
                                       weight:
-                                        format: int32
+                                        maximum: 4294967295
+                                        minimum: 0
+                                        nullable: true
                                         type: integer
                                     type: object
                                   type: array

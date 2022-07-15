@@ -52,7 +52,7 @@ var _ = Describe("Plugin", func() {
 			ns = "one"
 			wd = []*v1.WeightedDestination{
 				{
-					Weight: 5,
+					Weight: &wrappers.UInt32Value{Value: 5},
 					Destination: &v1.Destination{
 						DestinationType: &v1.Destination_Upstream{
 							Upstream: &core.ResourceRef{
@@ -63,7 +63,7 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 				{
-					Weight: 1,
+					Weight: &wrappers.UInt32Value{Value: 1},
 					Destination: &v1.Destination{
 						DestinationType: &v1.Destination_Upstream{
 							Upstream: &core.ResourceRef{

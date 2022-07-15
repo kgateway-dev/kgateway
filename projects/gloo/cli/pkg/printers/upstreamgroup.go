@@ -65,7 +65,7 @@ func getAggregateUpstreamGroupStatus(res resources.InputResource) string {
 func totalWeight(ug *v1.UpstreamGroup) uint32 {
 	weight := uint32(0)
 	for _, us := range ug.GetDestinations() {
-		weight += us.GetWeight()
+		weight += us.GetWeight().GetValue()
 	}
 	return weight
 }
@@ -102,7 +102,7 @@ func upstreamGroupDetails(ug *v1.UpstreamGroup) []string {
 			add(fmt.Sprintf("subset: %v", us.GetDestination().GetSubset().GetValues()))
 		}
 
-		add(fmt.Sprintf("weight: %v   %% total: %.2f", us.GetWeight(), float32(us.GetWeight())/float32(totalWeight)))
+		add(fmt.Sprintf("weight: %v   %% total: %.2f", us.GetWeight(), float32(us.GetWeight().GetValue())/float32(totalWeight)))
 	}
 	return details
 }

@@ -1961,7 +1961,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				},
 				Destinations: []*gloov1.WeightedDestination{
 					{
-						Weight: 1,
+						Weight: &wrappers.UInt32Value{Value: 1},
 						Destination: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
 								Upstream: upstreamRef,
@@ -1972,7 +1972,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						},
 					},
 					{
-						Weight: 1,
+						Weight: &wrappers.UInt32Value{Value: 1},
 						Destination: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
 								Upstream: upstreamRef,
@@ -1983,7 +1983,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						},
 					},
 					{
-						Weight: 1,
+						Weight: &wrappers.UInt32Value{Value: 1},
 						Destination: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
 								Upstream: upstreamRef,
