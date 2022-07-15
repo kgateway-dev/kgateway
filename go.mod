@@ -1,6 +1,6 @@
 module github.com/solo-io/gloo
 
-go 1.16
+go 1.18
 
 require (
 	github.com/Masterminds/semver v1.5.0 // indirect
@@ -97,10 +97,9 @@ require (
 	go.opencensus.io v0.23.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
+	golang.org/x/mod v0.4.2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20211117180635-dee7805ff2e1 // indirect
-	golang.org/x/tools v0.1.11
+	golang.org/x/tools v0.1.5
 	google.golang.org/genproto v0.0.0-20210312152112-fc591d9ea70f
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.27.1

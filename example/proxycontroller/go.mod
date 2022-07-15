@@ -1,6 +1,6 @@
 module proxycontroller
 
-go 1.16
+go 1.18
 
 require (
        github.com/solo-io/gloo v1.6.0-beta16

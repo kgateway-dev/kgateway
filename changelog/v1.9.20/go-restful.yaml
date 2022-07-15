@@ -1,7 +1,13 @@
 changelog:
-  - dependencyOwner: emicklei
+  - type: DEPENDENCY_BUMP
+    description: Trivy has this version listed as vulnerable but is awaiting NVD approval as per https://github.com/emicklei/go-restful/pull/503
+    dependencyOwner: emicklei
     dependencyRepo: go-restful
     dependencyTag: v2.16.0
-    description: Trivy has this version listed as vulnerable but is awaiting NVD approval as per https://github.com/emicklei/go-restful/pull/503
     issueLink: https://github.com/solo-io/gloo/issues/6714
-    type: DEPENDENCY_BUMP
+  - type: DEPENDENCY_BUMP
+    description: Updated go to 1.18.0
+    dependencyOwner: golang
+    dependencyRepo: go
+    dependencyTag: v1.18.0
+
