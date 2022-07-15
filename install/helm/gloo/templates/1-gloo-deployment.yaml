@@ -94,7 +94,7 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
-{{- if .Values.gloo.deployment.livenessProbeEnabled }}
+{{- if or .Values.gloo.deployment.livenessProbeEnabled .Values.gateway.deployment.livenessProbeEnabled}}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}

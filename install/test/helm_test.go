@@ -3256,28 +3256,45 @@ spec:
 
 				Context("gateway validation resources", func() {
 					It("creates a service for the gateway validation port", func() {
-						gwService := makeUnstructured(`
+						glooService := makeUnstructured(`
+---
+# Source: gloo/templates/2-gloo-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
- labels:
-   discovery.solo.io/function_discovery: disabled
-   app: gloo
-   gloo: gateway
- name: gateway
- namespace: ` + namespace + `
+  labels:
+    app: gloo
+    gloo: gloo
+  name: gloo
+  namespace: ` + namespace + `
 spec:
- ports:
- - name: https
-   port: 443
-   protocol: TCP
-   targetPort: 8443
- selector:
-   gloo: gateway
+  ports:
+  - name: grpc-xds
+    port: 9977
+    protocol: TCP
+  - name: rest-xds
+    port: 9976
+    protocol: TCP
+  - name: grpc-validation
+    port: 9988
+    protocol: TCP
+  - name: grpc-proxydebug
+    port: 9966
+    protocol: TCP
+  - name: wasm-cache
+    port: 9979
+    protocol: TCP
+  - name: https
+    port: 443
+    protocol: TCP
+    # this should map to projects/gateway/pkg/defaults.ValidationWebhookBindPort
+    targetPort: 8443
+  selector:
+    gloo: gloo
 `)
 
 						prepareMakefile(namespace, helmValues{})
-						testManifest.ExpectUnstructured(gwService.GetKind(), gwService.GetNamespace(), gwService.GetName()).To(BeEquivalentTo(gwService))
+						testManifest.ExpectUnstructured(glooService.GetKind(), glooService.GetNamespace(), glooService.GetName()).To(BeEquivalentTo(glooService))
 
 					})
 
@@ -3607,43 +3624,44 @@ webhooks:
 						testManifest.ExpectUnstructured(vwc.GetKind(), vwc.GetNamespace(), vwc.GetName()).To(BeEquivalentTo(vwc))
 					})
 
-					It("adds the validation port and mounts the certgen secret to the gateway deployment", func() {
+					It("adds the validation port and mounts the certgen secret to the gloo deployment", func() {
+						glooDeployment := makeUnstructured(`
+# Source: gloo/templates/1-gloo-deployment.yaml
 
-						gwDeployment := makeUnstructured(`
-# Source: gloo/templates/5-gateway-deployment.yaml
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: gloo
-    gloo: gateway
-  name: gateway
-  namespace: ` + namespace + `
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
-      gloo: gateway
+      gloo: gloo
   template:
     metadata:
       labels:
-        gloo: gateway
+        gloo: gloo
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
     spec:
-      serviceAccountName: gateway
+      serviceAccountName: gloo
+      volumes:
+      - name: labels-volume
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+      - name: validation-certs
+        secret:
+          secretName: gateway-validation-certs
+          defaultMode: 420
       containers:
-      - image: quay.io/solo-io/gateway:` + version + `
+      - image: quay.io/solo-io/gloo:` + version + `
         imagePullPolicy: IfNotPresent
-        name: gateway
-        ports:
-          - containerPort: 8443
-            name: https
-            protocol: TCP
-
+        name: gloo
+        resources:
+          requests:
+            cpu: 500m
+            memory: 256Mi
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -3652,6 +3670,28 @@ spec:
           capabilities:
             drop:
             - ALL
+        ports:
+        - containerPort: 9977
+          name: grpc-xds
+          protocol: TCP
+        - containerPort: 9976
+          protocol: TCP
+          name: rest-xds
+        - containerPort: 9988
+          name: grpc-validation
+          protocol: TCP
+        - containerPort: 9966
+          name: grpc-proxydebug
+          protocol: TCP
+        - containerPort: 9979
+          name: wasm-cache
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /etc/gateway/validation-certs
+          name: validation-certs
+        - name: labels-volume
+          mountPath: /etc/gloo
+          readOnly: true
         env:
           - name: POD_NAMESPACE
             valueFrom:
@@ -3661,33 +3701,30 @@ spec:
             value: "true"
           - name: VALIDATION_MUST_START
             value: "true"
+        readinessProbe:
+          tcpSocket:
+            port: 9977
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
         volumeMounts:
           - mountPath: /etc/gateway/validation-certs
             name: validation-certs
-        readinessProbe:
-          tcpSocket:
-            port: 8443
-          initialDelaySeconds: 3
-          periodSeconds: 10
-          failureThreshold: 3
-        livenessProbe:
-          tcpSocket:
-            port: 8443
-          initialDelaySeconds: 3
-          periodSeconds: 10
-          failureThreshold: 3
-      volumes:
-        - name: validation-certs
-          secret:
-            defaultMode: 420
-            secretName: gateway-validation-certs
-`)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo
+  name: gloo
+  namespace: ` + namespace)
+
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gateway.validation.livenessProbeEnabled=true",
 							},
 						})
-						testManifest.ExpectUnstructured(gwDeployment.GetKind(), gwDeployment.GetNamespace(), gwDeployment.GetName()).To(BeEquivalentTo(gwDeployment))
+						testManifest.ExpectUnstructured(glooDeployment.GetKind(), glooDeployment.GetNamespace(), glooDeployment.GetName()).To(BeEquivalentTo(glooDeployment))
 					})
 
 					Context("custom resource lifecycle", func() {
@@ -5035,7 +5072,6 @@ metadata:
 					Entry("2-gloo-service-account", "gloo.serviceAccount.kubeResourceOverride"),
 					Entry("3-discovery-deployment", "discovery.deployment.kubeResourceOverride"),
 					Entry("3-discovery-service-account", "discovery.serviceAccount.kubeResourceOverride"),
-					Entry("5-gateway-deployment", "gateway.deployment.kubeResourceOverride"),
 					Entry("5-gateway-service-account", "gateway.serviceAccount.kubeResourceOverride"),
 					Entry("5-gateway-validation-webhook-configuration", "gateway.validation.webhook.kubeResourceOverride"),
 					Entry("6-access-logger-deployment", "accessLogger.deployment.kubeResourceOverride", "accessLogger.enabled=true"),
