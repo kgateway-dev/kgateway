@@ -1421,7 +1421,7 @@ var _ = Describe("Translator", func() {
 				},
 				Destinations: []*v1.WeightedDestination{
 					{
-						Weight: 1,
+						Weight: &wrappers.UInt32Value{Value: 1},
 						Destination: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: upstream.Metadata.Ref(),
@@ -1429,7 +1429,7 @@ var _ = Describe("Translator", func() {
 						},
 					},
 					{
-						Weight: 1,
+						Weight: &wrappers.UInt32Value{Value: 1},
 						Destination: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: upstream2.Metadata.Ref(),
@@ -2292,10 +2292,10 @@ var _ = Describe("Translator", func() {
 			expectedClusterName := weightedDestFiveWeight.Destination.GetUpstream().Name + "_" + weightedDestFiveWeight.Destination.GetUpstream().Namespace
 
 			//There is only one route with a weight of 5 so total weight for the cluster should be 5
-			Expect(clusterAction.WeightedClusters.TotalWeight.GetValue()).To(Equal(totalWeight))
+			Expect(clusterAction.WeightedClusters.TotalWeight.GetValue()).To(Equal(totalWeight.GetValue()))
 			clusters := clusterAction.WeightedClusters.Clusters
 			Expect(clusters).To(HaveLen(1))
-			Expect(clusters[0].Weight.GetValue()).To(Equal(totalWeight))
+			Expect(clusters[0].Weight.GetValue()).To(Equal(totalWeight.GetValue()))
 			Expect(clusters[0].Name).To(Equal(expectedClusterName))
 		})
 
@@ -2319,7 +2319,7 @@ var _ = Describe("Translator", func() {
 			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoy_config_route_v3.RouteAction_WeightedClusters)
 			Expect(ok).To(BeTrue())
 
-			totalWeight := weightedDestFiveWeight.Weight + weightedDestZeroWeight.Weight
+			totalWeight := weightedDestFiveWeight.Weight.GetValue() + weightedDestZeroWeight.Weight.GetValue()
 			clusterNameFiveWeight := weightedDestFiveWeight.Destination.GetUpstream().Name + "_" + weightedDestFiveWeight.Destination.GetUpstream().Namespace
 			clusterNameZeroWeight := weightedDestZeroWeight.Destination.GetUpstream().Name + "_" + weightedDestZeroWeight.Destination.GetUpstream().Namespace
 
@@ -3354,7 +3354,7 @@ var _ = Describe("Translator", func() {
 							Multi: &v1.MultiDestination{
 								Destinations: []*v1.WeightedDestination{
 									{
-										Weight: 1,
+										Weight: &wrappers.UInt32Value{Value: 1},
 										Destination: &v1.Destination{
 											DestinationType: &v1.Destination_Upstream{
 												Upstream: &core.ResourceRef{
@@ -3571,7 +3571,7 @@ func createStaticUpstream(name, namespace string) *v1.Upstream {
 func createWeightedDestination(isWeightIncluded bool, weight uint32, upstream *v1.Upstream) *v1.WeightedDestination {
 	if isWeightIncluded {
 		return &v1.WeightedDestination{
-			Weight: weight,
+			Weight: &wrappers.UInt32Value{Value: weight},
 			Destination: &v1.Destination{
 				DestinationType: &v1.Destination_Upstream{
 					Upstream: &core.ResourceRef{
