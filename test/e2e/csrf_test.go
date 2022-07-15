@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -582,7 +584,7 @@ func getVirtualServiceMultiDest(ns string, up *gloov1.Upstream) *gatewayv1.Virtu
 							Multi: &gloov1.MultiDestination{
 								Destinations: []*gloov1.WeightedDestination{
 									{
-										Weight: 1,
+										Weight: &wrappers.UInt32Value{Value: 1},
 										Destination: &gloov1.Destination{
 
 											DestinationType: &gloov1.Destination_Upstream{

@@ -547,7 +547,7 @@ WeightedDestination attaches a weight to a single destination.
 
 ```yaml
 "destination": .gloo.solo.io.Destination
-"weight": int
+"weight": .google.protobuf.UInt32Value
 "options": .gloo.solo.io.WeightedDestinationOptions
 
 ```
@@ -555,7 +555,7 @@ WeightedDestination attaches a weight to a single destination.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `destination` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) |  |
-| `weight` | `int` | Weight must be zero or greater - Routing to each destination is balanced according to the ratio of the destination’s weight to the total weight on a route. For example, if the weight for one destination is 2, and the total weight of all destinations on the route is 6, the destination receives 2/6 of the traffic. Note that a weight of 0 routes no traffic to the destination. |
+| `weight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Weight must be zero or greater -if no weight is passed it will default to 0 - Routing to each destination is balanced according to the ratio of the destination’s weight to the total weight on a route. For example, if the weight for one destination is 2, and the total weight of all destinations on the route is 6, the destination receives 2/6 of the traffic. Note that a weight of 0 routes no traffic to the destination. |
 | `options` | [.gloo.solo.io.WeightedDestinationOptions](../options.proto.sk/#weighteddestinationoptions) | Apply configuration to traffic that is sent to this weighted destination. |
 
 
