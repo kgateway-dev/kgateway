@@ -5072,7 +5072,6 @@ metadata:
 					Entry("2-gloo-service-account", "gloo.serviceAccount.kubeResourceOverride"),
 					Entry("3-discovery-deployment", "discovery.deployment.kubeResourceOverride"),
 					Entry("3-discovery-service-account", "discovery.serviceAccount.kubeResourceOverride"),
-					Entry("5-gateway-service-account", "gateway.serviceAccount.kubeResourceOverride"),
 					Entry("5-gateway-validation-webhook-configuration", "gateway.validation.webhook.kubeResourceOverride"),
 					Entry("6-access-logger-deployment", "accessLogger.deployment.kubeResourceOverride", "accessLogger.enabled=true"),
 					Entry("6-access-logger-service", "accessLogger.service.kubeResourceOverride", "accessLogger.enabled=true"),
