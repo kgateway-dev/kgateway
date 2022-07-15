@@ -4,6 +4,8 @@ import (
 	"context"
 	"sort"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
@@ -57,7 +59,7 @@ var _ = Describe("UpstreamGroup", func() {
 						},
 					},
 				},
-				Weight: uint32(1),
+				Weight: &wrappers.UInt32Value{Value: 1},
 			},
 			{
 				Destination: &v1.Destination{
@@ -68,7 +70,7 @@ var _ = Describe("UpstreamGroup", func() {
 						},
 					},
 				},
-				Weight: uint32(3),
+				Weight: &wrappers.UInt32Value{Value: 3},
 			},
 		}
 	})
@@ -104,7 +106,7 @@ var _ = Describe("UpstreamGroup", func() {
 
 			ug := getUpstreamGroup("test")
 			sort.SliceStable(ug.Destinations, func(i, j int) bool {
-				return ug.Destinations[i].Weight < ug.Destinations[j].Weight
+				return ug.Destinations[i].Weight.GetValue() < ug.Destinations[j].Weight.GetValue()
 			})
 			Expect(ug.Destinations).To(Equal(expectedDest))
 		})
@@ -115,7 +117,7 @@ var _ = Describe("UpstreamGroup", func() {
 
 			ug := getUpstreamGroup("test")
 			sort.SliceStable(ug.Destinations, func(i, j int) bool {
-				return ug.Destinations[i].Weight < ug.Destinations[j].Weight
+				return ug.Destinations[i].Weight.GetValue() < ug.Destinations[j].Weight.GetValue()
 			})
 			Expect(ug.Destinations).To(Equal(expectedDest))
 		})

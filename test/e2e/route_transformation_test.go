@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -197,7 +199,7 @@ var _ = Describe("Transformations", func() {
 							Multi: &gloov1.MultiDestination{
 								Destinations: []*gloov1.WeightedDestination{
 									{
-										Weight: 1,
+										Weight: &wrappers.UInt32Value{Value: 1},
 										Options: &gloov1.WeightedDestinationOptions{
 											Transformations: transform,
 										},
