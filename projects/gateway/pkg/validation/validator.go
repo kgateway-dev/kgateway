@@ -378,8 +378,6 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 	return ProxyReports{}, errors.Errorf("Unknown group/version/kind, %v", itemGvk)
 }
 
-
-
 func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (ProxyReports, error) {
 	return v.validateVirtualServiceInternal(ctx, vs, dryRun, true)
 }
