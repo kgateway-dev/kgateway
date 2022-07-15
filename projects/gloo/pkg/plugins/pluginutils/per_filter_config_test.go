@@ -264,7 +264,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 			}
 		})
 		It("should not throw NPE when destination is nil", func() {
-			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+			err := MarkPerFilterConfig(context.TODO(), &v1snap.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 				return nil, nil
 			})
 			Expect(err).To(HaveOccurred())
