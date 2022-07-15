@@ -268,7 +268,7 @@ var _ = Describe("Helm Test", func() {
 						resourcesTested += 1
 					})
 					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
-					Expect(resourcesTested).To(Equal(9), "Tested %d resources when we were expecting 9."+
+					Expect(resourcesTested).To(Equal(8), "Tested %d resources when we were expecting 9."+
 						" Was a new pod added, or is an existing pod no longer being generated?", resourcesTested)
 				})
 
@@ -454,7 +454,6 @@ var _ = Describe("Helm Test", func() {
 					expectedServicesWithHttpMonitoring := []string{
 						"gloo",
 						"discovery",
-						"gateway",
 						"gateway-proxy-access-logger",
 						"gateway-proxy-monitoring-service",
 					}
@@ -493,7 +492,6 @@ var _ = Describe("Helm Test", func() {
 					expectedDeploymentsWithHttpMonitoring := []string{
 						"gloo",
 						"discovery",
-						"gateway",
 						"gateway-proxy-access-logger",
 						"gateway-proxy",
 					}
@@ -4131,226 +4129,6 @@ metadata:
 					})
 				})
 
-				Context("gateway service account", func() {
-					var gatewayServiceAccount *v1.ServiceAccount
-
-					BeforeEach(func() {
-						saLabels := map[string]string{
-							"app":  "gloo",
-							"gloo": "gateway",
-						}
-						rb := ResourceBuilder{
-							Namespace: namespace,
-							Name:      "gateway",
-							Args:      nil,
-							Labels:    saLabels,
-						}
-						gatewayServiceAccount = rb.GetServiceAccount()
-						gatewayServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
-					})
-
-					It("sets extra annotations", func() {
-						gatewayServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
-								"gateway.serviceAccount.extraAnnotations.foo=bar",
-								"gateway.serviceAccount.extraAnnotations.bar=baz",
-								"gateway.serviceAccount.disableAutomount=true",
-							},
-						})
-						testManifest.ExpectServiceAccount(gatewayServiceAccount)
-					})
-
-				})
-
-				Context("gateway deployment", func() {
-					var (
-						gatewayDeployment *appsv1.Deployment
-						labels            map[string]string
-					)
-					BeforeEach(func() {
-						labels = map[string]string{
-							"gloo": "gateway",
-							"app":  "gloo",
-						}
-						selector = map[string]string{
-							"gloo": "gateway",
-						}
-						container := GetQuayContainerSpec("gateway", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
-
-						rb := ResourceBuilder{
-							Namespace:   namespace,
-							Name:        "gateway",
-							Labels:      labels,
-							Annotations: statsAnnotations,
-							Containers:  []ContainerSpec{container},
-						}
-						deploy := rb.GetDeploymentAppsv1()
-						updateDeployment(deploy)
-						deploy.Spec.Template.Spec.ServiceAccountName = "gateway"
-
-						deploy.Spec.Template.Spec.Volumes = []v1.Volume{{
-							Name: "validation-certs",
-							VolumeSource: v1.VolumeSource{
-								Secret: &v1.SecretVolumeSource{
-									SecretName:  "gateway-validation-certs",
-									DefaultMode: proto.Int32(420),
-								},
-							},
-						}}
-						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
-							Name:      "validation-certs",
-							MountPath: "/etc/gateway/validation-certs",
-						}}
-						deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{{
-							Name:          "https",
-							ContainerPort: 8443,
-							Protocol:      "TCP",
-						}}
-						deploy.Spec.Template.Spec.Containers[0].Env = append(deploy.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
-							Name:  "VALIDATION_MUST_START",
-							Value: "true",
-						})
-
-						deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							Handler: v1.Handler{
-								TCPSocket: &v1.TCPSocketAction{
-									Port: intstr.FromInt(8443),
-								},
-							},
-							InitialDelaySeconds: 3,
-							PeriodSeconds:       10,
-							FailureThreshold:    3,
-						}
-						deploy.Spec.Replicas = pointer.Int32Ptr(0)
-						gatewayDeployment = deploy
-					})
-
-					It("has a creates a deployment", func() {
-						prepareMakefile(namespace, helmValues{})
-						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-					})
-
-					It("has limits", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
-								"gateway.deployment.resources.limits.memory=2Mi",
-								"gateway.deployment.resources.limits.cpu=3m",
-								"gateway.deployment.resources.requests.memory=4Mi",
-								"gateway.deployment.resources.requests.cpu=5m",
-							},
-						})
-
-						// Add the limits we are testing:
-						gatewayDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
-							Limits: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("2Mi"),
-								v1.ResourceCPU:    resource.MustParse("3m"),
-							},
-							Requests: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("4Mi"),
-								v1.ResourceCPU:    resource.MustParse("5m"),
-							},
-						}
-						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-					})
-
-					It("can overwrite the container image information", func() {
-						container := GetContainerSpec("gcr.io/solo-public", "gateway", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
-						container.PullPolicy = "Always"
-						rb := ResourceBuilder{
-							Namespace:   namespace,
-							Name:        "gateway",
-							Labels:      labels,
-							Annotations: statsAnnotations,
-							Containers:  []ContainerSpec{container},
-						}
-						deploy := rb.GetDeploymentAppsv1()
-						updateDeployment(deploy)
-
-						gatewayDeployment = deploy
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
-								"gateway.deployment.image.pullPolicy=Always",
-								"gateway.deployment.image.registry=gcr.io/solo-public",
-							},
-						})
-
-					})
-
-					It("can set log level env var", func() {
-						gatewayDeployment.Spec.Template.Spec.Containers[0].Env = append(
-							gatewayDeployment.Spec.Template.Spec.Containers[0].Env,
-							GetLogLevelEnvVar(),
-						)
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gateway.logLevel=debug"},
-						})
-						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-					})
-
-					It("can accept extra env vars", func() {
-						gatewayDeployment.Spec.Template.Spec.Containers[0].Env = append(
-							[]v1.EnvVar{GetTestExtraEnvVar()},
-							gatewayDeployment.Spec.Template.Spec.Containers[0].Env...,
-						)
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
-								"gateway.deployment.customEnv[0].Name=TEST_EXTRA_ENV_VAR",
-								"gateway.deployment.customEnv[0].Value=test",
-							},
-						})
-						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-					})
-
-					It("allows setting custom runAsUser", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gateway.deployment.runAsUser=10102"},
-						})
-						uid := int64(10102)
-						gatewayDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
-						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-					})
-
-					Context("pass image pull secrets", func() {
-						pullSecretName := "test-pull-secret"
-						pullSecret := []v1.LocalObjectReference{
-							{Name: pullSecretName},
-						}
-
-						It("via global values", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-						})
-
-						It("via podTemplate values", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									fmt.Sprintf("gateway.deployment.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-						})
-
-						It("podTemplate values win over global", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"global.image.pullSecret=wrong",
-									fmt.Sprintf("gateway.deployment.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-						})
-					})
-				})
-
 				Context("discovery service account", func() {
 					var discoveryServiceAccount *v1.ServiceAccount
 
@@ -5231,7 +5009,6 @@ metadata:
 					},
 					Entry("gloo deployment", "Deployment", "gloo", "gloo.deployment"),
 					Entry("discovery deployment", "Deployment", "discovery", "discovery.deployment"),
-					Entry("gateway deployment", "Deployment", "gateway", "gateway.deployment"),
 					Entry("ingress deployment", "Deployment", "ingress", "ingress.deployment", "ingress.enabled=true"),
 					Entry("cluster-ingress deployment", "Deployment", "clusteringress-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.7.0", "settings.integrations.knative.enabled=true"),
 					Entry("knative external proxy deployment", "Deployment", "knative-external-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
@@ -5259,7 +5036,6 @@ metadata:
 					Entry("3-discovery-deployment", "discovery.deployment.kubeResourceOverride"),
 					Entry("3-discovery-service-account", "discovery.serviceAccount.kubeResourceOverride"),
 					Entry("5-gateway-deployment", "gateway.deployment.kubeResourceOverride"),
-					Entry("5-gateway-service", "gateway.service.kubeResourceOverride"),
 					Entry("5-gateway-service-account", "gateway.serviceAccount.kubeResourceOverride"),
 					Entry("5-gateway-validation-webhook-configuration", "gateway.validation.webhook.kubeResourceOverride"),
 					Entry("6-access-logger-deployment", "accessLogger.deployment.kubeResourceOverride", "accessLogger.enabled=true"),
