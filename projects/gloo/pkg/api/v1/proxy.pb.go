@@ -1736,7 +1736,7 @@ type WeightedDestination struct {
 	unknownFields protoimpl.UnknownFields
 
 	Destination *Destination `protobuf:"bytes,1,opt,name=destination,proto3" json:"destination,omitempty"`
-	// Weight must be zero or greater -
+	// Weight must be zero or greater -if no weight is passed it will default to 0 -
 	// Routing to each destination is balanced according to the ratio of the destination’s weight to the total
 	// weight on a route. For example, if the weight for one destination is 2, and the total weight of all
 	// destinations on the route is 6, the destination receives 2/6 of the traffic. Note that a weight of 0
