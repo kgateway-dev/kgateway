@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -139,14 +141,15 @@ var _ = Describe("tunneling", func() {
 			var client http.Client
 			scheme := "http"
 			var json = []byte(jsonStr)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 9*time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
 			if err != nil {
 				return err
 			}
 			res, err := client.Do(req)
 			if err != nil {
+				fmt.Printf("COPILOT error: %v\n", err)
 				return err
 			}
 			if res.StatusCode != http.StatusOK {
@@ -157,6 +160,7 @@ var _ = Describe("tunneling", func() {
 				return err
 			}
 			defer res.Body.Close()
+			// res.Header.Get("")
 			responseBody = p.String()
 			return nil
 		}, "1s", "0.8s").Should(BeNil())
@@ -234,19 +238,19 @@ func startHttpProxy(ctx context.Context) int {
 	// 	// MaxVersion:   tls.VersionTLS11,
 	// }
 
-	// cert := []byte(gloohelpers.Certificate())
-	// key := []byte(gloohelpers.PrivateKey())
-	// cer, err := tls.X509KeyPair(cert, key)
-	// Expect(err).NotTo(HaveOccurred())
+	cert := []byte(gloohelpers.Certificate())
+	key := []byte(gloohelpers.PrivateKey())
+	cer, err := tls.X509KeyPair(cert, key)
+	Expect(err).NotTo(HaveOccurred())
 
-	// tlsCfg := &tls.Config{
-	// 	GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	// 		// if cb != nil {
-	// 		// 	cb(chi)
-	// 		// }
-	// 		return &cer, nil
-	// 	},
-	// }
+	tlsCfg := &tls.Config{
+		GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			// if cb != nil {
+			// 	cb(chi)
+			// }
+			return &cer, nil
+		},
+	}
 
 	// listener, err := tls.Listen("tcp", ":0", tlsCfg)
 
@@ -280,8 +284,10 @@ func startHttpProxy(ctx context.Context) int {
 	go func() {
 		defer GinkgoRecover()
 		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy), ConnState: cstate} //, TLSConfig: tlsCfg}
-		// tlsListener := tls.NewListener(listener, tlsCfg)
-		server.Serve(listener)
+		tlsListener := tls.NewListener(listener, tlsCfg)
+		server.Serve(tlsListener)
+		fmt.Printf("%v", tlsListener)
+		// server.Serve(listener)
 		<-ctx.Done()
 		server.Close()
 	}()
@@ -366,19 +372,21 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 	// 	ClientCAs:    caCertPool,
 	// }
 
+	fmt.Fprintf(GinkgoWriter, "***** pre dial upstream \n")
 	targetConn, err := net.Dial("tcp", host)
 	// targetConn, err := tls.Dial("tcp", host, tlsCfg)
 	if err != nil {
 		http.Error(w, "can't connect", 500)
 		return
 	}
+	defer targetConn.Close()
+	fmt.Fprintf(GinkgoWriter, "***** post dial upstream \n")
 
 	conn, buf, err := hij.Hijack()
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
 	defer conn.Close()
-
 	// tlsConn, ok := conn.(*tls.Conn)
 	// if !ok {
 	// 	Fail("connection was not a tls connection")
@@ -387,6 +395,7 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 	// err = tlsConn.Handshake()
 
 	fmt.Fprintf(GinkgoWriter, "Accepting CONNECT to %s\n", host)
+	// will only work HTTP1.1
 	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 
 	// no just copy:
@@ -395,18 +404,56 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		defer GinkgoRecover()
-		numBytes, err := io.Copy(buf, targetConn)
-		Expect(err).NotTo(HaveOccurred())
-		fmt.Fprintf(GinkgoWriter, "***** copied %v bytes from targetConn to buf *****\n", numBytes)
+		fmt.Fprintf(GinkgoWriter, "***** start copy from upstream to envoy *****\n")
+		buf.Flush()
+
+		for {
+			// read bytes from buf.Reader until EOF
+			bts := []byte{1}
+			_, err := targetConn.Read(bts)
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			Expect(err).NotTo(HaveOccurred())
+			numWritten, err := buf.Write(bts)
+			if err != nil && !errors.Is(err, io.EOF) {
+				fmt.Fprintf(GinkgoWriter, "***** copy err %v *****\n", err)
+				Fail("no good")
+			}
+			fmt.Fprintf(GinkgoWriter, "***** partial: copied %v bytes from upstream to envoy *****\n", numWritten)
+			buf.Flush()
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		// Expect(err).NotTo(HaveOccurred())
+		// numBytes, err := io.CopyBuffer(buf, targetConn, []byte{1})
+		// Expect(err).NotTo(HaveOccurred())
+		// fmt.Fprintf(GinkgoWriter, "***** copied %v bytes from upstream to envoy *****\n", numBytes)
 		err = buf.Flush()
 		Expect(err).NotTo(HaveOccurred())
 		wg.Done()
 	}()
 	go func() {
 		defer GinkgoRecover()
-		numBytes, err := io.Copy(targetConn, buf)
-		Expect(err).NotTo(HaveOccurred())
-		fmt.Fprintf(GinkgoWriter, "***** copied %v bytes from buf to targetConn *****\n", numBytes)
+		fmt.Fprintf(GinkgoWriter, "***** start copy from  envoy to upstream *****\n")
+
+		for !isEof(buf.Reader) {
+			// read bytes from buf.Reader until EOF
+			bts := []byte{1}
+			_, err := buf.Read(bts)
+			Expect(err).NotTo(HaveOccurred())
+			numWritten, err := targetConn.Write(bts)
+			if err != nil && !errors.Is(err, io.EOF) {
+				fmt.Fprintf(GinkgoWriter, "***** copy err %v *****\n", err)
+				// Fail("no good")
+			}
+			fmt.Fprintf(GinkgoWriter, "***** partial: copied %v bytes from envoy to upstream *****\n", numWritten)
+		}
+		fmt.Fprintf(GinkgoWriter, "***** done copied bytes from envoy to upstream *****\n")
+
+		// numBytes, err := io.CopyBuffer(targetConn, buf, []byte{1})
+		// Expect(err).NotTo(HaveOccurred())
+		// fmt.Fprintf(GinkgoWriter, "***** copied %v bytes from envoy to upstream *****\n", numBytes)
 		wg.Done()
 	}()
 

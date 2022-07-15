@@ -126,7 +126,7 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 								Name:       wellknown.TransportSocketTls,
 								ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
 							}
-							inCluster.TransportSocket = nil        // TODO(kdorosh)
+							// inCluster.TransportSocket = nil        // TODO(kdorosh)
 							inCluster.TransportSocketMatches = nil // TODO(kdorosh)
 							break
 						}

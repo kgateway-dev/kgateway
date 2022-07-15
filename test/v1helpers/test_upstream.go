@@ -141,6 +141,8 @@ func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-
 func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string, serveTls bool) (uint32, <-chan *ReceivedRequest) {
 	bodyChan := make(chan *ReceivedRequest, 100)
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Printf("COPILOT receive \n")
+
 		var rr ReceivedRequest
 		rr.Method = r.Method
 
@@ -162,7 +164,11 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 		rr.URL = r.URL
 		rr.Headers = r.Header
 
+		fmt.Printf("COPILOT %+v\n", rr)
+
 		bodyChan <- &rr
+
+		fmt.Printf("COPILOT rr done \n")
 	}
 
 	listener, err := net.Listen("tcp", ":0")
