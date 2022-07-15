@@ -60,7 +60,7 @@ jobs:
     - uses: azure/setup-kubectl@v1
       id: kubectl
       with:
-        version: 'v1.16.3'
+        version: 'v1.18.0'
     - uses: azure/setup-helm@v1
       with:
         version: v3.2.0
