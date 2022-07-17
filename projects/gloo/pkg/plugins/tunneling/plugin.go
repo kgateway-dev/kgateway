@@ -87,14 +87,22 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
 					for _, inCluster := range inClusters {
-						if inCluster.GetName() == cluster && inCluster.GetTransportSocket() != nil {
-							tmp := *inCluster.GetTransportSocket()
-							originalTransportSocket = &tmp
+						if inCluster.GetName() == cluster {
+							if inCluster.GetTransportSocket() != nil {
+								tmp := *inCluster.GetTransportSocket()
+								originalTransportSocket = &tmp
+							}
 							// we copy the transport socket to the generated cluster.
 							// the generated cluster will use upstream TLS context to leverage TLS origination;
 							// when we encapsulate in HTTP Connect the tcp data being proxied will
 							// be encrypted (thus we don't need the original transport socket metadata here)
+							inCluster.TransportSocket = nil
+							inCluster.TransportSocketMatches = nil
 
+							if us.GetHttpConnectSslConfig() == nil {
+								break
+							}
+							// user told us to configure ssl for the http connect proxy
 							secret := &v1.Secret{
 								Metadata: &core.Metadata{
 									Name:      "secret",
@@ -126,8 +134,6 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 								Name:       wellknown.TransportSocketTls,
 								ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
 							}
-							// inCluster.TransportSocket = nil        // TODO(kdorosh)
-							inCluster.TransportSocketMatches = nil // TODO(kdorosh)
 							break
 						}
 					}

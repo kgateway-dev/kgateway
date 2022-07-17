@@ -137,6 +137,7 @@ var _ = Describe("tunneling", func() {
 
 	AfterEach(func() {
 		envoyInstance.Clean()
+		time.Sleep(time.Second * 3)
 		cancel()
 	})
 
@@ -166,10 +167,9 @@ var _ = Describe("tunneling", func() {
 				return err
 			}
 			defer res.Body.Close()
-			// res.Header.Get("")
 			responseBody = p.String()
 			return nil
-		}, "1s", "0.8s").Should(BeNil())
+		}, "5s", "0.5s").Should(BeNil())
 		return responseBody
 	}
 
@@ -203,13 +203,19 @@ var _ = Describe("tunneling", func() {
 			_, err := testClients.SecretClient.Write(secret, clients.WriteOpts{OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 
-			up.SslConfig = &gloov1.UpstreamSslConfig{
+			sslCfg := &gloov1.UpstreamSslConfig{
 				SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{Name: "secret", Namespace: "default"},
 				},
 			}
-			// sslPort = v1helpers.StartSslProxy(ctx, tuPort)
+
+			if tlsUpstream {
+				up.SslConfig = sslCfg
+			}
 			up.HttpProxyHostname = &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tuPort)} // enable HTTP tunneling,
+			if tlsHttpConnect {
+				up.HttpConnectSslConfig = sslCfg
+			}
 
 			// this is repeated :/
 			_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
@@ -220,8 +226,11 @@ var _ = Describe("tunneling", func() {
 			// _, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			// Expect(err).NotTo(HaveOccurred())
 
-			checkProxy()
+			// not needed.. already have
+			// testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
 			// checkVirtualService(testVs)
+			checkProxy()
+
 		})
 
 		Context("with front TLS", func() {
@@ -235,7 +244,6 @@ var _ = Describe("tunneling", func() {
 				// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
 				// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
 				jsonStr := `{"value":"Hello, world!"}`
-				time.Sleep(time.Second * 5)
 				testReq := testRequest(jsonStr)
 				Expect(testReq).Should(ContainSubstring(jsonStr))
 			})
@@ -252,7 +260,6 @@ var _ = Describe("tunneling", func() {
 				// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
 				// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
 				jsonStr := `{"value":"Hello, world!"}`
-				time.Sleep(time.Second * 5)
 				testReq := testRequest(jsonStr)
 				Expect(testReq).Should(ContainSubstring(jsonStr))
 			})
@@ -270,7 +277,6 @@ var _ = Describe("tunneling", func() {
 				// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
 				// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
 				jsonStr := `{"value":"Hello, world!"}`
-				time.Sleep(time.Second * 5)
 				testReq := testRequest(jsonStr)
 				Expect(testReq).Should(ContainSubstring(jsonStr))
 			})
