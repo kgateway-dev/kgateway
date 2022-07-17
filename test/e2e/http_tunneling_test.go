@@ -37,13 +37,14 @@ import (
 var _ = Describe("tunneling", func() {
 
 	var (
-		ctx           context.Context
-		cancel        context.CancelFunc
-		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
-		up            *gloov1.Upstream
-		tuPort        uint32
-		tlsUpstream   bool
+		ctx            context.Context
+		cancel         context.CancelFunc
+		testClients    services.TestClients
+		envoyInstance  *services.EnvoyInstance
+		up             *gloov1.Upstream
+		tuPort         uint32
+		tlsUpstream    bool
+		tlsHttpConnect bool
 		// sslPort       uint32
 
 		writeNamespace = defaults.GlooSystem
@@ -64,6 +65,7 @@ var _ = Describe("tunneling", func() {
 
 	BeforeEach(func() {
 		tlsUpstream = false
+		tlsHttpConnect = false
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -95,7 +97,7 @@ var _ = Describe("tunneling", func() {
 
 	JustBeforeEach(func() {
 		// start http proxy and setup upstream that points to it
-		port := startHttpProxy(ctx)
+		port := startHttpProxy(ctx, tlsHttpConnect)
 
 		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsUpstream)
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
@@ -222,13 +224,48 @@ var _ = Describe("tunneling", func() {
 			// checkVirtualService(testVs)
 		})
 
-		Context("with front and back TLS", func() {
+		Context("with front TLS", func() {
+
+			BeforeEach(func() {
+				tlsHttpConnect = true
+			})
+
+			FIt("should proxy plaintext bytes over encrypted HTTP Connect", func() {
+				// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test TLS upstream
+				// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
+				// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
+				jsonStr := `{"value":"Hello, world!"}`
+				time.Sleep(time.Second * 5)
+				testReq := testRequest(jsonStr)
+				Expect(testReq).Should(ContainSubstring(jsonStr))
+			})
+		})
+
+		Context("with back TLS", func() {
 
 			BeforeEach(func() {
 				tlsUpstream = true
 			})
 
-			FIt("should proxy encrypted bytes over HTTPS HTTP Connect", func() {
+			It("should proxy encrypted bytes over plaintext HTTP Connect", func() {
+				// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test TLS upstream
+				// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
+				// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
+				jsonStr := `{"value":"Hello, world!"}`
+				time.Sleep(time.Second * 5)
+				testReq := testRequest(jsonStr)
+				Expect(testReq).Should(ContainSubstring(jsonStr))
+			})
+		})
+
+		Context("with front and back TLS", func() {
+
+			BeforeEach(func() {
+				tlsHttpConnect = true
+				tlsUpstream = true
+			})
+
+			It("should proxy encrypted bytes over encrypted HTTP Connect", func() {
 				// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test TLS upstream
 				// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
 				// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
@@ -242,25 +279,7 @@ var _ = Describe("tunneling", func() {
 
 })
 
-func startHttpProxy(ctx context.Context) int {
-
-	// clientCerts, err := tls.X509KeyPair([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
-	// Expect(err).ToNot(HaveOccurred())
-
-	// caCertPool := x509.NewCertPool()
-	// ok := caCertPool.AppendCertsFromPEM([]byte(gloohelpers.Certificate())) // in prod this would not be the client cert
-	// if !ok {
-	// 	Fail("unable to append ca certs to cert pool")
-	// }
-
-	// tlsCfg := &tls.Config{
-	// 	Certificates: []tls.Certificate{clientCerts},
-	// 	RootCAs:      caCertPool,
-	// 	ClientCAs:    caCertPool,
-	// 	// MinVersion:   tls.VersionTLS11,
-	// 	// MaxVersion:   tls.VersionTLS11,
-	// }
-
+func startHttpProxy(ctx context.Context, useTLS bool) int {
 	cert := []byte(gloohelpers.Certificate())
 	key := []byte(gloohelpers.PrivateKey())
 	cer, err := tls.X509KeyPair(cert, key)
@@ -304,17 +323,19 @@ func startHttpProxy(ctx context.Context) int {
 		}
 	}
 
-	go func() {
+	go func(useTLS bool) {
 		defer GinkgoRecover()
-		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxyTls), ConnState: cstate} //, TLSConfig: tlsCfg}
-		// server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy), ConnState: cstate} //, TLSConfig: tlsCfg}
-		tlsListener := tls.NewListener(listener, tlsCfg)
-		server.Serve(tlsListener)
-		fmt.Printf("%v", tlsListener)
-		// server.Serve(listener)
+		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxyTls), ConnState: cstate}
+		if useTLS {
+			tlsListener := tls.NewListener(listener, tlsCfg)
+			server.Serve(tlsListener)
+		} else {
+			// fmt.Printf("%v", tlsListener)
+			server.Serve(listener)
+		}
 		<-ctx.Done()
 		server.Close()
-	}()
+	}(useTLS)
 
 	return port
 }
