@@ -126,7 +126,7 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 								Name:       wellknown.TransportSocketTls,
 								ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
 							}
-							// inCluster.TransportSocket = nil        // TODO(kdorosh)
+							inCluster.TransportSocket = nil        // TODO(kdorosh)
 							inCluster.TransportSocketMatches = nil // TODO(kdorosh)
 							break
 						}
@@ -152,9 +152,9 @@ func generateSelfCluster(selfCluster, selfPipe string, originalTransportSocket *
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
 			Type: envoy_config_cluster_v3.Cluster_STATIC,
 		},
-		ConnectTimeout: &duration.Duration{Seconds: 5},
-		Name:           selfCluster,
-		// TransportSocket: originalTransportSocket,
+		ConnectTimeout:  &duration.Duration{Seconds: 5},
+		Name:            selfCluster,
+		TransportSocket: originalTransportSocket,
 		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: selfCluster,
 			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
