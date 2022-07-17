@@ -93,7 +93,7 @@ var _ = Describe("tunneling", func() {
 		// start http proxy and setup upstream that points to it
 		port := startHttpProxy(ctx)
 
-		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr())
+		tu := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
 
 		up = &gloov1.Upstream{
@@ -283,12 +283,12 @@ func startHttpProxy(ctx context.Context) int {
 
 	go func() {
 		defer GinkgoRecover()
-		// server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxyTls), ConnState: cstate} //, TLSConfig: tlsCfg}
-		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy), ConnState: cstate} //, TLSConfig: tlsCfg}
+		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxyTls), ConnState: cstate} //, TLSConfig: tlsCfg}
+		// server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy), ConnState: cstate} //, TLSConfig: tlsCfg}
 		tlsListener := tls.NewListener(listener, tlsCfg)
-		// server.Serve(tlsListener)
+		server.Serve(tlsListener)
 		fmt.Printf("%v", tlsListener)
-		server.Serve(listener)
+		// server.Serve(listener)
 		<-ctx.Done()
 		server.Close()
 	}()
