@@ -160,6 +160,12 @@ func (m *Upstream) Clone() proto.Message {
 		target.HttpProxyHostname = proto.Clone(m.GetHttpProxyHostname()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	}
 
+	if h, ok := interface{}(m.GetHttpConnectSslConfig()).(clone.Cloner); ok {
+		target.HttpConnectSslConfig = h.Clone().(*UpstreamSslConfig)
+	} else {
+		target.HttpConnectSslConfig = proto.Clone(m.GetHttpConnectSslConfig()).(*UpstreamSslConfig)
+	}
+
 	if h, ok := interface{}(m.GetIgnoreHealthOnHostRemoval()).(clone.Cloner); ok {
 		target.IgnoreHealthOnHostRemoval = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
