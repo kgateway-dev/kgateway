@@ -45,8 +45,6 @@ var _ = Describe("tunneling", func() {
 		tuPort         uint32
 		tlsUpstream    bool
 		tlsHttpConnect bool
-		// sslPort       uint32
-
 		writeNamespace = defaults.GlooSystem
 	)
 
@@ -119,25 +117,16 @@ var _ = Describe("tunneling", func() {
 			},
 			HttpProxyHostname: &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tuPort)}, // enable HTTP tunneling,
 		}
-	})
-
-	JustBeforeEach(func() {
-
-		// _, err := testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-		// Expect(err).NotTo(HaveOccurred())
 
 		// write a virtual service so we have a proxy to our test upstream
 		testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
 		_, err := testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
-
-		// checkProxy()
 		checkVirtualService(testVs)
 	})
 
 	AfterEach(func() {
 		envoyInstance.Clean()
-		time.Sleep(time.Second * 3)
 		cancel()
 	})
 
@@ -169,7 +158,7 @@ var _ = Describe("tunneling", func() {
 			defer res.Body.Close()
 			responseBody = p.String()
 			return nil
-		}, "5s", "0.5s").Should(BeNil())
+		}, "10s", "0.5s").Should(BeNil())
 		return responseBody
 	}
 
@@ -216,21 +205,10 @@ var _ = Describe("tunneling", func() {
 			if tlsHttpConnect {
 				up.HttpConnectSslConfig = sslCfg
 			}
-
-			// this is repeated :/
 			_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 
-			// write a virtual service so we have a proxy to our test upstream
-			// testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			// _, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			// Expect(err).NotTo(HaveOccurred())
-
-			// not needed.. already have
-			// testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			// checkVirtualService(testVs)
 			checkProxy()
-
 		})
 
 		Context("with front TLS", func() {
@@ -286,22 +264,6 @@ var _ = Describe("tunneling", func() {
 })
 
 func startHttpProxy(ctx context.Context, useTLS bool) int {
-	cert := []byte(gloohelpers.Certificate())
-	key := []byte(gloohelpers.PrivateKey())
-	cer, err := tls.X509KeyPair(cert, key)
-	Expect(err).NotTo(HaveOccurred())
-
-	tlsCfg := &tls.Config{
-		GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			// if cb != nil {
-			// 	cb(chi)
-			// }
-			return &cer, nil
-		},
-	}
-
-	// listener, err := tls.Listen("tcp", ":0", tlsCfg)
-
 	listener, err := net.Listen("tcp", ":0")
 	Expect(err).ToNot(HaveOccurred())
 
@@ -312,31 +274,23 @@ func startHttpProxy(ctx context.Context, useTLS bool) int {
 	port, err := strconv.Atoi(portStr)
 	Expect(err).ToNot(HaveOccurred())
 
-	fmt.Fprintln(GinkgoWriter, "go proxy addr", addr)
-
-	cstate := func(conn net.Conn, newState http.ConnState) {
-		switch newState {
-		case http.StateNew:
-			fmt.Fprintf(GinkgoWriter, "***** new state %s\n", "KDOROSH ******")
-		case http.StateClosed:
-			fmt.Fprintf(GinkgoWriter, "***** state closed %s\n", "KDOROSH ******")
-		case http.StateHijacked:
-			fmt.Fprintf(GinkgoWriter, "***** state hijacked %s\n", "KDOROSH ******")
-		case http.StateActive:
-			fmt.Fprintf(GinkgoWriter, "***** state active %s\n", "KDOROSH ******")
-		case http.StateIdle:
-			fmt.Fprintf(GinkgoWriter, "***** state idle %s\n", "KDOROSH ******")
-		}
-	}
-
 	go func(useTLS bool) {
 		defer GinkgoRecover()
-		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy), ConnState: cstate}
+		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy)}
 		if useTLS {
+			cert := []byte(gloohelpers.Certificate())
+			key := []byte(gloohelpers.PrivateKey())
+			cer, err := tls.X509KeyPair(cert, key)
+			Expect(err).NotTo(HaveOccurred())
+
+			tlsCfg := &tls.Config{
+				GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
+					return &cer, nil
+				},
+			}
 			tlsListener := tls.NewListener(listener, tlsCfg)
 			server.Serve(tlsListener)
 		} else {
-			// fmt.Printf("%v", tlsListener)
 			server.Serve(listener)
 		}
 		<-ctx.Done()
@@ -355,7 +309,6 @@ func isEof(r *bufio.Reader) bool {
 }
 
 func connectProxy(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(GinkgoWriter, "***** Accepting CONNECT to %s\n", "KDOROSH ******")
 	if r.Method != "CONNECT" {
 		http.Error(w, "not connect", 400)
 		return
@@ -375,14 +328,12 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	host := r.URL.Host
 
-	fmt.Fprintf(GinkgoWriter, "***** pre dial upstream \n")
 	targetConn, err := net.Dial("tcp", host)
 	if err != nil {
 		http.Error(w, "can't connect", 500)
 		return
 	}
 	defer targetConn.Close()
-	fmt.Fprintf(GinkgoWriter, "***** post dial upstream \n")
 
 	conn, buf, err := hij.Hijack()
 	if err != nil {
@@ -400,8 +351,6 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		defer GinkgoRecover()
-		fmt.Fprintf(GinkgoWriter, "***** start copy from upstream to envoy *****\n")
-
 		for {
 			// read bytes from buf.Reader until EOF
 			bts := []byte{1}
@@ -410,48 +359,38 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			Expect(err).NotTo(HaveOccurred())
-			numWritten, err := conn.Write(bts)
+			_, err = conn.Write(bts)
 			if err != nil && !errors.Is(err, io.EOF) {
-				fmt.Fprintf(GinkgoWriter, "***** copy err %v *****\n", err)
-				// Fail("no good")
+				// as written, when copy ends we get error writing to socket
+				// but all bytes were written properly so for this test we will
+				// just log and ignore
+				fmt.Fprintf(GinkgoWriter, "copy err %v\n", err)
+				// Fail("in theory we should be able to enable this")
 			}
-			fmt.Fprintf(GinkgoWriter, "***** partial: copied %v bytes from upstream to envoy *****\n", numWritten)
-			// buf.Flush()
-			// Expect(err).NotTo(HaveOccurred())
 		}
-
-		// Expect(err).NotTo(HaveOccurred())
-		// numBytes, err := io.CopyBuffer(buf, targetConn, []byte{1})
-		// Expect(err).NotTo(HaveOccurred())
-		// fmt.Fprintf(GinkgoWriter, "***** copied %v bytes from upstream to envoy *****\n", numBytes)
 		err = buf.Flush()
 		Expect(err).NotTo(HaveOccurred())
 		wg.Done()
 	}()
 	go func() {
 		defer GinkgoRecover()
-		fmt.Fprintf(GinkgoWriter, "***** start copy from  envoy to upstream *****\n")
-
 		for !isEof(buf.Reader) {
 			// read bytes from buf.Reader until EOF
 			bts := []byte{1}
 			_, err := buf.Read(bts)
 			Expect(err).NotTo(HaveOccurred())
-			numWritten, err := targetConn.Write(bts)
+			_, err = targetConn.Write(bts)
 			if err != nil && !errors.Is(err, io.EOF) {
-				fmt.Fprintf(GinkgoWriter, "***** copy err %v *****\n", err)
-				// Fail("no good")
+				// as written, when copy ends we get error writing to socket
+				// but all bytes were written properly so for this test we will
+				// just log and ignore
+				fmt.Fprintf(GinkgoWriter, "copy err %v\n", err)
+				// Fail("in theory we should be able to enable this")
 			}
-			fmt.Fprintf(GinkgoWriter, "***** partial: copied %v bytes from envoy to upstream *****\n", numWritten)
 		}
-		fmt.Fprintf(GinkgoWriter, "***** done copied bytes from envoy to upstream *****\n")
-
-		// numBytes, err := io.CopyBuffer(targetConn, buf, []byte{1})
-		// Expect(err).NotTo(HaveOccurred())
-		// fmt.Fprintf(GinkgoWriter, "***** copied %v bytes from envoy to upstream *****\n", numBytes)
 		wg.Done()
 	}()
 
 	wg.Wait()
-	fmt.Fprintf(GinkgoWriter, "***** done proxying *****\n")
+	fmt.Fprintf(GinkgoWriter, "done proxying\n")
 }
