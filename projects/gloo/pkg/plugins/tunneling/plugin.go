@@ -87,7 +87,7 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
 					for _, inCluster := range inClusters {
-						if inCluster.GetName() == cluster {
+						if inCluster.GetName() == cluster && inCluster.GetTransportSocket() != nil {
 							tmp := *inCluster.GetTransportSocket()
 							originalTransportSocket = &tmp
 							// we copy the transport socket to the generated cluster.

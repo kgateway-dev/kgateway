@@ -43,6 +43,7 @@ var _ = Describe("tunneling", func() {
 		envoyInstance *services.EnvoyInstance
 		up            *gloov1.Upstream
 		tuPort        uint32
+		tlsUpstream   bool
 		// sslPort       uint32
 
 		writeNamespace = defaults.GlooSystem
@@ -62,6 +63,7 @@ var _ = Describe("tunneling", func() {
 	}
 
 	BeforeEach(func() {
+		tlsUpstream = false
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -89,11 +91,13 @@ var _ = Describe("tunneling", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
+	})
 
+	JustBeforeEach(func() {
 		// start http proxy and setup upstream that points to it
 		port := startHttpProxy(ctx)
 
-		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr())
+		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsUpstream)
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
 
 		up = &gloov1.Upstream{
@@ -117,15 +121,15 @@ var _ = Describe("tunneling", func() {
 
 	JustBeforeEach(func() {
 
-		_, err := testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
+		// _, err := testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+		// Expect(err).NotTo(HaveOccurred())
 
 		// write a virtual service so we have a proxy to our test upstream
 		testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-		_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+		_, err := testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 
-		checkProxy()
+		// checkProxy()
 		checkVirtualService(testVs)
 	})
 
@@ -176,9 +180,9 @@ var _ = Describe("tunneling", func() {
 		Expect(testReq).Should(ContainSubstring(jsonStr))
 	})
 
-	Context("with SSL", func() {
+	Context("with TLS", func() {
 
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 
 			secret := &gloov1.Secret{
 				Metadata: &core.Metadata{
@@ -204,16 +208,35 @@ var _ = Describe("tunneling", func() {
 			}
 			// sslPort = v1helpers.StartSslProxy(ctx, tuPort)
 			up.HttpProxyHostname = &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tuPort)} // enable HTTP tunneling,
+
+			// this is repeated :/
+			_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			// write a virtual service so we have a proxy to our test upstream
+			// testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+			// _, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			// Expect(err).NotTo(HaveOccurred())
+
+			checkProxy()
+			// checkVirtualService(testVs)
 		})
 
-		FIt("should proxy HTTPS", func() {
-			// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test TLS upstream
-			// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
-			// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
-			jsonStr := `{"value":"Hello, world!"}`
-			time.Sleep(time.Second * 5)
-			testReq := testRequest(jsonStr)
-			Expect(testReq).Should(ContainSubstring(jsonStr))
+		Context("with front and back TLS", func() {
+
+			BeforeEach(func() {
+				tlsUpstream = true
+			})
+
+			FIt("should proxy encrypted bytes over HTTPS HTTP Connect", func() {
+				// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test TLS upstream
+				// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
+				// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
+				jsonStr := `{"value":"Hello, world!"}`
+				time.Sleep(time.Second * 5)
+				testReq := testRequest(jsonStr)
+				Expect(testReq).Should(ContainSubstring(jsonStr))
+			})
 		})
 	})
 
