@@ -230,7 +230,7 @@ var _ = Describe("tunneling", func() {
 				tlsHttpConnect = true
 			})
 
-			FIt("should proxy plaintext bytes over encrypted HTTP Connect", func() {
+			It("should proxy plaintext bytes over encrypted HTTP Connect", func() {
 				// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test TLS upstream
 				// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
 				// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
@@ -265,7 +265,7 @@ var _ = Describe("tunneling", func() {
 				tlsUpstream = true
 			})
 
-			It("should proxy encrypted bytes over encrypted HTTP Connect", func() {
+			FIt("should proxy encrypted bytes over encrypted HTTP Connect", func() {
 				// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test TLS upstream
 				// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
 				// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
@@ -325,7 +325,7 @@ func startHttpProxy(ctx context.Context, useTLS bool) int {
 
 	go func(useTLS bool) {
 		defer GinkgoRecover()
-		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxyTls), ConnState: cstate}
+		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy), ConnState: cstate}
 		if useTLS {
 			tlsListener := tls.NewListener(listener, tlsCfg)
 			server.Serve(tlsListener)
@@ -349,73 +349,11 @@ func isEof(r *bufio.Reader) bool {
 }
 
 func connectProxy(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(GinkgoWriter, "Accepting CONNECT to %s\n", "KDOROSH")
-	if r.Method != "CONNECT" {
-		http.Error(w, "not connect", 400)
-		return
-	}
-
-	hij, ok := w.(http.Hijacker)
-	if !ok {
-		Fail("no hijacker")
-	}
-	host := r.URL.Host
-
-	// clientCerts, err := tls.X509KeyPair([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
-	// Expect(err).NotTo(HaveOccurred())
-
-	// caCertPool := x509.NewCertPool()
-	// ok = caCertPool.AppendCertsFromPEM([]byte(gloohelpers.Certificate())) // in prod this would not be the client cert
-	// if !ok {
-	// 	Fail("unable to append ca certs to cert pool")
-	// }
-	// targetConn, err := tls.Dial("tcp", host, &tls.Config{
-	// 	Certificates: []tls.Certificate{clientCerts},
-	// 	RootCAs:      caCertPool,
-	// 	ClientCAs:    caCertPool,
-	// })
-	targetConn, err := net.Dial("tcp", host)
-	if err != nil {
-		http.Error(w, "can't connect", 500)
-		return
-	}
-
-	conn, buf, err := hij.Hijack()
-	if err != nil {
-		Expect(err).ToNot(HaveOccurred())
-	}
-	defer conn.Close()
-
-	fmt.Fprintf(GinkgoWriter, "Accepting CONNECT to %s\n", host)
-	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
-
-	// no just copy:
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		io.Copy(buf, targetConn)
-		buf.Flush()
-		wg.Done()
-	}()
-	go func() {
-		io.Copy(targetConn, buf)
-		wg.Done()
-	}()
-
-	wg.Wait()
-	fmt.Fprintf(GinkgoWriter, "done proxying\n")
-}
-
-func connectProxyTls(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(GinkgoWriter, "***** Accepting CONNECT to %s\n", "KDOROSH ******")
 	if r.Method != "CONNECT" {
 		http.Error(w, "not connect", 400)
 		return
 	}
-
-	// w.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
-	// w.Write([]byte("kdorosh manual\r\n\r\n"))
 
 	if r.TLS != nil {
 		fmt.Fprintf(GinkgoWriter, "***** handshake complete %v\n", r.TLS.HandshakeComplete)
@@ -425,60 +363,14 @@ func connectProxyTls(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintf(GinkgoWriter, "***** entire tls %v\n", r.TLS)
 
-	// seems to be empty regardless...
-	// var body string
-	// if r.Body != nil {
-	// 	if data, err := ioutil.ReadAll(r.Body); err == nil {
-	// 		body = string(data)
-	// 	}
-	// 	defer r.Body.Close()
-	// }
-
-	// hij, ok := w.(http.Hijacker)
-	// if !ok {
-	// 	Fail("no hijacker")
-	// }
-	// conn, buf, err := hij.Hijack()
-	// if err != nil {
-	// 	Expect(err).ToNot(HaveOccurred())
-	// }
-	// defer conn.Close()
-
-	// ioutil.ReadAll(buf.Reader)
-	// // ioutil.ReadAll(buf.Writer)
-
-	// for !isEof(buf.Reader) {
-	// 	fmt.Fprintf(GinkgoWriter, "***** waiting for reader to be done %s\n", "KDOROSH ******")
-	// }
-
-	// conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
-	// conn.Write([]byte("kdorosh manual2\r\n\r\n"))
-	// fmt.Fprintf(GinkgoWriter, "***** Done writing CONNECT to %s\n", "KDOROSH ******")
-	// return
-
 	hij, ok := w.(http.Hijacker)
 	if !ok {
 		Fail("no hijacker")
 	}
 	host := r.URL.Host
 
-	// clientCerts, err := tls.X509KeyPair([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
-	// Expect(err).ToNot(HaveOccurred())
-
-	// caCertPool := x509.NewCertPool()
-	// ok = caCertPool.AppendCertsFromPEM([]byte(gloohelpers.Certificate())) // in prod this would not be the client cert
-	// if !ok {
-	// 	Fail("unable to append ca certs to cert pool")
-	// }
-	// tlsCfg := &tls.Config{
-	// 	Certificates: []tls.Certificate{clientCerts},
-	// 	RootCAs:      caCertPool,
-	// 	ClientCAs:    caCertPool,
-	// }
-
 	fmt.Fprintf(GinkgoWriter, "***** pre dial upstream \n")
 	targetConn, err := net.Dial("tcp", host)
-	// targetConn, err := tls.Dial("tcp", host, tlsCfg)
 	if err != nil {
 		http.Error(w, "can't connect", 500)
 		return
@@ -491,25 +383,18 @@ func connectProxyTls(w http.ResponseWriter, r *http.Request) {
 		Expect(err).ToNot(HaveOccurred())
 	}
 	defer conn.Close()
-	// tlsConn, ok := conn.(*tls.Conn)
-	// if !ok {
-	// 	Fail("connection was not a tls connection")
-	// }
-	// // need to call so peer certs are present
-	// err = tlsConn.Handshake()
 
 	fmt.Fprintf(GinkgoWriter, "Accepting CONNECT to %s\n", host)
-	// will only work HTTP1.1
+	// note to devs! will only work with HTTP 1.1 request from envoy!
 	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 
-	// no just copy:
+	// now just copy:
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	go func() {
 		defer GinkgoRecover()
 		fmt.Fprintf(GinkgoWriter, "***** start copy from upstream to envoy *****\n")
-		// buf.Flush()
 
 		for {
 			// read bytes from buf.Reader until EOF
