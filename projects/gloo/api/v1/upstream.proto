@@ -53,7 +53,7 @@ message Upstream {
     // if this upstream is created or modified by Discovery, metadata about the operation will be placed here.
     DiscoveryMetadata discovery_metadata = 3;
 
-    // SslConfig contains the options necessary to configure an upstream to use TLS origination
+    // SslConfig contains the options necessary to configure envoy to originate TLS to an upstream.
     UpstreamSslConfig ssl_config = 4;
 
     // Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
@@ -147,6 +147,11 @@ message Upstream {
     //
     // Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route
     google.protobuf.StringValue http_proxy_hostname = 21;
+
+    // HttpConnectSslConfig contains the options necessary to configure envoy to originate TLS to an HTTP Connect proxy.
+    // If you also want to ensure the bytes proxied by the HTTP Connect proxy are encrypted, you should also
+    // specify `ssl_config`.
+    UpstreamSslConfig http_connect_ssl_config = 4;
 
     // (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery.
     // This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it.
