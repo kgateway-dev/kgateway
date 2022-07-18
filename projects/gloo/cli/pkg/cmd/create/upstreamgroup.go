@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
@@ -138,7 +140,7 @@ func upstreamGroupDestinationsFromOpts(ctx context.Context, input options.InputU
 					Upstream: ussByKey[namespacedUpstream].GetMetadata().Ref(),
 				},
 			},
-			Weight: weight,
+			Weight: &wrappers.UInt32Value{Value: weight},
 		}
 		weightedDestinations = append(weightedDestinations, &wd)
 	}
