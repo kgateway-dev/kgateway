@@ -116,12 +116,16 @@ func ModifyPerFilterConfig(
 		// if we want to create an upstream so upstream-specific config has a place to live (e.g. tls), then we can
 		// support this on a new upstream type (i.e. will be covered by `configureSingleDest()` code path)
 		return nil
+	default:
+		err = errors.New("unexpected destination type that is nil")
+		destination := inAction.GetDestination()
+		if destination != nil {
+			err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(destination).Name())
+		}
+		logger := contextutils.LoggerFrom(ctx)
+		logger.DPanic("error: %v", err)
+		return err
 	}
-
-	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.GetDestination()).Name())
-	logger := contextutils.LoggerFrom(ctx)
-	logger.DPanic("error: %v", err)
-	return err
 }
 
 // call this from
