@@ -278,6 +278,8 @@ func startHttpProxy(ctx context.Context, useTLS bool) int {
 	port, err := strconv.Atoi(portStr)
 	Expect(err).ToNot(HaveOccurred())
 
+	fmt.Fprintln(GinkgoWriter, "go proxy addr", addr)
+
 	go func(useTLS bool) {
 		defer GinkgoRecover()
 		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy)}
