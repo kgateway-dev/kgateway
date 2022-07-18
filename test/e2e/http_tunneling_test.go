@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -245,7 +246,7 @@ var _ = Describe("tunneling", func() {
 				tlsUpstream = true
 			})
 
-			FIt("should proxy encrypted bytes over encrypted HTTP Connect", func() {
+			It("should proxy encrypted bytes over encrypted HTTP Connect", func() {
 				// the request path here is [envoy] -- encrypted --> [local HTTP Connect proxy] -- encrypted --> TLS upstream
 				jsonStr := `{"value":"Hello, world!"}`
 				testReq := testRequest(jsonStr)
@@ -352,12 +353,9 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 			}
 			Expect(err).NotTo(HaveOccurred())
 			_, err = conn.Write(bts)
-			if err != nil && !errors.Is(err, io.EOF) {
-				// as written, when copy ends we get error writing to socket
-				// but all bytes were written properly so for this test we will
-				// just log and ignore
-				fmt.Fprintf(GinkgoWriter, "copy err %v\n", err)
-				// Fail("in theory we should be able to enable this")
+			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, syscall.EPIPE) {
+				fmt.Fprintf(GinkgoWriter, "error writing from upstream to envoy %v\n", err)
+				Fail("error writing from upstream to envoy")
 			}
 		}
 		err = buf.Flush()
@@ -372,12 +370,9 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 			_, err := buf.Read(bts)
 			Expect(err).NotTo(HaveOccurred())
 			_, err = targetConn.Write(bts)
-			if err != nil && !errors.Is(err, io.EOF) {
-				// as written, when copy ends we get error writing to socket
-				// but all bytes were written properly so for this test we will
-				// just log and ignore
-				fmt.Fprintf(GinkgoWriter, "copy err %v\n", err)
-				// Fail("in theory we should be able to enable this")
+			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, syscall.EPIPE) {
+				fmt.Fprintf(GinkgoWriter, "error writing from envoy to upstream %v\n", err)
+				Fail("error writing from envoy to upstream")
 			}
 		}
 		wg.Done()
