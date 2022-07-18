@@ -2,4 +2,6 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/solo-projects/issues/3667
     resolvesIssue: false
-    description: Remove helm charts that created gateway deployment and service accounts
+    description: > 
+      Remove helm charts that created gateway deployment and service accounts. Also remove some unreachable code to start
+      the gateway process and the Dockerfile to build the image.
