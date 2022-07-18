@@ -73,12 +73,16 @@ func MarkPerFilterConfig(
 	// intentionally ignored because destination is not specified at runtime, so perFilterConfig is useless
 	case *v1.RouteAction_ClusterHeader:
 		return nil
+	default:
+		err = errors.New("unexpected destination type that is nil")
+		destination := inAction.GetDestination()
+		if destination != nil {
+			err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(destination).Name())
+		}
+		logger := contextutils.LoggerFrom(ctx)
+		logger.DPanic("error: %v", err)
+		return err
 	}
-
-	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.GetDestination()).Name())
-	logger := contextutils.LoggerFrom(ctx)
-	logger.DPanic("error: %v", err)
-	return err
 }
 
 func configureMultiDest(
