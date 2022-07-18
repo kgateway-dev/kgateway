@@ -7,6 +7,7 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -84,17 +85,34 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
 					for _, inCluster := range inClusters {
 						if inCluster.GetName() == cluster {
-							originalTransportSocket = inCluster.GetTransportSocket()
+							if inCluster.GetTransportSocket() != nil {
+								tmp := *inCluster.GetTransportSocket()
+								originalTransportSocket = &tmp
+							}
 							// we copy the transport socket to the generated cluster.
 							// the generated cluster will use upstream TLS context to leverage TLS origination;
 							// when we encapsulate in HTTP Connect the tcp data being proxied will
 							// be encrypted (thus we don't need the original transport socket metadata here)
 							inCluster.TransportSocket = nil
 							inCluster.TransportSocketMatches = nil
+
+							if us.GetHttpConnectSslConfig() == nil {
+								break
+							}
+							// user told us to configure ssl for the http connect proxy
+							cfg, err := utils.NewSslConfigTranslator().ResolveUpstreamSslConfig(params.Snapshot.Secrets, us.GetHttpConnectSslConfig())
+							if err != nil {
+								// return what we have so far, so that any modified input resources can still route
+								// successfully to their generated targets
+								return generatedClusters, nil, nil, generatedListeners, nil
+							}
+							inCluster.TransportSocket = &envoy_config_core_v3.TransportSocket{
+								Name:       wellknown.TransportSocketTls,
+								ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
+							}
 							break
 						}
 					}
-
 					generatedClusters = append(generatedClusters, generateSelfCluster(selfCluster, selfPipe, originalTransportSocket))
 					generatedListeners = append(generatedListeners, generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname))
 				}
