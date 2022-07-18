@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
 	"knative.dev/networking/pkg/apis/networking"
@@ -243,7 +245,7 @@ func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov
 			Destination: &gloov1.Destination{
 				DestinationType: serviceForSplit(split),
 			},
-			Weight:  weight,
+			Weight:  &wrappers.UInt32Value{Value: weight},
 			Options: weightedDestinationPlugins,
 		})
 	}
