@@ -4,7 +4,7 @@ FROM $ENVOY_IMAGE
 
 ARG GOARCH=amd64
 
-RUN apk -U upgrade
+RUN apk -U upgrade && apk update
 
 COPY envoyinit-linux-$GOARCH /usr/local/bin/envoyinit
 

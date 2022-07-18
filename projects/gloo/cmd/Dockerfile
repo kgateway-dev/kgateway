@@ -5,6 +5,7 @@ FROM $ENVOY_IMAGE
 ARG GOARCH=amd64
 
 RUN apk upgrade --update-cache \
+    && apk update \
     && apk add ca-certificates \
     && rm -rf /var/cache/apk/*
 
