@@ -223,7 +223,6 @@ var _ = Describe("Helm Test", func() {
 					// Note note: Update number in final expectation if you add new labels here.
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
-							"gateway.deployment.extraGatewayLabels.foo=bar",
 							"gloo.deployment.extraGlooLabels.foo=bar",
 							"discovery.deployment.extraDiscoveryLabels.foo=bar",
 							"gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.foo=bar",
@@ -240,7 +239,6 @@ var _ = Describe("Helm Test", func() {
 							"settings.integrations.knative.extraKnativeExternalAnnotations.foo=bar",
 							"settings.integrations.knative.extraKnativeInternalAnnotations.foo=bar",
 							"discovery.deployment.extraDiscoveryAnnotations.foo=bar",
-							"gateway.deployment.extraGatewayAnnotations.foo=bar",
 							"accessLogger.extraAccessLoggerAnnotations.foo=bar",
 							"settings.integrations.knative.proxy.extraClusterIngressProxyAnnotations.foo=bar",
 						},
