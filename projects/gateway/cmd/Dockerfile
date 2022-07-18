@@ -2,7 +2,7 @@ FROM alpine:3.13.8
 
 ARG GOARCH=amd64
 
-RUN apk -U upgrade
+RUN apk -U upgrade && apk update
 
 COPY gateway-linux-$GOARCH /usr/local/bin/gateway
 
