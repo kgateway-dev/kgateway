@@ -4,6 +4,7 @@ ARG GOARCH=amd64
 
 # Needed for access to AWS
 RUN apk upgrade --update-cache \
+    && apk update \
     && apk add ca-certificates \
     && rm -rf /var/cache/apk/*
 
