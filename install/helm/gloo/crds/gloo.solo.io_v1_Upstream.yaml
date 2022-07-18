@@ -596,6 +596,76 @@ spec:
                       type: integer
                   type: object
                 type: array
+              httpConnectSslConfig:
+                properties:
+                  allowRenegotiation:
+                    nullable: true
+                    type: boolean
+                  alpnProtocols:
+                    items:
+                      type: string
+                    type: array
+                  parameters:
+                    properties:
+                      cipherSuites:
+                        items:
+                          type: string
+                        type: array
+                      ecdhCurves:
+                        items:
+                          type: string
+                        type: array
+                      maximumProtocolVersion:
+                        type: string
+                        x-kubernetes-int-or-string: true
+                      minimumProtocolVersion:
+                        type: string
+                        x-kubernetes-int-or-string: true
+                    type: object
+                  sds:
+                    properties:
+                      callCredentials:
+                        properties:
+                          fileCredentialSource:
+                            properties:
+                              header:
+                                type: string
+                              tokenFileName:
+                                type: string
+                            type: object
+                        type: object
+                      certificatesSecretName:
+                        type: string
+                      clusterName:
+                        type: string
+                      targetUri:
+                        type: string
+                      validationContextName:
+                        type: string
+                    type: object
+                  secretRef:
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                    type: object
+                  sni:
+                    type: string
+                  sslFiles:
+                    properties:
+                      rootCa:
+                        type: string
+                      tlsCert:
+                        type: string
+                      tlsKey:
+                        type: string
+                    type: object
+                  verifySubjectAltName:
+                    items:
+                      type: string
+                    type: array
+                type: object
               httpProxyHostname:
                 nullable: true
                 type: string
