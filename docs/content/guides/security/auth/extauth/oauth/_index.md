@@ -163,7 +163,7 @@ The access token on the server is also revoked based on the discovered revocatio
 You can also override the revocation endpoint through the [DiscoveryOverride field]{{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#discoveryoverride" >}}) in `AuthConfig`.
 
 {{% notice warning %}}
-Gloo currently does not retry to revoke an access token if there is a service error with the authorization server.
+If the authorization server has a service error, Gloo logs out the user, but does not retry revoking the access token. Check the logs and your identity provider for errors, and manually revoke the access token.
 {{% /notice %}}
 
 ## Sessions in Redis
