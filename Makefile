@@ -286,29 +286,6 @@ glooctl-windows-$(GOARCH): $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe
 build-cli: glooctl-linux-$(GOARCH) glooctl-darwin-$(GOARCH) glooctl-windows-$(GOARCH)
 
 #----------------------------------------------------------------------------------
-# Gateway
-#----------------------------------------------------------------------------------
-
-GATEWAY_DIR=projects/gateway
-GATEWAY_SOURCES=$(call get_sources,$(GATEWAY_DIR))
-GATEWAY_OUTPUT_DIR=$(OUTPUT_DIR)/$(GATEWAY_DIR)
-
-$(GATEWAY_OUTPUT_DIR)/gateway-linux-$(GOARCH): $(GATEWAY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
-
-.PHONY: gateway
-gateway: $(GATEWAY_OUTPUT_DIR)/gateway-linux-$(GOARCH)
-
-$(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway: $(GATEWAY_DIR)/cmd/Dockerfile
-	cp $< $@
-
-.PHONY: gateway-docker
-gateway-docker: $(GATEWAY_OUTPUT_DIR)/gateway-linux-$(GOARCH) $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway
-	docker build $(GATEWAY_OUTPUT_DIR) -f $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REPO)/gateway:$(VERSION) $(QUAY_EXPIRATION_LABEL)
-
-#----------------------------------------------------------------------------------
 # Ingress
 #----------------------------------------------------------------------------------
 
@@ -478,7 +455,7 @@ certgen-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTGEN_OUTPUT_D
 # Build All
 #----------------------------------------------------------------------------------
 .PHONY: build
-build: gloo glooctl gateway discovery envoyinit certgen ingress
+build: gloo glooctl discovery envoyinit certgen ingress
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
@@ -607,7 +584,6 @@ endif
 .PHONY: docker-push-retag
 docker-push-retag:
 ifeq ($(RELEASE), "true")
-	docker tag $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION) $(IMAGE_REPO)/gloo:$(VERSION) && \
@@ -616,7 +592,6 @@ ifeq ($(RELEASE), "true")
 	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION)
 
-	docker tag $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION)-extended $(IMAGE_REPO)/gateway:$(VERSION)-extended && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION)-extended $(IMAGE_REPO)/ingress:$(VERSION)-extended && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION)-extended $(IMAGE_REPO)/discovery:$(VERSION)-extended && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION)-extended $(IMAGE_REPO)/gloo:$(VERSION)-extended && \
@@ -625,7 +600,6 @@ ifeq ($(RELEASE), "true")
 	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION)-extended $(IMAGE_REPO)/sds:$(VERSION)-extended && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION)-extended $(IMAGE_REPO)/access-logger:$(VERSION)-extended
 
-	docker push $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
@@ -634,7 +608,6 @@ ifeq ($(RELEASE), "true")
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
 
-	docker push $(IMAGE_REPO)/gateway:$(VERSION)-extended && \
 	docker push $(IMAGE_REPO)/ingress:$(VERSION)-extended && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION)-extended && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION)-extended && \
@@ -645,7 +618,7 @@ ifeq ($(RELEASE), "true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gateway-docker gloo-docker \
+docker: discovery-docker gloo-docker \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker
 
@@ -659,7 +632,6 @@ docker-push-local-arm: docker docker-push
 .PHONY: docker-push
 docker-push: $(DOCKER_IMAGES)
 ifeq ($(CREATE_ASSETS), "true")
-	docker push $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
@@ -743,7 +715,6 @@ security-checks:
 
 	curl -Ls "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_${machine}-${TRIVY_ARCH}.tar.gz" | tar zx '*trivy' || { echo "Download/extract failed for trivy."; exit 1; };
 
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/gateway_cve_report.docgen $(IMAGE_REPO)/gateway:$(VERSION) && \
 	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/ingress_cve_report.docgen $(IMAGE_REPO)/ingress:$(VERSION) && \
 	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/discovery_cve_report.docgen $(IMAGE_REPO)/discovery:$(VERSION) && \
 	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/gloo_cve_report.docgen $(IMAGE_REPO)/gloo:$(VERSION) && \
