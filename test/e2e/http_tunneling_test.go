@@ -162,13 +162,23 @@ var _ = Describe("tunneling", func() {
 		return responseBody
 	}
 
-	It("should proxy http", func() {
-		// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test upstream
-		// and back. The HTTP proxy is sending unencrypted HTTP bytes over
-		// TCP to the test upstream (an echo server)
-		jsonStr := `{"value":"Hello, world!"}`
-		testReq := testRequest(jsonStr)
-		Expect(testReq).Should(ContainSubstring(jsonStr))
+	Context("plaintext", func() {
+
+		JustBeforeEach(func() {
+			_, err := testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			checkProxy()
+		})
+
+		It("should proxy http", func() {
+			// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test upstream
+			// and back. The HTTP proxy is sending unencrypted HTTP bytes over
+			// TCP to the test upstream (an echo server)
+			jsonStr := `{"value":"Hello, world!"}`
+			testReq := testRequest(jsonStr)
+			Expect(testReq).Should(ContainSubstring(jsonStr))
+		})
 	})
 
 	Context("with TLS", func() {
