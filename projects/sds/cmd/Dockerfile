@@ -2,7 +2,7 @@ FROM alpine:3.15.4
 
 ARG GOARCH=amd64
 
-RUN apk -U upgrade
+RUN apk -U upgrade && apk update
 
 COPY sds-linux-$GOARCH /usr/local/bin/sds
 

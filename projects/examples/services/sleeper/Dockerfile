@@ -1,6 +1,7 @@
 FROM alpine:3.15.4
 
 RUN apk upgrade --update-cache \
+    && apk update \
     && apk add ca-certificates \
     && rm -rf /var/cache/apk/*
 
