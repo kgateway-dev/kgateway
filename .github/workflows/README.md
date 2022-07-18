@@ -30,7 +30,7 @@ This Github Action will not run by default on a Draft Pull Request. If you would
 ## [Trivy Vulnerability Scanning](./trivy-analysis-scheduled.yaml)
 A scheduled job which scans images released from both the Open Source and Enterprise repositories.
 
-To run the vulnerability locally, check out [the security scanner README](https://github.com/solo-io/gloo/tree/master/docs/cmd/securityscanutils)
+To run the vulnerability checker locally, check out [the security scanner README](https://github.com/solo-io/gloo/tree/master/docs/cmd/securityscanutils)
 
 ## Future Work
 It would be great to add support for issue comment directives. This would mean that commenting `/sig-ci` would signal CI to run, or `/skip-ci` would auto-succeed CI.
