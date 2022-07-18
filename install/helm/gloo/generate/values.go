@@ -259,19 +259,17 @@ type UdsOptions struct {
 }
 
 type Gateway struct {
-	Enabled                       *bool              `json:"enabled,omitempty" desc:"enable Gloo Edge API Gateway features"`
-	Validation                    GatewayValidation  `json:"validation,omitempty" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
-	Deployment                    *GatewayDeployment `json:"deployment,omitempty"`
-	CertGenJob                    *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
-	RolloutJob                    *RolloutJob        `json:"rolloutJob,omitempty" desc:"This job waits for the 'gloo' deployment to successfully roll out (if the validation webhook is enabled), and then applies the Gloo Edge custom resources."`
-	CleanupJob                    *CleanupJob        `json:"cleanupJob,omitempty" desc:"This job cleans up resources that are not deleted by Helm when Gloo Edge is uninstalled."`
-	UpdateValues                  *bool              `json:"updateValues,omitempty" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
-	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount,omitempty" `
-	ServiceAccount                ServiceAccount     `json:"serviceAccount,omitempty" `
-	ReadGatewaysFromAllNamespaces *bool              `json:"readGatewaysFromAllNamespaces,omitempty" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
-	CompressedProxySpec           *bool              `json:"compressedProxySpec,omitempty" desc:"if true, enables compression for the Proxy CRD spec"`
-	LogLevel                      *string            `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
-	PersistProxySpec              *bool              `json:"persistProxySpec,omitempty" desc:"Enable writing Proxy CRD to etcd. Disabled by default for performance."`
+	Enabled                       *bool             `json:"enabled,omitempty" desc:"enable Gloo Edge API Gateway features"`
+	Validation                    GatewayValidation `json:"validation,omitempty" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
+	CertGenJob                    *CertGenJob       `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
+	RolloutJob                    *RolloutJob       `json:"rolloutJob,omitempty" desc:"This job waits for the 'gloo' deployment to successfully roll out (if the validation webhook is enabled), and then applies the Gloo Edge custom resources."`
+	CleanupJob                    *CleanupJob       `json:"cleanupJob,omitempty" desc:"This job cleans up resources that are not deleted by Helm when Gloo Edge is uninstalled."`
+	UpdateValues                  *bool             `json:"updateValues,omitempty" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
+	ProxyServiceAccount           ServiceAccount    `json:"proxyServiceAccount,omitempty" `
+	ReadGatewaysFromAllNamespaces *bool             `json:"readGatewaysFromAllNamespaces,omitempty" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
+	CompressedProxySpec           *bool             `json:"compressedProxySpec,omitempty" desc:"if true, enables compression for the Proxy CRD spec"`
+	LogLevel                      *string           `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
+	PersistProxySpec              *bool             `json:"persistProxySpec,omitempty" desc:"Enable writing Proxy CRD to etcd. Disabled by default for performance."`
 	Service                       *KubeResourceOverride
 }
 
@@ -299,16 +297,6 @@ type Webhook struct {
 	DisableHelmHook  *bool             `json:"disableHelmHook,omitempty" desc:"do not create the webhook as helm hook (default false)"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the webhook"`
 	*KubeResourceOverride
-}
-
-type GatewayDeployment struct {
-	Image                   *Image            `json:"image,omitempty"`
-	Stats                   *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway pod"`
-	FloatingUserId          *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser               *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	ExtraGatewayLabels      map[string]string `json:"extraGatewayLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway deployment."`
-	ExtraGatewayAnnotations map[string]string `json:"extraGatewayAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the gloo edge gateway deployment."`
-	*DeploymentSpec
 }
 
 type Job struct {

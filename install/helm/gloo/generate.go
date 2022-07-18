@@ -175,7 +175,6 @@ func generateValuesConfig(version, repositoryPrefix, globalPullPolicy string) (*
 
 	cfg.Gloo.Deployment.Image.Tag = &version
 	cfg.Discovery.Deployment.Image.Tag = &version
-	cfg.Gateway.Deployment.Image.Tag = &version
 	cfg.Gateway.CertGenJob.Image.Tag = &version
 
 	cfg.AccessLogger.Image.Tag = &version

@@ -90,11 +90,11 @@ spec:
           protocol: TCP
         readinessProbe:
           tcpSocket:
-            port: {{ .Values.gloo.deployment.xdsPort }}
+            port: {{ .Values.gloo.deployment.xdsPort }}/
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
-{{- if or .Values.gloo.deployment.livenessProbeEnabled .Values.gateway.deployment.livenessProbeEnabled}}
+{{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
