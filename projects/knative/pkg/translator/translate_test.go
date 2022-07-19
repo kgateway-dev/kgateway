@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/onsi/ginkgo"
@@ -185,7 +187,7 @@ var _ = Describe("Translate", func() {
 																			},
 																		},
 																	},
-																	Weight: 0x00000064,
+																	Weight: &wrappers.UInt32Value{Value: 0x00000064},
 																},
 															},
 														},
@@ -234,7 +236,7 @@ var _ = Describe("Translate", func() {
 																			},
 																		},
 																	},
-																	Weight: 0x00000064,
+																	Weight: &wrappers.UInt32Value{Value: 0x00000064},
 																},
 															},
 														},
@@ -292,7 +294,7 @@ var _ = Describe("Translate", func() {
 																			},
 																		},
 																	},
-																	Weight: 0x00000064,
+																	Weight: &wrappers.UInt32Value{Value: 0x00000064},
 																},
 															},
 														},

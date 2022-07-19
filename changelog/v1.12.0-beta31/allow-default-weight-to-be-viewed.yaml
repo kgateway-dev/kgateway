@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6424
+    description: >
+      Make changes to weight for weighted destination so that when a weight of 0 is set 
+      <kubectl describe resource> will show that you have set 0 and not hide 
+      it as if it is an unset field
+    resolvesIssue: false
