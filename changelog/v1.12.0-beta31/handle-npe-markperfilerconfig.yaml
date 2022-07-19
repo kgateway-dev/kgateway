@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6534
+    description: |
+      Fix bug where NPE occurs when the destination is nil in the RouteActions.
+    resolvesIssue: false
