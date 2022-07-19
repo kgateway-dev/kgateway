@@ -122,6 +122,28 @@ var _ = Describe("Helm Test", func() {
 				}
 			})
 
+			It("should allow image digest pinning", func() {
+				shaTest := "sha256:1234123412341234123412341234213412341234123412341234123412341234"
+				prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gateway.deployment.image.digest=" + shaTest,
+						},
+					})
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment" && resource.GetName() == "gateway"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						containers := structuredDeployment.Spec.Template.Spec.Containers
+						Expect(len(containers)).To(Equal(1), "should have exactly 1 container")
+						image := containers[0].Image
+						Expect(image).To(ContainSubstring(shaTest), "should have sha digest in image")
+					})
+			})
+
 			It("should have all resources marked with a namespace", func() {
 				prepareMakefile(namespace, helmValues{})
 
