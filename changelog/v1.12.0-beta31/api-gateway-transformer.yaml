@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: API Changes, syncer additions to support API Gateway transformation functionality in Gloo Enterprise
+    issueLink: https://github.com/solo-io/gloo/issues/6143
