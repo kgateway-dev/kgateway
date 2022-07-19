@@ -15,6 +15,10 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 		desired.SslConfig = original.GetSslConfig()
 	}
 
+	if desired.GetHttpConnectSslConfig() == nil {
+		desired.HttpConnectSslConfig = original.GetHttpConnectSslConfig()
+	}
+
 	if desired.GetCircuitBreakers() == nil {
 		desired.CircuitBreakers = original.GetCircuitBreakers()
 	}

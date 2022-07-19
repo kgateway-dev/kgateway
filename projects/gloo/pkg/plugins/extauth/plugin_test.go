@@ -3,6 +3,8 @@ package extauth_test
 import (
 	"context"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
@@ -164,7 +166,7 @@ func getPluginContext(globalSettings bool, authOnVirtualHost, authOnRoute, authO
 				Upstream: extAuthServerUpstream.Metadata.Ref(),
 			},
 		},
-		Weight:  1,
+		Weight:  &wrappers.UInt32Value{Value: 1},
 		Options: &gloov1.WeightedDestinationOptions{}, // will be set below
 	}
 
