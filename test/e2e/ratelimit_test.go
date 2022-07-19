@@ -167,7 +167,8 @@ var _ = Describe("Rate Limit", func() {
 			}
 			ref := rlserver.Metadata.Ref()
 			rlSettings := &ratelimit.Settings{
-				RatelimitServerRef: ref,
+				RatelimitServerRef:      ref,
+				EnableXRatelimitHeaders: true,
 			}
 
 			ctx, cancel = context.WithCancel(context.Background())

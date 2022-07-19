@@ -5,17 +5,17 @@ description: Control the rate of traffic sent to your services.
 ---
 
 #### Why Rate Limit in API Gateway Environments
-API Gateways act as a control point for the outside world to access the various application services 
-(monoliths, microservices, serverless functions) running in your environment. In microservices or hybrid application 
-architecture, any number of these workloads will need to accept incoming requests from external end users (clients). 
-Incoming requests can be numerous and varied -- protecting backend services and globally enforcing business limits 
+API Gateways act as a control point for the outside world to access the various application services
+(monoliths, microservices, serverless functions) running in your environment. In microservices or hybrid application
+architecture, any number of these workloads will need to accept incoming requests from external end users (clients).
+Incoming requests can be numerous and varied -- protecting backend services and globally enforcing business limits
 can become incredibly complex being handled at the application level. Using an API gateway we can define client
 request limits to these varied services in one place.
 
 #### Rate Limiting in Gloo Edge
 
 Gloo Edge exposes Envoy's rate-limit API, which allows users to provide their own implementation of an Envoy gRPC rate-limit
-service. Lyft provides an example implementation of this gRPC rate-limit service 
+service. Lyft provides an example implementation of this gRPC rate-limit service
 [here](https://github.com/lyft/ratelimit). To configure Gloo Edge to use your rate-limit server implementation,
 install Gloo Edge gateway and then modify the settings to use your rate limit server upstream:
 
@@ -35,7 +35,7 @@ metadata:
   name: default
   namespace: gloo-system
 spec:
-  discoveryNamespace: gloo-system  
+  discoveryNamespace: gloo-system
   extauth:
     extauthzServerRef:
       name: extauth
@@ -48,7 +48,7 @@ spec:
     xdsBindAddr: 0.0.0.0:9977
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
-  kubernetesSecretSource: {}      
+  kubernetesSecretSource: {}
   ratelimitServer:
     ratelimitServerRef:
       name: ...        # rate-limit server upstream name
@@ -56,6 +56,7 @@ spec:
     requestTimeout: ...      # optional, default 100ms
     denyOnFail: ...          # optional, default false
     rateLimitBeforeAuth: ... # optional, default false
+    enableXRatelimitHeaders: ... # optional, default false
   refreshRate: 60s
 {{< /highlight  >}}
 
@@ -85,6 +86,10 @@ When it starts up correctly, you should see a log line similar to:
 ```
 
 ### Rate Limit Configuration
+
+#### Enabling Envoy's X-RateLimit Headers
+Setting the value `enableXRatelimitHeaders` to true will configure Envoy to return the headers defined in their [rate limit API](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ratelimit/v3/rate_limit.proto.html#envoy-v3-api-field-extensions-filters-http-ratelimit-v3-ratelimit-enable-x-ratelimit-headers)
+to the downstream.
 
 Check out the guides for each of the Gloo Edge rate-limit APIs and configuration options for Gloo Edge Enterprise's rate-limit
 service:
