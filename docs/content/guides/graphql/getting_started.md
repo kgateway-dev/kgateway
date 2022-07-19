@@ -72,18 +72,29 @@ Explore GraphQL service discovery with the Pet Store sample application.
        app: petstore
    EOF
    ```
-   Optional: You can [create a route and send a `/GET` request to `/api/pets` of this service]({{% versioned_link_path fromRoot="/guides/security/auth/custom_auth/#setup" %}}), which returns the following unfiltered JSON output:
-   ```json
-   [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
-   ```
 
-2. To allow Gloo Edge to automatically discover API specifications and create GraphQL schemas, turn on FDS discovery.
+2. Optional: Check the unfiltered JSON output for the Pet Store service.
+   1. Create a route for the service.
+      ```sh
+      glooctl add route --name default --namespace gloo-system --path-prefix / --dest-name default-petstore-8080 --dest-namespace gloo-system
+      ```
+
+   2. Send a `/GET` request to `/v3/pet/10` of this service.
+      ```sh
+      curl "$(glooctl proxy url)/v3/pet/10" -H 'Accept: application/json'
+      ```
+      Example unfiltered JSON output:
+      ```json
+      {"id":10,"category":{"id":3,"name":"Rabbits"},"name":"Rabbit 1","photoUrls":["url1","url2"],"tags":[{"id":1,"name":"tag3"},{"id":2,"name":"tag4"}],"status":"available"}
+      ```
+
+3. To allow Gloo Edge to automatically discover API specifications and create GraphQL schemas, turn on FDS discovery.
    ```sh
    kubectl patch settings -n gloo-system default --type=merge --patch '{"spec":{"discovery":{"fdsMode":"BLACKLIST"}}}'
    ```
    Note that this setting enables discovery for all upstreams. To enable discovery for only specified upstreams, see the [Function Discovery Service (FDS) guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#function-discovery-service-fds" %}}).
 
-3. Verify that OpenAPI specification discovery is enabled, and that Gloo Edge created a corresponding GraphQL custom resource.
+4. Verify that OpenAPI specification discovery is enabled, and that Gloo Edge created a corresponding GraphQL custom resource.
    ```sh
    kubectl get graphqlapis -n gloo-system
    ```
@@ -94,12 +105,12 @@ Explore GraphQL service discovery with the Pet Store sample application.
    default-petstore-8080   2m58s
    ```
 
-4. Optional: Check out the generated GraphQL schema. 
+5. Optional: Check out the generated GraphQL schema. 
    ```sh
    kubectl get graphqlapis default-petstore-8080 -o yaml -n gloo-system
    ```
 
-5. Create a virtual service that defines a `Route` with a `graphqlApiRef` as the destination. In this example, all traffic to `/graphql` is handled by the GraphQL server in the Envoy proxy.
+6. Create a virtual service that defines a `Route` with a `graphqlApiRef` as the destination. In this example, all traffic to `/graphql` is handled by the GraphQL server in the Envoy proxy.
 {{< highlight yaml "hl_lines=12-16" >}}
 cat << EOF | kubectl apply -f -
 apiVersion: gateway.solo.io/v1
@@ -120,18 +131,18 @@ spec:
 EOF
 {{< /highlight >}}
 
-6. Send a request to the endpoint to verify that the request is successfully resolved by Envoy.
+6. Send a request to the endpoint to verify that the request is successfully resolved by Envoy. For example, if you want only the name of the pet given the pet's ID:
    ```sh
-   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {getPetById(petId: 2) {name}}"}'
+   curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {getPetById(petId: 10) {name}}"}' 
    ```
    Example successful response:
    ```json
-   {"data":{"getPetById":{"name":"Cat 2"}}}
+   {"data":{"getPetById":{"name":"Rabbit 1"}}}
    ```
 
 This JSON output is filtered only for the desired data, as compared to the unfiltered response that the Pet Store app returned to the GraphQL server:
 ```json
-[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+{"id":10,"category":{"id":3,"name":"Rabbits"},"name":"Rabbit 1","photoUrls":["url1","url2"],"tags":[{"id":1,"name":"tag3"},{"id":2,"name":"tag4"}],"status":"available"}
 ```
 Data filtering is one advantage of using GraphQL instead of querying the upstream directly. Because the GraphQL query is issued for only the name of the pets, GraphQL is able to filter out any data in the response that is irrelevant to the query, and return only the data that is specifically requested.
 
