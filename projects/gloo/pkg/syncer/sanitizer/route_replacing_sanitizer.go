@@ -16,6 +16,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -104,9 +105,15 @@ func makeFallbackListenerAndCluster(
 				}},
 			},
 		},
-		HttpFilters: []*envoyhcm.HttpFilter{{
-			Name: wellknown.Router,
-		}},
+		HttpFilters: []*envoyhcm.HttpFilter{
+			{
+				Name: wellknown.Router,
+				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
+					TypedConfig: &any.Any{
+						TypeUrl: "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router",
+					},
+				},
+			}},
 	}
 
 	typedHcmConfig, err := glooutils.MessageToAny(hcmConfig)

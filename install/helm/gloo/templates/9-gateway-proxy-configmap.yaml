@@ -98,6 +98,8 @@ data:
                             {{- end }}
                     http_filters:
                       - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 {{- end}} {{- /* if $statsConfig.enabled */}}
 {{- if $spec.readConfig }}
         - name: read_config_listener
@@ -149,6 +151,8 @@ data:
                                 cluster: admin_port_cluster
                     http_filters:
                       - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 {{- end}} {{- /* if $spec.readConfig */}}
       clusters:
       - name: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}:{{ .Values.gloo.deployment.xdsPort }}

@@ -52,7 +52,9 @@ static_resources:
                   prefix_rewrite: /stats/prometheus
                   cluster: admin_port_cluster
           http_filters:
-          - name: envoy.filters.http.router
+          - name: 
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
   clusters:
   - name: gloo.gloo-system.svc.cluster.local:9977
     alt_stat_name: xds_cluster
