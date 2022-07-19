@@ -56,7 +56,7 @@ spec:
             kubectl annotate gateways.gateway.solo.io -n {{ . }} -l app=gloo helm.sh/resource-policy- || exit $?
             {{- end }}
       restartPolicy: OnFailure
-  ttlSecondsAfterFinished: 60
+  ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1

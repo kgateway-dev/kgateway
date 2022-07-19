@@ -52,7 +52,7 @@ spec:
             kubectl label gateways.gateway.solo.io -n {{ . }} -l app=gloo,app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by- || exit $?
             {{- end }}
       restartPolicy: OnFailure
-  ttlSecondsAfterFinished: 60
+  ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1

@@ -344,6 +344,7 @@
 |gateway.rolloutJob.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
 |gateway.rolloutJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
 |gateway.rolloutJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
+|gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.cleanupJob.image.tag|string|1.22.9|The image tag for the container.|
 |gateway.cleanupJob.image.repository|string|kubectl|The image repository (name) for the container.|
 |gateway.cleanupJob.image.registry|string|bitnami|The image hostname prefix and registry, such as quay.io/solo-io.|
@@ -353,6 +354,7 @@
 |gateway.cleanupJob.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
 |gateway.cleanupJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
 |gateway.cleanupJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
+|gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.updateValues|bool||if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.proxyServiceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
