@@ -386,7 +386,7 @@ var _ = Describe("enterprise_warning plugin", func() {
 								DestinationSpec: &v1.DestinationSpec{
 									DestinationType: &v1.DestinationSpec_Aws{
 										Aws: &awsapi.DestinationSpec{
-											LogicalName: "funcName",
+											LogicalName:        "funcName",
 											UnwrapAsApiGateway: false,
 										},
 									},
@@ -418,7 +418,7 @@ var _ = Describe("enterprise_warning plugin", func() {
 								DestinationSpec: &v1.DestinationSpec{
 									DestinationType: &v1.DestinationSpec_Aws{
 										Aws: &awsapi.DestinationSpec{
-											LogicalName: "funcName",
+											LogicalName:        "funcName",
 											UnwrapAsApiGateway: true,
 										},
 									},
@@ -452,7 +452,7 @@ var _ = Describe("enterprise_warning plugin", func() {
 										DestinationSpec: &v1.DestinationSpec{
 											DestinationType: &v1.DestinationSpec_Aws{
 												Aws: &awsapi.DestinationSpec{
-													LogicalName: "funcName",
+													LogicalName:        "funcName",
 													UnwrapAsApiGateway: true,
 												},
 											},

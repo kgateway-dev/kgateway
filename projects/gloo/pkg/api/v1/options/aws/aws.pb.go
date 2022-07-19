@@ -248,10 +248,14 @@ type DestinationSpec struct {
 	// Intended to ease migration when previously using alb to invoke Lambdas.
 	// For further information see below link for the expected format when true.
 	// https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
+	// Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided.
+	// If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway
 	UnwrapAsAlb bool `protobuf:"varint,7,opt,name=unwrap_as_alb,json=unwrapAsAlb,proto3" json:"unwrap_as_alb,omitempty"`
+	// Enterprise-Only
 	// Unwrap the response as if the proxy was an AWS API Gateway.
-	// Cannot be configured simultaneously with unwrap_as_alb.
-	// This functionality is only available to enterprise users.
+	// Intended to ease migration when previously using API Gateway to invoke Lambdas.
+	// Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided.
+	// If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway
 	UnwrapAsApiGateway bool `protobuf:"varint,8,opt,name=unwrap_as_api_gateway,json=unwrapAsApiGateway,proto3" json:"unwrap_as_api_gateway,omitempty"`
 }
 
