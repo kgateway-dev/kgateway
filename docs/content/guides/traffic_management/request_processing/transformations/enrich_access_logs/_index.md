@@ -134,7 +134,7 @@ Let's see how this can be done.
 
 We will add two custom access logging attributes:
 
-- `pod_name`: the name of the Gateway pod that handled the request
+- `pod_name`: the name of the Gateway proxy pod that handled the request
 - `endpoint_url`: the URL of the upstream endpoint; note that this attribute is included in the JSON response payload returned by the Postman Echo service (see our earlier `curl` command output).
 
 #### Update access logging configuration
@@ -259,7 +259,7 @@ You should see an entry like the following:
 }
 {{< /highlight >}}
 
-As you can see, the access log entries now include the gateway pod name and the `url` attribute in the response body.
+As you can see, the access log entries now include the gateway proxy pod name and the `url` attribute in the response body.
 
 ### Cleanup
 To cleanup the resources created in this tutorial you can run the following commands:

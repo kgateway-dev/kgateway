@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Updates documentation for v1.12.x, including docs for an upgrade guide, 
+      GraphQL remote executor support, and rolling gateway functionality into the gloo pod.
+    issueLink: https://github.com/solo-io/gloo/issues/6656
