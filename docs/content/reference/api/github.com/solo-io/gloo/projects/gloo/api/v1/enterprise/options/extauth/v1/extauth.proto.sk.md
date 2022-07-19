@@ -541,7 +541,7 @@ redis socket types
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `keyPrefix` | `string` | Prefix to append to cookie keys. |
+| `keyPrefix` | `string` | Prefix to append to stored cookies. |
 
 
 

@@ -3500,7 +3500,7 @@ type UserSession_InternalSession struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Prefix to append to cookie keys.
+	// Prefix to append to stored cookies.
 	KeyPrefix string `protobuf:"bytes,1,opt,name=key_prefix,json=keyPrefix,proto3" json:"key_prefix,omitempty"`
 }
 
