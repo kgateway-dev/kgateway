@@ -121,7 +121,7 @@ spec:
 
 ## Executor configuration for existing GraphQL API upstreams
 
-When your upstream service is already a GraphQL API, use a `remote` executor in the corresponding `GraphQLApi` resource. The remote executor tells the `GraphQLApi` to use the resolver in the upstream to resolve requests. You do not need to define another resolve within the `GraphQLApi`.
+When your upstream service is already a GraphQL API, use a `remote` executor in the corresponding `GraphQLApi` resource. The remote executor tells the `GraphQLApi` to use the resolver in the upstream to resolve requests. You do not need to define another resolver within the `GraphQLApi`.
 
 ```yaml
 ...

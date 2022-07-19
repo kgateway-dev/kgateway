@@ -66,7 +66,7 @@ Gloo Edge makes use of secrets in Kubernetes to store tokens, certificates, and 
 * gloo-token: Mounted as a volume on `gloo` pods.
 * sh.helm.release.v1.gloo.v1
 
-Gloo Edge makes use of certificates for validation and authentication. When Gloo Edge in gateway mode is installed, it runs a job to generate certificates. The resulting certificate is stored in a Kubernetes secret called `gateway-validation-certs`, and mapped as a volume to the `gloo` pods.
+Gloo Edge makes use of certificates for validation and authentication. When Gloo Edge is installed in gateway mode, it runs a job to generate certificates. The resulting certificate is stored in a Kubernetes secret called `gateway-validation-certs`, and mapped as a volume to the `gloo` pods.
 
 ### Custom Resource Definitions
 

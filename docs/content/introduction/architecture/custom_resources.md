@@ -29,13 +29,13 @@ As a quick refresher, Gloo Edge is deployed as pods from three different contain
 * discovery
 * gateway-proxy/ingress-proxy
 
-The gloo and discovery pods act as the control plane for Gloo Edge. The data plane is handled by the gateway-proxy/ingress-proxy pods running Envoy.
+The `gloo` and `discovery` pods act as the control plane for Gloo Edge. The data plane is handled by the `gateway-proxy/ingress-proxy` pods running Envoy.
 
 The `gloo` deployment is responsible for:
 
-* Translating Proxy, Upstreams, UpstreamGroups, Secrets, AuthConfigs, ConfigMaps, Endpoints, Gateway, RouteTables, and Virtual Service Custom Resources into cached Envoy config
+* Translating Proxy, Upstreams, UpstreamGroups, Secrets, AuthConfigs, ConfigMaps, Endpoints, Gateway, RouteTables, and Virtual Service Custom Resources into cached Envoy configurations
 * Serving cached Envoy configurations via xDS
-* Validation webhooks hit the Gateway validation server to validate a configuration before application
+* Validation webhooks in the Gateway validation server are used to validate a configuration before it is applied
 * Gloo Edge validation server is hit by the Gateway validation server to validate Proxy from Gloo Edge's point of view
 
 Discovery is responsible for:
