@@ -10,11 +10,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
-	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	envoytransform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
-	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	v1transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
@@ -85,7 +84,7 @@ var _ = Describe("Plugin", func() {
 							},
 							DestinationSpec: &v1.DestinationSpec{
 								DestinationType: &v1.DestinationSpec_Aws{
-									Aws: &awsapi.DestinationSpec{
+									Aws: &aws.DestinationSpec{
 										LogicalName: funcName,
 									},
 								},
@@ -353,7 +352,7 @@ var _ = Describe("Plugin", func() {
 				Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
 
 				pfc := outroute.GetTypedPerFilterConfig()[transformation.FilterName]
-				var transforms envoy_transform.RouteTransformations
+				var transforms envoytransform.RouteTransformations
 				pfc.UnmarshalTo(&transforms)
 
 				Expect(transforms.Transformations).To(HaveLen(2))
