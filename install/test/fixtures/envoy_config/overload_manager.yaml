@@ -52,7 +52,7 @@ static_resources:
                   prefix_rewrite: /stats/prometheus
                   cluster: admin_port_cluster
           http_filters:
-          - name: 
+          - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
   clusters:
