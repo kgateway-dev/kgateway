@@ -1,8 +1,8 @@
 changelog:
   - type: DEPENDENCY_BUMP
-      dependencyOwner: solo-io
-      dependencyRepo: envoy-gloo
-      dependencyTag: 1.22.0-patch2
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: 1.22.0-patch2
   - type: NON_USER_FACING
     description: >
       Introduce enterprise API to support configuring a new per route option
