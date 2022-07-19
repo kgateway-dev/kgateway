@@ -109,10 +109,9 @@ var _ = Describe("CustomAuth", func() {
 	})
 
 	AfterEach(func() {
-		cancel()
 		envoyInstance.Clean()
-
 		srv.GracefulStop()
+		cancel()
 	})
 
 	It("works as expected", func() {

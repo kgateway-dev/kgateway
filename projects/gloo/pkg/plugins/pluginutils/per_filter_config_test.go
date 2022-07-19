@@ -246,4 +246,29 @@ var _ = Describe("TypedPerFilterConfig", func() {
 			})
 		})
 	})
+	Context("nil destination", func() {
+		BeforeEach(func() {
+			in = &v1.Route{
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{},
+				},
+			}
+			out = &envoy_config_route_v3.Route{
+				Action: &envoy_config_route_v3.Route_Route{
+					Route: &envoy_config_route_v3.RouteAction{
+						ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
+							Cluster: "test",
+						},
+					},
+				},
+			}
+		})
+		It("should not throw NPE when destination is nil", func() {
+			err := MarkPerFilterConfig(context.TODO(), &v1snap.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+				return nil, nil
+			})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("unexpected destination type that is nil"))
+		})
+	})
 })
