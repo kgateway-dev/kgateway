@@ -4,15 +4,9 @@ weight: 50
 description: Use Gloo Edge to stitch together schemas for multiple GraphQL services.
 ---
 
-{{% notice warning %}}
-Stitching is a beta feature. Do not use this feature in a production environment.
-{{% /notice %}}
-
 When you use GraphQL in Gloo Edge, you can stitch multiple schemas together to expose one unified GraphQL server to your clients.
 
-Consider a cluster that has two different gRPC services, `user-svc` and `product-svc`. These services are either native GraphQL servers, or have been converted to GraphQL via automatic schema discovery. Each service has similar information that you might want to provide as part of a unified data model. 
-
-Typically, clients must stitch together the services in the frontend. With Gloo Edge, you can instead stitch the GraphQL schemas for these services together in the backend, and expose a unified GraphQL server to your clients. This frees your clients to consider only what data that they want to fetch, not how to fetch the data.
+Consider a cluster that has two existing GraphQL APIs, `user-svc` and `product-svc`. Each service has similar information that you might want to provide as part of a unified data model. Typically, clients must stitch together the services in the frontend. With Gloo Edge, you can instead stitch the GraphQL schemas for these services together in the backend, and expose a unified GraphQL server to your clients. This stitching frees your clients to consider only what data that they want to fetch, not how to fetch the data.
 
 Follow along with the user and product service example.
 
