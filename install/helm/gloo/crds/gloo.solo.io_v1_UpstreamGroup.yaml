@@ -56,6 +56,8 @@ spec:
                                   type: boolean
                                 unwrapAsAlb:
                                   type: boolean
+                                unwrapAsApiGateway:
+                                  type: boolean
                               type: object
                             azure:
                               properties:

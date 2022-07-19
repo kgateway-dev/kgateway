@@ -76,4 +76,8 @@ message DestinationSpec {
     // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
     bool unwrap_as_alb = 7;
 
+    // Unwrap the response as if the proxy was an AWS API Gateway.
+    // Cannot be configured simultaneously with unwrap_as_alb.
+    // This functionality is only available to enterprise users.
+    bool unwrap_as_api_gateway = 8;
 }

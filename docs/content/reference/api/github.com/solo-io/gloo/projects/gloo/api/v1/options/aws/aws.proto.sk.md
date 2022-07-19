@@ -88,6 +88,7 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 "requestTransformation": bool
 "responseTransformation": bool
 "unwrapAsAlb": bool
+"unwrapAsApiGateway": bool
 
 ```
 
@@ -98,6 +99,7 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 | `requestTransformation` | `bool` | Include headers, querystring, request path, and request method in the event payload sent to aws lambda. |
 | `responseTransformation` | `bool` | de-jsonify response bodies returned from aws lambda. |
 | `unwrapAsAlb` | `bool` | Unwrap the response as if the proxy was an ALB. Intended to ease migration when previously using alb to invoke Lambdas. For further information see below link for the expected format when true. https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html. |
+| `unwrapAsApiGateway` | `bool` | Unwrap the response as if the proxy was an AWS API Gateway TODO: more description TODO: make oneof with unwrap_as_alb. |
 
 
 
