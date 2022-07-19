@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"unicode/utf8"
@@ -39,9 +38,12 @@ var (
 
 const (
 	ExtensionName = "aws_lambda"
-	// filter info
-	FilterName = "io.solo.aws_lambda"
+	FilterName    = "io.solo.aws_lambda"
 )
+
+// PerRouteConfigGenerator defines how to build the Per Route Configuration for a Lambda upstream
+// This enables the open source and enterprise definitions to differ, but still share the same core plugin functionality
+type PerRouteConfigGenerator func(destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error)
 
 var (
 	pluginStage          = plugins.DuringStage(plugins.OutAuthStage)
@@ -49,15 +51,17 @@ var (
 )
 
 type Plugin struct {
-	recordedUpstreams  map[string]*aws.UpstreamSpec
-	ctx                context.Context
-	settings           *v1.GlooOptions_AWSOptions
-	upstreamOptions    *v1.UpstreamOptions
-	needTransformation bool
+	perRouteConfigGenerator      PerRouteConfigGenerator
+	recordedUpstreams            map[string]*aws.UpstreamSpec
+	settings                     *v1.GlooOptions_AWSOptions
+	upstreamOptions              *v1.UpstreamOptions
+	requiresTransformationFilter bool
 }
 
-func NewPlugin() plugins.Plugin {
-	return &Plugin{}
+func NewPlugin(perRouteConfigGenerator PerRouteConfigGenerator) plugins.Plugin {
+	return &Plugin{
+		perRouteConfigGenerator: perRouteConfigGenerator,
+	}
 }
 
 func (p *Plugin) Name() string {
@@ -65,11 +69,10 @@ func (p *Plugin) Name() string {
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
-	p.ctx = params.Ctx
 	p.recordedUpstreams = make(map[string]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
 	p.upstreamOptions = params.Settings.GetUpstreamOptions()
-	p.needTransformation = false
+	p.requiresTransformationFilter = false
 	return nil
 }
 
@@ -167,7 +170,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	err := pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, FilterName,
+	err := pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
 			// check if it's aws destination
 			if spec.GetDestinationSpec() == nil {
@@ -181,42 +184,24 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			// get upstream
 			upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
 			if err != nil {
-				contextutils.LoggerFrom(p.ctx).Error(err)
+				contextutils.LoggerFrom(params.Ctx).Error(err)
 				return nil, err
 			}
 			lambdaSpec, ok := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 			if !ok {
 				err := errors.Errorf("%v is not an AWS upstream", *upstreamRef)
-				contextutils.LoggerFrom(p.ctx).Error(err)
+				contextutils.LoggerFrom(params.Ctx).Error(err)
 				return nil, err
 			}
 			// should be aws upstream
-
-			// get function
-			logicalName := awsDestinationSpec.Aws.GetLogicalName()
-			for _, lambdaFunc := range lambdaSpec.GetLambdaFunctions() {
-				if lambdaFunc.GetLogicalName() == logicalName {
-
-					lambdaRouteFunc := &AWSLambdaPerRoute{
-						Async: awsDestinationSpec.Aws.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
-						// we need to query escape per AWS spec:
-						// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-						Qualifier:   url.QueryEscape(lambdaFunc.GetQualifier()),
-						Name:        lambdaFunc.GetLambdaFunctionName(),
-						UnwrapAsAlb: awsDestinationSpec.Aws.GetUnwrapAsAlb(),
-					}
-
-					return lambdaRouteFunc, nil
-				}
-			}
-			return nil, errors.Errorf("unknown function %v", logicalName)
+			return p.perRouteConfigGenerator(awsDestinationSpec.Aws, lambdaSpec)
 		},
 	)
 
 	if err != nil {
 		return err
 	}
-	return pluginutils.ModifyPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
+	return pluginutils.ModifyPerFilterConfig(params.Ctx, params.Snapshot, in, out, transformation.FilterName,
 		func(spec *v1.Destination, existing *any.Any) (proto.Message, error) {
 			// check if it's aws destination
 			if spec.GetDestinationSpec() == nil {
@@ -227,12 +212,12 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				return nil, nil
 			}
 
-			requesttransform := awsDestinationSpec.Aws.GetRequestTransformation()
-			repsonsetransform := awsDestinationSpec.Aws.GetResponseTransformation()
-			if !requesttransform && !repsonsetransform {
+			requiresRequestTransformation := awsDestinationSpec.Aws.GetRequestTransformation()
+			requiresResponseTransformation := awsDestinationSpec.Aws.GetResponseTransformation()
+			if !requiresRequestTransformation && !requiresResponseTransformation {
 				return nil, nil
 			}
-			p.needTransformation = true
+			p.requiresTransformationFilter = true
 
 			transform := &envoy_transform.RouteTransformations_RouteTransformation{
 				Stage: transformation.AwsStageNumber,
@@ -240,7 +225,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			var reqTransform *envoy_transform.Transformation
 			var respTransform *envoy_transform.Transformation
 
-			if requesttransform {
+			if requiresRequestTransformation {
 				reqTransform = &envoy_transform.Transformation{
 					TransformationType: &envoy_transform.Transformation_HeaderBodyTransform{
 						HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
@@ -250,7 +235,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				}
 			}
 
-			if repsonsetransform {
+			if requiresResponseTransformation {
 				respTransform = &envoy_transform.Transformation{
 					TransformationType: &envoy_transform.Transformation_TransformationTemplate{
 						TransformationTemplate: &envoy_transform.TransformationTemplate{
@@ -269,7 +254,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				}
 			}
 
-			if requesttransform {
+			if requiresRequestTransformation {
 				// Early stage transform: place all headers in the request body
 				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
 					RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
@@ -306,23 +291,23 @@ func (p *Plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 		// no upstreams no filter
 		return nil, nil
 	}
-	filterconfig := &AWSLambdaConfig{}
+	filterConfig := &AWSLambdaConfig{}
 	switch typedFetcher := p.settings.GetCredentialsFetcher().(type) {
 	case *v1.GlooOptions_AWSOptions_EnableCredentialsDiscovey:
-		filterconfig.CredentialsFetcher = &AWSLambdaConfig_UseDefaultCredentials{
+		filterConfig.CredentialsFetcher = &AWSLambdaConfig_UseDefaultCredentials{
 			UseDefaultCredentials: &wrappers.BoolValue{
 				Value: typedFetcher.EnableCredentialsDiscovey,
 			},
 		}
 	case *v1.GlooOptions_AWSOptions_ServiceAccountCredentials:
-		filterconfig.CredentialsFetcher = &AWSLambdaConfig_ServiceAccountCredentials_{
+		filterConfig.CredentialsFetcher = &AWSLambdaConfig_ServiceAccountCredentials_{
 			ServiceAccountCredentials: typedFetcher.ServiceAccountCredentials,
 		}
 	}
-	filterconfig.CredentialRefreshDelay = p.settings.GetCredentialRefreshDelay()
-	filterconfig.PropagateOriginalRouting = p.settings.GetPropagateOriginalRouting().GetValue()
+	filterConfig.CredentialRefreshDelay = p.settings.GetCredentialRefreshDelay()
+	filterConfig.PropagateOriginalRouting = p.settings.GetPropagateOriginalRouting().GetValue()
 
-	f, err := plugins.NewStagedFilter(FilterName, filterconfig, pluginStage)
+	f, err := plugins.NewStagedFilter(FilterName, filterConfig, pluginStage)
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +315,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 	filters := []plugins.StagedHttpFilter{
 		f,
 	}
-	if p.needTransformation {
+	if p.requiresTransformationFilter {
 		awsStageConfig := &envoy_transform.FilterTransformations{
 			Stage: transformation.AwsStageNumber,
 		}
@@ -342,4 +327,26 @@ func (p *Plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 	}
 
 	return filters, nil
+}
+
+func GenerateAWSLambdaRouteConfig(destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error) {
+	logicalName := destination.GetLogicalName()
+	for _, lambdaFunc := range upstream.GetLambdaFunctions() {
+		if lambdaFunc.GetLogicalName() == logicalName {
+
+			lambdaRouteFunc := &AWSLambdaPerRoute{
+				Async: destination.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
+				// we need to query escape per AWS spec:
+				// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
+				Qualifier:   url.QueryEscape(lambdaFunc.GetQualifier()),
+				Name:        lambdaFunc.GetLambdaFunctionName(),
+				UnwrapAsAlb: destination.GetUnwrapAsAlb(),
+				// TransformerConfig is intentionally not included as that is an enterprise only feature
+				TransformerConfig: nil,
+			}
+
+			return lambdaRouteFunc, nil
+		}
+	}
+	return nil, errors.Errorf("unknown lambda function %v", logicalName)
 }

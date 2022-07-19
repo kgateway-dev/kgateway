@@ -12,6 +12,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
@@ -39,6 +40,7 @@ const (
 	SanitizeClusterHeaderExtensionName = "sanitize_cluster_header"
 	WafExtensionName                   = "waf"
 	WasmExtensionName                  = "wasm"
+	Aws                                = "aws"
 )
 
 type plugin struct{}
@@ -97,6 +99,10 @@ func (p *plugin) ProcessRoute(_ plugins.RouteParams, in *v1.Route, _ *envoy_conf
 
 	if isWafConfiguredOnRoute(in) {
 		enterpriseExtensions = append(enterpriseExtensions, WafExtensionName)
+	}
+
+	if isEnterpriseAWSConfiguredOnRoute(in) {
+		enterpriseExtensions = append(enterpriseExtensions, Aws)
 	}
 
 	return GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
@@ -256,4 +262,30 @@ func isWafConfiguredOnListener(in *v1.HttpListener) bool {
 //
 func isWasmConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetWasm() != nil
+}
+
+//
+// aws
+//
+func isEnterpriseAWSConfiguredOnRoute(in *v1.Route) bool {
+	var awsDestinationSpecs []*aws.DestinationSpec
+
+	if singleDestinationSpec := in.GetRouteAction().GetSingle().GetDestinationSpec().GetAws(); singleDestinationSpec != nil {
+		awsDestinationSpecs = append(awsDestinationSpecs, singleDestinationSpec)
+	}
+
+	for _, weightedDestination := range in.GetRouteAction().GetMulti().GetDestinations() {
+		if weightedDestinationSpec := weightedDestination.GetDestination().GetDestinationSpec().GetAws(); weightedDestinationSpec != nil {
+			awsDestinationSpecs = append(awsDestinationSpecs, weightedDestinationSpec)
+		}
+	}
+
+	for _, awsDestinationSpec := range awsDestinationSpecs {
+		if awsDestinationSpec.GetUnwrapAsApiGateway() {
+			// this is an enterprise only feature
+			return true
+		}
+	}
+
+	return false
 }

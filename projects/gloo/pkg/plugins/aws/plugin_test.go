@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	accessKeyValue    = "some acccess value"
+	accessKeyValue    = "some access value"
 	secretKeyValue    = "some secret value"
 	sessionTokenValue = "some session token value"
 )
@@ -46,7 +46,7 @@ var _ = Describe("Plugin", func() {
 	)
 
 	BeforeEach(func() {
-		awsPlugin = NewPlugin()
+		awsPlugin = NewPlugin(GenerateAWSLambdaRouteConfig)
 
 		upstreamName := "up"
 		clusterName := upstreamName
@@ -366,7 +366,7 @@ var _ = Describe("Plugin", func() {
 				verify()
 			})
 			It("should work with transformation first", func() {
-				// the same but in referse order
+				// the same but in reverse order
 				err := transformationPlugin.ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 				Expect(err).NotTo(HaveOccurred())
 				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
