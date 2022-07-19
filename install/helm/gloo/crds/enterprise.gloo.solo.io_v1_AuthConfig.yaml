@@ -282,10 +282,6 @@ spec:
                             session:
                               properties:
                                 cookie:
-                                  properties:
-                                    allowRefreshing:
-                                      nullable: true
-                                      type: boolean
                                   type: object
                                 cookieOptions:
                                   properties:

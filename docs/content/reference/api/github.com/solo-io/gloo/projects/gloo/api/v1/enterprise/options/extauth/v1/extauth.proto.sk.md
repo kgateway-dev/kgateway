@@ -535,13 +535,11 @@ redis socket types
 
 
 ```yaml
-"allowRefreshing": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set, refresh expired id-tokens using the refresh-token. Defaults to false. Explicitly set to true to disable refreshing. |
 
 
 
