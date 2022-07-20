@@ -290,6 +290,9 @@ apis:
   envoy.config.filter.http.aws_lambda.v2.AWSLambdaProtocolExtension:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaProtocolExtension
     package: envoy.config.filter.http.aws_lambda.v2
+  envoy.config.filter.http.aws_lambda.v2.ApiGatewayTransformation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#ApiGatewayTransformation
+    package: envoy.config.filter.http.aws_lambda.v2
   envoy.config.filter.http.graphql.v2.AbstractTypeResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#AbstractTypeResolver
     package: envoy.config.filter.http.graphql.v2

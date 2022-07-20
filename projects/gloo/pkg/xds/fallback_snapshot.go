@@ -4,8 +4,10 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoyhttpconnectionmanager "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -80,6 +82,11 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 		HttpFilters: []*envoyhttpconnectionmanager.HttpFilter{
 			{
 				Name: wellknown.Router,
+				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
+					TypedConfig: &any.Any{
+						TypeUrl: "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router",
+					},
+				},
 			},
 		},
 	}

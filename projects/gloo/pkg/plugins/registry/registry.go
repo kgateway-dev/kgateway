@@ -62,7 +62,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		loadbalancer.NewPlugin(),
 		upstreamconn.NewPlugin(),
 		azure.NewPlugin(),
-		aws.NewPlugin(),
+		aws.NewPlugin(aws.GenerateAWSLambdaRouteConfig),
 		rest.NewPlugin(),
 		hcmPlugin,
 		als.NewPlugin(),

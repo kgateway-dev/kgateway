@@ -157,7 +157,7 @@ func NewStagedFilterWithConfig(name string, config proto.Message, stage FilterSt
 }
 
 // MustNewStagedFilter creates an instance of the named filter with the desired stage.
-// Returns a filter even if an error occured.
+// Returns a filter even if an error occurred.
 // Should rarely be used as disregarding an error is bad practice but does make
 // appending easier.
 // If not directly appending consider using NewStagedFilter instead of this function.
