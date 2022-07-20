@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/advanced_http"
+	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -364,6 +365,113 @@ var _ = Describe("enterprise_warning plugin", func() {
 			ExpectEnterpriseOnlyErr(err)
 			Expect(f).To(BeNil())
 		})
+	})
+
+	Context("aws", func() {
+
+		It("will not err if aws.UnwrapAsApiGateway is not configured on single destination route", func() {
+			p := NewPlugin()
+
+			route := &v1.Route{
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &v1.Destination{
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: &core.ResourceRef{
+										Namespace: "ns",
+										Name:      "upstreamName",
+									},
+								},
+								DestinationSpec: &v1.DestinationSpec{
+									DestinationType: &v1.DestinationSpec_Aws{
+										Aws: &awsapi.DestinationSpec{
+											LogicalName:        "funcName",
+											UnwrapAsApiGateway: false,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			err := p.ProcessRoute(plugins.RouteParams{}, route, &envoy_config_route.Route{})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("will err if aws.UnwrapAsApiGateway is configured on single destination route", func() {
+			p := NewPlugin()
+
+			route := &v1.Route{
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &v1.Destination{
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: &core.ResourceRef{
+										Namespace: "ns",
+										Name:      "upstreamName",
+									},
+								},
+								DestinationSpec: &v1.DestinationSpec{
+									DestinationType: &v1.DestinationSpec_Aws{
+										Aws: &awsapi.DestinationSpec{
+											LogicalName:        "funcName",
+											UnwrapAsApiGateway: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			err := p.ProcessRoute(plugins.RouteParams{}, route, &envoy_config_route.Route{})
+			ExpectEnterpriseOnlyErr(err)
+		})
+
+		It("will err if aws.UnwrapAsApiGateway is configured on multi destination route", func() {
+			p := NewPlugin()
+
+			route := &v1.Route{
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Multi{
+							Multi: &v1.MultiDestination{
+								Destinations: []*v1.WeightedDestination{{
+									Weight: &wrappers.UInt32Value{
+										Value: 100,
+									},
+									Destination: &v1.Destination{
+										DestinationType: &v1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Namespace: "ns",
+												Name:      "upstreamName",
+											},
+										},
+										DestinationSpec: &v1.DestinationSpec{
+											DestinationType: &v1.DestinationSpec_Aws{
+												Aws: &awsapi.DestinationSpec{
+													LogicalName:        "funcName",
+													UnwrapAsApiGateway: true,
+												},
+											},
+										},
+									},
+								}},
+							},
+						},
+					},
+				},
+			}
+
+			err := p.ProcessRoute(plugins.RouteParams{}, route, &envoy_config_route.Route{})
+			ExpectEnterpriseOnlyErr(err)
+		})
+
 	})
 
 })

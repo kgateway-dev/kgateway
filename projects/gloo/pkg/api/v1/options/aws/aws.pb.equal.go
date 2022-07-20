@@ -161,5 +161,9 @@ func (m *DestinationSpec) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetUnwrapAsApiGateway() != target.GetUnwrapAsApiGateway() {
+		return false
+	}
+
 	return true
 }

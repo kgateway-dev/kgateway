@@ -56,6 +56,8 @@ static_resources:
                   cluster: admin_port_cluster
           http_filters:
           - name: envoy.filters.http.router # if $spec.tracing # if $statsConfig.enabled # if $spec.readConfig
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
   clusters:
   - name: gloo.gloo-system.svc.cluster.local:9977
     alt_stat_name: xds_cluster
@@ -269,6 +271,8 @@ static_resources:
           codec_type: AUTO
           http_filters:
           - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           route_config:
             name: prometheus_route
             virtual_hosts:
@@ -421,6 +425,8 @@ static_resources:
           codec_type: AUTO
           http_filters:
           - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           route_config:
             name: prometheus_route
             virtual_hosts:
@@ -559,6 +565,8 @@ static_resources:
           codec_type: AUTO
           http_filters:
           - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           route_config:
             name: prometheus_route
             virtual_hosts:
@@ -595,6 +603,8 @@ static_resources:
           codec_type: AUTO
           http_filters:
           - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           route_config:
             name: read_config_route
             virtual_hosts:
@@ -759,6 +769,8 @@ static_resources:
           codec_type: AUTO
           http_filters:
           - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           route_config:
             name: prometheus_route
             virtual_hosts:
