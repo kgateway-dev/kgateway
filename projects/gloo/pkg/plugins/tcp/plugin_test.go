@@ -3,6 +3,9 @@ package tcp_test
 import (
 	"time"
 
+	envoy_extensions_filters_network_sni_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/sni_cluster/v3"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
@@ -289,7 +292,8 @@ var _ = Describe("Plugin", func() {
 			Expect(filterChains).To(HaveLen(1))
 			Expect(filterChains[0].Filters).To(HaveLen(2))
 			Expect(filterChains[0].Filters[0].Name).To(Equal(SniFilter))
-			Expect(filterChains[0].Filters[0].GetTypedConfig()).To(BeNil())
+			sniClusterConfig := utils.MustAnyToMessage(filterChains[0].Filters[0].GetTypedConfig()).(*envoy_extensions_filters_network_sni_cluster_v3.SniCluster)
+			Expect(sniClusterConfig).NotTo(BeNil())
 
 			var cfg envoytcp.TcpProxy
 			err = translatorutil.ParseTypedConfig(filterChains[0].Filters[1], &cfg)
