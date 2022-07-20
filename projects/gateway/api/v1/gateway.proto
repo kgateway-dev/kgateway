@@ -39,7 +39,6 @@ message Gateway {
     bool ssl = 1;
 
     // the bind address the gateway should serve traffic on
-    // must either be an Ipv6 or Ipv4-mapped address
     string bind_address = 3;
 
     // bind ports must not conflict across gateways for a single proxy

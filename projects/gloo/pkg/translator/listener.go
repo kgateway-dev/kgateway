@@ -77,10 +77,7 @@ func (l *listenerTranslatorInstance) computeListenerAddress() *envoy_config_core
 		// If bindIP is not an IPv4 address, To4 returns nil.
 		// As of Envoy 1.22: https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.22/v1.22.0.html
 		// the Ipv4Compat flag can only be set on Ipv6 address and Ipv4-mapped Ipv6 address.
-		validation.AppendListenerError(l.report,
-			validationapi.ListenerReport_Error_ProcessingError,
-			fmt.Sprintf("bindAddress %s is not a valid Ipv6 or Ipv4-mapped address", bindAddress),
-		)
+		bindAddress = bindIP.To16().String()
 	}
 
 	return &envoy_config_core_v3.Address{

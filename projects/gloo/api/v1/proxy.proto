@@ -70,7 +70,7 @@ message Listener {
     string name = 1;
 
     // the bind address for the listener.
-    // both Ipv4-mapped and Ipv6 formats are supported
+    // both ipv4 and ipv6 formats are supported
     string bind_address = 2;
 
     // the port to bind on

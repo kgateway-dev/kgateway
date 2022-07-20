@@ -49,14 +49,6 @@ var _ = Describe("Transformations", func() {
 				DisableFds:     true,
 				DisableUds:     true,
 			},
-			// temporary
-			Settings: &gloov1.Settings{
-				Gateway: &gloov1.GatewayOptions{
-					Validation: &gloov1.GatewayOptions_ValidationOptions{
-						DisableTransformationValidation: &wrappers.BoolValue{Value: true},
-					},
-				},
-			},
 		}
 
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
