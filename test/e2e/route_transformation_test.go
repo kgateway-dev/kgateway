@@ -124,7 +124,7 @@ var _ = Describe("Transformations", func() {
 			},
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
-				BindAddress: net.IPv6zero.String(),
+				BindAddress: net.IPv4zero.String(),
 				BindPort:    envoyPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{

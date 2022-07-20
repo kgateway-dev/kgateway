@@ -2,7 +2,6 @@ package translator
 
 import (
 	"fmt"
-	"net"
 	"reflect"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -64,27 +63,21 @@ func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) *env
 
 // computeListenerAddress returns the Address that this listener will listen for traffic
 func (l *listenerTranslatorInstance) computeListenerAddress() *envoy_config_core_v3.Address {
-	bindAddress := l.listener.GetBindAddress()
-
-	bindIP := net.ParseIP(bindAddress)
-	if bindIP == nil {
-		// If bindAddress is not a valid textual representation of an IP address
+	// As of Envoy 1.22: https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.22/v1.22.0.html
+	// the Ipv4Compat flag can only be set on Ipv6 address and Ipv4-mapped Ipv6 address.
+	listenerBindAddress, err := GetIpv6Address(l.listener.GetBindAddress())
+	if err != nil {
 		validation.AppendListenerError(l.report,
 			validationapi.ListenerReport_Error_ProcessingError,
-			fmt.Sprintf("bindAddress %s is not a valid IP address", bindAddress),
+			err.Error(),
 		)
-	} else if bindIP.To4() != nil {
-		// If bindIP is not an IPv4 address, To4 returns nil.
-		// As of Envoy 1.22: https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.22/v1.22.0.html
-		// the Ipv4Compat flag can only be set on Ipv6 address and Ipv4-mapped Ipv6 address.
-		bindAddress = bindIP.To16().String()
 	}
 
 	return &envoy_config_core_v3.Address{
 		Address: &envoy_config_core_v3.Address_SocketAddress{
 			SocketAddress: &envoy_config_core_v3.SocketAddress{
 				Protocol: envoy_config_core_v3.SocketAddress_TCP,
-				Address:  bindAddress,
+				Address:  listenerBindAddress,
 				PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
 					PortValue: l.listener.GetBindPort(),
 				},
