@@ -30,10 +30,10 @@ import (
 )
 
 var (
-	_ plugins.Plugin           = new(Plugin)
-	_ plugins.UpstreamPlugin   = new(Plugin)
-	_ plugins.RoutePlugin      = new(Plugin)
-	_ plugins.HttpFilterPlugin = new(Plugin)
+	_ plugins.Plugin           = new(plugin)
+	_ plugins.UpstreamPlugin   = new(plugin)
+	_ plugins.RoutePlugin      = new(plugin)
+	_ plugins.HttpFilterPlugin = new(plugin)
 )
 
 const (
@@ -50,7 +50,7 @@ var (
 	transformPluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 )
 
-type Plugin struct {
+type plugin struct {
 	perRouteConfigGenerator      PerRouteConfigGenerator
 	recordedUpstreams            map[string]*aws.UpstreamSpec
 	settings                     *v1.GlooOptions_AWSOptions
@@ -59,16 +59,16 @@ type Plugin struct {
 }
 
 func NewPlugin(perRouteConfigGenerator PerRouteConfigGenerator) plugins.Plugin {
-	return &Plugin{
+	return &plugin{
 		perRouteConfigGenerator: perRouteConfigGenerator,
 	}
 }
 
-func (p *Plugin) Name() string {
+func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	p.recordedUpstreams = make(map[string]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
 	p.upstreamOptions = params.Settings.GetUpstreamOptions()
@@ -80,7 +80,7 @@ func getLambdaHostname(s *aws.UpstreamSpec) string {
 	return fmt.Sprintf("lambda.%s.amazonaws.com", s.GetRegion())
 }
 
-func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 	upstreamSpec, ok := in.GetUpstreamType().(*v1.Upstream_Aws)
 	if !ok {
 		// not ours
@@ -169,7 +169,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	err := pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
 			// check if it's aws destination
@@ -286,7 +286,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	)
 }
 
-func (p *Plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	if len(p.recordedUpstreams) == 0 {
 		// no upstreams no filter
 		return nil, nil
