@@ -56,7 +56,6 @@ else
   endif
 endif
 
-# TODO: This PR cannot merge until the envoy-gloo version is bumped to include the API gateway changes
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.22.0-patch1
 
 # The full SHA of the currently checked out commit
