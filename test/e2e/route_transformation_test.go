@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
 
@@ -48,6 +49,14 @@ var _ = Describe("Transformations", func() {
 				DisableFds:     true,
 				DisableUds:     true,
 			},
+			// temporary
+			Settings: &gloov1.Settings{
+				Gateway: &gloov1.GatewayOptions{
+					Validation: &gloov1.GatewayOptions_ValidationOptions{
+						DisableTransformationValidation: &wrappers.BoolValue{Value: true},
+					},
+				},
+			},
 		}
 
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
@@ -86,9 +95,8 @@ var _ = Describe("Transformations", func() {
 	})
 
 	AfterEach(func() {
-		if envoyInstance != nil {
-			envoyInstance.Clean()
-		}
+		envoyInstance.Clean()
+
 		cancel()
 	})
 
@@ -98,7 +106,7 @@ var _ = Describe("Transformations", func() {
 
 		client := &http.Client{Timeout: time.Second}
 
-		Eventually(func() (string, error) {
+		EventuallyWithOffset(1, func() (string, error) {
 			// send a request with a body
 			var buf bytes.Buffer
 			buf.Write(body)
@@ -124,7 +132,7 @@ var _ = Describe("Transformations", func() {
 			},
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
-				BindAddress: "0.0.0.0",
+				BindAddress: net.IPv6zero.String(),
 				BindPort:    envoyPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
