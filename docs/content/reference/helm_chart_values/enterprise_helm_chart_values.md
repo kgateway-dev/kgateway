@@ -12,7 +12,7 @@ chart for Enterprise Gloo Edge. More information on using a Helm chart to instal
 Because the Gloo Edge Enterprise Helm chart uses the open source chart as a dependency, 
 you must add the `gloo.` prefix to all open source Gloo Edge chart values.
 
-This applies to all values except for `global.*`. For example, when you install Gloo Edge Enterprise, `gateway.certGenJob.enabled` must be changed to `gloo.gateway.certGenJob.enabled`, but `global.glooRbac.create` remains unchanged.
+This applies to all values except for `global.*`. For example, when you install Gloo Edge Enterprise, `ingress.deployment.nodeName` must be changed to `gloo.ingress.deployment.nodeName`, but `global.glooRbac.create` remains unchanged.
 {{% /notice %}}
 
 {{< readfile file="static/content/glooe-values.docgen" markdown="true" >}}

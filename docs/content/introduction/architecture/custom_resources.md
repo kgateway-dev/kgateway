@@ -23,24 +23,19 @@ When Gloo Edge is installed on Kubernetes, it creates a number of Custom Resourc
 | {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} | gloo.solo.io | Group multiple Upstreams and/or external endpoints to be referenced by Virtual Service(s). |
 | {{< protobuf name="enterprise.gloo.solo.io.AuthConfig" display="AuthConfig">}} | enterprise.gloo.solo.io | User-facing authentication configuration referenced by Virtual Service(s). |
 
-As a quick refresher, Gloo Edge is deployed as pods from four different container images:
+As a quick refresher, Gloo Edge is deployed as pods from three different container images:
 
-* gateway
 * gloo
 * discovery
 * gateway-proxy/ingress-proxy
 
-The gateway, gloo, and discovery pods act as the control plane for Gloo Edge. The data plane is handled by the gateway-proxy/ingress-proxy pods running Envoy.
+The `gloo` and `discovery` pods act as the control plane for Gloo Edge. The data plane is handled by the `gateway-proxy/ingress-proxy` pods running Envoy.
 
-Gateway is responsible for:
+The `gloo` deployment is responsible for:
 
-* Translating Gateway, RouteTables, and Virtual Service Custom Resources into configuration & status on the Proxy CR
-* Validation webhooks hit the Gateway validation server to validate a configuration before application
-
-Gloo Edge is responsible for:
-
-* Translating Proxy, Upstreams, UpstreamGroups, Secrets, AuthConfigs, ConfigMaps, and Endpoints into cached Envoy config
+* Translating Proxy, Upstreams, UpstreamGroups, Secrets, AuthConfigs, ConfigMaps, Endpoints, Gateway, RouteTables, and Virtual Service Custom Resources into cached Envoy configurations
 * Serving cached Envoy configurations via xDS
+* Validation webhooks in the Gateway validation server are used to validate a configuration before it is applied
 * Gloo Edge validation server is hit by the Gateway validation server to validate Proxy from Gloo Edge's point of view
 
 Discovery is responsible for:
@@ -58,7 +53,7 @@ The next few sections detail different scenarios where a Custom Resource is used
 
 ![Gateway and Proxy Configuration]({{< versioned_link_path fromRoot="/img/gateway-cr.png" >}})
 
-When a user or process wants to perform CRUD (Create, Read, Update, Delete) operations on a Virtual Server, Gateway, or Route Table they may use the `glooctl` command-line tool or `kubectl` directly to make changes. The changes are written to a new or existing Custom Resource matching the resource type that is being altered. The Gateway pods of Gloo Edge take the information from all three Custom Resource types, and merge and transform the data to create a Proxy Custom Resource. The Proxy Custom Resource is watched by the Gloo Edge pods, which use it to generate the snapshot to be pulled by the Envoy Proxy instances.
+When a user or process wants to perform CRUD (Create, Read, Update, Delete) operations on a Virtual Server, Gateway, or Route Table they may use the `glooctl` command-line tool or `kubectl` directly to make changes. The changes are written to a new or existing Custom Resource matching the resource type that is being altered. The Gateway functionality in the Gloo Edge pods takes the information from all three Custom Resource types, and merges and transforms the data to create a Proxy Custom Resource. The Proxy Custom Resource is watched by the Gloo Edge pods, which use it to generate the snapshot to be pulled by the Envoy Proxy instances.
 
 ---
 
@@ -88,9 +83,7 @@ The Upstream Group Custom Resource is created by a user or process utilizing the
 
 ## Settings
 
-Gloo Edge keeps global settings stored in a Settings Custom Resource. When a new Gateway, Gloo Edge, or Discovery pod is created, it will look for a Settings Custom Resource to load its configuration.
-
-![Gateway and Proxy Configuration]({{< versioned_link_path fromRoot="/img/settings-cr.png" >}})
+Gloo Edge keeps global settings stored in a Settings Custom Resource. When a new Gloo Edge or Discovery pod is created, it looks for a Settings Custom Resource to load its configuration.
 
 The Settings Custom Resource is typically created through an installation process using Helm. The values in the CR can be manipulated using the `glooctl` command-line tool or `kubectl` directly. The pods run a periodic sync process that looks for changes to the Settings CR. When a change is detected it is applied after an internal snapshot is taken.
 
