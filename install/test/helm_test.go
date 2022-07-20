@@ -138,7 +138,7 @@ var _ = Describe("Helm Test", func() {
 					Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 					containers := structuredDeployment.Spec.Template.Spec.Containers
-					Expect(len(containers)).To(Equal(1), "should have exactly 1 container")
+					Expect(containers).To(HaveLen(1), "should have exactly 1 container")
 					image := containers[0].Image
 					Expect(image).To(ContainSubstring(shaTest), "should have sha digest in image")
 				})
