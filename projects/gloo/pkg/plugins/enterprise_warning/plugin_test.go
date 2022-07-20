@@ -442,6 +442,9 @@ var _ = Describe("enterprise_warning plugin", func() {
 						Destination: &v1.RouteAction_Multi{
 							Multi: &v1.MultiDestination{
 								Destinations: []*v1.WeightedDestination{{
+									Weight: &wrappers.UInt32Value{
+										Value: 100,
+									},
 									Destination: &v1.Destination{
 										DestinationType: &v1.Destination_Upstream{
 											Upstream: &core.ResourceRef{
