@@ -7,3 +7,7 @@ changelog:
     dependencyOwner: prometheus
     dependencyRepo: client_golang
     dependencyTag: v1.11.1
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: linux
+    dependencyRepo: alpine
+    dependencyTag: 3.15.4
