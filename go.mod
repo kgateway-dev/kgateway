@@ -82,6 +82,7 @@ require (
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
+	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/tools v0.1.10
 	google.golang.org/genproto v0.0.0-20211129164237-f09f9a12af12
@@ -124,7 +125,7 @@ replace (
 
 	//Fix for CVE-2021-44716
 	//knative@v0.0.0-20211206113427-18589ac7627e cannot be updated without updating controller-runtime
-	golang.org/x/net v0.0.0-20211205041911-012df41ee64c => golang.org/x/net v0.0.0-20211209124913-491a49abca63
+	//golang.org/x/net v0.0.0-20211205041911-012df41ee64c => golang.org/x/net v0.0.0-20211209124913-491a49abca63
 
 	// version upgrade to 1.40.2 fails a specific unit test
 	// see https://github.com/solo-io/gloo/issues/5719
