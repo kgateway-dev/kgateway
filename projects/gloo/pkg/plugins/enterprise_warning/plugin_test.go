@@ -369,7 +369,7 @@ var _ = Describe("enterprise_warning plugin", func() {
 
 	Context("aws", func() {
 
-		It("will not err if aws.UnwrapAsApiGateway is nt configured on single destination route", func() {
+		It("will not err if aws.UnwrapAsApiGateway is not configured on single destination route", func() {
 			p := NewPlugin()
 
 			route := &v1.Route{
