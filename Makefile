@@ -50,7 +50,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.21.3-patch1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.20.4-patch2
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -138,7 +138,7 @@ install-go-tools: mod-download
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
 	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
-	GOBIN=$(DEPSGOBIN) go install github.com/saiskee/gettercheck
+	GOBIN=$(DEPSGOBIN) go get github.com/saiskee/gettercheck
 
 # command to run regression tests with guaranteed access to $(DEPSGOBIN)/ginkgo
 # requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
