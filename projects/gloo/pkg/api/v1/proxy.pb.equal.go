@@ -1361,8 +1361,14 @@ func (m *WeightedDestination) Equal(that interface{}) bool {
 		}
 	}
 
-	if m.GetWeight() != target.GetWeight() {
-		return false
+	if h, ok := interface{}(m.GetWeight()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetWeight()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetWeight(), target.GetWeight()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetOptions()).(equality.Equalizer); ok {

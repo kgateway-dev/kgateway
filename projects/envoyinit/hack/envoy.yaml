@@ -26,6 +26,8 @@ static_resources:
                             autoHostRewrite: true
                 http_filters:
                   - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
   clusters:
     - name: echo_service
       connect_timeout: 0.25s

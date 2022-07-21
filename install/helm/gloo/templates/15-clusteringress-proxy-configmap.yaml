@@ -115,6 +115,8 @@ data:
                             {{- end }}
                     http_filters:
                       - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 {{- if .Values.settings.integrations.knative.proxy.tracing }}
                     tracing:
 {{ toYaml .Values.settings.integrations.knative.proxy.tracing | indent 22}}

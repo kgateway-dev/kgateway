@@ -6,8 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -84,9 +87,8 @@ var _ = Describe("Transformations", func() {
 	})
 
 	AfterEach(func() {
-		if envoyInstance != nil {
-			envoyInstance.Clean()
-		}
+		envoyInstance.Clean()
+
 		cancel()
 	})
 
@@ -96,7 +98,7 @@ var _ = Describe("Transformations", func() {
 
 		client := &http.Client{Timeout: time.Second}
 
-		Eventually(func() (string, error) {
+		EventuallyWithOffset(1, func() (string, error) {
 			// send a request with a body
 			var buf bytes.Buffer
 			buf.Write(body)
@@ -122,7 +124,7 @@ var _ = Describe("Transformations", func() {
 			},
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
-				BindAddress: "0.0.0.0",
+				BindAddress: net.IPv4zero.String(),
 				BindPort:    envoyPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
@@ -197,7 +199,7 @@ var _ = Describe("Transformations", func() {
 							Multi: &gloov1.MultiDestination{
 								Destinations: []*gloov1.WeightedDestination{
 									{
-										Weight: 1,
+										Weight: &wrappers.UInt32Value{Value: 1},
 										Options: &gloov1.WeightedDestinationOptions{
 											Transformations: transform,
 										},

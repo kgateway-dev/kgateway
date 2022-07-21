@@ -75,6 +75,15 @@ spec:
                               namespace:
                                 type: string
                             type: object
+                          maxPayloadSize:
+                            properties:
+                              value:
+                                format: int64
+                                type: integer
+                                x-kubernetes-int-or-string: true
+                            type: object
+                          timeout:
+                            type: string
                         type: object
                       csrf:
                         properties:
@@ -519,6 +528,27 @@ spec:
                           headersWithUnderscoresAction:
                             type: string
                             x-kubernetes-int-or-string: true
+                          http2ProtocolOptions:
+                            properties:
+                              initialConnectionWindowSize:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                              initialStreamWindowSize:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                              maxConcurrentStreams:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                              overrideStreamErrorOnInvalidHttpMessage:
+                                nullable: true
+                                type: boolean
+                            type: object
                           idleTimeout:
                             type: string
                           maxConnectionDuration:
@@ -718,6 +748,8 @@ spec:
                         properties:
                           denyOnFail:
                             type: boolean
+                          enableXRatelimitHeaders:
+                            type: boolean
                           rateLimitBeforeAuth:
                             type: boolean
                           ratelimitServerRef:
@@ -872,6 +904,27 @@ spec:
                           headersWithUnderscoresAction:
                             type: string
                             x-kubernetes-int-or-string: true
+                          http2ProtocolOptions:
+                            properties:
+                              initialConnectionWindowSize:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                              initialStreamWindowSize:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                              maxConcurrentStreams:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                              overrideStreamErrorOnInvalidHttpMessage:
+                                nullable: true
+                                type: boolean
+                            type: object
                           idleTimeout:
                             type: string
                           maxConnectionDuration:
@@ -1206,6 +1259,15 @@ spec:
                                         namespace:
                                           type: string
                                       type: object
+                                    maxPayloadSize:
+                                      properties:
+                                        value:
+                                          format: int64
+                                          type: integer
+                                          x-kubernetes-int-or-string: true
+                                      type: object
+                                    timeout:
+                                      type: string
                                   type: object
                                 csrf:
                                   properties:
@@ -1650,6 +1712,27 @@ spec:
                                     headersWithUnderscoresAction:
                                       type: string
                                       x-kubernetes-int-or-string: true
+                                    http2ProtocolOptions:
+                                      properties:
+                                        initialConnectionWindowSize:
+                                          maximum: 4294967295
+                                          minimum: 0
+                                          nullable: true
+                                          type: integer
+                                        initialStreamWindowSize:
+                                          maximum: 4294967295
+                                          minimum: 0
+                                          nullable: true
+                                          type: integer
+                                        maxConcurrentStreams:
+                                          maximum: 4294967295
+                                          minimum: 0
+                                          nullable: true
+                                          type: integer
+                                        overrideStreamErrorOnInvalidHttpMessage:
+                                          nullable: true
+                                          type: boolean
+                                      type: object
                                     idleTimeout:
                                       type: string
                                     maxConnectionDuration:
@@ -1848,6 +1931,8 @@ spec:
                                 ratelimitServer:
                                   properties:
                                     denyOnFail:
+                                      type: boolean
+                                    enableXRatelimitHeaders:
                                       type: boolean
                                     rateLimitBeforeAuth:
                                       type: boolean
@@ -2142,6 +2227,8 @@ spec:
                                                             responseTransformation:
                                                               type: boolean
                                                             unwrapAsAlb:
+                                                              type: boolean
+                                                            unwrapAsApiGateway:
                                                               type: boolean
                                                           type: object
                                                         azure:
@@ -3252,7 +3339,9 @@ spec:
                                                       type: object
                                                   type: object
                                                 weight:
-                                                  format: int32
+                                                  maximum: 4294967295
+                                                  minimum: 0
+                                                  nullable: true
                                                   type: integer
                                               type: object
                                             type: array
@@ -3286,6 +3375,8 @@ spec:
                                                   responseTransformation:
                                                     type: boolean
                                                   unwrapAsAlb:
+                                                    type: boolean
+                                                  unwrapAsApiGateway:
                                                     type: boolean
                                                 type: object
                                               azure:
@@ -3713,6 +3804,8 @@ spec:
                                                   responseTransformation:
                                                     type: boolean
                                                   unwrapAsAlb:
+                                                    type: boolean
+                                                  unwrapAsApiGateway:
                                                     type: boolean
                                                 type: object
                                               azure:
@@ -4823,7 +4916,9 @@ spec:
                                             type: object
                                         type: object
                                       weight:
-                                        format: int32
+                                        maximum: 4294967295
+                                        minimum: 0
+                                        nullable: true
                                         type: integer
                                     type: object
                                   type: array
@@ -4857,6 +4952,8 @@ spec:
                                         responseTransformation:
                                           type: boolean
                                         unwrapAsAlb:
+                                          type: boolean
+                                        unwrapAsApiGateway:
                                           type: boolean
                                       type: object
                                     azure:

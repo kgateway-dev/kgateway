@@ -145,10 +145,11 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 	go func() {
 		var previousHash uint64
 
-		syncFunc := func() {
+		// return success for the sync (ie if there still needs changes its a false)
+		syncFunc := func() bool {
 			currentHash := current.hash()
 			if currentHash == previousHash {
-				return
+				return true
 			}
 			toSend := current.clone()
 
@@ -158,13 +159,14 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 			default:
 				contextutils.LoggerFrom(ctx).Debugw("failed to push hybrid upstream list to "+
 					"channel (must be full), retrying in 1s", zap.Uint64("list hash", currentHash))
+				return false
 			}
+			return true
 		}
 
 		// First time - sync the current state
-		syncFunc()
+		needsSync := syncFunc()
 		timer := time.NewTicker(time.Second * 1)
-		var needsSync bool
 
 		for {
 			select {
@@ -181,8 +183,8 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 				}
 			case <-timer.C:
 				if needsSync {
-					syncFunc()
-					needsSync = false
+
+					needsSync = !syncFunc()
 				}
 			}
 		}

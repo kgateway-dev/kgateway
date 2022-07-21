@@ -1419,7 +1419,7 @@ var _ = Describe("Translator", func() {
 				},
 				Destinations: []*v1.WeightedDestination{
 					{
-						Weight: 1,
+						Weight: &wrappers.UInt32Value{Value: 1},
 						Destination: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: upstream.Metadata.Ref(),
@@ -1427,7 +1427,7 @@ var _ = Describe("Translator", func() {
 						},
 					},
 					{
-						Weight: 1,
+						Weight: &wrappers.UInt32Value{Value: 1},
 						Destination: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: upstream2.Metadata.Ref(),
@@ -2242,10 +2242,11 @@ var _ = Describe("Translator", func() {
 
 		var (
 			multiActionRouteWithNoWeightPassedDest *v1.Route
-			multiActionRouteWithZeroWeightDest     *v1.Route
-			multiActionRouteWithOneValidDest       *v1.Route
+			multiActionRouteOneDest                *v1.Route
+			multiActionRouteZeroAndFiveAsWeights   *v1.Route
 			expectedErrorString                    string
-			weightedDestValidWeight                *v1.WeightedDestination
+			weightedDestFiveWeight                 *v1.WeightedDestination
+			weightedDestZeroWeight                 *v1.WeightedDestination
 		)
 
 		BeforeEach(func() {
@@ -2253,19 +2254,19 @@ var _ = Describe("Translator", func() {
 			testUpstream2 := createStaticUpstream("test2", "gloo-system")
 
 			weightedDestNoWeightPassed := createWeightedDestination(false, 0, testUpstream1)
-			weightedDestWeightOfZero := createWeightedDestination(true, 0, testUpstream1)
-			weightedDestValidWeight = createWeightedDestination(true, 5, testUpstream2)
+			weightedDestZeroWeight = createWeightedDestination(true, 0, testUpstream1)
+			weightedDestFiveWeight = createWeightedDestination(true, 5, testUpstream2)
 
-			multiActionRouteWithNoWeightPassedDest = createMultiActionRoute("NoWeightPassedDest", matcher, []*v1.WeightedDestination{weightedDestNoWeightPassed, weightedDestValidWeight})
-			multiActionRouteWithZeroWeightDest = createMultiActionRoute("NegativeWeightDest", matcher, []*v1.WeightedDestination{weightedDestWeightOfZero, weightedDestValidWeight})
-			multiActionRouteWithOneValidDest = createMultiActionRoute("OneValidDest", matcher, []*v1.WeightedDestination{weightedDestValidWeight})
+			multiActionRouteOneDest = createMultiActionRoute("OneDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight})
+			multiActionRouteZeroAndFiveAsWeights = createMultiActionRoute("TwoDest", matcher, []*v1.WeightedDestination{weightedDestFiveWeight, weightedDestZeroWeight})
+			multiActionRouteWithNoWeightPassedDest = createMultiActionRoute("NoWeightPassedDest", matcher, []*v1.WeightedDestination{weightedDestNoWeightPassed, weightedDestNoWeightPassed})
 
-			expectedErrorString = fmt.Sprintf("Incorrect configuration for Weighted Destination for upstream: %s - Weighted Destinations require a weight that is greater than 0", "test1")
+			expectedErrorString = fmt.Sprintf("Incorrect configuration for Weighted Destination for route - Weighted Destinations require a total weight that is greater than or equal to 1")
 		})
 
 		//Positive Tests
 		It("Should translate single routes when multiRoute is passed and only one destination is specified", func() {
-			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteWithOneValidDest}
+			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteOneDest}
 			snap, resourceReport, _, _ := translator.Translate(params, proxy)
 			Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
 
@@ -2285,28 +2286,59 @@ var _ = Describe("Translator", func() {
 			Expect(ok).To(BeTrue())
 
 			//DataFromWeightedCluster
-			totalWeight := weightedDestValidWeight.Weight
-			expectedClusterName := weightedDestValidWeight.Destination.GetUpstream().Name + "_" + weightedDestValidWeight.Destination.GetUpstream().Namespace
+			totalWeight := weightedDestFiveWeight.Weight
+			expectedClusterName := weightedDestFiveWeight.Destination.GetUpstream().Name + "_" + weightedDestFiveWeight.Destination.GetUpstream().Namespace
+
+			//There is only one route with a weight of 5 so total weight for the cluster should be 5
+			Expect(clusterAction.WeightedClusters.TotalWeight.GetValue()).To(Equal(totalWeight.GetValue()))
+			clusters := clusterAction.WeightedClusters.Clusters
+			Expect(clusters).To(HaveLen(1))
+			Expect(clusters[0].Weight.GetValue()).To(Equal(totalWeight.GetValue()))
+			Expect(clusters[0].Name).To(Equal(expectedClusterName))
+		})
+
+		It("Should translate 0 weight destinations if there are other destinations with weights over 0", func() {
+			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteZeroAndFiveAsWeights}
+			snap, resourceReport, _, _ := translator.Translate(params, proxy)
+			Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
+
+			// A weighted route to the service has been configured
+			routes := snap.GetResources(types.RouteTypeV3)
+			Expect(routes.Items).To(HaveKey("http-listener-routes"))
+			routeResource := routes.Items["http-listener-routes"]
+			routeConfiguration = routeResource.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
+			Expect(routeConfiguration).NotTo(BeNil())
+			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains[0]).To(Equal("*"))
+			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
+			routeAction, ok := routeConfiguration.VirtualHosts[0].Routes[0].Action.(*envoy_config_route_v3.Route_Route)
+			Expect(ok).To(BeTrue())
+			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoy_config_route_v3.RouteAction_WeightedClusters)
+			Expect(ok).To(BeTrue())
+
+			totalWeight := weightedDestFiveWeight.Weight.GetValue() + weightedDestZeroWeight.Weight.GetValue()
+			clusterNameFiveWeight := weightedDestFiveWeight.Destination.GetUpstream().Name + "_" + weightedDestFiveWeight.Destination.GetUpstream().Namespace
+			clusterNameZeroWeight := weightedDestZeroWeight.Destination.GetUpstream().Name + "_" + weightedDestZeroWeight.Destination.GetUpstream().Namespace
 
 			//There is only one route with a weight of 5 so total weight for the cluster should be 5
 			Expect(clusterAction.WeightedClusters.TotalWeight.GetValue()).To(Equal(totalWeight))
 			clusters := clusterAction.WeightedClusters.Clusters
-			Expect(clusters).To(HaveLen(1))
-			Expect(clusters[0].Weight.GetValue()).To(Equal(totalWeight))
-			Expect(clusters[0].Name).To(Equal(expectedClusterName))
+			Expect(clusters).To(HaveLen(2))
+
+			for _, c := range clusters {
+				switch c.Name {
+				case clusterNameFiveWeight:
+					Expect(c.Weight.GetValue()).To(Equal(uint32(5)))
+				case clusterNameZeroWeight:
+					Expect(c.Weight.GetValue()).To(Equal(uint32(0)))
+				}
+			}
 		})
 
 		//Negative Tests
-		It("Should report an error when a weighted destination is passed with no weight", func() {
+		It("Should report an error when total weight is 0 - nil and 0 weights passed", func() {
 			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteWithNoWeightPassedDest}
-			_, errs, _, err := translator.Translate(params, proxy)
-			Expect(err).To(BeNil())
-			Expect(errs.Validate()).To(HaveOccurred())
-			Expect(errs.Validate().Error()).To(ContainSubstring(expectedErrorString))
-		})
-
-		It("Should report an error when a weighted destination is passed with weight less than 1", func() {
-			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteWithZeroWeightDest}
 			_, errs, _, err := translator.Translate(params, proxy)
 			Expect(err).To(BeNil())
 			Expect(errs.Validate()).To(HaveOccurred())
@@ -3320,7 +3352,7 @@ var _ = Describe("Translator", func() {
 							Multi: &v1.MultiDestination{
 								Destinations: []*v1.WeightedDestination{
 									{
-										Weight: 1,
+										Weight: &wrappers.UInt32Value{Value: 1},
 										Destination: &v1.Destination{
 											DestinationType: &v1.Destination_Upstream{
 												Upstream: &core.ResourceRef{
@@ -3537,7 +3569,7 @@ func createStaticUpstream(name, namespace string) *v1.Upstream {
 func createWeightedDestination(isWeightIncluded bool, weight uint32, upstream *v1.Upstream) *v1.WeightedDestination {
 	if isWeightIncluded {
 		return &v1.WeightedDestination{
-			Weight: weight,
+			Weight: &wrappers.UInt32Value{Value: weight},
 			Destination: &v1.Destination{
 				DestinationType: &v1.Destination_Upstream{
 					Upstream: &core.ResourceRef{

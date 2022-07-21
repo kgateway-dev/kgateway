@@ -429,22 +429,17 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 			return err
 		}
 
-		//Catch when Customers pass weights less than 1 or forget to pass weights - this leads to envoy errors
-		if weightedDest.GetWeight() < 1 {
-			weightedDestUpstream := weightedDest.GetDestination().GetUpstream()
-
-			validation.AppendRouteError(routeReport,
-				validationapi.RouteReport_Error_ProcessingError,
-				fmt.Sprintf("Incorrect configuration for Weighted Destination for upstream: %s - Weighted Destinations require a weight that is greater than 0", weightedDestUpstream.GetName()),
-				routeName,
-			)
+		//Cluster weight can be nil so check if end user did not pass a weight for destination and set the default weight of 0
+		var clusterWeight uint32
+		if weightedDest.GetWeight() != nil {
+			clusterWeight = weightedDest.GetWeight().GetValue()
 		}
 
-		totalWeight += weightedDest.GetWeight()
+		totalWeight += weightedDest.GetWeight().GetValue()
 
 		weightedCluster := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 			Name:          UpstreamToClusterName(usRef),
-			Weight:        &wrappers.UInt32Value{Value: weightedDest.GetWeight()},
+			Weight:        &wrappers.UInt32Value{Value: clusterWeight},
 			MetadataMatch: getSubsetMatch(weightedDest.GetDestination()),
 		}
 
@@ -466,10 +461,18 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 		}
 	}
 
-	//Envoy has a default total weight of 100 and requires all weights to equal the current value of total weight
-	//This overrides the default of 100 to the sum of all passed weights both satisfying the requirements
+	// Envoy has a default total weight of 100 and requires all weights to equal the current value of total weight
+	// This overrides the default of 100 to the sum of all passed weights both satisfying the requirements
 	// - that all weights equal total weight
 	// - the passed weights are weighted proportional to each other
+	if totalWeight < 1 {
+		// Envoy errors with:`WeightedClusterValidationError.TotalWeight: value must be greater than or equal to 1`
+		validation.AppendRouteError(routeReport,
+			validationapi.RouteReport_Error_ProcessingError,
+			fmt.Sprintf("Incorrect configuration for Weighted Destination for route - Weighted Destinations require a total weight that is greater than or equal to 1"),
+			routeName,
+		)
+	}
 	clusterSpecifier.WeightedClusters.TotalWeight = &wrappers.UInt32Value{Value: totalWeight}
 
 	return nil

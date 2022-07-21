@@ -4,41 +4,38 @@ import (
 	"context"
 	"net"
 	"os"
+	"os/exec"
+	"strconv"
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	k2e "github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/k8s-utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
-	"github.com/solo-io/solo-kit/test/helpers"
-	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
-	"google.golang.org/grpc"
+	"github.com/solo-io/solo-kit/test/helpers"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"google.golang.org/grpc"
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
-
-	. "github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/client-go/rest"
 )
 
 var _ = Describe("SetupSyncer", func() {
@@ -78,58 +75,57 @@ var _ = Describe("SetupSyncer", func() {
 		return synchronizedSetupFunc
 	}
 
-	BeforeEach(func() {
-		settings = &v1.Settings{
-			RefreshRate: prototime.DurationToProto(time.Hour),
-			Gloo: &v1.GlooOptions{
-				XdsBindAddr:        getRandomAddr(),
-				ValidationBindAddr: getRandomAddr(),
-			},
-			DiscoveryNamespace: "non-existent-namespace",
-			WatchNamespaces:    []string{"non-existent-namespace"},
-			Gateway: &v1.GatewayOptions{
-				EnableGatewayController: &wrapperspb.BoolValue{Value: true},
-				PersistProxySpec:        &wrapperspb.BoolValue{Value: false},
-				Validation:              nil,
-			},
-		}
-		memcache = memory.NewInMemoryResourceCache()
-		newContext()
-	})
-
 	AfterEach(func() {
 		cancel()
 	})
 
 	Context("Setup", func() {
-		setupTestGrpcClient := func() func() error {
-			cc, err := grpc.DialContext(ctx, settings.Gloo.XdsBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
-			Expect(err).NotTo(HaveOccurred())
-			// setup a gRPC client to make sure connection is persistent across invocations
-			client := reflectpb.NewServerReflectionClient(cc)
-			req := &reflectpb.ServerReflectionRequest{
-				MessageRequest: &reflectpb.ServerReflectionRequest_ListServices{
-					ListServices: "*",
+		BeforeEach(func() {
+			settings = &v1.Settings{
+				RefreshRate: prototime.DurationToProto(time.Hour),
+				Gloo: &v1.GlooOptions{
+					XdsBindAddr:        getRandomAddr(),
+					ValidationBindAddr: getRandomAddr(),
+				},
+				DiscoveryNamespace: "non-existent-namespace",
+				WatchNamespaces:    []string{"non-existent-namespace"},
+				Gateway: &v1.GatewayOptions{
+					EnableGatewayController: &wrapperspb.BoolValue{Value: true},
+					PersistProxySpec:        &wrapperspb.BoolValue{Value: false},
+					Validation:              nil,
 				},
 			}
-			clientstream, err := client.ServerReflectionInfo(context.Background())
-			Expect(err).NotTo(HaveOccurred())
-			err = clientstream.Send(req)
-			go func() {
-				for {
-					_, err := clientstream.Recv()
-					if err != nil {
-						return
-					}
+			memcache = memory.NewInMemoryResourceCache()
+			newContext()
+		})
+		Context("xds", func() {
+			setupTestGrpcClient := func() func() error {
+				cc, err := grpc.DialContext(ctx, settings.Gloo.XdsBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
+				Expect(err).NotTo(HaveOccurred())
+				// setup a gRPC client to make sure connection is persistent across invocations
+				client := reflectpb.NewServerReflectionClient(cc)
+				req := &reflectpb.ServerReflectionRequest{
+					MessageRequest: &reflectpb.ServerReflectionRequest_ListServices{
+						ListServices: "*",
+					},
 				}
-			}()
-			Expect(err).NotTo(HaveOccurred())
-			return func() error { return clientstream.Send(req) }
-		}
-
-		Context("XDS tests", func() {
+				clientstream, err := client.ServerReflectionInfo(context.Background())
+				Expect(err).NotTo(HaveOccurred())
+				err = clientstream.Send(req)
+				go func() {
+					for {
+						_, err := clientstream.Recv()
+						if err != nil {
+							return
+						}
+					}
+				}()
+				Expect(err).NotTo(HaveOccurred())
+				return func() error { return clientstream.Send(req) }
+			}
 
 			It("setup can be called twice", func() {
+
 				setup := newSynchronizedSetupFunc()
 
 				err := setup(ctx, nil, memcache, settings)
@@ -180,19 +176,22 @@ var _ = Describe("SetupSyncer", func() {
 			var (
 				kubeCoreCache    kube.SharedCache
 				registerCrdsOnce sync.Once
+				cfg              *rest.Config
 			)
 
 			registerCRDs := func() {
-				cfg, err := kubeutils.GetConfig("", "")
+				var err error
+				cfg, err = kubeutils.GetConfig("", "")
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-				apiExts, err := apiext.NewForConfig(cfg)
+				cs, err := clientset.NewForConfig(cfg)
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 				crdsToRegister := []crd.Crd{
 					v1.UpstreamCrd,
 					v1.UpstreamGroupCrd,
 					v1.ProxyCrd,
+					v1.SettingsCrd,
 					gatewayv1.GatewayCrd,
 					extauthv1.AuthConfigCrd,
 					v1alpha1.RateLimitConfigCrd,
@@ -205,7 +204,7 @@ var _ = Describe("SetupSyncer", func() {
 				}
 
 				for _, crdToRegister := range crdsToRegister {
-					err = helpers.AddAndRegisterCrd(ctx, crdToRegister, apiExts)
+					err = helpers.AddAndRegisterCrd(ctx, crdToRegister, cs)
 					ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				}
 			}
@@ -214,23 +213,31 @@ var _ = Describe("SetupSyncer", func() {
 				if os.Getenv("RUN_KUBE_TESTS") != "1" {
 					Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 				}
-				settings.ConfigSource = &v1.Settings_KubernetesConfigSource{KubernetesConfigSource: &v1.Settings_KubernetesCrds{}}
-				settings.SecretSource = &v1.Settings_KubernetesSecretSource{KubernetesSecretSource: &v1.Settings_KubernetesSecrets{}}
-				settings.ArtifactSource = &v1.Settings_KubernetesArtifactSource{KubernetesArtifactSource: &v1.Settings_KubernetesConfigmaps{}}
+				settings = &v1.Settings{
+					RefreshRate: prototime.DurationToProto(time.Hour),
+					Gloo: &v1.GlooOptions{
+						XdsBindAddr:        getRandomAddr(),
+						ValidationBindAddr: getRandomAddr(),
+					},
+					ConfigSource:       &v1.Settings_KubernetesConfigSource{KubernetesConfigSource: &v1.Settings_KubernetesCrds{}},
+					SecretSource:       &v1.Settings_KubernetesSecretSource{KubernetesSecretSource: &v1.Settings_KubernetesSecrets{}},
+					ArtifactSource:     &v1.Settings_KubernetesArtifactSource{KubernetesArtifactSource: &v1.Settings_KubernetesConfigmaps{}},
+					DiscoveryNamespace: "non-existent-namespace",
+					WatchNamespaces:    []string{"non-existent-namespace"},
+					Gateway: &v1.GatewayOptions{
+						EnableGatewayController: &wrapperspb.BoolValue{Value: true},
+						PersistProxySpec:        &wrapperspb.BoolValue{Value: false},
+						Validation: &v1.GatewayOptions_ValidationOptions{
+							ValidationServerGrpcMaxSizeBytes: &wrappers.Int32Value{Value: 4000000},
+						},
+					},
+				}
 				kubeCoreCache = kube.NewKubeCache(ctx)
 
 				// Gloo SetupFunc is no longer responsible for registering CRDs. This was not used in production, and
 				// required Gloo having RBAC permissions that it should not have. CRD registration is now only supported
 				// by Helm. Therefore, this test needs to manually register CRDs to test setup.
 				registerCrdsOnce.Do(registerCRDs)
-
-				err := os.Setenv(statusutils.PodNamespaceEnvName, defaults.GlooSystem)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			AfterEach(func() {
-				err := os.Unsetenv(statusutils.PodNamespaceEnvName)
-				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("can be called with core cache", func() {
@@ -258,6 +265,53 @@ var _ = Describe("SetupSyncer", func() {
 				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).NotTo(Panic())
 			})
 
+			setupTestGrpcClient := func() func() error {
+				var cc *grpc.ClientConn
+				var err error
+				Eventually(func() error {
+					cc, err = grpc.DialContext(ctx, "localhost:9988", grpc.WithInsecure(), grpc.WithBlock(), grpc.FailOnNonTempDialError(true))
+					return err
+				}, "10s", "1s").Should(BeNil())
+				// setup a gRPC client to make sure connection is persistent across invocations
+				client := validation.NewGlooValidationServiceClient(cc)
+				req := &validation.GlooValidationServiceRequest{Proxy: &v1.Proxy{Listeners: []*v1.Listener{{Name: "test-listener"}}}}
+				return func() error {
+					_, err := client.Validate(ctx, req)
+					return err
+				}
+			}
+
+			startPortFwd := func() *os.Process {
+				validationPort := strconv.Itoa(9988)
+				portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
+					"deployment/gloo", validationPort)
+				portFwd.Stdout = os.Stderr
+				portFwd.Stderr = os.Stderr
+				err := portFwd.Start()
+				Expect(err).ToNot(HaveOccurred())
+				return portFwd.Process
+			}
+
+			It("restarts validation grpc server when settings change", func() {
+				// setup port forward
+				portFwdProc := startPortFwd()
+				defer func() {
+					if portFwdProc != nil {
+						portFwdProc.Kill()
+					}
+				}()
+
+				testFunc := setupTestGrpcClient()
+				err := testFunc()
+				Expect(err).NotTo(HaveOccurred())
+
+				k2e.UpdateSettings(ctx, func(settings *v1.Settings) {
+					settings.Gateway.Validation.ValidationServerGrpcMaxSizeBytes = &wrappers.Int32Value{Value: 1}
+				}, namespace)
+
+				err = testFunc()
+				Expect(err.Error()).To(ContainSubstring("received message larger than max (19 vs. 1)"))
+			})
 		})
 	})
 })

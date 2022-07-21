@@ -51,6 +51,7 @@ var _ = BeforeSuite(func() {
 	randomNumber := time.Now().Unix() % 10000
 	namespace = "gloo-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
 
+	// necessary for non-default namespace
 	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 

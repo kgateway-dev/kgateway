@@ -3,6 +3,7 @@ package tcp
 import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_extensions_filters_network_sni_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/sni_cluster/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -159,6 +160,9 @@ func (p *plugin) tcpProxyFilters(
 		// append empty sni-forward-filter to pass the SNI name to the cluster field above
 		filters = append(filters, &envoy_config_listener_v3.Filter{
 			Name: SniFilter,
+			ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+				TypedConfig: utils.MustMessageToAny(&envoy_extensions_filters_network_sni_cluster_v3.SniCluster{}),
+			},
 		})
 	default:
 		return nil, NoDestinationTypeError(host)
@@ -194,7 +198,7 @@ func (p *plugin) convertToWeightedCluster(multiDest *v1.MultiDestination) (*envo
 
 		wc[i] = &envoytcp.TcpProxy_WeightedCluster_ClusterWeight{
 			Name:   translatorutil.UpstreamToClusterName(usRef),
-			Weight: weightedDest.GetWeight(),
+			Weight: weightedDest.GetWeight().GetValue(),
 		}
 	}
 	return &envoytcp.TcpProxy_WeightedCluster{Clusters: wc}, nil

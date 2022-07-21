@@ -56,7 +56,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.21.3-patch1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.23.0-patch1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -502,7 +502,7 @@ generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
 $(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
 	mkdir -p $(HELM_SYNC_DIR)/charts
-	go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
+	IMAGE_REPO=$(IMAGE_REPO) go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
 	touch $@
 
 .PHONY: package-chart
@@ -758,7 +758,8 @@ SCAN_BUCKET ?= solo-gloo-security-scans
 run-security-scan:
 	# Run security scan on gloo and solo-projects
 	# Generates scan files to _output/scans directory
-	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan
+	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo
+	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe
 
 .PHONY: publish-security-scan
 publish-security-scan:

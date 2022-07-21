@@ -125,9 +125,12 @@ func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) s
 	return s.Setup
 }
 
+// grpcServer contains grpc server configuration fields we will need to persist after starting a server
+// to later check if they changed and we need to trigger a server restart
 type grpcServer struct {
-	addr   string
-	cancel context.CancelFunc
+	addr            string
+	maxGrpcRecvSize int
+	cancel          context.CancelFunc
 }
 
 type setupSyncer struct {
@@ -245,10 +248,22 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 
+	// process grpcserver options to understand if any servers will need a restart
+
+	maxGrpcRecvSize := -1
+	// Use the same maxGrpcMsgSize for both validation server and proxy debug server as the message size is determined by the size of proxies.
+	if maxGrpcMsgSize := settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); maxGrpcMsgSize != nil {
+		if maxGrpcMsgSize.GetValue() < 0 {
+			return errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be non-negative, current value: %v", maxGrpcMsgSize.GetValue())
+		}
+		maxGrpcRecvSize = int(maxGrpcMsgSize.GetValue())
+	}
+
 	emptyControlPlane := bootstrap.ControlPlane{}
 	emptyValidationServer := bootstrap.ValidationServer{}
 	emptyProxyDebugServer := bootstrap.ProxyDebugServer{}
 
+	// check if we need to restart the control plane
 	if xdsAddr != s.previousXdsServer.addr {
 		if s.previousXdsServer.cancel != nil {
 			s.previousXdsServer.cancel()
@@ -257,20 +272,24 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.controlPlane = emptyControlPlane
 	}
 
-	if validationAddr != s.previousValidationServer.addr {
+	// check if we need to restart the validation server
+	if validationAddr != s.previousValidationServer.addr || maxGrpcRecvSize != s.previousValidationServer.maxGrpcRecvSize {
 		if s.previousValidationServer.cancel != nil {
 			s.previousValidationServer.cancel()
 			s.previousValidationServer.cancel = nil
 		}
 		s.validationServer = emptyValidationServer
 	}
-	if proxyDebugAddr != s.previousProxyDebugServer.addr {
+
+	// check if we need to restart the proxy debug server
+	if proxyDebugAddr != s.previousProxyDebugServer.addr || maxGrpcRecvSize != s.previousProxyDebugServer.maxGrpcRecvSize {
 		if s.previousProxyDebugServer.cancel != nil {
 			s.previousProxyDebugServer.cancel()
 			s.previousProxyDebugServer.cancel = nil
 		}
 		s.proxyDebugServer = emptyProxyDebugServer
 	}
+
 	// initialize the control plane context in this block either on the first loop, or if bind addr changed
 	if s.controlPlane == emptyControlPlane {
 		// create new context as the grpc server might survive multiple iterations of this loop.
@@ -289,33 +308,25 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
 		var validationGrpcServerOpts []grpc.ServerOption
-		if maxGrpcMsgSize := settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); maxGrpcMsgSize != nil {
-			if maxGrpcMsgSize.GetValue() < 0 {
-				cancel()
-				return errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be non-negative, current value: %v", maxGrpcMsgSize.GetValue())
-			}
-			validationGrpcServerOpts = append(validationGrpcServerOpts, grpc.MaxRecvMsgSize(int(maxGrpcMsgSize.GetValue())))
+		// if validationServerGrpcMaxSizeBytes was set this will be non-negative, otherwise use gRPC default
+		if maxGrpcRecvSize >= 0 {
+			validationGrpcServerOpts = append(validationGrpcServerOpts, grpc.MaxRecvMsgSize(maxGrpcRecvSize))
 		}
 		s.validationServer = NewValidationServer(ctx, s.makeGrpcServer(ctx, validationGrpcServerOpts...), validationTcpAddress, true)
 		s.previousValidationServer.cancel = cancel
 		s.previousValidationServer.addr = validationAddr
+		s.previousValidationServer.maxGrpcRecvSize = maxGrpcRecvSize
 	}
 	// initialize the proxy debug server context in this block either on the first loop, or if bind addr changed
 	if s.proxyDebugServer == emptyProxyDebugServer {
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
-		var proxyGrpcServerOpts []grpc.ServerOption
-		// Use the same maxGrpcMsgSize as validation as this is determined by the size of proxies.
-		if maxGrpcMsgSize := settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); maxGrpcMsgSize != nil {
-			if maxGrpcMsgSize.GetValue() < 0 {
-				cancel()
-				return errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be non-negative, current value: %v", maxGrpcMsgSize.GetValue())
-			}
-			proxyGrpcServerOpts = append(proxyGrpcServerOpts, grpc.MaxRecvMsgSize(int(maxGrpcMsgSize.GetValue())))
-		}
+
+		proxyGrpcServerOpts := []grpc.ServerOption{grpc.MaxRecvMsgSize(maxGrpcRecvSize)}
 		s.proxyDebugServer = NewProxyDebugServer(ctx, s.makeGrpcServer(ctx, proxyGrpcServerOpts...), proxyDebugTcpAddress, true)
 		s.previousProxyDebugServer.cancel = cancel
 		s.previousProxyDebugServer.addr = proxyDebugAddr
+		s.previousProxyDebugServer.maxGrpcRecvSize = maxGrpcRecvSize
 	}
 	consulClient, err := bootstrap.ConsulClientForSettings(ctx, settings)
 	if err != nil {

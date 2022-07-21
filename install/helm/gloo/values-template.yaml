@@ -100,12 +100,14 @@ gateway:
       repository: kubectl
       tag: 1.22.9
     runAsUser: 10101
+    ttlSecondsAfterFinished: 60
   cleanupJob:
     image:
       registry: bitnami
       repository: kubectl
       tag: 1.22.9
     runAsUser: 10101
+    ttlSecondsAfterFinished: 60
   proxyServiceAccount: {}
   serviceAccount: {}
 gatewayProxies:
@@ -216,6 +218,11 @@ global:
     sds:
       image:
         repository: sds
+    istioProxy:
+      image:
+        repository: proxyv2
+        registry: docker.io/istio
+        tag: 1.9.5
     envoy:
       image:
         repository: gloo-envoy-wrapper
