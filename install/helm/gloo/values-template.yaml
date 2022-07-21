@@ -50,6 +50,7 @@ gloo:
     replicas: 1
     runAsUser: 10101
     serviceAccount: {}
+    ossVersion:
 discovery:
   enabled: true
   fdsMode: WHITELIST

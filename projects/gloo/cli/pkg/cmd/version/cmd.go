@@ -130,7 +130,7 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 			}
 			content := []string{kubeSrvVrs.GetNamespace(), getDistributionName(v.GetType().String(), v.GetEnterprise())}
 			for i, container := range kubeSrvVrs.GetContainers() {
-				name := fmt.Sprintf("%s: %s", container.GetName(), container.GetTag())
+				name := fmt.Sprintf("%s: %s %s", container.GetName(), container.GetTag(), container.OssTag)
 				if i == 0 {
 					rows = append(rows, append(content, name))
 				} else {

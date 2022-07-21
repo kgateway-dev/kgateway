@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	ContainerNameToCheck = "discovery"
+	ContainerNameToCheck = "gloo"
 )
 
 func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
@@ -146,7 +146,7 @@ func getOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versi
 		switch podVersion.GetVersionType().(type) {
 		case *versiondiscovery.ServerVersion_Kubernetes:
 			for _, container := range podVersion.GetKubernetes().GetContainers() {
-				containerVersion, err := versionutils.ParseVersion("v" + container.GetTag())
+				containerOssVersion, err := versionutils.ParseVersion("v" + container.GetOssTag())
 				if err != nil {
 					// if the container version doesn't match our versioning scheme
 					// (ie, as of writing this the redis container is on version "5")
@@ -155,7 +155,7 @@ func getOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versi
 				}
 
 				if container.GetName() == ContainerNameToCheck {
-					versions = append(versions, containerVersion)
+					versions = append(versions, containerOssVersion)
 				}
 			}
 		default:
