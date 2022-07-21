@@ -14,7 +14,6 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -77,8 +76,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			}
 
 			CheckMulticlusterResources(opts)
-
-			CheckVersionsMatch(opts)
 
 			if opts.Top.Output.IsJSON() {
 				printer.PrintChecks(new(bytes.Buffer))
@@ -928,27 +925,5 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 			continue
 		}
 		return false
-	}
-}
-
-func CheckVersionsMatch(opts *options.Options) {
-	vrs, err := version.GetClientServerVersions(opts.Top.Ctx, version.NewKube(opts.Metadata.GetNamespace(), ""))
-
-	if err != nil {
-		return
-	}
-
-	clientVersionStr := vrs.GetClient().GetVersion()
-	for _, v := range vrs.GetServer() {
-		for _, cvr := range v.GetKubernetes().GetContainers() {
-			if cvr.GetName() == "gloo" {
-				//if v.GetEnterprise() && clientVersionStr != cvr.GetOssTag() {
-				if clientVersionStr != cvr.GetOssTag() {
-					printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Version mismatch - Client (v"+clientVersionStr+") and Server (Enterprise v"+cvr.GetTag()+" OSS v"+cvr.OssTag+") in namespace "+v.GetKubernetes().GetNamespace()+" do not match."))
-				} else if clientVersionStr != cvr.GetTag() {
-					printer.AppendMessage(fmt.Sprintf("\nWARN: %s\n", "Version mismatch - Client (v"+clientVersionStr+") and Server (v"+cvr.GetTag()+") in namespace "+v.GetKubernetes().GetNamespace()+" do not match."))
-				}
-			}
-		}
 	}
 }

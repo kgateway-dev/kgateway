@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	ContainerNameToCheck = "gloo"
+	ContainerNameToCheckAnnotation = "gloo"
+	ContainerNameToCheckTag        = "gateway"
 )
 
 func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
@@ -140,12 +141,19 @@ type ContainerVersion struct {
 }
 
 // return an array of open source gloo versions found in the cluster
-// this is determined by looking at all the versions of discovery that we can find
+// this is determined by looking at either the version of gateway (if the pod is present) or the annotation in the gloo pod.
 func getOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versions []*versionutils.Version, err error) {
 	for _, podVersion := range podVersions {
 		switch podVersion.GetVersionType().(type) {
 		case *versiondiscovery.ServerVersion_Kubernetes:
 			for _, container := range podVersion.GetKubernetes().GetContainers() {
+				containerVersion, err := versionutils.ParseVersion("v" + container.GetTag())
+				if err != nil {
+					continue
+				}
+				if container.GetName() == ContainerNameToCheckTag {
+					versions = append(versions, containerVersion)
+				}
 				containerOssVersion, err := versionutils.ParseVersion("v" + container.GetOssTag())
 				if err != nil {
 					// if the container version doesn't match our versioning scheme
@@ -154,7 +162,7 @@ func getOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versi
 					continue
 				}
 
-				if container.GetName() == ContainerNameToCheck {
+				if container.GetName() == ContainerNameToCheckAnnotation {
 					versions = append(versions, containerOssVersion)
 				}
 			}
