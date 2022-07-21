@@ -335,8 +335,8 @@ func (p *Plugin) getTransformations(
 	transformations *transformation.RequestResponseTransformations,
 ) ([]*envoytransformation.RouteTransformations_RouteTransformation, error) {
 	var outTransformations []*envoytransformation.RouteTransformations_RouteTransformation
-	for _, transformation := range transformations.GetResponseTransforms() {
-		responseTransform, err := p.TranslateTransformation(transformation.GetResponseTransformation())
+	for _, t := range transformations.GetResponseTransforms() {
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation())
 		if err != nil {
 			return nil, err
 		}
@@ -344,19 +344,19 @@ func (p *Plugin) getTransformations(
 			Stage: stage,
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_ResponseMatch_{
 				ResponseMatch: &envoytransformation.RouteTransformations_RouteTransformation_ResponseMatch{
-					Match:                  getResponseMatcher(ctx, transformation),
+					Match:                  getResponseMatcher(ctx, t),
 					ResponseTransformation: responseTransform,
 				},
 			},
 		})
 	}
 
-	for _, transformation := range transformations.GetRequestTransforms() {
-		requestTransform, err := p.TranslateTransformation(transformation.GetRequestTransformation())
+	for _, t := range transformations.GetRequestTransforms() {
+		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation())
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.TranslateTransformation(transformation.GetResponseTransformation())
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation())
 		if err != nil {
 			return nil, err
 		}
@@ -364,9 +364,9 @@ func (p *Plugin) getTransformations(
 			Stage: stage,
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
-					Match:                  getRequestMatcher(ctx, transformation.GetMatcher()),
+					Match:                  getRequestMatcher(ctx, t.GetMatcher()),
 					RequestTransformation:  requestTransform,
-					ClearRouteCache:        transformation.GetClearRouteCache(),
+					ClearRouteCache:        t.GetClearRouteCache(),
 					ResponseTransformation: responseTransform,
 				},
 			},

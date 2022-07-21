@@ -70,6 +70,15 @@ spec:
                               namespace:
                                 type: string
                             type: object
+                          maxPayloadSize:
+                            properties:
+                              value:
+                                format: int64
+                                type: integer
+                                x-kubernetes-int-or-string: true
+                            type: object
+                          timeout:
+                            type: string
                         type: object
                       csrf:
                         properties:
@@ -733,6 +742,8 @@ spec:
                       ratelimitServer:
                         properties:
                           denyOnFail:
+                            type: boolean
+                          enableXRatelimitHeaders:
                             type: boolean
                           rateLimitBeforeAuth:
                             type: boolean

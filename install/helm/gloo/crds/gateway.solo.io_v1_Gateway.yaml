@@ -75,6 +75,15 @@ spec:
                               namespace:
                                 type: string
                             type: object
+                          maxPayloadSize:
+                            properties:
+                              value:
+                                format: int64
+                                type: integer
+                                x-kubernetes-int-or-string: true
+                            type: object
+                          timeout:
+                            type: string
                         type: object
                       csrf:
                         properties:
@@ -739,6 +748,8 @@ spec:
                         properties:
                           denyOnFail:
                             type: boolean
+                          enableXRatelimitHeaders:
+                            type: boolean
                           rateLimitBeforeAuth:
                             type: boolean
                           ratelimitServerRef:
@@ -1248,6 +1259,15 @@ spec:
                                         namespace:
                                           type: string
                                       type: object
+                                    maxPayloadSize:
+                                      properties:
+                                        value:
+                                          format: int64
+                                          type: integer
+                                          x-kubernetes-int-or-string: true
+                                      type: object
+                                    timeout:
+                                      type: string
                                   type: object
                                 csrf:
                                   properties:
@@ -1912,6 +1932,8 @@ spec:
                                   properties:
                                     denyOnFail:
                                       type: boolean
+                                    enableXRatelimitHeaders:
+                                      type: boolean
                                     rateLimitBeforeAuth:
                                       type: boolean
                                     ratelimitServerRef:
@@ -2205,6 +2227,8 @@ spec:
                                                             responseTransformation:
                                                               type: boolean
                                                             unwrapAsAlb:
+                                                              type: boolean
+                                                            unwrapAsApiGateway:
                                                               type: boolean
                                                           type: object
                                                         azure:
@@ -3352,6 +3376,8 @@ spec:
                                                     type: boolean
                                                   unwrapAsAlb:
                                                     type: boolean
+                                                  unwrapAsApiGateway:
+                                                    type: boolean
                                                 type: object
                                               azure:
                                                 properties:
@@ -3778,6 +3804,8 @@ spec:
                                                   responseTransformation:
                                                     type: boolean
                                                   unwrapAsAlb:
+                                                    type: boolean
+                                                  unwrapAsApiGateway:
                                                     type: boolean
                                                 type: object
                                               azure:
@@ -4924,6 +4952,8 @@ spec:
                                         responseTransformation:
                                           type: boolean
                                         unwrapAsAlb:
+                                          type: boolean
+                                        unwrapAsApiGateway:
                                           type: boolean
                                       type: object
                                     azure:

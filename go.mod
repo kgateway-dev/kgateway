@@ -41,7 +41,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/rotisserie/eris v0.4.0
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
@@ -270,7 +270,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
-	golang.org/x/net v0.0.0-20211205041911-012df41ee64c // indirect
+	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sys v0.0.0-20220608164250-635b8c9b7f68 // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect

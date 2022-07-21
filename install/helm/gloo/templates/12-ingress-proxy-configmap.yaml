@@ -114,6 +114,8 @@ data:
                             {{- end }}
                     http_filters:
                       - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 {{- if .Values.ingressProxy.tracing }}
                     tracing:
 {{ toYaml .Values.ingressProxy.tracing | indent 22}}

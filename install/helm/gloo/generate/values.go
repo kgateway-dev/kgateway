@@ -50,6 +50,7 @@ type Rbac struct {
 type Image struct {
 	Tag        *string `json:"tag,omitempty"  desc:"The image tag for the container."`
 	Repository *string `json:"repository,omitempty"  desc:"The image repository (name) for the container."`
+	Digest     *string `json:"digest,omitempty"  desc:"The hash digest of the container's image, ie. sha256:12345...."`
 	Registry   *string `json:"registry,omitempty" desc:"The image hostname prefix and registry, such as quay.io/solo-io."`
 	PullPolicy *string `json:"pullPolicy,omitempty"  desc:"The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting"`
 	PullSecret *string `json:"pullSecret,omitempty" desc:"The image pull secret to use for the container, in the same namespace as the container pod."`
@@ -331,15 +332,17 @@ type CertGenJob struct {
 }
 
 type RolloutJob struct {
-	Image          *Image   `json:"image,omitempty"`
-	FloatingUserId *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser      *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	Image                   *Image   `json:"image,omitempty"`
+	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 }
 
 type CleanupJob struct {
-	Image          *Image   `json:"image,omitempty"`
-	FloatingUserId *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser      *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	Image                   *Image   `json:"image,omitempty"`
+	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 }
 
 /*

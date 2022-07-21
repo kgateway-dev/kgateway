@@ -13,6 +13,10 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
+	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+
+	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -54,6 +58,18 @@ func (m *Settings) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	if h, ok := interface{}(m.GetTimeout()).(clone.Cloner); ok {
+		target.Timeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.Timeout = proto.Clone(m.GetTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetMaxPayloadSize()).(clone.Cloner); ok {
+		target.MaxPayloadSize = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt64Value)
+	} else {
+		target.MaxPayloadSize = proto.Clone(m.GetMaxPayloadSize()).(*github_com_golang_protobuf_ptypes_wrappers.UInt64Value)
 	}
 
 	return target

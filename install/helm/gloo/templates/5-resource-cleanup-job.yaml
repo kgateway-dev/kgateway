@@ -43,7 +43,7 @@ spec:
             kubectl delete --ignore-not-found gateways.gateway.solo.io -n {{ . }} -l app=gloo || exit $?
             {{- end }}
       restartPolicy: OnFailure
-  ttlSecondsAfterFinished: 0
+  ttlSecondsAfterFinished: {{ .Values.gateway.cleanupJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1

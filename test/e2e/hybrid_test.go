@@ -152,7 +152,7 @@ var _ = Describe("Hybrid", func() {
 						},
 					},
 					{
-						AddressPrefix: "255.0.0.0",
+						AddressPrefix: "::",
 						PrefixLen: &wrappers.UInt32Value{
 							Value: 1,
 						},
