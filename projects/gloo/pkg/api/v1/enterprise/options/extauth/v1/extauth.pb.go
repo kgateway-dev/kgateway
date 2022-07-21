@@ -3501,7 +3501,7 @@ type UserSession_InternalSession struct {
 	unknownFields protoimpl.UnknownFields
 
 	// When set, refresh expired id-tokens using the refresh-token. Defaults to false.
-	// Explicitly set to true to disable refreshing.
+	// Explicitly set to true to enable refreshing.
 	AllowRefreshing *wrappers.BoolValue `protobuf:"bytes,1,opt,name=allow_refreshing,json=allowRefreshing,proto3" json:"allow_refreshing,omitempty"`
 }
 
