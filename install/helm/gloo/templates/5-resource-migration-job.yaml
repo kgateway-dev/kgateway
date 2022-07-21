@@ -36,7 +36,7 @@ spec:
           - -c
           - |
             if ! kubectl get crd upstreams.gloo.solo.io; then
-              echo "Gloo Edge crds are not installed; skipping migration job"
+              echo "Could not find Upstream CRD. Gloo Edge may not be installed yet. Skipping migration job."
               exit 0
             fi
 
