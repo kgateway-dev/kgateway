@@ -19,6 +19,8 @@ import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 import "validate/validate.proto";
 
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/extension.proto";
+
 /// [#protodoc-title: AWS Lambda]
 // AWS Lambda
 
@@ -45,6 +47,10 @@ message AWSLambdaPerRoute {
   // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
   // Defaults to false.
   bool unwrap_as_alb = 5;
+
+  // transformer configuration used to process response data
+  // cannot be configured simultaneously with unwrap_as_alb
+  .solo.io.envoy.config.core.v3.TypedExtensionConfig transformer_config = 6;
 }
 
 message AWSLambdaProtocolExtension {
@@ -116,3 +122,6 @@ message AWSLambdaConfig {
   // Defaults to not refreshing on time period. Suggested is 15 minutes.
   google.protobuf.Duration credential_refresh_delay = 4;
 }
+
+message ApiGatewayTransformation {
+} 

@@ -1,10 +1,9 @@
 package e2e_test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
+	"net"
 	"net/http"
 	"strings"
 
@@ -25,7 +24,6 @@ type perCorsTestData struct {
 	up            *gloov1.Upstream
 	envoyInstance *services.EnvoyInstance
 	envoyPort     uint32
-	envoyAdminUrl string
 }
 type corsTestData struct {
 	testClients services.TestClients
@@ -64,9 +62,6 @@ var _ = Describe("CORS", func() {
 			var err error
 			td.per.envoyInstance, err = envoyFactory.NewEnvoyInstance()
 			Expect(err).NotTo(HaveOccurred())
-			td.per.envoyAdminUrl = fmt.Sprintf("http://%s:%d/config_dump",
-				td.per.envoyInstance.LocalAddr(),
-				td.per.envoyInstance.AdminPort)
 
 			err = td.per.envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, td.testClients.GlooPort, td.testClients.RestXdsPort)
 			Expect(err).NotTo(HaveOccurred())
@@ -142,7 +137,7 @@ func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, 
 		},
 		Listeners: []*gloov1.Listener{{
 			Name:        "listener",
-			BindAddress: "0.0.0.0",
+			BindAddress: net.IPv4zero.String(),
 			BindPort:    ptd.envoyPort,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
@@ -245,17 +240,9 @@ func (ptd *perCorsTestData) getEnvoyConfig() string {
 	By("Get config")
 	envoyConfig := ""
 	Eventually(func() error {
-		r, err := http.Get(ptd.envoyAdminUrl)
-		if err != nil {
-			return err
-		}
-		p := new(bytes.Buffer)
-		if _, err := io.Copy(p, r.Body); err != nil {
-			return err
-		}
-		defer r.Body.Close()
-		envoyConfig = p.String()
-		return nil
+		cfg, err := ptd.envoyInstance.EnvoyConfigDump()
+		envoyConfig = cfg
+		return err
 	}, "10s", ".1s").Should(BeNil())
 	return envoyConfig
 }
