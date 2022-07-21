@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fixes the GraphQL getting started for v3 of the petstore sample app.
+    issueLink: https://github.com/solo-io/gloo/issues/6721
