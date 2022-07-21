@@ -27,23 +27,21 @@ import (
 	proto2 "google.golang.org/protobuf/proto"
 )
 
+// Translator converts a Proxy CR into an xDS Snapshot
+// Any errors that are encountered during translation are appended to the ResourceReports
+// It is invalid for us to return an error here, since translation of resources always needs
+// to results in an xDS Snapshot so we are resilient to pod restarts
 type Translator interface {
-	// TODO(kdorosh) in follow up PR, update this interface so it can never error
-	// It is logically invalid for us to return an error here (translation of resources always needs to
-	// result in a xds snapshot, so we are resilient to pod restarts)
 	Translate(
 		params plugins.Params,
 		proxy *v1.Proxy,
-	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
+	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport)
 }
 
-func NewTranslator(
-	sslConfigTranslator utils.SslConfigTranslator,
-	settings *v1.Settings,
-	pluginRegistry plugins.PluginRegistry,
-) Translator {
-	return NewTranslatorWithHasher(sslConfigTranslator, settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)
-}
+var (
+	_ Translator = new(translatorInstance)
+	_ Translator = new(translatorFactory)
+)
 
 func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
@@ -71,7 +69,7 @@ type translatorFactory struct {
 func (t *translatorFactory) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
 
 	// TODO - can we just remove this since a factory and instance are the same?
 	instance := &translatorInstance{
@@ -97,7 +95,7 @@ type translatorInstance struct {
 func (t *translatorInstance) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
 	// setup tracing, logging
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
@@ -109,12 +107,7 @@ func (t *translatorInstance) Translate(
 	//	2. Plugins are built with the assumption that they will be short lived, only for the
 	//		duration of a single translation loop
 	for _, p := range t.pluginRegistry.GetPlugins() {
-		if err := p.Init(plugins.InitParams{
-			Ctx:      params.Ctx,
-			Settings: t.settings,
-		}); err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "plugin init failed")
-		}
+		p.Init(plugins.InitParams{Ctx: params.Ctx, Settings: t.settings})
 	}
 
 	// prepare reports used to aggregate Warnings/Errors encountered during translation
@@ -158,7 +151,7 @@ func (t *translatorInstance) Translate(
 		}
 	}
 
-	return xdsSnapshot, reports, proxyReport, nil
+	return xdsSnapshot, reports, proxyReport
 }
 
 func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.Params, proxy *v1.Proxy, reports reporter.ResourceReports) (

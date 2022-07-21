@@ -19,7 +19,7 @@ import (
 
 // Compile-time assertion
 var (
-	_ syncer.TranslatorSyncerExtension            = new(TranslatorSyncerExtension)
+	_ syncer.TranslatorSyncerExtension = new(TranslatorSyncerExtension)
 )
 
 const (

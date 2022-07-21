@@ -155,7 +155,7 @@ var _ = Describe("SetupSyncer", func() {
 
 			It("should return plugins", func() {
 				extensions := Extensions{
-					PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
+					PluginRegistryFactory: func(ctx context.Context) registry.PluginRegistry {
 						return registry.NewPluginRegistry([]plugins.Plugin{
 							plugin1,
 							plugin2,

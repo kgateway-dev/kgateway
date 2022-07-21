@@ -2,10 +2,6 @@ package plugins
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -28,7 +24,7 @@ type Plugin interface {
 	//		we need to be able to cancel that go-routine on the next translation
 	//	2. Plugins are built with the assumption that they will be short lived, only for the
 	//		duration of a single translation loop
-	Init(params InitParams) error
+	Init(params InitParams)
 }
 
 /*
@@ -173,9 +169,4 @@ type PluginRegistry interface {
 	GetRoutePlugins() []RoutePlugin
 	GetRouteActionPlugins() []RouteActionPlugin
 	GetWeightedDestinationPlugins() []WeightedDestinationPlugin
-	GetDiscoveryPlugins() []discovery.DiscoveryPlugin
 }
-
-// A PluginRegistryFactory generates a PluginRegistry
-// It is executed each translation loop, ensuring we have up to date configuration of all plugins
-type PluginRegistryFactory func(ctx context.Context, opts bootstrap.Opts) PluginRegistry

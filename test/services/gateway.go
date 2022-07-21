@@ -243,11 +243,12 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		ratelimitExt.NewTranslatorSyncerExtension,
 		extauthExt.NewTranslatorSyncerExtension,
 	}
+	runOptions.Extensions.ApiEmitterChannel = make(chan struct{})
 
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
 	glooOpts.GatewayControllerEnabled = !runOptions.WhatToRun.DisableGateway
-	go setup.RunGlooWithExtensions(glooOpts, runOptions.Extensions, make(chan struct{}))
+	go setup.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
 
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {

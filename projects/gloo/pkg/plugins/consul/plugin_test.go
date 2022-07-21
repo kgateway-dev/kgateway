@@ -178,6 +178,6 @@ var _ = Describe("Resolve", func() {
 			},
 		})
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(ConsulTlsInputError(rootCa.String()).Error()))
+		Expect(err.Error()).To(Equal(TLSInputError(rootCa.String()).Error()))
 	})
 })

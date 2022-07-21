@@ -3,7 +3,8 @@ package registry
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
 
@@ -51,13 +52,21 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-var _ plugins.PluginRegistry = new(pluginRegistry)
+var (
+	_ plugins.PluginRegistry = new(pluginRegistry)
+)
+
+// A PluginRegistryFactory generates a PluginRegistry
+// It is executed each translation loop, ensuring we have up to date configuration of all plugins
+type PluginRegistryFactory func(ctx context.Context, opts bootstrap.Opts) plugins.PluginRegistry
 
 func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	var glooPlugins []plugins.Plugin
 
-	transformationPlugin := transformation.NewPlugin()
-	hcmPlugin := hcm.NewPlugin()
+	ec2Plugin, err := ec2.NewPlugin(opts.WatchOpts.Ctx, opts.Secrets)
+	if err != nil {
+		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Errorf("Failed to create ec2 Plugin %+v", err)
+	}
 
 	glooPlugins = append(glooPlugins,
 		loadbalancer.NewPlugin(),
@@ -65,14 +74,14 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		azure.NewPlugin(),
 		aws.NewPlugin(aws.GenerateAWSLambdaRouteConfig),
 		rest.NewPlugin(),
-		hcmPlugin,
+		hcm.NewPlugin(),
 		als.NewPlugin(),
 		proxyprotocol.NewPlugin(),
 		tls_inspector.NewPlugin(),
 		pipe.NewPlugin(),
 		tcp.NewPlugin(utils.NewSslConfigTranslator()),
 		static.NewPlugin(),
-		transformationPlugin,
+		transformation.NewPlugin(),
 		grpcweb.NewPlugin(),
 		grpc.NewPlugin(),
 		faultinjection.NewPlugin(),
@@ -80,7 +89,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		cors.NewPlugin(),
 		linkerd.NewPlugin(),
 		stats.NewPlugin(),
-		ec2.NewPlugin(opts.WatchOpts.Ctx, opts.Secrets),
+		ec2Plugin,
 		tracing.NewPlugin(),
 		shadowing.NewPlugin(),
 		headers.NewPlugin(),
@@ -109,7 +118,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	return glooPlugins
 }
 
-func GetPluginRegistryFactory() plugins.PluginRegistryFactory {
+func GetPluginRegistryFactory() PluginRegistryFactory {
 	return func(ctx context.Context, opts bootstrap.Opts) plugins.PluginRegistry {
 		availablePlugins := Plugins(opts)
 
@@ -132,13 +141,13 @@ type pluginRegistry struct {
 	routePlugins                 []plugins.RoutePlugin
 	routeActionPlugins           []plugins.RouteActionPlugin
 	weightedDestinationPlugins   []plugins.WeightedDestinationPlugin
-	discoveryPlugins []discovery.DiscoveryPlugin
 }
 
 // NewPluginRegistry creates a plugin registry and places all registered plugins
 // into their appropriate plugin lists. This process is referred to as
 // registering the plugins.
 func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
+	var allPlugins []plugins.Plugin
 	var listenerPlugins []plugins.ListenerPlugin
 	var tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
 	var httpFilterPlugins []plugins.HttpFilterPlugin
@@ -150,10 +159,14 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 	var routePlugins []plugins.RoutePlugin
 	var routeActionPlugins []plugins.RouteActionPlugin
 	var weightedDestinationPlugins []plugins.WeightedDestinationPlugin
-	var discoveryPlugins []discovery.DiscoveryPlugin
 
 	// Process registered plugins once
 	for _, plugin := range registeredPlugins {
+		if plugin == nil {
+			continue
+		}
+		allPlugins = append(allPlugins, plugin)
+
 		listenerPlugin, ok := plugin.(plugins.ListenerPlugin)
 		if ok {
 			listenerPlugins = append(listenerPlugins, listenerPlugin)
@@ -208,15 +221,10 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		if ok {
 			weightedDestinationPlugins = append(weightedDestinationPlugins, weightedDestinationPlugin)
 		}
-
-		discoveryPlugin, ok := plugin.(discovery.DiscoveryPlugin)
-		if ok {
-			discoveryPlugins = append(discoveryPlugins, discoveryPlugin)
-		}
 	}
 
 	return &pluginRegistry{
-		plugins:                      registeredPlugins,
+		plugins:                      allPlugins,
 		listenerPlugins:              listenerPlugins,
 		tcpFilterChainPlugins:        tcpFilterChainPlugins,
 		httpFilterPlugins:            httpFilterPlugins,
@@ -228,7 +236,6 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		routePlugins:                 routePlugins,
 		routeActionPlugins:           routeActionPlugins,
 		weightedDestinationPlugins:   weightedDestinationPlugins,
-		discoveryPlugins: discoveryPlugins,
 	}
 }
 
@@ -290,9 +297,4 @@ func (p *pluginRegistry) GetRouteActionPlugins() []plugins.RouteActionPlugin {
 // GetWeightedDestinationPlugins returns the plugins that were registered which act on WeightedDestination.
 func (p *pluginRegistry) GetWeightedDestinationPlugins() []plugins.WeightedDestinationPlugin {
 	return p.weightedDestinationPlugins
-}
-
-// GetDiscoveryPlugins returns the plugins that were registered which acts on Upstreams and Endpoints.
-func (p *pluginRegistry) GetDiscoveryPlugins() []discovery.DiscoveryPlugin {
-	return p.discoveryPlugins
 }

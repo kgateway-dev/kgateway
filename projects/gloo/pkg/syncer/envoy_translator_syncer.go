@@ -12,7 +12,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 
 	"github.com/gorilla/mux"
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -72,7 +71,7 @@ func measureResource(ctx context.Context, resource string, len int) {
 // TODO(kdorosh) in follow up PR, update this interface so it can never error
 // It is logically invalid for us to return an error here (translation of resources always needs to
 // result in a xds snapshot, so we are resilient to pod restarts)
-func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) error {
+func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
@@ -106,8 +105,8 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
 			allKeys[key] = true
 		}
-		// Get all valid node ID keys for extensions (rate-limit, ext-auth)
-		for _, extension := range s.extensions {
+		// Get all valid node ID keys for syncerExtensions (rate-limit, ext-auth)
+		for _, extension := range s.syncerExtensions {
 			allKeys[extension.ID()] = true
 		}
 
@@ -130,19 +129,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			Messages: map[*core.ResourceRef][]string{},
 		}
 
-		// TODO(kdorosh) in follow up PR, update this interface so it can never error
-		// It is logically invalid for us to return an error here (translation of resources always needs to
-		// result in a xds snapshot, so we are resilient to pod restarts)
-		//
-		// for now this can only really fail on plugin initialization e.g. https://github.com/solo-io/gloo/blob/4f133dd2be0875463754fecc84c1eced7d4202fd/projects/gloo/pkg/plugins/consul/plugin.go#L134
-		// we are not in a very bad place today but should update this interface ASAP so we don't introduce new regressions
-		xdsSnapshot, reports, _, err := s.translator.Translate(params, proxy)
-		if err != nil {
-			err := eris.Wrapf(err, "translation loop failed")
-			logger.DPanicw("", zap.Error(err))
-			return err
-		}
-
+		xdsSnapshot, reports, _ := s.translator.Translate(params, proxy)
 		if validateErr := reports.ValidateStrict(); validateErr != nil {
 			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		}
@@ -181,8 +168,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	}
 
 	logger.Debugf("gloo reports to be written: %v", allReports)
-
-	return nil
 }
 
 // TODO(ilackarms): move this somewhere else, make it part of dev-mode
