@@ -246,6 +246,8 @@ spec:
                             "@type": type.googleapis.com/envoy.extensions.filters.http.health_check.v3.HealthCheck
                             pass_through_mode: true
                         - name: envoy.filters.http.router
+                          typed_config:
+                            "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                 clusters:
                 - name: some_service
                   connect_timeout: 0.25s
@@ -380,6 +382,8 @@ spec:
                             "@type": type.googleapis.com/envoy.extensions.filters.http.health_check.v3.HealthCheck
                             pass_through_mode: true
                         - name: envoy.filters.http.router
+                          typed_config:
+                            "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                 clusters:
                 - name: some_service
                   connect_timeout: 0.25s

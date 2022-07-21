@@ -240,6 +240,7 @@ type AwsDestinationSpec struct {
 	LogicalName            string
 	ResponseTransformation bool
 	UnwrapAsAlb            bool
+	UnwrapAsAPIGateway     bool
 }
 
 type RestDestinationSpec struct {

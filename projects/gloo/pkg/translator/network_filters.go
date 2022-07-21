@@ -4,8 +4,10 @@ import (
 	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
@@ -202,7 +204,14 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	// As outlined by the Envoy docs, the last configured filter has to be a terminal filter.
 	// We set the Router filter (https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router)
 	// as the terminal filter in Gloo Edge.
-	envoyHttpFilters = append(envoyHttpFilters, &envoyhttp.HttpFilter{Name: wellknown.Router})
+	envoyHttpFilters = append(envoyHttpFilters, &envoyhttp.HttpFilter{
+		Name: wellknown.Router,
+		ConfigType: &envoyhcm.HttpFilter_TypedConfig{
+			TypedConfig: &any.Any{
+				TypeUrl: "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router",
+			},
+		},
+	})
 
 	return envoyHttpFilters
 }

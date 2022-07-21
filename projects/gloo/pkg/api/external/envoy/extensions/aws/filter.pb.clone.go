@@ -16,6 +16,8 @@ import (
 	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
 
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 )
 
 // ensure the imports are used
@@ -50,6 +52,12 @@ func (m *AWSLambdaPerRoute) Clone() proto.Message {
 	}
 
 	target.UnwrapAsAlb = m.GetUnwrapAsAlb()
+
+	if h, ok := interface{}(m.GetTransformerConfig()).(clone.Cloner); ok {
+		target.TransformerConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
+	} else {
+		target.TransformerConfig = proto.Clone(m.GetTransformerConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
+	}
 
 	return target
 }
@@ -120,6 +128,17 @@ func (m *AWSLambdaConfig) Clone() proto.Message {
 		}
 
 	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiGatewayTransformation) Clone() proto.Message {
+	var target *ApiGatewayTransformation
+	if m == nil {
+		return target
+	}
+	target = &ApiGatewayTransformation{}
 
 	return target
 }
