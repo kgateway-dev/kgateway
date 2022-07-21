@@ -54,7 +54,7 @@ spec:
             kubectl annotate upstreams.gloo.solo.io -n {{ $.Release.Namespace }} -l app=gloo helm.sh/resource-policy- || exit $?
             kubectl annotate gateways.gateway.solo.io -n {{ $.Release.Namespace }} -l app=gloo helm.sh/resource-policy- || exit $?
       restartPolicy: OnFailure
-  ttlSecondsAfterFinished: 0
+  ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1

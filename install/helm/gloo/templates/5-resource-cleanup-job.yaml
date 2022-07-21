@@ -39,7 +39,7 @@ spec:
             kubectl delete --ignore-not-found upstreams.gloo.solo.io -n {{ .Release.Namespace }} -l app=gloo || exit $?
             kubectl delete --ignore-not-found gateways.gateway.solo.io -n {{ .Release.Namespace }} -l app=gloo || exit $?
       restartPolicy: OnFailure
-  ttlSecondsAfterFinished: 0
+  ttlSecondsAfterFinished: {{ .Values.gateway.cleanupJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1
