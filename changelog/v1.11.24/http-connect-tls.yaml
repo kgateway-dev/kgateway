@@ -1,5 +1,5 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/6743
     description: >
       Add `httpConnectSslConfig` field to `Upstream` to allow users to configure TLS origination
