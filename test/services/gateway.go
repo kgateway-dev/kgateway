@@ -237,7 +237,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		glooOpts.Settings.Gloo = &gloov1.GlooOptions{}
 	}
 	if glooOpts.Settings.GetGloo().GetRestXdsBindAddr() == "" {
-		glooOpts.Settings.GetGloo().RestXdsBindAddr = fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort))
+		glooOpts.Settings.GetGloo().RestXdsBindAddr = fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort)
 	}
 	runOptions.Extensions.SyncerExtensions = []syncer.TranslatorSyncerExtensionFactory{
 		ratelimitExt.NewTranslatorSyncerExtension,
@@ -424,15 +424,15 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			RefreshRate: time.Second / 10,
 		},
 		ControlPlane: setup.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
-			IP:   net.ParseIP("0.0.0.0"),
+			IP:   net.IPv4zero,
 			Port: 8081,
 		}, nil, true),
 		ValidationServer: setup.NewValidationServer(ctx, grpcServerValidation, &net.TCPAddr{
-			IP:   net.ParseIP("0.0.0.0"),
+			IP:   net.IPv4zero,
 			Port: 8081,
 		}, true),
 		ProxyDebugServer: setup.NewProxyDebugServer(ctx, grpcServer, &net.TCPAddr{
-			IP:   net.ParseIP("0.0.0.0"),
+			IP:   net.IPv4zero,
 			Port: 8001,
 		}, false),
 		KubeClient:    runOptions.KubeClient,

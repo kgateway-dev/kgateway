@@ -44,19 +44,8 @@ func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) *env
 	CheckForDuplicateFilterChainMatches(filterChains, l.report)
 
 	out := &envoy_config_listener_v3.Listener{
-		Name: l.listener.GetName(),
-		Address: &envoy_config_core_v3.Address{
-			Address: &envoy_config_core_v3.Address_SocketAddress{
-				SocketAddress: &envoy_config_core_v3.SocketAddress{
-					Protocol: envoy_config_core_v3.SocketAddress_TCP,
-					Address:  l.listener.GetBindAddress(),
-					PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
-						PortValue: l.listener.GetBindPort(),
-					},
-					Ipv4Compat: true,
-				},
-			},
-		},
+		Name:         l.listener.GetName(),
+		Address:      l.computeListenerAddress(),
 		FilterChains: filterChains,
 	}
 
@@ -70,6 +59,32 @@ func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) *env
 	}
 
 	return out
+}
+
+// computeListenerAddress returns the Address that this listener will listen for traffic
+func (l *listenerTranslatorInstance) computeListenerAddress() *envoy_config_core_v3.Address {
+	// As of Envoy 1.22: https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.22/v1.22.0.html
+	// the Ipv4Compat flag can only be set on Ipv6 address and Ipv4-mapped Ipv6 address.
+	listenerBindAddress, err := GetIpv6Address(l.listener.GetBindAddress())
+	if err != nil {
+		validation.AppendListenerError(l.report,
+			validationapi.ListenerReport_Error_ProcessingError,
+			err.Error(),
+		)
+	}
+
+	return &envoy_config_core_v3.Address{
+		Address: &envoy_config_core_v3.Address_SocketAddress{
+			SocketAddress: &envoy_config_core_v3.SocketAddress{
+				Protocol: envoy_config_core_v3.SocketAddress_TCP,
+				Address:  listenerBindAddress,
+				PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+					PortValue: l.listener.GetBindPort(),
+				},
+				Ipv4Compat: true,
+			},
+		},
+	}
 }
 
 func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.ListenerReport) {

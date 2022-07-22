@@ -35,6 +35,11 @@ spec:
           - /bin/sh
           - -c
           - |
+            if ! kubectl get crd upstreams.gloo.solo.io; then
+              echo "Could not find Upstream CRD. Gloo Edge may not be installed yet. Skipping migration job."
+              exit 0
+            fi
+
             # remove existing helm labels/annotations since the custom resources are no longer managed by helm.
             # also add resource-policy to tell helm not to delete the resource during upgrade.
             # select by label app=gloo, which is on all CRs from the gloo helm chart.
@@ -47,7 +52,7 @@ spec:
             kubectl label gateways.gateway.solo.io -n {{ . }} -l app=gloo,app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by- || exit $?
             {{- end }}
       restartPolicy: OnFailure
-  ttlSecondsAfterFinished: 0
+  ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1
@@ -116,6 +121,9 @@ rules:
 - apiGroups: ["gateway.solo.io"]
   resources: ["*"]
   verbs: ["get", "list", "update", "patch"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list"]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1

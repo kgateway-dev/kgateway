@@ -46,7 +46,7 @@ great way to get a cluster up quickly.
 
     ```shell
     kubectl apply \
-      --filename https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
+      --filename https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
     ```
 
 3. Let's create a Kubernetes Ingress object to route requests to the petstore:
