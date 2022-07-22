@@ -162,6 +162,27 @@ var _ = Describe("version command", func() {
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
 	})
 
+	It("should warn when the versions differ in gateway pod", func() {
+		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
+			Tag:      v_1_0_0,
+			Name:     prerun.ContainerNameToCheckTag,
+			Registry: "test-registry",
+			OssTag:   v_1_0_0,
+		}})
+
+		mismatches := []*versionutils.Version{{
+			Major: 1,
+			Minor: 0,
+			Patch: 0,
+		}}
+
+		expectedOutputLines = []string{
+			prerun.BuildSuggestedUpgradeCommand(binaryName, mismatches),
+		}
+
+		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
+	})
+
 	It("should ignore containers other than the one we specifically look for", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{
 			{

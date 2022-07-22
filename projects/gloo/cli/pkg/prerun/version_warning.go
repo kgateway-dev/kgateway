@@ -21,6 +21,8 @@ import (
 )
 
 const (
+	// If the gateway pod is present use the image tag on that to get the gloo server version
+	// Otherwise, look for the annotation on the gloo pod
 	ContainerNameToCheckAnnotation = "gloo"
 	ContainerNameToCheckTag        = "gateway"
 )
