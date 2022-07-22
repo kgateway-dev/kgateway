@@ -44,7 +44,7 @@ func (s *TranslatorSyncerExtension) Sync(
 	_ *gloov1.Settings,
 	_ envoycache.SnapshotCache,
 	_ reporter.ResourceReports,
-) error {
+) {
 	ctx = contextutils.WithLogger(ctx, "rateLimitTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -114,8 +114,6 @@ func (s *TranslatorSyncerExtension) Sync(
 			}
 		}
 	}
-
-	return nil
 }
 
 func createErrorMsg(feature string) string {

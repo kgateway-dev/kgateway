@@ -54,7 +54,7 @@ func (s *TranslatorSyncerExtension) Sync(
 	}
 
 	if settings.GetNamedExtauth() != nil {
-		return getEnterpriseOnlyErr()
+		logger.Error(ErrEnterpriseOnly.Error())
 	}
 
 	for _, proxy := range snap.Proxies {
@@ -63,7 +63,7 @@ func (s *TranslatorSyncerExtension) Sync(
 
 			for _, virtualHost := range virtualHosts {
 				if virtualHost.GetOptions().GetExtauth().GetConfigRef() != nil {
-					return getEnterpriseOnlyErr()
+					reports.AddError(proxy, getEnterpriseOnlyErr())
 				}
 
 				if virtualHost.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
@@ -72,20 +72,20 @@ func (s *TranslatorSyncerExtension) Sync(
 
 				for _, route := range virtualHost.GetRoutes() {
 					if route.GetOptions().GetExtauth().GetConfigRef() != nil {
-						return getEnterpriseOnlyErr()
+						reports.AddError(proxy, getEnterpriseOnlyErr())
 					}
 
 					if route.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
-						return getEnterpriseOnlyErr()
+						reports.AddError(proxy, getEnterpriseOnlyErr())
 					}
 
 					for _, weightedDestination := range route.GetRouteAction().GetMulti().GetDestinations() {
 						if weightedDestination.GetOptions().GetExtauth().GetConfigRef() != nil {
-							return getEnterpriseOnlyErr()
+							reports.AddError(proxy, getEnterpriseOnlyErr())
 						}
 
 						if weightedDestination.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
-							return getEnterpriseOnlyErr()
+							reports.AddError(proxy, getEnterpriseOnlyErr())
 						}
 					}
 				}
