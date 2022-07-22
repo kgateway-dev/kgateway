@@ -303,7 +303,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			// Forward compatibility with later versions of Gloo
 			proxy, err = proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(proxy.Metadata.Labels["created_by"]).To(Equal("gloo"))
+			Expect(proxy.Metadata.Labels["created_by"]).To(Equal("gateway"))
 		})
 	})
 
