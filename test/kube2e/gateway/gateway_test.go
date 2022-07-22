@@ -266,7 +266,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			proxy.Metadata.Labels = map[string]string{
-				"created_by": "gateway",
+				"created_by": "gloo-gateway-translator",
 			}
 			_, err = proxyClient.Write(proxy, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
@@ -297,6 +297,13 @@ var _ = Describe("Kube2e: gateway", func() {
 				}
 				return proxy, nil
 			})
+
+			// Ensure that the updated Proxy has the old label
+			// This allows backwards compatibility with older versions of Gloo and
+			// Forward compatibility with later versions of Gloo
+			proxy, err = proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(proxy.Metadata.Labels["created_by"]).To(Equal("gloo"))
 		})
 	})
 
