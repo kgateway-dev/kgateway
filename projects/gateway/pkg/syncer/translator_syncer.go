@@ -44,20 +44,17 @@ type translatorSyncer struct {
 var (
 	// labels used to uniquely identify Proxies that are managed by the Gloo controllers
 	proxyLabelsToWrite = map[string]string{
-		"created_by": "gloo-gateway-translator",
+		"created_by": "gateway",
 	}
 
-	// Previously, proxies would be identified with:
+	// Currently, proxies are identified with:
 	//   created_by: gateway
-	// Now, proxies are identified with:
+	// In later version of Gloo, proxies are identified with:
 	//   created_by: gloo-gateway-translator
 	//
-	// We need to ensure that users can successfully upgrade from versions
-	// where the previous labels were used, to versions with the new labels.
-	// Therefore, we watch Proxies with a superset of the old and new labels, and persist Proxies with new labels.
-	//
-	// This is only required for backwards compatibility.
-	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
+	// We need to ensure that users can successfully downgrade from versions
+	// where the newer labels were used, to versions with the current labels.
+	// Therefore, we watch Proxies with a superset of the old and new labels, and persist Proxies with old labels.
 	proxyLabelSelectorOptions = clients.ListOpts{
 		ExpressionSelector: "created_by in (gloo-gateway-translator, gateway)",
 	}
