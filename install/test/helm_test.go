@@ -3639,6 +3639,7 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
+        solo.io/ossImage: "` + version + `"
     spec:
       serviceAccountName: gloo
       volumes:
@@ -3952,12 +3953,16 @@ metadata:
 							"gloo": "gloo",
 						}
 						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats(), GetValidationEnvVar())
-
+						glooAnnotations := make(map[string]string)
+						for k, v := range statsAnnotations {
+							glooAnnotations[k] = v
+						}
+						glooAnnotations["solo.io/ossImage"] = version
 						rb := ResourceBuilder{
 							Namespace:   namespace,
 							Name:        "gloo",
 							Labels:      labels,
-							Annotations: statsAnnotations,
+							Annotations: glooAnnotations,
 							Containers:  []ContainerSpec{container},
 						}
 						deploy := rb.GetDeploymentAppsv1()
@@ -4776,6 +4781,11 @@ metadata:
 					podLabels := map[string]string{
 						"gloo": "gloo",
 					}
+					glooAnnotations := make(map[string]string)
+					for k, v := range statsAnnotations {
+						glooAnnotations[k] = v
+					}
+					glooAnnotations["solo.io/ossImage"] = version
 					var glooDeploymentPostMerge = &appsv1.Deployment{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Deployment",
@@ -4792,7 +4802,7 @@ metadata:
 							Template: v1.PodTemplateSpec{
 								ObjectMeta: metav1.ObjectMeta{
 									Labels:      podLabels,
-									Annotations: statsAnnotations,
+									Annotations: glooAnnotations,
 								},
 								Spec: v1.PodSpec{
 									Volumes: []v1.Volume{{
