@@ -126,11 +126,11 @@ var _ = Describe("Helm Test", func() {
 				shaTest := "sha256:1234123412341234123412341234213412341234123412341234123412341234"
 				prepareMakefile(namespace, helmValues{
 					valuesArgs: []string{
-						"gateway.deployment.image.digest=" + shaTest,
+						"gloo.deployment.image.digest=" + shaTest,
 					},
 				})
 				testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-					return resource.GetKind() == "Deployment" && resource.GetName() == "gateway"
+					return resource.GetKind() == "Deployment" && resource.GetName() == "gloo"
 				}).ExpectAll(func(deployment *unstructured.Unstructured) {
 					deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
 					ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
