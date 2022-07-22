@@ -2,4 +2,6 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/6406
     resolvesIssue: false
-    description: Ensure Proxies with `created_by` labels in both the current   can be reconciled correctly.
+    description: >
+      Ensure Proxies with `created_by` labels in both
+      the original and updated format can be reconciled correctly.
