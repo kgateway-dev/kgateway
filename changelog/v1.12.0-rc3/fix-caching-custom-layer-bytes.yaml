@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3206
+    resolvesIssue: false
+    description: Cache max size configurable on custom layer in addition to top layer

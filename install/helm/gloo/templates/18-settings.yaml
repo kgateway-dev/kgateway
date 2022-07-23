@@ -134,6 +134,10 @@ spec:
   extauth:
 {{- toYaml .Values.global.extensions.extAuth | nindent 4 }}
 {{- end }}
+{{- if .Values.global.extensions.caching }}
+  caching:
+{{- toYaml .Values.global.extensions.caching | nindent 4 }}
+{{- end }}
 {{- end }}
 {{- end -}}
 
