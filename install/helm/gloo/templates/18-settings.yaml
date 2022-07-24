@@ -128,16 +128,12 @@ spec:
 {{- end }}
 
 {{/* extauth have specified yaml in Enterprise (as opposed to generic yaml insertion for third party configs here) */}}
-{{- if .Values.global.extensions }}
 {{- if .Values.global.extauthCustomYaml }}
+{{- if .Values.global.extensions }}
 {{- if .Values.global.extensions.extAuth }}
   extauth:
 {{- toYaml .Values.global.extensions.extAuth | nindent 4 }}
 {{- end }}
-{{- end }} {{/* exauth custom end */}}
-{{- if .Values.global.extensions.caching }}
-  cachingServer:
-{{- toYaml .Values.global.extensions.caching | nindent 4 }}
 {{- end }}
 {{- end -}}
 
