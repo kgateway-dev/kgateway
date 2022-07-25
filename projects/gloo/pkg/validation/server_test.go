@@ -187,7 +187,7 @@ var _ = Describe("Validation Server", func() {
 			proxyReport := resp.ValidationReports[0].GetProxyReport()
 			warnings := validation.GetProxyWarning(proxyReport)
 			errors := validation.GetProxyError(proxyReport)
-			Expect(warnings).To(HaveLen(2)) // one each for http and hybrid
+			Expect(warnings).To(HaveLen(3))
 			Expect(errors).To(HaveOccurred())
 		})
 		It("upstream deletion validation succeeds", func() {
@@ -229,7 +229,7 @@ var _ = Describe("Validation Server", func() {
 			proxyReport := resp.ValidationReports[0].GetProxyReport()
 			warnings := validation.GetProxyWarning(proxyReport)
 			errors := validation.GetProxyError(proxyReport)
-			Expect(warnings).To(HaveLen(2))
+			Expect(warnings).To(HaveLen(3))
 			Expect(errors).To(HaveOccurred())
 		})
 		It("secret deletion validation succeeds", func() {
