@@ -10,7 +10,7 @@ func GetVirtualHostsForListener(listener *v1.Listener) []*v1.VirtualHost {
 
 	switch typedListener := listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
-		virtualHosts = typedListener.HttpListener.VirtualHosts
+		virtualHosts = typedListener.HttpListener.GetVirtualHosts()
 
 	case *v1.Listener_TcpListener:
 		// VirtualHosts are an http-only concept
@@ -18,8 +18,8 @@ func GetVirtualHostsForListener(listener *v1.Listener) []*v1.VirtualHost {
 
 	case *v1.Listener_HybridListener:
 		for _, matchedListener := range typedListener.HybridListener.GetMatchedListeners() {
-			if http, ok := matchedListener.ListenerType.(*v1.MatchedListener_HttpListener); ok {
-				virtualHosts = append(virtualHosts, http.HttpListener.VirtualHosts...)
+			if http, ok := matchedListener.GetListenerType().(*v1.MatchedListener_HttpListener); ok {
+				virtualHosts = append(virtualHosts, http.HttpListener.GetVirtualHosts()...)
 			}
 		}
 
