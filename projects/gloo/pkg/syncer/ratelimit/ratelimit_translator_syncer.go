@@ -23,14 +23,16 @@ var (
 )
 
 const (
-	Name       = "rate-limit"
 	ServerRole = "ratelimit"
 )
 
-type TranslatorSyncerExtension struct {
-}
+// TranslatorSyncerExtension is the Open Source variant of the Enterprise TranslatorSyncerExtension for RateLimit
+// TODO (sam-heilbron)
+// 	This placeholder is solely used to detect Enterprise features being used in an Open Source installation
+//	Once https://github.com/solo-io/gloo/issues/6495 is implemented, we should be able to remove this placeholder altogether
+type TranslatorSyncerExtension struct {}
 
-func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
+func NewTranslatorSyncerExtension(_ context.Context, _ syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
 	return &TranslatorSyncerExtension{}, nil
 }
 
@@ -43,7 +45,7 @@ func (s *TranslatorSyncerExtension) Sync(
 	snap *gloov1snap.ApiSnapshot,
 	_ *gloov1.Settings,
 	_ envoycache.SnapshotCache,
-	_ reporter.ResourceReports,
+	reports reporter.ResourceReports,
 ) {
 	ctx = contextutils.WithLogger(ctx, "rateLimitTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
@@ -54,6 +56,8 @@ func (s *TranslatorSyncerExtension) Sync(
 		return eris.New(errorMsg)
 	}
 
+	reports.Accept(snap.Proxies.AsInputResources()...)
+
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {
 			virtualHosts := utils.GetVhostsFromListener(listener)
@@ -62,53 +66,53 @@ func (s *TranslatorSyncerExtension) Sync(
 
 				// RateLimitConfigs is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/crds/
 				if virtualHost.GetOptions().GetRateLimitConfigs() != nil {
-					return enterpriseOnlyError("RateLimitConfig")
+					reports.AddError(proxy, enterpriseOnlyError("RateLimitConfig"))
 				}
 
 				// ratelimitBasic is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/simple/
 				if virtualHost.GetOptions().GetRatelimitBasic() != nil {
-					return enterpriseOnlyError("ratelimitBasic")
+					reports.AddError(proxy, enterpriseOnlyError("ratelimitBasic"))
 				}
 
 				// check setActions on vhost
 				rlactionsVhost := virtualHost.GetOptions().GetRatelimit().GetRateLimits()
 				for _, rlaction := range rlactionsVhost {
 					if rlaction.GetSetActions() != nil {
-						return enterpriseOnlyError("setActions")
+						reports.AddError(proxy, enterpriseOnlyError("setActions"))
 					}
 				}
 
 				// Staged RateLimiting is an enterprise feature
 				if virtualHost.GetOptions().GetRateLimitEarlyConfigType() != nil {
-					return enterpriseOnlyError("RateLimitEarly")
+					reports.AddError(proxy, enterpriseOnlyError("RateLimitEarly"))
 				}
 				if virtualHost.GetOptions().GetRateLimitRegularConfigType() != nil {
-					return enterpriseOnlyError("RateLimitRegular")
+					reports.AddError(proxy, enterpriseOnlyError("RateLimitRegular"))
 				}
 
 				for _, route := range virtualHost.GetRoutes() {
 					if route.GetOptions().GetRateLimitConfigs() != nil {
-						return enterpriseOnlyError("RateLimitConfig")
+						reports.AddError(proxy, enterpriseOnlyError("RateLimitConfig"))
 					}
 
 					if route.GetOptions().GetRatelimitBasic() != nil {
-						return enterpriseOnlyError("ratelimitBasic")
+						reports.AddError(proxy, enterpriseOnlyError("ratelimitBasic"))
 					}
 
 					// check setActions on route
 					rlactionsRoute := route.GetOptions().GetRatelimit().GetRateLimits()
 					for _, rlaction := range rlactionsRoute {
 						if rlaction.GetSetActions() != nil {
-							return enterpriseOnlyError("setActions")
+							reports.AddError(proxy, enterpriseOnlyError("setActions"))
 						}
 					}
 
 					// Staged RateLimiting is an enterprise feature
 					if route.GetOptions().GetRateLimitEarlyConfigType() != nil {
-						return enterpriseOnlyError("RateLimitEarly")
+						reports.AddError(proxy, enterpriseOnlyError("RateLimitEarly"))
 					}
 					if route.GetOptions().GetRateLimitRegularConfigType() != nil {
-						return enterpriseOnlyError("RateLimitRegular")
+						reports.AddError(proxy, enterpriseOnlyError("RateLimitRegular"))
 					}
 				}
 			}

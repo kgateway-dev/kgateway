@@ -28,6 +28,10 @@ var (
 	ErrEnterpriseOnly = eris.New("The Gloo Advanced Extauth API is an enterprise-only feature, please upgrade or use the Envoy Extauth API instead")
 )
 
+// TranslatorSyncerExtension is the Open Source variant of the Enterprise TranslatorSyncerExtension for ExtAuth
+// TODO (sam-heilbron)
+// 	This placeholder is solely used to detect Enterprise features being used in an Open Source installation
+//	Once https://github.com/solo-io/gloo/issues/6495 is implemented, we should be able to remove this placeholder altogether
 type TranslatorSyncerExtension struct{}
 
 func NewTranslatorSyncerExtension(_ context.Context, _ syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
