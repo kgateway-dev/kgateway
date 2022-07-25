@@ -34,7 +34,7 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
-        solo.io/ossImage: {{ .Values.gloo.deployment.ossImageTag }}
+        gloo.solo.io/oss-image-tag: {{ .Values.gloo.deployment.ossImageTag }}
         {{- end}}
         {{- if .Values.gloo.deployment.extraGlooAnnotations }}
         {{- range $key, $value := .Values.gloo.deployment.extraGlooAnnotations }}

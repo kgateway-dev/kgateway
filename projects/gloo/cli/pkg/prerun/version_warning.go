@@ -149,23 +149,19 @@ func getOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versi
 		switch podVersion.GetVersionType().(type) {
 		case *versiondiscovery.ServerVersion_Kubernetes:
 			for _, container := range podVersion.GetKubernetes().GetContainers() {
-				containerVersion, err := versionutils.ParseVersion("v" + container.GetTag())
-				if err != nil {
-					continue
-				}
-				if container.GetName() == ContainerNameToCheckTag {
-					versions = append(versions, containerVersion)
-				}
-				containerOssVersion, err := versionutils.ParseVersion("v" + container.GetOssTag())
-				if err != nil {
-					// if the container version doesn't match our versioning scheme
-					// (ie, as of writing this the redis container is on version "5")
-					// then just skip it
-					continue
-				}
-
 				if container.GetName() == ContainerNameToCheckAnnotation {
+					containerOssVersion, err := versionutils.ParseVersion("v" + container.GetOssTag())
+					if err != nil {
+						// If the annotation wasn't present or didn't contain a valid version, move on
+						continue
+					}
 					versions = append(versions, containerOssVersion)
+				} else if container.GetName() == ContainerNameToCheckTag {
+					containerVersion, err := versionutils.ParseVersion("v" + container.GetTag())
+					if err != nil {
+						continue
+					}
+					versions = append(versions, containerVersion)
 				}
 			}
 		default:

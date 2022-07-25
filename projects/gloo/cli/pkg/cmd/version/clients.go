@@ -28,7 +28,7 @@ var (
 	KnativeUniqueContainers = []string{"knative-external-proxy", "knative-internal-proxy"}
 	IngressUniqueContainers = []string{"ingress"}
 	GlooEUniqueContainers   = []string{"gloo-ee"}
-	ossImageAnnotation      = "solo.io/ossImage"
+	ossImageAnnotation      = "gloo.solo.io/oss-image-tag"
 )
 
 func NewKube(namespace, kubeContext string) *kube {

@@ -3661,7 +3661,7 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
-        solo.io/ossImage: "` + version + `"
+        gloo.solo.io/oss-image-tag: "` + version + `"
     spec:
       serviceAccountName: gloo
       volumes:
@@ -3979,7 +3979,7 @@ metadata:
 						for k, v := range statsAnnotations {
 							glooAnnotations[k] = v
 						}
-						glooAnnotations["solo.io/ossImage"] = version
+						glooAnnotations["gloo.solo.io/oss-image-tag"] = version
 						rb := ResourceBuilder{
 							Namespace:   namespace,
 							Name:        "gloo",
@@ -4807,7 +4807,7 @@ metadata:
 					for k, v := range statsAnnotations {
 						glooAnnotations[k] = v
 					}
-					glooAnnotations["solo.io/ossImage"] = version
+					glooAnnotations["gloo.solo.io/oss-image-tag"] = version
 					var glooDeploymentPostMerge = &appsv1.Deployment{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Deployment",

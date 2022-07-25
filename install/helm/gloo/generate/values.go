@@ -229,7 +229,7 @@ type GlooDeployment struct {
 	ExtraGlooLabels       map[string]string `json:"extraGlooLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment."`
 	ExtraGlooAnnotations  map[string]string `json:"extraGlooAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment."`
 	LivenessProbeEnabled  *bool             `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for Gloo Edge (default is false)."`
-	OssImageTag           *string           `json:"ossImageTag,omitempty"`
+	OssImageTag           *string           `json:"ossImageTag,omitempty" desc:"Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with."`
 	*DeploymentSpec
 }
 
