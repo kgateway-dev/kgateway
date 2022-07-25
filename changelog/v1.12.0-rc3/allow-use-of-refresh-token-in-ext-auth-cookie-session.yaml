@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/4338
-    description: Allows ext-auth CRD to support refresh tokens for cookies without using redis.
-    resolvesIssue: false
