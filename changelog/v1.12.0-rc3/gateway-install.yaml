@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/3667
+    resolvesIssue: false
+    description: > 
+      Remove helm charts that created gateway deployment and service accounts. Also remove some unreachable code to start
+      the gateway process and the Dockerfile to build the image.
+      Update the version mismatch check in glooctl to look at a newly added annotation on the gloo pod instead of the 
+      tag in the gateway pod. Previously we relied on the gateway pod as a way to find the OSS version in an enterprise install.
