@@ -101,7 +101,7 @@ var _ = Describe("version command", func() {
 	It("should not warn when the versions match exactly", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_20_12,
-			Name:     prerun.ContainerNameToCheck,
+			Name:     prerun.ContainerNameToCheckAnnotation,
 			Registry: "test-registry",
 		}})
 
@@ -112,7 +112,7 @@ var _ = Describe("version command", func() {
 	It("should not warn when the versions differ only by patch version", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_20_13,
-			Name:     prerun.ContainerNameToCheck,
+			Name:     prerun.ContainerNameToCheckAnnotation,
 			Registry: "test-registry",
 		}})
 
@@ -123,8 +123,9 @@ var _ = Describe("version command", func() {
 	It("should warn when the versions differ by minor version", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_21_0,
-			Name:     prerun.ContainerNameToCheck,
+			Name:     prerun.ContainerNameToCheckAnnotation,
 			Registry: "test-registry",
+			OssTag:   v_21_0,
 		}})
 
 		mismatches := []*versionutils.Version{{
@@ -143,8 +144,30 @@ var _ = Describe("version command", func() {
 	It("should warn when the versions differ by major version", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_1_0_0,
-			Name:     prerun.ContainerNameToCheck,
+			Name:     prerun.ContainerNameToCheckAnnotation,
 			Registry: "test-registry",
+			OssTag:   v_1_0_0,
+		}})
+
+		mismatches := []*versionutils.Version{{
+			Major: 1,
+			Minor: 0,
+			Patch: 0,
+		}}
+
+		expectedOutputLines = []string{
+			prerun.BuildSuggestedUpgradeCommand(binaryName, mismatches),
+		}
+
+		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
+	})
+
+	It("should warn when the versions differ in gateway pod", func() {
+		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
+			Tag:      v_1_0_0,
+			Name:     prerun.ContainerNameToCheckTag,
+			Registry: "test-registry",
+			OssTag:   v_1_0_0,
 		}})
 
 		mismatches := []*versionutils.Version{{
@@ -164,13 +187,14 @@ var _ = Describe("version command", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{
 			{
 				Tag:      v_20_12,
-				Name:     prerun.ContainerNameToCheck,
+				Name:     prerun.ContainerNameToCheckAnnotation,
 				Registry: "test-registry",
 			},
 			{
 				Tag:      v_1_0_0,
 				Name:     otherPodName,
 				Registry: "test-registry",
+				OssTag:   v_1_0_0,
 			},
 		})
 

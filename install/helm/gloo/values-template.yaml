@@ -77,11 +77,6 @@ gateway:
       enabled: true
       disableHelmHook: false
       extraAnnotations: {}
-  deployment:
-    image:
-      repository: gateway
-    replicas: 0
-    runAsUser: 10101
   certGenJob:
     enabled: true
     image:
@@ -109,7 +104,6 @@ gateway:
     runAsUser: 10101
     ttlSecondsAfterFinished: 60
   proxyServiceAccount: {}
-  serviceAccount: {}
 gatewayProxies:
   gatewayProxy:
     envoyApiVersion: V3
