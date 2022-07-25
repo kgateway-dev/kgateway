@@ -38,11 +38,8 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 	Context("config with enterprise ratelimit feature is set on listener", func() {
 
 		BeforeEach(func() {
-			var err error
 			ctx, cancel = context.WithCancel(context.Background())
-
-			translator, err = NewTranslatorSyncerExtension(ctx, params)
-			Expect(err).NotTo(HaveOccurred())
+			translator = NewTranslatorSyncerExtension(ctx, params)
 		})
 
 		JustBeforeEach(func() {

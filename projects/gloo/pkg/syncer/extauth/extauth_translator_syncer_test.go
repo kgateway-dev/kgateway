@@ -33,10 +33,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		var err error
-
-		translator, err = NewTranslatorSyncerExtension(ctx, syncer.TranslatorSyncerExtensionParams{})
-		Expect(err).NotTo(HaveOccurred())
+		translator = NewTranslatorSyncerExtension(ctx, syncer.TranslatorSyncerExtensionParams{})
 
 		apiSnapshot = &gloov1snap.ApiSnapshot{}
 		settings = &gloov1.Settings{}
