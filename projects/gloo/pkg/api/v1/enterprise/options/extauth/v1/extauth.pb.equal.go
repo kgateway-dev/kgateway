@@ -1399,6 +1399,10 @@ func (m *Ldap) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetDisableGroupChecking() != target.GetDisableGroupChecking() {
+		return false
+	}
+
 	return true
 }
 
