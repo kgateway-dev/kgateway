@@ -776,12 +776,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Set up the syncer extensions
 	var syncerExtensions []syncer.TranslatorSyncerExtension
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
-		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
-		if err != nil {
-			logger.Errorw("Error initializing extension", "error", err)
-			continue
-		}
-
+		syncerExtension := syncerExtensionFactory(watchOpts.Ctx, params)
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 

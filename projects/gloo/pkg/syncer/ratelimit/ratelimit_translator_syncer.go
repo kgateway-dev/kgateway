@@ -31,8 +31,8 @@ const (
 //	Once https://github.com/solo-io/gloo/issues/6495 is implemented, we should be able to remove this placeholder altogether
 type translatorSyncerExtension struct{}
 
-func NewTranslatorSyncerExtension(_ context.Context, _ syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
-	return &translatorSyncerExtension{}, nil
+func NewTranslatorSyncerExtension(_ context.Context, _ syncer.TranslatorSyncerExtensionParams) syncer.TranslatorSyncerExtension {
+	return &translatorSyncerExtension{}
 }
 
 func (s *translatorSyncerExtension) ID() string {

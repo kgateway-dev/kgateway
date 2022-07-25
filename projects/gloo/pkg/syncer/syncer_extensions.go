@@ -38,4 +38,4 @@ type TranslatorSyncerExtensionParams struct {
 }
 
 // TranslatorSyncerExtensionFactory generates TranslatorSyncerExtensions
-type TranslatorSyncerExtensionFactory func(context.Context, TranslatorSyncerExtensionParams) (TranslatorSyncerExtension, error)
+type TranslatorSyncerExtensionFactory func(context.Context, TranslatorSyncerExtensionParams) TranslatorSyncerExtension
