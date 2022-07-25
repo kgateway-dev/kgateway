@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -67,12 +66,10 @@ var _ = Describe("Listener Subsystem", func() {
 		// The translatorFactory expects each of the plugins to be initialized
 		// Therefore, to test this component we pre-initialize the plugins
 		for _, p := range pluginRegistry.GetPlugins() {
-			if err := p.Init(plugins.InitParams{
+			p.Init(plugins.InitParams{
 				Ctx:      ctx,
 				Settings: &v1.Settings{},
-			}); err != nil {
-				panic(errors.Wrapf(err, "test is not initialized properly"))
-			}
+			})
 		}
 
 		translatorFactory = translator.NewListenerSubsystemTranslatorFactory(pluginRegistry, sslutils.NewSslConfigTranslator())
