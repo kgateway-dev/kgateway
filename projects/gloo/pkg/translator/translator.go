@@ -298,7 +298,7 @@ func (t *translatorInstance) generateXDSSnapshot(
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
 }
 
-func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
+func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
 	hasher := fnv.New64()
 	// 8kb capacity, consider raising if we find the buffer is frequently being
 	// re-allocated by MarshalAppend to fit larger protos.
@@ -323,8 +323,8 @@ func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
 	return hasher.Sum64()
 }
 
-// deprecated, slower than EnvoyCacheResourcesListToFnvHash
-func EnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
+// deprecated, slower than MustEnvoyCacheResourcesListToFnvHash
+func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
 	hash, err := hashstructure.Hash(resources, nil)
 	if err != nil {
 		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
@@ -343,7 +343,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 		routesProto = append(routesProto, resource.NewEnvoyResource(proto.Clone(routeCfg)))
 	}
 
-	routesVersion := EnvoyCacheResourcesListToFnvHash(routesProto)
+	routesVersion := MustEnvoyCacheResourcesListToFnvHash(routesProto)
 	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }
 

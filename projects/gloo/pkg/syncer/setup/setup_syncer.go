@@ -732,7 +732,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		allowWarnings = gwOpts.Validation.AllowWarnings
 	}
 
-	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistry, translator.EnvoyCacheResourcesListToFnvHash)
+	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistry, translator.MustEnvoyCacheResourcesListToFnvHash)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {

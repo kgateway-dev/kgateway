@@ -181,10 +181,10 @@ var _ = Describe("Translator", func() {
 	}
 	BeforeEach(beforeEach)
 
-	JustBeforeEach(func() {
+	justBeforeEach := func() {
 		pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 
-		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)
+		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, MustEnvoyCacheResourcesListToFnvHash)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",
@@ -343,7 +343,8 @@ var _ = Describe("Translator", func() {
 				hybridListener,
 			},
 		}
-	})
+	}
+	JustBeforeEach(justBeforeEach)
 
 	translateWithError := func() *validation.ProxyReport {
 		_, errs, report := translator.Translate(params, proxy)
@@ -1298,6 +1299,7 @@ var _ = Describe("Translator", func() {
 
 			// reset modified global variables
 			beforeEach()
+			justBeforeEach()
 
 			By("add the upstreams in the opposite order and compare the version and http filters")
 
