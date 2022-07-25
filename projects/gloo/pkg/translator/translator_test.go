@@ -2891,7 +2891,6 @@ var _ = Describe("Translator", func() {
 				Expect(report.Errors).NotTo(BeNil())
 				Expect(report.Errors).To(HaveLen(1))
 				Expect(report.Errors[0].Type).To(Equal(validation.ListenerReport_Error_SSLConfigError))
-				Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
 			})
 			It("should combine sni matches", func() {
 				prep([]*v1.SslConfig{
@@ -3309,7 +3308,6 @@ var _ = Describe("Translator", func() {
 		Expect(report.VirtualHostReports[0].Errors).To(BeEmpty(), "The virtual host with domain * should not have an error")
 		Expect(report.VirtualHostReports[1].Errors).NotTo(BeEmpty(), "The virtual host with an empty domain should report errors")
 		Expect(report.VirtualHostReports[1].Errors[0].Type).To(Equal(validation.VirtualHostReport_Error_EmptyDomainError), "The error reported for the virtual host with empty domain should be the EmptyDomainError")
-		Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
 	})
 
 	It("clusterSpecifier is set even when there is an error setting the route action", func() {
