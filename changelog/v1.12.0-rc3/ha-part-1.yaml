@@ -1,5 +1,5 @@
 changelog:
-  - type: FIX
+  - type: BREAKING_CHANGE
     issueLink: https://github.com/solo-io/gloo/issues/6114
     description: Gloo translation loop always completes and updates internal xds snapshot
     resolvesIssue: false

@@ -135,7 +135,7 @@ func (p *plugin) Init(params plugins.InitParams) {
 		if rootCa.GetNamespace() == "" || rootCa.GetName() == "" {
 			// Historically, we would return an error here
 			// That behavior would cause Envoy translation to exit early and never update the xDS Snapshot
-			contextutils.LoggerFrom(params.Ctx).Warnf(TLSInputError(rootCa.String()).Error())
+			contextutils.LoggerFrom(params.Ctx).Errorf(TLSInputError(rootCa.String()).Error())
 		}
 
 		tlsTagName := p.consulUpstreamDiscoverySettings.GetTlsTagName()
