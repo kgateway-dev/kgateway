@@ -174,8 +174,9 @@ func generateValuesConfig(version, repositoryPrefix, globalPullPolicy string) (*
 	}
 
 	cfg.Gloo.Deployment.Image.Tag = &version
+	// this will be overwritten in solo-projects
+	cfg.Gloo.Deployment.OssImageTag = &version
 	cfg.Discovery.Deployment.Image.Tag = &version
-	cfg.Gateway.Deployment.Image.Tag = &version
 	cfg.Gateway.CertGenJob.Image.Tag = &version
 
 	cfg.AccessLogger.Image.Tag = &version

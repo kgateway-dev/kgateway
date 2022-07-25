@@ -238,5 +238,9 @@ func (m *Kubernetes_Container) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetOssTag(), target.GetOssTag()) != 0 {
+		return false
+	}
+
 	return true
 }
