@@ -82,6 +82,7 @@ weight: 5
 "tag": string
 "name": string
 "registry": string
+"ossTag": string
 
 ```
 
@@ -90,6 +91,7 @@ weight: 5
 | `tag` | `string` |  |
 | `name` | `string` |  |
 | `registry` | `string` |  |
+| `ossTag` | `string` |  |
 
 
 

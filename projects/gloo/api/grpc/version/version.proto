@@ -36,6 +36,7 @@ message Kubernetes {
          string Tag = 1;
          string Name = 2;
          string Registry = 3;
+         string OssTag = 4;
     }
 
     // Array of containers comprising a single distribution of gloo
