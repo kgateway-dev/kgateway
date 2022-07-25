@@ -31,6 +31,7 @@ weight: 5
 ```yaml
 "service": .solo.io.envoy.config.core.v3.GrpcService
 "timeout": .google.protobuf.Duration
+"maxPayloadSize": int
 
 ```
 
@@ -38,6 +39,7 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `service` | [.solo.io.envoy.config.core.v3.GrpcService](../../../../config/core/v3/grpc_service.proto.sk/#grpcservice) | A GRPC service: this maps exactly to envoy GRPC service defintions. |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Connection timeout for retrieval from cache. |
+| `maxPayloadSize` | `int` | Max payload size to cache. This may be set to protect against large requests or responses by not caching them. |
 
 
 

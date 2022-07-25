@@ -45,11 +45,6 @@ var _ = Describe("SVC Accnt Test", func() {
 				testManifest.ExpectServiceAccount(resourceBuilder.GetServiceAccount())
 			})
 
-			It("gateway", func() {
-				prepareMakefile("gateway", []string{"global.glooRbac.namespaced=false"})
-				testManifest.ExpectServiceAccount(resourceBuilder.GetServiceAccount())
-			})
-
 			It("gateway-proxy", func() {
 				prepareMakefile("gateway-proxy", []string{"global.glooRbac.namespaced=false"})
 				svcAccount := resourceBuilder.GetServiceAccount()
