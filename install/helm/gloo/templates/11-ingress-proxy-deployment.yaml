@@ -1,6 +1,6 @@
 {{- define "ingressProxy.deploymentSpec"}}
 {{- if .Values.ingress.enabled }}
-{{- $image := .Values.gateway.deployment.image }}
+{{- $image := .Values.ingressProxy.deployment.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.ingressProxy.deployment.image .Values.global.image }}
 {{- end }}

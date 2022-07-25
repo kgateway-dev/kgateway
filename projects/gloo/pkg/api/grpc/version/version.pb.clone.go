@@ -139,5 +139,7 @@ func (m *Kubernetes_Container) Clone() proto.Message {
 
 	target.Registry = m.GetRegistry()
 
+	target.OssTag = m.GetOssTag()
+
 	return target
 }
