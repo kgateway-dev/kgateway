@@ -5,4 +5,5 @@ changelog:
     resolvesIssue: false
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/5795
+    description: Ensure that gloo translation is resilient to pod restarts.
     resolvesIssue: false
