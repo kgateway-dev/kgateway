@@ -811,6 +811,10 @@ message Ldap {
 
     // Use to set a custom filter when searching a member. Defaults to "(uid=*)".
     string searchFilter = 6;
+
+    //Sometimes, it's enough to check for the user credentials so this flag disables group checking
+    //group checking is enabled by default
+    bool DisableGroupChecking = 7;
 }
 
 // Authorizes requests by querying a custom extauth server.
