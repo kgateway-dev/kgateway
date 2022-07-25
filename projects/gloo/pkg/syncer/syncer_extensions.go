@@ -10,6 +10,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
+// SnapshotSetter sets a response snapshot for a node.
+// It exposes only the Set functionality for a SnapshotCache
+type SnapshotSetter interface {
+	SetSnapshot(node string, snapshot envoycache.Snapshot)
+}
+
 // TranslatorSyncerExtension represents a custom sync behavior that updates an entry in the SnapshotCache
 type TranslatorSyncerExtension interface {
 	// ID returns the unique identifier for this TranslatorSyncerExtension
@@ -22,7 +28,7 @@ type TranslatorSyncerExtension interface {
 		ctx context.Context,
 		snap *v1snap.ApiSnapshot,
 		settings *v1.Settings,
-		xdsCache envoycache.SnapshotCache,
+		snapshotSetter SnapshotSetter,
 		reports reporter.ResourceReports)
 }
 

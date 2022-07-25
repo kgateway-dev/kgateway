@@ -11,13 +11,12 @@ import (
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/go-utils/contextutils"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 // Compile-time assertion
 var (
-	_ syncer.TranslatorSyncerExtension = new(TranslatorSyncerExtension)
+	_ syncer.TranslatorSyncerExtension = new(translatorSyncerExtension)
 )
 
 const (
@@ -28,25 +27,25 @@ var (
 	ErrEnterpriseOnly = eris.New("The Gloo Advanced Extauth API is an enterprise-only feature, please upgrade or use the Envoy Extauth API instead")
 )
 
-// TranslatorSyncerExtension is the Open Source variant of the Enterprise TranslatorSyncerExtension for ExtAuth
+// translatorSyncerExtension is the Open Source variant of the Enterprise translatorSyncerExtension for ExtAuth
 // TODO (sam-heilbron)
 // 	This placeholder is solely used to detect Enterprise features being used in an Open Source installation
 //	Once https://github.com/solo-io/gloo/issues/6495 is implemented, we should be able to remove this placeholder altogether
-type TranslatorSyncerExtension struct{}
+type translatorSyncerExtension struct{}
 
 func NewTranslatorSyncerExtension(_ context.Context, _ syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
-	return &TranslatorSyncerExtension{}, nil
+	return &translatorSyncerExtension{}, nil
 }
 
-func (s *TranslatorSyncerExtension) ID() string {
+func (s *translatorSyncerExtension) ID() string {
 	return ServerRole
 }
 
-func (s *TranslatorSyncerExtension) Sync(
+func (s *translatorSyncerExtension) Sync(
 	ctx context.Context,
 	snap *gloov1snap.ApiSnapshot,
 	settings *gloov1.Settings,
-	_ envoycache.SnapshotCache,
+	_ syncer.SnapshotSetter,
 	reports reporter.ResourceReports,
 ) {
 	ctx = contextutils.WithLogger(ctx, "extAuthTranslatorSyncer")
