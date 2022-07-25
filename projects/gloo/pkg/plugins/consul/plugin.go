@@ -31,7 +31,6 @@ const (
 	DefaultDnsAddress         = "127.0.0.1:8600"
 	DefaultDnsPollingInterval = 5 * time.Second
 	DefaultTlsTagName         = "glooUseTls"
-	DefaultRootCAName         = "glooRootCA"
 )
 
 var (
