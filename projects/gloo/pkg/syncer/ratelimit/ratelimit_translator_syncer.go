@@ -59,7 +59,7 @@ func (s *translatorSyncerExtension) Sync(
 
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {
-			virtualHosts := utils.GetVhostsFromListener(listener)
+			virtualHosts := utils.GetVirtualHostsForListener(listener)
 
 			for _, virtualHost := range virtualHosts {
 
