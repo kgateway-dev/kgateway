@@ -61,6 +61,8 @@ func (s *TranslatorSyncerExtension) Sync(
 		logger.Error(ErrEnterpriseOnly.Error())
 	}
 
+	reports.Accept(snap.Proxies.AsInputResources()...)
+
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {
 			virtualHosts := utils.GetVhostsFromListener(listener)

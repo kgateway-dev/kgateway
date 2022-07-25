@@ -30,7 +30,7 @@ const (
 // TODO (sam-heilbron)
 // 	This placeholder is solely used to detect Enterprise features being used in an Open Source installation
 //	Once https://github.com/solo-io/gloo/issues/6495 is implemented, we should be able to remove this placeholder altogether
-type TranslatorSyncerExtension struct {}
+type TranslatorSyncerExtension struct{}
 
 func NewTranslatorSyncerExtension(_ context.Context, _ syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
 	return &TranslatorSyncerExtension{}, nil
