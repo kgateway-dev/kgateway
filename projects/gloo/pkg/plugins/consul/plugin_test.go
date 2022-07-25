@@ -161,19 +161,21 @@ var _ = Describe("Resolve", func() {
 		Expect(plug.consulUpstreamDiscoverySettings.TlsTagName).To(Equal(DefaultTlsTagName))
 	})
 
-	It("does not error if it tries to init with missing required values.", func() {
-		// missing resource value, expect err.
+	It("initializes with rootCa even if missing name or namespace.", func() {
 		plug := NewPlugin(consulWatcherMock, nil, nil)
 		var rootCa = &core.ResourceRef{
 			Namespace: "rootNs",
-			Name:      "",
+			Name:      "", // missing the name
 		}
 		plug.Init(plugins.InitParams{
-			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
-				UseTlsTagging: true,
-				RootCa:        rootCa,
-			},
+			Settings: &v1.Settings{
+				ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+					UseTlsTagging: true,
+					RootCa:        rootCa,
+				},
 			},
 		})
+
+		Expect(plug.settings.ConsulDiscovery.RootCa).To(Equal(rootCa)) // plugin initialized with rootCa
 	})
 })
