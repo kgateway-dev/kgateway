@@ -29,4 +29,8 @@ message GrpcCacheConfig {
 
   // Connection timeout  for retrieval from cache
   google.protobuf.Duration timeout = 2;
+
+  // Max payload size to cache. This may be set to protect against large
+  // requests or responses by not caching them.
+  uint64 max_payload_size = 3;
 }

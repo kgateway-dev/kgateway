@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3206
+    resolvesIssue: false
+    description: Cache max size configurable on custom layer for cleaner checks
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3206
+    description: Support extra image in helper to clean up enterprise helper.
