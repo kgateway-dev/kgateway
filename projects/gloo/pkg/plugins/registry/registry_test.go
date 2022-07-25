@@ -35,14 +35,14 @@ import (
 
 func TestPlugins(t *testing.T) {
 	opts := bootstrap.Opts{}
-	plugins := Plugins(opts)
+	allPlugins := Plugins(opts)
 	pluginTypes := make(map[reflect.Type]int)
-	for index, plugin := range plugins {
+	for index, plugin := range allPlugins {
 		pluginType := reflect.TypeOf(plugin)
 		pluginTypes[pluginType] = index
 	}
-	if len(plugins) != len(pluginTypes) {
-		t.Errorf("Multiple pllugins with the same type.")
+	if len(allPlugins) != len(pluginTypes) {
+		t.Errorf("Multiple plugins with the same type.")
 	}
 }
 
