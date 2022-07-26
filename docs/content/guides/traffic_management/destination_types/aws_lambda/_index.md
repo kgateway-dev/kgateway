@@ -4,120 +4,131 @@ weight: 100
 description: Routing to AWS Lambda as an Upstream
 ---
 
-## How to setup and use AWS Upstream
+## About
 
-There are 2 steps to enabling Gloo Edge to discover and access AWS Lambda services.
 
-1. Create an AWS Secret to give Gloo Edge credentials to access AWS.
-2. Create a Gloo Edge upstream, referencing AWS Secret, that will populate the Gloo Edge function catalog with available
-AWS Lambda functions. 
+The setup for routing to an AWS Lambda upstream follows these steps:
+1. Create an AWS Lambda function that returns a response in the form required by the AWS API Gateway.
+2. Create a secret containing AWS account credentials that enable access to the Lambda function.
+3. Create an Upstream resource that references the Lambda secret.
+4. Create a VirtualService resource containing a route action that points to the AWS Lambda upstream.
 
-### Create AWS Secret
+## Before you begin
 
-The following command will create a Kubernetes secret that contains the AWS Access Key and Secret Key needed by Gloo Edge
-to connect to AWS for service discovery.
+* [Install Gloo Edge version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
+* The following steps require you to use the access key and secret key for your AWS account. Ensure that the credentials for your AWS account have appropriate permissions to interact with AWS Lambda. For more information, see the [AWS credentials documentation](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html).
 
-```shell
-glooctl create secret aws --help
+## Step 1: Create an AWS Lambda
 
-Create an AWS secret with the given name
+Create an AWS Lambda function that returns a response in the form required by the AWS API Gateway.
 
-Usage:
-  glooctl create secret aws [flags]
+1. Log into the AWS console and navigate to the Lambda page.
+   
+2. Note of your region, which is used when configuring AWS credentials in subsequent steps.
 
-Flags:
-      --access-key string   aws access key
-  -h, --help                help for aws
-      --name string         name of the resource to read or write
-  -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
-      --secret-key string   aws secret key
+3. Click the **Create Function** button.
 
-Global Flags:
-  -i, --interactive     use interactive mode
-  -o, --output string   output format: (yaml, json, table)
-```
+4. Name the function `echo` and select `Node.js 16.x` for the runtime.
 
-For example, to create an AWS secret named `my-aws` in the (default) namespace `gloo-system`, run the following command.
-You can name the secret (`--name 'your_name'`) whatever you like. Just make sure you use the correct name when
-referencing it from AWS Upstream.
+5. Replace the default contents of `index.js` with the following Node.js Lambda, which returns a response body that contains exactly what was sent to the function in the request body.
+   ```js
+   exports.handler = async (event) => {
+       return event;
+   };
+   ```
 
-```shell 
-glooctl create secret aws \
-    --name 'my-aws' \
-    --namespace gloo-system \
-    --access-key '<AWS ACCESS KEY>' \
-    --secret-key '<AWS SECRET KEY>'
-```
+## Step 2: Create an AWS credentials secret
 
-You can see the details of the created secret as follows.
+Create a Kubernetes secret that contains the AWS access key and secret key so that Gloo Edge can connect to AWS Lambda for service discovery.
 
-```shell
-kubectl describe secret my-aws -n gloo-system
-```
+1. Get the access key and secret key for your AWS account. Note that your AWS credentials must have the appropriate permissions to interact with AWS Lambda.
 
-```noop
-Name:         my-aws
-Namespace:    gloo-system
-Labels:       <none>
-Annotations:  <none>
+2. Create a Kubernetes secret that contains the AWS access key and secret key.
+   ```sh
+   glooctl create secret aws \
+       --name 'aws-creds' \
+       --namespace gloo-system \
+       --access-key '$ACCESS_KEY' \
+       --secret-key '$SECRET_KEY'
+   ```
 
-Type:  Opaque
+## Step 3: Create an upstream and virtual service
 
-Data
-====
-aws_access_key_id:      20 bytes
-aws_secret_access_key:  40 bytes
-```
+Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to the Lambda function.
 
-### Create AWS Upstream
+1. Create an upstream resource that references the Lambda secret. Update the region as needed.
+   {{< tabs >}}
+   {{< tab name="kubectl" codelang="shell">}}
+   kubectl apply -f - <<EOF
+   apiVersion: gloo.solo.io/v1
+   kind: Upstream
+   metadata:
+     name: aws-upstream
+     namespace: gloo-system
+   spec:
+     aws:
+       region: us-east-1
+       secretRef:
+         name: aws-creds
+         namespace: gloo-system
+   EOF
+   {{< /tab >}}
+   {{< tab name="glooctl" codelang="shell">}}
+   glooctl create upstream aws \
+       --name 'aws-upstream' \
+       --namespace 'gloo-system' \
+       --aws-region 'us-east-1' \
+       --aws-secret-name 'aws-creds' \
+       --aws-secret-namespace 'gloo-system'
+   {{< /tab >}}
+   {{< /tabs >}}
 
-This is how you create an AWS Upstream so that Gloo Edge can do both: Lambda service discovery; and allow you to create routing rules
-referencing those Lambda functions.
+2. Verify that Gloo Edge can access AWS Lambda via your AWS credentials. In the `spec.aws.lambdaFunctions` section of the output, verify that the `echo` Lambda function is listed.
+   ```sh
+   kubectl get upstream -n gloo-system aws-upstream -o yaml
+   ```
 
-```shell
-glooctl create upstream aws --help
+3. Create a VirtualService resource containing a `routeAction` that points to the AWS Lambda upstream.
+   {{< tabs >}}
+   {{< tab name="kubectl" codelang="shell">}}
+   kubectl apply -f - <<EOF
+   apiVersion: gateway.solo.io/v1
+   kind: VirtualService
+   metadata:
+     name: aws-route
+     namespace: gloo-system
+   spec:
+     virtualHost:
+       domains:
+       - '*'
+       routes:
+       - matchers:
+         - exact: /
+         routeAction:
+           single:
+             destinationSpec:
+               aws:
+                 logicalName: echo
+             upstream:
+               name: aws-upstream
+               namespace: gloo-system
+   EOF
+   {{< /tab >}}
+   {{< tab name="glooctl" codelang="shell">}}
+   glooctl add route \
+       --name 'aws-route' \
+       --namespace 'gloo-system' \
+       --path-prefix '/' \
+       --dest-name 'aws-upstream' \
+       --aws-function-name 'echo'
+   {{< /tab >}}
+   {{< /tabs >}}
 
-AWS Upstreams represent a set of AWS Lambda Functions for a Region that can be routed to with Gloo Edge. AWS Upstreams require a valid set of AWS Credentials to be provided. These should be uploaded to Gloo Edge using `glooctl create secret aws`
-
-Usage:
-  glooctl create upstream aws [flags]
-
-Flags:
-      --aws-region string                                       region for AWS services this upstream utilize (default "us-east-1")
-      --aws-secret-name glooctl create secret aws --help        name of a secret containing AWS credentials created with glooctl. See glooctl create secret aws --help for help creating secrets
-      --aws-secret-namespace glooctl create secret aws --help   namespace where the AWS secret lives. See glooctl create secret aws --help for help creating secrets (default "gloo-system")
-  -h, --help                                                    help for aws
-      --name string                                             name of the resource to read or write
-  -n, --namespace string                                        namespace for reading or writing resources (default "gloo-system")
-
-Global Flags:
-  -i, --interactive     use interactive mode
-  -o, --output string   output format: (yaml, json, table)
-```
-
-For example, to create an AWS Upstream named `my-aws-upstream` in the (default) namespace `gloo-system` against the AWS
-region `us-east-1` and referencing the AWS Secret we created in the previous step - `my-aws` in `gloo-system` namespace.
-
-```shell
-glooctl create upstream aws \
-    --name 'my-aws-upstream' \
-    --namespace 'gloo-system' \
-    --aws-region 'us-east-1' \
-    --aws-secret-name 'my-aws' \
-    --aws-secret-namespace 'gloo-system'
-```
-
-### Usage
-
-To create a route rule for your new AWS upstream, you use the `glooctl add route` command with the `--aws-function-name`
-option. For example,
-
-```shell
-glooctl add route \
-    --name 'default' \
-    --namespace 'gloo-system' \
-    --path-prefix '/helloworld' \
-    --dest-name 'my-aws' \
-    --aws-function-name 'helloworld'
-```
-
+3. Verify that Gloo Edge is routing traffic requests to the Lambda function.
+   ```sh
+   curl $(glooctl proxy url)/ -d '{"key1":"value1", "key2":"value2"}' -X POST
+   ```
+   Should return the request body sent to it:
+   ```json
+   {"key1":"value1", "key2":"value2"}
+   ```
