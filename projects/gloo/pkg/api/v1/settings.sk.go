@@ -15,6 +15,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.InputResource = new(Settings)
+)
+
 func NewSettings(namespace, name string) *Settings {
 	settings := &Settings{}
 	settings.SetMetadata(&core.Metadata{

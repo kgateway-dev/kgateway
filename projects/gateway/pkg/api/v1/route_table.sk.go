@@ -15,6 +15,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.InputResource = new(RouteTable)
+)
+
 func NewRouteTable(namespace, name string) *RouteTable {
 	routetable := &RouteTable{}
 	routetable.SetMetadata(&core.Metadata{
