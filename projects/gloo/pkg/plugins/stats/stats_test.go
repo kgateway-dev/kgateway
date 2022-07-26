@@ -39,7 +39,7 @@ var _ = Describe("Virtual Clusters", func() {
 
 	BeforeEach(func() {
 		plugin = NewPlugin()
-		Expect(plugin.Init(plugins.InitParams{Ctx: ctx})).NotTo(HaveOccurred())
+		plugin.Init(plugins.InitParams{Ctx: ctx})
 	})
 
 	It("does nothing if no virtual clusters are specified", func() {

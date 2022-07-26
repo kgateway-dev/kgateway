@@ -270,13 +270,13 @@ var _ = Describe("linkerd plugin", func() {
 				},
 			}
 			outCopy := proto.Clone(out)
-			err := plugin.Init(plugins.InitParams{
+			plugin.Init(plugins.InitParams{
 				Settings: &v1.Settings{
 					Linkerd: true,
 				},
 			})
-			Expect(err).NotTo(HaveOccurred())
-			err = plugin.ProcessRoute(plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: params}}, in, out)
+
+			err := plugin.ProcessRoute(plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: params}}, in, out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).NotTo(BeEquivalentTo(outCopy))
 			Expect(out.RequestHeadersToAdd).To(ContainElement(createHeaderForUpstream(kubeSpecs[0])))

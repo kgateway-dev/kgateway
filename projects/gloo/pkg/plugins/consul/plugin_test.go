@@ -128,7 +128,7 @@ var _ = Describe("Resolve", func() {
 
 		// correct w/custom tag
 		plug := NewPlugin(consulWatcherMock, nil, nil)
-		err := plug.Init(plugins.InitParams{
+		plug.Init(plugins.InitParams{
 			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
 				UseTlsTagging: true,
 				TlsTagName:    "testTag",
@@ -139,7 +139,6 @@ var _ = Describe("Resolve", func() {
 			},
 			},
 		})
-		Expect(err).NotTo(HaveOccurred())
 		Expect(plug.consulUpstreamDiscoverySettings.TlsTagName).To(Equal("testTag"))
 		Expect(plug.consulUpstreamDiscoverySettings.RootCa.Namespace).To(Equal("rootNs"))
 		Expect(plug.consulUpstreamDiscoverySettings.RootCa.Name).To(Equal("rootName"))
@@ -149,7 +148,7 @@ var _ = Describe("Resolve", func() {
 
 		// correct w/default tag
 		plug := NewPlugin(consulWatcherMock, nil, nil)
-		err := plug.Init(plugins.InitParams{
+		plug.Init(plugins.InitParams{
 			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
 				UseTlsTagging: true,
 				RootCa: &core.ResourceRef{
@@ -159,25 +158,24 @@ var _ = Describe("Resolve", func() {
 			},
 			},
 		})
-		Expect(err).NotTo(HaveOccurred())
 		Expect(plug.consulUpstreamDiscoverySettings.TlsTagName).To(Equal(DefaultTlsTagName))
 	})
 
-	It("returns an error if it tries to init with missing required values.", func() {
-		// missing resource value, expect err.
+	It("initializes with rootCa even if missing name or namespace.", func() {
 		plug := NewPlugin(consulWatcherMock, nil, nil)
 		var rootCa = &core.ResourceRef{
 			Namespace: "rootNs",
-			Name:      "",
+			Name:      "", // missing the name
 		}
-		err := plug.Init(plugins.InitParams{
-			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
-				UseTlsTagging: true,
-				RootCa:        rootCa,
-			},
+		plug.Init(plugins.InitParams{
+			Settings: &v1.Settings{
+				ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+					UseTlsTagging: true,
+					RootCa:        rootCa,
+				},
 			},
 		})
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(ConsulTlsInputError(rootCa.String()).Error()))
+
+		Expect(plug.settings.ConsulDiscovery.RootCa).To(Equal(rootCa)) // plugin initialized with rootCa
 	})
 })

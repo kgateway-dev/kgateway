@@ -25,7 +25,7 @@ type Plugin interface {
 	//		we need to be able to cancel that go-routine on the next translation
 	//	2. Plugins are built with the assumption that they will be short lived, only for the
 	//		duration of a single translation loop
-	Init(params InitParams) error
+	Init(params InitParams)
 }
 
 /*
@@ -171,7 +171,3 @@ type PluginRegistry interface {
 	GetRouteActionPlugins() []RouteActionPlugin
 	GetWeightedDestinationPlugins() []WeightedDestinationPlugin
 }
-
-// A PluginRegistryFactory generates a PluginRegistry
-// It is executed each translation loop, ensuring we have up to date configuration of all plugins
-type PluginRegistryFactory func(ctx context.Context) PluginRegistry

@@ -68,12 +68,11 @@ func (p *Plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *Plugin) Init(params plugins.InitParams) {
 	p.recordedUpstreams = make(map[string]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
 	p.upstreamOptions = params.Settings.GetUpstreamOptions()
 	p.requiresTransformationFilter = false
-	return nil
 }
 
 func getLambdaHostname(s *aws.UpstreamSpec) string {

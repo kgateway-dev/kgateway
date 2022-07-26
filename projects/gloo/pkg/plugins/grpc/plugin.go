@@ -1,7 +1,6 @@
 package grpc
 
 import (
-	"context"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
@@ -48,8 +47,6 @@ var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 type plugin struct {
 	recordedUpstreams map[string]*v1.Upstream
 	upstreamServices  []ServicesAndDescriptor
-
-	ctx context.Context
 }
 
 type ServicesAndDescriptor struct {
@@ -67,9 +64,7 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) error {
-	p.ctx = params.Ctx
-	return nil
+func (p *plugin) Init(params plugins.InitParams) {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
@@ -117,7 +112,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		Descriptors: descriptors,
 		Spec:        grpcSpec,
 	})
-	contextutils.LoggerFrom(p.ctx).Debugf("in.Metadata.Namespace: %s, in.Metadata.Name: %s", in.GetMetadata().GetNamespace(), in.GetMetadata().GetName())
+	contextutils.LoggerFrom(params.Ctx).Debugf("in.Metadata.Namespace: %s, in.Metadata.Name: %s", in.GetMetadata().GetNamespace(), in.GetMetadata().GetName())
 
 	return nil
 }
@@ -146,7 +141,7 @@ func convertProto(encodedBytes []byte) (*descriptor.FileDescriptorSet, error) {
 // gloo creates these descriptors automatically (if gRPC reflection is enabled),
 // uses its transformation filter to provide the context for the json-grpc translation.
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
+	return pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, transformation.FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
 			// check if it's grpc destination
 			if spec.GetDestinationSpec() == nil {
@@ -176,7 +171,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 			upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
 			if err != nil {
-				contextutils.LoggerFrom(p.ctx).Error(err)
+				contextutils.LoggerFrom(params.Ctx).Error(err)
 				return nil, err
 			}
 

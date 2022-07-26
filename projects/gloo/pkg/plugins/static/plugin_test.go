@@ -51,8 +51,7 @@ var _ = Describe("Plugin", func() {
 	})
 
 	JustBeforeEach(func() {
-		err := p.Init(initParams)
-		Expect(err).NotTo(HaveOccurred())
+		p.Init(initParams)
 	})
 
 	Context("h2", func() {

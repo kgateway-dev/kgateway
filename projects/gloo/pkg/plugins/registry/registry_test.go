@@ -35,21 +35,21 @@ import (
 
 func TestPlugins(t *testing.T) {
 	opts := bootstrap.Opts{}
-	plugins := Plugins(opts)
+	allPlugins := Plugins(opts)
 	pluginTypes := make(map[reflect.Type]int)
-	for index, plugin := range plugins {
+	for index, plugin := range allPlugins {
 		pluginType := reflect.TypeOf(plugin)
 		pluginTypes[pluginType] = index
 	}
-	if len(plugins) != len(pluginTypes) {
+	if len(allPlugins) != len(pluginTypes) {
 		t.Errorf("Multiple plugins with the same type.")
 	}
 }
 
 func TestPluginsHttpFilterUsefulness(t *testing.T) {
 	opts := bootstrap.Opts{}
-	pluginRegistryFactory := GetPluginRegistryFactory(opts)
-	pluginRegistry := pluginRegistryFactory(context.TODO())
+	pluginRegistryFactory := GetPluginRegistryFactory()
+	pluginRegistry := pluginRegistryFactory(context.TODO(), opts)
 	t.Run("Http Filters are only added if needed", func(t *testing.T) {
 
 		ctx := context.Background()
