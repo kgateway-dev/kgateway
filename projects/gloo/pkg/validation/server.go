@@ -174,9 +174,6 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	applyRequestToSnapshot(&snapCopy, req)
 
 	ctx = contextutils.WithLogger(ctx, "proxy-validator")
-
-	params := plugins.Params{Ctx: ctx, Snapshot: &snapCopy}
-
 	logger := contextutils.LoggerFrom(ctx)
 
 	logger.Infof("received proxy validation request")
@@ -189,12 +186,12 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 		// if no proxy was passed in, call translate for all proxies in snapshot
 		proxiesToValidate = snapCopy.Proxies
 	}
+	params := plugins.Params{
+		Ctx:      ctx,
+		Snapshot: &snapCopy,
+	}
 	for _, proxy := range proxiesToValidate {
-		xdsSnapshot, resourceReports, proxyReport, err := s.translator.Translate(params, proxy)
-		if err != nil {
-			logger.Errorw("failed to validate proxy", zap.Error(err))
-			return nil, err
-		}
+		xdsSnapshot, resourceReports, proxyReport := s.translator.Translate(params, proxy)
 
 		// Sanitize routes before sending report to gateway
 		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)

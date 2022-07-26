@@ -25,9 +25,7 @@ var _ = Describe("Plugin", func() {
 
 	BeforeEach(func() {
 		p = NewPlugin()
-
-		err := p.Init(plugins.InitParams{})
-		Expect(err).NotTo(HaveOccurred())
+		p.Init(plugins.InitParams{})
 
 		in = &v1.Listener{}
 		out = &envoy_config_listener_v3.Listener{}

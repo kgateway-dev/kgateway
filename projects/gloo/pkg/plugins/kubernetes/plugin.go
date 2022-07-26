@@ -48,9 +48,8 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) {
 	p.settings = params.Settings
-	return nil
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {

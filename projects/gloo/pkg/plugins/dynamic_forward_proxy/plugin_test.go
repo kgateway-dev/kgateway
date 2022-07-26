@@ -50,8 +50,8 @@ var _ = Describe("dynamic forward proxy plugin", func() {
 
 		It("uses sane defaults with empty http filter", func() {
 			p := NewPlugin()
-			err := p.Init(initParams)
-			Expect(err).NotTo(HaveOccurred())
+			p.Init(initParams)
+
 			filters, err := p.HttpFilters(params, listener)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
@@ -114,8 +114,8 @@ var _ = Describe("dynamic forward proxy plugin", func() {
 
 		It("translates cares config and top level fields", func() {
 			p := NewPlugin()
-			err := p.Init(initParams)
-			Expect(err).NotTo(HaveOccurred())
+			p.Init(initParams)
+
 			filters, err := p.HttpFilters(params, listener)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
@@ -157,8 +157,7 @@ var _ = Describe("dynamic forward proxy plugin", func() {
 
 		It("cache config name is per dns cache config", func() {
 			p := NewPlugin()
-			err := p.Init(initParams)
-			Expect(err).NotTo(HaveOccurred())
+			p.Init(initParams)
 
 			listener1 := listener.Clone().(*v1.HttpListener)
 			listener2 := listener.Clone().(*v1.HttpListener)
