@@ -1,8 +1,9 @@
 package ratelimit
 
 import (
-	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 	"reflect"
+
+	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 

@@ -5,9 +5,10 @@ import (
 	"compress/zlib"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 	"io"
 	"strconv"
+
+	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
