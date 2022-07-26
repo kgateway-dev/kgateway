@@ -45,7 +45,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	extauthExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/extauth"
@@ -92,7 +91,7 @@ func NewSetupFunc() setuputils.SetupFunc {
 //noinspection GoUnusedExportedFunction
 func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
-		return RunGlooWithExtensions(opts, extensions, make(chan struct{}))
+		return RunGlooWithExtensions(opts, extensions)
 	}
 	return NewSetupFuncWithRunAndExtensions(runWithExtensions, &extensions)
 }
@@ -397,24 +396,38 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 }
 
 type Extensions struct {
-	PluginRegistryFactory plugins.PluginRegistryFactory
+	PluginRegistryFactory registry.PluginRegistryFactory
 	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
 	XdsCallbacks          xdsserver.Callbacks
+	ApiEmitterChannel     chan struct{}
 }
 
 func RunGloo(opts bootstrap.Opts) error {
-	return RunGlooWithExtensions(
-		opts,
-		Extensions{
-			SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
-				ratelimitExt.NewTranslatorSyncerExtension,
-				extauthExt.NewTranslatorSyncerExtension,
-			}},
-		make(chan struct{}),
-	)
+	glooExtensions := Extensions{
+		PluginRegistryFactory: registry.GetPluginRegistryFactory(),
+		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
+			ratelimitExt.NewTranslatorSyncerExtension,
+			extauthExt.NewTranslatorSyncerExtension,
+		},
+		ApiEmitterChannel: make(chan struct{}),
+		XdsCallbacks:      nil,
+	}
+
+	return RunGlooWithExtensions(opts, glooExtensions)
 }
 
-func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitterChan chan struct{}) error {
+func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
+	// Validate Extensions
+	if extensions.ApiEmitterChannel == nil {
+		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")
+	}
+	if extensions.PluginRegistryFactory == nil {
+		return errors.Errorf("Extensions.PluginRegistryFactory must be defined, found nil")
+	}
+	if extensions.SyncerExtensions == nil {
+		return errors.Errorf("Extensions.SyncerExtensions must be defined, found nil")
+	}
+
 	watchOpts := opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
@@ -546,14 +559,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	}
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
-	xdsHasher := xds.NewNodeRoleHasher()
 
-	pluginRegistryFactory := extensions.PluginRegistryFactory
-	if pluginRegistryFactory == nil {
-		pluginRegistryFactory = registry.GetPluginRegistryFactory(opts)
-	}
-
-	pluginRegistry := pluginRegistryFactory(watchOpts.Ctx)
+	pluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx, opts)
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range pluginRegistry.GetPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
@@ -561,6 +568,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 			discoveryPlugins = append(discoveryPlugins, disc)
 		}
 	}
+
 	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
 	startRestXdsServer(opts)
@@ -616,7 +624,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		routeOptionClient,
 		matchableHttpGatewayClient,
 		graphqlApiClient,
-		apiEmitterChan,
+		extensions.ApiEmitterChannel,
 	)
 
 	rpt := reporter.NewReporter("gloo",
@@ -724,7 +732,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		allowWarnings = gwOpts.Validation.AllowWarnings
 	}
 
-	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistryFactory)
+	resourceHasher := translator.MustEnvoyCacheResourcesListToFnvHash
+
+	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistry, resourceHasher)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
@@ -758,31 +768,33 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		ignoreProxyValidationFailure,
 		allowWarnings,
 	))
-	params := syncer.TranslatorSyncerExtensionParams{
+
+	// Set up the syncer extensions
+	syncerExtensionParams := syncer.TranslatorSyncerExtensionParams{
 		RateLimitServiceSettings: ratelimit.ServiceSettings{
 			Descriptors:    opts.Settings.GetRatelimit().GetDescriptors(),
 			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),
 		},
+		Hasher: resourceHasher,
 	}
-
-	// Set up the syncer extension
-	syncerExtensions := []syncer.TranslatorSyncerExtension{}
-
-	upgradedExtensions := make(map[string]bool)
+	var syncerExtensions []syncer.TranslatorSyncerExtension
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
-		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
-		if err != nil {
-			logger.Errorw("Error initializing extension", "error", err)
-			continue
-		}
-		if extension, ok := syncerExtension.(syncer.UpgradeableTranslatorSyncerExtension); ok && extension.IsUpgrade() {
-			upgradedExtensions[extension.ExtensionName()] = true
-		}
+		syncerExtension := syncerExtensionFactory(watchOpts.Ctx, syncerExtensionParams)
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
-	syncerExtensions = reconcileUpgradedTranslatorSyncerExtensions(syncerExtensions, upgradedExtensions)
 
-	translationSync := syncer.NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings, statusMetrics, gwTranslatorSyncer, proxyClient, opts.WriteNamespace)
+	translationSync := syncer.NewTranslatorSyncer(
+		t,
+		opts.ControlPlane.SnapshotCache,
+		xdsSanitizer,
+		rpt,
+		opts.DevMode,
+		syncerExtensions,
+		opts.Settings,
+		statusMetrics,
+		gwTranslatorSyncer,
+		proxyClient,
+		opts.WriteNamespace)
 
 	syncers := v1snap.ApiSyncers{
 		validator,
@@ -891,29 +903,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	}()
 
 	return nil
-}
-
-// removes any redundant syncers, if we have added an upgraded version to replace them
-func reconcileUpgradedTranslatorSyncerExtensions(syncerList []syncer.TranslatorSyncerExtension, upgradedSyncers map[string]bool) []syncer.TranslatorSyncerExtension {
-	var syncersToDrop []int
-	for i, syncerExtension := range syncerList {
-		extension, upgradable := syncerExtension.(syncer.UpgradeableTranslatorSyncerExtension)
-		if upgradable {
-			_, inMap := upgradedSyncers[extension.ExtensionName()]
-			if inMap && !extension.IsUpgrade() {
-				// An upgraded version of this syncer exists,
-				// mark this one for removal
-				syncersToDrop = append(syncersToDrop, i)
-			}
-		}
-	}
-
-	// Walk back through the syncerList and remove the redundant syncers
-	for i := len(syncersToDrop) - 1; i >= 0; i-- {
-		badIndex := syncersToDrop[i]
-		syncerList = append(syncerList[:badIndex], syncerList[badIndex+1:]...)
-	}
-	return syncerList
 }
 
 func startRestXdsServer(opts bootstrap.Opts) {

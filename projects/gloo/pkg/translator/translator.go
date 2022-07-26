@@ -11,7 +11,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/mitchellh/hashstructure"
 	errors "github.com/rotisserie/eris"
-	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -28,75 +27,46 @@ import (
 )
 
 type Translator interface {
-	// TODO(kdorosh) in follow up PR, update this interface so it can never error
-	// It is logically invalid for us to return an error here (translation of resources always needs to
-	// result in a xds snapshot, so we are resilient to pod restarts)
+	// Translate converts a Proxy CR into an xDS Snapshot
+	// Any errors that are encountered during translation are appended to the ResourceReports
+	// It is invalid for us to return an error here, since translation of resources always needs
+	// to results in an xDS Snapshot so we are resilient to pod restarts
 	Translate(
 		params plugins.Params,
 		proxy *v1.Proxy,
-	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
+	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport)
 }
 
-func NewTranslator(
-	sslConfigTranslator utils.SslConfigTranslator,
-	settings *v1.Settings,
-	pluginRegistryFactory plugins.PluginRegistryFactory,
-) Translator {
-	return NewTranslatorWithHasher(sslConfigTranslator, settings, pluginRegistryFactory, EnvoyCacheResourcesListToFnvHash)
+var (
+	_ Translator = new(translatorInstance)
+)
+
+// translatorInstance is the implementation for a Translator used during Gloo translation
+type translatorInstance struct {
+	pluginRegistry            plugins.PluginRegistry
+	settings                  *v1.Settings
+	hasher                    func(resources []envoycache.Resource) uint64
+	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
 }
 
 func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
-	pluginRegistryFactory plugins.PluginRegistryFactory,
+	pluginRegistry plugins.PluginRegistry,
 	hasher func(resources []envoycache.Resource) uint64,
-) Translator {
-	return &translatorFactory{
-		pluginRegistryFactory: pluginRegistryFactory,
-		settings:              settings,
-		sslConfigTranslator:   sslConfigTranslator,
-		hasher:                hasher,
-	}
-}
-
-type translatorFactory struct {
-	pluginRegistryFactory plugins.PluginRegistryFactory
-	settings              *v1.Settings
-	sslConfigTranslator   utils.SslConfigTranslator
-	hasher                func(resources []envoycache.Resource) uint64
-}
-
-func (t *translatorFactory) Translate(
-	params plugins.Params,
-	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
-	pluginRegistry := t.pluginRegistryFactory(params.Ctx)
-	listenerTranslatorFactory := NewListenerSubsystemTranslatorFactory(pluginRegistry, t.sslConfigTranslator)
-
-	instance := &translatorInstance{
+) *translatorInstance {
+	return &translatorInstance{
 		pluginRegistry:            pluginRegistry,
-		settings:                  t.settings,
-		hasher:                    t.hasher,
-		listenerTranslatorFactory: listenerTranslatorFactory,
+		settings:                  settings,
+		hasher:                    hasher,
+		listenerTranslatorFactory: NewListenerSubsystemTranslatorFactory(pluginRegistry, sslConfigTranslator),
 	}
-
-	return instance.Translate(params, proxy)
-}
-
-// a translator instance performs one
-type translatorInstance struct {
-	pluginRegistry            plugins.PluginRegistry
-	settings                  *v1.Settings
-	sslConfigTranslator       utils.SslConfigTranslator
-	hasher                    func(resources []envoycache.Resource) uint64
-	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
-	gwTranslator              gwtranslator.Translator
 }
 
 func (t *translatorInstance) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
 	// setup tracing, logging
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
@@ -108,12 +78,7 @@ func (t *translatorInstance) Translate(
 	//	2. Plugins are built with the assumption that they will be short lived, only for the
 	//		duration of a single translation loop
 	for _, p := range t.pluginRegistry.GetPlugins() {
-		if err := p.Init(plugins.InitParams{
-			Ctx:      params.Ctx,
-			Settings: t.settings,
-		}); err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "plugin init failed")
-		}
+		p.Init(plugins.InitParams{Ctx: params.Ctx, Settings: t.settings})
 	}
 
 	// prepare reports used to aggregate Warnings/Errors encountered during translation
@@ -143,21 +108,13 @@ func (t *translatorInstance) Translate(
 		reports.AddError(proxy, err)
 	}
 
-	// TODO: add a settings flag to allow accepting proxy on warnings
 	if warnings := validation.GetProxyWarning(proxyReport); len(warnings) > 0 {
 		for _, warning := range warnings {
 			reports.AddWarning(proxy, warning)
 		}
 	}
 
-	messagesMap := params.Messages
-	if len(messagesMap) > 0 {
-		for _, messages := range messagesMap {
-			reports.AddMessages(proxy, messages...)
-		}
-	}
-
-	return xdsSnapshot, reports, proxyReport, nil
+	return xdsSnapshot, reports, proxyReport
 }
 
 func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.Params, proxy *v1.Proxy, reports reporter.ResourceReports) (
@@ -202,7 +159,7 @@ ClusterLoop:
 				continue ClusterLoop
 			}
 		}
-		emptyendpointlist := &envoy_config_endpoint_v3.ClusterLoadAssignment{
+		emptyEndpointList := &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: endpointClusterName,
 		}
 		// make sure to call EndpointPlugin with empty endpoint
@@ -212,14 +169,14 @@ ClusterLoop:
 				Namespace: upstream.GetMetadata().GetNamespace(),
 			}) == c.GetName() {
 				for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
-					if err := plugin.ProcessEndpoints(params, upstream, emptyendpointlist); err != nil {
+					if err := plugin.ProcessEndpoints(params, upstream, emptyEndpointList); err != nil {
 						reports.AddError(upstream, err)
 					}
 				}
 			}
 		}
 
-		endpoints = append(endpoints, emptyendpointlist)
+		endpoints = append(endpoints, emptyEndpointList)
 	}
 
 	return clusters, endpoints
@@ -244,7 +201,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		// TODO: This only needs to happen once, we should move it out of the loop
 		validateListenerPorts(proxy, listenerReport)
 
-		// Select a ListenerTranslator and RouteConfigurationTranslator, based on the type of listener (ie TCP, HTTP, or Hybrid)
+		// Select a ListenerTranslator and RouteConfigurationTranslator, based on the type of listener (ie TCP, HTTP, Hybrid, or Aggregate)
 		listenerTranslator, routeConfigurationTranslator := t.listenerTranslatorFactory.GetTranslators(params.Ctx, proxy, listener, listenerReport)
 
 		// 1. Compute RouteConfiguration
@@ -304,7 +261,7 @@ func (t *translatorInstance) generateXDSSnapshot(
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
 }
 
-func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
+func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
 	hasher := fnv.New64()
 	// 8kb capacity, consider raising if we find the buffer is frequently being
 	// re-allocated by MarshalAppend to fit larger protos.
@@ -329,8 +286,8 @@ func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
 	return hasher.Sum64()
 }
 
-// deprecated, slower than EnvoyCacheResourcesListToFnvHash
-func EnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
+// deprecated, slower than MustEnvoyCacheResourcesListToFnvHash
+func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
 	hash, err := hashstructure.Hash(resources, nil)
 	if err != nil {
 		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
@@ -349,7 +306,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 		routesProto = append(routesProto, resource.NewEnvoyResource(proto.Clone(routeCfg)))
 	}
 
-	routesVersion := EnvoyCacheResourcesListToFnvHash(routesProto)
+	routesVersion := MustEnvoyCacheResourcesListToFnvHash(routesProto)
 	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }
 

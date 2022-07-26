@@ -31,8 +31,7 @@ var _ = Describe("Plugin", func() {
 	Context("translate transformations", func() {
 		BeforeEach(func() {
 			p = NewPlugin()
-			err := p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
-			Expect(err).NotTo(HaveOccurred())
+			p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
 		})
 
 		It("translates header body transform", func() {
@@ -107,8 +106,8 @@ var _ = Describe("Plugin", func() {
 		)
 		BeforeEach(func() {
 			p = NewPlugin()
-			err := p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
-			Expect(err).NotTo(HaveOccurred())
+			p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+
 			inputTransform = &transformation.Transformations{
 				ClearRouteCache: true,
 			}
@@ -184,9 +183,9 @@ var _ = Describe("Plugin", func() {
 		)
 		BeforeEach(func() {
 			p = NewPlugin()
-			err := p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+			p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
 
-			Expect(err).NotTo(HaveOccurred())
+			var err error
 			earlyStageFilterConfig, err = utils.MessageToAny(&envoytransformation.FilterTransformations{
 				Stage: EarlyStageNumber,
 			})
