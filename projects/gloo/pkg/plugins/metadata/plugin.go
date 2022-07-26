@@ -27,8 +27,7 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(_ plugins.InitParams) error {
-	return nil
+func (p *plugin) Init(_ plugins.InitParams) {
 }
 
 func (p *plugin) ProcessRoute(_ plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {

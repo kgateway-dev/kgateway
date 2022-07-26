@@ -5,7 +5,6 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -23,48 +22,22 @@ type translatorSyncer struct {
 	translator translator.Translator
 	sanitizer  sanitizer.XdsSanitizer
 	xdsCache   envoycache.SnapshotCache
-	xdsHasher  envoycache.NodeHash
 	reporter   reporter.StatusReporter
+
+	syncerExtensions []TranslatorSyncerExtension
+	settings         *v1.Settings
+	statusMetrics    metrics.ConfigStatusMetrics
+	gatewaySyncer    *gwsyncer.TranslatorSyncer
+	proxyClient      v1.ProxyClient
+	writeNamespace   string
+
 	// used for debugging purposes only
 	latestSnap *v1snap.ApiSnapshot
-	extensions []TranslatorSyncerExtension
-	// used to track which envoy node IDs exist without belonging to a proxy
-	extensionKeys  map[string]struct{}
-	settings       *v1.Settings
-	statusMetrics  metrics.ConfigStatusMetrics
-	gatewaySyncer  *gwsyncer.TranslatorSyncer
-	proxyClient    v1.ProxyClient
-	writeNamespace string
-}
-
-type TranslatorSyncerExtensionParams struct {
-	RateLimitServiceSettings ratelimit.ServiceSettings
-}
-
-type TranslatorSyncerExtensionFactory func(context.Context, TranslatorSyncerExtensionParams) (TranslatorSyncerExtension, error)
-
-type UpgradeableTranslatorSyncerExtension interface {
-	ExtensionName() string
-	IsUpgrade() bool
-}
-
-// TODO(kdorosh) in follow up PR, update this interface so it can never error
-// It is logically invalid for us to return an error here (translation of resources always needs to
-// result in a xds snapshot, so we are resilient to pod restarts)
-type TranslatorSyncerExtension interface {
-	Sync(
-		ctx context.Context,
-		snap *v1snap.ApiSnapshot,
-		settings *v1.Settings,
-		xdsCache envoycache.SnapshotCache,
-		reports reporter.ResourceReports,
-	) (string, error)
 }
 
 func NewTranslatorSyncer(
 	translator translator.Translator,
 	xdsCache envoycache.SnapshotCache,
-	xdsHasher envoycache.NodeHash,
 	sanitizer sanitizer.XdsSanitizer,
 	reporter reporter.StatusReporter,
 	devMode bool,
@@ -76,17 +49,16 @@ func NewTranslatorSyncer(
 	writeNamespace string,
 ) v1snap.ApiSyncer {
 	s := &translatorSyncer{
-		translator:     translator,
-		xdsCache:       xdsCache,
-		xdsHasher:      xdsHasher,
-		reporter:       reporter,
-		extensions:     extensions,
-		sanitizer:      sanitizer,
-		settings:       settings,
-		statusMetrics:  statusMetrics,
-		gatewaySyncer:  gatewaySyncer,
-		proxyClient:    proxyClient,
-		writeNamespace: writeNamespace,
+		translator:       translator,
+		xdsCache:         xdsCache,
+		reporter:         reporter,
+		syncerExtensions: extensions,
+		sanitizer:        sanitizer,
+		settings:         settings,
+		statusMetrics:    statusMetrics,
+		gatewaySyncer:    gatewaySyncer,
+		proxyClient:      proxyClient,
+		writeNamespace:   writeNamespace,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
@@ -101,28 +73,29 @@ func NewTranslatorSyncer(
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) error {
 	logger := contextutils.LoggerFrom(ctx)
 	reports := make(reporter.ResourceReports)
+	var multiErr *multierror.Error
 
 	// If gateway controller is enabled, run the gateway translation to generate proxies.
 	// Use the ProxyClient interface to persist them either to an in-memory store or etcd as configured at startup.
 	if s.gatewaySyncer != nil {
 		logger.Debugf("getting proxies from gateway translation")
-		s.translateProxies(ctx, snap)
-	}
-	var multiErr *multierror.Error
-	err := s.syncEnvoy(ctx, snap, reports)
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
-	}
-	s.extensionKeys = map[string]struct{}{}
-	for _, extension := range s.extensions {
-		intermediateReports := make(reporter.ResourceReports)
-		nodeID, err := extension.Sync(ctx, snap, s.settings, s.xdsCache, intermediateReports)
-		if err != nil {
-			multiErr = multierror.Append(multiErr, err)
+		if err := s.translateProxies(ctx, snap); err != nil {
+			multiErr = multierror.Append(multiErr, eris.Wrapf(err, "translating proxies"))
 		}
-		reports.Merge(intermediateReports)
-		s.extensionKeys[nodeID] = struct{}{}
 	}
+
+	// Execute the EnvoySyncer
+	// This will update the xDS SnapshotCache for each entry that corresponds to a Proxy in the API Snapshot
+	s.syncEnvoy(ctx, snap, reports)
+
+	// Execute the SyncerExtensions
+	// Each of these are responsible for updating a single entry in the SnapshotCache
+	for _, syncerExtension := range s.syncerExtensions {
+		intermediateReports := make(reporter.ResourceReports)
+		syncerExtension.Sync(ctx, snap, s.settings, s.xdsCache, intermediateReports)
+		reports.Merge(intermediateReports)
+	}
+
 	if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
 		logger.Debugf("Failed writing report for proxies: %v", err)
 		multiErr = multierror.Append(multiErr, eris.Wrapf(err, "writing reports"))

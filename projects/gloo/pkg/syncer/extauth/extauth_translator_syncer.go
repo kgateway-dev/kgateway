@@ -11,18 +11,15 @@ import (
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/go-utils/contextutils"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 // Compile-time assertion
 var (
-	_ syncer.TranslatorSyncerExtension            = new(TranslatorSyncerExtension)
-	_ syncer.UpgradeableTranslatorSyncerExtension = new(TranslatorSyncerExtension)
+	_ syncer.TranslatorSyncerExtension = new(translatorSyncerExtension)
 )
 
 const (
-	Name       = "extauth"
 	ServerRole = "extauth"
 )
 
@@ -30,71 +27,70 @@ var (
 	ErrEnterpriseOnly = eris.New("The Gloo Advanced Extauth API is an enterprise-only feature, please upgrade or use the Envoy Extauth API instead")
 )
 
-type TranslatorSyncerExtension struct{}
+// translatorSyncerExtension is the Open Source variant of the Enterprise translatorSyncerExtension for ExtAuth
+// TODO (sam-heilbron)
+// 	This placeholder is solely used to detect Enterprise features being used in an Open Source installation
+//	Once https://github.com/solo-io/gloo/issues/6495 is implemented, we should be able to remove this placeholder altogether
+type translatorSyncerExtension struct{}
 
-func (s *TranslatorSyncerExtension) ExtensionName() string {
-	return Name
+func NewTranslatorSyncerExtension(_ context.Context, _ syncer.TranslatorSyncerExtensionParams) syncer.TranslatorSyncerExtension {
+	return &translatorSyncerExtension{}
 }
 
-func (s *TranslatorSyncerExtension) IsUpgrade() bool {
-	return false
+func (s *translatorSyncerExtension) ID() string {
+	return ServerRole
 }
 
-func NewTranslatorSyncerExtension(
-	_ context.Context,
-	params syncer.TranslatorSyncerExtensionParams,
-) (syncer.TranslatorSyncerExtension, error) {
-	return &TranslatorSyncerExtension{}, nil
-}
-
-func (s *TranslatorSyncerExtension) Sync(
+func (s *translatorSyncerExtension) Sync(
 	ctx context.Context,
 	snap *gloov1snap.ApiSnapshot,
 	settings *gloov1.Settings,
-	xdsCache envoycache.SnapshotCache,
+	_ syncer.SnapshotSetter,
 	reports reporter.ResourceReports,
-) (string, error) {
+) {
 	ctx = contextutils.WithLogger(ctx, "extAuthTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	getEnterpriseOnlyErr := func() (string, error) {
+	getEnterpriseOnlyErr := func() error {
 		logger.Error(ErrEnterpriseOnly.Error())
-		return ServerRole, ErrEnterpriseOnly
+		return ErrEnterpriseOnly
 	}
 
 	if settings.GetNamedExtauth() != nil {
-		return getEnterpriseOnlyErr()
+		logger.Error(ErrEnterpriseOnly.Error())
 	}
+
+	reports.Accept(snap.Proxies.AsInputResources()...)
 
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {
-			virtualHosts := utils.GetVhostsFromListener(listener)
+			virtualHosts := utils.GetVirtualHostsForListener(listener)
 
 			for _, virtualHost := range virtualHosts {
 				if virtualHost.GetOptions().GetExtauth().GetConfigRef() != nil {
-					return getEnterpriseOnlyErr()
+					reports.AddError(proxy, getEnterpriseOnlyErr())
 				}
 
 				if virtualHost.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
-					return getEnterpriseOnlyErr()
+					reports.AddError(proxy, getEnterpriseOnlyErr())
 				}
 
 				for _, route := range virtualHost.GetRoutes() {
 					if route.GetOptions().GetExtauth().GetConfigRef() != nil {
-						return getEnterpriseOnlyErr()
+						reports.AddError(proxy, getEnterpriseOnlyErr())
 					}
 
 					if route.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
-						return getEnterpriseOnlyErr()
+						reports.AddError(proxy, getEnterpriseOnlyErr())
 					}
 
 					for _, weightedDestination := range route.GetRouteAction().GetMulti().GetDestinations() {
 						if weightedDestination.GetOptions().GetExtauth().GetConfigRef() != nil {
-							return getEnterpriseOnlyErr()
+							reports.AddError(proxy, getEnterpriseOnlyErr())
 						}
 
 						if weightedDestination.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
-							return getEnterpriseOnlyErr()
+							reports.AddError(proxy, getEnterpriseOnlyErr())
 						}
 					}
 				}
@@ -102,6 +98,4 @@ func (s *TranslatorSyncerExtension) Sync(
 			}
 		}
 	}
-
-	return ServerRole, nil
 }

@@ -1,8 +1,6 @@
 package rest
 
 import (
-	"context"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/proto"
@@ -35,7 +33,6 @@ this will grab the parameters from the route extension
 */
 type plugin struct {
 	recordedUpstreams map[string]*glooplugins.ServiceSpec_Rest
-	ctx               context.Context
 }
 
 func NewPlugin() plugins.Plugin {
@@ -46,10 +43,8 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) error {
-	p.ctx = params.Ctx
+func (p *plugin) Init(_ plugins.InitParams) {
 	p.recordedUpstreams = make(map[string]*glooplugins.ServiceSpec_Rest)
-	return nil
 }
 
 type UpstreamWithServiceSpec interface {
@@ -80,7 +75,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envo
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
+	return pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, transformation.FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
 			// check if it's rest destination
 			if spec.GetDestinationSpec() == nil {
@@ -94,7 +89,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			// get upstream
 			upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
 			if err != nil {
-				contextutils.LoggerFrom(p.ctx).Error(err)
+				contextutils.LoggerFrom(params.Ctx).Error(err)
 				return nil, err
 			}
 			restServiceSpec, ok := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]

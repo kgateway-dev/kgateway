@@ -58,8 +58,7 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(_ plugins.InitParams) error {
-	return nil
+func (p *plugin) Init(_ plugins.InitParams) {
 }
 
 func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1.Listener, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error) {
