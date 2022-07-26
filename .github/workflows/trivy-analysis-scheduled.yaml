@@ -54,7 +54,7 @@ jobs:
         env:
           SCAN_DIR: _output/scans
           IMAGE_REPO: quay.io/solo-io
-          MIN_SCANNED_VERSION: 'v1.9.0'
+          MIN_SCANNED_VERSION: 'v1.8.0'
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
           mkdir -p $SCAN_DIR
