@@ -61,12 +61,10 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) {
 	if rlServer := params.Settings.GetRatelimitServer(); rlServer != nil {
 		p.rlServerSettings = rlServer
 	}
-
-	return nil
 }
 
 func (p *plugin) ProcessVirtualHost(

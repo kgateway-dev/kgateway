@@ -27,8 +27,7 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(_ plugins.InitParams) error {
-	return nil
+func (p *plugin) Init(_ plugins.InitParams) {
 }
 
 // Used to set config that are directly on the [Envoy listener](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/listener.proto)

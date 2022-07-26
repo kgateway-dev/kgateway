@@ -36,8 +36,7 @@ var _ = Describe("Route Plugin", func() {
 
 	BeforeEach(func() {
 		plugin = NewPlugin()
-		err := plugin.Init(plugins.InitParams{})
-		Expect(err).NotTo(HaveOccurred())
+		plugin.Init(plugins.InitParams{})
 		params = plugins.RouteParams{}
 
 	})
