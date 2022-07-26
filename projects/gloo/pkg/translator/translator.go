@@ -114,13 +114,6 @@ func (t *translatorInstance) Translate(
 		}
 	}
 
-	messagesMap := params.Messages
-	if len(messagesMap) > 0 {
-		for _, messages := range messagesMap {
-			reports.AddMessages(proxy, messages...)
-		}
-	}
-
 	return xdsSnapshot, reports, proxyReport
 }
 
@@ -166,7 +159,7 @@ ClusterLoop:
 				continue ClusterLoop
 			}
 		}
-		emptyendpointlist := &envoy_config_endpoint_v3.ClusterLoadAssignment{
+		emptyEndpointList := &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: endpointClusterName,
 		}
 		// make sure to call EndpointPlugin with empty endpoint
@@ -176,14 +169,14 @@ ClusterLoop:
 				Namespace: upstream.GetMetadata().GetNamespace(),
 			}) == c.GetName() {
 				for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
-					if err := plugin.ProcessEndpoints(params, upstream, emptyendpointlist); err != nil {
+					if err := plugin.ProcessEndpoints(params, upstream, emptyEndpointList); err != nil {
 						reports.AddError(upstream, err)
 					}
 				}
 			}
 		}
 
-		endpoints = append(endpoints, emptyendpointlist)
+		endpoints = append(endpoints, emptyEndpointList)
 	}
 
 	return clusters, endpoints
@@ -208,7 +201,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		// TODO: This only needs to happen once, we should move it out of the loop
 		validateListenerPorts(proxy, listenerReport)
 
-		// Select a ListenerTranslator and RouteConfigurationTranslator, based on the type of listener (ie TCP, HTTP, or Hybrid)
+		// Select a ListenerTranslator and RouteConfigurationTranslator, based on the type of listener (ie TCP, HTTP, Hybrid, or Aggregate)
 		listenerTranslator, routeConfigurationTranslator := t.listenerTranslatorFactory.GetTranslators(params.Ctx, proxy, listener, listenerReport)
 
 		// 1. Compute RouteConfiguration

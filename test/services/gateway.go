@@ -13,9 +13,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
-	extauthExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/extauth"
-	ratelimitExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
@@ -197,7 +194,6 @@ type RunOptions struct {
 	ValidationPort   int32
 	RestXdsPort      int32
 	Settings         *gloov1.Settings
-	Extensions       setup.Extensions
 	Cache            memory.InMemoryResourceCache
 	KubeClient       kubernetes.Interface
 	ConsulClient     consul.ConsulWatcher
@@ -239,16 +235,11 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if glooOpts.Settings.GetGloo().GetRestXdsBindAddr() == "" {
 		glooOpts.Settings.GetGloo().RestXdsBindAddr = fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort)
 	}
-	runOptions.Extensions.SyncerExtensions = []syncer.TranslatorSyncerExtensionFactory{
-		ratelimitExt.NewTranslatorSyncerExtension,
-		extauthExt.NewTranslatorSyncerExtension,
-	}
-	runOptions.Extensions.ApiEmitterChannel = make(chan struct{})
-
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
 	glooOpts.GatewayControllerEnabled = !runOptions.WhatToRun.DisableGateway
-	go setup.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
+
+	go setup.RunGloo(glooOpts)
 
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {

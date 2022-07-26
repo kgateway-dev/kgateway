@@ -68,9 +68,6 @@ func measureResource(ctx context.Context, resource string, len int) {
 	}
 }
 
-// TODO(kdorosh) in follow up PR, update this interface so it can never error
-// It is logically invalid for us to return an error here (translation of resources always needs to
-// result in a xds snapshot, so we are resilient to pod restarts)
 func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
@@ -130,6 +127,12 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		}
 
 		xdsSnapshot, reports, _ := s.translator.Translate(params, proxy)
+
+		// Messages are aggregated during translation, and need to be added to reports
+		for _, messages := range params.Messages {
+			reports.AddMessages(proxy, messages...)
+		}
+
 		if validateErr := reports.ValidateStrict(); validateErr != nil {
 			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		}

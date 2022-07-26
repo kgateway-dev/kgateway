@@ -73,15 +73,16 @@ func NewTranslatorSyncer(
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) error {
 	logger := contextutils.LoggerFrom(ctx)
 	reports := make(reporter.ResourceReports)
+	var multiErr *multierror.Error
 
 	// If gateway controller is enabled, run the gateway translation to generate proxies.
 	// Use the ProxyClient interface to persist them either to an in-memory store or etcd as configured at startup.
 	if s.gatewaySyncer != nil {
 		logger.Debugf("getting proxies from gateway translation")
-		s.translateProxies(ctx, snap)
+		if err := s.translateProxies(ctx, snap); err != nil {
+			multiErr = multierror.Append(multiErr, eris.Wrapf(err, "translating proxies"))
+		}
 	}
-
-	var multiErr *multierror.Error
 
 	// Execute the EnvoySyncer
 	// This will update the xDS SnapshotCache for each entry that corresponds to a Proxy in the API Snapshot
