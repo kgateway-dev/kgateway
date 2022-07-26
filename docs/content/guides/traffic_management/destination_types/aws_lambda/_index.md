@@ -4,10 +4,22 @@ weight: 100
 description: Routing to AWS Lambda as an Upstream
 ---
 
+Route traffic requests directly to an [Amazon Web Services (AWS) Lambda function](https://aws.amazon.com/lambda/resources/).
+
 ## About
 
+Gloo Edge enables you to route traffic requests directly to your AWS Lambda functions, in place of an AWS ALB or AWS API Gateway.
 
-The setup for routing to an AWS Lambda upstream follows these steps:
+### 
+
+To use Gloo Edge in place of your AWS ALB or AWS API Gateway, you configure the `unwrapAsAlb` setting or the `unwrapAsApiGateway` setting (Gloo Edge Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
+
+
+
+For more information, see the AWS Lambda documentation on [configuring Lambda functions as targets](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html) and [how AWS API Gateways process Lambda responses](https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway.html#apigateway-types-transforms).
+
+
+The following sections walk you through these general steps to set up routing to your Lambda function:
 1. Create an AWS Lambda function that returns a response in the form required by the AWS API Gateway.
 2. Create a secret containing AWS account credentials that enable access to the Lambda function.
 3. Create an Upstream resource that references the Lambda secret.
@@ -89,8 +101,7 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
    ```
 
 3. Create a VirtualService resource containing a `routeAction` that points to the AWS Lambda upstream.
-   {{< tabs >}}
-   {{< tab name="kubectl" codelang="shell">}}
+   ```yaml
    kubectl apply -f - <<EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
@@ -113,22 +124,17 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
                name: aws-upstream
                namespace: gloo-system
    EOF
-   {{< /tab >}}
-   {{< tab name="glooctl" codelang="shell">}}
-   glooctl add route \
-       --name 'aws-route' \
-       --namespace 'gloo-system' \
-       --path-prefix '/' \
-       --dest-name 'aws-upstream' \
-       --aws-function-name 'echo'
-   {{< /tab >}}
-   {{< /tabs >}}
+   ```
 
-3. Verify that Gloo Edge is routing traffic requests to the Lambda function.
+4. Verify that Gloo Edge is routing traffic requests to the Lambda function.
    ```sh
    curl $(glooctl proxy url)/ -d '{"key1":"value1", "key2":"value2"}' -X POST
    ```
-   Should return the request body sent to it:
+   The funtion returns the request body that was sent to it, such as the following:
    ```json
    {"key1":"value1", "key2":"value2"}
    ```
+
+
+
+Note that only one setting should be configured. If you configure both, the `unwrapAsAlb` setting is used by default.
