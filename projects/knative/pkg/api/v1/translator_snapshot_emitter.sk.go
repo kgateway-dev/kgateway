@@ -138,6 +138,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	var initialIngressList github_com_solo_io_gloo_projects_knative_pkg_api_external_knative.IngressList
 
 	currentSnapshot := TranslatorSnapshot{}
+	ingressesByNamespace := make(map[string]github_com_solo_io_gloo_projects_knative_pkg_api_external_knative.IngressList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Ingress */
@@ -147,6 +148,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				return nil, nil, errors.Wrapf(err, "initial Ingress list")
 			}
 			initialIngressList = append(initialIngressList, ingresses...)
+			ingressesByNamespace[namespace] = ingresses
 		}
 		ingressNamespacesChan, ingressErrs, err := c.ingress.Watch(namespace, opts)
 		if err != nil {
@@ -211,7 +213,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				stats.Record(ctx, mTranslatorSnapshotMissed.M(1))
 			}
 		}
-		ingressesByNamespace := make(map[string]github_com_solo_io_gloo_projects_knative_pkg_api_external_knative.IngressList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
