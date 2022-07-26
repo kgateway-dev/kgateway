@@ -10,14 +10,16 @@ Route traffic requests directly to an [Amazon Web Services (AWS) Lambda function
 
 Gloo Edge enables you to route traffic requests directly to your AWS Lambda functions, in place of an AWS ALB or AWS API Gateway.
 
-### 
-
 To use Gloo Edge in place of your AWS ALB or AWS API Gateway, you configure the `unwrapAsAlb` setting or the `unwrapAsApiGateway` setting (Gloo Edge Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
 
-
+Gloo Edge looks for a JSON response from the Lambda upstream that contains the following specific fields:
+- `body`: String containing the desired response body.
+- `headers`: JSON object containing a mapping from the desired response header keys to the desired response header values.
+- `multiValueHeaders`: JSON object containing a mapping from the desired response header keys to a list of the desired response header values to be mapped to that header key.
+- `statusCode`: Integer representing the desired HTTP response status code (default `200`).
+- `isBase64Encoded`: Boolean for whether to decode the provided body string as base64 (default `false`).
 
 For more information, see the AWS Lambda documentation on [configuring Lambda functions as targets](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html) and [how AWS API Gateways process Lambda responses](https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway.html#apigateway-types-transforms).
-
 
 The following sections walk you through these general steps to set up routing to your Lambda function:
 1. Create an AWS Lambda function that returns a response in the form required by the AWS API Gateway.
@@ -100,7 +102,9 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
    kubectl get upstream -n gloo-system aws-upstream -o yaml
    ```
 
-3. Create a VirtualService resource containing a `routeAction` that points to the AWS Lambda upstream.
+3. Create a VirtualService resource containing a `routeAction` that points to the AWS Lambda upstream. In the `destinationSpec.aws` section, include one of the following settings. Note that only one setting should be configured. If you configure both, the `unwrapAsAlb` setting is used by default.
+   * `unwrapAsAlb: true`: Replace the functionality of an AWS ALB.
+   * `unwrapAsApiGateway: true` (Gloo Edge Enterprise only, version 1.12.0 or later): Replace the functionality of an AWS API Gateway.
    ```yaml
    kubectl apply -f - <<EOF
    apiVersion: gateway.solo.io/v1
@@ -120,21 +124,36 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
              destinationSpec:
                aws:
                  logicalName: echo
+                 unwrapAsApiGateway: true
              upstream:
                name: aws-upstream
                namespace: gloo-system
    EOF
    ```
 
-4. Verify that Gloo Edge is routing traffic requests to the Lambda function.
+4. Verify that Gloo Edge correctly routes traffic requests to the Lambda function.
    ```sh
-   curl $(glooctl proxy url)/ -d '{"key1":"value1", "key2":"value2"}' -X POST
+   curl $(glooctl proxy url)/ -d '{"body": "gloo edge is inserting this body", "headers": {"test-header-key": "test-header-value"}, "statusCode": 201}' -X POST -v
    ```
-   The funtion returns the request body that was sent to it, such as the following:
-   ```json
-   {"key1":"value1", "key2":"value2"}
+   A successful response contains the same body string, response headers, and status code that you provided in the curl command, such as the following:
    ```
-
-
-
-Note that only one setting should be configured. If you configure both, the `unwrapAsAlb` setting is used by default.
+   *   Trying ::1...
+   * TCP_NODELAY set
+   * Connected to localhost (::1) port 8080 (#0)
+   > POST / HTTP/1.1
+   > Host: localhost:8080
+   > User-Agent: curl/7.64.1
+   > Accept: */*
+   > Content-Length: 116
+   > Content-Type: application/x-www-form-urlencoded
+   > 
+   * upload completely sent off: 116 out of 116 bytes
+   < HTTP/1.1 201 Created
+   < test-header-key: test-header-value
+   < content-length: 32
+   < date: Mon, 25 Jul 2022 13:37:05 GMT
+   < server: envoy
+   < 
+   * Connection #0 to host localhost left intact
+   gloo edge is inserting this body* Closing connection 0
+   ```
