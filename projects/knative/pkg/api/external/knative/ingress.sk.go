@@ -18,6 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.Resource = new(Ingress)
+)
+
 func NewIngress(namespace, name string) *Ingress {
 	ingress := &Ingress{}
 	ingress.Ingress.SetMetadata(&core.Metadata{
