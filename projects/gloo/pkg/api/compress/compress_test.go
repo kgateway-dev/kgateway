@@ -96,6 +96,27 @@ var _ = Describe("Compress", func() {
 			// make sure it gets compressed by 90%
 			Expect(size(compressedSpec)).To(BeNumerically("<", size(uncompressedSpec)/10))
 		})
+		It("should ignore unknown fields on unmarshal spec", func() {
+			p := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name: "foo",
+				},
+				Listeners: []*v1.Listener{{BindAddress: "1234"}},
+			}
+
+			// take a valid spec
+			spec, err := MarshalSpec(p)
+			Expect(err).NotTo(HaveOccurred())
+
+			// add an unknown field
+			spec["unknownField"] = "unknownFieldValue"
+
+			p2 := &v1.Proxy{}
+			err = UnmarshalSpec(p2, spec)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(p2.Listeners).To(BeEquivalentTo(p.Listeners))
+		})
 	})
 
 	Context("status", func() {

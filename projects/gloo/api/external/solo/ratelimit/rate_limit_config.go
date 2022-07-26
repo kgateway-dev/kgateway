@@ -1,6 +1,7 @@
 package ratelimit
 
 import (
+	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 	"reflect"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -40,7 +41,7 @@ func (r *RateLimitConfig) Clone() *RateLimitConfig {
 }
 
 func (r *RateLimitConfig) UnmarshalSpec(spec skres.Spec) error {
-	return protoutils.UnmarshalMapToProto(spec, &r.Spec)
+	return specutils.UnmarshalSpecMapToProto(spec, &r.Spec)
 }
 
 func (r *RateLimitConfig) UnmarshalStatus(status skres.Status, unmarshaler resources.StatusUnmarshaler) {
