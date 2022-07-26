@@ -15,6 +15,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.InputResource = new(Gateway)
+)
+
 func NewGateway(namespace, name string) *Gateway {
 	gateway := &Gateway{}
 	gateway.SetMetadata(&core.Metadata{
