@@ -54,11 +54,9 @@ func (mr *MockDiscoveryPluginMockRecorder) DiscoverUpstreams(arg0, arg1, arg2, a
 }
 
 // Init mocks base method.
-func (m *MockDiscoveryPlugin) Init(arg0 plugins.InitParams) error {
+func (m *MockDiscoveryPlugin) Init(arg0 plugins.InitParams) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Init", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "Init", arg0)
 }
 
 // Init indicates an expected call of Init.

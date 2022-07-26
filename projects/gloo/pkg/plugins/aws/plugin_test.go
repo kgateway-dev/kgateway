@@ -126,8 +126,7 @@ var _ = Describe("Plugin", func() {
 	})
 
 	JustBeforeEach(func() {
-		err := awsPlugin.Init(initParams)
-		Expect(err).NotTo(HaveOccurred())
+		awsPlugin.Init(initParams)
 	})
 
 	processProtocolOptions := func() {

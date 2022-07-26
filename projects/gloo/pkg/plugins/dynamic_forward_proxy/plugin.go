@@ -361,7 +361,6 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(_ plugins.InitParams) error {
+func (p *plugin) Init(_ plugins.InitParams) {
 	p.filterHashMap = map[string]*dynamic_forward_proxy.FilterConfig{}
-	return nil
 }

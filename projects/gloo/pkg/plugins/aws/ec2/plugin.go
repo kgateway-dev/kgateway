@@ -38,41 +38,32 @@ type plugin struct {
 	secretClient v1.SecretClient
 
 	settings *v1.Settings
-
-	// pre-initialization only
-	// we need to register the clients while creating the plugin, otherwise our EDS poll and upstream watch will fail
-	// since Init can be called after our poll begins (race condition) we cannot create the client there
-	// since NewPlugin does not return an error, we will store any non-nil errors from initializing the secret client in the plugin struct
-	// we will check those errors during the Init call
-	constructorErr error
 }
 
-func NewPlugin(ctx context.Context, secretFactory factory.ResourceClientFactory) *plugin {
+func NewPlugin(ctx context.Context, secretFactory factory.ResourceClientFactory) (*plugin, error) {
 	p := &plugin{}
 	var err error
+
 	if secretFactory == nil {
-		p.constructorErr = ConstructorInputError("secret")
-		return p
+		return p, ConstructorInputError("secret")
 	}
 	p.secretClient, err = v1.NewSecretClient(ctx, secretFactory)
 	if err != nil {
-		p.constructorErr = ConstructorGetClientError("secret", err)
-		return p
+		return p, ConstructorGetClientError("secret", err)
 	}
-	if err := p.secretClient.Register(); err != nil {
-		p.constructorErr = ConstructorRegisterClientError("secret", err)
-		return p
+	if err = p.secretClient.Register(); err != nil {
+		return p, ConstructorRegisterClientError("secret", err)
 	}
-	return p
+
+	return p, nil
 }
 
 func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) {
 	p.settings = params.Settings
-	return p.constructorErr
 }
 
 // we do not need to update any fields, just check that the input is valid
