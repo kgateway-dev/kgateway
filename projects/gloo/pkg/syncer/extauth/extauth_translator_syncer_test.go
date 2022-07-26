@@ -22,34 +22,41 @@ import (
 var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 	var (
-		ctx             context.Context
-		cancel          context.CancelFunc
-		translator      syncer.TranslatorSyncerExtension
-		apiSnapshot     *gloov1snap.ApiSnapshot
-		snapCache       *syncer.MockXdsCache
-		settings        *gloov1.Settings
-		resourceReports reporter.ResourceReports
+		ctx         context.Context
+		cancel      context.CancelFunc
+		translator  syncer.TranslatorSyncerExtension
+		apiSnapshot *gloov1snap.ApiSnapshot
+		settings    *gloov1.Settings
 	)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		translator = NewTranslatorSyncerExtension(ctx, syncer.TranslatorSyncerExtensionParams{})
 
-		apiSnapshot = &gloov1snap.ApiSnapshot{}
 		settings = &gloov1.Settings{}
-		resourceReports = make(reporter.ResourceReports)
+		apiSnapshot = &gloov1snap.ApiSnapshot{}
 	})
 
 	AfterEach(func() {
 		cancel()
 	})
 
-	ExpectReportsContainEnterpriseOnlyError := func(reports reporter.ResourceReports) {
+	ExpectSyncGeneratesEnterpriseOnlyError := func() {
+		reports := make(reporter.ResourceReports)
+		translator.Sync(ctx, apiSnapshot, settings, &syncer.MockXdsCache{}, reports)
+
 		err := reports.ValidateStrict()
 		multiErr, ok := err.(*multierror.Error)
 		ExpectWithOffset(1, ok).To(BeTrue())
-
 		ExpectWithOffset(1, multiErr.WrappedErrors()).To(ContainElement(testutils.HaveInErrorChain(ErrEnterpriseOnly)))
+	}
+
+	ExpectSyncDoesNotError := func() {
+		reports := make(reporter.ResourceReports)
+		translator.Sync(ctx, apiSnapshot, settings, &syncer.MockXdsCache{}, reports)
+
+		err := reports.ValidateStrict()
+		ExpectWithOffset(1, err).To(BeNil())
 	}
 
 	Context("Listener contains ExtAuthExtension.ConfigRef", func() {
@@ -88,8 +95,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 			})
 
 			It("should error", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
-				ExpectReportsContainEnterpriseOnlyError(resourceReports)
+				ExpectSyncGeneratesEnterpriseOnlyError()
 			})
 		})
 
@@ -104,8 +110,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 			})
 
 			It("should error", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
-				ExpectReportsContainEnterpriseOnlyError(resourceReports)
+				ExpectSyncGeneratesEnterpriseOnlyError()
 			})
 		})
 
@@ -120,8 +125,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 			})
 
 			It("should error", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
-				ExpectReportsContainEnterpriseOnlyError(resourceReports)
+				ExpectSyncGeneratesEnterpriseOnlyError()
 			})
 		})
 
@@ -136,8 +140,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 			})
 
 			It("should error", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
-				ExpectReportsContainEnterpriseOnlyError(resourceReports)
+				ExpectSyncGeneratesEnterpriseOnlyError()
 			})
 		})
 
@@ -169,8 +172,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 			})
 
 			It("should error", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
-				ExpectReportsContainEnterpriseOnlyError(resourceReports)
+				ExpectSyncGeneratesEnterpriseOnlyError()
 			})
 		})
 
@@ -184,8 +186,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 			})
 
 			It("should error", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
-				ExpectReportsContainEnterpriseOnlyError(resourceReports)
+				ExpectSyncGeneratesEnterpriseOnlyError()
 			})
 		})
 
@@ -199,8 +200,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 			})
 
 			It("should error", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
-				ExpectReportsContainEnterpriseOnlyError(resourceReports)
+				ExpectSyncGeneratesEnterpriseOnlyError()
 			})
 		})
 
@@ -216,10 +216,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 		})
 
 		It("should not error", func() {
-			translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
-
-			err := resourceReports.ValidateStrict()
-			Expect(err).To(BeNil())
+			ExpectSyncDoesNotError()
 		})
 
 	})
@@ -233,12 +230,9 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 		})
 
 		It("should not error", func() {
-			translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
-
 			// Currently, we do not aggregate errors from Settings on resourceReports
 			// We will only log this error
-			err := resourceReports.ValidateStrict()
-			Expect(err).To(BeNil())
+			ExpectSyncDoesNotError()
 		})
 
 	})

@@ -11,7 +11,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/mitchellh/hashstructure"
 	errors "github.com/rotisserie/eris"
-	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -27,11 +26,11 @@ import (
 	proto2 "google.golang.org/protobuf/proto"
 )
 
-// Translator converts a Proxy CR into an xDS Snapshot
-// Any errors that are encountered during translation are appended to the ResourceReports
-// It is invalid for us to return an error here, since translation of resources always needs
-// to results in an xDS Snapshot so we are resilient to pod restarts
 type Translator interface {
+	// Translate converts a Proxy CR into an xDS Snapshot
+	// Any errors that are encountered during translation are appended to the ResourceReports
+	// It is invalid for us to return an error here, since translation of resources always needs
+	// to results in an xDS Snapshot so we are resilient to pod restarts
 	Translate(
 		params plugins.Params,
 		proxy *v1.Proxy,
@@ -40,56 +39,28 @@ type Translator interface {
 
 var (
 	_ Translator = new(translatorInstance)
-	_ Translator = new(translatorFactory)
 )
+
+// translatorInstance is the implementation for a Translator used during Gloo translation
+type translatorInstance struct {
+	pluginRegistry            plugins.PluginRegistry
+	settings                  *v1.Settings
+	hasher                    func(resources []envoycache.Resource) uint64
+	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
+}
 
 func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
 	pluginRegistry plugins.PluginRegistry,
 	hasher func(resources []envoycache.Resource) uint64,
-) Translator {
-	return &translatorFactory{
+) *translatorInstance {
+	return &translatorInstance{
 		pluginRegistry:            pluginRegistry,
 		settings:                  settings,
-		sslConfigTranslator:       sslConfigTranslator,
 		hasher:                    hasher,
 		listenerTranslatorFactory: NewListenerSubsystemTranslatorFactory(pluginRegistry, sslConfigTranslator),
 	}
-}
-
-type translatorFactory struct {
-	pluginRegistry            plugins.PluginRegistry
-	settings                  *v1.Settings
-	sslConfigTranslator       utils.SslConfigTranslator
-	hasher                    func(resources []envoycache.Resource) uint64
-	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
-}
-
-func (t *translatorFactory) Translate(
-	params plugins.Params,
-	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
-
-	// TODO - can we just remove this since a factory and instance are the same?
-	instance := &translatorInstance{
-		pluginRegistry:            t.pluginRegistry,
-		settings:                  t.settings,
-		hasher:                    t.hasher,
-		listenerTranslatorFactory: t.listenerTranslatorFactory,
-	}
-
-	return instance.Translate(params, proxy)
-}
-
-// a translator instance performs one
-type translatorInstance struct {
-	pluginRegistry            plugins.PluginRegistry
-	settings                  *v1.Settings
-	sslConfigTranslator       utils.SslConfigTranslator
-	hasher                    func(resources []envoycache.Resource) uint64
-	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
-	gwTranslator              gwtranslator.Translator
 }
 
 func (t *translatorInstance) Translate(
@@ -137,7 +108,6 @@ func (t *translatorInstance) Translate(
 		reports.AddError(proxy, err)
 	}
 
-	// TODO: add a settings flag to allow accepting proxy on warnings
 	if warnings := validation.GetProxyWarning(proxyReport); len(warnings) > 0 {
 		for _, warning := range warnings {
 			reports.AddWarning(proxy, warning)

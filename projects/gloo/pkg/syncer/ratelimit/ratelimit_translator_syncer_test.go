@@ -23,45 +23,35 @@ import (
 var _ = Describe("RatelimitTranslatorSyncer", func() {
 
 	var (
-		ctx         context.Context
-		cancel      context.CancelFunc
-		proxy       *gloov1.Proxy
-		params      syncer.TranslatorSyncerExtensionParams
-		translator  syncer.TranslatorSyncerExtension
-		apiSnapshot *gloov1snap.ApiSnapshot
-		snapCache   *syncer.MockXdsCache
-		settings    *gloov1.Settings
-
-		reports reporter.ResourceReports
+		ctx        context.Context
+		cancel     context.CancelFunc
+		proxy      *gloov1.Proxy
+		translator syncer.TranslatorSyncerExtension
 	)
 
 	Context("config with enterprise ratelimit feature is set on listener", func() {
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
-			translator = NewTranslatorSyncerExtension(ctx, params)
-		})
-
-		JustBeforeEach(func() {
-			settings = &gloov1.Settings{}
-
-			apiSnapshot = &gloov1snap.ApiSnapshot{
-				Proxies: []*gloov1.Proxy{proxy},
-			}
-
-			reports = make(reporter.ResourceReports)
+			translator = NewTranslatorSyncerExtension(ctx, syncer.TranslatorSyncerExtensionParams{})
 		})
 
 		AfterEach(func() {
 			cancel()
 		})
 
-		ExpectReportsContainEnterpriseOnlyError := func(reports reporter.ResourceReports, name string) {
+		ExpectSyncGeneratesEnterpriseOnlyError := func(errorName string) {
+			apiSnapshot := &gloov1snap.ApiSnapshot{
+				Proxies: []*gloov1.Proxy{proxy},
+			}
+			reports := make(reporter.ResourceReports)
+			translator.Sync(ctx, apiSnapshot, &gloov1.Settings{}, &syncer.MockXdsCache{}, reports)
+
+			// validate the reports contain appropriate error
+			expectedErrorMessage := fmt.Sprintf("The Gloo Advanced Rate limit API feature '%s' is enterprise-only, please upgrade or use the Envoy rate-limit API instead", errorName)
 			err := reports.ValidateStrict()
 			multiErr, ok := err.(*multierror.Error)
 			ExpectWithOffset(1, ok).To(BeTrue())
-
-			expectedErrorMessage := fmt.Sprintf("The Gloo Advanced Rate limit API feature '%s' is enterprise-only, please upgrade or use the Envoy rate-limit API instead", name)
 			ExpectWithOffset(1, multiErr.WrappedErrors()).To(ContainElement(testutils.HaveInErrorChain(eris.New(expectedErrorMessage))))
 		}
 
@@ -97,9 +87,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise ratelimitBasic config is set", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-				ExpectReportsContainEnterpriseOnlyError(reports, "ratelimitBasic")
+				ExpectSyncGeneratesEnterpriseOnlyError("ratelimitBasic")
 			})
 		})
 
@@ -143,9 +131,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise ratelimitBasic config is set", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-				ExpectReportsContainEnterpriseOnlyError(reports, "ratelimitBasic")
+				ExpectSyncGeneratesEnterpriseOnlyError("ratelimitBasic")
 			})
 		})
 
@@ -190,9 +176,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise RateLimitConfig config is set", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-				ExpectReportsContainEnterpriseOnlyError(reports, "RateLimitConfig")
+				ExpectSyncGeneratesEnterpriseOnlyError("RateLimitConfig")
 			})
 		})
 
@@ -231,9 +215,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise setActions config is set", func() {
-				translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-				ExpectReportsContainEnterpriseOnlyError(reports, "setActions")
+				ExpectSyncGeneratesEnterpriseOnlyError("setActions")
 			})
 		})
 
@@ -275,9 +257,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-					ExpectReportsContainEnterpriseOnlyError(reports, "RateLimitEarly")
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitEarly")
 				})
 			})
 
@@ -318,9 +298,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-					ExpectReportsContainEnterpriseOnlyError(reports, "RateLimitEarly")
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitEarly")
 				})
 			})
 
@@ -361,9 +339,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-					ExpectReportsContainEnterpriseOnlyError(reports, "RateLimitEarly")
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitEarly")
 				})
 			})
 
@@ -405,9 +381,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-					ExpectReportsContainEnterpriseOnlyError(reports, "RateLimitEarly")
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitEarly")
 				})
 			})
 
@@ -447,9 +421,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-					ExpectReportsContainEnterpriseOnlyError(reports, "RateLimitRegular")
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitRegular")
 				})
 			})
 
@@ -490,9 +462,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-					ExpectReportsContainEnterpriseOnlyError(reports, "RateLimitRegular")
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitRegular")
 				})
 			})
 
@@ -533,9 +503,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-					ExpectReportsContainEnterpriseOnlyError(reports, "RateLimitRegular")
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitRegular")
 				})
 			})
 
@@ -577,9 +545,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					translator.Sync(ctx, apiSnapshot, settings, snapCache, reports)
-
-					ExpectReportsContainEnterpriseOnlyError(reports, "RateLimitRegular")
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitRegular")
 				})
 			})
 
