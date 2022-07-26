@@ -11,3 +11,5 @@ changelog:
     dependencyOwner: linux
     dependencyRepo: alpine
     dependencyTag: 3.15.4
+  - type: NON_USER_FACING
+    description: Bump cloudbuild's e2e-go-mod-ginkgo to 0.4.15 to user a newer version of go.
