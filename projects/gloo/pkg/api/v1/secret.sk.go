@@ -14,6 +14,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.Resource = new(Secret)
+)
+
 func NewSecret(namespace, name string) *Secret {
 	secret := &Secret{}
 	secret.SetMetadata(&core.Metadata{

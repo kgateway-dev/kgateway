@@ -337,7 +337,6 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 			Opts: &securityscanutils.SecurityScanOpts{
 				OutputDir: outputDir,
 				ImagesPerVersion: map[string][]string{
-					"<=1.6.x":  EnterpriseImages(true),
 					">=v1.7.x": EnterpriseImages(false),
 				},
 				VersionConstraint:                      versionConstraint,

@@ -47,14 +47,14 @@ require (
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.0
-	github.com/solo-io/go-utils v0.21.27
+	github.com/solo-io/go-utils v0.22.0
 	github.com/solo-io/k8s-utils v0.1.0
 	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.21.6
 	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
-	github.com/solo-io/solo-kit v0.30.1
+	github.com/solo-io/solo-kit v0.30.2
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5

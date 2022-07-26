@@ -15,6 +15,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.InputResource = new(Upstream)
+)
+
 func NewUpstream(namespace, name string) *Upstream {
 	upstream := &Upstream{}
 	upstream.SetMetadata(&core.Metadata{
