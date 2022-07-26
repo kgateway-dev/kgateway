@@ -732,7 +732,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		allowWarnings = gwOpts.Validation.AllowWarnings
 	}
 
-	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistry, translator.MustEnvoyCacheResourcesListToFnvHash)
+	resourceHasher := translator.MustEnvoyCacheResourcesListToFnvHash
+
+	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistry, resourceHasher)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
@@ -766,17 +768,18 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		ignoreProxyValidationFailure,
 		allowWarnings,
 	))
-	params := syncer.TranslatorSyncerExtensionParams{
+
+	// Set up the syncer extensions
+	syncerExtensionParams := syncer.TranslatorSyncerExtensionParams{
 		RateLimitServiceSettings: ratelimit.ServiceSettings{
 			Descriptors:    opts.Settings.GetRatelimit().GetDescriptors(),
 			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),
 		},
+		Hasher: resourceHasher,
 	}
-
-	// Set up the syncer extensions
 	var syncerExtensions []syncer.TranslatorSyncerExtension
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
-		syncerExtension := syncerExtensionFactory(watchOpts.Ctx, params)
+		syncerExtension := syncerExtensionFactory(watchOpts.Ctx, syncerExtensionParams)
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
