@@ -57,9 +57,8 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	return url.Parse(fmt.Sprintf("tcp://%v:%v", staticSpec.Static.GetHosts()[0].GetAddr(), staticSpec.Static.GetHosts()[0].GetPort()))
 }
 
-func (p *plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) {
 	p.settings = params.Settings
-	return nil
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {

@@ -284,8 +284,7 @@ func getPluginContext(globalSettings bool, authOnVirtualHost, authOnRoute, authO
 		initParams.Settings.Extauth = settings
 	}
 
-	err := plugin.Init(initParams)
-	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	plugin.Init(initParams)
 
 	return &pluginContext{
 		PluginInstance:      plugin,

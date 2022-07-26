@@ -39,9 +39,8 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) {
 	p.extAuthzConfigGenerator = getOpenSourceConfigGenerator(params.Settings.GetExtauth(), params.Settings.GetNamedExtauth())
-	return nil
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
