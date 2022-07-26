@@ -33,10 +33,10 @@ jobs:
 
           echo "After clearing disk space:"
           df -h
-      - name: Install Trivy (0.19.2)
+      - name: Install Trivy (0.30.3)
         run: |
-          wget https://github.com/aquasecurity/trivy/releases/download/v0.19.2/trivy_0.19.2_Linux-64bit.deb
-          sudo dpkg -i trivy_0.19.2_Linux-64bit.deb
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.30.3/trivy_0.30.3_Linux-64bit.deb
+          sudo dpkg -i trivy_0.30.3_Linux-64bit.deb
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
