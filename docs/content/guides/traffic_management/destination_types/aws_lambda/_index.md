@@ -12,7 +12,7 @@ Gloo Edge enables you to route traffic requests directly to your AWS Lambda func
 
 To use Gloo Edge in place of your AWS ALB or AWS API Gateway, you configure the `unwrapAsAlb` setting or the `unwrapAsApiGateway` setting (Gloo Edge Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
 
-Gloo Edge looks for a JSON response from the Lambda upstream that contains the following specific fields:
+Note that to use the `unwrapAsApiGateway` setting, your Lambda function must be capable of returning a response in the form that is required by an AWS API Gateway. Gloo Edge looks for a JSON response from the Lambda upstream that contains the following specific fields:
 - `body`: String containing the desired response body.
 - `headers`: JSON object containing a mapping from the desired response header keys to the desired response header values.
 - `multiValueHeaders`: JSON object containing a mapping from the desired response header keys to a list of the desired response header values to be mapped to that header key.
@@ -21,20 +21,14 @@ Gloo Edge looks for a JSON response from the Lambda upstream that contains the f
 
 For more information, see the AWS Lambda documentation on [configuring Lambda functions as targets](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html) and [how AWS API Gateways process Lambda responses](https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway.html#apigateway-types-transforms).
 
-The following sections walk you through these general steps to set up routing to your Lambda function:
-1. Create an AWS Lambda function that returns a response in the form required by the AWS API Gateway.
-2. Create a secret containing AWS account credentials that enable access to the Lambda function.
-3. Create an Upstream resource that references the Lambda secret.
-4. Create a VirtualService resource containing a route action that points to the AWS Lambda upstream.
-
 ## Before you begin
 
-* [Install Gloo Edge version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
 * The following steps require you to use the access key and secret key for your AWS account. Ensure that the credentials for your AWS account have appropriate permissions to interact with AWS Lambda. For more information, see the [AWS credentials documentation](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html).
+* To use the `unwrapAsApiGateway` setting, [install Gloo Edge Enterprise version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing Enterprise installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
 
 ## Step 1: Create an AWS Lambda
 
-Create an AWS Lambda function that returns a response in the form required by the AWS API Gateway.
+Create an AWS Lambda function to test with Gloo Edge routing.
 
 1. Log into the AWS console and navigate to the Lambda page.
    
