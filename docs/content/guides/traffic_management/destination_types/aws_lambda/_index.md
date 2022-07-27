@@ -8,7 +8,7 @@ Route traffic requests directly to an [Amazon Web Services (AWS) Lambda function
 
 ## About
 
-Gloo Edge enables you to route traffic requests directly to your AWS Lambda functions. To also use Gloo Edge in place of your AWS ALB or AWS API Gateway, you can configure the `unwrapAsAlb` setting or the `unwrapAsApiGateway` setting (Gloo Edge Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
+Gloo Edge enables you to route traffic requests directly to your AWS Lambda functions. To also use Gloo Edge in place of your AWS ALB or AWS API Gateway, you can configure the `unwrapAsAlb` or `unwrapAsApiGateway` setting (Gloo Edge Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
 
 For more information, see the AWS Lambda documentation on [configuring Lambda functions as targets](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html).
 
@@ -20,7 +20,7 @@ For more information, see the AWS Lambda documentation on [configuring Lambda fu
 
 Create an AWS Lambda function to test with Gloo Edge routing.
 
-1. Log into the AWS console and navigate to the Lambda page.
+1. Log in to the AWS console and navigate to the Lambda page.
    
 2. Note your region, which is used when configuring AWS credentials in subsequent steps.
 
@@ -112,7 +112,7 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
    EOF
    ```
 
-4. Confirm that Gloo Edge is correctly routing requests to Lambda by sending a simple curl request.
+4. Confirm that Gloo Edge is correctly routing requests to Lambda by sending a curl request.
    ```sh
    curl $(glooctl proxy url)/ -d '{"key1":"value1", "key2":"value2"}' -X POST
    ```
@@ -184,7 +184,7 @@ Unwrap the JSON response from the function in the same way as an AWS API Gateway
 Note that to use the `unwrapAsApiGateway` setting, your Lambda function must be capable of returning a response in the form that is required by an AWS API Gateway. Gloo Edge looks for a JSON response from the Lambda upstream that contains the following specific fields:
 - `body`: String containing the desired response body.
 - `headers`: JSON object containing a mapping from the desired response header keys to the desired response header values.
-- `multiValueHeaders`: JSON object containing a mapping from the desired response header keys to a list of the desired response header values to be mapped to that header key.
+- `multiValueHeaders`: JSON object containing a mapping from the desired response header keys to a list of the desired response header values that you want to map to a header key.
 - `statusCode`: Integer representing the desired HTTP response status code (default `200`).
 - `isBase64Encoded`: Boolean for whether to decode the provided body string as base64 (default `false`).
 
