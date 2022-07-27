@@ -22,7 +22,7 @@ Create an AWS Lambda function to test with Gloo Edge routing.
 
 1. Log in to the AWS console and navigate to the Lambda page.
    
-2. Note your region, which is used when configuring AWS credentials in subsequent steps.
+2. Note your region, which is used when configuring the AWS upstream in subsequent steps.
 
 3. Click the **Create Function** button.
 
@@ -54,7 +54,7 @@ Create a Kubernetes secret that contains your AWS access key and secret key. Glo
 
 Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to the Lambda function.
 
-1. Create an upstream resource that references the Lambda secret. Update the region as needed.
+1. Create an upstream resource that references the Lambda secret. Update the region with your Lamda location, such as `us-east-1`.
    {{< tabs >}}
    {{< tab name="kubectl" codelang="shell">}}
    kubectl apply -f - <<EOF
@@ -65,7 +65,7 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
      namespace: gloo-system
    spec:
      aws:
-       region: us-east-1
+       region: <region>
        secretRef:
          name: aws-creds
          namespace: gloo-system
@@ -75,7 +75,7 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
    glooctl create upstream aws \
        --name 'aws-upstream' \
        --namespace 'gloo-system' \
-       --aws-region 'us-east-1' \
+       --aws-region '<region>' \
        --aws-secret-name 'aws-creds' \
        --aws-secret-namespace 'gloo-system'
    {{< /tab >}}
@@ -86,7 +86,7 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
    kubectl get upstream -n gloo-system aws-upstream -o yaml
    ```
 
-3. Create a simple VirtualService resource containing a `routeAction` that points to the AWS Lambda upstream. 
+3. Create a VirtualService resource containing a `routeAction` that points to the AWS Lambda upstream. Note that this resource directs Gloo Edge to route requests directly to the Lambda upstram, but does not manipulate the JSON response.
    ```yaml
    kubectl apply -f - <<EOF
    apiVersion: gateway.solo.io/v1
