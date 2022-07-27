@@ -1386,8 +1386,8 @@ github.com/solo-io/go-utils v0.19.0/go.mod h1:If8NiehXROCFU65PGeDTrrZCNA5gJXvbcV
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
 github.com/solo-io/go-utils v0.21.4/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
 github.com/solo-io/go-utils v0.21.6/go.mod h1:N6jeYnrAKq5uGv6m/hBkJ+g6i3AwgkyfVoaDlQ/z64o=
-github.com/solo-io/go-utils v0.21.25 h1:ASgOS/Hp2sfBkzXdA2qpN14b4K39UHiwtlAcVYTN0uI=
-github.com/solo-io/go-utils v0.21.25/go.mod h1:0gLjjgdtI5diEgdMvtGtceAdL/5z4C0NcotRqQdhlu0=
+github.com/solo-io/go-utils v0.21.28 h1:R4pYUX6x36ZDl5y71Bi93uCKfUnsqF8YiAoVpw3V76c=
+github.com/solo-io/go-utils v0.21.28/go.mod h1:0gLjjgdtI5diEgdMvtGtceAdL/5z4C0NcotRqQdhlu0=
 github.com/solo-io/k8s-utils v0.0.1/go.mod h1:53N9+9Gl2MwqIZJ7/ocA9gKvWt+6z7MPD2qKQix7oFE=
 github.com/solo-io/k8s-utils v0.0.8/go.mod h1:Cg2ymG0xhLdyS3NJ0D98yxiSWjAKYPNopzPTwVDl7e4=
 github.com/solo-io/k8s-utils v0.1.0 h1:podyELsbIkkdmu5xx6+y1dd6OUIt8Tv2XqAttUPI1VI=
@@ -1403,8 +1403,8 @@ github.com/solo-io/skv2 v0.21.6/go.mod h1:8jNcMWuAkBxdGhlRFMSgsK94q/jZGPEas8VHTr
 github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c h1:4/yTroUmyUJonldE5EyC3AinNG4KVLgG0FVMrI2SQ04=
 github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c/go.mod h1:4HQsQO4Cy/4V7ZZxWncvnMvIq7pYnb66jAT5hvDJBgQ=
 github.com/solo-io/solo-kit v0.23.0/go.mod h1:uCOi8RQ3MetHXsRFvVKPzafYySUvFuPxB+gvo7ScRR8=
-github.com/solo-io/solo-kit v0.30.0 h1:O5cqCLIQdWyiXZ2GGue/LV5IVnfUyMntEkZaMqqcqdY=
-github.com/solo-io/solo-kit v0.30.0/go.mod h1:F3Jd/1+2XWfMObGRn5o3FzbQPdU5VtEZHA9wJDNudeI=
+github.com/solo-io/solo-kit v0.30.2 h1:VWDsu9/w8tZ2siQ4P4ENmdBuCEUTNrj13DRpVdwV4hg=
+github.com/solo-io/solo-kit v0.30.2/go.mod h1:F3Jd/1+2XWfMObGRn5o3FzbQPdU5VtEZHA9wJDNudeI=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=

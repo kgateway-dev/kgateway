@@ -167,6 +167,8 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 	var initialSecretList SecretList
 
 	currentSnapshot := DiscoverySnapshot{}
+	upstreamsByNamespace := make(map[string]UpstreamList)
+	secretsByNamespace := make(map[string]SecretList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Upstream */
@@ -176,6 +178,7 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 				return nil, nil, errors.Wrapf(err, "initial Upstream list")
 			}
 			initialUpstreamList = append(initialUpstreamList, upstreams...)
+			upstreamsByNamespace[namespace] = upstreams
 		}
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
@@ -194,6 +197,7 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 				return nil, nil, errors.Wrapf(err, "initial Secret list")
 			}
 			initialSecretList = append(initialSecretList, secrets...)
+			secretsByNamespace[namespace] = secrets
 		}
 		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
 		if err != nil {
@@ -284,8 +288,7 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 				stats.Record(ctx, mDiscoverySnapshotMissed.M(1))
 			}
 		}
-		upstreamsByNamespace := make(map[string]UpstreamList)
-		secretsByNamespace := make(map[string]SecretList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,

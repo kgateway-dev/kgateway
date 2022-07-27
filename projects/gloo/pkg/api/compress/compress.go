@@ -8,6 +8,8 @@ import (
 	"io"
 	"strconv"
 
+	"github.com/solo-io/solo-kit/pkg/utils/specutils"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -144,7 +146,7 @@ func UnmarshalSpec(in resources.Resource, spec v1.Spec) error {
 		// if we have a compressed spec, make sure the resource is marked for compression
 		SetShouldCompressed(in)
 	}
-	if err := protoutils.UnmarshalMap(spec, in); err != nil {
+	if err := specutils.UnmarshalSpecMapToResource(spec, in); err != nil {
 		return eris.Wrapf(err, "reading crd spec on resource %v in namespace %v into %T", in.GetMetadata().GetName(), in.GetMetadata().GetNamespace(), in)
 	}
 	return nil
