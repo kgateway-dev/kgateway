@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"go.uber.org/zap/zapcore"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	"go.uber.org/zap/zapcore"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/go-utils/testutils/goimpl"
