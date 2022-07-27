@@ -1,6 +1,8 @@
-package syncer
+package runner
 
 import (
+	"github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
@@ -12,12 +14,11 @@ import (
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 )
 
-func RunUDS(opts bootstrap.Opts) error {
+func StartUDS(opts runner.StartOpts) error {
 	udsEnabled := syncerutils.GetUdsEnabled(opts.Settings)
 	if !udsEnabled {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Upstream discovery "+
@@ -94,7 +95,7 @@ func RunUDS(opts bootstrap.Opts) error {
 	}
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, udsErrs, "event_loop.uds")
 
-	sync := NewDiscoverySyncer(uds, watchOpts.RefreshRate)
+	sync := syncer.NewDiscoverySyncer(uds, watchOpts.RefreshRate)
 	eventLoop := v1.NewDiscoveryEventLoop(emitter, sync)
 
 	eventLoopErrs, err := eventLoop.Run(opts.WatchNamespaces, watchOpts)

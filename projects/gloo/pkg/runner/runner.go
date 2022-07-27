@@ -5,8 +5,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
-
 	"github.com/solo-io/gloo/pkg/version"
 )
 
@@ -15,7 +13,7 @@ func Run(ctx context.Context) error {
 		Ctx:        ctx,
 		LoggerName: "gloo",
 		Version:    version.Version,
-		SetupFunc:  setup.NewSetupFunc(),
+		SetupFunc:  NewSetupFunc(),
 	}
 	return bootstrap.Run(runnerOptions)
 }

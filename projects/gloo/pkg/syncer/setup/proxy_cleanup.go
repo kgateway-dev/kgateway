@@ -41,7 +41,7 @@ func deleteUnusedProxies(ctx context.Context, namespace string, proxyClient v1.P
 	}
 	return errors.New(allErrs)
 }
-func doProxyCleanup(ctx context.Context, params bootstrap.ConfigFactoryParams, settings *v1.Settings, namespace string) error {
+func DoProxyCleanup(ctx context.Context, params bootstrap.ConfigFactoryParams, settings *v1.Settings, namespace string) error {
 	//Do not clean up proxies if all the resources are held in memory or if proxies are being persisted
 	if settings.GetConfigSource() == nil || settings.GetGateway().GetPersistProxySpec().GetValue() {
 		return nil

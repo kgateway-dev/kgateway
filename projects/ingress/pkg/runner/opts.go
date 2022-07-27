@@ -5,7 +5,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 )
 
-type Opts struct {
+type StartOpts struct {
 	ClusterIngressProxyAddress  string
 	KnativeExternalProxyAddress string
 	KnativeInternalProxyAddress string

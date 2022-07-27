@@ -3,12 +3,12 @@ package registry
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
@@ -58,9 +58,9 @@ var (
 
 // A PluginRegistryFactory generates a PluginRegistry
 // It is executed each translation loop, ensuring we have up to date configuration of all plugins
-type PluginRegistryFactory func(ctx context.Context, opts bootstrap.Opts) plugins.PluginRegistry
+type PluginRegistryFactory func(ctx context.Context, opts runner.StartOpts) plugins.PluginRegistry
 
-func Plugins(opts bootstrap.Opts) []plugins.Plugin {
+func Plugins(opts runner.StartOpts) []plugins.Plugin {
 	var glooPlugins []plugins.Plugin
 
 	ec2Plugin, err := ec2.NewPlugin(opts.WatchOpts.Ctx, opts.Secrets)
@@ -119,7 +119,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 }
 
 func GetPluginRegistryFactory() PluginRegistryFactory {
-	return func(ctx context.Context, opts bootstrap.Opts) plugins.PluginRegistry {
+	return func(ctx context.Context, opts runner.StartOpts) plugins.PluginRegistry {
 		availablePlugins := Plugins(opts)
 
 		// To improve the UX, load a plugin that warns users if they are attempting to use enterprise configuration

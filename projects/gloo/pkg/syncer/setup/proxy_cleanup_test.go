@@ -80,7 +80,7 @@ var _ = Describe("Clean up proxies", func() {
 			nil,
 			nil,
 		)
-		err := doProxyCleanup(ctx, params, settings, defaults.GlooSystem)
+		err := DoProxyCleanup(ctx, params, settings, defaults.GlooSystem)
 		Expect(err).NotTo(HaveOccurred())
 		remainingProxies, _ := proxyClient.List(defaults.GlooSystem, clients.ListOpts{})
 		Expect(len(remainingProxies)).To(Equal(1))

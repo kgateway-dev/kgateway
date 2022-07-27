@@ -1,8 +1,9 @@
-package setup
+package runner
 
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"net"
 	"net/http"
 	"os"
@@ -82,27 +83,25 @@ var AcceptAllResourcesByDefault = true
 
 var AllowWarnings = true
 
-type RunFunc func(opts gloobootstrap.Opts) error
-
 func NewSetupFunc() bootstrap.SetupFunc {
-	return NewSetupFuncWithRunAndExtensions(RunGloo, nil)
+	return NewSetupFuncWithRunAndExtensions(StartGloo, nil)
 }
 
 // used outside of this repo
 //noinspection GoUnusedExportedFunction
-func NewSetupFuncWithExtensions(extensions Extensions) bootstrap.SetupFunc {
-	runWithExtensions := func(opts gloobootstrap.Opts) error {
-		return RunGlooWithExtensions(opts, extensions)
+func NewSetupFuncWithExtensions(extensions StartExtensions) bootstrap.SetupFunc {
+	runWithExtensions := func(opts StartOpts) error {
+		return StartGlooWithExtensions(opts, extensions)
 	}
 	return NewSetupFuncWithRunAndExtensions(runWithExtensions, &extensions)
 }
 
 // for use by UDS, FDS, other v1.SetupSyncers
-func NewSetupFuncWithRun(runFunc RunFunc) bootstrap.SetupFunc {
+func NewSetupFuncWithRun(runFunc StartFunc) bootstrap.SetupFunc {
 	return NewSetupFuncWithRunAndExtensions(runFunc, nil)
 }
 
-func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) bootstrap.SetupFunc {
+func NewSetupFuncWithRunAndExtensions(runFunc StartFunc, extensions *StartExtensions) bootstrap.SetupFunc {
 	s := &setupSyncer{
 		extensions: extensions,
 		makeGrpcServer: func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server {
@@ -134,25 +133,25 @@ type grpcServer struct {
 }
 
 type setupSyncer struct {
-	extensions               *Extensions
-	runFunc                  RunFunc
+	extensions               *StartExtensions
+	runFunc                  StartFunc
 	makeGrpcServer           func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server
 	previousXdsServer        grpcServer
 	previousValidationServer grpcServer
 	previousProxyDebugServer grpcServer
-	controlPlane             gloobootstrap.ControlPlane
-	validationServer         gloobootstrap.ValidationServer
-	proxyDebugServer         gloobootstrap.ProxyDebugServer
+	controlPlane             ControlPlane
+	validationServer         ValidationServer
+	proxyDebugServer         ProxyDebugServer
 	callbacks                xdsserver.Callbacks
 }
 
-func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, callbacks xdsserver.Callbacks, start bool) gloobootstrap.ControlPlane {
+func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, callbacks xdsserver.Callbacks, start bool) ControlPlane {
 	snapshotCache := xds.NewAdsSnapshotCache(ctx)
 	xdsServer := server.NewServer(ctx, snapshotCache, callbacks)
 	reflection.Register(grpcServer)
 
-	return gloobootstrap.ControlPlane{
-		GrpcService: &gloobootstrap.GrpcService{
+	return ControlPlane{
+		GrpcService: &GrpcService{
 			GrpcServer:      grpcServer,
 			StartGrpcServer: start,
 			BindAddr:        bindAddr,
@@ -163,9 +162,9 @@ func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.
 	}
 }
 
-func NewValidationServer(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, start bool) gloobootstrap.ValidationServer {
-	return gloobootstrap.ValidationServer{
-		GrpcService: &gloobootstrap.GrpcService{
+func NewValidationServer(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, start bool) ValidationServer {
+	return ValidationServer{
+		GrpcService: &GrpcService{
 			GrpcServer:      grpcServer,
 			StartGrpcServer: start,
 			BindAddr:        bindAddr,
@@ -175,9 +174,9 @@ func NewValidationServer(ctx context.Context, grpcServer *grpc.Server, bindAddr 
 	}
 }
 
-func NewProxyDebugServer(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, start bool) gloobootstrap.ProxyDebugServer {
-	return gloobootstrap.ProxyDebugServer{
-		GrpcService: &gloobootstrap.GrpcService{
+func NewProxyDebugServer(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, start bool) ProxyDebugServer {
+	return ProxyDebugServer{
+		GrpcService: &GrpcService{
 			Ctx:             ctx,
 			BindAddr:        bindAddr,
 			GrpcServer:      grpcServer,
@@ -259,9 +258,9 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		maxGrpcRecvSize = int(maxGrpcMsgSize.GetValue())
 	}
 
-	emptyControlPlane := gloobootstrap.ControlPlane{}
-	emptyValidationServer := gloobootstrap.ValidationServer{}
-	emptyProxyDebugServer := gloobootstrap.ProxyDebugServer{}
+	emptyControlPlane := ControlPlane{}
+	emptyValidationServer := ValidationServer{}
+	emptyProxyDebugServer := ProxyDebugServer{}
 
 	// check if we need to restart the control plane
 	if xdsAddr != s.previousXdsServer.addr {
@@ -396,15 +395,15 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	return err
 }
 
-type Extensions struct {
+type StartExtensions struct {
 	PluginRegistryFactory registry.PluginRegistryFactory
 	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
 	XdsCallbacks          xdsserver.Callbacks
 	ApiEmitterChannel     chan struct{}
 }
 
-func RunGloo(opts gloobootstrap.Opts) error {
-	glooExtensions := Extensions{
+func StartGloo(opts StartOpts) error {
+	glooExtensions := StartExtensions{
 		PluginRegistryFactory: registry.GetPluginRegistryFactory(),
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
@@ -414,19 +413,19 @@ func RunGloo(opts gloobootstrap.Opts) error {
 		XdsCallbacks:      nil,
 	}
 
-	return RunGlooWithExtensions(opts, glooExtensions)
+	return StartGlooWithExtensions(opts, glooExtensions)
 }
 
-func RunGlooWithExtensions(opts gloobootstrap.Opts, extensions Extensions) error {
-	// Validate Extensions
+func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
+	// Validate StartExtensions
 	if extensions.ApiEmitterChannel == nil {
-		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")
+		return errors.Errorf("StartExtensions.ApiEmitterChannel must be defined, found nil")
 	}
 	if extensions.PluginRegistryFactory == nil {
-		return errors.Errorf("Extensions.PluginRegistryFactory must be defined, found nil")
+		return errors.Errorf("StartExtensions.PluginRegistryFactory must be defined, found nil")
 	}
 	if extensions.SyncerExtensions == nil {
-		return errors.Errorf("Extensions.SyncerExtensions must be defined, found nil")
+		return errors.Errorf("StartExtensions.SyncerExtensions must be defined, found nil")
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()
@@ -906,7 +905,7 @@ func RunGlooWithExtensions(opts gloobootstrap.Opts, extensions Extensions) error
 	return nil
 }
 
-func startRestXdsServer(opts gloobootstrap.Opts) {
+func startRestXdsServer(opts StartOpts) {
 	restClient := server.NewHTTPGateway(
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx),
 		opts.ControlPlane.XDSServer,
@@ -935,7 +934,7 @@ func startRestXdsServer(opts gloobootstrap.Opts) {
 		}
 	}()
 }
-func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings, writeNamespace string) (gloobootstrap.Opts, error) {
+func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings, writeNamespace string) (StartOpts, error) {
 
 	var (
 		cfg           *rest.Config
@@ -952,7 +951,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 
 	upstreamFactory, err := gloobootstrap.ConfigFactoryForSettings(params, v1.UpstreamCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, errors.Wrapf(err, "creating config source from settings")
+		return StartOpts{}, errors.Wrapf(err, "creating config source from settings")
 	}
 
 	kubeServiceClient, err := gloobootstrap.KubeServiceClientForSettings(
@@ -964,19 +963,19 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		&kubeCoreCache,
 	)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	var proxyFactory factory.ResourceClientFactory
 	// Delete proxies that may have been left from prior to an upgrade or from previously having set persistProxySpec
 	// Ignore errors because gloo will still work with stray proxies.
 	proxyCleanup := func() {
-		doProxyCleanup(ctx, params, settings, writeNamespace)
+		setup.DoProxyCleanup(ctx, params, settings, writeNamespace)
 	}
 	if settings.GetGateway().GetPersistProxySpec().GetValue() {
 		proxyFactory, err = gloobootstrap.ConfigFactoryForSettings(params, v1.ProxyCrd)
 		if err != nil {
-			return gloobootstrap.Opts{}, err
+			return StartOpts{}, err
 		}
 	} else {
 		proxyFactory = &factory.MemoryResourceClientFactory{
@@ -995,12 +994,12 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		v1.SecretCrd.Plural,
 	)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	upstreamGroupFactory, err := gloobootstrap.ConfigFactoryForSettings(params, v1.UpstreamGroupCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	artifactFactory, err := gloobootstrap.ArtifactFactoryForSettings(
@@ -1014,52 +1013,52 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		v1.ArtifactCrd.Plural,
 	)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	authConfigFactory, err := gloobootstrap.ConfigFactoryForSettings(params, extauth.AuthConfigCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	rateLimitConfigFactory, err := gloobootstrap.ConfigFactoryForSettings(params, rlv1alpha1.RateLimitConfigCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	graphqlApiFactory, err := gloobootstrap.ConfigFactoryForSettings(params, v1beta1.GraphQLApiCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	virtualServiceFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.VirtualServiceCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	routeTableFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.RouteTableCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	virtualHostOptionFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.VirtualHostOptionCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	routeOptionFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.RouteOptionCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	gatewayFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.GatewayCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 
 	matchableHttpGatewayFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.MatchableHttpGatewayCrd)
 	if err != nil {
-		return gloobootstrap.Opts{}, err
+		return StartOpts{}, err
 	}
 	var validation *gwtranslator.ValidationOpts
 	validationCfg := settings.GetGateway().GetValidation()
@@ -1107,7 +1106,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	} else {
 		// This will stop users from setting failurePolicy=fail and then removing the webhook configuration
 		if validationMustStart := os.Getenv("VALIDATION_MUST_START"); validationMustStart != "" && validationMustStart != "false" && gatewayMode {
-			return gloobootstrap.Opts{}, errors.Errorf("A validation webhook was configured, but no validation configuration was provided in the settings. "+
+			return StartOpts{}, errors.Errorf("A validation webhook was configured, but no validation configuration was provided in the settings. "+
 				"Ensure the v1.Settings %v contains the spec.gateway.validation config."+
 				"If you have removed the webhook configuration from K8s since installing and want to disable validation, "+
 				"set the environment variable VALIDATION_MUST_START=false",
@@ -1115,7 +1114,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		}
 	}
 	readGatewaysFromAllNamespaces := settings.GetGateway().GetReadGatewaysFromAllNamespaces()
-	return gloobootstrap.Opts{
+	return StartOpts{
 		Upstreams:                    upstreamFactory,
 		KubeServiceClient:            kubeServiceClient,
 		Proxies:                      proxyFactory,

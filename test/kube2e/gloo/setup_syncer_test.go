@@ -2,14 +2,13 @@ package gloo_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"net"
 	"os"
 	"os/exec"
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 
 	"github.com/solo-io/gloo/pkg/utils/runutils"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -21,7 +20,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	k2e "github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -65,7 +63,7 @@ var _ = Describe("SetupSyncer", func() {
 	// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
 	// we ensure that only 1 SetupFunc is ever called at a time
 	newSynchronizedSetupFunc := func() runutils.SetupFunc {
-		setupFunc := NewSetupFunc()
+		setupFunc := runner.NewSetupFunc()
 
 		var synchronizedSetupFunc runutils.SetupFunc
 		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
@@ -148,7 +146,7 @@ var _ = Describe("SetupSyncer", func() {
 			})
 		})
 
-		Context("Extensions tests", func() {
+		Context("StartExtensions tests", func() {
 
 			var (
 				plugin1 = &dummyPlugin{}
@@ -156,8 +154,8 @@ var _ = Describe("SetupSyncer", func() {
 			)
 
 			It("should return plugins", func() {
-				extensions := Extensions{
-					PluginRegistryFactory: func(ctx context.Context, opts bootstrap.Opts) plugins.PluginRegistry {
+				extensions := runner.StartExtensions{
+					PluginRegistryFactory: func(ctx context.Context, opts runner.StartOpts) plugins.PluginRegistry {
 						return registry.NewPluginRegistry([]plugins.Plugin{
 							plugin1,
 							plugin2,
@@ -165,7 +163,7 @@ var _ = Describe("SetupSyncer", func() {
 					},
 				}
 
-				pluginRegistry := extensions.PluginRegistryFactory(context.TODO(), bootstrap.Opts{})
+				pluginRegistry := extensions.PluginRegistryFactory(context.TODO(), runner.StartOpts{})
 				plugins := pluginRegistry.GetPlugins()
 				Expect(plugins).To(ContainElement(plugin1))
 				Expect(plugins).To(ContainElement(plugin2))

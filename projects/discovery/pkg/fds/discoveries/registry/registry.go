@@ -6,8 +6,8 @@ import (
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/grpc"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/swagger"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 )
 
 type FunctionDiscoveryPlugin func(u *v1.Upstream) fds.UpstreamFunctionDiscovery
@@ -16,7 +16,7 @@ type registry struct {
 	plugins []fds.FunctionDiscoveryFactory
 }
 
-var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugins.Plugin) *registry {
+var globalRegistry = func(opts runner.StartOpts, pluginExtensions ...func() plugins.Plugin) *registry {
 	reg := &registry{}
 	// plugins should be added here
 	reg.plugins = append(reg.plugins,
@@ -28,6 +28,6 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 	return reg
 }
 
-func Plugins(opts bootstrap.Opts) []fds.FunctionDiscoveryFactory {
+func Plugins(opts runner.StartOpts) []fds.FunctionDiscoveryFactory {
 	return globalRegistry(opts).plugins
 }

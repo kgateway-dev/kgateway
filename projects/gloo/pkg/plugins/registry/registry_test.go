@@ -2,6 +2,7 @@ package registry
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"reflect"
 	"testing"
 
@@ -28,13 +29,12 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 func TestPlugins(t *testing.T) {
-	opts := bootstrap.Opts{}
+	opts := runner.StartOpts{}
 	allPlugins := Plugins(opts)
 	pluginTypes := make(map[reflect.Type]int)
 	for index, plugin := range allPlugins {
@@ -47,7 +47,7 @@ func TestPlugins(t *testing.T) {
 }
 
 func TestPluginsHttpFilterUsefulness(t *testing.T) {
-	opts := bootstrap.Opts{}
+	opts := runner.StartOpts{}
 	pluginRegistryFactory := GetPluginRegistryFactory()
 	pluginRegistry := pluginRegistryFactory(context.TODO(), opts)
 	t.Run("Http Filters are only added if needed", func(t *testing.T) {

@@ -6,7 +6,6 @@ package docs_demo
 // package registry
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
@@ -14,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 
 	// add our plugin's import here:
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/gce"
@@ -34,7 +34,7 @@ type registry struct {
 	plugins []plugins.Plugin
 }
 
-var globalRegistry = func(opts bootstrap.Opts) *registry {
+var globalRegistry = func(opts runner.StartOpts) *registry {
 	transformationPlugin := transformation.NewPlugin()
 	reg := &registry{}
 	// plugins should be added here
@@ -68,6 +68,6 @@ var globalRegistry = func(opts bootstrap.Opts) *registry {
 	return reg
 }
 
-func Plugins(opts bootstrap.Opts, pluginExtensions ...plugins.Plugin) []plugins.Plugin {
+func Plugins(opts runner.StartOpts, pluginExtensions ...plugins.Plugin) []plugins.Plugin {
 	return globalRegistry(opts, pluginExtensions...).plugins
 }

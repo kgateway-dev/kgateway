@@ -3,6 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
+	fdsrunner "github.com/solo-io/gloo/projects/discovery/pkg/fds/runner"
+	udsrunner "github.com/solo-io/gloo/projects/discovery/pkg/uds/runner"
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"net"
 	"sync/atomic"
 	"time"
@@ -12,8 +15,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
@@ -35,7 +36,6 @@ import (
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"google.golang.org/grpc"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -47,8 +47,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
-	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
-	uds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"k8s.io/client-go/kubernetes"
 )
@@ -239,18 +237,18 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	glooOpts.ValidationServer.StartGrpcServer = true
 	glooOpts.GatewayControllerEnabled = !runOptions.WhatToRun.DisableGateway
 
-	go setup.RunGloo(glooOpts)
+	go runner.StartGloo(glooOpts)
 
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {
 			defer GinkgoRecover()
-			fds_syncer.RunFDS(glooOpts)
+			fdsrunner.StartFDS(glooOpts)
 		}()
 	}
 	if !runOptions.WhatToRun.DisableUds {
 		go func() {
 			defer GinkgoRecover()
-			uds_syncer.RunUDS(glooOpts)
+			udsrunner.StartUDS(glooOpts)
 		}()
 	}
 
@@ -340,7 +338,7 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 	}
 }
 
-func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts {
+func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) runner.StartOpts {
 	ctx = contextutils.WithLogger(ctx, "gloo")
 	logger := contextutils.LoggerFrom(ctx)
 	grpcServer := grpc.NewServer(grpc.StreamInterceptor(
@@ -391,7 +389,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		}
 		validationOpts.AlwaysAcceptResources = runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue()
 	}
-	return bootstrap.Opts{
+	return runner.StartOpts{
 		Settings:                runOptions.Settings,
 		WriteNamespace:          runOptions.NsToWrite,
 		StatusReporterNamespace: statusutils.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem),
@@ -415,22 +413,22 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,
 		},
-		ControlPlane: setup.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
+		ControlPlane: runner.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
 			IP:   net.IPv4zero,
 			Port: 8081,
 		}, nil, true),
-		ValidationServer: setup.NewValidationServer(ctx, grpcServerValidation, &net.TCPAddr{
+		ValidationServer: runner.NewValidationServer(ctx, grpcServerValidation, &net.TCPAddr{
 			IP:   net.IPv4zero,
 			Port: 8081,
 		}, true),
-		ProxyDebugServer: setup.NewProxyDebugServer(ctx, grpcServer, &net.TCPAddr{
+		ProxyDebugServer: runner.NewProxyDebugServer(ctx, grpcServer, &net.TCPAddr{
 			IP:   net.IPv4zero,
 			Port: 8001,
 		}, false),
 		KubeClient:    runOptions.KubeClient,
 		KubeCoreCache: kubeCoreCache,
 		DevMode:       true,
-		Consul: bootstrap.Consul{
+		Consul: runner.Consul{
 			ConsulWatcher: runOptions.ConsulClient,
 			DnsServer:     runOptions.ConsulDnsAddress,
 		},

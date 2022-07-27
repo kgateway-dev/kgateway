@@ -1,19 +1,12 @@
-package bootstrap
+package runner
 
 import (
 	"context"
-	"net"
-	"time"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
-
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -22,9 +15,13 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
+	"net"
+	"time"
 )
 
-type Opts struct {
+type StartFunc func(opts StartOpts) error
+
+type StartOpts struct {
 	WriteNamespace               string
 	StatusReporterNamespace      string
 	WatchNamespaces              []string

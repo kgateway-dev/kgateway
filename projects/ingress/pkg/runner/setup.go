@@ -127,7 +127,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		ingressProxyLabel = "ingress-proxy"
 	}
 
-	opts := Opts{
+	opts := StartOpts{
 		ClusterIngressProxyAddress:  clusterIngressProxyAddress,
 		KnativeExternalProxyAddress: knativeExternalProxyAddress,
 		KnativeInternalProxyAddress: knativeInternalProxyAddress,
@@ -149,10 +149,10 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		IngressProxyLabel:   ingressProxyLabel,
 	}
 
-	return RunIngress(opts)
+	return StartIngress(opts)
 }
 
-func RunIngress(opts Opts) error {
+func StartIngress(opts StartOpts) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "ingress")
 

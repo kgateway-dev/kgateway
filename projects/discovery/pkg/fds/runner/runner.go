@@ -6,7 +6,6 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap"
 
 	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 )
 
 func Run(customCtx context.Context) error {
@@ -14,7 +13,7 @@ func Run(customCtx context.Context) error {
 		Ctx:        customCtx,
 		LoggerName: "fds",
 		Version:    version.Version,
-		SetupFunc:  syncer.NewSetupFunc(),
+		SetupFunc:  NewSetupFunc(),
 	}
 	return bootstrap.Run(runnerOptions)
 }

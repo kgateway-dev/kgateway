@@ -2,12 +2,11 @@ package runner
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
 
 	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 )
 
 func Run(customCtx context.Context) error {
@@ -15,7 +14,7 @@ func Run(customCtx context.Context) error {
 		Ctx:        customCtx,
 		LoggerName: "uds",
 		Version:    version.Version,
-		SetupFunc:  setup.NewSetupFuncWithRun(syncer.RunUDS),
+		SetupFunc:  runner.NewSetupFuncWithRun(StartUDS),
 	}
 
 	return bootstrap.Run(runnerOptions)

@@ -1,14 +1,14 @@
-package syncer
+package runner
 
 import (
 	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	discoveryRegistry "github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/registry"
 	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
-
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
@@ -16,31 +16,30 @@ import (
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	gloobootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 )
 
-type Extensions struct {
+type StartExtensions struct {
 	DiscoveryFactoryFuncs []func() fds.FunctionDiscoveryFactory
 }
 
 func NewSetupFunc() bootstrap.SetupFunc {
-	return setup.NewSetupFuncWithRunAndExtensions(RunFDS, nil)
+	return runner.NewSetupFuncWithRunAndExtensions(StartFDS, nil)
 }
 
 // NewSetupFuncWithExtensions used as extension point for external repo
-func NewSetupFuncWithExtensions(extensions Extensions) bootstrap.SetupFunc {
-	runWithExtensions := func(opts gloobootstrap.Opts) error {
-		return RunFDSWithExtensions(opts, extensions)
+func NewSetupFuncWithExtensions(extensions StartExtensions) bootstrap.SetupFunc {
+	runWithExtensions := func(opts runner.StartOpts) error {
+		return StartFDSWithExtensions(opts, extensions)
 	}
-	return setup.NewSetupFuncWithRunAndExtensions(runWithExtensions, nil)
+	return runner.NewSetupFuncWithRunAndExtensions(runWithExtensions, nil)
 }
 
-func RunFDS(opts gloobootstrap.Opts) error {
-	return RunFDSWithExtensions(opts, Extensions{})
+func StartFDS(opts runner.StartOpts) error {
+	return StartFDSWithExtensions(opts, StartExtensions{})
 }
 
-func RunFDSWithExtensions(opts gloobootstrap.Opts, extensions Extensions) error {
+func StartFDSWithExtensions(opts runner.StartOpts, extensions StartExtensions) error {
 	fdsMode := syncerutils.GetFdsMode(opts.Settings)
 	if fdsMode == v1.Settings_DiscoveryOptions_DISABLED {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Function discovery "+
@@ -101,7 +100,7 @@ func RunFDSWithExtensions(opts gloobootstrap.Opts, extensions Extensions) error 
 	updater := fds.NewUpdater(watchOpts.Ctx, resolvers, graphqlClient, upstreamClient, 0, functionalPlugins)
 	disc := fds.NewFunctionDiscovery(updater)
 
-	sync := NewDiscoverySyncer(disc, fdsMode)
+	sync := syncer.NewDiscoverySyncer(disc, fdsMode)
 	eventLoop := v1.NewDiscoveryEventLoop(cache, sync)
 
 	errs := make(chan error)
@@ -128,11 +127,11 @@ func RunFDSWithExtensions(opts gloobootstrap.Opts, extensions Extensions) error 
 	return nil
 }
 
-func GetFunctionDiscoveriesWithExtensions(opts gloobootstrap.Opts, extensions Extensions) []fds.FunctionDiscoveryFactory {
+func GetFunctionDiscoveriesWithExtensions(opts runner.StartOpts, extensions StartExtensions) []fds.FunctionDiscoveryFactory {
 	return GetFunctionDiscoveriesWithExtensionsAndRegistry(opts, discoveryRegistry.Plugins, extensions)
 }
 
-func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts gloobootstrap.Opts, registryDiscFacts func(opts gloobootstrap.Opts) []fds.FunctionDiscoveryFactory, extensions Extensions) []fds.FunctionDiscoveryFactory {
+func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts runner.StartOpts, registryDiscFacts func(opts runner.StartOpts) []fds.FunctionDiscoveryFactory, extensions StartExtensions) []fds.FunctionDiscoveryFactory {
 	pluginfuncs := extensions.DiscoveryFactoryFuncs
 	discFactories := registryDiscFacts(opts)
 	for _, discoveryFactoryExtension := range pluginfuncs {
