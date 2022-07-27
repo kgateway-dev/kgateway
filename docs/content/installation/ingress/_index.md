@@ -123,4 +123,4 @@ glooctl uninstall -n my-namespace
 
 To begin using Gloo Edge with the Kubernetes Ingress API, check out the [Ingress Controller guide]({{< versioned_link_path fromRoot="/guides/integrations/ingress/" >}}).
 
-{{< readfile file="static/content/upgrade-crd.md" markdown="true">}}
+{{< readfile file="static/content/upgrade-note.md" markdown="true">}}
