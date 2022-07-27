@@ -80,14 +80,12 @@ var _ = Describe("RateLimit Plugin", func() {
 
 	JustBeforeEach(func() {
 		initParams.Settings = &gloov1.Settings{RatelimitServer: rlSettings}
-		err := rlPlugin.Init(initParams)
-		Expect(err).NotTo(HaveOccurred())
+		rlPlugin.Init(initParams)
 	})
 
 	It("should get rate limit server settings first from the listener, then from the global settings", func() {
 		initParams.Settings = &gloov1.Settings{}
-		err := rlPlugin.Init(initParams)
-		Expect(err).NotTo(HaveOccurred())
+		rlPlugin.Init(initParams)
 		listener := &gloov1.HttpListener{
 			Options: &gloov1.HttpListenerOptions{
 				RatelimitServer: rlSettings,
@@ -158,8 +156,7 @@ var _ = Describe("RateLimit Plugin", func() {
 					RequestTimeout:    timeout,
 				},
 			}
-			err := rlPlugin.Init(initParams)
-			Expect(err).NotTo(HaveOccurred())
+			rlPlugin.Init(initParams)
 		})
 
 		It("should be ordered before ext auth", func() {
@@ -169,8 +166,7 @@ var _ = Describe("RateLimit Plugin", func() {
 
 			customStagedFilter := filters[0]
 			extAuthPlugin := extauth.NewPlugin()
-			err = extAuthPlugin.Init(initParams)
-			Expect(err).NotTo(HaveOccurred(), "Should be able to initialize the ext auth plugin")
+			extAuthPlugin.Init(initParams)
 			extAuthFilters, err := extAuthPlugin.HttpFilters(params, nil)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to build the ext auth filters")
 			Expect(extAuthFilters).NotTo(BeEmpty(), "Should have actually created more than zero ext auth filters")

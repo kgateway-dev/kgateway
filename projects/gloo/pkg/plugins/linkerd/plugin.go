@@ -38,11 +38,10 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) {
 	if settings := params.Settings; settings != nil {
 		p.enabled = params.Settings.GetLinkerd()
 	}
-	return nil
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {

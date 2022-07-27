@@ -18,6 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.Resource = new(ClusterIngress)
+)
+
 func NewClusterIngress(namespace, name string) *ClusterIngress {
 	clusteringress := &ClusterIngress{}
 	clusteringress.ClusterIngress.SetMetadata(&core.Metadata{

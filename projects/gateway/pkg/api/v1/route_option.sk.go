@@ -15,6 +15,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.InputResource = new(RouteOption)
+)
+
 func NewRouteOption(namespace, name string) *RouteOption {
 	routeoption := &RouteOption{}
 	routeoption.SetMetadata(&core.Metadata{

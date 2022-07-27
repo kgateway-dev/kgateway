@@ -5,35 +5,53 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-func GetVhostsFromListener(listener *v1.Listener) []*v1.VirtualHost {
-	virtualHosts := []*v1.VirtualHost{}
+func GetVirtualHostsForListener(listener *v1.Listener) []*v1.VirtualHost {
+	var virtualHosts []*v1.VirtualHost
 
-	// extauth not yet supported for tcp
 	switch typedListener := listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
 		virtualHosts = typedListener.HttpListener.GetVirtualHosts()
+	case *v1.Listener_TcpListener:
+		// VirtualHosts are an http-only concept
+		break
 	case *v1.Listener_HybridListener:
 		for _, matchedListener := range typedListener.HybridListener.GetMatchedListeners() {
-			if httpListener := matchedListener.GetHttpListener(); httpListener != nil {
-				virtualHosts = append(virtualHosts, httpListener.GetVirtualHosts()...)
+			if http, ok := matchedListener.GetListenerType().(*v1.MatchedListener_HttpListener); ok {
+				virtualHosts = append(virtualHosts, http.HttpListener.GetVirtualHosts()...)
 			}
 		}
+	case *v1.Listener_AggregateListener:
+		for _, vhost := range typedListener.AggregateListener.GetHttpResources().GetVirtualHosts() {
+			virtualHosts = append(virtualHosts, vhost)
+		}
+	default:
+		break
 	}
+
 	return virtualHosts
 }
 
 func GetVhostReportsFromListenerReport(listenerReport *validation.ListenerReport) []*validation.VirtualHostReport {
-	virtualHostReports := []*validation.VirtualHostReport{}
+	var virtualHostReports []*validation.VirtualHostReport
 
 	switch listenerReportType := listenerReport.GetListenerTypeReport().(type) {
 	case *validation.ListenerReport_HttpListenerReport:
 		virtualHostReports = listenerReportType.HttpListenerReport.GetVirtualHostReports()
+	case *validation.ListenerReport_TcpListenerReport:
+		// VirtualHosts are an http-only concept
+		break
 	case *validation.ListenerReport_HybridListenerReport:
 		for _, matchedListenerReport := range listenerReportType.HybridListenerReport.GetMatchedListenerReports() {
 			if httpListenerReport := matchedListenerReport.GetHttpListenerReport(); httpListenerReport != nil {
 				virtualHostReports = append(virtualHostReports, httpListenerReport.GetVirtualHostReports()...)
 			}
 		}
+	case *validation.ListenerReport_AggregateListenerReport:
+		for _, httpListenerReport := range listenerReportType.AggregateListenerReport.GetHttpListenerReports() {
+			virtualHostReports = append(virtualHostReports, httpListenerReport.GetVirtualHostReports()...)
+		}
+	default:
+		break
 	}
 	return virtualHostReports
 }
