@@ -39,7 +39,7 @@ Create an AWS Lambda function to test with Gloo Edge routing.
 
 Create a Kubernetes secret that contains your AWS access key and secret key. Gloo Edge uses this secret to connect to AWS Lambda for service discovery.
 
-1. Get the access key and secret key for your AWS account. Note that your AWS credentials must have the appropriate permissions to interact with AWS Lambda.
+1. Get the access key and secret key for your AWS account. Note that your [AWS credentials](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html) must have the appropriate permissions to interact with AWS Lambda.
 
 2. Create a Kubernetes secret that contains the AWS access key and secret key.
    ```sh
