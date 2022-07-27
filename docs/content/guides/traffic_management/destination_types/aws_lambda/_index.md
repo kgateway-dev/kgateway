@@ -123,10 +123,11 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
 
 At this point, Gloo Edge is routing directly to the `echo` Lambda function. To configure Gloo Edge to also unwrap the JSON response from the function in the same way as an AWS ALB or AWS API Gateway, continue to the next section.
 
-## Unwrap responses as an AWS ALB or AWS API Gateway
+## Unwrap responses as an<!-- AWS ALB or--> AWS API Gateway
 
 To use Gloo Edge in place of your AWS ALB or AWS API Gateway, you can additionally configure the `unwrapAsAlb` setting or the `unwrapAsApiGateway` setting (Gloo Edge Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
 
+<!-- As of right now, we dont have a great understanding of exactly how edge should manipulate the response in the same manner as an aws alb. Seems very similar to the manipulation from the API gateway one. Will leave the unwrapAsAlb setting info in the about section and in the ^ paragraph right before this in case people still want to try this out on their own, but I dont think our testing docs will help very much at this point.
 ### AWS ALB
 
 Unwrap the JSON response from the function in the same way as an AWS ALB.
@@ -176,7 +177,7 @@ Unwrap the JSON response from the function in the same way as an AWS ALB.
    * Connection #0 to host localhost left intact
    gloo edge is inserting this body* Closing connection 0
    ```
-
+-->
 ### AWS API Gateway (Enterprise v1.12.0+ only)
 
 Unwrap the JSON response from the function in the same way as an AWS API Gateway.
