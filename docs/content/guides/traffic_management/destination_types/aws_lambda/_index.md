@@ -32,7 +32,7 @@ Create an AWS Lambda function to test with Gloo Edge routing.
 
 1. Log into the AWS console and navigate to the Lambda page.
    
-2. Note of your region, which is used when configuring AWS credentials in subsequent steps.
+2. Note your region, which is used when configuring AWS credentials in subsequent steps.
 
 3. Click the **Create Function** button.
 
@@ -47,7 +47,7 @@ Create an AWS Lambda function to test with Gloo Edge routing.
 
 ## Step 2: Create an AWS credentials secret
 
-Create a Kubernetes secret that contains the AWS access key and secret key so that Gloo Edge can connect to AWS Lambda for service discovery.
+Create a Kubernetes secret that contains your AWS access key and secret key. Gloo Edge uses this secret to connect to AWS Lambda for service discovery.
 
 1. Get the access key and secret key for your AWS account. Note that your AWS credentials must have the appropriate permissions to interact with AWS Lambda.
 
@@ -118,7 +118,11 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
              destinationSpec:
                aws:
                  logicalName: echo
-                 unwrapAsApiGateway: true
+                 # Configure only ONE setting
+                 # Replace AWS ALB functionality
+                 #unwrapAsAlb: true
+                 # Replace AWS API gateway functionality. Gloo Edge Enterprise v1.12.0+ required
+                 #unwrapAsApiGateway: true
              upstream:
                name: aws-upstream
                namespace: gloo-system
