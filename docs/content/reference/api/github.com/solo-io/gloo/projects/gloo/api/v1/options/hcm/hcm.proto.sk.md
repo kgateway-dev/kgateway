@@ -188,7 +188,7 @@ Subnet mask for CIDR ranges
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `addressPrefix` | `string` | IPv4 or IPv6 address. |
-| `prefixLen` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) |  |
+| `prefixLen` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Length of prefix in bits. |
 
 
 

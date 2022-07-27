@@ -94,18 +94,18 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 	}
 
 	if in.GetInternalAddressConfig() != nil {
-	 	if out.GetInternalAddressConfig() == nil {
-	 		out.InternalAddressConfig = &envoyhttp.HttpConnectionManager_InternalAddressConfig{}
-	 	}
-		out.InternalAddressConfig.UnixSockets = in.InternalAddressConfig.UnixSockets
-		for _, cidrRange := range in.InternalAddressConfig.CidrRanges {
-			_, _, err := net.ParseCIDR(fmt.Sprintf("%s/%d", cidrRange.AddressPrefix, cidrRange.PrefixLen.Value))
+		if out.GetInternalAddressConfig() == nil {
+			out.InternalAddressConfig = &envoyhttp.HttpConnectionManager_InternalAddressConfig{}
+		}
+		out.GetInternalAddressConfig().UnixSockets = in.GetInternalAddressConfig().GetUnixSockets()
+		for _, cidrRange := range in.GetInternalAddressConfig().GetCidrRanges() {
+			_, _, err := net.ParseCIDR(fmt.Sprintf("%s/%d", cidrRange.GetAddressPrefix(), cidrRange.GetPrefixLen().GetValue()))
 			if err != nil {
 				return err
 			}
-			out.InternalAddressConfig.CidrRanges = append(out.InternalAddressConfig.CidrRanges, &envoycore.CidrRange{
-				AddressPrefix: cidrRange.AddressPrefix,
-				PrefixLen: cidrRange.PrefixLen,
+			out.GetInternalAddressConfig().CidrRanges = append(out.GetInternalAddressConfig().GetCidrRanges(), &envoycore.CidrRange{
+				AddressPrefix: cidrRange.GetAddressPrefix(),
+				PrefixLen:     cidrRange.GetPrefixLen(),
 			})
 		}
 	}

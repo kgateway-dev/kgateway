@@ -132,11 +132,11 @@ var _ = Describe("Plugin", func() {
 				CidrRanges: []*hcm.HttpConnectionManagerSettings_CidrRange{
 					&hcm.HttpConnectionManagerSettings_CidrRange{
 						AddressPrefix: "123.45.0.0",
-						PrefixLen: &wrappers.UInt32Value{Value: 16},
+						PrefixLen:     &wrappers.UInt32Value{Value: 16},
 					},
 					&hcm.HttpConnectionManagerSettings_CidrRange{
 						AddressPrefix: "abcd:1234::",
-						PrefixLen: &wrappers.UInt32Value{Value: 32},
+						PrefixLen:     &wrappers.UInt32Value{Value: 32},
 					},
 				},
 			},
@@ -223,7 +223,7 @@ var _ = Describe("Plugin", func() {
 				CidrRanges: []*hcm.HttpConnectionManagerSettings_CidrRange{
 					&hcm.HttpConnectionManagerSettings_CidrRange{
 						AddressPrefix: "invalid_prefix",
-						PrefixLen: &wrappers.UInt32Value{Value: 32},
+						PrefixLen:     &wrappers.UInt32Value{Value: 32},
 					},
 				},
 			},
