@@ -311,6 +311,16 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetInternalAddressConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetInternalAddressConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetInternalAddressConfig(), target.GetInternalAddressConfig()) {
+			return false
+		}
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
@@ -430,6 +440,89 @@ func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) Equal(that i
 		if !proto.Equal(m.GetUseRequestIdForTraceSampling(), target.GetUseRequestIdForTraceSampling()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HttpConnectionManagerSettings_CidrRange) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HttpConnectionManagerSettings_CidrRange)
+	if !ok {
+		that2, ok := that.(HttpConnectionManagerSettings_CidrRange)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetAddressPrefix(), target.GetAddressPrefix()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetPrefixLen()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPrefixLen()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPrefixLen(), target.GetPrefixLen()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HttpConnectionManagerSettings_InternalAddressConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HttpConnectionManagerSettings_InternalAddressConfig)
+	if !ok {
+		that2, ok := that.(HttpConnectionManagerSettings_InternalAddressConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetUnixSockets() != target.GetUnixSockets() {
+		return false
+	}
+
+	if len(m.GetCidrRanges()) != len(target.GetCidrRanges()) {
+		return false
+	}
+	for idx, v := range m.GetCidrRanges() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCidrRanges()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetCidrRanges()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true

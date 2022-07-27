@@ -127,6 +127,19 @@ var _ = Describe("Plugin", func() {
 				InitialConnectionWindowSize:             &wrappers.UInt32Value{Value: 65535},
 				OverrideStreamErrorOnInvalidHttpMessage: &wrappers.BoolValue{Value: true},
 			},
+			InternalAddressConfig: &hcm.HttpConnectionManagerSettings_InternalAddressConfig{
+				UnixSockets: true,
+				CidrRanges: []*hcm.HttpConnectionManagerSettings_CidrRange{
+					&hcm.HttpConnectionManagerSettings_CidrRange{
+						AddressPrefix: "123.45.0.0",
+						PrefixLen: &wrappers.UInt32Value{Value: 16},
+					},
+					&hcm.HttpConnectionManagerSettings_CidrRange{
+						AddressPrefix: "abcd:1234::",
+						PrefixLen: &wrappers.UInt32Value{Value: 32},
+					},
+				},
+			},
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
@@ -193,6 +206,33 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.Http2ProtocolOptions.InitialStreamWindowSize).To(Equal(&wrappers.UInt32Value{Value: 268435457}))
 		Expect(cfg.Http2ProtocolOptions.InitialConnectionWindowSize).To(Equal(&wrappers.UInt32Value{Value: 65535}))
 		Expect(cfg.Http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage).To(Equal(&wrappers.BoolValue{Value: true}))
+
+		Expect(cfg.GetInternalAddressConfig().UnixSockets).To(Equal(settings.GetInternalAddressConfig().UnixSockets))
+		// CidrRanges has a different type in the two objects so they must be compared manually
+		for i, cidrIn := range settings.GetInternalAddressConfig().CidrRanges {
+			cidrOut := cfg.GetInternalAddressConfig().CidrRanges[i]
+			Expect(cidrIn.AddressPrefix).To(Equal(cidrOut.AddressPrefix))
+			Expect(cidrIn.PrefixLen).To(Equal(cidrOut.PrefixLen))
+		}
+	})
+
+	It("should reject invalid values for CidrRanges", func() {
+		settings = &hcm.HttpConnectionManagerSettings{
+			InternalAddressConfig: &hcm.HttpConnectionManagerSettings_InternalAddressConfig{
+				UnixSockets: true,
+				CidrRanges: []*hcm.HttpConnectionManagerSettings_CidrRange{
+					&hcm.HttpConnectionManagerSettings_CidrRange{
+						AddressPrefix: "invalid_prefix",
+						PrefixLen: &wrappers.UInt32Value{Value: 32},
+					},
+				},
+			},
+		}
+
+		settings.InternalAddressConfig.CidrRanges[0].AddressPrefix = "invalid_prefix"
+		cfg := &envoyhttp.HttpConnectionManager{}
+		err := processHcmNetworkFilter(cfg)
+		Expect(err).To(MatchError(ContainSubstring("invalid CIDR address")))
 	})
 
 	It("should copy stateful_formatter setting to hcm filter", func() {

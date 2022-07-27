@@ -1,6 +1,9 @@
 package hcm
 
 import (
+	"fmt"
+	"net"
+
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_extensions_http_header_formatters_preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
@@ -88,6 +91,23 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 					TypedConfig: utils.MustMessageToAny(&envoy_extensions_http_header_formatters_preserve_case_v3.PreserveCaseFormatterConfig{}),
 				},
 			},
+		}
+	}
+
+	if in.GetInternalAddressConfig() != nil {
+	 	if out.GetInternalAddressConfig() == nil {
+	 		out.InternalAddressConfig = &envoyhttp.HttpConnectionManager_InternalAddressConfig{}
+	 	}
+		out.InternalAddressConfig.UnixSockets = in.InternalAddressConfig.UnixSockets
+		for _, cidrRange := range in.InternalAddressConfig.CidrRanges {
+			_, _, err := net.ParseCIDR(fmt.Sprintf("%s/%d", cidrRange.AddressPrefix, cidrRange.PrefixLen.Value))
+			if err != nil {
+				return err
+			}
+			out.InternalAddressConfig.CidrRanges = append(out.InternalAddressConfig.CidrRanges, &envoycore.CidrRange{
+				AddressPrefix: cidrRange.AddressPrefix,
+				PrefixLen: cidrRange.PrefixLen,
+			})
 		}
 	}
 
