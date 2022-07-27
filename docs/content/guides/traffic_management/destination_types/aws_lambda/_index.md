@@ -133,7 +133,7 @@ Unwrap the JSON response from the function in the same way as an AWS ALB.
 
 **Before you begin**: [Install Gloo Edge Enterprise version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing Enterprise installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
 
-1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.unwrapAsApiGateway: true` setting.
+1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.unwrapAsAlb: true` setting.
    ```bash
    kubectl edit virtualservices.gateway.solo.io -n gloo-system aws-route
    ```
@@ -144,7 +144,7 @@ Unwrap the JSON response from the function in the same way as an AWS ALB.
              destinationSpec:
                aws:
                  logicalName: echo
-                 unwrapAsApiGateway: true
+                 unwrapAsAlb: true
              upstream:
                name: aws-upstream
                namespace: gloo-system
