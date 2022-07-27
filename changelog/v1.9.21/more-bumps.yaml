@@ -11,3 +11,7 @@ changelog:
     dependencyOwner: linux
     dependencyRepo: alpine
     dependencyTag: 3.15.4
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo.io
+    dependencyRepo: envoy-gloo
+    dependencyTag: 1.20.4-patch2
