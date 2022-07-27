@@ -221,4 +221,4 @@ glooctl uninstall --all
 
 After you've installed Gloo Edge, please check out our user guides on [Traffic Management]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}).
 
-{{< readfile file="static/content/upgrade-crd.md" markdown="true">}}
+{{< readfile file="static/content/upgrade-note.md" markdown="true">}}

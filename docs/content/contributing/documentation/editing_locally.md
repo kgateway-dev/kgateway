@@ -62,7 +62,7 @@ Navigate to the `docs` folder from the Gloo Edge repo root and run `make` to sta
 ```bash
 cd docs
 export GITHUB_TOKEN=foo
-SKIP_CHANGELOG_GENERATION=true SKIP_SECURITY_SCAN=true SKIP_ENTERPRISE_DOCS_GENERATION=true make serve-site -b
+SKIP_CHANGELOG_GENERATION=true SKIP_SECURITY_SCAN=true SKIP_ENTERPRISE_DOCS_GENERATION=true HUGO_PARAMS_noSecurityScan=true make serve-site -B
 ```
 
 Those commands download any Go dependencies and render the site using Hugo.
