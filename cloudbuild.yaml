@@ -87,10 +87,12 @@ steps:
   dir: *dir
   id: 'install-go-tools'
 
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.15'
   entrypoint: make
   env:
   - 'ENVOY_BINARY=/workspace/envoy'
+  - 'ACK_GINKGO_RC=true'
+  - 'ACK_GINKGO_DEPRECATIONS=1.16.5'
   - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
   - 'RUN_KUBE_TESTS=1'
   - 'RUN_CONSUL_TESTS=1'
