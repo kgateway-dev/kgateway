@@ -1,9 +1,9 @@
 package syncer
 
 import (
+	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
-	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	discoveryRegistry "github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/registry"
 	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
@@ -16,7 +16,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	gloobootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 )
 
@@ -24,23 +24,23 @@ type Extensions struct {
 	DiscoveryFactoryFuncs []func() fds.FunctionDiscoveryFactory
 }
 
-func NewSetupFunc() setuputils.SetupFunc {
+func NewSetupFunc() bootstrap.SetupFunc {
 	return setup.NewSetupFuncWithRunAndExtensions(RunFDS, nil)
 }
 
 // NewSetupFuncWithExtensions used as extension point for external repo
-func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
-	runWithExtensions := func(opts bootstrap.Opts) error {
+func NewSetupFuncWithExtensions(extensions Extensions) bootstrap.SetupFunc {
+	runWithExtensions := func(opts gloobootstrap.Opts) error {
 		return RunFDSWithExtensions(opts, extensions)
 	}
 	return setup.NewSetupFuncWithRunAndExtensions(runWithExtensions, nil)
 }
 
-func RunFDS(opts bootstrap.Opts) error {
+func RunFDS(opts gloobootstrap.Opts) error {
 	return RunFDSWithExtensions(opts, Extensions{})
 }
 
-func RunFDSWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
+func RunFDSWithExtensions(opts gloobootstrap.Opts, extensions Extensions) error {
 	fdsMode := syncerutils.GetFdsMode(opts.Settings)
 	if fdsMode == v1.Settings_DiscoveryOptions_DISABLED {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Function discovery "+
@@ -128,11 +128,11 @@ func RunFDSWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	return nil
 }
 
-func GetFunctionDiscoveriesWithExtensions(opts bootstrap.Opts, extensions Extensions) []fds.FunctionDiscoveryFactory {
+func GetFunctionDiscoveriesWithExtensions(opts gloobootstrap.Opts, extensions Extensions) []fds.FunctionDiscoveryFactory {
 	return GetFunctionDiscoveriesWithExtensionsAndRegistry(opts, discoveryRegistry.Plugins, extensions)
 }
 
-func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts bootstrap.Opts, registryDiscFacts func(opts bootstrap.Opts) []fds.FunctionDiscoveryFactory, extensions Extensions) []fds.FunctionDiscoveryFactory {
+func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts gloobootstrap.Opts, registryDiscFacts func(opts gloobootstrap.Opts) []fds.FunctionDiscoveryFactory, extensions Extensions) []fds.FunctionDiscoveryFactory {
 	pluginfuncs := extensions.DiscoveryFactoryFuncs
 	discFactories := registryDiscFacts(opts)
 	for _, discoveryFactoryExtension := range pluginfuncs {

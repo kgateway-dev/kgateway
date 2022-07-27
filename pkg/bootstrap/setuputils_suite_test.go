@@ -1,4 +1,4 @@
-package setuputils_test
+package bootstrap_test
 
 import (
 	"testing"

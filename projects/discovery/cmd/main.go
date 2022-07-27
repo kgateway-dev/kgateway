@@ -4,8 +4,8 @@ import (
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/stats"
 
-	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
-	uds "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
+	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/runner"
+	uds "github.com/solo-io/gloo/projects/discovery/pkg/uds/runner"
 )
 
 func main() {
@@ -18,10 +18,10 @@ func main() {
 func run() error {
 	errs := make(chan error)
 	go func() {
-		errs <- uds.Main(nil)
+		errs <- uds.Run(nil)
 	}()
 	go func() {
-		errs <- fdssetup.Main(nil)
+		errs <- fdssetup.Run(nil)
 	}()
 	return <-errs
 }

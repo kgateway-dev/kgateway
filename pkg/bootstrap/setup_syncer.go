@@ -1,4 +1,4 @@
-package setuputils
+package bootstrap
 
 import (
 	"context"
@@ -17,12 +17,6 @@ import (
 var (
 	mSetupsRun = utils.MakeSumCounter("gloo.solo.io/setups_run", "The number of times the main setup loop has run")
 )
-
-// tell us how to setup
-type SetupFunc func(ctx context.Context,
-	kubeCache kube.SharedCache,
-	inMemoryCache memory.InMemoryResourceCache,
-	settings *v1.Settings) error
 
 type SetupSyncer struct {
 	settingsRef   *core.ResourceRef
@@ -43,14 +37,11 @@ func (s *SetupSyncer) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
 	if err != nil {
 		return errors.Wrapf(err, "finding bootstrap configuration")
 	}
-	ctx = settingsutil.WithSettings(ctx, settings)
 
+	ctx = settingsutil.WithSettings(ctx, settings)
 	contextutils.LoggerFrom(ctx).Debugw("received settings snapshot", zap.Any("settings", settings))
 
-	utils.MeasureOne(
-		ctx,
-		mSetupsRun,
-	)
+	utils.MeasureOne(ctx, mSetupsRun)
 
 	return s.setupFunc(ctx, kube.NewKubeCache(ctx), s.inMemoryCache, settings)
 }

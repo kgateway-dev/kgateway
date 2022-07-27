@@ -11,8 +11,8 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 
+	"github.com/solo-io/gloo/pkg/utils/runutils"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
-	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -64,10 +64,10 @@ var _ = Describe("SetupSyncer", func() {
 	// One of those, is the construction of schemes: https://github.com/kubernetes/kubernetes/pull/89019#issuecomment-600278461
 	// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
 	// we ensure that only 1 SetupFunc is ever called at a time
-	newSynchronizedSetupFunc := func() setuputils.SetupFunc {
+	newSynchronizedSetupFunc := func() runutils.SetupFunc {
 		setupFunc := NewSetupFunc()
 
-		var synchronizedSetupFunc setuputils.SetupFunc
+		var synchronizedSetupFunc runutils.SetupFunc
 		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
 			setupLock.Lock()
 			defer setupLock.Unlock()

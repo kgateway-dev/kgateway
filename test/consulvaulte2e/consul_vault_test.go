@@ -15,15 +15,15 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
-	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
-	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
+	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/runner"
+	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/runner"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -125,19 +125,19 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		go func() {
 			defer GinkgoRecover()
 			// Start Gloo
-			err = setup.StartGlooInTest(ctx)
+			err = runner.Run(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		go func() {
 			defer GinkgoRecover()
 			// Start FDS
-			err = fdssetup.Main(ctx)
+			err = fdssetup.Run(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		go func() {
 			defer GinkgoRecover()
 			// Start UDS
-			err = udssetup.Main(ctx)
+			err = udssetup.Run(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
 

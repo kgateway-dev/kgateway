@@ -1,15 +1,10 @@
-package setuputils
+package bootstrap
 
 import (
 	"flag"
 	"os"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-)
-
-const (
-	PodNamespace = statusutils.PodNamespaceEnvName
+	"github.com/solo-io/gloo/pkg/defaults"
 )
 
 var (
@@ -23,7 +18,7 @@ func init() {
 
 	// Allow for more dynamic setting of settings namespace
 	// Based on article https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#the-downward-api
-	defaultNamespace := os.Getenv(PodNamespace)
+	defaultNamespace := os.Getenv(defaults.PodNamespace)
 	if defaultNamespace == "" {
 		defaultNamespace = defaults.GlooSystem
 	}
