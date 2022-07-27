@@ -1769,6 +1769,12 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 		target.AutoMapFromMetadata = proto.Clone(m.GetAutoMapFromMetadata()).(*AutoMapFromMetadata)
 	}
 
+	if h, ok := interface{}(m.GetEndSessionProperties()).(clone.Cloner); ok {
+		target.EndSessionProperties = h.Clone().(*EndSessionProperties)
+	} else {
+		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
+	}
+
 	return target
 }
 

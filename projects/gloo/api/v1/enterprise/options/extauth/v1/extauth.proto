@@ -1089,8 +1089,10 @@ message ExtAuthConfig {
         // this behavior can be overridden by explicitly specifying a namespace
         AutoMapFromMetadata auto_map_from_metadata = 18;
 
-
-        
+        // If specified, these are properties defined for the end session endpoint
+        // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
+        // in the OIDC documentation.
+        EndSessionProperties end_session_properties = 19; 
     }
 
     message AccessTokenValidationConfig {

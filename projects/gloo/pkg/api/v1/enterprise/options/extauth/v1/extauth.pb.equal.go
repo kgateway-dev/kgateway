@@ -2989,6 +2989,16 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 		}
 	}
 
+	if h, ok := interface{}(m.GetEndSessionProperties()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEndSessionProperties()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEndSessionProperties(), target.GetEndSessionProperties()) {
+			return false
+		}
+	}
+
 	return true
 }
 
