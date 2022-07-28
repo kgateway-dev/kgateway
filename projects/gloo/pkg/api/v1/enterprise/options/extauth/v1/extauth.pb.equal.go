@@ -2319,6 +2319,16 @@ func (m *UserSession_InternalSession) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetAllowRefreshing()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAllowRefreshing()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAllowRefreshing(), target.GetAllowRefreshing()) {
+			return false
+		}
+	}
+
 	return true
 }
 
