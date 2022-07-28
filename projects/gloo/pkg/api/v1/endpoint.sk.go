@@ -14,6 +14,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.Resource = new(Endpoint)
+)
+
 func NewEndpoint(namespace, name string) *Endpoint {
 	endpoint := &Endpoint{}
 	endpoint.SetMetadata(&core.Metadata{

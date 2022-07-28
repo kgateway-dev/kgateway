@@ -1,7 +1,9 @@
 package kube2e
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -9,6 +11,9 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/solo-io/go-utils/testutils/goimpl"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/golang/protobuf/proto"
 
@@ -86,9 +91,10 @@ gatewayProxies:
 }
 
 func EventuallyReachesConsistentState(installNamespace string) {
-	metricsPort := strconv.Itoa(9091)
+	metricsPort := 9091
+	metricsPortString := strconv.Itoa(metricsPort)
 	portFwd := exec.Command("kubectl", "port-forward", "-n", installNamespace,
-		"deployment/gloo", metricsPort)
+		"deployment/gloo", metricsPortString)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
 	err := portFwd.Start()
@@ -101,22 +107,25 @@ func EventuallyReachesConsistentState(installNamespace string) {
 	}()
 
 	// make sure we eventually reach an eventually consistent state
-	lastSnapOut := getSnapOut(metricsPort)
+	lastSnapOut := getSnapOut(metricsPortString)
 
 	eventuallyConsistentPollingInterval := 7 * time.Second // >= 5s for metrics reporting, which happens every 5s
 	time.Sleep(eventuallyConsistentPollingInterval)
 
 	Eventually(func() bool {
-		currentSnapOut := getSnapOut(metricsPort)
+		currentSnapOut := getSnapOut(metricsPortString)
 		consistent := lastSnapOut == currentSnapOut
 		lastSnapOut = currentSnapOut
 		return consistent
 	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(true))
 
 	Consistently(func() string {
-		currentSnapOut := getSnapOut(metricsPort)
+		currentSnapOut := getSnapOut(metricsPortString)
 		return currentSnapOut
 	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(lastSnapOut))
+
+	// Gloo components are configured to log to the Info level by default
+	EventuallyLogLevel(metricsPort, zapcore.InfoLevel)
 }
 
 // Copied from: https://github.com/solo-io/go-utils/blob/176c4c008b4d7cde836269c7a817f657b6981236/testutils/assertions.go#L20
@@ -149,6 +158,21 @@ func getSnapOut(metricsPort string) string {
 	Expect(matches).To(HaveLen(1))
 	snapOut := matches[0][1]
 	return snapOut
+}
+
+// EventuallyLogLevel ensures that we can query the endpoint responsible for getting the current
+// log level of a gloo component, and updating the log level dynamically
+func EventuallyLogLevel(port int, logLevel zapcore.Level) {
+	url := fmt.Sprintf("http://localhost:%d/logging", port)
+	body := bytes.NewReader([]byte(url))
+
+	request, err := http.NewRequest(http.MethodGet, url, body)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	expectedResponse := fmt.Sprintf("{\"level\":\"%s\"}\n", logLevel.String())
+	EventuallyWithOffset(1, func() (string, error) {
+		return goimpl.ExecuteRequest(request)
+	}, time.Second*5, time.Millisecond*100).Should(Equal(expectedResponse))
 }
 
 func UpdateDisableTransformationValidationSetting(ctx context.Context, shouldDisable bool, installNamespace string) {
