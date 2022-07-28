@@ -21,25 +21,25 @@ import (
 
 var (
 	// Deprecated. See mSetupResourcesIn
-	mSetupSnapshotIn = stats.Int64("setup.gloo.solo.io/emitter/snap_in", "Deprecated. Use setup.gloo.solo.io/emitter/resources_in. The number of snapshots in", "1")
+	mSetupSnapshotIn = stats.Int64("setup_gloo_solo_io/emitter/snap_in", "Deprecated. Use setup_gloo_solo_io/emitter/resources_in. The number of snapshots in", "1")
 
 	// metrics for emitter
-	mSetupResourcesIn    = stats.Int64("setup.gloo.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
-	mSetupSnapshotOut    = stats.Int64("setup.gloo.solo.io/emitter/snap_out", "The number of snapshots out", "1")
-	mSetupSnapshotMissed = stats.Int64("setup.gloo.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
+	mSetupResourcesIn    = stats.Int64("setup_gloo_solo_io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mSetupSnapshotOut    = stats.Int64("setup_gloo_solo_io/emitter/snap_out", "The number of snapshots out", "1")
+	mSetupSnapshotMissed = stats.Int64("setup_gloo_solo_io/emitter/snap_missed", "The number of snapshots missed", "1")
 
 	// views for emitter
 	// deprecated: see setupResourcesInView
 	setupsnapshotInView = &view.View{
-		Name:        "setup.gloo.solo.io/emitter/snap_in",
+		Name:        "setup_gloo_solo_io/emitter/snap_in",
 		Measure:     mSetupSnapshotIn,
-		Description: "Deprecated. Use setup.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
+		Description: "Deprecated. Use setup_gloo_solo_io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 
 	setupResourcesInView = &view.View{
-		Name:        "setup.gloo.solo.io/emitter/resources_in",
+		Name:        "setup_gloo_solo_io/emitter/resources_in",
 		Measure:     mSetupResourcesIn,
 		Description: "The number of resource lists received on open watch channels",
 		Aggregation: view.Count(),
@@ -49,14 +49,14 @@ var (
 		},
 	}
 	setupsnapshotOutView = &view.View{
-		Name:        "setup.gloo.solo.io/emitter/snap_out",
+		Name:        "setup_gloo_solo_io/emitter/snap_out",
 		Measure:     mSetupSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	setupsnapshotMissedView = &view.View{
-		Name:        "setup.gloo.solo.io/emitter/snap_missed",
+		Name:        "setup_gloo_solo_io/emitter/snap_missed",
 		Measure:     mSetupSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
