@@ -1399,6 +1399,8 @@ func (m *UserSession_InternalSession) Clone() proto.Message {
 		target.AllowRefreshing = proto.Clone(m.GetAllowRefreshing()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	target.KeyPrefix = m.GetKeyPrefix()
+
 	return target
 }
 

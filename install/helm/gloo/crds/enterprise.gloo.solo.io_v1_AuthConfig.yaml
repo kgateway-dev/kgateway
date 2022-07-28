@@ -286,6 +286,8 @@ spec:
                                     allowRefreshing:
                                       nullable: true
                                       type: boolean
+                                    keyPrefix:
+                                      type: string
                                   type: object
                                 cookieOptions:
                                   properties:
