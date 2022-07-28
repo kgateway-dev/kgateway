@@ -23,25 +23,25 @@ import (
 
 var (
 	// Deprecated. See mTranslatorResourcesIn
-	mTranslatorSnapshotIn = stats.Int64("translator.ingress.solo.io/emitter/snap_in", "Deprecated. Use translator.ingress.solo.io/emitter/resources_in. The number of snapshots in", "1")
+	mTranslatorSnapshotIn = stats.Int64("translator_ingress_solo_io/emitter/snap_in", "Deprecated. Use translator_ingress_solo_io/emitter/resources_in. The number of snapshots in", "1")
 
 	// metrics for emitter
-	mTranslatorResourcesIn    = stats.Int64("translator.ingress.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
-	mTranslatorSnapshotOut    = stats.Int64("translator.ingress.solo.io/emitter/snap_out", "The number of snapshots out", "1")
-	mTranslatorSnapshotMissed = stats.Int64("translator.ingress.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
+	mTranslatorResourcesIn    = stats.Int64("translator_ingress_solo_io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mTranslatorSnapshotOut    = stats.Int64("translator_ingress_solo_io/emitter/snap_out", "The number of snapshots out", "1")
+	mTranslatorSnapshotMissed = stats.Int64("translator_ingress_solo_io/emitter/snap_missed", "The number of snapshots missed", "1")
 
 	// views for emitter
 	// deprecated: see translatorResourcesInView
 	translatorsnapshotInView = &view.View{
-		Name:        "translator.ingress.solo.io/emitter/snap_in",
+		Name:        "translator_ingress_solo_io/emitter/snap_in",
 		Measure:     mTranslatorSnapshotIn,
-		Description: "Deprecated. Use translator.ingress.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
+		Description: "Deprecated. Use translator_ingress_solo_io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 
 	translatorResourcesInView = &view.View{
-		Name:        "translator.ingress.solo.io/emitter/resources_in",
+		Name:        "translator_ingress_solo_io/emitter/resources_in",
 		Measure:     mTranslatorResourcesIn,
 		Description: "The number of resource lists received on open watch channels",
 		Aggregation: view.Count(),
@@ -51,14 +51,14 @@ var (
 		},
 	}
 	translatorsnapshotOutView = &view.View{
-		Name:        "translator.ingress.solo.io/emitter/snap_out",
+		Name:        "translator_ingress_solo_io/emitter/snap_out",
 		Measure:     mTranslatorSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	translatorsnapshotMissedView = &view.View{
-		Name:        "translator.ingress.solo.io/emitter/snap_missed",
+		Name:        "translator_ingress_solo_io/emitter/snap_missed",
 		Measure:     mTranslatorSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),

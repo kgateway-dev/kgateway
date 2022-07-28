@@ -23,25 +23,25 @@ import (
 
 var (
 	// Deprecated. See mDiscoveryResourcesIn
-	mDiscoverySnapshotIn = stats.Int64("discovery.gloo.solo.io/emitter/snap_in", "Deprecated. Use discovery.gloo.solo.io/emitter/resources_in. The number of snapshots in", "1")
+	mDiscoverySnapshotIn = stats.Int64("discovery_gloo_solo_io/emitter/snap_in", "Deprecated. Use discovery_gloo_solo_io/emitter/resources_in. The number of snapshots in", "1")
 
 	// metrics for emitter
-	mDiscoveryResourcesIn    = stats.Int64("discovery.gloo.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
-	mDiscoverySnapshotOut    = stats.Int64("discovery.gloo.solo.io/emitter/snap_out", "The number of snapshots out", "1")
-	mDiscoverySnapshotMissed = stats.Int64("discovery.gloo.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
+	mDiscoveryResourcesIn    = stats.Int64("discovery_gloo_solo_io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mDiscoverySnapshotOut    = stats.Int64("discovery_gloo_solo_io/emitter/snap_out", "The number of snapshots out", "1")
+	mDiscoverySnapshotMissed = stats.Int64("discovery_gloo_solo_io/emitter/snap_missed", "The number of snapshots missed", "1")
 
 	// views for emitter
 	// deprecated: see discoveryResourcesInView
 	discoverysnapshotInView = &view.View{
-		Name:        "discovery.gloo.solo.io/emitter/snap_in",
+		Name:        "discovery_gloo_solo_io/emitter/snap_in",
 		Measure:     mDiscoverySnapshotIn,
-		Description: "Deprecated. Use discovery.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
+		Description: "Deprecated. Use discovery_gloo_solo_io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 
 	discoveryResourcesInView = &view.View{
-		Name:        "discovery.gloo.solo.io/emitter/resources_in",
+		Name:        "discovery_gloo_solo_io/emitter/resources_in",
 		Measure:     mDiscoveryResourcesIn,
 		Description: "The number of resource lists received on open watch channels",
 		Aggregation: view.Count(),
@@ -51,14 +51,14 @@ var (
 		},
 	}
 	discoverysnapshotOutView = &view.View{
-		Name:        "discovery.gloo.solo.io/emitter/snap_out",
+		Name:        "discovery_gloo_solo_io/emitter/snap_out",
 		Measure:     mDiscoverySnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	discoverysnapshotMissedView = &view.View{
-		Name:        "discovery.gloo.solo.io/emitter/snap_missed",
+		Name:        "discovery_gloo_solo_io/emitter/snap_missed",
 		Measure:     mDiscoverySnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),

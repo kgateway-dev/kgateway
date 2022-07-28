@@ -443,6 +443,9 @@ message DiscoveryOverride {
 
     // url of the provider token revocation endpoint
     string revocation_endpoint = 10;
+
+    // url of the provider end session endpoint
+    string end_session_endpoint = 11;
 }
 
 // The json web key set (JWKS) (https://tools.ietf.org/html/rfc7517) is discovered at an interval
@@ -476,6 +479,18 @@ message JwksOnDemandCacheRefreshPolicy {
 message AutoMapFromMetadata {
     // The namespace from which to map metadata
     string namespace = 1;
+}
+
+message EndSessionProperties {
+    // The Method used to make the request.
+    enum MethodType {
+        // Uses GET method when making the request
+        GetMethod = 0;
+        // Uses POST method when making the request
+        PostMethod = 1;
+    }
+    // The method type used by the end session endpoint, defaults to GET.
+    MethodType methodType = 1;
 }
 
 
@@ -578,7 +593,11 @@ message OidcAuthorizationCode {
     // By default parameters will be extracted from the solo_authconfig_oidc namespace
     // this behavior can be overridden by explicitly specifying a namespace
     AutoMapFromMetadata auto_map_from_metadata = 18;
-    
+   
+    // If specified, these are properties defined for the end session endpoint
+    // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
+    // in the OIDC documentation.
+    EndSessionProperties end_session_properties = 19;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -1075,6 +1094,11 @@ message ExtAuthConfig {
         // By default parameters will be extracted from the solo_authconfig_oidc namespace
         // this behavior can be overridden by explicitly specifying a namespace
         AutoMapFromMetadata auto_map_from_metadata = 18;
+
+        // If specified, these are properties defined for the end session endpoint
+        // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
+        // in the OIDC documentation.
+        EndSessionProperties end_session_properties = 19; 
     }
 
     message AccessTokenValidationConfig {
