@@ -2,6 +2,6 @@ changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/4410
     description: >
-      Add properties for each method type that the end session endpoint could use
+      Add properties for each HTTP request method type that the end session endpoint could use
       to be executed upon.
     resolvesIssue: false
