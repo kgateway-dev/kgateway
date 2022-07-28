@@ -7,9 +7,6 @@
 package hcm
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/golang/protobuf/ptypes/any"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
@@ -19,6 +16,8 @@ import (
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -396,7 +395,8 @@ type HttpConnectionManagerSettings struct {
 	NormalizePath       *wrappers.BoolValue                                        `protobuf:"bytes,30,opt,name=normalize_path,json=normalizePath,proto3" json:"normalize_path,omitempty"`
 	UuidRequestIdConfig *HttpConnectionManagerSettings_UuidRequestIdConfigSettings `protobuf:"bytes,37,opt,name=uuid_request_id_config,json=uuidRequestIdConfig,proto3" json:"uuid_request_id_config,omitempty"`
 	// Additional HTTP/2 settings that are passed directly to the HTTP/2 codec.
-	Http2ProtocolOptions  *protocol.Http2ProtocolOptions                       `protobuf:"bytes,39,opt,name=http2_protocol_options,json=http2ProtocolOptions,proto3" json:"http2_protocol_options,omitempty"`
+	Http2ProtocolOptions *protocol.Http2ProtocolOptions `protobuf:"bytes,39,opt,name=http2_protocol_options,json=http2ProtocolOptions,proto3" json:"http2_protocol_options,omitempty"`
+	// Configuration of internal addresses
 	InternalAddressConfig *HttpConnectionManagerSettings_InternalAddressConfig `protobuf:"bytes,38,opt,name=internal_address_config,json=internalAddressConfig,proto3" json:"internal_address_config,omitempty"`
 }
 
