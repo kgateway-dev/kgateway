@@ -3,7 +3,6 @@ package runner
 import (
 	"context"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	ratelimitv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -22,31 +21,21 @@ import (
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"net"
-	"time"
 )
 
 type StartFunc func(opts StartOpts) error
 
 type StartOpts struct {
 	WriteNamespace               string
-	StatusReporterNamespace      string
 	WatchNamespaces              []string
 
 	Settings         *gloov1.Settings
 	WatchOpts        clients.WatchOpts
-	DevMode          bool
 
 	ResourceClientset ResourceClientset
+	TypedClientset TypedClientset
 
-	// if nil, kube plugin disabled
-	KubeClient                   kubernetes.Interface
-	KubeServiceClient            skkube.ServiceClient
-	KubeCoreCache                corecache.KubeCoreCache
-
-	Consul           ConsulStartOpts
-	ValidationOpts               *gwtranslator.ValidationOpts
 	GatewayControllerEnabled     bool
-
 
 	ControlPlane     ControlPlane
 	ValidationServer ValidationServer
@@ -97,12 +86,6 @@ type TypedClientset struct {
 
 	// Consul clients
 	ConsulWatcher      consul.ConsulWatcher
-}
-
-type ConsulStartOpts struct {
-	ConsulWatcher      consul.ConsulWatcher
-	DnsServer          string
-	DnsPollingInterval *time.Duration
 }
 
 type ControlPlane struct {

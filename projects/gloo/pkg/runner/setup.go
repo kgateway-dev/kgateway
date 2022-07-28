@@ -331,20 +331,18 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 
 	// Generate the set of clients used to power Gloo Edge
-	print("GENERATE CLIENTSET")
 	resourceClientset, typedClientset, err := GenerateGlooClientsets(ctx, settings, kubeCache, memCache)
 	if err != nil {
 		return err
 	}
 
-	validationStartOpts, gatewayControllerEnabled, err := GenerateValidationStartOpts(settings)
-	if err != nil {
-		return err
+	var gatewayControllerEnabled = true
+	if settings.GetGateway().GetEnableGatewayController() != nil {
+		gatewayControllerEnabled = settings.GetGateway().GetEnableGatewayController().GetValue()
 	}
 
 	opts := StartOpts{
 		WriteNamespace: writeNamespace,
-		StatusReporterNamespace: gloostatusutils.GetStatusReporterNamespaceOrDefault(writeNamespace),
 		WatchNamespaces: watchNamespaces,
 		WatchOpts : clients.WatchOpts{
 			Ctx:         ctx,
@@ -353,14 +351,10 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		Settings: settings,
 
 		ResourceClientset: resourceClientset,
+		TypedClientset: typedClientset,
 
-		KubeServiceClient: typedClientset.KubeServiceClient,
-		KubeClient: typedClientset.KubeClient,
-		KubeCoreCache: typedClientset.KubeCoreCache,
-
-		ValidationOpts: validationStartOpts,
 		GatewayControllerEnabled: gatewayControllerEnabled,
-		Consul: GenerateConsulStartOpts(settings, typedClientset.ConsulWatcher),
+
 	}
 
 	// TODO (samheilbron) These should be built from the start options, not included in the start options
@@ -378,14 +372,25 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 }
 
 func GetPluginOpts(opts StartOpts) registry.PluginOpts {
+	settings := opts.Settings
+	dnsAddress := settings.GetConsul().GetDnsAddress()
+	if len(dnsAddress) == 0 {
+		dnsAddress = consulplugin.DefaultDnsAddress
+	}
+
+	dnsPollingInterval := consulplugin.DefaultDnsPollingInterval
+	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
+		dnsPollingInterval = prototime.DurationFromProto(pollingInterval)
+	}
+
 	return registry.PluginOpts{
 		SecretClient:  opts.ResourceClientset.Secrets,
-		KubeClient:    opts.KubeClient,
-		KubeCoreCache: opts.KubeCoreCache,
+		KubeClient:    opts.TypedClientset.KubeClient,
+		KubeCoreCache: opts.TypedClientset.KubeCoreCache,
 		Consul:        registry.ConsulPluginOpts{
-			ConsulWatcher: opts.Consul.ConsulWatcher,
-			DnsServer: opts.Consul.DnsServer,
-			DnsPollingInterval: opts.Consul.DnsPollingInterval,
+			ConsulWatcher: opts.TypedClientset.ConsulWatcher,
+			DnsServer: dnsAddress,
+			DnsPollingInterval: &dnsPollingInterval,
 		},
 	}
 }
@@ -431,7 +436,7 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 
 	glooClientset := opts.ResourceClientset
 
-	hybridUsClient, err := upstreams.NewHybridUpstreamClient(glooClientset.Upstreams, opts.KubeServiceClient, opts.Consul.ConsulWatcher)
+	hybridUsClient, err := upstreams.NewHybridUpstreamClient(glooClientset.Upstreams, opts.TypedClientset.KubeServiceClient, opts.TypedClientset.ConsulWatcher)
 	if err != nil {
 		return err
 	}
@@ -459,7 +464,8 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 
 	errs := make(chan error)
 
-	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+	statusReporterNamespace := gloostatusutils.GetStatusReporterNamespaceOrDefault(opts.WriteNamespace)
+	statusClient := gloostatusutils.GetStatusClientForNamespace(statusReporterNamespace)
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, glooClientset.Endpoints, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
 	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
@@ -589,17 +595,23 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 		}()
 		opts.ProxyDebugServer.StartGrpcServer = false
 	}
+
+	validationOptions, err := GenerateValidationStartOpts(opts.GatewayControllerEnabled, opts.Settings)
+	if err != nil {
+		return err
+	}
+
 	gwOpts := gwtranslator.Opts{
 		WriteNamespace:                 opts.WriteNamespace,
 		ReadGatewaysFromAllNamespaces:  opts.Settings.Gateway.GetReadGatewaysFromAllNamespaces(),
-		Validation:                     opts.ValidationOpts,
+		Validation:                     validationOptions,
 		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
 	}
 	var (
 		ignoreProxyValidationFailure bool
 		allowWarnings                bool
 	)
-	if gwOpts.Validation != nil && opts.GatewayControllerEnabled {
+	if validationOptions != nil && opts.GatewayControllerEnabled {
 		ignoreProxyValidationFailure = gwOpts.Validation.IgnoreProxyValidationFailure
 		allowWarnings = gwOpts.Validation.AllowWarnings
 	}
@@ -1112,16 +1124,11 @@ func GenerateGlooClientsets(ctx context.Context, settings *v1.Settings, kubeCach
 	return resourceClientset, typedClientset, nil
 }
 
-func GenerateValidationStartOpts(settings *v1.Settings) (*gwtranslator.ValidationOpts, bool, error) {
+func GenerateValidationStartOpts(gatewayMode bool, settings *v1.Settings) (*gwtranslator.ValidationOpts, error) {
 	var validation *gwtranslator.ValidationOpts
 
 	validationCfg := settings.GetGateway().GetValidation()
-	var gatewayMode bool
-	if settings.GetGateway().GetEnableGatewayController() != nil {
-		gatewayMode = settings.GetGateway().GetEnableGatewayController().GetValue()
-	} else {
-		gatewayMode = true
-	}
+
 	if validationCfg != nil && gatewayMode {
 		alwaysAcceptResources := AcceptAllResourcesByDefault
 
@@ -1160,30 +1167,12 @@ func GenerateValidationStartOpts(settings *v1.Settings) (*gwtranslator.Validatio
 	} else {
 		// This will stop users from setting failurePolicy=fail and then removing the webhook configuration
 		if validationMustStart := os.Getenv("VALIDATION_MUST_START"); validationMustStart != "" && validationMustStart != "false" && gatewayMode {
-			return validation, gatewayMode, errors.Errorf("A validation webhook was configured, but no validation configuration was provided in the settings. "+
+			return validation, errors.Errorf("A validation webhook was configured, but no validation configuration was provided in the settings. "+
 				"Ensure the v1.Settings %v contains the spec.gateway.validation config."+
 				"If you have removed the webhook configuration from K8s since installing and want to disable validation, "+
 				"set the environment variable VALIDATION_MUST_START=false",
 				settings.GetMetadata().Ref())
 		}
 	}
-	return validation, gatewayMode, nil
-}
-
-func GenerateConsulStartOpts(settings *v1.Settings, consulWatcher consul.ConsulWatcher) ConsulStartOpts {
-	dnsAddress := settings.GetConsul().GetDnsAddress()
-	if len(dnsAddress) == 0 {
-		dnsAddress = consulplugin.DefaultDnsAddress
-	}
-
-	dnsPollingInterval := consulplugin.DefaultDnsPollingInterval
-	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
-		dnsPollingInterval = prototime.DurationFromProto(pollingInterval)
-	}
-
-	return ConsulStartOpts{
-		ConsulWatcher:      consulWatcher,
-		DnsServer:          dnsAddress,
-		DnsPollingInterval: &dnsPollingInterval,
-	}
+	return validation, nil
 }
