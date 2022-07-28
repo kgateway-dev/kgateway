@@ -21,25 +21,25 @@ import (
 
 var (
 	// Deprecated. See mEdsResourcesIn
-	mEdsSnapshotIn = stats.Int64("eds.gloo.solo.io/emitter/snap_in", "Deprecated. Use eds.gloo.solo.io/emitter/resources_in. The number of snapshots in", "1")
+	mEdsSnapshotIn = stats.Int64("eds_gloo_solo_io/emitter/snap_in", "Deprecated. Use eds_gloo_solo_io/emitter/resources_in. The number of snapshots in", "1")
 
 	// metrics for emitter
-	mEdsResourcesIn    = stats.Int64("eds.gloo.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
-	mEdsSnapshotOut    = stats.Int64("eds.gloo.solo.io/emitter/snap_out", "The number of snapshots out", "1")
-	mEdsSnapshotMissed = stats.Int64("eds.gloo.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
+	mEdsResourcesIn    = stats.Int64("eds_gloo_solo_io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mEdsSnapshotOut    = stats.Int64("eds_gloo_solo_io/emitter/snap_out", "The number of snapshots out", "1")
+	mEdsSnapshotMissed = stats.Int64("eds_gloo_solo_io/emitter/snap_missed", "The number of snapshots missed", "1")
 
 	// views for emitter
 	// deprecated: see edsResourcesInView
 	edssnapshotInView = &view.View{
-		Name:        "eds.gloo.solo.io/emitter/snap_in",
+		Name:        "eds_gloo_solo_io/emitter/snap_in",
 		Measure:     mEdsSnapshotIn,
-		Description: "Deprecated. Use eds.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
+		Description: "Deprecated. Use eds_gloo_solo_io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 
 	edsResourcesInView = &view.View{
-		Name:        "eds.gloo.solo.io/emitter/resources_in",
+		Name:        "eds_gloo_solo_io/emitter/resources_in",
 		Measure:     mEdsResourcesIn,
 		Description: "The number of resource lists received on open watch channels",
 		Aggregation: view.Count(),
@@ -49,14 +49,14 @@ var (
 		},
 	}
 	edssnapshotOutView = &view.View{
-		Name:        "eds.gloo.solo.io/emitter/snap_out",
+		Name:        "eds_gloo_solo_io/emitter/snap_out",
 		Measure:     mEdsSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	edssnapshotMissedView = &view.View{
-		Name:        "eds.gloo.solo.io/emitter/snap_missed",
+		Name:        "eds_gloo_solo_io/emitter/snap_missed",
 		Measure:     mEdsSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
