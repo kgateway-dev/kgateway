@@ -283,8 +283,9 @@ spec:
                               properties:
                                 cookie:
                                   properties:
-                                    keyPrefix:
-                                      type: string
+                                    allowRefreshing:
+                                      nullable: true
+                                      type: boolean
                                   type: object
                                 cookieOptions:
                                   properties:

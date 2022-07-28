@@ -331,9 +331,12 @@ message RedisOptions {
 
 message UserSession {
     message InternalSession {
+        // When set, refresh expired id-tokens using the refresh-token. Defaults to false.
+        // Explicitly set to true to enable refreshing.
+        google.protobuf.BoolValue allow_refreshing = 1;
         // Prefix to append to cookies keys. Cookie keys will be stored in the form `<key_prefix>_<cookie_name>`.
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes
-        string key_prefix = 1;
+        string key_prefix = 2;
     }
     message RedisSession {
         // Options to connect to redis

@@ -535,13 +535,13 @@ redis socket types
 
 
 ```yaml
-"keyPrefix": string
+"allowRefreshing": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `keyPrefix` | `string` | Prefix to append to cookies keys. Cookie keys will be stored in the form `<key_prefix>_<cookie_name>`. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes. |
+| `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set, refresh expired id-tokens using the refresh-token. Defaults to false. Explicitly set to true to enable refreshing. |
 
 
 
