@@ -331,6 +331,9 @@ message RedisOptions {
 
 message UserSession {
     message InternalSession {
+        // When set, refresh expired id-tokens using the refresh-token. Defaults to false.
+        // Explicitly set to true to enable refreshing.
+        google.protobuf.BoolValue allow_refreshing = 1;
     }
     message RedisSession {
         // Options to connect to redis

@@ -1414,6 +1414,12 @@ func (m *UserSession_InternalSession) Clone() proto.Message {
 	}
 	target = &UserSession_InternalSession{}
 
+	if h, ok := interface{}(m.GetAllowRefreshing()).(clone.Cloner); ok {
+		target.AllowRefreshing = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.AllowRefreshing = proto.Clone(m.GetAllowRefreshing()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 
