@@ -194,6 +194,11 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
+                            autoMapFromMetadata:
+                              properties:
+                                namespace:
+                                  type: string
+                              type: object
                             callbackPath:
                               type: string
                             clientId:
@@ -217,6 +222,8 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                endSessionEndpoint:
+                                  type: string
                                 idTokenAlgs:
                                   items:
                                     type: string
@@ -242,6 +249,12 @@ spec:
                               type: object
                             discoveryPollInterval:
                               type: string
+                            endSessionProperties:
+                              properties:
+                                methodType:
+                                  type: string
+                                  x-kubernetes-int-or-string: true
+                              type: object
                             headers:
                               properties:
                                 accessTokenHeader:
@@ -277,6 +290,12 @@ spec:
                             session:
                               properties:
                                 cookie:
+                                  properties:
+                                    allowRefreshing:
+                                      nullable: true
+                                      type: boolean
+                                    keyPrefix:
+                                      type: string
                                   type: object
                                 cookieOptions:
                                   properties:
