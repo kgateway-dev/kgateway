@@ -57,7 +57,7 @@ var _ = Describe("Validation Server", func() {
 			Settings:  settings,
 			Secrets:   memoryClientFactory,
 			Upstreams: memoryClientFactory,
-			Consul: runner.Consul{
+			Consul: runner.ConsulStartOpts{
 				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 			},
 		}

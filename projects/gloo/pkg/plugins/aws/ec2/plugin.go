@@ -1,7 +1,6 @@
 package ec2
 
 import (
-	"context"
 	"reflect"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -13,7 +12,6 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 )
 
 var (
@@ -40,22 +38,10 @@ type plugin struct {
 	settings *v1.Settings
 }
 
-func NewPlugin(ctx context.Context, secretFactory factory.ResourceClientFactory) (*plugin, error) {
-	p := &plugin{}
-	var err error
-
-	if secretFactory == nil {
-		return p, ConstructorInputError("secret")
+func NewPlugin(secretClient v1.SecretClient) *plugin {
+	return &plugin{
+		secretClient: secretClient,
 	}
-	p.secretClient, err = v1.NewSecretClient(ctx, secretFactory)
-	if err != nil {
-		return p, ConstructorGetClientError("secret", err)
-	}
-	if err = p.secretClient.Register(); err != nil {
-		return p, ConstructorRegisterClientError("secret", err)
-	}
-
-	return p, nil
 }
 
 func (p *plugin) Name() string {

@@ -114,7 +114,7 @@ var _ = Describe("Translator", func() {
 			Settings:  settings,
 			Secrets:   memoryClientFactory,
 			Upstreams: memoryClientFactory,
-			Consul: runner.Consul{
+			Consul: runner.ConsulStartOpts{
 				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 			},
 		}
@@ -1886,7 +1886,7 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
-	Context("when translating a route that points to a Consul service", func() {
+	Context("when translating a route that points to a ConsulStartOpts service", func() {
 
 		var (
 			fakeUsList v1.UpstreamList
@@ -1926,7 +1926,7 @@ var _ = Describe("Translator", func() {
 
 		BeforeEach(func() {
 
-			// Metadata for the Consul service that we want to route to
+			// Metadata for the ConsulStartOpts service that we want to route to
 			svc := &consul.ServiceMeta{
 				Name:        svcName,
 				DataCenters: []string{east, west},
@@ -1941,7 +1941,7 @@ var _ = Describe("Translator", func() {
 			}
 			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, fakeUsList...)
 
-			// We need to manually add some fake endpoints for the above Consul service
+			// We need to manually add some fake endpoints for the above ConsulStartOpts service
 			// Normally these would have been discovered by EDS
 			params.Snapshot.Endpoints = v1.EndpointList{
 				// 2 prod endpoints, 1 in each data center, 1 dev endpoint in west data center

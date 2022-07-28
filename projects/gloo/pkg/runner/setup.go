@@ -3,6 +3,8 @@ package runner
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/enterprise_warning"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"net"
 	"net/http"
@@ -33,7 +35,6 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
@@ -327,65 +328,46 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.previousProxyDebugServer.addr = proxyDebugAddr
 		s.previousProxyDebugServer.maxGrpcRecvSize = maxGrpcRecvSize
 	}
-	consulClient, err := gloobootstrap.ConsulClientForSettings(ctx, settings)
+
+
+	// Generate the set of clients used to power Gloo Edge
+	print("GENERATE CLIENTSET")
+	resourceClientset, typedClientset, err := GenerateGlooClientsets(ctx, settings, kubeCache, memCache)
 	if err != nil {
 		return err
 	}
 
-	var vaultClient *vaultapi.Client
-	if vaultSettings := settings.GetVaultSecretSource(); vaultSettings != nil {
-		vaultClient, err = gloobootstrap.VaultClientForSettings(vaultSettings)
-		if err != nil {
-			return err
-		}
-	}
-
-	var clientset kubernetes.Interface
-	opts, err := constructOpts(ctx,
-		&clientset,
-		kubeCache,
-		consulClient,
-		vaultClient,
-		memCache,
-		settings,
-		writeNamespace,
-	)
+	validationStartOpts, gatewayControllerEnabled, err := GenerateValidationStartOpts(settings)
 	if err != nil {
 		return err
 	}
-	opts.WriteNamespace = writeNamespace
-	opts.StatusReporterNamespace = gloostatusutils.GetStatusReporterNamespaceOrDefault(writeNamespace)
-	opts.WatchNamespaces = watchNamespaces
-	opts.WatchOpts = clients.WatchOpts{
-		Ctx:         ctx,
-		RefreshRate: refreshRate,
+
+	opts := StartOpts{
+		WriteNamespace: writeNamespace,
+		StatusReporterNamespace: gloostatusutils.GetStatusReporterNamespaceOrDefault(writeNamespace),
+		WatchNamespaces: watchNamespaces,
+		WatchOpts : clients.WatchOpts{
+			Ctx:         ctx,
+			RefreshRate: refreshRate,
+		},
+		Settings: settings,
+
+		ResourceClientset: resourceClientset,
+
+		KubeServiceClient: typedClientset.KubeServiceClient,
+		KubeClient: typedClientset.KubeClient,
+		KubeCoreCache: typedClientset.KubeCoreCache,
+
+		ValidationOpts: validationStartOpts,
+		GatewayControllerEnabled: gatewayControllerEnabled,
+		Consul: GenerateConsulStartOpts(settings, typedClientset.ConsulWatcher),
 	}
+
+	// TODO (samheilbron) These should be built from the start options, not included in the start options
 	opts.ControlPlane = s.controlPlane
 	opts.ValidationServer = s.validationServer
 	opts.ProxyDebugServer = s.proxyDebugServer
-	// if nil, kube plugin disabled
-	opts.KubeClient = clientset
-	opts.DevMode = settings.GetDevMode()
-	opts.Settings = settings
 
-	opts.Consul.DnsServer = settings.GetConsul().GetDnsAddress()
-	if len(opts.Consul.DnsServer) == 0 {
-		opts.Consul.DnsServer = consulplugin.DefaultDnsAddress
-	}
-	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
-		dnsPollingInterval := prototime.DurationFromProto(pollingInterval)
-		opts.Consul.DnsPollingInterval = &dnsPollingInterval
-	}
-
-	// if vault service discovery specified, initialize consul watcher
-	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {
-		// Set up Consul client
-		consulClientWrapper, err := consul.NewConsulWatcher(consulClient, consulServiceDiscovery.GetDataCenters())
-		if err != nil {
-			return err
-		}
-		opts.Consul.ConsulWatcher = consulClientWrapper
-	}
 
 	err = s.runFunc(opts)
 
@@ -395,16 +377,30 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	return err
 }
 
-type StartExtensions struct {
-	PluginRegistryFactory registry.PluginRegistryFactory
-	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
-	XdsCallbacks          xdsserver.Callbacks
-	ApiEmitterChannel     chan struct{}
+func GetPluginOpts(opts StartOpts) registry.PluginOpts {
+	return registry.PluginOpts{
+		SecretClient:  opts.ResourceClientset.Secrets,
+		KubeClient:    opts.KubeClient,
+		KubeCoreCache: opts.KubeCoreCache,
+		Consul:        registry.ConsulPluginOpts{
+			ConsulWatcher: opts.Consul.ConsulWatcher,
+			DnsServer: opts.Consul.DnsServer,
+			DnsPollingInterval: opts.Consul.DnsPollingInterval,
+		},
+	}
+}
+
+func GlooPluginRegistryFactory(_ context.Context, opts StartOpts) plugins.PluginRegistry {
+	availablePlugins := registry.Plugins(GetPluginOpts(opts))
+
+	// To improve the UX, load a plugin that warns users if they are attempting to use enterprise configuration
+	availablePlugins = append(availablePlugins, enterprise_warning.NewPlugin())
+	return registry.NewPluginRegistry(availablePlugins)
 }
 
 func StartGloo(opts StartOpts) error {
 	glooExtensions := StartExtensions{
-		PluginRegistryFactory: registry.GetPluginRegistryFactory(),
+		PluginRegistryFactory: GlooPluginRegistryFactory,
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,
@@ -432,131 +428,19 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "setup")
-	endpointsFactory := &factory.MemoryResourceClientFactory{
-		Cache: memory.NewInMemoryResourceCache(),
-	}
 
-	upstreamClient, err := v1.NewUpstreamClient(watchOpts.Ctx, opts.Upstreams)
-	if err != nil {
-		return err
-	}
-	if err := upstreamClient.Register(); err != nil {
-		return err
-	}
+	glooClientset := opts.ResourceClientset
 
-	kubeServiceClient := opts.KubeServiceClient
-	if opts.Settings.GetGloo().GetDisableKubernetesDestinations() {
-		kubeServiceClient = nil
-	}
-	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, kubeServiceClient, opts.Consul.ConsulWatcher)
+	hybridUsClient, err := upstreams.NewHybridUpstreamClient(glooClientset.Upstreams, opts.KubeServiceClient, opts.Consul.ConsulWatcher)
 	if err != nil {
 		return err
 	}
 
-	proxyClient, err := v1.NewProxyClient(watchOpts.Ctx, opts.Proxies)
-	if err != nil {
-		return err
-	}
-	if err := proxyClient.Register(); err != nil {
-		return err
-	}
+	// Delete proxies that may have been left from prior to an upgrade or from previously having set persistProxySpec
+	// Ignore errors because gloo will still work with stray proxies.
+	_ = setup.DoProxyCleanup(watchOpts.Ctx, opts.Settings, glooClientset.Proxies, opts.WriteNamespace)
 
-	upstreamGroupClient, err := v1.NewUpstreamGroupClient(watchOpts.Ctx, opts.UpstreamGroups)
-	if err != nil {
-		return err
-	}
-	if err := upstreamGroupClient.Register(); err != nil {
-		return err
-	}
 
-	endpointClient, err := v1.NewEndpointClient(watchOpts.Ctx, endpointsFactory)
-	if err != nil {
-		return err
-	}
-
-	secretClient, err := v1.NewSecretClient(watchOpts.Ctx, opts.Secrets)
-	if err != nil {
-		return err
-	}
-
-	artifactClient, err := v1.NewArtifactClient(watchOpts.Ctx, opts.Artifacts)
-	if err != nil {
-		return err
-	}
-
-	authConfigClient, err := extauth.NewAuthConfigClient(watchOpts.Ctx, opts.AuthConfigs)
-	if err != nil {
-		return err
-	}
-	if err := authConfigClient.Register(); err != nil {
-		return err
-	}
-
-	graphqlApiClient, err := v1beta1.NewGraphQLApiClient(watchOpts.Ctx, opts.GraphQLApis)
-	if err != nil {
-		return err
-	}
-	if err := graphqlApiClient.Register(); err != nil {
-		return err
-	}
-
-	rlClient, rlReporterClient, err := rlv1alpha1.NewRateLimitClients(watchOpts.Ctx, opts.RateLimitConfigs)
-	if err != nil {
-		return err
-	}
-	if err := rlClient.Register(); err != nil {
-		return err
-	}
-
-	virtualServiceClient, err := gateway.NewVirtualServiceClient(watchOpts.Ctx, opts.VirtualServices)
-	if err != nil {
-		return err
-	}
-	if err := virtualServiceClient.Register(); err != nil {
-		return err
-	}
-
-	rtClient, err := gateway.NewRouteTableClient(watchOpts.Ctx, opts.RouteTables)
-	if err != nil {
-		return err
-	}
-	if err := rtClient.Register(); err != nil {
-		return err
-	}
-
-	gatewayClient, err := gateway.NewGatewayClient(watchOpts.Ctx, opts.Gateways)
-	if err != nil {
-		return err
-	}
-	if err := gatewayClient.Register(); err != nil {
-		return err
-	}
-
-	matchableHttpGatewayClient, err := gateway.NewMatchableHttpGatewayClient(watchOpts.Ctx, opts.MatchableHttpGateways)
-	if err != nil {
-		return err
-	}
-	if err := matchableHttpGatewayClient.Register(); err != nil {
-		return err
-	}
-	virtualHostOptionClient, err := gateway.NewVirtualHostOptionClient(watchOpts.Ctx, opts.VirtualHostOptions)
-	if err != nil {
-		return err
-	}
-	if err := virtualHostOptionClient.Register(); err != nil {
-		return err
-	}
-
-	routeOptionClient, err := gateway.NewRouteOptionClient(watchOpts.Ctx, opts.RouteOptions)
-	if err != nil {
-		return err
-	}
-	if err := routeOptionClient.Register(); err != nil {
-		return err
-	}
-	if opts.ProxyCleanup != nil {
-		opts.ProxyCleanup()
-	}
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
@@ -576,7 +460,7 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 	errs := make(chan error)
 
 	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
-	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, statusClient, discoveryPlugins)
+	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, glooClientset.Endpoints, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
 	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
 	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
@@ -609,37 +493,37 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
 	apiCache := v1snap.NewApiEmitterWithEmit(
-		artifactClient,
-		endpointClient,
-		proxyClient,
-		upstreamGroupClient,
-		secretClient,
+		glooClientset.Artifacts,
+		glooClientset.Endpoints,
+		glooClientset.Proxies,
+		glooClientset.UpstreamGroups,
+		glooClientset.Secrets,
 		hybridUsClient,
-		authConfigClient,
-		rlClient,
-		virtualServiceClient,
-		rtClient,
-		gatewayClient,
-		virtualHostOptionClient,
-		routeOptionClient,
-		matchableHttpGatewayClient,
-		graphqlApiClient,
+		glooClientset.AuthConfigs,
+		glooClientset.RateLimitConfigs,
+		glooClientset.VirtualServices,
+		glooClientset.RouteTables,
+		glooClientset.Gateways,
+		glooClientset.VirtualHostOptions,
+		glooClientset.RouteOptions,
+		glooClientset.MatchableHttpGateways,
+		glooClientset.GraphQLApis,
 		extensions.ApiEmitterChannel,
 	)
 
 	rpt := reporter.NewReporter("gloo",
 		statusClient,
 		hybridUsClient.BaseClient(),
-		proxyClient.BaseClient(),
-		upstreamGroupClient.BaseClient(),
-		authConfigClient.BaseClient(),
-		gatewayClient.BaseClient(),
-		matchableHttpGatewayClient.BaseClient(),
-		virtualServiceClient.BaseClient(),
-		rtClient.BaseClient(),
-		virtualHostOptionClient.BaseClient(),
-		routeOptionClient.BaseClient(),
-		rlReporterClient,
+		glooClientset.Proxies.BaseClient(),
+		glooClientset.UpstreamGroups.BaseClient(),
+		glooClientset.AuthConfigs.BaseClient(),
+		glooClientset.Gateways.BaseClient(),
+		glooClientset.MatchableHttpGateways.BaseClient(),
+		glooClientset.VirtualServices.BaseClient(),
+		glooClientset.RouteTables.BaseClient(),
+		glooClientset.VirtualHostOptions.BaseClient(),
+		glooClientset.RouteOptions.BaseClient(),
+		glooClientset.RateLimitReporter,
 	)
 	statusMetrics, err := metrics.NewConfigStatusMetrics(opts.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels())
 	if err != nil {
@@ -687,7 +571,7 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 	}
 	if opts.ProxyDebugServer.StartGrpcServer {
 		proxyDebugServer := opts.ProxyDebugServer
-		proxyDebugServer.Server.SetProxyClient(proxyClient)
+		proxyDebugServer.Server.SetProxyClient(glooClientset.Proxies)
 		proxyDebugServer.Server.Register(proxyDebugServer.GrpcServer)
 		lis, err := net.Listen(opts.ProxyDebugServer.BindAddr.Network(), opts.ProxyDebugServer.BindAddr.String())
 		if err != nil {
@@ -706,21 +590,9 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 		opts.ProxyDebugServer.StartGrpcServer = false
 	}
 	gwOpts := gwtranslator.Opts{
-		GlooNamespace:                  opts.WriteNamespace,
 		WriteNamespace:                 opts.WriteNamespace,
-		StatusReporterNamespace:        opts.StatusReporterNamespace,
-		WatchNamespaces:                opts.WatchNamespaces,
-		Gateways:                       opts.Gateways,
-		VirtualServices:                opts.VirtualServices,
-		RouteTables:                    opts.RouteTables,
-		Proxies:                        opts.Proxies,
-		RouteOptions:                   opts.RouteOptions,
-		VirtualHostOptions:             opts.VirtualHostOptions,
-		WatchOpts:                      opts.WatchOpts,
-		DevMode:                        opts.DevMode,
-		ReadGatewaysFromAllNamespaces:  opts.ReadGatwaysFromAllNamespaces,
+		ReadGatewaysFromAllNamespaces:  opts.Settings.Gateway.GetReadGatewaysFromAllNamespaces(),
 		Validation:                     opts.ValidationOpts,
-		ConfigStatusMetricOpts:         nil,
 		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
 	}
 	var (
@@ -757,8 +629,8 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 	if opts.GatewayControllerEnabled {
 		logger.Debugf("Setting up gateway translator")
 		gatewayTranslator = gwtranslator.NewDefaultTranslator(gwOpts)
-		proxyReconciler := gwreconciler.NewProxyReconciler(validator.Validate, proxyClient, statusClient)
-		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(opts.WatchOpts.Ctx, opts.WriteNamespace, proxyClient, proxyReconciler, rpt, gatewayTranslator, statusClient, statusMetrics)
+		proxyReconciler := gwreconciler.NewProxyReconciler(validator.Validate, glooClientset.Proxies, statusClient)
+		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(opts.WatchOpts.Ctx, opts.WriteNamespace, glooClientset.Proxies, proxyReconciler, rpt, gatewayTranslator, statusClient, statusMetrics)
 	} else {
 		logger.Debugf("Gateway translation is disabled. Proxies are provided from another source")
 	}
@@ -788,12 +660,12 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 		opts.ControlPlane.SnapshotCache,
 		xdsSanitizer,
 		rpt,
-		opts.DevMode,
+		opts.Settings.GetDevMode(),
 		syncerExtensions,
 		opts.Settings,
 		statusMetrics,
 		gwTranslatorSyncer,
-		proxyClient,
+		glooClientset.Proxies,
 		opts.WriteNamespace)
 
 	syncers := v1snap.ApiSyncers{
@@ -821,6 +693,7 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 	}()
 
 	//Start the validation webhook
+	glooNamespace := opts.WriteNamespace
 	validationServerErr := make(chan error, 1)
 	if gwOpts.Validation != nil {
 		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
@@ -828,7 +701,7 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 		if !gwOpts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
 			foundSelf := false
 			for _, namespace := range opts.WatchNamespaces {
-				if gwOpts.GlooNamespace == namespace {
+				if glooNamespace == namespace {
 					foundSelf = true
 					break
 				}
@@ -837,7 +710,7 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 				return errors.Errorf("The gateway configuration value readGatewaysFromAllNamespaces was set "+
 					"to false, but the non-empty settings.watchNamespaces "+
 					"list (%s) did not contain this gloo instance's own namespace: %s.",
-					strings.Join(opts.WatchNamespaces, ", "), gwOpts.GlooNamespace)
+					strings.Join(opts.WatchNamespaces, ", "), glooNamespace)
 			}
 		}
 
@@ -845,13 +718,13 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 			k8sadmission.NewWebhookConfig(
 				watchOpts.Ctx,
 				gwValidationSyncer,
-				gwOpts.WatchNamespaces,
+				opts.WatchNamespaces,
 				gwOpts.Validation.ValidatingWebhookPort,
 				gwOpts.Validation.ValidatingWebhookCertPath,
 				gwOpts.Validation.ValidatingWebhookKeyPath,
 				gwOpts.Validation.AlwaysAcceptResources,
 				gwOpts.ReadGatewaysFromAllNamespaces,
-				gwOpts.GlooNamespace,
+				glooNamespace,
 			),
 		)
 		if err != nil {
@@ -934,12 +807,45 @@ func startRestXdsServer(opts StartOpts) {
 		}
 	}()
 }
-func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings, writeNamespace string) (StartOpts, error) {
 
+func GenerateGlooClientsets(ctx context.Context, settings *v1.Settings, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache) (ResourceClientset, TypedClientset, error) {
 	var (
 		cfg           *rest.Config
 		kubeCoreCache corecache.KubeCoreCache
+		kubeClient    kubernetes.Interface
+
+		// Wrapper types for Gloo Edge
+		typedClientset    TypedClientset
+		resourceClientset ResourceClientset
 	)
+
+	failedToConstruct := func(err error) (ResourceClientset, TypedClientset, error) {
+		return resourceClientset, typedClientset, err
+	}
+
+	consulClient, err := gloobootstrap.ConsulClientForSettings(ctx, settings)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+
+	// if vault service discovery specified, initialize consul watcher
+	var consulWatcher consul.ConsulWatcher
+	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {
+		// Set up ConsulStartOpts client
+		consulClientWrapper, err := consul.NewConsulWatcher(consulClient, consulServiceDiscovery.GetDataCenters())
+		if err != nil {
+			return failedToConstruct(err)
+		}
+		consulWatcher = consulClientWrapper
+	}
+
+	var vaultClient *vaultapi.Client
+	if vaultSettings := settings.GetVaultSecretSource(); vaultSettings != nil {
+		vaultClient, err = gloobootstrap.VaultClientForSettings(vaultSettings)
+		if err != nil {
+			return failedToConstruct(err)
+		}
+	}
 
 	params := gloobootstrap.NewConfigFactoryParams(
 		settings,
@@ -949,33 +855,28 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		consulClient,
 	)
 
-	upstreamFactory, err := gloobootstrap.ConfigFactoryForSettings(params, v1.UpstreamCrd)
-	if err != nil {
-		return StartOpts{}, errors.Wrapf(err, "creating config source from settings")
-	}
-
 	kubeServiceClient, err := gloobootstrap.KubeServiceClientForSettings(
 		ctx,
 		settings,
 		memCache,
 		&cfg,
-		clientset,
+		&kubeClient,
 		&kubeCoreCache,
 	)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
+	}
+
+	upstreamFactory, err := gloobootstrap.ConfigFactoryForSettings(params, v1.UpstreamCrd)
+	if err != nil {
+		return failedToConstruct(errors.Wrapf(err, "creating config source from settings"))
 	}
 
 	var proxyFactory factory.ResourceClientFactory
-	// Delete proxies that may have been left from prior to an upgrade or from previously having set persistProxySpec
-	// Ignore errors because gloo will still work with stray proxies.
-	proxyCleanup := func() {
-		setup.DoProxyCleanup(ctx, params, settings, writeNamespace)
-	}
 	if settings.GetGateway().GetPersistProxySpec().GetValue() {
 		proxyFactory, err = gloobootstrap.ConfigFactoryForSettings(params, v1.ProxyCrd)
 		if err != nil {
-			return StartOpts{}, err
+			return failedToConstruct(err)
 		}
 	} else {
 		proxyFactory = &factory.MemoryResourceClientFactory{
@@ -988,18 +889,18 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		settings,
 		memCache,
 		&cfg,
-		clientset,
+		&kubeClient,
 		&kubeCoreCache,
 		vaultClient,
 		v1.SecretCrd.Plural,
 	)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	upstreamGroupFactory, err := gloobootstrap.ConfigFactoryForSettings(params, v1.UpstreamGroupCrd)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	artifactFactory, err := gloobootstrap.ArtifactFactoryForSettings(
@@ -1007,60 +908,213 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		settings,
 		memCache,
 		&cfg,
-		clientset,
+		&kubeClient,
 		&kubeCoreCache,
 		consulClient,
 		v1.ArtifactCrd.Plural,
 	)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	authConfigFactory, err := gloobootstrap.ConfigFactoryForSettings(params, extauth.AuthConfigCrd)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	rateLimitConfigFactory, err := gloobootstrap.ConfigFactoryForSettings(params, rlv1alpha1.RateLimitConfigCrd)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	graphqlApiFactory, err := gloobootstrap.ConfigFactoryForSettings(params, v1beta1.GraphQLApiCrd)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	virtualServiceFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.VirtualServiceCrd)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	routeTableFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.RouteTableCrd)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	virtualHostOptionFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.VirtualHostOptionCrd)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	routeOptionFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.RouteOptionCrd)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	gatewayFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.GatewayCrd)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
 
 	matchableHttpGatewayFactory, err := gloobootstrap.ConfigFactoryForSettings(params, gateway.MatchableHttpGatewayCrd)
 	if err != nil {
-		return StartOpts{}, err
+		return failedToConstruct(err)
 	}
+
+	endpointsFactory := &factory.MemoryResourceClientFactory{
+		Cache: memCache,
+	}
+
+
+	upstreamClient, err := v1.NewUpstreamClient(ctx, upstreamFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := upstreamClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+	proxyClient, err := v1.NewProxyClient(ctx, proxyFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := proxyClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+	upstreamGroupClient, err := v1.NewUpstreamGroupClient(ctx, upstreamGroupFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := upstreamGroupClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+	endpointClient, err := v1.NewEndpointClient(ctx, endpointsFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+
+	secretClient, err := v1.NewSecretClient(ctx, secretFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+
+	artifactClient, err := v1.NewArtifactClient(ctx, artifactFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+
+	authConfigClient, err := extauth.NewAuthConfigClient(ctx, authConfigFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := authConfigClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+	graphqlApiClient, err := v1beta1.NewGraphQLApiClient(ctx, graphqlApiFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := graphqlApiClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+	rateLimitClient, rateLimitReporterClient, err := rlv1alpha1.NewRateLimitClients(ctx, rateLimitConfigFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := rateLimitClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+	virtualServiceClient, err := gateway.NewVirtualServiceClient(ctx, virtualServiceFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := virtualServiceClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+	routeTableClient, err := gateway.NewRouteTableClient(ctx, routeTableFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := routeTableClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+	gatewayClient, err := gateway.NewGatewayClient(ctx, gatewayFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := gatewayClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+	matchableHttpGatewayClient, err := gateway.NewMatchableHttpGatewayClient(ctx, matchableHttpGatewayFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := matchableHttpGatewayClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+	virtualHostOptionClient, err := gateway.NewVirtualHostOptionClient(ctx, virtualHostOptionFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := virtualHostOptionClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+	routeOptionClient, err := gateway.NewRouteOptionClient(ctx, routeOptionFactory)
+	if err != nil {
+		return failedToConstruct(err)
+	}
+	if err := routeOptionClient.Register(); err != nil {
+		return failedToConstruct(err)
+	}
+
+
+	resourceClientset = ResourceClientset{
+		// Gateway resources
+		VirtualServices:       virtualServiceClient,
+		RouteTables:           routeTableClient,
+		Gateways:              gatewayClient,
+		MatchableHttpGateways: matchableHttpGatewayClient,
+		VirtualHostOptions:    virtualHostOptionClient,
+		RouteOptions:          routeOptionClient,
+
+		// Gloo resources
+		Endpoints:             endpointClient,
+		Upstreams:            upstreamClient,
+		UpstreamGroups:        upstreamGroupClient,
+		Proxies:               proxyClient,
+		Secrets:               secretClient,
+		Artifacts:             artifactClient,
+
+		// Gloo Enterprise resources
+		AuthConfigs:           authConfigClient,
+		RateLimitConfigs:      rateLimitClient,
+		RateLimitReporter: rateLimitReporterClient,
+		GraphQLApis:           graphqlApiClient,
+	}
+
+	typedClientset = TypedClientset{
+		KubeClient:        kubeClient,
+		KubeServiceClient: kubeServiceClient,
+		KubeCoreCache:     kubeCoreCache,
+		ConsulWatcher: consulWatcher,
+	}
+
+	return resourceClientset, typedClientset, nil
+}
+
+func GenerateValidationStartOpts(settings *v1.Settings) (*gwtranslator.ValidationOpts, bool, error) {
 	var validation *gwtranslator.ValidationOpts
+
 	validationCfg := settings.GetGateway().GetValidation()
 	var gatewayMode bool
 	if settings.GetGateway().GetEnableGatewayController() != nil {
@@ -1106,34 +1160,30 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	} else {
 		// This will stop users from setting failurePolicy=fail and then removing the webhook configuration
 		if validationMustStart := os.Getenv("VALIDATION_MUST_START"); validationMustStart != "" && validationMustStart != "false" && gatewayMode {
-			return StartOpts{}, errors.Errorf("A validation webhook was configured, but no validation configuration was provided in the settings. "+
+			return validation, gatewayMode, errors.Errorf("A validation webhook was configured, but no validation configuration was provided in the settings. "+
 				"Ensure the v1.Settings %v contains the spec.gateway.validation config."+
 				"If you have removed the webhook configuration from K8s since installing and want to disable validation, "+
 				"set the environment variable VALIDATION_MUST_START=false",
 				settings.GetMetadata().Ref())
 		}
 	}
-	readGatewaysFromAllNamespaces := settings.GetGateway().GetReadGatewaysFromAllNamespaces()
-	return StartOpts{
-		Upstreams:                    upstreamFactory,
-		KubeServiceClient:            kubeServiceClient,
-		Proxies:                      proxyFactory,
-		UpstreamGroups:               upstreamGroupFactory,
-		Secrets:                      secretFactory,
-		Artifacts:                    artifactFactory,
-		AuthConfigs:                  authConfigFactory,
-		RateLimitConfigs:             rateLimitConfigFactory,
-		GraphQLApis:                  graphqlApiFactory,
-		VirtualServices:              virtualServiceFactory,
-		RouteTables:                  routeTableFactory,
-		VirtualHostOptions:           virtualHostOptionFactory,
-		RouteOptions:                 routeOptionFactory,
-		Gateways:                     gatewayFactory,
-		MatchableHttpGateways:        matchableHttpGatewayFactory,
-		KubeCoreCache:                kubeCoreCache,
-		ValidationOpts:               validation,
-		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
-		GatewayControllerEnabled:     gatewayMode,
-		ProxyCleanup:                 proxyCleanup,
-	}, nil
+	return validation, gatewayMode, nil
+}
+
+func GenerateConsulStartOpts(settings *v1.Settings, consulWatcher consul.ConsulWatcher) ConsulStartOpts {
+	dnsAddress := settings.GetConsul().GetDnsAddress()
+	if len(dnsAddress) == 0 {
+		dnsAddress = consulplugin.DefaultDnsAddress
+	}
+
+	dnsPollingInterval := consulplugin.DefaultDnsPollingInterval
+	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
+		dnsPollingInterval = prototime.DurationFromProto(pollingInterval)
+	}
+
+	return ConsulStartOpts{
+		ConsulWatcher:      consulWatcher,
+		DnsServer:          dnsAddress,
+		DnsPollingInterval: &dnsPollingInterval,
+	}
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -41,21 +40,11 @@ func deleteUnusedProxies(ctx context.Context, namespace string, proxyClient v1.P
 	}
 	return errors.New(allErrs)
 }
-func DoProxyCleanup(ctx context.Context, params bootstrap.ConfigFactoryParams, settings *v1.Settings, namespace string) error {
+func DoProxyCleanup(ctx context.Context, settings *v1.Settings, proxyClient v1.ProxyClient, namespace string) error {
 	//Do not clean up proxies if all the resources are held in memory or if proxies are being persisted
 	if settings.GetConfigSource() == nil || settings.GetGateway().GetPersistProxySpec().GetValue() {
 		return nil
 	}
-	proxyClientFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.ProxyCrd)
-	if err != nil {
-		return err
-	}
-	proxyClient, err := v1.NewProxyClient(ctx, proxyClientFactory)
-	if err != nil {
-		return err
-	}
-	if err := proxyClient.Register(); err != nil {
-		return err
-	}
+
 	return deleteUnusedProxies(ctx, namespace, proxyClient)
 }

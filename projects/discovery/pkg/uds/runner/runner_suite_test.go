@@ -1,4 +1,4 @@
-package syncer_test
+package runner_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -9,8 +9,8 @@ import (
 	"github.com/onsi/ginkgo/reporters"
 )
 
-func TestSyncer(t *testing.T) {
+func TestRunner(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Syncer Utils Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "UDS Runner Suite", []Reporter{junitReporter})
 }

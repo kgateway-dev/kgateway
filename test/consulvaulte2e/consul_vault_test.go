@@ -38,7 +38,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
+var _ = Describe("ConsulStartOpts + Vault Configuration Happy Path e2e", func() {
 
 	var (
 		ctx            context.Context
@@ -76,7 +76,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
-		// Start Consul
+		// Start ConsulStartOpts
 		consulInstance, err = consulFactory.NewConsulInstance()
 		Expect(err).NotTo(HaveOccurred())
 		err = consulInstance.Run()

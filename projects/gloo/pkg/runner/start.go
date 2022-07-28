@@ -2,17 +2,23 @@ package runner
 
 import (
 	"context"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	ratelimitv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"net"
@@ -25,37 +31,75 @@ type StartOpts struct {
 	WriteNamespace               string
 	StatusReporterNamespace      string
 	WatchNamespaces              []string
-	Upstreams                    factory.ResourceClientFactory
-	KubeServiceClient            skkube.ServiceClient
-	UpstreamGroups               factory.ResourceClientFactory
-	Proxies                      factory.ResourceClientFactory
-	Secrets                      factory.ResourceClientFactory
-	Artifacts                    factory.ResourceClientFactory
-	AuthConfigs                  factory.ResourceClientFactory
-	RateLimitConfigs             factory.ResourceClientFactory
-	GraphQLApis                  factory.ResourceClientFactory
-	VirtualServices              factory.ResourceClientFactory
-	RouteTables                  factory.ResourceClientFactory
-	Gateways                     factory.ResourceClientFactory
-	MatchableHttpGateways        factory.ResourceClientFactory
-	VirtualHostOptions           factory.ResourceClientFactory
-	RouteOptions                 factory.ResourceClientFactory
+
+	Settings         *gloov1.Settings
+	WatchOpts        clients.WatchOpts
+	DevMode          bool
+
+	ResourceClientset ResourceClientset
+
+	// if nil, kube plugin disabled
 	KubeClient                   kubernetes.Interface
-	Consul                       Consul
-	WatchOpts                    clients.WatchOpts
-	DevMode                      bool
-	ControlPlane                 ControlPlane
-	ValidationServer             ValidationServer
-	ProxyDebugServer             ProxyDebugServer
-	Settings                     *v1.Settings
+	KubeServiceClient            skkube.ServiceClient
 	KubeCoreCache                corecache.KubeCoreCache
+
+	Consul           ConsulStartOpts
 	ValidationOpts               *gwtranslator.ValidationOpts
-	ReadGatwaysFromAllNamespaces bool
 	GatewayControllerEnabled     bool
-	ProxyCleanup                 func()
+
+
+	ControlPlane     ControlPlane
+	ValidationServer ValidationServer
+	ProxyDebugServer ProxyDebugServer
 }
 
-type Consul struct {
+// A PluginRegistryFactory generates a PluginRegistry
+// It is executed each translation loop, ensuring we have up to date configuration of all plugins
+type PluginRegistryFactory func(ctx context.Context, opts StartOpts) plugins.PluginRegistry
+
+
+type StartExtensions struct {
+	PluginRegistryFactory PluginRegistryFactory
+	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
+	XdsCallbacks          server.Callbacks
+	ApiEmitterChannel     chan struct{}
+}
+
+type ResourceClientset struct {
+	// Gateway resources
+	VirtualServices       gatewayv1.VirtualServiceClient
+	RouteTables           gatewayv1.RouteTableClient
+	Gateways              gatewayv1.GatewayClient
+	MatchableHttpGateways gatewayv1.MatchableHttpGatewayClient
+	VirtualHostOptions    gatewayv1.VirtualHostOptionClient
+	RouteOptions          gatewayv1.RouteOptionClient
+
+	// Gloo resources
+	Endpoints             gloov1.EndpointClient
+	Upstreams             gloov1.UpstreamClient
+	UpstreamGroups        gloov1.UpstreamGroupClient
+	Proxies               gloov1.ProxyClient
+	Secrets               gloov1.SecretClient
+	Artifacts             gloov1.ArtifactClient
+
+	// Gloo Enterprise resources
+	AuthConfigs           extauthv1.AuthConfigClient
+	GraphQLApis           v1beta1.GraphQLApiClient
+	RateLimitConfigs      ratelimitv1.RateLimitConfigClient
+	RateLimitReporter reporter.ReporterResourceClient
+}
+
+type TypedClientset struct {
+	// Kubernetes clients
+	KubeClient                   kubernetes.Interface
+	KubeServiceClient            skkube.ServiceClient
+	KubeCoreCache                corecache.KubeCoreCache
+
+	// Consul clients
+	ConsulWatcher      consul.ConsulWatcher
+}
+
+type ConsulStartOpts struct {
 	ConsulWatcher      consul.ConsulWatcher
 	DnsServer          string
 	DnsPollingInterval *time.Duration
@@ -67,7 +111,7 @@ type ControlPlane struct {
 	XDSServer     server.Server
 }
 
-// ValidationServer validates proxies generated by controllors outside the gloo pod
+// ValidationServer validates proxies generated by controllers outside the gloo pod
 type ValidationServer struct {
 	*GrpcService
 	Server validation.ValidationServer

@@ -12,7 +12,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
-	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
+	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
@@ -24,7 +24,7 @@ func StartUDS(opts runner.StartOpts) error {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Upstream discovery "+
 			"(settings.discovery.udsOptions.enabled) disabled. To enable, modify "+
 			"gloo.solo.io/Settings - %v", opts.Settings.GetMetadata().Ref())
-		if err := syncerutils.ErrorIfDiscoveryServiceUnused(&opts); err != nil {
+		if err := syncerutils.ErrorIfDiscoveryServiceUnused(opts.Settings); err != nil {
 			return err
 		}
 		return nil
@@ -33,22 +33,9 @@ func StartUDS(opts runner.StartOpts) error {
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "uds")
 	watchOpts.Selector = syncerutils.GetWatchLabels(opts.Settings)
 
-	upstreamClient, err := v1.NewUpstreamClient(watchOpts.Ctx, opts.Upstreams)
-	if err != nil {
-		return err
-	}
-	if err := upstreamClient.Register(); err != nil {
-		return err
-	}
+	glooClientset := opts.ResourceClientset
 
-	secretClient, err := v1.NewSecretClient(watchOpts.Ctx, opts.Secrets)
-	if err != nil {
-		return err
-	}
-	if err := secretClient.Register(); err != nil {
-		return err
-	}
-
+	var err error
 	var nsClient kubernetes.KubeNamespaceClient
 	if opts.KubeClient != nil && opts.KubeCoreCache.NamespaceLister() != nil {
 		nsClient = namespace.NewNamespaceClient(opts.KubeClient, opts.KubeCoreCache)
@@ -65,14 +52,14 @@ func StartUDS(opts runner.StartOpts) error {
 	}
 
 	emit := make(chan struct{})
-	emitter := v1.NewDiscoveryEmitterWithEmit(upstreamClient, nsClient, secretClient, emit)
+	emitter := v1.NewDiscoveryEmitterWithEmit(glooClientset.Upstreams, nsClient, glooClientset.Secrets, emit)
 
 	// jumpstart all the watches
 	go func() {
 		emit <- struct{}{}
 	}()
 
-	plugins := registry.Plugins(opts)
+	plugins := registry.Plugins(runner.GetPluginOpts(opts))
 
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range plugins {
@@ -87,7 +74,7 @@ func StartUDS(opts runner.StartOpts) error {
 
 	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
 
-	uds := discovery.NewUpstreamDiscovery(watchNamespaces, opts.WriteNamespace, upstreamClient, statusClient, discoveryPlugins)
+	uds := discovery.NewUpstreamDiscovery(watchNamespaces, opts.WriteNamespace, glooClientset.Upstreams, statusClient, discoveryPlugins)
 	// TODO(ilackarms) expose discovery options
 	udsErrs, err := uds.StartUds(watchOpts, discovery.Opts{})
 	if err != nil {

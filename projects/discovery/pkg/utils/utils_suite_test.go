@@ -1,4 +1,4 @@
-package syncer_test
+package utils_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -12,5 +12,5 @@ import (
 func TestSyncer(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "UDS Syncer Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "Syncer Utils Suite", []Reporter{junitReporter})
 }

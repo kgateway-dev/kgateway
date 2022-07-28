@@ -2,12 +2,12 @@
 package registry
 
 import (
-	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
-
-	"github.com/solo-io/go-utils/contextutils"
-
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
+	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	kubernetes2 "k8s.io/client-go/kubernetes"
+	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
@@ -19,7 +19,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/csrf"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/enterprise_warning"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
@@ -56,17 +55,23 @@ var (
 	_ plugins.PluginRegistry = new(pluginRegistry)
 )
 
-// A PluginRegistryFactory generates a PluginRegistry
-// It is executed each translation loop, ensuring we have up to date configuration of all plugins
-type PluginRegistryFactory func(ctx context.Context, opts runner.StartOpts) plugins.PluginRegistry
+type PluginOpts struct {
+	SecretClient v1.SecretClient
 
-func Plugins(opts runner.StartOpts) []plugins.Plugin {
+	KubeClient kubernetes2.Interface
+	KubeCoreCache cache.KubeCoreCache
+
+	Consul ConsulPluginOpts
+}
+
+type ConsulPluginOpts struct {
+	ConsulWatcher     	consul2.ConsulWatcher
+	DnsServer          string
+	DnsPollingInterval *time.Duration
+}
+
+func Plugins(opts PluginOpts) []plugins.Plugin {
 	var glooPlugins []plugins.Plugin
-
-	ec2Plugin, err := ec2.NewPlugin(opts.WatchOpts.Ctx, opts.Secrets)
-	if err != nil {
-		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Errorf("Failed to create ec2 Plugin %+v", err)
-	}
 
 	glooPlugins = append(glooPlugins,
 		loadbalancer.NewPlugin(),
@@ -89,7 +94,7 @@ func Plugins(opts runner.StartOpts) []plugins.Plugin {
 		cors.NewPlugin(),
 		linkerd.NewPlugin(),
 		stats.NewPlugin(),
-		ec2Plugin,
+		ec2.NewPlugin(opts.SecretClient),
 		tracing.NewPlugin(),
 		shadowing.NewPlugin(),
 		headers.NewPlugin(),
@@ -116,16 +121,6 @@ func Plugins(opts runner.StartOpts) []plugins.Plugin {
 	}
 
 	return glooPlugins
-}
-
-func GetPluginRegistryFactory() PluginRegistryFactory {
-	return func(ctx context.Context, opts runner.StartOpts) plugins.PluginRegistry {
-		availablePlugins := Plugins(opts)
-
-		// To improve the UX, load a plugin that warns users if they are attempting to use enterprise configuration
-		availablePlugins = append(availablePlugins, enterprise_warning.NewPlugin())
-		return NewPluginRegistry(availablePlugins)
-	}
 }
 
 type pluginRegistry struct {

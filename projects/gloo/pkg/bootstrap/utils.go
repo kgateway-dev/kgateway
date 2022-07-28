@@ -132,12 +132,18 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 	return nil, errors.Errorf("invalid config source type")
 }
 
-func KubeServiceClientForSettings(ctx context.Context,
+func KubeServiceClientForSettings(
+	ctx context.Context,
 	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
 	cfg **rest.Config,
 	clientset *kubernetes.Interface,
-	kubeCoreCache *cache.KubeCoreCache) (skkube.ServiceClient, error) {
+	kubeCoreCache *cache.KubeCoreCache,
+) (skkube.ServiceClient, error) {
+
+	if settings.GetGloo().GetDisableKubernetesDestinations() {
+		return nil, nil
+	}
 
 	// We are running in kubernetes
 	switch settings.GetConfigSource().(type) {

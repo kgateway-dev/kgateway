@@ -1,14 +1,10 @@
 package syncer
 
 import (
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	runner2 "github.com/solo-io/gloo/projects/discovery/pkg/fds/runner"
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -128,25 +124,6 @@ var _ = Describe("selectUpstreamsForDiscovery", func() {
 		})
 	})
 
-	Context("StartFDS", func() {
-		It("returns an error when both UDS and FDS are disabled", func() {
-			opts := runner.StartOpts{
-				Settings: &gloov1.Settings{
-					Metadata: &core.Metadata{
-						Name:      "test-settings",
-						Namespace: "gloo-system",
-					},
-					Discovery: &gloov1.Settings_DiscoveryOptions{
-						UdsOptions: &gloov1.Settings_DiscoveryOptions_UdsOptions{
-							Enabled: &wrappers.BoolValue{Value: false},
-						},
-						FdsMode: gloov1.Settings_DiscoveryOptions_DISABLED,
-					},
-				},
-			}
-			Expect(runner2.StartFDS(opts)).To(HaveOccurred())
-		})
-	})
 })
 
 func makeKubeUpstream(name, namespace string, labels map[string]string) *gloov1.Upstream {

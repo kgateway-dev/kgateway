@@ -1,4 +1,4 @@
-package syncer
+package utils
 
 import (
 	. "github.com/onsi/ginkgo"
