@@ -5,6 +5,6 @@ changelog:
   - type: DEPENDENCY_BUMP
     issueLink: https://github.com/solo-io/gloo/issues/6470
     description: Bump the version of go-control-plane to provide support for the CidrRanges option
-	dependencyOwner: envoyproxy
-	dependencyRepo: go-control-plane
-	dependencyTag: v0.10.2
+    dependencyOwner: envoyproxy
+    dependencyRepo: go-control-plane
+    dependencyTag: v0.10.2
