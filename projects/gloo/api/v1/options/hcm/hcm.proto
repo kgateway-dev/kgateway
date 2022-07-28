@@ -236,5 +236,6 @@ message HttpConnectionManagerSettings {
         repeated CidrRange cidr_ranges = 2;
     }
 
+    // Configuration of internal addresses
     InternalAddressConfig internal_address_config = 38;
 }
