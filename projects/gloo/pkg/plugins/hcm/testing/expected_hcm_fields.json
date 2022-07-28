@@ -46,6 +46,6 @@
     "StreamErrorOnInvalidHttpMessage",
     "PathNormalizationOptions",
     "StripTrailingHostDot",
-	"ProxyStatusConfig",
-	"TypedHeaderValidationConfig"
+    "ProxyStatusConfig",
+    "TypedHeaderValidationConfig"
 ]
