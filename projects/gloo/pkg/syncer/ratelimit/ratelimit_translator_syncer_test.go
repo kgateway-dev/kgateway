@@ -2,13 +2,17 @@ package ratelimit_test
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -19,37 +23,37 @@ import (
 var _ = Describe("RatelimitTranslatorSyncer", func() {
 
 	var (
-		ctx         context.Context
-		cancel      context.CancelFunc
-		proxy       *gloov1.Proxy
-		params      syncer.TranslatorSyncerExtensionParams
-		translator  syncer.TranslatorSyncerExtension
-		apiSnapshot *gloov1snap.ApiSnapshot
-		snapCache   *syncer.MockXdsCache
-		settings    *gloov1.Settings
+		ctx        context.Context
+		cancel     context.CancelFunc
+		proxy      *gloov1.Proxy
+		translator syncer.TranslatorSyncerExtension
 	)
 
 	Context("config with enterprise ratelimit feature is set on listener", func() {
 
 		BeforeEach(func() {
-			var err error
 			ctx, cancel = context.WithCancel(context.Background())
-
-			translator, err = NewTranslatorSyncerExtension(ctx, params)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		JustBeforeEach(func() {
-			settings = &gloov1.Settings{}
-
-			apiSnapshot = &gloov1snap.ApiSnapshot{
-				Proxies: []*gloov1.Proxy{proxy},
-			}
+			translator = NewTranslatorSyncerExtension(ctx, syncer.TranslatorSyncerExtensionParams{})
 		})
 
 		AfterEach(func() {
 			cancel()
 		})
+
+		ExpectSyncGeneratesEnterpriseOnlyError := func(errorName string) {
+			apiSnapshot := &gloov1snap.ApiSnapshot{
+				Proxies: []*gloov1.Proxy{proxy},
+			}
+			reports := make(reporter.ResourceReports)
+			translator.Sync(ctx, apiSnapshot, &gloov1.Settings{}, &syncer.MockXdsCache{}, reports)
+
+			// validate the reports contain appropriate error
+			expectedErrorMessage := fmt.Sprintf("The Gloo Advanced Rate limit API feature '%s' is enterprise-only, please upgrade or use the Envoy rate-limit API instead", errorName)
+			err := reports.ValidateStrict()
+			multiErr, ok := err.(*multierror.Error)
+			ExpectWithOffset(1, ok).To(BeTrue())
+			ExpectWithOffset(1, multiErr.WrappedErrors()).To(ContainElement(testutils.HaveInErrorChain(eris.New(expectedErrorMessage))))
+		}
 
 		Context("config ratelimitBasic", func() {
 
@@ -83,9 +87,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise ratelimitBasic config is set", func() {
-				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'ratelimitBasic' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+				ExpectSyncGeneratesEnterpriseOnlyError("ratelimitBasic")
 			})
 		})
 
@@ -129,9 +131,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise ratelimitBasic config is set", func() {
-				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'ratelimitBasic' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+				ExpectSyncGeneratesEnterpriseOnlyError("ratelimitBasic")
 			})
 		})
 
@@ -176,9 +176,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise RateLimitConfig config is set", func() {
-				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+				ExpectSyncGeneratesEnterpriseOnlyError("RateLimitConfig")
 			})
 		})
 
@@ -217,9 +215,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise setActions config is set", func() {
-				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'setActions' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+				ExpectSyncGeneratesEnterpriseOnlyError("setActions")
 			})
 		})
 
@@ -261,9 +257,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitEarly' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitEarly")
 				})
 			})
 
@@ -304,9 +298,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitEarly' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitEarly")
 				})
 			})
 
@@ -347,9 +339,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitEarly' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitEarly")
 				})
 			})
 
@@ -391,9 +381,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitEarly' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitEarly")
 				})
 			})
 
@@ -433,9 +421,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitRegular' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitRegular")
 				})
 			})
 
@@ -476,9 +462,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitRegular' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitRegular")
 				})
 			})
 
@@ -519,9 +503,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitRegular' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitRegular")
 				})
 			})
 
@@ -563,9 +545,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				})
 
 				It("errors", func() {
-					_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitRegular' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
+					ExpectSyncGeneratesEnterpriseOnlyError("RateLimitRegular")
 				})
 			})
 
