@@ -39,6 +39,8 @@ weight: 5
 - [DiscoveryOverride](#discoveryoverride)
 - [JwksOnDemandCacheRefreshPolicy](#jwksondemandcacherefreshpolicy)
 - [AutoMapFromMetadata](#automapfrommetadata)
+- [EndSessionProperties](#endsessionproperties)
+- [MethodType](#methodtype)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -536,12 +538,14 @@ redis socket types
 
 ```yaml
 "allowRefreshing": .google.protobuf.BoolValue
+"keyPrefix": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set, refresh expired id-tokens using the refresh-token. Defaults to false. Explicitly set to true to enable refreshing. |
+| `keyPrefix` | `string` | Prefix to append to cookies keys. Cookie keys will be stored in the form `<key_prefix>_<cookie_name>`. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes. |
 
 
 
@@ -654,6 +658,7 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 "authMethods": []string
 "claims": []string
 "revocationEndpoint": string
+"endSessionEndpoint": string
 
 ```
 
@@ -669,6 +674,7 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 | `authMethods` | `[]string` | list of client authentication methods supported by the provider token endpoint. |
 | `claims` | `[]string` | list of claim types that the provider supports. |
 | `revocationEndpoint` | `string` | url of the provider token revocation endpoint. |
+| `endSessionEndpoint` | `string` | url of the provider end session endpoint. |
 
 
 
@@ -720,6 +726,37 @@ not yet in the local cache.
 
 
 ---
+### EndSessionProperties
+
+
+
+```yaml
+"methodType": .enterprise.gloo.solo.io.EndSessionProperties.MethodType
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `methodType` | [.enterprise.gloo.solo.io.EndSessionProperties.MethodType](../extauth.proto.sk/#methodtype) | The method type used by the end session endpoint, defaults to GET. |
+
+
+
+
+---
+### MethodType
+
+ 
+The Method used to make the request.
+
+| Name | Description |
+| ----- | ----------- | 
+| `GetMethod` | Uses GET method when making the request |
+| `PostMethod` | Uses POST method when making the request |
+
+
+
+
+---
 ### OidcAuthorizationCode
 
 
@@ -743,6 +780,7 @@ not yet in the local cache.
 "sessionIdHeaderName": string
 "parseCallbackPathAsRegex": bool
 "autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
+"endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 
 ```
 
@@ -766,6 +804,7 @@ not yet in the local cache.
 | `sessionIdHeaderName` | `string` | If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
 | `parseCallbackPathAsRegex` | `bool` | If set, CallbackPath will be evaluated as a regular expression. |
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
+| `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 
 
 
@@ -1301,6 +1340,7 @@ Deprecated, prefer OAuth2Config
 "sessionIdHeaderName": string
 "parseCallbackPathAsRegex": bool
 "autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
+"endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 
 ```
 
@@ -1324,6 +1364,7 @@ Deprecated, prefer OAuth2Config
 | `sessionIdHeaderName` | `string` | If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
 | `parseCallbackPathAsRegex` | `bool` | If set, CallbackPath will be evaluated as a regular expression. |
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
+| `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 
 
 

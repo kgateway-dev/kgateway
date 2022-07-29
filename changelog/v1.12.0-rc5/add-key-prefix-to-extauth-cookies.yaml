@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6523
+    description: |
+      Add a new field - `KeyPrefix` - to store auth token cookies with `KeyPrefix` prefix.
+    resolvesIssue: false

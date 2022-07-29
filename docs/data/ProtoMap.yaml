@@ -167,6 +167,9 @@ apis:
   enterprise.gloo.solo.io.DiscoveryOverride:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#DiscoveryOverride
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.EndSessionProperties:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#EndSessionProperties
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.ExtAuthConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ExtAuthConfig
     package: enterprise.gloo.solo.io

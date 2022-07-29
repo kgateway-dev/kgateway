@@ -224,6 +224,8 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                endSessionEndpoint:
+                                  type: string
                                 idTokenAlgs:
                                   items:
                                     type: string
@@ -249,6 +251,12 @@ spec:
                               type: object
                             discoveryPollInterval:
                               type: string
+                            endSessionProperties:
+                              properties:
+                                methodType:
+                                  type: string
+                                  x-kubernetes-int-or-string: true
+                              type: object
                             headers:
                               properties:
                                 accessTokenHeader:
@@ -288,6 +296,8 @@ spec:
                                     allowRefreshing:
                                       nullable: true
                                       type: boolean
+                                    keyPrefix:
+                                      type: string
                                   type: object
                                 cookieOptions:
                                   properties:
