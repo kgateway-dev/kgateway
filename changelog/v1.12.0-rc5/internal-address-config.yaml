@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6470
+    description: Expose `extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.InternalAddressConfig`
+  - type: DEPENDENCY_BUMP
+    issueLink: https://github.com/solo-io/gloo/issues/6470
+    description: Bump the version of go-control-plane to provide support for the CidrRanges option
+    dependencyOwner: envoyproxy
+    dependencyRepo: go-control-plane
+    dependencyTag: v0.10.2
