@@ -16,7 +16,7 @@ type StartExtensions struct {
 }
 
 func NewRunnerFactory() bootstrap.RunnerFactory {
-	return runner.NewRunnerFactoryWithRunAndExtensions(RunFDS, nil).GetRunnerFactory()
+	return runner.NewGlooRunnerFactory(RunFDS, nil).GetRunnerFactory()
 }
 
 // NewSetupFuncWithExtensions used as extension point for external repo
@@ -24,7 +24,7 @@ func NewRunnerFactoryWithExtensions(extensions StartExtensions) bootstrap.Runner
 	runWithExtensions := func(opts runner.RunOpts) error {
 		return RunFDSWithExtensions(opts, extensions)
 	}
-	return runner.NewRunnerFactoryWithRunAndExtensions(runWithExtensions, nil).GetRunnerFactory()
+	return runner.NewGlooRunnerFactory(runWithExtensions, nil).GetRunnerFactory()
 }
 
 func GetFunctionDiscoveriesWithExtensions(opts runner.RunOpts, extensions StartExtensions) []fds.FunctionDiscoveryFactory {

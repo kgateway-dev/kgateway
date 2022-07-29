@@ -11,7 +11,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 
-	"github.com/solo-io/gloo/pkg/utils/runutils"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
@@ -20,7 +19,6 @@ import (
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	k2e "github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -33,7 +31,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
-	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/rest"
@@ -63,17 +60,21 @@ var _ = Describe("SetupSyncer", func() {
 	// One of those, is the construction of schemes: https://github.com/kubernetes/kubernetes/pull/89019#issuecomment-600278461
 	// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
 	// we ensure that only 1 RunnerFactory is ever called at a time
-	newSynchronizedSetupFunc := func() runutils.SetupFunc {
-		setupFunc := runner.NewRunnerFactory()
+	newSynchronizedSetup := func() func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+		runnerFactory := runner.NewRunnerFactory()
 
-		var synchronizedSetupFunc runutils.SetupFunc
-		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+		var synchronizedSetup func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error
+		synchronizedSetup = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
 			setupLock.Lock()
 			defer setupLock.Unlock()
-			return setupFunc(ctx, kubeCache, inMemoryCache, settings)
+			runFunc, err := runnerFactory(ctx, kubeCache, inMemoryCache, settings)
+			if err != nil {
+				return  err
+			}
+			return runFunc()
 		}
 
-		return synchronizedSetupFunc
+		return synchronizedSetup
 	}
 
 	AfterEach(func() {
@@ -98,78 +99,6 @@ var _ = Describe("SetupSyncer", func() {
 			}
 			memcache = memory.NewInMemoryResourceCache()
 			newContext()
-		})
-		Context("xds", func() {
-			setupTestGrpcClient := func() func() error {
-				cc, err := grpc.DialContext(ctx, settings.Gloo.XdsBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
-				Expect(err).NotTo(HaveOccurred())
-				// setup a gRPC client to make sure connection is persistent across invocations
-				client := reflectpb.NewServerReflectionClient(cc)
-				req := &reflectpb.ServerReflectionRequest{
-					MessageRequest: &reflectpb.ServerReflectionRequest_ListServices{
-						ListServices: "*",
-					},
-				}
-				clientstream, err := client.ServerReflectionInfo(context.Background())
-				Expect(err).NotTo(HaveOccurred())
-				err = clientstream.Send(req)
-				go func() {
-					for {
-						_, err := clientstream.Recv()
-						if err != nil {
-							return
-						}
-					}
-				}()
-				Expect(err).NotTo(HaveOccurred())
-				return func() error { return clientstream.Send(req) }
-			}
-
-			It("setup can be called twice", func() {
-
-				setup := newSynchronizedSetupFunc()
-
-				err := setup(ctx, nil, memcache, settings)
-				Expect(err).NotTo(HaveOccurred())
-
-				testFunc := setupTestGrpcClient()
-
-				newContext()
-				err = setup(ctx, nil, memcache, settings)
-				Expect(err).NotTo(HaveOccurred())
-
-				// give things a chance to react
-				time.Sleep(time.Second)
-
-				// make sure that xds snapshot was not restarted
-				err = testFunc()
-				Expect(err).NotTo(HaveOccurred())
-			})
-		})
-
-		Context("RunExtensions tests", func() {
-
-			var (
-				plugin1 = &dummyPlugin{}
-				plugin2 = &dummyPlugin{}
-			)
-
-			It("should return plugins", func() {
-				extensions := runner.RunExtensions{
-					PluginRegistryFactory: func(ctx context.Context, opts runner.RunOpts) plugins.PluginRegistry {
-						return registry.NewPluginRegistry([]plugins.Plugin{
-							plugin1,
-							plugin2,
-						})
-					},
-				}
-
-				pluginRegistry := extensions.PluginRegistryFactory(context.TODO(), runner.RunOpts{})
-				plugins := pluginRegistry.GetPlugins()
-				Expect(plugins).To(ContainElement(plugin1))
-				Expect(plugins).To(ContainElement(plugin2))
-			})
-
 		})
 
 		Context("Kube tests", func() {
@@ -242,27 +171,27 @@ var _ = Describe("SetupSyncer", func() {
 			})
 
 			It("can be called with core cache", func() {
-				setup := newSynchronizedSetupFunc()
+				setup := newSynchronizedSetup()
 				err := setup(ctx, kubeCoreCache, memcache, settings)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("can be called with core cache warming endpoints", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(time.Minute)
-				setup := newSynchronizedSetupFunc()
+				setup := newSynchronizedSetup()
 				err := setup(ctx, kubeCoreCache, memcache, settings)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("panics when endpoints don't arrive in a timely manner", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(1 * time.Nanosecond)
-				setup := newSynchronizedSetupFunc()
+				setup := newSynchronizedSetup()
 				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).To(Panic())
 			})
 
 			It("doesn't panic when endpoints don't arrive in a timely manner if set to zero", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(0)
-				setup := newSynchronizedSetupFunc()
+				setup := newSynchronizedSetup()
 				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).NotTo(Panic())
 			})
 

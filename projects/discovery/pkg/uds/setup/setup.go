@@ -15,7 +15,7 @@ func Main(customCtx context.Context) error {
 		Ctx:           customCtx,
 		LoggerName:    "uds",
 		Version:       version.Version,
-		RunnerFactory: runner.NewRunnerFactory().GetRunnerFactory(),
+		RunnerFactory: runner.NewRunnerFactory(),
 	}
 
 	return bootstrap.Setup(setupOptions)

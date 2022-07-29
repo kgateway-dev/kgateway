@@ -125,7 +125,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	ctx = settingsutil.WithSettings(ctx, settings)
 
-	glooRunnerFactory := runner.NewRunnerFactory()
+	glooRunnerFactory := runner.NewGlooRunnerFactory(runner.RunGloo, nil)
 	baseRunnerFactory := glooRunnerFactory.GetRunnerFactory()
 	runGloo, factoryErr := baseRunnerFactory(ctx, kubeCache, inMemoryCache, settings)
 	Expect(factoryErr).NotTo(HaveOccurred())
