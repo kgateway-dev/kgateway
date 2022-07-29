@@ -3,7 +3,6 @@ package translator_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/onsi/ginkgo/extensions/table"
@@ -110,11 +109,13 @@ var _ = Describe("Translator", func() {
 		memoryClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		opts := runner.StartOpts{
-			Settings:  settings,
-			Secrets:   memoryClientFactory,
-			Upstreams: memoryClientFactory,
-			Consul: runner.ConsulStartOpts{
+
+		secretClient, err := v1.NewSecretClient(context.TODO(), memoryClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
+		opts := registry.PluginOpts{
+			SecretClient: secretClient,
+			Consul: registry.ConsulPluginOpts{
 				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 			},
 		}

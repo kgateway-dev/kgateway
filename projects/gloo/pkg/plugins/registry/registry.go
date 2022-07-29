@@ -2,12 +2,13 @@
 package registry
 
 import (
+	"time"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
 	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	kubernetes2 "k8s.io/client-go/kubernetes"
-	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
@@ -58,14 +59,14 @@ var (
 type PluginOpts struct {
 	SecretClient v1.SecretClient
 
-	KubeClient kubernetes2.Interface
+	KubeClient    kubernetes2.Interface
 	KubeCoreCache cache.KubeCoreCache
 
 	Consul ConsulPluginOpts
 }
 
 type ConsulPluginOpts struct {
-	ConsulWatcher     	consul2.ConsulWatcher
+	ConsulWatcher      consul2.ConsulWatcher
 	DnsServer          string
 	DnsPollingInterval *time.Duration
 }

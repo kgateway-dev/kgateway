@@ -9,11 +9,11 @@ import (
 )
 
 func Run(ctx context.Context) error {
-	runnerOptions := bootstrap.RunnerOpts{
-		Ctx:        ctx,
-		LoggerName: "ingress",
-		Version:    version.Version,
-		SetupFunc:  Setup,
+	runnerOptions := bootstrap.SetupOpts{
+		Ctx:           ctx,
+		LoggerName:    "ingress",
+		Version:       version.Version,
+		RunnerFactory: Setup,
 	}
-	return bootstrap.Run(runnerOptions)
+	return bootstrap.Setup(runnerOptions)
 }

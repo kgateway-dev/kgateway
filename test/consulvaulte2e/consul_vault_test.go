@@ -9,21 +9,22 @@ import (
 	"path/filepath"
 	"time"
 
+	setup2 "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
+	setup3 "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
+	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
+
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
-	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/runner"
-	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/runner"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -125,19 +126,19 @@ var _ = Describe("ConsulStartOpts + Vault Configuration Happy Path e2e", func() 
 		go func() {
 			defer GinkgoRecover()
 			// Start Gloo
-			err = runner.Run(ctx)
+			err = setup.Main(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		go func() {
 			defer GinkgoRecover()
 			// Start FDS
-			err = fdssetup.Run(ctx)
+			err = setup2.Main(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		go func() {
 			defer GinkgoRecover()
 			// Start UDS
-			err = udssetup.Run(ctx)
+			err = setup3.Main(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
@@ -147,10 +148,10 @@ var _ = Describe("ConsulStartOpts + Vault Configuration Happy Path e2e", func() 
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort, restXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		// Run a simple web application locally
+		// Setup a simple web application locally
 		svc1 = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
-		// Run the petstore locally
+		// Setup the petstore locally
 		petstorePort = 1234
 		go func() {
 			defer GinkgoRecover()

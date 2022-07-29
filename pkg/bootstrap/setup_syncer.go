@@ -20,14 +20,14 @@ var (
 
 type SetupSyncer struct {
 	settingsRef   *core.ResourceRef
-	setupFunc     SetupFunc
+	runnerFactory RunnerFactory
 	inMemoryCache memory.InMemoryResourceCache
 }
 
-func NewSetupSyncer(settingsRef *core.ResourceRef, setupFunc SetupFunc) *SetupSyncer {
+func NewSetupSyncer(settingsRef *core.ResourceRef, runnerFactory RunnerFactory) *SetupSyncer {
 	return &SetupSyncer{
 		settingsRef:   settingsRef,
-		setupFunc:     setupFunc,
+		runnerFactory: runnerFactory,
 		inMemoryCache: memory.NewInMemoryResourceCache(),
 	}
 }
@@ -43,5 +43,9 @@ func (s *SetupSyncer) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
 
 	utils.MeasureOne(ctx, mSetupsRun)
 
-	return s.setupFunc(ctx, kube.NewKubeCache(ctx), s.inMemoryCache, settings)
+	runFunc, err := s.runnerFactory(ctx, kube.NewKubeCache(ctx), s.inMemoryCache, settings)
+	if err != nil {
+		return err
+	}
+	return runFunc()
 }

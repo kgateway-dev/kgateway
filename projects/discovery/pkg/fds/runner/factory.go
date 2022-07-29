@@ -15,23 +15,23 @@ type StartExtensions struct {
 	DiscoveryFactoryFuncs []func() fds.FunctionDiscoveryFactory
 }
 
-func NewSetupFunc() bootstrap.SetupFunc {
-	return runner.NewSetupFuncWithRunAndExtensions(StartFDS, nil)
+func NewRunnerFactory() bootstrap.RunnerFactory {
+	return runner.NewRunnerFactoryWithRunAndExtensions(RunFDS, nil).GetRunnerFactory()
 }
 
 // NewSetupFuncWithExtensions used as extension point for external repo
-func NewSetupFuncWithExtensions(extensions StartExtensions) bootstrap.SetupFunc {
-	runWithExtensions := func(opts runner.StartOpts) error {
-		return StartFDSWithExtensions(opts, extensions)
+func NewRunnerFactoryWithExtensions(extensions StartExtensions) bootstrap.RunnerFactory {
+	runWithExtensions := func(opts runner.RunOpts) error {
+		return RunFDSWithExtensions(opts, extensions)
 	}
-	return runner.NewSetupFuncWithRunAndExtensions(runWithExtensions, nil)
+	return runner.NewRunnerFactoryWithRunAndExtensions(runWithExtensions, nil).GetRunnerFactory()
 }
 
-func GetFunctionDiscoveriesWithExtensions(opts runner.StartOpts, extensions StartExtensions) []fds.FunctionDiscoveryFactory {
+func GetFunctionDiscoveriesWithExtensions(opts runner.RunOpts, extensions StartExtensions) []fds.FunctionDiscoveryFactory {
 	return GetFunctionDiscoveriesWithExtensionsAndRegistry(opts, discoveryRegistry.Plugins, extensions)
 }
 
-func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts runner.StartOpts, registryDiscFacts func(opts runner.StartOpts) []fds.FunctionDiscoveryFactory, extensions StartExtensions) []fds.FunctionDiscoveryFactory {
+func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts runner.RunOpts, registryDiscFacts func(opts runner.RunOpts) []fds.FunctionDiscoveryFactory, extensions StartExtensions) []fds.FunctionDiscoveryFactory {
 	pluginfuncs := extensions.DiscoveryFactoryFuncs
 	discFactories := registryDiscFacts(opts)
 	for _, discoveryFactoryExtension := range pluginfuncs {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -107,7 +108,7 @@ var _ = Describe("SnapshotBenchmark", func() {
 			memoryClientFactory := &factory.MemoryResourceClientFactory{
 				Cache: memory.NewInMemoryResourceCache(),
 			}
-			opts := runner.StartOpts{
+			opts := runner.RunOpts{
 				Settings:  settings,
 				Secrets:   memoryClientFactory,
 				Upstreams: memoryClientFactory,

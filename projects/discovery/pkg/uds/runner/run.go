@@ -18,7 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 )
 
-func StartUDS(opts runner.StartOpts) error {
+func RunUDS(opts runner.RunOpts) error {
 	udsEnabled := syncerutils.GetUdsEnabled(opts.Settings)
 	if !udsEnabled {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Upstream discovery "+
@@ -37,8 +37,9 @@ func StartUDS(opts runner.StartOpts) error {
 
 	var err error
 	var nsClient kubernetes.KubeNamespaceClient
-	if opts.KubeClient != nil && opts.KubeCoreCache.NamespaceLister() != nil {
-		nsClient = namespace.NewNamespaceClient(opts.KubeClient, opts.KubeCoreCache)
+	typedClientset := opts.TypedClientset
+	if typedClientset.KubeClient != nil && typedClientset.KubeCoreCache.NamespaceLister() != nil {
+		nsClient = namespace.NewNamespaceClient(typedClientset.KubeClient, typedClientset.KubeCoreCache)
 	} else {
 		// initialize an empty namespace client
 		// in the future we can extend the concept of namespaces to
@@ -72,7 +73,8 @@ func StartUDS(opts runner.StartOpts) error {
 
 	errs := make(chan error)
 
-	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+	statusReporterNamespace := gloostatusutils.GetStatusReporterNamespaceOrDefault(opts.WriteNamespace)
+	statusClient := gloostatusutils.GetStatusClientForNamespace(statusReporterNamespace)
 
 	uds := discovery.NewUpstreamDiscovery(watchNamespaces, opts.WriteNamespace, glooClientset.Upstreams, statusClient, discoveryPlugins)
 	// TODO(ilackarms) expose discovery options

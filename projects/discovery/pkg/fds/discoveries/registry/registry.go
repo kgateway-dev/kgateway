@@ -16,7 +16,7 @@ type registry struct {
 	plugins []fds.FunctionDiscoveryFactory
 }
 
-var globalRegistry = func(opts runner.StartOpts, pluginExtensions ...func() plugins.Plugin) *registry {
+var globalRegistry = func(opts runner.RunOpts, pluginExtensions ...func() plugins.Plugin) *registry {
 	reg := &registry{}
 	// plugins should be added here
 	reg.plugins = append(reg.plugins,
@@ -28,6 +28,6 @@ var globalRegistry = func(opts runner.StartOpts, pluginExtensions ...func() plug
 	return reg
 }
 
-func Plugins(opts runner.StartOpts) []fds.FunctionDiscoveryFactory {
+func Plugins(opts runner.RunOpts) []fds.FunctionDiscoveryFactory {
 	return globalRegistry(opts).plugins
 }

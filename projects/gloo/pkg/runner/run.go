@@ -2,6 +2,8 @@ package runner
 
 import (
 	"context"
+	"net"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	ratelimitv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -20,22 +22,21 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
-	"net"
 )
 
-type StartFunc func(opts StartOpts) error
+type RunWithOptions func(opts RunOpts) error
 
-type StartOpts struct {
-	WriteNamespace               string
-	WatchNamespaces              []string
+type RunOpts struct {
+	WriteNamespace  string
+	WatchNamespaces []string
 
-	Settings         *gloov1.Settings
-	WatchOpts        clients.WatchOpts
+	Settings  *gloov1.Settings
+	WatchOpts clients.WatchOpts
 
 	ResourceClientset ResourceClientset
-	TypedClientset TypedClientset
+	TypedClientset    TypedClientset
 
-	GatewayControllerEnabled     bool
+	GatewayControllerEnabled bool
 
 	ControlPlane     ControlPlane
 	ValidationServer ValidationServer
@@ -44,10 +45,9 @@ type StartOpts struct {
 
 // A PluginRegistryFactory generates a PluginRegistry
 // It is executed each translation loop, ensuring we have up to date configuration of all plugins
-type PluginRegistryFactory func(ctx context.Context, opts StartOpts) plugins.PluginRegistry
+type PluginRegistryFactory func(ctx context.Context, opts RunOpts) plugins.PluginRegistry
 
-
-type StartExtensions struct {
+type RunExtensions struct {
 	PluginRegistryFactory PluginRegistryFactory
 	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
 	XdsCallbacks          server.Callbacks
@@ -64,28 +64,28 @@ type ResourceClientset struct {
 	RouteOptions          gatewayv1.RouteOptionClient
 
 	// Gloo resources
-	Endpoints             gloov1.EndpointClient
-	Upstreams             gloov1.UpstreamClient
-	UpstreamGroups        gloov1.UpstreamGroupClient
-	Proxies               gloov1.ProxyClient
-	Secrets               gloov1.SecretClient
-	Artifacts             gloov1.ArtifactClient
+	Endpoints      gloov1.EndpointClient
+	Upstreams      gloov1.UpstreamClient
+	UpstreamGroups gloov1.UpstreamGroupClient
+	Proxies        gloov1.ProxyClient
+	Secrets        gloov1.SecretClient
+	Artifacts      gloov1.ArtifactClient
 
 	// Gloo Enterprise resources
-	AuthConfigs           extauthv1.AuthConfigClient
-	GraphQLApis           v1beta1.GraphQLApiClient
-	RateLimitConfigs      ratelimitv1.RateLimitConfigClient
+	AuthConfigs       extauthv1.AuthConfigClient
+	GraphQLApis       v1beta1.GraphQLApiClient
+	RateLimitConfigs  ratelimitv1.RateLimitConfigClient
 	RateLimitReporter reporter.ReporterResourceClient
 }
 
 type TypedClientset struct {
 	// Kubernetes clients
-	KubeClient                   kubernetes.Interface
-	KubeServiceClient            skkube.ServiceClient
-	KubeCoreCache                corecache.KubeCoreCache
+	KubeClient        kubernetes.Interface
+	KubeServiceClient skkube.ServiceClient
+	KubeCoreCache     corecache.KubeCoreCache
 
 	// Consul clients
-	ConsulWatcher      consul.ConsulWatcher
+	ConsulWatcher consul.ConsulWatcher
 }
 
 type ControlPlane struct {

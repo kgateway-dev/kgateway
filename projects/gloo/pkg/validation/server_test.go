@@ -2,7 +2,6 @@ package validation_test
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"net"
 	"sync"
 	"time"
@@ -53,11 +52,12 @@ var _ = Describe("Validation Server", func() {
 		memoryClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		opts := runner.StartOpts{
-			Settings:  settings,
-			Secrets:   memoryClientFactory,
-			Upstreams: memoryClientFactory,
-			Consul: runner.ConsulStartOpts{
+		secretClient, err := v1.NewSecretClient(context.TODO(), memoryClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
+		opts := registry.PluginOpts{
+			SecretClient: secretClient,
+			Consul: registry.ConsulPluginOpts{
 				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 			},
 		}

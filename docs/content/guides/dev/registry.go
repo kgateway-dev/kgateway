@@ -34,7 +34,7 @@ type registry struct {
 	plugins []plugins.Plugin
 }
 
-var globalRegistry = func(opts runner.StartOpts) *registry {
+var globalRegistry = func(opts runner.RunOpts) *registry {
 	transformationPlugin := transformation.NewPlugin()
 	reg := &registry{}
 	// plugins should be added here
@@ -68,6 +68,6 @@ var globalRegistry = func(opts runner.StartOpts) *registry {
 	return reg
 }
 
-func Plugins(opts runner.StartOpts, pluginExtensions ...plugins.Plugin) []plugins.Plugin {
+func Plugins(opts runner.RunOpts, pluginExtensions ...plugins.Plugin) []plugins.Plugin {
 	return globalRegistry(opts, pluginExtensions...).plugins
 }

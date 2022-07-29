@@ -2,13 +2,14 @@ package gloo_test
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"net"
 	"os"
 	"os/exec"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 
 	"github.com/solo-io/gloo/pkg/utils/runutils"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -56,14 +57,14 @@ var _ = Describe("SetupSyncer", func() {
 		ctx = settingsutil.WithSettings(ctx, settings)
 	}
 
-	// SetupFunc is used to configure Gloo with appropriate configuration
+	// RunnerFactory is used to configure Gloo with appropriate configuration
 	// It is assumed to run once at construction time, and therefore it executes directives that
 	// are also assumed to only run at construction time.
 	// One of those, is the construction of schemes: https://github.com/kubernetes/kubernetes/pull/89019#issuecomment-600278461
 	// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
-	// we ensure that only 1 SetupFunc is ever called at a time
+	// we ensure that only 1 RunnerFactory is ever called at a time
 	newSynchronizedSetupFunc := func() runutils.SetupFunc {
-		setupFunc := runner.NewSetupFunc()
+		setupFunc := runner.NewRunnerFactory()
 
 		var synchronizedSetupFunc runutils.SetupFunc
 		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
@@ -146,7 +147,7 @@ var _ = Describe("SetupSyncer", func() {
 			})
 		})
 
-		Context("StartExtensions tests", func() {
+		Context("RunExtensions tests", func() {
 
 			var (
 				plugin1 = &dummyPlugin{}
@@ -154,8 +155,8 @@ var _ = Describe("SetupSyncer", func() {
 			)
 
 			It("should return plugins", func() {
-				extensions := runner.StartExtensions{
-					PluginRegistryFactory: func(ctx context.Context, opts runner.StartOpts) plugins.PluginRegistry {
+				extensions := runner.RunExtensions{
+					PluginRegistryFactory: func(ctx context.Context, opts runner.RunOpts) plugins.PluginRegistry {
 						return registry.NewPluginRegistry([]plugins.Plugin{
 							plugin1,
 							plugin2,
@@ -163,7 +164,7 @@ var _ = Describe("SetupSyncer", func() {
 					},
 				}
 
-				pluginRegistry := extensions.PluginRegistryFactory(context.TODO(), runner.StartOpts{})
+				pluginRegistry := extensions.PluginRegistryFactory(context.TODO(), runner.RunOpts{})
 				plugins := pluginRegistry.GetPlugins()
 				Expect(plugins).To(ContainElement(plugin1))
 				Expect(plugins).To(ContainElement(plugin2))
@@ -234,7 +235,7 @@ var _ = Describe("SetupSyncer", func() {
 				}
 				kubeCoreCache = kube.NewKubeCache(ctx)
 
-				// Gloo SetupFunc is no longer responsible for registering CRDs. This was not used in production, and
+				// Gloo RunnerFactory is no longer responsible for registering CRDs. This was not used in production, and
 				// required Gloo having RBAC permissions that it should not have. CRD registration is now only supported
 				// by Helm. Therefore, this test needs to manually register CRDs to test setup.
 				registerCrdsOnce.Do(registerCRDs)

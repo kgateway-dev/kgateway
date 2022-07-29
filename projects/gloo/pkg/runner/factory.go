@@ -3,15 +3,19 @@ package runner
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/enterprise_warning"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/enterprise_warning"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
 
@@ -32,9 +36,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 
 	"github.com/golang/protobuf/ptypes/duration"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
@@ -84,26 +85,44 @@ var AcceptAllResourcesByDefault = true
 
 var AllowWarnings = true
 
-func NewSetupFunc() bootstrap.SetupFunc {
-	return NewSetupFuncWithRunAndExtensions(StartGloo, nil)
+type glooRunnerFactory struct {
+	runnerFactory bootstrap.RunnerFactory
+
+	resourceClientset ResourceClientset
+	typedClientset    TypedClientset
+
+	extensions               *RunExtensions
+	runFunc                  RunWithOptions
+	makeGrpcServer           func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server
+	previousXdsServer        grpcServer
+	previousValidationServer grpcServer
+	previousProxyDebugServer grpcServer
+	controlPlane             ControlPlane
+	validationServer         ValidationServer
+	proxyDebugServer         ProxyDebugServer
+	callbacks                xdsserver.Callbacks
+}
+
+func NewRunnerFactory() *glooRunnerFactory {
+	return NewRunnerFactoryWithRunAndExtensions(RunGloo, nil)
 }
 
 // used outside of this repo
 //noinspection GoUnusedExportedFunction
-func NewSetupFuncWithExtensions(extensions StartExtensions) bootstrap.SetupFunc {
-	runWithExtensions := func(opts StartOpts) error {
-		return StartGlooWithExtensions(opts, extensions)
+func NewRunnerFactoryWithExtensions(extensions RunExtensions) *glooRunnerFactory {
+	runWithExtensions := func(opts RunOpts) error {
+		return RunGlooWithExtensions(opts, extensions)
 	}
-	return NewSetupFuncWithRunAndExtensions(runWithExtensions, &extensions)
+	return NewRunnerFactoryWithRunAndExtensions(runWithExtensions, &extensions)
 }
 
 // for use by UDS, FDS, other v1.SetupSyncers
-func NewSetupFuncWithRun(runFunc StartFunc) bootstrap.SetupFunc {
-	return NewSetupFuncWithRunAndExtensions(runFunc, nil)
+func NewRunnerFactoryWithRun(runFunc RunWithOptions) bootstrap.RunnerFactory {
+	return NewRunnerFactoryWithRunAndExtensions(runFunc, nil).GetRunnerFactory()
 }
 
-func NewSetupFuncWithRunAndExtensions(runFunc StartFunc, extensions *StartExtensions) bootstrap.SetupFunc {
-	s := &setupSyncer{
+func NewRunnerFactoryWithRunAndExtensions(runFunc RunWithOptions, extensions *RunExtensions) *glooRunnerFactory {
+	s := &glooRunnerFactory{
 		extensions: extensions,
 		makeGrpcServer: func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server {
 			serverOpts := []grpc.ServerOption{
@@ -122,7 +141,20 @@ func NewSetupFuncWithRunAndExtensions(runFunc StartFunc, extensions *StartExtens
 		},
 		runFunc: runFunc,
 	}
-	return s.Setup
+	s.runnerFactory = s.RunnerFactoryImpl
+	return s
+}
+
+func (g *glooRunnerFactory) GetRunnerFactory() bootstrap.RunnerFactory {
+	return g.runnerFactory
+}
+
+func (g *glooRunnerFactory) GetResourceClientset() ResourceClientset {
+	return g.resourceClientset
+}
+
+func (g *glooRunnerFactory) GetTypedClientset() TypedClientset {
+	return g.typedClientset
 }
 
 // grpcServer contains grpc server configuration fields we will need to persist after starting a server
@@ -131,19 +163,6 @@ type grpcServer struct {
 	addr            string
 	maxGrpcRecvSize int
 	cancel          context.CancelFunc
-}
-
-type setupSyncer struct {
-	extensions               *StartExtensions
-	runFunc                  StartFunc
-	makeGrpcServer           func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server
-	previousXdsServer        grpcServer
-	previousValidationServer grpcServer
-	previousProxyDebugServer grpcServer
-	controlPlane             ControlPlane
-	validationServer         ValidationServer
-	proxyDebugServer         ProxyDebugServer
-	callbacks                xdsserver.Callbacks
 }
 
 func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, callbacks xdsserver.Callbacks, start bool) ControlPlane {
@@ -209,7 +228,7 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 	return &net.TCPAddr{IP: ip, Port: port}, nil
 }
 
-func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+func (s *glooRunnerFactory) RunnerFactoryImpl(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) (bootstrap.RunFunc, error) {
 
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
@@ -217,7 +236,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 	xdsTcpAddress, err := getAddr(xdsAddr)
 	if err != nil {
-		return errors.Wrapf(err, "parsing xds addr")
+		return nil, errors.Wrapf(err, "parsing xds addr")
 	}
 
 	validationAddr := settings.GetGloo().GetValidationBindAddr()
@@ -226,7 +245,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 	validationTcpAddress, err := getAddr(validationAddr)
 	if err != nil {
-		return errors.Wrapf(err, "parsing validation addr")
+		return nil, errors.Wrapf(err, "parsing validation addr")
 	}
 
 	proxyDebugAddr := settings.GetGloo().GetProxyDebugBindAddr()
@@ -235,7 +254,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 	proxyDebugTcpAddress, err := getAddr(proxyDebugAddr)
 	if err != nil {
-		return errors.Wrapf(err, "parsing proxy debug endpoint addr")
+		return nil, errors.Wrapf(err, "parsing proxy debug endpoint addr")
 	}
 	refreshRate := time.Minute
 	if settings.GetRefreshRate() != nil {
@@ -254,7 +273,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	// Use the same maxGrpcMsgSize for both validation server and proxy debug server as the message size is determined by the size of proxies.
 	if maxGrpcMsgSize := settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); maxGrpcMsgSize != nil {
 		if maxGrpcMsgSize.GetValue() < 0 {
-			return errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be non-negative, current value: %v", maxGrpcMsgSize.GetValue())
+			return nil, errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be non-negative, current value: %v", maxGrpcMsgSize.GetValue())
 		}
 		maxGrpcRecvSize = int(maxGrpcMsgSize.GetValue())
 	}
@@ -329,32 +348,32 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.previousProxyDebugServer.maxGrpcRecvSize = maxGrpcRecvSize
 	}
 
-
 	// Generate the set of clients used to power Gloo Edge
 	resourceClientset, typedClientset, err := GenerateGlooClientsets(ctx, settings, kubeCache, memCache)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	s.resourceClientset = resourceClientset
+	s.typedClientset = typedClientset
 
 	var gatewayControllerEnabled = true
 	if settings.GetGateway().GetEnableGatewayController() != nil {
 		gatewayControllerEnabled = settings.GetGateway().GetEnableGatewayController().GetValue()
 	}
 
-	opts := StartOpts{
-		WriteNamespace: writeNamespace,
+	opts := RunOpts{
+		WriteNamespace:  writeNamespace,
 		WatchNamespaces: watchNamespaces,
-		WatchOpts : clients.WatchOpts{
+		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
 		},
 		Settings: settings,
 
 		ResourceClientset: resourceClientset,
-		TypedClientset: typedClientset,
+		TypedClientset:    typedClientset,
 
 		GatewayControllerEnabled: gatewayControllerEnabled,
-
 	}
 
 	// TODO (samheilbron) These should be built from the start options, not included in the start options
@@ -362,16 +381,17 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.ValidationServer = s.validationServer
 	opts.ProxyDebugServer = s.proxyDebugServer
 
+	return func() error {
+		err = s.runFunc(opts)
 
-	err = s.runFunc(opts)
+		s.validationServer.StartGrpcServer = opts.ValidationServer.StartGrpcServer
+		s.controlPlane.StartGrpcServer = opts.ControlPlane.StartGrpcServer
 
-	s.validationServer.StartGrpcServer = opts.ValidationServer.StartGrpcServer
-	s.controlPlane.StartGrpcServer = opts.ControlPlane.StartGrpcServer
-
-	return err
+		return err
+	}, nil
 }
 
-func GetPluginOpts(opts StartOpts) registry.PluginOpts {
+func GetPluginOpts(opts RunOpts) registry.PluginOpts {
 	settings := opts.Settings
 	dnsAddress := settings.GetConsul().GetDnsAddress()
 	if len(dnsAddress) == 0 {
@@ -387,15 +407,15 @@ func GetPluginOpts(opts StartOpts) registry.PluginOpts {
 		SecretClient:  opts.ResourceClientset.Secrets,
 		KubeClient:    opts.TypedClientset.KubeClient,
 		KubeCoreCache: opts.TypedClientset.KubeCoreCache,
-		Consul:        registry.ConsulPluginOpts{
-			ConsulWatcher: opts.TypedClientset.ConsulWatcher,
-			DnsServer: dnsAddress,
+		Consul: registry.ConsulPluginOpts{
+			ConsulWatcher:      opts.TypedClientset.ConsulWatcher,
+			DnsServer:          dnsAddress,
 			DnsPollingInterval: &dnsPollingInterval,
 		},
 	}
 }
 
-func GlooPluginRegistryFactory(_ context.Context, opts StartOpts) plugins.PluginRegistry {
+func GlooPluginRegistryFactory(_ context.Context, opts RunOpts) plugins.PluginRegistry {
 	availablePlugins := registry.Plugins(GetPluginOpts(opts))
 
 	// To improve the UX, load a plugin that warns users if they are attempting to use enterprise configuration
@@ -403,8 +423,8 @@ func GlooPluginRegistryFactory(_ context.Context, opts StartOpts) plugins.Plugin
 	return registry.NewPluginRegistry(availablePlugins)
 }
 
-func StartGloo(opts StartOpts) error {
-	glooExtensions := StartExtensions{
+func RunGloo(opts RunOpts) error {
+	glooExtensions := RunExtensions{
 		PluginRegistryFactory: GlooPluginRegistryFactory,
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
@@ -414,19 +434,19 @@ func StartGloo(opts StartOpts) error {
 		XdsCallbacks:      nil,
 	}
 
-	return StartGlooWithExtensions(opts, glooExtensions)
+	return RunGlooWithExtensions(opts, glooExtensions)
 }
 
-func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
-	// Validate StartExtensions
+func RunGlooWithExtensions(opts RunOpts, extensions RunExtensions) error {
+	// Validate RunExtensions
 	if extensions.ApiEmitterChannel == nil {
-		return errors.Errorf("StartExtensions.ApiEmitterChannel must be defined, found nil")
+		return errors.Errorf("RunExtensions.ApiEmitterChannel must be defined, found nil")
 	}
 	if extensions.PluginRegistryFactory == nil {
-		return errors.Errorf("StartExtensions.PluginRegistryFactory must be defined, found nil")
+		return errors.Errorf("RunExtensions.PluginRegistryFactory must be defined, found nil")
 	}
 	if extensions.SyncerExtensions == nil {
-		return errors.Errorf("StartExtensions.SyncerExtensions must be defined, found nil")
+		return errors.Errorf("RunExtensions.SyncerExtensions must be defined, found nil")
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()
@@ -444,7 +464,6 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 	// Delete proxies that may have been left from prior to an upgrade or from previously having set persistProxySpec
 	// Ignore errors because gloo will still work with stray proxies.
 	_ = setup.DoProxyCleanup(watchOpts.Ctx, opts.Settings, glooClientset.Proxies, opts.WriteNamespace)
-
 
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
@@ -790,7 +809,7 @@ func StartGlooWithExtensions(opts StartOpts, extensions StartExtensions) error {
 	return nil
 }
 
-func startRestXdsServer(opts StartOpts) {
+func startRestXdsServer(opts RunOpts) {
 	restClient := server.NewHTTPGateway(
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx),
 		opts.ControlPlane.XDSServer,
@@ -978,7 +997,6 @@ func GenerateGlooClientsets(ctx context.Context, settings *v1.Settings, kubeCach
 		Cache: memCache,
 	}
 
-
 	upstreamClient, err := v1.NewUpstreamClient(ctx, upstreamFactory)
 	if err != nil {
 		return failedToConstruct(err)
@@ -1089,7 +1107,6 @@ func GenerateGlooClientsets(ctx context.Context, settings *v1.Settings, kubeCach
 		return failedToConstruct(err)
 	}
 
-
 	resourceClientset = ResourceClientset{
 		// Gateway resources
 		VirtualServices:       virtualServiceClient,
@@ -1100,25 +1117,25 @@ func GenerateGlooClientsets(ctx context.Context, settings *v1.Settings, kubeCach
 		RouteOptions:          routeOptionClient,
 
 		// Gloo resources
-		Endpoints:             endpointClient,
-		Upstreams:            upstreamClient,
-		UpstreamGroups:        upstreamGroupClient,
-		Proxies:               proxyClient,
-		Secrets:               secretClient,
-		Artifacts:             artifactClient,
+		Endpoints:      endpointClient,
+		Upstreams:      upstreamClient,
+		UpstreamGroups: upstreamGroupClient,
+		Proxies:        proxyClient,
+		Secrets:        secretClient,
+		Artifacts:      artifactClient,
 
 		// Gloo Enterprise resources
-		AuthConfigs:           authConfigClient,
-		RateLimitConfigs:      rateLimitClient,
+		AuthConfigs:       authConfigClient,
+		RateLimitConfigs:  rateLimitClient,
 		RateLimitReporter: rateLimitReporterClient,
-		GraphQLApis:           graphqlApiClient,
+		GraphQLApis:       graphqlApiClient,
 	}
 
 	typedClientset = TypedClientset{
 		KubeClient:        kubeClient,
 		KubeServiceClient: kubeServiceClient,
 		KubeCoreCache:     kubeCoreCache,
-		ConsulWatcher: consulWatcher,
+		ConsulWatcher:     consulWatcher,
 	}
 
 	return resourceClientset, typedClientset, nil
