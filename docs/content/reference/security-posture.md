@@ -4,7 +4,7 @@ description: Expected release cadence and support of Gloo Edge
 weight: 33
 ---
 
-Review the following information about security posture of Solo's Gloo Edge Envoy extensions. For more information, see the [Envoy thread model](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/threat_model).
+Review the following information about security posture of Solo's Gloo Edge Envoy extensions. For more information, see the [Envoy threat model](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/threat_model).
 
 ## About the security posture {#about}
 
