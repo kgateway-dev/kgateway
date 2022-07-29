@@ -32,7 +32,7 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) {
 	maybeDisabled := params.Settings.GetGloo().GetDisableGrpcWeb()
 	if maybeDisabled != nil {
 		p.disabled = maybeDisabled.GetValue()
@@ -41,7 +41,6 @@ func (p *plugin) Init(params plugins.InitParams) error {
 		// this is a safe fallback because this value defaults to false
 		p.disabled = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
 	}
-	return nil
 }
 
 func (p *plugin) isDisabled(httplistener *v1.HttpListener) bool {

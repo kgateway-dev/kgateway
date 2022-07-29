@@ -33,8 +33,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 
 	BeforeEach(func() {
 		plugin = NewPlugin()
-		err := plugin.Init(plugins.InitParams{})
-		Expect(err).NotTo(HaveOccurred())
+		plugin.Init(plugins.InitParams{})
 		allowCredentials1 := true
 		in1 := &cors.CorsPolicy{
 			AllowOrigin:      allowOrigin1,
