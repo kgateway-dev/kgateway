@@ -57,8 +57,8 @@ glooctl get upstream -n gloo-system default-petstore-8080
 Here, we can see an upstream was created and accepted. The upstream points to the petstore service on port 8080 in the
 default namespace. 
 
-By default the upstream created is rather simple. It represents a specific kubernetes service. However, the petstore
-application is a swagger service. Gloo Edge can discover this swagger spec, but by default Gloo Edge's function
+By default the upstream created is rather simple. It represents a specific Kubernetes service. However, the petstore
+application is an OpenAPI (Swagger) service. Gloo Edge can discover this OpenAPI spec, but by default Gloo Edge's function
 discovery features are turned off to improve performance. To enable Function Discovery Service (fds) on our petstore,
 we need to label the namespace.
 
@@ -67,12 +67,13 @@ kubectl label namespace default  discovery.solo.io/function_discovery=enabled
 ```
 
 Gloo Edge discovered that it was a REST service and, using it's function discovery system, 
-added the functions it found in the Swagger definition to the upstream.
+added the functions it found in the OpenAPI definition to the upstream.
 
 {{% notice note %}}
 The default endpoints evaluated for `swagger` or `OpenAPISpec` docs are:
 
 ```
+"/openapi.json"
 "/swagger.json"
 "/swagger/docs/v1"
 "/swagger/docs/v2"
@@ -80,7 +81,7 @@ The default endpoints evaluated for `swagger` or `OpenAPISpec` docs are:
 "/v2/swagger"
 ```
 
-If you have a Swagger definition in a different location that the default conventions listed above, you can customize the location by configuring it in the `serviceSpec.rest.swaggerInfo.url` field. See [Configuring Function Discovery]({{< versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/" >}}) for more information. 
+If you have an OpenAPI definition in a different location that the default conventions listed above, you can customize the location by configuring it in the `serviceSpec.rest.swaggerInfo.url` field. See [Configuring Function Discovery]({{< versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/" >}}) for more information. 
 
 {{% /notice %}}
 
@@ -202,7 +203,7 @@ This should return:
 ## Summary
 
 We deployed an application to Kubernetes and Gloo Edge automatically discovered upstreams from it, including specific 
-functions off of a swagger definition. We created a virtual service and routed requests to one of those endpoints. 
+functions off of an OpenAPI definition. We created a virtual service and routed requests to one of those endpoints. 
 
 Let's clean up the virtual service we created: 
 
