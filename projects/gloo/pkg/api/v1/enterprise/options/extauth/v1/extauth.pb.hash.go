@@ -2624,6 +2624,10 @@ func (m *UserSession_InternalSession) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if _, err = hasher.Write([]byte(m.GetKeyPrefix())); err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 
