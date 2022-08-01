@@ -6,13 +6,14 @@ description: Using automatic function discovery (ie, discovering and understandi
 
 Gloo Edge's **Function Discovery Service** (FDS) attempts to poll endpoints for:
 
-* A path serving a [Swagger Document](https://swagger.io/specification/).
+* A path serving an [OpenAPI (Swagger) document](https://swagger.io/specification/).
 * gRPC Services with [gRPC Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md) enabled.
 
 
 The default endpoints evaluated for `swagger` or `OpenAPISpec` docs are:
 
 ```
+"/openapi.json"
 "/swagger.json"
 "/swagger/docs/v1"
 "/swagger/docs/v2"
@@ -20,7 +21,7 @@ The default endpoints evaluated for `swagger` or `OpenAPISpec` docs are:
 "/v2/swagger"
 ```
 
-If you have a Swagger definition on a different endpoint, you can customize the location by configuring it in the `serviceSpec.rest.swaggerInfo.url` field. For example, for a given Upstream, you can add the following including an explicit location for the Swagger document:
+If you have an OpenAPI definition on a different endpoint, you can customize the location by configuring it in the `serviceSpec.rest.swaggerInfo.url` field. For example, for a given Upstream, you can add the following including an explicit location for the OpenAPI document:
 
 
 {{< highlight yaml "hl_lines=17-20" >}}

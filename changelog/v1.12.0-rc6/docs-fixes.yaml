@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fixes docs for new logo, security posture issue, followup field descriptions, and links/typos.
+    issueLink: https://github.com/solo-io/gloo/issues/5905
