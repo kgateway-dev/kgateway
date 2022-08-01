@@ -1,0 +1,58 @@
+# Security posture for Gloo Edge Envoy extensions
+# This file includes information for both Open Source 
+# and Enterprise versions of Gloo Edge.
+# For more information, see the docs: 
+# https://docs.solo.io/gloo-edge/master/reference/security-posture/
+#
+# Options are:
+# - data_plane_agnostic
+# - requires_trusted_downstream_and_upstream
+# - robust_to_untrusted_downstream
+# - robust_to_untrusted_downstream_and_upstream
+# - unknown
+#
+# ---OPEN SOURCE--
+extensions:
+- name: filters/http/aws_lambda
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/nats/streaming
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/transformation
+  security_posture: robust_to_untrusted_downstream
+#
+# ---ENTERPRISE---
+extensions:
+- name: filters/http/graphql
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/json_grpc_transcoder
+  security_posture: unknown # this filter is not used; consider removing it.
+- name: filters/http/modsecurity
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/proxylatency
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/sanitize
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/solo_jwt_authn
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/solo_xff_offset
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/transformation_ee
+  security_posture: robust_to_untrusted_downstream
+- name: filters/listener/proxy_protocol
+  security_posture: robust_to_untrusted_downstream_and_upstream
+- name: graphql/resolvers
+  security_posture: robust_to_untrusted_downstream
+- name: health_checkers/advanced_http
+  security_posture: requires_trusted_downstream_and_upstream
+- name: transformers/xslt
+  security_posture: robust_to_untrusted_downstream
+- name: transformers/aws_lambda
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/aws_lambda
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/nats/streaming
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/cache
+  security_posture: robust_to_untrusted_downstream
+- name: filters/http/cache/grpc
+  security_posture: robust_to_untrusted_downstream  

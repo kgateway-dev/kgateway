@@ -3631,8 +3631,9 @@ type UserSession_InternalSession struct {
 	// When set, refresh expired id-tokens using the refresh-token. Defaults to false.
 	// Explicitly set to true to enable refreshing.
 	AllowRefreshing *wrappers.BoolValue `protobuf:"bytes,1,opt,name=allow_refreshing,json=allowRefreshing,proto3" json:"allow_refreshing,omitempty"`
-	// Prefix to append to cookies keys. Cookie keys will be stored in the form `<key_prefix>_<cookie_name>`.
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes
+	// Prefix to append to cookie keys, such as for separate domain and subdomain prefixes.
+	// Cookie keys are stored in the form `<key_prefix>_<cookie_name>`.
+	// For more information, see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes
 	KeyPrefix string `protobuf:"bytes,2,opt,name=key_prefix,json=keyPrefix,proto3" json:"key_prefix,omitempty"`
 }
 
