@@ -21,25 +21,25 @@ import (
 
 var (
 	// Deprecated. See mEnterpriseResourcesIn
-	mEnterpriseSnapshotIn = stats.Int64("enterprise_gloo_solo_io/emitter/snap_in", "Deprecated. Use enterprise_gloo_solo_io/emitter/resources_in. The number of snapshots in", "1")
+	mEnterpriseSnapshotIn = stats.Int64("enterprise.gloo.solo.io/emitter/snap_in", "Deprecated. Use enterprise.gloo.solo.io/emitter/resources_in. The number of snapshots in", "1")
 
 	// metrics for emitter
-	mEnterpriseResourcesIn    = stats.Int64("enterprise_gloo_solo_io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
-	mEnterpriseSnapshotOut    = stats.Int64("enterprise_gloo_solo_io/emitter/snap_out", "The number of snapshots out", "1")
-	mEnterpriseSnapshotMissed = stats.Int64("enterprise_gloo_solo_io/emitter/snap_missed", "The number of snapshots missed", "1")
+	mEnterpriseResourcesIn    = stats.Int64("enterprise.gloo.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mEnterpriseSnapshotOut    = stats.Int64("enterprise.gloo.solo.io/emitter/snap_out", "The number of snapshots out", "1")
+	mEnterpriseSnapshotMissed = stats.Int64("enterprise.gloo.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
 
 	// views for emitter
 	// deprecated: see enterpriseResourcesInView
 	enterprisesnapshotInView = &view.View{
-		Name:        "enterprise_gloo_solo_io/emitter/snap_in",
+		Name:        "enterprise.gloo.solo.io/emitter/snap_in",
 		Measure:     mEnterpriseSnapshotIn,
-		Description: "Deprecated. Use enterprise_gloo_solo_io/emitter/resources_in. The number of snapshots updates coming in.",
+		Description: "Deprecated. Use enterprise.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 
 	enterpriseResourcesInView = &view.View{
-		Name:        "enterprise_gloo_solo_io/emitter/resources_in",
+		Name:        "enterprise.gloo.solo.io/emitter/resources_in",
 		Measure:     mEnterpriseResourcesIn,
 		Description: "The number of resource lists received on open watch channels",
 		Aggregation: view.Count(),
@@ -49,14 +49,14 @@ var (
 		},
 	}
 	enterprisesnapshotOutView = &view.View{
-		Name:        "enterprise_gloo_solo_io/emitter/snap_out",
+		Name:        "enterprise.gloo.solo.io/emitter/snap_out",
 		Measure:     mEnterpriseSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	enterprisesnapshotMissedView = &view.View{
-		Name:        "enterprise_gloo_solo_io/emitter/snap_missed",
+		Name:        "enterprise.gloo.solo.io/emitter/snap_missed",
 		Measure:     mEnterpriseSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),

@@ -21,25 +21,25 @@ import (
 
 var (
 	// Deprecated. See mStatusResourcesIn
-	mStatusSnapshotIn = stats.Int64("status_ingress_solo_io/emitter/snap_in", "Deprecated. Use status_ingress_solo_io/emitter/resources_in. The number of snapshots in", "1")
+	mStatusSnapshotIn = stats.Int64("status.ingress.solo.io/emitter/snap_in", "Deprecated. Use status.ingress.solo.io/emitter/resources_in. The number of snapshots in", "1")
 
 	// metrics for emitter
-	mStatusResourcesIn    = stats.Int64("status_ingress_solo_io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
-	mStatusSnapshotOut    = stats.Int64("status_ingress_solo_io/emitter/snap_out", "The number of snapshots out", "1")
-	mStatusSnapshotMissed = stats.Int64("status_ingress_solo_io/emitter/snap_missed", "The number of snapshots missed", "1")
+	mStatusResourcesIn    = stats.Int64("status.ingress.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mStatusSnapshotOut    = stats.Int64("status.ingress.solo.io/emitter/snap_out", "The number of snapshots out", "1")
+	mStatusSnapshotMissed = stats.Int64("status.ingress.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
 
 	// views for emitter
 	// deprecated: see statusResourcesInView
 	statussnapshotInView = &view.View{
-		Name:        "status_ingress_solo_io/emitter/snap_in",
+		Name:        "status.ingress.solo.io/emitter/snap_in",
 		Measure:     mStatusSnapshotIn,
-		Description: "Deprecated. Use status_ingress_solo_io/emitter/resources_in. The number of snapshots updates coming in.",
+		Description: "Deprecated. Use status.ingress.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 
 	statusResourcesInView = &view.View{
-		Name:        "status_ingress_solo_io/emitter/resources_in",
+		Name:        "status.ingress.solo.io/emitter/resources_in",
 		Measure:     mStatusResourcesIn,
 		Description: "The number of resource lists received on open watch channels",
 		Aggregation: view.Count(),
@@ -49,14 +49,14 @@ var (
 		},
 	}
 	statussnapshotOutView = &view.View{
-		Name:        "status_ingress_solo_io/emitter/snap_out",
+		Name:        "status.ingress.solo.io/emitter/snap_out",
 		Measure:     mStatusSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	statussnapshotMissedView = &view.View{
-		Name:        "status_ingress_solo_io/emitter/snap_missed",
+		Name:        "status.ingress.solo.io/emitter/snap_missed",
 		Measure:     mStatusSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
