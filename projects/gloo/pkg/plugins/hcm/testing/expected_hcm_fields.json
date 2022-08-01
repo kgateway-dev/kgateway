@@ -45,7 +45,5 @@
     "StripPortMode",
     "StreamErrorOnInvalidHttpMessage",
     "PathNormalizationOptions",
-    "StripTrailingHostDot",
-    "ProxyStatusConfig",
-    "TypedHeaderValidationConfig"
+    "StripTrailingHostDot"
 ]
