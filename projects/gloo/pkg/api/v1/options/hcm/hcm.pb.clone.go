@@ -198,12 +198,6 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 		target.Http2ProtocolOptions = proto.Clone(m.GetHttp2ProtocolOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol.Http2ProtocolOptions)
 	}
 
-	if h, ok := interface{}(m.GetInternalAddressConfig()).(clone.Cloner); ok {
-		target.InternalAddressConfig = h.Clone().(*HttpConnectionManagerSettings_InternalAddressConfig)
-	} else {
-		target.InternalAddressConfig = proto.Clone(m.GetInternalAddressConfig()).(*HttpConnectionManagerSettings_InternalAddressConfig)
-	}
-
 	switch m.HeaderFormat.(type) {
 
 	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
@@ -266,51 +260,6 @@ func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) Clone() prot
 		target.UseRequestIdForTraceSampling = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
 		target.UseRequestIdForTraceSampling = proto.Clone(m.GetUseRequestIdForTraceSampling()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
-	}
-
-	return target
-}
-
-// Clone function
-func (m *HttpConnectionManagerSettings_CidrRange) Clone() proto.Message {
-	var target *HttpConnectionManagerSettings_CidrRange
-	if m == nil {
-		return target
-	}
-	target = &HttpConnectionManagerSettings_CidrRange{}
-
-	target.AddressPrefix = m.GetAddressPrefix()
-
-	if h, ok := interface{}(m.GetPrefixLen()).(clone.Cloner); ok {
-		target.PrefixLen = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
-	} else {
-		target.PrefixLen = proto.Clone(m.GetPrefixLen()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
-	}
-
-	return target
-}
-
-// Clone function
-func (m *HttpConnectionManagerSettings_InternalAddressConfig) Clone() proto.Message {
-	var target *HttpConnectionManagerSettings_InternalAddressConfig
-	if m == nil {
-		return target
-	}
-	target = &HttpConnectionManagerSettings_InternalAddressConfig{}
-
-	target.UnixSockets = m.GetUnixSockets()
-
-	if m.GetCidrRanges() != nil {
-		target.CidrRanges = make([]*HttpConnectionManagerSettings_CidrRange, len(m.GetCidrRanges()))
-		for idx, v := range m.GetCidrRanges() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.CidrRanges[idx] = h.Clone().(*HttpConnectionManagerSettings_CidrRange)
-			} else {
-				target.CidrRanges[idx] = proto.Clone(v).(*HttpConnectionManagerSettings_CidrRange)
-			}
-
-		}
 	}
 
 	return target
