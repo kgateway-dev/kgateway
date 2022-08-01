@@ -2786,9 +2786,9 @@ type Ldap struct {
 	Pool *Ldap_ConnectionPool `protobuf:"bytes,5,opt,name=pool,proto3" json:"pool,omitempty"`
 	// Use to set a custom filter when searching a member. Defaults to "(uid=*)".
 	SearchFilter string `protobuf:"bytes,6,opt,name=searchFilter,proto3" json:"searchFilter,omitempty"`
-	// Disables group checking regardless of what exists in allowedGroups
-	// Disables validation of the membership attribute of the user entry
-	// Group checking is enabled by default
+	// Disables group checking, regardless of the value for allowedGroups,
+	// and disables validation for the membership attribute of the user entry.
+	// Group checking is enabled by default.
 	DisableGroupChecking bool `protobuf:"varint,7,opt,name=disable_group_checking,json=disableGroupChecking,proto3" json:"disable_group_checking,omitempty"`
 }
 
