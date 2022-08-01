@@ -117,8 +117,8 @@ A single field of a message type.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `kind` | [.google.protobuf.Field.Kind](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/field-kind) | The field type. |
-| `cardinality` | [.google.protobuf.Field.Cardinality](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/field-cardinality) | The field cardinality. |
+| `kind` | [.google.protobuf.Field.Kind](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/field.kind) | The field type. |
+| `cardinality` | [.google.protobuf.Field.Cardinality](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/field.cardinality) | The field cardinality. |
 | `number` | `int` | The field number. |
 | `name` | `string` | The field name. |
 | `typeUrl` | `string` | The field type URL, without the scheme, for message or enumeration types. Example: `"type.googleapis.com/google.protobuf.Timestamp"`. |

@@ -122,7 +122,7 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 	}
 	contextutils.LoggerFrom(ctx).Infof("Updating SDS config. sdsClient is %s. Snapshot version is %s", s.sdsClient, snapshotVersion)
 
-	secretSnapshot := &cache.Snapshot{}
+	secretSnapshot := cache.Snapshot{}
 	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)
 	return s.snapshotCache.SetSnapshot(ctx, s.sdsClient, secretSnapshot)
 }
