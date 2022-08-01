@@ -2,6 +2,12 @@ package runner
 
 import (
 	"context"
+	"net"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	vaultapi "github.com/hashicorp/vault/api"
 	errors "github.com/rotisserie/eris"
@@ -39,11 +45,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
-	"net"
-	"net/http"
-	"os"
-	"strings"
-	"time"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	ratelimitv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
@@ -152,7 +153,6 @@ type GrpcService struct {
 	GrpcServer      *grpc.Server
 	StartGrpcServer bool
 }
-
 
 func RunGloo(opts RunOpts) error {
 	glooExtensions := RunExtensions{

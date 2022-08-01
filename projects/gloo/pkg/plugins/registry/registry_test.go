@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
@@ -35,7 +33,7 @@ import (
 )
 
 func TestPlugins(t *testing.T) {
-	opts := runner.RunOpts{}
+	opts := PluginOpts{}
 	allPlugins := Plugins(opts)
 	pluginTypes := make(map[reflect.Type]int)
 	for index, plugin := range allPlugins {
@@ -48,9 +46,10 @@ func TestPlugins(t *testing.T) {
 }
 
 func TestPluginsHttpFilterUsefulness(t *testing.T) {
-	opts := runner.RunOpts{}
-	pluginRegistryFactory := GetPluginRegistryFactory()
-	pluginRegistry := pluginRegistryFactory(context.TODO(), opts)
+	opts := PluginOpts{}
+	allPlugins := Plugins(opts)
+	pluginRegistry := NewPluginRegistry(allPlugins)
+
 	t.Run("Http Filters are only added if needed", func(t *testing.T) {
 
 		ctx := context.Background()

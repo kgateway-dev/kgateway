@@ -56,8 +56,6 @@ func NewRunnerFactoryWithRun(runFunc RunWithOptions) bootstrap.RunnerFactory {
 }
 
 type glooRunnerFactory struct {
-	runnerFactory bootstrap.RunnerFactory
-
 	resourceClientset ResourceClientset
 	typedClientset    TypedClientset
 
@@ -93,12 +91,11 @@ func NewGlooRunnerFactory(runFunc RunWithOptions, extensions *RunExtensions) *gl
 		},
 		runFunc: runFunc,
 	}
-	s.runnerFactory = s.RunnerFactoryImpl
 	return s
 }
 
 func (g *glooRunnerFactory) GetRunnerFactory() bootstrap.RunnerFactory {
-	return g.runnerFactory
+	return g.RunnerFactoryImpl
 }
 
 func (g *glooRunnerFactory) GetResourceClientset() ResourceClientset {
@@ -341,4 +338,3 @@ func (g *glooRunnerFactory) RunnerFactoryImpl(ctx context.Context, kubeCache kub
 		return err
 	}, nil
 }
-

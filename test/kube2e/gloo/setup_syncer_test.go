@@ -69,7 +69,7 @@ var _ = Describe("SetupSyncer", func() {
 			defer setupLock.Unlock()
 			runFunc, err := runnerFactory(ctx, kubeCache, inMemoryCache, settings)
 			if err != nil {
-				return  err
+				return err
 			}
 			return runFunc()
 		}

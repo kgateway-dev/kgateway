@@ -186,7 +186,7 @@ var _ = Describe("ConsulStartOpts + Vault Configuration Happy Path e2e", func() 
 		cancel()
 	})
 
-	It("can be configured using consul k-v and read secrets using vault", func() {
+	FIt("can be configured using consul k-v and read secrets using vault", func() {
 		cert := helpers.Certificate()
 
 		secret := &gloov1.Secret{
@@ -232,6 +232,7 @@ var _ = Describe("ConsulStartOpts + Vault Configuration Happy Path e2e", func() 
 
 		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
 	})
+
 	It("can do function routing with consul services", func() {
 
 		vsClient, err := v1.NewVirtualServiceClient(ctx, consulResources)

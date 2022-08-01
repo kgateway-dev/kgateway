@@ -1,7 +1,9 @@
-package runner
+package setup
 
 import (
 	"context"
+
+	"github.com/solo-io/gloo/projects/ingress/pkg/runner"
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
 
@@ -9,11 +11,11 @@ import (
 )
 
 func Run(ctx context.Context) error {
-	runnerOptions := bootstrap.SetupOpts{
+	setupOptions := bootstrap.SetupOpts{
 		Ctx:           ctx,
 		LoggerName:    "ingress",
 		Version:       version.Version,
-		RunnerFactory: Setup,
+		RunnerFactory: runner.IngressRunnerFactory,
 	}
-	return bootstrap.Setup(runnerOptions)
+	return bootstrap.Setup(setupOptions)
 }

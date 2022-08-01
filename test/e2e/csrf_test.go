@@ -41,7 +41,7 @@ var (
 	validOriginResponseMatcher   = BeEmpty()
 )
 
-var _ = Describe("CSRF", func() {
+var _ = FDescribe("CSRF", func() {
 
 	var (
 		err           error
@@ -165,7 +165,7 @@ var _ = Describe("CSRF", func() {
 			checkVirtualService(testVs)
 		})
 
-		FIt("should succeed with allowed origin", func() {
+		It("should succeed with allowed origin", func() {
 			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
 			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
 		})

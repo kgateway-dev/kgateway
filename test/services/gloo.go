@@ -101,7 +101,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 			RestXdsBindAddr:    fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort),
 			ValidationBindAddr: fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.ValidationPort),
 			XdsBindAddr:        fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.GlooPort),
-			ProxyDebugBindAddr: "", // not currently used by e2e tests, respect the default
+			ProxyDebugBindAddr:  fmt.Sprintf("%s:%d", net.IPv4zero.String(), AllocateGlooPort()),
 		},
 		Gateway: &gloov1.GatewayOptions{
 			PersistProxySpec: &wrappers.BoolValue{
