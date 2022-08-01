@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Changes back the name of the logo so that we don't have to change it in each backported branch.
