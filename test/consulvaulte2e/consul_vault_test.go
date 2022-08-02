@@ -2,80 +2,52 @@ package consulvaulte2e_test
 
 import (
 	"context"
-	"flag"
-	"fmt"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"time"
-
-	setup2 "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
-	setup3 "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
-	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
-
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
-
-	consulapi "github.com/hashicorp/consul/api"
-	vaultapi "github.com/hashicorp/vault/api"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
+	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("ConsulStartOpts + Vault Configuration Happy Path e2e", func() {
+const (
+	writeNamespace = defaults.GlooSystem
+	customSecretEngine = "custom-secret-engine"
+)
+
+var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 
 	var (
 		ctx            context.Context
 		cancel         context.CancelFunc
+
 		consulInstance *services.ConsulInstance
 		vaultInstance  *services.VaultInstance
 		envoyInstance  *services.EnvoyInstance
+
+		testClients   services.TestClients
+		settingsDir string
+
 		svc1           *v1helpers.TestUpstream
 		err            error
-		settingsDir    string
-
-		consulClient    *consulapi.Client
-		vaultClient     *vaultapi.Client
-		consulResources factory.ResourceClientFactory
-		vaultResources  factory.ResourceClientFactory
-
-		petstorePort   int
-		glooPort       int
-		validationPort int
-		restXdsPort    int
-		proxyDebugPort int
 	)
-
-	const writeNamespace = defaults.GlooSystem
-	const customSecretEngine = "custom-secret-engine"
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
-		glooPort = int(services.AllocateGlooPort())
-		validationPort = int(services.AllocateGlooPort())
-		restXdsPort = int(services.AllocateGlooPort())
-		proxyDebugPort = int(services.AllocateGlooPort())
-
 		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
 
 		// Start Consul
 		consulInstance, err = consulFactory.NewConsulInstance()
@@ -91,74 +63,64 @@ var _ = Describe("ConsulStartOpts + Vault Configuration Happy Path e2e", func() 
 		err = vaultInstance.EnableSecretEngine(customSecretEngine)
 		Expect(err).NotTo(HaveOccurred())
 
-		vaultSecretSource := getVaultSecretSource(vaultInstance, customSecretEngine)
-
-		// write settings telling Gloo to use consul/vault
-		settingsDir, err = ioutil.TempDir("", "")
+		// Start Gloo
+		watchNamespaces := []string{"default", writeNamespace}
+		settingsDir, err = setupSettingsDirectory(watchNamespaces)
 		Expect(err).NotTo(HaveOccurred())
-
-		settings, err := writeSettings(settingsDir, glooPort, validationPort, restXdsPort, proxyDebugPort, writeNamespace, vaultSecretSource)
-		Expect(err).NotTo(HaveOccurred())
-
-		consulClient, err = bootstrap.ConsulClientForSettings(ctx, settings)
-		Expect(err).NotTo(HaveOccurred())
-
-		vaultClient, err = bootstrap.VaultClientForSettings(vaultSecretSource)
-		Expect(err).NotTo(HaveOccurred())
-
-		consulResources = &factory.ConsulResourceClientFactory{
-			RootKey:      bootstrap.DefaultRootKey,
-			Consul:       consulClient,
-			QueryOptions: &consulapi.QueryOptions{RequireConsistent: true},
+		runOptions := &services.RunOptions{
+			NsToWrite: writeNamespace,
+			NsToWatch: watchNamespaces,
+			WhatToRun: services.What{
+				DisableFds: false,
+				DisableUds: false,
+			},
+			Settings: &gloov1.Settings{
+				ConfigSource: &gloov1.Settings_ConsulKvSource{
+					ConsulKvSource: &gloov1.Settings_ConsulKv{},
+				},
+				SecretSource: &gloov1.Settings_VaultSecretSource{
+					VaultSecretSource: &gloov1.Settings_VaultSecrets{
+						Address:    vaultInstance.Address(),
+						Token:      vaultInstance.Token(),
+						PathPrefix: customSecretEngine,
+						RootKey:    bootstrap.DefaultRootKey,
+					},
+				},
+				ArtifactSource: &gloov1.Settings_DirectoryArtifactSource{
+					DirectoryArtifactSource: &gloov1.Settings_Directory{
+						Directory: settingsDir,
+					},
+				},
+				Discovery: &gloov1.Settings_DiscoveryOptions{
+					FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
+				},
+				Consul: &gloov1.Settings_ConsulConfiguration{
+					ServiceDiscovery: &gloov1.Settings_ConsulConfiguration_ServiceDiscoveryOptions{},
+				},
+			},
 		}
+		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
-		gatewayClient, err := v1.NewGatewayClient(ctx, consulResources)
-		Expect(err).NotTo(HaveOccurred(), "Should be able to build the gateway client")
-		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
+		err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
-
-		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, customSecretEngine, bootstrap.DefaultRootKey)
-
-		// set flag for gloo to use settings dir
-		err = flag.Set("dir", settingsDir)
-		err = flag.Set("namespace", writeNamespace)
-		Expect(err).NotTo(HaveOccurred())
-		go func() {
-			defer GinkgoRecover()
-			// Start Gloo
-			err = setup.Main(ctx)
-			Expect(err).NotTo(HaveOccurred())
-		}()
-		go func() {
-			defer GinkgoRecover()
-			// Start FDS
-			err = setup2.Main(ctx)
-			Expect(err).NotTo(HaveOccurred())
-		}()
-		go func() {
-			defer GinkgoRecover()
-			// Start UDS
-			err = setup3.Main(ctx)
-			Expect(err).NotTo(HaveOccurred())
-		}()
 
 		// Start Envoy
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort, restXdsPort)
+		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Setup a simple web application locally
 		svc1 = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
-		// Setup the petstore locally
-		petstorePort = 1234
+		// Start petstore
+		petstorePort := 1234
 		go func() {
 			defer GinkgoRecover()
-			// Start petstore
-			err = services.RunPetstore(ctx, petstorePort)
-			if err != nil {
-				Expect(err.Error()).To(ContainSubstring("http: Server closed"))
+
+			petstoreErr := services.RunPetstore(ctx, petstorePort)
+			if petstoreErr != nil {
+				Expect(petstoreErr.Error()).To(ContainSubstring("http: Server closed"))
 			}
 		}()
 
@@ -171,22 +133,21 @@ var _ = Describe("ConsulStartOpts + Vault Configuration Happy Path e2e", func() 
 	})
 
 	AfterEach(func() {
-		if consulInstance != nil {
-			err = consulInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
-		if vaultInstance != nil {
-			err = vaultInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
+		err = consulInstance.Clean()
+		Expect(err).NotTo(HaveOccurred())
+
+		err = vaultInstance.Clean()
+		Expect(err).NotTo(HaveOccurred())
+
 		envoyInstance.Clean()
 
-		os.RemoveAll(settingsDir)
+		err = os.RemoveAll(settingsDir)
+		Expect(err).NotTo(HaveOccurred())
 
 		cancel()
 	})
 
-	FIt("can be configured using consul k-v and read secrets using vault", func() {
+	It("can be configured using consul k-v and read secrets using vault", func() {
 		cert := helpers.Certificate()
 
 		secret := &gloov1.Secret{
@@ -202,55 +163,33 @@ var _ = Describe("ConsulStartOpts + Vault Configuration Happy Path e2e", func() 
 			},
 		}
 
-		secretClient, err := gloov1.NewSecretClient(ctx, vaultResources)
-		Expect(err).NotTo(HaveOccurred())
-
-		_, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		vsClient, err := v1.NewVirtualServiceClient(ctx, consulResources)
-		Expect(err).NotTo(HaveOccurred())
-
-		proxyClient, err := gloov1.NewProxyClient(ctx, consulResources)
+		_, err = testClients.SecretClient.Write(secret, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		vs := makeSslVirtualService(writeNamespace, secret.Metadata.Ref())
-
-		vs, err = vsClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+		vs, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-
-		// Wait for vs and gw to be accepted
-		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return vsClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-		}, "60s", ".2s")
 
 		// Wait for the proxy to be accepted. this can take up to 40 seconds, as the vault snapshot
 		// updates every 30 seconds.
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		}, "60s", ".2s")
 
 		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
 	})
 
 	It("can do function routing with consul services", func() {
-
-		vsClient, err := v1.NewVirtualServiceClient(ctx, consulResources)
-		Expect(err).NotTo(HaveOccurred())
-
-		proxyClient, err := gloov1.NewProxyClient(ctx, consulResources)
-		Expect(err).NotTo(HaveOccurred())
-
-		us := &core.ResourceRef{Namespace: "gloo-system", Name: "petstore"}
+		us := &core.ResourceRef{Namespace: writeNamespace, Name: "petstore"}
 
 		vs := makeFunctionRoutingVirtualService(writeNamespace, us, "findPetById")
 
-		vs, err = vsClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+		vs, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for the proxy to be accepted.
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		}, "60s", ".2s")
 
 		v1helpers.ExpectHttpOK(nil, nil, defaults.HttpPort,
@@ -327,62 +266,22 @@ func makeFunctionRoutingVirtualService(vsNamespace string, upstream *core.Resour
 	}
 }
 
-func getVaultSecretSource(vaultInstance *services.VaultInstance, secretEngine string) *gloov1.Settings_VaultSecrets {
-	return &gloov1.Settings_VaultSecrets{
-		Address:    vaultInstance.Address(),
-		Token:      vaultInstance.Token(),
-		PathPrefix: secretEngine,
-		RootKey:    bootstrap.DefaultRootKey,
-	}
-}
+func setupSettingsDirectory(watchNamespaces []string) (string, error) {
+	settingsDir, err := ioutil.TempDir("", "")
+	Expect(err).NotTo(HaveOccurred())
 
-func writeSettings(
-	settingsDir string,
-	glooPort, validationPort, restXdsPort, proxyDebugPort int,
-	writeNamespace string,
-	vaultSecretSource *gloov1.Settings_VaultSecrets,
-) (*gloov1.Settings, error) {
-	settings := &gloov1.Settings{
-		ConfigSource: &gloov1.Settings_ConsulKvSource{
-			ConsulKvSource: &gloov1.Settings_ConsulKv{},
-		},
-		SecretSource: &gloov1.Settings_VaultSecretSource{
-			VaultSecretSource: vaultSecretSource,
-		},
-		ArtifactSource: &gloov1.Settings_DirectoryArtifactSource{
-			DirectoryArtifactSource: &gloov1.Settings_Directory{
-				Directory: settingsDir,
-			},
-		},
-		Discovery: &gloov1.Settings_DiscoveryOptions{
-			FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
-		},
-		Consul: &gloov1.Settings_ConsulConfiguration{
-			ServiceDiscovery: &gloov1.Settings_ConsulConfiguration_ServiceDiscoveryOptions{},
-		},
-		Gloo: &gloov1.GlooOptions{
-			XdsBindAddr:        fmt.Sprintf("0.0.0.0:%v", glooPort),
-			ValidationBindAddr: fmt.Sprintf("0.0.0.0:%v", validationPort),
-			RestXdsBindAddr:    fmt.Sprintf("0.0.0.0:%v", restXdsPort),
-			ProxyDebugBindAddr: fmt.Sprintf("0.0.0.0:%v", proxyDebugPort),
-		},
-		Gateway: &gloov1.GatewayOptions{
-			PersistProxySpec: &wrapperspb.BoolValue{Value: true},
-		},
-		RefreshRate:        prototime.DurationToProto(time.Second * 1),
-		DiscoveryNamespace: writeNamespace,
-		Metadata:           &core.Metadata{Namespace: writeNamespace, Name: "default"},
+	var requiredPaths []string
+
+	for _, ns := range watchNamespaces {
+		// must create a directory for artifacts so gloo doesn't error
+		requiredPaths = append(requiredPaths, filepath.Join(settingsDir, gloov1.ArtifactCrd.Plural, ns))
 	}
-	yam, err := protoutils.MarshalYAML(settings)
-	if err != nil {
-		return nil, err
+
+	for _, requiredPath := range requiredPaths {
+		if err := os.MkdirAll(requiredPath, 0755); err != nil {
+			return "", err
+		}
 	}
-	if err := os.MkdirAll(filepath.Join(settingsDir, writeNamespace), 0755); err != nil {
-		return nil, err
-	}
-	// must create a directory for artifacts so gloo doesn't error
-	if err := os.MkdirAll(filepath.Join(settingsDir, "artifacts", "default"), 0755); err != nil {
-		return nil, err
-	}
-	return settings, ioutil.WriteFile(filepath.Join(settingsDir, writeNamespace, "default.yaml"), yam, 0644)
+
+	return settingsDir, nil
 }

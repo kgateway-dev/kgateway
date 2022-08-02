@@ -173,6 +173,9 @@ func (i *VaultInstance) Binary() string {
 }
 
 func (i *VaultInstance) Clean() error {
+	if i == nil {
+		return nil
+	}
 	if i.session != nil {
 		i.session.Kill()
 	}
