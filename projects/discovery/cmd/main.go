@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
-	setup2 "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
+	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
+	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/stats"
 )
@@ -17,10 +17,10 @@ func main() {
 func run() error {
 	errs := make(chan error)
 	go func() {
-		errs <- setup2.Main(nil)
+		errs <- fdssetup.Main(nil)
 	}()
 	go func() {
-		errs <- setup.Main(nil)
+		errs <- udssetup.Main(nil)
 	}()
 	return <-errs
 }
