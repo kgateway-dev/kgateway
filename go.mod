@@ -81,7 +81,7 @@ require (
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/solo-io/anyvendor v0.0.4 // indirect
 	github.com/solo-io/go-list-licenses v0.1.0
-	github.com/solo-io/go-utils v0.22.1-0.20220802180906-5b8aee32889b
+	github.com/solo-io/go-utils v0.22.1-0.20220802185301-482c81bdf485
 	github.com/solo-io/k8s-utils v0.1.0
 	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/protoc-gen-openapi v0.0.1
