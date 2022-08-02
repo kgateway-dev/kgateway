@@ -269,6 +269,9 @@ spec:
                           session:
                             properties:
                               cookie:
+                                properties:
+                                  keyPrefix:
+                                    type: string
                                 type: object
                               cookieOptions:
                                 properties:
