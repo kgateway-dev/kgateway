@@ -12,7 +12,7 @@ This feature is available only for Gloo Edge Enterprise v1.12.x and later.
 
 The Gloo Edge Enterprise caching filter is an extension (implementing filter) of the [Envoy cache filter](https://www.envoyproxy.io/docs/envoy/latest/start/sandboxes/cache) and takes advantage of all the cache-ability checks that are applied. However, Gloo Edge also provides the ability to store the cached objects in a Redis instance, including Redis configuration options such as setting a password.
 
-When you enable caching during installation, the caching server deployment is automatically created for you and is managed by Gloo Edge. Then, you can configure an HTTP or HTTPS listener to cache responses for its upstream services. When the listener routes a request comes to an upstream, the response from the upstream is automatically cached for one hour. All subsequent requests receive the cached response.
+When you enable caching during installation, the caching server deployment is automatically created for you and is managed by Gloo Edge. Then, you can configure an HTTP or HTTPS listener to cache responses for its upstream services. When the listener routes a request to an upstream, the response from the upstream is automatically cached for one hour. All subsequent requests receive the cached response.
 
 ## Deploy the caching server
 
@@ -29,6 +29,13 @@ Create a caching server during Gloo Edge Enterprise installation time, and speci
    ```sh
    kubectl --namespace gloo-system get all | grep caching
    ```
+   Example output:
+   ```
+   pod/caching-service-5d7f867cdc-bhmqp                       1/1     Running   0          74s
+   service/caching-service                       ClusterIP      10.76.11.242   <none>          8085/TCP                                               77s
+   deployment.apps/caching-service                       1/1     1            1           77s
+   replicaset.apps/caching-service-5d7f867cdc                       1         1         1       76s
+   ```
 
 <!-- future work
 ## Configure settings for the caching server
@@ -40,27 +47,30 @@ https://docs.solo.io/gloo-edge/master/reference/api/github.com/solo-io/gloo/proj
 
 ## Configure caching for a listener
 
-In the Gateway CRD where your listener is defined, specify the caching server in the `httpGateway.options` section. Currently, all paths for all upstreams that are served by a listener are cached.
+1. Edit the Gateway CRD where your listener is defined.
+   ```sh
+   kubectl edit gateway -n gloo-system gateway-proxy
+   ```
 
-{{< highlight yaml "hl_lines=11-16" >}}
-apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: gateway-proxy
-  namespace: gloo-system
-spec:
-  bindAddress: ‘::’
-  bindPort: 8080
-  proxyNames:
-  - gateway-proxy
-  httpGateway:
-    options:
-      caching:
-        cachingServiceRef:
-          name: caching-server
-          namespace: gloo-system
-    ...
-{{< /highlight >}}
+2. Specify the caching server in the `httpGateway.options` section. Currently, all paths for all upstreams that are served by a listener are cached.
+   {{< highlight yaml "hl_lines=11-16" >}}
+   apiVersion: gateway.solo.io/v1
+   kind: Gateway
+   metadata:
+     name: gateway-proxy
+     namespace: gloo-system
+   spec:
+     bindAddress: ‘::’
+     bindPort: 8080
+     proxyNames:
+     - gateway-proxy
+     httpGateway:
+       options:
+         caching:
+           cachingServiceRef:
+             name: caching-service
+             namespace: gloo-system
+   {{< /highlight >}}
 
 <!-- future work: define matchers to specify which paths should be cached -->
 
@@ -68,19 +78,9 @@ spec:
 
 Verify that responses are now cached.
 
-1. Edit your gateway definition to configure the `gateway-proxy` deployment to log the value of the `test-header` request header.
-   {{< highlight yaml "hl_lines=18-23" >}}
-   kubectl apply -f- <<EOF
-   apiVersion: gateway.solo.io/v1
-   kind: Gateway
-   metadata:
-     name: gateway-proxy
-     namespace: gloo-system
-   spec:
-     bindAddress: '::'
-     bindPort: 8080
-     proxyNames:
-     - gateway-proxy
+1. Edit your gateway definition to configure the `gateway-proxy` deployment to log requests to your upstream services.
+   {{< highlight yaml "hl_lines=8-13" >}}
+   ...
      httpGateway:
        options:
          caching:
@@ -91,14 +91,13 @@ Verify that responses are now cached.
        accessLoggingService:
          accessLog:
          - fileSink:
-             stringFormat: "test-header: %REQ(test-header)%\n"
              path: /dev/stdout
-   EOF
+             stringFormat: (specific log format that would indicate responses are being cached...?)
    {{< /highlight >}}
 
-2. Send a request to an upstream service that the listener routes to. For example, if you followed the [Hello World guide]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) to deploy a sample app and configure routing to it, send the following curl request. The `test-value` value is specified for the `test-header` request header.
+2. Send a request to an upstream service that the listener routes to. For example, if you followed the [Hello World guide]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) to deploy a sample app and configure routing to it, send the following curl request.
    ```sh
-   curl $(glooctl proxy url)/all-pets -H test-header:test-value
+   curl $(glooctl proxy url)/all-pets
    ```
    The response returned by the upstream, such as the following example, should now be cached.
    ```json
@@ -109,17 +108,17 @@ Verify that responses are now cached.
    ```shell
    kubectl logs deployment/gateway-proxy -n gloo-system
    ```
-   Verify that you see the following log entry:
+   At the end of the output, verify that you see a log entry similar to the following:
    ```
-   test-header: test-value
+   (example output)
    ```
 
 4. Send another request to the service.
    ```sh
-   curl $(glooctl proxy url)/all-pets -H test-header:test-value
+   curl $(glooctl proxy url)/all-pets
    ```
 
-5. Check the access logs again from the `gateway-proxy` deployment. This time, no new log entries are generated, because the gateway returns a cached response instead of routing the request to the upstream and returning the response.
+5. Check the access logs again from the `gateway-proxy` deployment. This time, (hopefully should see a log w different info), because the gateway returns a cached response instead of routing the request to the upstream and returning a response.
    ```shell
    kubectl logs deployment/gateway-proxy -n gloo-system
    ```
