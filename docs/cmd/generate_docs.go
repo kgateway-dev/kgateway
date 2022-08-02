@@ -306,6 +306,8 @@ func scanGlooImages(ctx context.Context) error {
 			log.Fatalf("Invalid constraint version: %s", minVersionToScan)
 		}
 	}
+
+	a, err := os.ReadFile(".trivyignore")
 	scanner := &securityscanutils.SecurityScanner{
 		Repos: []*securityscanutils.SecurityScanRepo{
 			{
@@ -337,6 +339,7 @@ func scanGlooImages(ctx context.Context) error {
 				},
 			},
 		},
+		TrivyIgnoreContents: string(a),
 	}
 	return scanner.GenerateSecurityScans(ctx)
 }
