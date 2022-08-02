@@ -29,7 +29,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 
-var _ = FDescribe("Benchmark", func() {
+var _ = Describe("Benchmark", func() {
 	var allUpstreams v1.UpstreamList
 
 	BeforeEach(func() {

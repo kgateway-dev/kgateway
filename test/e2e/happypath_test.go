@@ -60,14 +60,12 @@ var _ = Describe("Happy path", func() {
 				RestEdsEnabled: &wrappers.BoolValue{
 					Value: true,
 				},
-				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 			},
 			{
 				Title: "Rest Eds Disabled",
 				RestEdsEnabled: &wrappers.BoolValue{
 					Value: false,
 				},
-				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 			},
 		}
 	)
@@ -96,7 +94,7 @@ var _ = Describe("Happy path", func() {
 
 	for _, testCase := range testCases {
 
-		Describe(fmt.Sprintf("%s: (%s)", testCase.Title, testCase.TransportApiVersion.String()), func() {
+		Describe(fmt.Sprintf("%s", testCase.Title), func() {
 
 			Describe("in memory", func() {
 
@@ -119,7 +117,6 @@ var _ = Describe("Happy path", func() {
 						},
 					}
 					testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-					envoyInstance.ApiVersion = testCase.TransportApiVersion.String()
 					err := envoyInstance.RunWithRoleAndRestXds(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 					Expect(err).NotTo(HaveOccurred())
 

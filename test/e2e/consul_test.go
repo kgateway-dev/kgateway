@@ -27,7 +27,7 @@ import (
 
 const writeNamespace = defaults.GlooSystem
 
-var _ = FDescribe("Consul e2e", func() {
+var _ = Describe("Consul e2e", func() {
 
 	var (
 		ctx            context.Context

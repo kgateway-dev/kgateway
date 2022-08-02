@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"io"
 	"io/ioutil"
 	"net"
@@ -406,7 +407,7 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 		GlooAddr:      gloo,
 		AccessLogAddr: gloo,
 		AdminPort:     atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
-		ApiVersion:    "V3",
+		ApiVersion:    envoy_config_core_v3.ApiVersion_V3.String(),
 	}
 	ef.instances = append(ef.instances, ei)
 	return ei, nil
