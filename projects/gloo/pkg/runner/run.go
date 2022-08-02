@@ -353,7 +353,7 @@ func RunGlooWithExtensions(opts RunOpts, extensions RunExtensions) error {
 
 	gwOpts := gwtranslator.Opts{
 		WriteNamespace:                 opts.WriteNamespace,
-		ReadGatewaysFromAllNamespaces:  opts.Settings.Gateway.GetReadGatewaysFromAllNamespaces(),
+		ReadGatewaysFromAllNamespaces:  opts.Settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
 		Validation:                     validationOptions,
 		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
 	}

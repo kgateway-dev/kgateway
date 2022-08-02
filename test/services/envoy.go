@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"io"
 	"io/ioutil"
 	"net"
@@ -18,6 +17,8 @@ import (
 	"sync/atomic"
 	"text/template"
 	"time"
+
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 

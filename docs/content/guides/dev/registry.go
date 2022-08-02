@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
 	pluginregistry "github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+
 	// add our plugin's import here:
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/gce"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
