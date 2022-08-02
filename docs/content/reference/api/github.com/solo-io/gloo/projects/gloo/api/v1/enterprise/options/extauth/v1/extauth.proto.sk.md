@@ -534,11 +534,13 @@ redis socket types
 
 
 ```yaml
+"keyPrefix": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `keyPrefix` | `string` | Prefix to append to cookies keys. Cookie keys will be stored in the form `<key_prefix>_<cookie_name>`. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes. |
 
 
 
