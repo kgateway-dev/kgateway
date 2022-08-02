@@ -1,7 +1,7 @@
 ---
 title: Caching responses
-weight: 20
-description: Enable or disable the transcoding of messages to support gRPC web clients
+weight: 50
+description: Cache responses from upstream services.
 ---
 
 Cache responses from upstream services by deploying a caching server for your Gloo Edge setup and applying a caching filter to a listener.
