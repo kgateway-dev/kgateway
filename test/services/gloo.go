@@ -17,8 +17,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -65,12 +63,6 @@ type RunOptions struct {
 	RestXdsPort    int32
 	Settings       *gloov1.Settings
 	KubeClient     kubernetes.Interface
-
-	// TODO (samheilbron) these are not currently handled
-	GenerateConsulClient bool
-
-	ConsulClient     consul.ConsulWatcher
-	ConsulDnsAddress string
 }
 
 //noinspection GoUnhandledErrorResult
@@ -101,11 +93,11 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 			RestXdsBindAddr:    fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort),
 			ValidationBindAddr: fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.ValidationPort),
 			XdsBindAddr:        fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.GlooPort),
-			ProxyDebugBindAddr:  fmt.Sprintf("%s:%d", net.IPv4zero.String(), AllocateGlooPort()),
+			ProxyDebugBindAddr: fmt.Sprintf("%s:%d", net.IPv4zero.String(), AllocateGlooPort()),
 		},
 		Gateway: &gloov1.GatewayOptions{
 			PersistProxySpec: &wrappers.BoolValue{
-				Value: false,
+				Value: true,
 			},
 			EnableGatewayController: &wrappers.BoolValue{
 				Value: !runOptions.WhatToRun.DisableGateway,

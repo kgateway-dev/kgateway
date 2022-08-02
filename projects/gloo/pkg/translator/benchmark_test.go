@@ -1,11 +1,9 @@
-package benchmark_test
+package translator_test
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
@@ -21,8 +19,6 @@ import (
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	matchers2 "github.com/solo-io/gloo/test/matchers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/mitchellh/hashstructure"
@@ -33,11 +29,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 
-var _ = Describe("SnapshotBenchmark", func() {
+var _ = FDescribe("Benchmark", func() {
 	var allUpstreams v1.UpstreamList
+
 	BeforeEach(func() {
 		var upstreams []interface{}
-		data := helpers.MustReadFile("upstream_list.json")
+		data := helpers.MustReadFile("test_fixtures/upstream_list.json")
 		err := json.Unmarshal(data, &upstreams)
 		Expect(err).NotTo(HaveOccurred())
 		for _, usInt := range upstreams {
@@ -75,6 +72,7 @@ var _ = Describe("SnapshotBenchmark", func() {
 	}, 10)
 
 	Context("accuracy", func() {
+
 		It("Exhaustive", func() {
 			present := make(map[uint64]*v1.Upstream, len(allUpstreams))
 			for _, v := range allUpstreams {
@@ -92,30 +90,17 @@ var _ = Describe("SnapshotBenchmark", func() {
 	Context("Benchmark Gloo Translation", func() {
 
 		var (
-			settings                *v1.Settings
 			fnvTranslator           translator.Translator
 			hashstructureTranslator translator.Translator
-			upName                  *core.Metadata
 			proxy                   *v1.Proxy
 			params                  plugins.Params
-			registeredPlugins       []plugins.Plugin
-			routes                  []*v1.Route
 		)
 
 		beforeEach := func() {
+			settings := &v1.Settings{}
+			registeredPlugins := registry.Plugins(registry.PluginOpts{})
 
-			settings = &v1.Settings{}
-			memoryClientFactory := &factory.MemoryResourceClientFactory{
-				Cache: memory.NewInMemoryResourceCache(),
-			}
-			opts := runner.RunOpts{
-				Settings:  settings,
-				Secrets:   memoryClientFactory,
-				Upstreams: memoryClientFactory,
-			}
-			registeredPlugins = registry.Plugins(opts)
-
-			upName = &core.Metadata{
+			upName := &core.Metadata{
 				Name:      "kube-svc:default-helloworld-1-xvgfm-q2ktv-9090",
 				Namespace: "default",
 			}
@@ -141,7 +126,7 @@ var _ = Describe("SnapshotBenchmark", func() {
 					Upstreams: allUpstreams,
 				},
 			}
-			routes = []*v1.Route{{
+			routes := []*v1.Route{{
 				Name:     "testRouteName",
 				Matchers: []*matchers.Matcher{defaults.DefaultMatcher()},
 				Action: &v1.Route_RouteAction{
@@ -156,11 +141,7 @@ var _ = Describe("SnapshotBenchmark", func() {
 					},
 				},
 			}}
-		}
 
-		BeforeEach(beforeEach)
-
-		JustBeforeEach(func() {
 			pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 
 			fnvTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, translator.MustEnvoyCacheResourcesListToFnvHash)
@@ -275,7 +256,9 @@ var _ = Describe("SnapshotBenchmark", func() {
 					hybridListener,
 				},
 			}
-		})
+		}
+
+		BeforeEach(beforeEach)
 
 		Measure("it should perform translation efficiently", func(b Benchmarker) {
 			proxyClone := proto.Clone(proxy).(*v1.Proxy)

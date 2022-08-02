@@ -2,12 +2,13 @@ package consulvaulte2e_test
 
 import (
 	"context"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,25 +24,25 @@ import (
 )
 
 const (
-	writeNamespace = defaults.GlooSystem
+	writeNamespace     = defaults.GlooSystem
 	customSecretEngine = "custom-secret-engine"
 )
 
 var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
+		ctx    context.Context
+		cancel context.CancelFunc
 
 		consulInstance *services.ConsulInstance
 		vaultInstance  *services.VaultInstance
 		envoyInstance  *services.EnvoyInstance
 
-		testClients   services.TestClients
+		testClients services.TestClients
 		settingsDir string
 
-		svc1           *v1helpers.TestUpstream
-		err            error
+		svc1 *v1helpers.TestUpstream
+		err  error
 	)
 
 	BeforeEach(func() {

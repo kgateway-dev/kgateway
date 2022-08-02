@@ -41,7 +41,7 @@ var (
 	validOriginResponseMatcher   = BeEmpty()
 )
 
-var _ = FDescribe("CSRF", func() {
+var _ = Describe("CSRF", func() {
 
 	var (
 		err           error
@@ -59,7 +59,6 @@ var _ = FDescribe("CSRF", func() {
 		defaults.HttpPort = services.NextBindPort()
 
 		// run gloo
-		writeNamespace = defaults.GlooSystem
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
 			NsToWatch: []string{"default", writeNamespace},
