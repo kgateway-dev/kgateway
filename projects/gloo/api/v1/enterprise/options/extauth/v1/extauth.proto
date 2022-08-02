@@ -72,6 +72,12 @@ message AuthConfig {
     // An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )`
     // The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
     google.protobuf.StringValue boolean_expr = 10;
+
+    // How the service should handle a redirect response from an OIDC issuer. In the default false mode,
+    // the redirect will be considered a successful response, and the client will receive a 302 with a location header.
+    // If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where
+    // API calls are being made or other such occurrences where the client cannot handle the redirect.
+    bool fail_on_redirect = 11;
 }
 
 // Auth configurations defined on virtual hosts, routes, and weighted destinations will be unmarshalled to this message.
@@ -312,9 +318,9 @@ message RedisOptions {
     // defaults to 10 connections per every CPU
     int32 pool_size = 3;
 	// enabled with a socket type of TLS. this is the tls cert mount path for this particular host.
-	// the generic secret can include the keys 'ca.crt', 'tls.crt', and 'tls.key'. 
-	// the secret can contain the root-ca ,'ca.crt', at minimum. If a 
-	// certificate is needed, both the 'tls.crt' and 'tls.key' need to be included. 
+	// the generic secret can include the keys 'ca.crt', 'tls.crt', and 'tls.key'.
+	// the secret can contain the root-ca ,'ca.crt', at minimum. If a
+	// certificate is needed, both the 'tls.crt' and 'tls.key' need to be included.
 	// reference this to equal the 'mountPath' on the 'redis.certs[x].mountPath' in the helm chart values.
 	// an example of a mount path is '/certs'.
     string tls_cert_mount_path = 4;
@@ -324,7 +330,7 @@ message RedisOptions {
         TCP = 0;
         // TLS connection socket.
         TLS = 1;
-    } 
+    }
     // the socket type, default is TCP.
     SocketType socket_type = 5;
 }
@@ -376,7 +382,7 @@ message UserSession {
         enum SameSite {
             // Default Mode is the same as LaxMode but will not show up in the Cookie Header. This value is ignored.
             DefaultMode = 0;
-            // Cookies are not sent on normal cross-site subrequests, but are sent when 
+            // Cookies are not sent on normal cross-site subrequests, but are sent when
             // navigating to the origin site.
             LaxMode = 1;
             // Only be sent in a first-party context and not be sent along with requests
@@ -594,7 +600,7 @@ message OidcAuthorizationCode {
     // By default parameters will be extracted from the solo_authconfig_oidc namespace
     // this behavior can be overridden by explicitly specifying a namespace
     AutoMapFromMetadata auto_map_from_metadata = 18;
-   
+
     // If specified, these are properties defined for the end session endpoint
     // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
     // in the OIDC documentation.
@@ -679,7 +685,7 @@ message IntrospectionValidation {
 }
 
 message AccessTokenValidation {
-    
+
     oneof validation_type {
         // The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
         // If provided, the (opaque) access token provided or received from the oauth authorization endpoint
@@ -791,9 +797,9 @@ message OpaAuth {
 }
 
 message OpaAuthOptions {
-    // Decreases OPA latency by speeding up conversion of input to the OPA engine. 
-    // If this is set to true, only http_request and state fields which are a scalar, map, or string array 
-    // are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine. 
+    // Decreases OPA latency by speeding up conversion of input to the OPA engine.
+    // If this is set to true, only http_request and state fields which are a scalar, map, or string array
+    // are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine.
     // By default, this is set to false and all fields are evaluated by OPA.
     bool fast_input_conversion = 1;
 }
@@ -1090,7 +1096,7 @@ message ExtAuthConfig {
 
         // If set, CallbackPath will be evaluated as a regular expression
         bool parse_callback_path_as_regex = 17;
-    
+
         // If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values.
         // By default parameters will be extracted from the solo_authconfig_oidc namespace
         // this behavior can be overridden by explicitly specifying a namespace
@@ -1099,7 +1105,7 @@ message ExtAuthConfig {
         // If specified, these are properties defined for the end session endpoint
         // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
         // in the OIDC documentation.
-        EndSessionProperties end_session_properties = 19; 
+        EndSessionProperties end_session_properties = 19;
     }
 
     message AccessTokenValidationConfig {
