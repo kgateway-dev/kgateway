@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSetuputils(t *testing.T) {
+func TestBootstrap(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Setuputils Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "Bootstrap Suite", []Reporter{junitReporter})
 }

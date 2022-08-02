@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("SetupSyncer", func() {
 
-	It("calls the setup function with the referenced settings crd", func() {
+	It("calls the RunFunc with the referenced settings crd", func() {
 		var actualSettings *v1.Settings
 		expectedSettings := &v1.Settings{
 			Metadata: &core.Metadata{Name: "hello", Namespace: "goodbye"},
@@ -34,9 +34,7 @@ var _ = Describe("SetupSyncer", func() {
 			return mockRunFunc, nil
 		}
 
-		setupSyncer := bootstrap.NewSetupSyncer(
-			expectedSettings.Metadata.Ref(),
-			mockRunnerFactory)
+		setupSyncer := bootstrap.NewSetupSyncer(expectedSettings.Metadata.Ref(), mockRunnerFactory)
 		err := setupSyncer.Sync(context.TODO(), &v1.SetupSnapshot{
 			Settings: v1.SettingsList{expectedSettings},
 		})

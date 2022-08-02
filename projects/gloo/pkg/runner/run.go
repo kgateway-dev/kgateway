@@ -87,7 +87,7 @@ type RunOpts struct {
 
 // A PluginRegistryFactory generates a PluginRegistry
 // It is executed each translation loop, ensuring we have up to date configuration of all plugins
-type PluginRegistryFactory func(ctx context.Context, opts RunOpts) plugins.PluginRegistry
+type PluginRegistryFactory func(ctx context.Context, opts registry.PluginOpts) plugins.PluginRegistry
 
 type RunExtensions struct {
 	PluginRegistryFactory PluginRegistryFactory
@@ -199,7 +199,7 @@ func RunGlooWithExtensions(opts RunOpts, extensions RunExtensions) error {
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
-	pluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx, opts)
+	pluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx, GetPluginOpts(opts))
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range pluginRegistry.GetPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
@@ -564,8 +564,8 @@ func GetPluginOpts(opts RunOpts) registry.PluginOpts {
 	}
 }
 
-func GlooPluginRegistryFactory(_ context.Context, opts RunOpts) plugins.PluginRegistry {
-	availablePlugins := registry.Plugins(GetPluginOpts(opts))
+func GlooPluginRegistryFactory(_ context.Context, opts registry.PluginOpts) plugins.PluginRegistry {
+	availablePlugins := registry.Plugins(opts)
 
 	// To improve the UX, load a plugin that warns users if they are attempting to use enterprise configuration
 	availablePlugins = append(availablePlugins, enterprise_warning.NewPlugin())

@@ -13,8 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
-
+	pluginregistry "github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	// add our plugin's import here:
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/gce"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
@@ -34,7 +33,7 @@ type registry struct {
 	plugins []plugins.Plugin
 }
 
-var globalRegistry = func(opts runner.RunOpts) *registry {
+var globalRegistry = func(opts pluginregistry.PluginOpts) *registry {
 	transformationPlugin := transformation.NewPlugin()
 	reg := &registry{}
 	// plugins should be added here
@@ -68,6 +67,6 @@ var globalRegistry = func(opts runner.RunOpts) *registry {
 	return reg
 }
 
-func Plugins(opts runner.RunOpts, pluginExtensions ...plugins.Plugin) []plugins.Plugin {
+func Plugins(opts pluginregistry.PluginOpts, pluginExtensions ...plugins.Plugin) []plugins.Plugin {
 	return globalRegistry(opts, pluginExtensions...).plugins
 }
