@@ -540,7 +540,7 @@ redis socket types
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `keyPrefix` | `string` | Prefix to append to cookies keys. Cookie keys will be stored in the form `<key_prefix>_<cookie_name>`. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes. |
+| `keyPrefix` | `string` | Prefix to append to cookie keys, such as for separate domain and subdomain prefixes. Cookie keys are stored in the form `<key_prefix>_<cookie_name>`. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes. |
 
 
 

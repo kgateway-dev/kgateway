@@ -3441,7 +3441,8 @@ type UserSession_InternalSession struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Prefix to append to cookies keys. Cookie keys will be stored in the form `<key_prefix>_<cookie_name>`.
+	// Prefix to append to cookie keys, such as for separate domain and subdomain prefixes.
+	// Cookie keys are stored in the form `<key_prefix>_<cookie_name>`.
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes
 	KeyPrefix string `protobuf:"bytes,1,opt,name=key_prefix,json=keyPrefix,proto3" json:"key_prefix,omitempty"`
 }
