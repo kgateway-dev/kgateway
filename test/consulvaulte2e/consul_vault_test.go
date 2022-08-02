@@ -77,7 +77,7 @@ var _ = Describe("ConsulStartOpts + Vault Configuration Happy Path e2e", func() 
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
-		// Start ConsulStartOpts
+		// Start Consul
 		consulInstance, err = consulFactory.NewConsulInstance()
 		Expect(err).NotTo(HaveOccurred())
 		err = consulInstance.Run()

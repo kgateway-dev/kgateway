@@ -183,6 +183,9 @@ func (i *ConsulInstance) Binary() string {
 }
 
 func (i *ConsulInstance) Clean() error {
+	if i == nil {
+		return nil
+	}
 	if i.session != nil {
 		i.session.Kill()
 	}

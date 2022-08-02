@@ -13,11 +13,9 @@ import (
 
 	"time"
 
-	"regexp"
 	"strings"
 
 	"github.com/onsi/ginkgo"
-	errors "github.com/rotisserie/eris"
 )
 
 const defaultVaultDockerImage = "vault:1.1.3"
@@ -144,15 +142,15 @@ func (i *VaultInstance) RunWithAddress(address string) error {
 	i.cmd = cmd
 	i.session = session
 
-	out := string(session.Out.Contents())
+	//out := string(session.Out.Contents())
 
-	tokenSlice := regexp.MustCompile("Root Token: ([\\-[:word:]]+)").FindAllString(out, 1)
-	if len(tokenSlice) < 1 {
-		return errors.Errorf("%s did not contain root token", out)
-	}
+	//tokenSlice := regexp.MustCompile("Root Token: ([\\-[:word:]]+)").FindAllString(out, 1)
+	//if len(tokenSlice) < 1 {
+	///	return errors.Errorf("%s did not contain root token", out)
+	//}
 
 	i.address = address
-	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
+	//i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
 
 	return nil
 }
