@@ -2076,6 +2076,10 @@ func (m *UserSession_InternalSession) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetKeyPrefix(), target.GetKeyPrefix()) != 0 {
+		return false
+	}
+
 	return true
 }
 
