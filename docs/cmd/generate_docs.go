@@ -307,7 +307,7 @@ func scanGlooImages(ctx context.Context) error {
 		}
 	}
 
-	trivyFileContents, err := os.ReadFile(".trivyignore")
+	trivyFileContents, _ := os.ReadFile(".trivyignore")
 	scanner := &securityscanutils.SecurityScanner{
 		Repos: []*securityscanutils.SecurityScanRepo{
 			{
