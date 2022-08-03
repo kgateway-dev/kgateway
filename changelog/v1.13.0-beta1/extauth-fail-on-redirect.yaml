@@ -1,7 +1,7 @@
 CHANGELOG:
 - type: NEW_FEATURE
   issueLink: https://github.com/solo-io/gloo/issues/6811
-  fixesIssue: false
+  resolvesIssue: false
   description: |
     Add config to enable users to opt-in to configuring an AuthConfig to fail when
     an OIDC provider returns a redirect instead of returning that redirect to the
