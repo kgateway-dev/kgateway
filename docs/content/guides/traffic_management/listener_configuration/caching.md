@@ -12,7 +12,7 @@ This feature is available only for Gloo Edge Enterprise v1.12.x and later.
 
 The Gloo Edge Enterprise caching filter is an extension (implementing filter) of the [Envoy cache filter](https://www.envoyproxy.io/docs/envoy/latest/start/sandboxes/cache) and takes advantage of all the cache-ability checks that are applied. However, Gloo Edge also provides the ability to store the cached objects in a Redis instance, including Redis configuration options such as setting a password.
 
-When you enable caching during installation, the caching server deployment is automatically created for you and is managed by Gloo Edge. Then, you can configure an HTTP or HTTPS listener to cache responses for its upstream services. When the listener routes a request to an upstream, the response from the upstream is automatically cached for one hour. All subsequent requests receive the cached response.
+When you enable caching during installation, the caching server deployment is automatically created for you and is managed by Gloo Edge. Then, you must configure an HTTP or HTTPS listener to cache responses for its upstream services. When the listener routes a request to an upstream, the response from the upstream is automatically cached for one hour. All subsequent requests receive the cached response.
 
 ## Deploy the caching server
 
