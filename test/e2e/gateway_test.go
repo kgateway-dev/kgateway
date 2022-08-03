@@ -74,13 +74,6 @@ var _ = Describe("Gateway", func() {
 				},
 				ValidationPort: validationPort,
 				Settings: &gloov1.Settings{
-					Gateway: &gloov1.GatewayOptions{
-						Validation: &gloov1.GatewayOptions_ValidationOptions{
-							// Enable strict validation,
-							AlwaysAccept:              &wrappers.BoolValue{Value: false},
-							ProxyValidationServerAddr: fmt.Sprintf("127.0.0.1:%v", validationPort),
-						},
-					},
 					// Record the config status for virtual services. Use the resource name as a
 					// label on the metric so that a unique time series is tracked for each VS
 					ObservabilityOptions: &gloov1.Settings_ObservabilityOptions{
