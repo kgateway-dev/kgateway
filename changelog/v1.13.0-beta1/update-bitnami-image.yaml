@@ -1,0 +1,6 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: bitnami
+  dependencyRepo: kubectl
+  dependencyTag: 1.22.12
+  description: Upgrade image used in install/upgrade/uninstall jobs to pick up CVE fixes.
