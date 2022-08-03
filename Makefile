@@ -459,6 +459,7 @@ KUBECTL_DIR=jobs/kubectl
 KUBECTL_OUTPUT_DIR=$(OUTPUT_DIR)/$(KUBECTL_DIR)
 
 $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl: $(KUBECTL_DIR)/Dockerfile
+	mkdir -p $(KUBECTL_OUTPUT_DIR)
 	cp $< $@
 
 .PHONY: kubectl-docker
