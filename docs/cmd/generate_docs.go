@@ -325,7 +325,7 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 				ImageRepo:                              "quay.io/solo-io",
 				UploadCodeScanToGithub:                 false,
 				CreateGithubIssuePerVersion:            false,
-				CreateGithubIssueForLatestPatchVersion: true,
+				CreateGithubIssueForLatestPatchVersion: false,
 			},
 		})
 	}
@@ -343,7 +343,7 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 				ImageRepo:                              "quay.io/solo-io",
 				UploadCodeScanToGithub:                 false,
 				CreateGithubIssuePerVersion:            false,
-				CreateGithubIssueForLatestPatchVersion: true,
+				CreateGithubIssueForLatestPatchVersion: false,
 			},
 		})
 	}
