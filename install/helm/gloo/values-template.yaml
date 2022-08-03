@@ -93,14 +93,14 @@ gateway:
     image:
       registry: bitnami
       repository: kubectl
-      tag: 1.22.9
+      tag: 1.22.12
     runAsUser: 10101
     ttlSecondsAfterFinished: 60
   cleanupJob:
     image:
       registry: bitnami
       repository: kubectl
-      tag: 1.22.9
+      tag: 1.22.12
     runAsUser: 10101
     ttlSecondsAfterFinished: 60
   proxyServiceAccount: {}
