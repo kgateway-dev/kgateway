@@ -4,7 +4,7 @@ weight: 50
 description: Cache responses from upstream services.
 ---
 
-Cache responses from upstream services by deploying a caching server for your Gloo Edge setup and applying a caching filter to a listener.
+Use the Gloo Edge Enterprise caching server to cache responses from upstream services for quicker response times.
 
 {{% notice note %}}
 This feature is available only for Gloo Edge Enterprise v1.12.x and later.
@@ -35,6 +35,16 @@ Create a caching server during Gloo Edge Enterprise installation time, and speci
    service/caching-service                       ClusterIP      10.76.11.242   <none>          8085/TCP                                               77s
    deployment.apps/caching-service                       1/1     1            1           77s
    replicaset.apps/caching-service-5d7f867cdc                       1         1         1       76s
+   ```
+
+3. Optional: You can also check the debug logs to verify that caching is enabled.
+   ```sh
+   glooctl debug logs
+   ```
+   Search the output for `caching` to verify that you have log entries similar to the following:
+   ```json
+   {"level":"info","ts":"2022-08-02T20:47:30.057Z","caller":"radix/server.go:31","msg":"Starting our basic redis caching service","version":"1.12.0"}
+   {"level":"info","ts":"2022-08-02T20:47:30.057Z","caller":"radix/server.go:35","msg":"Created redis pool for caching","version":"1.12.0"}
    ```
 
 <!-- future work
@@ -73,52 +83,3 @@ https://docs.solo.io/gloo-edge/master/reference/api/github.com/solo-io/gloo/proj
    {{< /highlight >}}
 
 <!-- future work: define matchers to specify which paths should be cached -->
-
-## Verify caching
-
-Verify that responses are now cached.
-
-1. Edit your gateway definition to configure the `gateway-proxy` deployment to log requests to your upstream services.
-   {{< highlight yaml "hl_lines=8-13" >}}
-   ...
-     httpGateway:
-       options:
-         caching:
-           cachingServiceRef:
-             name: caching-server
-             namespace: gloo-system
-     options:
-       accessLoggingService:
-         accessLog:
-         - fileSink:
-             path: /dev/stdout
-             stringFormat: (specific log format that would indicate responses are being cached...?)
-   {{< /highlight >}}
-
-2. Send a request to an upstream service that the listener routes to. For example, if you followed the [Hello World guide]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) to deploy a sample app and configure routing to it, send the following curl request.
-   ```sh
-   curl $(glooctl proxy url)/all-pets
-   ```
-   The response returned by the upstream, such as the following example, should now be cached.
-   ```json
-   [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
-   ```
-
-3. Get the access logs from the `gateway-proxy` deployment.
-   ```shell
-   kubectl logs deployment/gateway-proxy -n gloo-system
-   ```
-   At the end of the output, verify that you see a log entry similar to the following:
-   ```
-   (example output)
-   ```
-
-4. Send another request to the service.
-   ```sh
-   curl $(glooctl proxy url)/all-pets
-   ```
-
-5. Check the access logs again from the `gateway-proxy` deployment. This time, (hopefully should see a log w different info), because the gateway returns a cached response instead of routing the request to the upstream and returning a response.
-   ```shell
-   kubectl logs deployment/gateway-proxy -n gloo-system
-   ```
