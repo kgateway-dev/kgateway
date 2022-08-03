@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6369
+    resolvesIssue: false
+    description: Add a flag to LDAP config to allow auth without group checking
