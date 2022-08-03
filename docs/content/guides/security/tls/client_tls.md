@@ -294,7 +294,7 @@ kubectl -n gloo-system logs -l gloo=gloo
 
 Example of an issue:
 ```json
-{"level":"warn","ts":1631524528.8111176,"logger":"gloo-ee.v1.event_loop.setup.v1.event_loop.envoyTranslatorSyncer","caller":"syncer/envoy_translator_syncer.go:140","msg":"proxy gloo-system.gateway-proxy was rejected due to invalid config: 2 errors occurred:\n\t* invalid resource gloo-system.default-server-mtls\n\t* SSL secret not found: list did not find secret default.client-mtls\n\n\nAttempting to update only EDS information","version":"1.8.7"}
+{"level":"warn","ts":1631524528.8111176,"logger":"gloo-ee.v1.event_loop.setup.v1.event_loop.envoyTranslatorSyncer","caller":"syncer/envoy_translator_syncer.go:140","msg":"proxy gloo-system.gateway-proxy was rejected due to invalid config: 2 errors occurred:\n\t* invalid resource gloo-system.default-server-mtls\n\t* SSL secret not found: list did not find secret default.client-mtls\n\n\nAttempting to update only EDS information","version":".7"}
 ```
 
 To see which `sslConfig` is actually used by Envoy, run an [Envoy config dump]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#dumping-envoy-configuration" >}}).
