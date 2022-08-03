@@ -312,9 +312,9 @@ message RedisOptions {
     // defaults to 10 connections per every CPU
     int32 pool_size = 3;
     // enabled with a socket type of TLS. this is the tls cert mount path for this particular host.
-    // the generic secret can include the keys 'ca.crt', 'tls.crt', and 'tls.key'. 
-    // the secret can contain the root-ca ,'ca.crt', at minimum. If a 
-    // certificate is needed, both the 'tls.crt' and 'tls.key' need to be included. 
+    // the generic secret can include the keys 'ca.crt', 'tls.crt', and 'tls.key'.
+    // the secret can contain the root-ca ,'ca.crt', at minimum. If a
+    // certificate is needed, both the 'tls.crt' and 'tls.key' need to be included.
     // reference this to equal the 'mountPath' on the 'redis.certs[x].mountPath' in the helm chart values.
     // an example of a mount path is '/certs'.
     string tls_cert_mount_path = 4;
@@ -331,6 +331,10 @@ message RedisOptions {
 
 message UserSession {
     message InternalSession {
+        // Prefix to append to cookie keys, such as for separate domain and subdomain prefixes.
+        // Cookie keys are stored in the form `<key_prefix>_<cookie_name>`.
+        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes
+        string key_prefix = 2;
     }
     message RedisSession {
         // Options to connect to redis
