@@ -202,19 +202,20 @@ For more information, see the following resources:
 Gloo Edge Open Source Helm values in Enterprise must be prefixed with `gloo`, unless they are the Gloo Edge settings, such as `settings.<rest of helm value>`.
 {{% /notice %}}
 
-| option                                                    | type     | description                                                                                                                                                                                                                                                    |
+| Option                                                    | Type     | Description                                                                                                                                                                                                                                                    |
 | --------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| grafana.defaultInstallationEnabled                        | bool     | deploy grafana in your gloo system namespace. default is `true` |
-| prometheus.enabled                                        | bool     | deploy prometheus in your gloo system namespace. default is `true` |
-| rateLimit.enabled                                         | bool     | deploy rate-limiting in your gloo system namespace. default is `true` |
-| global.extensions.extAuth.enabled                         | bool     | deploy ext-auth in your gloo system namespace. default is `true` |
-| global.extensions.extAuth.envoySidecar                    | bool     | deploy ext-auth in the gateway-proxy pod, as a sidecar to envoy. communicates over unix domain socket instead of TCP. default is `false` |
-| observability.enabled                                     | bool     | deploy observability in your gloo system namespace. default is `true` |
-| observability.customGrafana.enabled                       | bool     | indicate you'll be using your own instance of grafana rather than the one shipped with Gloo Edge. default is `false`
-| observability.customGrafana.username                      | string   | set this and the `password` field to authenticate to the custom grafana instance using basic auth
-| observability.customGrafana.password                      | string   | set this and the `username` field to authenticate to the custom grafana instance using basic auth
-| observability.customGrafana.apiKey                        | string   | authenticate to the custom grafana instance using this api key
-| observability.customGrafana.url                           | string   | the URL for the custom grafana instance
+| grafana.defaultInstallationEnabled                        | bool     | Deploy Grafana in the `gloo-system` namespace. Default is `true`. |
+| prometheus.enabled                                        | bool     | Deploy Prometheus in the `gloo-system` namespace. Default is `true`. |
+| rateLimit.enabled                                         | bool     | Deploy the rate-limiting server in the `gloo-system` namespace. Default is `true`. |
+| global.extensions.caching.enabled                         | bool     | Deploy the caching server in the `gloo-system` namespace. Default is `false`. |
+| global.extensions.extAuth.enabled                         | bool     | Deploy the ext-auth server in the `gloo-system` namespace. Default is `true`. |
+| global.extensions.extAuth.envoySidecar                    | bool     | Deploy ext-auth in the `gateway-proxy` pod as a sidecar to Envoy. Communicates over a Unix domain socket instead of TCP. Default is `false`. |
+| observability.enabled                                     | bool     | Deploy Grafana in the `gloo-system` namespace. Default is `true`. |
+| observability.customGrafana.enabled                       | bool     | Use your own Grafana instance instead of the default Gloo Edge Grafana instance. Default is `false`. |
+| observability.customGrafana.username                      | string   | Authenticate to your custom Grafana instance using this username for basic auth. |
+| observability.customGrafana.password                      | string   | Authenticate to your custom Grafana instance using this password basic auth. |
+| observability.customGrafana.apiKey                        | string   | Authenticate to your custom Grafana instance using this API key. |
+| observability.customGrafana.url                           | string   | The URL for your custom Grafana instance. |
 ---
 
 ## Enterprise UI
