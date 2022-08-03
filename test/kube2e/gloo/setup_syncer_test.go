@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -54,27 +56,19 @@ var _ = Describe("SetupSyncer", func() {
 		ctx = settingsutil.WithSettings(ctx, settings)
 	}
 
-	// RunnerFactory is used to configure Gloo with appropriate configuration
+	// Runner.Run is used to configure Gloo with appropriate configuration
 	// It is assumed to run once at construction time, and therefore it executes directives that
 	// are also assumed to only run at construction time.
 	// One of those, is the construction of schemes: https://github.com/kubernetes/kubernetes/pull/89019#issuecomment-600278461
 	// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
 	// we ensure that only 1 RunnerFactory is ever called at a time
-	newSynchronizedSetup := func() func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
-		runnerFactory := runner.NewRunnerFactory()
-
-		var synchronizedSetup func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error
-		synchronizedSetup = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
-			setupLock.Lock()
-			defer setupLock.Unlock()
-			runFunc, err := runnerFactory(ctx, kubeCache, inMemoryCache, settings)
-			if err != nil {
-				return err
-			}
-			return runFunc()
+	newSynchronizedRunner := func() bootstrap.Runner {
+		runner := &SynchronizedRunner{
+			Runner:  runner.NewGlooRunner(),
+			RunLock: setupLock,
 		}
 
-		return synchronizedSetup
+		return runner
 	}
 
 	AfterEach(func() {
@@ -171,28 +165,28 @@ var _ = Describe("SetupSyncer", func() {
 			})
 
 			It("can be called with core cache", func() {
-				setup := newSynchronizedSetup()
-				err := setup(ctx, kubeCoreCache, memcache, settings)
+				runner := newSynchronizedRunner()
+				err := runner.Run(ctx, kubeCoreCache, memcache, settings)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("can be called with core cache warming endpoints", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(time.Minute)
-				setup := newSynchronizedSetup()
-				err := setup(ctx, kubeCoreCache, memcache, settings)
+				runner := newSynchronizedRunner()
+				err := runner.Run(ctx, kubeCoreCache, memcache, settings)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("panics when endpoints don't arrive in a timely manner", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(1 * time.Nanosecond)
-				setup := newSynchronizedSetup()
-				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).To(Panic())
+				runner := newSynchronizedRunner()
+				Expect(func() { runner.Run(ctx, kubeCoreCache, memcache, settings) }).To(Panic())
 			})
 
 			It("doesn't panic when endpoints don't arrive in a timely manner if set to zero", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(0)
-				setup := newSynchronizedSetup()
-				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).NotTo(Panic())
+				runner := newSynchronizedRunner()
+				Expect(func() { runner.Run(ctx, kubeCoreCache, memcache, settings) }).NotTo(Panic())
 			})
 
 			setupTestGrpcClient := func() func() error {
@@ -259,4 +253,23 @@ type dummyPlugin struct{}
 func (*dummyPlugin) Name() string { return "dummy_plugin" }
 
 func (*dummyPlugin) Init(_ plugins.InitParams) {
+}
+
+var _ bootstrap.Runner = new(SynchronizedRunner)
+
+// Runner.Run is used to configure Gloo with appropriate configuration
+// It is assumed to run once at construction time, and therefore it executes directives that
+// are also assumed to only run at construction time.
+// One of those, is the construction of schemes: https://github.com/kubernetes/kubernetes/pull/89019#issuecomment-600278461
+// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
+// we ensure that only 1 RunnerFactory is ever called at a time
+type SynchronizedRunner struct {
+	Runner  bootstrap.Runner
+	RunLock sync.RWMutex
+}
+
+func (s *SynchronizedRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+	s.RunLock.Lock()
+	defer s.RunLock.Unlock()
+	return s.Runner.Run(ctx, kubeCache, inMemoryCache, settings)
 }

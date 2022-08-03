@@ -24,11 +24,11 @@ type SetupOpts struct {
 	// LoggerName is the name of the logger, which corresponds to the component that is being run
 	LoggerName string
 
-	// Version is the current version of Gloo that is executing.
+	// Version is the current version of Gloo Edge that is being run
 	Version string
 
-	// RunnerFactory defines the behavior that will execute whenever Settings are updated
-	RunnerFactory RunnerFactory
+	// Runner defines the behavior that will execute whenever Settings are updated
+	Runner Runner
 }
 
 var once sync.Once
@@ -67,7 +67,7 @@ func Setup(opts SetupOpts) error {
 
 	// define the setup behavior which will occur when settings change
 	settingsRef := &core.ResourceRef{Namespace: setupNamespace, Name: setupName}
-	setupSyncer := NewSetupSyncer(settingsRef, opts.RunnerFactory)
+	setupSyncer := NewSetupSyncer(settingsRef, opts.Runner)
 
 	// run an event loop, watching events on the Settings resource
 	emitter := v1.NewSetupEmitter(settingsClient)
@@ -91,8 +91,8 @@ func validateSetupOpts(setupOpts SetupOpts) error {
 	if setupOpts.Ctx == nil {
 		return eris.New("Ctx required, found nil")
 	}
-	if setupOpts.RunnerFactory == nil {
-		return eris.New("RunnerFactory required, found nil")
+	if setupOpts.Runner == nil {
+		return eris.New("Runner required, found nil")
 	}
 	if setupOpts.LoggerName == "" {
 		return eris.New("LoggerName required, found nil")

@@ -12,10 +12,10 @@ import (
 
 func Run(ctx context.Context) error {
 	setupOptions := bootstrap.SetupOpts{
-		Ctx:           ctx,
-		LoggerName:    "ingress",
-		Version:       version.Version,
-		RunnerFactory: runner.IngressRunnerFactory,
+		Ctx:        ctx,
+		LoggerName: "ingress",
+		Version:    version.Version,
+		Runner:     runner.NewIngressRunner(),
 	}
 	return bootstrap.Setup(setupOptions)
 }

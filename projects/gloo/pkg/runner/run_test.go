@@ -24,13 +24,12 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-var _ = Describe("RunnerFactory", func() {
+var _ = Describe("GlooRunner", func() {
 
 	var (
 		settings *v1.Settings
 		ctx      context.Context
 		cancel   context.CancelFunc
-		memcache memory.InMemoryResourceCache
 	)
 
 	newContext := func() {
@@ -62,7 +61,6 @@ var _ = Describe("RunnerFactory", func() {
 					Validation:              nil,
 				},
 			}
-			memcache = memory.NewInMemoryResourceCache()
 			newContext()
 		})
 
@@ -93,18 +91,16 @@ var _ = Describe("RunnerFactory", func() {
 			}
 
 			It("setup can be called twice", func() {
-				runnerFactoryImpl := runner.NewRunnerFactory()
+				glooRunner := runner.NewGlooRunner()
 
-				runner, err := runnerFactoryImpl(ctx, nil, memcache, settings)
+				err := glooRunner.Run(ctx, nil, memory.NewInMemoryResourceCache(), settings)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(runner()).NotTo(HaveOccurred())
 
 				testFunc := setupTestGrpcClient()
 
 				newContext()
-				runner, err = runnerFactoryImpl(ctx, nil, memcache, settings)
+				err = glooRunner.Run(ctx, nil, memory.NewInMemoryResourceCache(), settings)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(runner()).NotTo(HaveOccurred())
 
 				// give things a chance to react
 				time.Sleep(time.Second)
@@ -124,7 +120,7 @@ var _ = Describe("RunnerFactory", func() {
 
 			It("should return plugins", func() {
 				extensions := runner.RunExtensions{
-					PluginRegistryFactory: func(ctx context.Context, opts runner.RunOpts) plugins.PluginRegistry {
+					PluginRegistryFactory: func(ctx context.Context, opts registry.PluginOpts) plugins.PluginRegistry {
 						return registry.NewPluginRegistry([]plugins.Plugin{
 							plugin1,
 							plugin2,
@@ -132,7 +128,7 @@ var _ = Describe("RunnerFactory", func() {
 					},
 				}
 
-				pluginRegistry := extensions.PluginRegistryFactory(context.TODO(), runner.RunOpts{})
+				pluginRegistry := extensions.PluginRegistryFactory(context.TODO(), registry.PluginOpts{})
 				plugins := pluginRegistry.GetPlugins()
 				Expect(plugins).To(ContainElement(plugin1))
 				Expect(plugins).To(ContainElement(plugin2))
@@ -147,13 +143,16 @@ func getRandomAddr() string {
 	listener, err := net.Listen("tcp", "localhost:0")
 	Expect(err).NotTo(HaveOccurred())
 	addr := listener.Addr().String()
-	listener.Close()
+	err = listener.Close()
+	Expect(err).NotTo(HaveOccurred())
 	return addr
 }
 
 type dummyPlugin struct{}
 
-func (*dummyPlugin) Name() string { return "dummy_plugin" }
+func (*dummyPlugin) Name() string {
+	return "dummy_plugin"
+}
 
 func (*dummyPlugin) Init(_ plugins.InitParams) {
 }

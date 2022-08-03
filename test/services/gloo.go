@@ -117,45 +117,33 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	ctx = settingsutil.WithSettings(ctx, settings)
 
-	glooRunnerFactory := runner.NewGlooRunnerFactory(runner.RunGloo, nil)
-	baseRunnerFactory := glooRunnerFactory.GetRunnerFactory()
-	runGloo, factoryErr := baseRunnerFactory(ctx, kubeCache, inMemoryCache, settings)
-	Expect(factoryErr).NotTo(HaveOccurred())
+	// Run Gloo
+	glooRunner := runner.NewGlooRunner()
+	runErr := glooRunner.Run(ctx, kubeCache, inMemoryCache, settings)
+	Expect(runErr).NotTo(HaveOccurred())
+	resourceClientset := glooRunner.GetResourceClientset()
+	typedClientset := glooRunner.GetTypedClientset()
 
-	// Get the set of clients used to power Gloo Edge
-	// These are generated during setup. We need the same clients that the live code is using to modify resources
-	resourceClientset := glooRunnerFactory.GetResourceClientset()
-	typedClientset := glooRunnerFactory.GetTypedClientset()
-
-	go func() {
-		defer GinkgoRecover()
-
-		runErr := runGloo()
-		Expect(runErr).NotTo(HaveOccurred())
-	}()
-
+	// Run FDS (if necessary)
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {
 			defer GinkgoRecover()
 
-			fdsRunnerFactory := fdsrunner.NewRunnerFactory()
-			runFDS, factoryErr := fdsRunnerFactory(ctx, kubeCache, inMemoryCache, settings)
-			Expect(factoryErr).NotTo(HaveOccurred())
-
-			runErr := runFDS()
-			Expect(runErr).NotTo(HaveOccurred())
+			fdsRunner := fdsrunner.NewFDSRunner()
+			err := fdsRunner.Run(ctx, kubeCache, inMemoryCache, settings)
+			Expect(err).NotTo(HaveOccurred())
 		}()
 	}
+
+	// Run UDS (if necessary)
 	if !runOptions.WhatToRun.DisableUds {
 		go func() {
 			defer GinkgoRecover()
 
-			udsRunnerFactory := udsrunner.NewRunnerFactory()
-			runUDS, factoryErr := udsRunnerFactory(ctx, kubeCache, inMemoryCache, settings)
-			Expect(factoryErr).NotTo(HaveOccurred())
+			udsRunner := udsrunner.NewUDSRunner()
+			err := udsRunner.Run(ctx, kubeCache, inMemoryCache, settings)
+			Expect(err).NotTo(HaveOccurred())
 
-			runErr := runUDS()
-			Expect(runErr).NotTo(HaveOccurred())
 		}()
 	}
 

@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"os"
@@ -9,11 +8,11 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/duration"
-	vaultapi "github.com/hashicorp/vault/api"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gwreconciler "github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
@@ -21,48 +20,34 @@ import (
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/enterprise_warning"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
-	extauthExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/extauth"
-	ratelimitExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/ratelimit"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
-	"go.uber.org/zap"
-	"k8s.io/client-go/rest"
-
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	ratelimitv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
+	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"google.golang.org/grpc"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
+	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -83,17 +68,6 @@ type RunOpts struct {
 	ControlPlane     ControlPlane
 	ValidationServer ValidationServer
 	ProxyDebugServer ProxyDebugServer
-}
-
-// A PluginRegistryFactory generates a PluginRegistry
-// It is executed each translation loop, ensuring we have up to date configuration of all plugins
-type PluginRegistryFactory func(ctx context.Context, opts registry.PluginOpts) plugins.PluginRegistry
-
-type RunExtensions struct {
-	PluginRegistryFactory PluginRegistryFactory
-	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
-	XdsCallbacks          server.Callbacks
-	ApiEmitterChannel     chan struct{}
 }
 
 type ResourceClientset struct {
@@ -128,44 +102,6 @@ type TypedClientset struct {
 
 	// Consul clients
 	ConsulWatcher consul.ConsulWatcher
-}
-
-type ControlPlane struct {
-	*GrpcService
-	SnapshotCache cache.SnapshotCache
-	XDSServer     server.Server
-}
-
-// ValidationServer validates proxies generated by controllers outside the gloo pod
-type ValidationServer struct {
-	*GrpcService
-	Server validation.ValidationServer
-}
-
-// ProxyDebugServer returns proxies to callers outside the gloo pod - this is only necessary for UI/debugging purposes.
-type ProxyDebugServer struct {
-	*GrpcService
-	Server debug.ProxyEndpointServer
-}
-type GrpcService struct {
-	Ctx             context.Context
-	BindAddr        net.Addr
-	GrpcServer      *grpc.Server
-	StartGrpcServer bool
-}
-
-func RunGloo(opts RunOpts) error {
-	glooExtensions := RunExtensions{
-		PluginRegistryFactory: GlooPluginRegistryFactory,
-		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
-			ratelimitExt.NewTranslatorSyncerExtension,
-			extauthExt.NewTranslatorSyncerExtension,
-		},
-		ApiEmitterChannel: make(chan struct{}),
-		XdsCallbacks:      nil,
-	}
-
-	return RunGlooWithExtensions(opts, glooExtensions)
 }
 
 func RunGlooWithExtensions(opts RunOpts, extensions RunExtensions) error {
@@ -346,7 +282,7 @@ func RunGlooWithExtensions(opts RunOpts, extensions RunExtensions) error {
 		opts.ProxyDebugServer.StartGrpcServer = false
 	}
 
-	validationOptions, err := GenerateValidationStartOpts(opts.GatewayControllerEnabled, opts.Settings)
+	validationOptions, err := generateValidationStartOpts(opts.GatewayControllerEnabled, opts.Settings)
 	if err != nil {
 		return err
 	}
@@ -564,14 +500,6 @@ func GetPluginOpts(opts RunOpts) registry.PluginOpts {
 	}
 }
 
-func GlooPluginRegistryFactory(_ context.Context, opts registry.PluginOpts) plugins.PluginRegistry {
-	availablePlugins := registry.Plugins(opts)
-
-	// To improve the UX, load a plugin that warns users if they are attempting to use enterprise configuration
-	availablePlugins = append(availablePlugins, enterprise_warning.NewPlugin())
-	return registry.NewPluginRegistry(availablePlugins)
-}
-
 func startRestXdsServer(opts RunOpts) {
 	restClient := server.NewHTTPGateway(
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx),
@@ -602,310 +530,7 @@ func startRestXdsServer(opts RunOpts) {
 	}()
 }
 
-func GenerateGlooClientsets(ctx context.Context, settings *gloov1.Settings, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache) (ResourceClientset, TypedClientset, error) {
-	var (
-		cfg           *rest.Config
-		kubeCoreCache corecache.KubeCoreCache
-		kubeClient    kubernetes.Interface
-
-		// Wrapper types for Gloo Edge
-		typedClientset    TypedClientset
-		resourceClientset ResourceClientset
-	)
-
-	failedToConstruct := func(err error) (ResourceClientset, TypedClientset, error) {
-		return resourceClientset, typedClientset, err
-	}
-
-	consulClient, err := bootstrap.ConsulClientForSettings(ctx, settings)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	// if vault service discovery specified, initialize consul watcher
-	var consulWatcher consul.ConsulWatcher
-	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {
-		// Set up ConsulStartOpts client
-		consulClientWrapper, err := consul.NewConsulWatcher(consulClient, consulServiceDiscovery.GetDataCenters())
-		if err != nil {
-			return failedToConstruct(err)
-		}
-		consulWatcher = consulClientWrapper
-	}
-
-	var vaultClient *vaultapi.Client
-	if vaultSettings := settings.GetVaultSecretSource(); vaultSettings != nil {
-		vaultClient, err = bootstrap.VaultClientForSettings(vaultSettings)
-		if err != nil {
-			return failedToConstruct(err)
-		}
-	}
-
-	params := bootstrap.NewConfigFactoryParams(
-		settings,
-		memCache,
-		kubeCache,
-		&cfg,
-		consulClient,
-	)
-
-	kubeServiceClient, err := bootstrap.KubeServiceClientForSettings(
-		ctx,
-		settings,
-		memCache,
-		&cfg,
-		&kubeClient,
-		&kubeCoreCache,
-	)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(params, gloov1.UpstreamCrd)
-	if err != nil {
-		return failedToConstruct(errors.Wrapf(err, "creating config source from settings"))
-	}
-
-	var proxyFactory factory.ResourceClientFactory
-	if settings.GetGateway().GetPersistProxySpec().GetValue() {
-		proxyFactory, err = bootstrap.ConfigFactoryForSettings(params, gloov1.ProxyCrd)
-		if err != nil {
-			return failedToConstruct(err)
-		}
-	} else {
-		proxyFactory = &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
-		}
-	}
-
-	secretFactory, err := bootstrap.SecretFactoryForSettings(
-		ctx,
-		settings,
-		memCache,
-		&cfg,
-		&kubeClient,
-		&kubeCoreCache,
-		vaultClient,
-		gloov1.SecretCrd.Plural,
-	)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	upstreamGroupFactory, err := bootstrap.ConfigFactoryForSettings(params, gloov1.UpstreamGroupCrd)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	artifactFactory, err := bootstrap.ArtifactFactoryForSettings(
-		ctx,
-		settings,
-		memCache,
-		&cfg,
-		&kubeClient,
-		&kubeCoreCache,
-		consulClient,
-		gloov1.ArtifactCrd.Plural,
-	)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	authConfigFactory, err := bootstrap.ConfigFactoryForSettings(params, extauthv1.AuthConfigCrd)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	rateLimitConfigFactory, err := bootstrap.ConfigFactoryForSettings(params, ratelimitv1.RateLimitConfigCrd)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	graphqlApiFactory, err := bootstrap.ConfigFactoryForSettings(params, v1beta1.GraphQLApiCrd)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	virtualServiceFactory, err := bootstrap.ConfigFactoryForSettings(params, gatewayv1.VirtualServiceCrd)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	routeTableFactory, err := bootstrap.ConfigFactoryForSettings(params, gatewayv1.RouteTableCrd)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	virtualHostOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gatewayv1.VirtualHostOptionCrd)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	routeOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gatewayv1.RouteOptionCrd)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gatewayv1.GatewayCrd)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	matchableHttpGatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gatewayv1.MatchableHttpGatewayCrd)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	endpointsFactory := &factory.MemoryResourceClientFactory{
-		Cache: memCache,
-	}
-
-	upstreamClient, err := gloov1.NewUpstreamClient(ctx, upstreamFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := upstreamClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	proxyClient, err := gloov1.NewProxyClient(ctx, proxyFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := proxyClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	upstreamGroupClient, err := gloov1.NewUpstreamGroupClient(ctx, upstreamGroupFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := upstreamGroupClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	endpointClient, err := gloov1.NewEndpointClient(ctx, endpointsFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	secretClient, err := gloov1.NewSecretClient(ctx, secretFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	artifactClient, err := gloov1.NewArtifactClient(ctx, artifactFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-
-	authConfigClient, err := extauthv1.NewAuthConfigClient(ctx, authConfigFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := authConfigClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	graphqlApiClient, err := v1beta1.NewGraphQLApiClient(ctx, graphqlApiFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := graphqlApiClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	rateLimitClient, rateLimitReporterClient, err := ratelimitv1.NewRateLimitClients(ctx, rateLimitConfigFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := rateLimitClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, virtualServiceFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := virtualServiceClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	routeTableClient, err := gatewayv1.NewRouteTableClient(ctx, routeTableFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := routeTableClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	gatewayClient, err := gatewayv1.NewGatewayClient(ctx, gatewayFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := gatewayClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	matchableHttpGatewayClient, err := gatewayv1.NewMatchableHttpGatewayClient(ctx, matchableHttpGatewayFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := matchableHttpGatewayClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	virtualHostOptionClient, err := gatewayv1.NewVirtualHostOptionClient(ctx, virtualHostOptionFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := virtualHostOptionClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	routeOptionClient, err := gatewayv1.NewRouteOptionClient(ctx, routeOptionFactory)
-	if err != nil {
-		return failedToConstruct(err)
-	}
-	if err := routeOptionClient.Register(); err != nil {
-		return failedToConstruct(err)
-	}
-
-	resourceClientset = ResourceClientset{
-		// Gateway resources
-		VirtualServices:       virtualServiceClient,
-		RouteTables:           routeTableClient,
-		Gateways:              gatewayClient,
-		MatchableHttpGateways: matchableHttpGatewayClient,
-		VirtualHostOptions:    virtualHostOptionClient,
-		RouteOptions:          routeOptionClient,
-
-		// Gloo resources
-		Endpoints:      endpointClient,
-		Upstreams:      upstreamClient,
-		UpstreamGroups: upstreamGroupClient,
-		Proxies:        proxyClient,
-		Secrets:        secretClient,
-		Artifacts:      artifactClient,
-
-		// Gloo Enterprise resources
-		AuthConfigs:       authConfigClient,
-		RateLimitConfigs:  rateLimitClient,
-		RateLimitReporter: rateLimitReporterClient,
-		GraphQLApis:       graphqlApiClient,
-	}
-
-	typedClientset = TypedClientset{
-		KubeClient:        kubeClient,
-		KubeServiceClient: kubeServiceClient,
-		KubeCoreCache:     kubeCoreCache,
-		ConsulWatcher:     consulWatcher,
-	}
-
-	return resourceClientset, typedClientset, nil
-}
-
-func GenerateValidationStartOpts(gatewayMode bool, settings *gloov1.Settings) (*gwtranslator.ValidationOpts, error) {
+func generateValidationStartOpts(gatewayMode bool, settings *gloov1.Settings) (*gwtranslator.ValidationOpts, error) {
 	var validation *gwtranslator.ValidationOpts
 
 	validationCfg := settings.GetGateway().GetValidation()

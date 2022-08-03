@@ -3,7 +3,7 @@ package setup
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
+	"github.com/solo-io/gloo/projects/discovery/pkg/uds/runner"
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
 
@@ -12,10 +12,10 @@ import (
 
 func Main(customCtx context.Context) error {
 	setupOptions := bootstrap.SetupOpts{
-		Ctx:           customCtx,
-		LoggerName:    "uds",
-		Version:       version.Version,
-		RunnerFactory: runner.NewRunnerFactory(),
+		Ctx:        customCtx,
+		LoggerName: "uds",
+		Version:    version.Version,
+		Runner:     runner.NewUDSRunner(),
 	}
 
 	return bootstrap.Setup(setupOptions)

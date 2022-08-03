@@ -12,55 +12,36 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
+
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
+
+var _ bootstrap.Runner = new(glooRunner)
 
 // TODO: (copied from gateway) switch AcceptAllResourcesByDefault to false after validation has been tested in user environments
 var AcceptAllResourcesByDefault = true
 
 var AllowWarnings = true
 
-func NewRunnerFactory() bootstrap.RunnerFactory {
-	return NewGlooRunnerFactory(RunGloo, nil).GetRunnerFactory()
-}
+type glooRunner struct {
+	extensions *RunExtensions
 
-// used outside of this repo
-//noinspection GoUnusedExportedFunction
-func NewRunnerFactoryWithExtensions(extensions RunExtensions) bootstrap.RunnerFactory {
-	runWithExtensions := func(opts RunOpts) error {
-		return RunGlooWithExtensions(opts, extensions)
-	}
-	return NewGlooRunnerFactory(runWithExtensions, &extensions).GetRunnerFactory()
-}
-
-// for use by UDS, FDS, other v1.SetupSyncers
-func NewRunnerFactoryWithRun(runFunc RunWithOptions) bootstrap.RunnerFactory {
-	return NewGlooRunnerFactory(runFunc, nil).GetRunnerFactory()
-}
-
-type glooRunnerFactory struct {
 	resourceClientset ResourceClientset
 	typedClientset    TypedClientset
 
-	extensions               *RunExtensions
-	runFunc                  RunWithOptions
 	makeGrpcServer           func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server
 	previousXdsServer        grpcServer
 	previousValidationServer grpcServer
@@ -71,8 +52,12 @@ type glooRunnerFactory struct {
 	callbacks                xdsserver.Callbacks
 }
 
-func NewGlooRunnerFactory(runFunc RunWithOptions, extensions *RunExtensions) *glooRunnerFactory {
-	s := &glooRunnerFactory{
+func NewGlooRunner() *glooRunner {
+	return NewGlooRunnerWithExtensions(DefaultRunExtensions())
+}
+
+func NewGlooRunnerWithExtensions(extensions *RunExtensions) *glooRunner {
+	s := &glooRunner{
 		extensions: extensions,
 		makeGrpcServer: func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server {
 			serverOpts := []grpc.ServerOption{
@@ -89,20 +74,15 @@ func NewGlooRunnerFactory(runFunc RunWithOptions, extensions *RunExtensions) *gl
 			serverOpts = append(serverOpts, options...)
 			return grpc.NewServer(serverOpts...)
 		},
-		runFunc: runFunc,
 	}
 	return s
 }
 
-func (g *glooRunnerFactory) GetRunnerFactory() bootstrap.RunnerFactory {
-	return g.RunnerFactoryImpl
-}
-
-func (g *glooRunnerFactory) GetResourceClientset() ResourceClientset {
+func (g *glooRunner) GetResourceClientset() ResourceClientset {
 	return g.resourceClientset
 }
 
-func (g *glooRunnerFactory) GetTypedClientset() TypedClientset {
+func (g *glooRunner) GetTypedClientset() TypedClientset {
 	return g.typedClientset
 }
 
@@ -112,47 +92,6 @@ type grpcServer struct {
 	addr            string
 	maxGrpcRecvSize int
 	cancel          context.CancelFunc
-}
-
-func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, callbacks xdsserver.Callbacks, start bool) ControlPlane {
-	snapshotCache := xds.NewAdsSnapshotCache(ctx)
-	xdsServer := server.NewServer(ctx, snapshotCache, callbacks)
-	reflection.Register(grpcServer)
-
-	return ControlPlane{
-		GrpcService: &GrpcService{
-			GrpcServer:      grpcServer,
-			StartGrpcServer: start,
-			BindAddr:        bindAddr,
-			Ctx:             ctx,
-		},
-		SnapshotCache: snapshotCache,
-		XDSServer:     xdsServer,
-	}
-}
-
-func NewValidationServer(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, start bool) ValidationServer {
-	return ValidationServer{
-		GrpcService: &GrpcService{
-			GrpcServer:      grpcServer,
-			StartGrpcServer: start,
-			BindAddr:        bindAddr,
-			Ctx:             ctx,
-		},
-		Server: validation.NewValidationServer(),
-	}
-}
-
-func NewProxyDebugServer(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, start bool) ProxyDebugServer {
-	return ProxyDebugServer{
-		GrpcService: &GrpcService{
-			Ctx:             ctx,
-			BindAddr:        bindAddr,
-			GrpcServer:      grpcServer,
-			StartGrpcServer: start,
-		},
-		Server: debug.NewProxyEndpointServer(),
-	}
 }
 
 var (
@@ -177,14 +116,14 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 	return &net.TCPAddr{IP: ip, Port: port}, nil
 }
 
-func (g *glooRunnerFactory) RunnerFactoryImpl(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) (bootstrap.RunFunc, error) {
+func (g *glooRunner) Run(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) error {
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
 		xdsAddr = DefaultXdsBindAddr
 	}
 	xdsTcpAddress, err := getAddr(xdsAddr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parsing xds addr")
+		return errors.Wrapf(err, "parsing xds addr")
 	}
 
 	validationAddr := settings.GetGloo().GetValidationBindAddr()
@@ -193,7 +132,7 @@ func (g *glooRunnerFactory) RunnerFactoryImpl(ctx context.Context, kubeCache kub
 	}
 	validationTcpAddress, err := getAddr(validationAddr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parsing validation addr")
+		return errors.Wrapf(err, "parsing validation addr")
 	}
 
 	proxyDebugAddr := settings.GetGloo().GetProxyDebugBindAddr()
@@ -202,7 +141,7 @@ func (g *glooRunnerFactory) RunnerFactoryImpl(ctx context.Context, kubeCache kub
 	}
 	proxyDebugTcpAddress, err := getAddr(proxyDebugAddr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parsing proxy debug endpoint addr")
+		return errors.Wrapf(err, "parsing proxy debug endpoint addr")
 	}
 	refreshRate := time.Minute
 	if settings.GetRefreshRate() != nil {
@@ -221,7 +160,7 @@ func (g *glooRunnerFactory) RunnerFactoryImpl(ctx context.Context, kubeCache kub
 	// Use the same maxGrpcMsgSize for both validation server and proxy debug server as the message size is determined by the size of proxies.
 	if maxGrpcMsgSize := settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); maxGrpcMsgSize != nil {
 		if maxGrpcMsgSize.GetValue() < 0 {
-			return nil, errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be non-negative, current value: %v", maxGrpcMsgSize.GetValue())
+			return errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be non-negative, current value: %v", maxGrpcMsgSize.GetValue())
 		}
 		maxGrpcRecvSize = int(maxGrpcMsgSize.GetValue())
 	}
@@ -299,7 +238,7 @@ func (g *glooRunnerFactory) RunnerFactoryImpl(ctx context.Context, kubeCache kub
 	// Generate the set of clients used to power Gloo Edge
 	resourceClientset, typedClientset, err := GenerateGlooClientsets(ctx, settings, kubeCache, memCache)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	g.resourceClientset = resourceClientset
 	g.typedClientset = typedClientset
@@ -324,17 +263,15 @@ func (g *glooRunnerFactory) RunnerFactoryImpl(ctx context.Context, kubeCache kub
 		GatewayControllerEnabled: gatewayControllerEnabled,
 	}
 
-	// TODO (samheilbron) These should be built from the start options, not included in the start options
+	// TODO (samheilbron) we should remove the whole concept of RunOpts
 	opts.ControlPlane = g.controlPlane
 	opts.ValidationServer = g.validationServer
 	opts.ProxyDebugServer = g.proxyDebugServer
 
-	return func() error {
-		err = g.runFunc(opts)
+	err = RunGlooWithExtensions(opts, *g.extensions)
 
-		g.validationServer.StartGrpcServer = opts.ValidationServer.StartGrpcServer
-		g.controlPlane.StartGrpcServer = opts.ControlPlane.StartGrpcServer
+	g.validationServer.StartGrpcServer = opts.ValidationServer.StartGrpcServer
+	g.controlPlane.StartGrpcServer = opts.ControlPlane.StartGrpcServer
 
-		return err
-	}, nil
+	return err
 }

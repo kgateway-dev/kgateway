@@ -14,32 +14,29 @@ import (
 
 var _ = Describe("SetupSyncer", func() {
 
-	It("calls the RunFunc with the referenced settings crd", func() {
-		var actualSettings *v1.Settings
+	It("Executes the Runner with the referenced settings crd", func() {
 		expectedSettings := &v1.Settings{
 			Metadata: &core.Metadata{Name: "hello", Namespace: "goodbye"},
 		}
 
-		mockRunFunc := func() error {
-			actualSettings = expectedSettings
-			return nil
-		}
-
-		mockRunnerFactory := func(
-			ctx context.Context,
-			kubeCache kube.SharedCache,
-			inMemoryCache memory.InMemoryResourceCache,
-			settings *v1.Settings,
-		) (bootstrap.RunFunc, error) {
-			return mockRunFunc, nil
-		}
-
-		setupSyncer := bootstrap.NewSetupSyncer(expectedSettings.Metadata.Ref(), mockRunnerFactory)
+		runner := &mockRunner{lastRunSettings: nil}
+		setupSyncer := bootstrap.NewSetupSyncer(expectedSettings.Metadata.Ref(), runner)
 		err := setupSyncer.Sync(context.TODO(), &v1.SetupSnapshot{
 			Settings: v1.SettingsList{expectedSettings},
 		})
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(actualSettings).To(Equal(expectedSettings))
+		Expect(runner.lastRunSettings).To(Equal(expectedSettings))
 	})
 })
+
+var _ bootstrap.Runner = new(mockRunner)
+
+type mockRunner struct {
+	lastRunSettings *v1.Settings
+}
+
+func (m *mockRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+	m.lastRunSettings = settings
+	return nil
+}

@@ -12,10 +12,10 @@ import (
 
 func Main(customCtx context.Context) error {
 	setupOptions := bootstrap.SetupOpts{
-		Ctx:           customCtx,
-		LoggerName:    "fds",
-		Version:       version.Version,
-		RunnerFactory: runner.NewRunnerFactory(),
+		Ctx:        customCtx,
+		LoggerName: "fds",
+		Version:    version.Version,
+		Runner:     runner.NewFDSRunner(),
 	}
 	return bootstrap.Setup(setupOptions)
 }

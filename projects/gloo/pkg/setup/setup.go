@@ -10,10 +10,10 @@ import (
 
 func Main(ctx context.Context) error {
 	setupOptions := bootstrap.SetupOpts{
-		Ctx:           ctx,
-		LoggerName:    "gloo",
-		Version:       version.Version,
-		RunnerFactory: runner.NewRunnerFactory(),
+		Ctx:        ctx,
+		LoggerName: "gloo",
+		Version:    version.Version,
+		Runner:     runner.NewGlooRunner(),
 	}
 	return bootstrap.Setup(setupOptions)
 }
