@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Added a trivyignore file to mask CVE-2022-1996
+    issueLink: https://github.com/solo-io/gloo/issues/6827
