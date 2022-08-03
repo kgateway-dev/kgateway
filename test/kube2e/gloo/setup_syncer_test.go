@@ -56,12 +56,12 @@ var _ = Describe("SetupSyncer", func() {
 		ctx = settingsutil.WithSettings(ctx, settings)
 	}
 
-	// Runner.Run is used to configure Gloo with appropriate configuration
+	// Runner is used to configure Gloo with appropriate configuration
 	// It is assumed to run once at construction time, and therefore it executes directives that
 	// are also assumed to only run at construction time.
 	// One of those, is the construction of schemes: https://github.com/kubernetes/kubernetes/pull/89019#issuecomment-600278461
 	// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
-	// we ensure that only 1 RunnerFactory is ever called at a time
+	// we ensure that only 1 Runner is ever called at a time
 	newSynchronizedRunner := func() bootstrap.Runner {
 		runner := &SynchronizedRunner{
 			Runner:  runner.NewGlooRunner(),
@@ -158,7 +158,7 @@ var _ = Describe("SetupSyncer", func() {
 				}
 				kubeCoreCache = kube.NewKubeCache(ctx)
 
-				// Gloo RunnerFactory is no longer responsible for registering CRDs. This was not used in production, and
+				// Gloo Runner is no longer responsible for registering CRDs. This was not used in production, and
 				// required Gloo having RBAC permissions that it should not have. CRD registration is now only supported
 				// by Helm. Therefore, this test needs to manually register CRDs to test setup.
 				registerCrdsOnce.Do(registerCRDs)
@@ -262,7 +262,7 @@ var _ bootstrap.Runner = new(SynchronizedRunner)
 // are also assumed to only run at construction time.
 // One of those, is the construction of schemes: https://github.com/kubernetes/kubernetes/pull/89019#issuecomment-600278461
 // In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
-// we ensure that only 1 RunnerFactory is ever called at a time
+// we ensure that only 1 Runner is ever called at a time
 type SynchronizedRunner struct {
 	Runner  bootstrap.Runner
 	RunLock sync.RWMutex

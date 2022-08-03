@@ -36,6 +36,7 @@ type ProxyDebugServer struct {
 	*GrpcService
 	Server debug.ProxyEndpointServer
 }
+
 type GrpcService struct {
 	Ctx             context.Context
 	BindAddr        net.Addr

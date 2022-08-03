@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	if err := setup.Run(nil); err != nil {
+	if err := setup.Main(nil); err != nil {
 		log.Fatalf("err in main: %v", err.Error())
 	}
 }

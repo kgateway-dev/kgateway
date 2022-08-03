@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 )
 
-func Run(ctx context.Context) error {
+func Main(ctx context.Context) error {
 	setupOptions := bootstrap.SetupOpts{
 		Ctx:        ctx,
 		LoggerName: "ingress",

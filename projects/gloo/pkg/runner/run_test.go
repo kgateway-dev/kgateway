@@ -24,7 +24,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-var _ = Describe("GlooRunner", func() {
+var _ = Describe("Gloo Runner", func() {
 
 	var (
 		settings *v1.Settings
@@ -44,7 +44,7 @@ var _ = Describe("GlooRunner", func() {
 		cancel()
 	})
 
-	Context("Setup", func() {
+	Context("Runner", func() {
 
 		BeforeEach(func() {
 			settings = &v1.Settings{

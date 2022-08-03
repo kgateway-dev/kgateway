@@ -141,16 +141,7 @@ func (i *VaultInstance) RunWithAddress(address string) error {
 	time.Sleep(time.Millisecond * 1500)
 	i.cmd = cmd
 	i.session = session
-
-	//out := string(session.Out.Contents())
-
-	//tokenSlice := regexp.MustCompile("Root Token: ([\\-[:word:]]+)").FindAllString(out, 1)
-	//if len(tokenSlice) < 1 {
-	///	return errors.Errorf("%s did not contain root token", out)
-	//}
-
 	i.address = address
-	//i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
 
 	return nil
 }

@@ -44,7 +44,7 @@ var _ = Describe("FDS Runner", func() {
 			},
 		}
 
-		err := runner.Run(context.Background(), nil, nil, settings)
+		err := runner.Run(ctx, nil, nil, settings)
 		Expect(err).To(HaveOccurred())
 	})
 

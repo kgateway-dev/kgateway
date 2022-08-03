@@ -44,7 +44,7 @@ func GenerateGlooClientsets(ctx context.Context, settings *gloov1.Settings, kube
 	// if vault service discovery specified, initialize consul watcher
 	var consulWatcher consul.ConsulWatcher
 	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {
-		// Set up ConsulStartOpts client
+		// Set up Consul client
 		consulClientWrapper, err := consul.NewConsulWatcher(consulClient, consulServiceDiscovery.GetDataCenters())
 		if err != nil {
 			return failedToConstruct(err)

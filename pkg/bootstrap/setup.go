@@ -37,7 +37,7 @@ var once sync.Once
 // It works by performing the following:
 //	1. Initialize a SettingsClient backed either by Kubernetes or a File
 // 	2. Run an event loop, watching events on the Settings resource, and executing the
-//		opts.RunnerFactory whenever settings change
+//		opts.Runner whenever settings change
 // This allows Gloo components to automatically receive updates to Settings and reload their
 // configuration, without needing to restart the container
 func Setup(opts SetupOpts) error {
