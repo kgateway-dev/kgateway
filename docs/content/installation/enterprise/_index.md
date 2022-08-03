@@ -111,7 +111,7 @@ For OpenShift clusters, make sure to include the `--values values.yaml` option t
 {{% /notice %}}
 
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge v1.8.0 or later.
+Using Helm 2 is not supported in Gloo Edge.
 {{% /notice %}}
 
 Once you've installed Gloo Edge, please be sure [to verify your installation](#verify-your-installation).
@@ -186,7 +186,7 @@ helm install gloo glooe/gloo-ee --namespace gloo-system \
 ```
 
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge v1.8.0 or later.
+Using Helm 2 is not supported in Gloo Edge.
 {{% /notice %}}
 
 ### List of Gloo Edge Helm chart values
@@ -219,9 +219,7 @@ Gloo Edge Open Source Helm values in Enterprise must be prefixed with `gloo`, un
 
 ## Enterprise UI
 
-For version 1.8.9 and later, Gloo Edge Enterprise includes the user interface (UI) by default. Prior versions have the UI only when you enable Gloo Federation.
-
-Note that when you enable Gloo Federation in version 1.8.9 or later, the UI does not show any data until you [register one or more clusters]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}). If you do not use Gloo Federation, the UI shows the installed Gloo Edge instance automatically without cluster registration.
+Gloo Edge Enterprise includes the user interface (UI) by default. Note that when you enable Gloo Federation, the UI does not show any data until you [register one or more clusters]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}). If you do not use Gloo Federation, the UI shows the installed Gloo Edge instance automatically without cluster registration.
 
 To disable Gloo Federation, you can set `gloo-fed.enabled=false` during installation as shown in the following examples.
 
