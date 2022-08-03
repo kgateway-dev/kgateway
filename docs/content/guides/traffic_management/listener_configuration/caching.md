@@ -57,6 +57,7 @@ https://docs.solo.io/gloo-edge/master/reference/api/github.com/solo-io/gloo/proj
 
 ## Configure caching for a listener
 
+After you enable the caching server, you must configure caching on a listener defined in a Gateway CRD.
 1. Edit the Gateway CRD where your listener is defined.
    ```sh
    kubectl edit gateway -n gloo-system gateway-proxy
