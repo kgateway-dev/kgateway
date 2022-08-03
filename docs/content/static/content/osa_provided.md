@@ -50,7 +50,7 @@ Name|Version|License
 [google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20211129164237-f09f9a12af12|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.40.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.27.1|BSD 3-clause "New" or "Revised" License
-[AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}|MIT License
+[AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
 [helm/v3](https://helm.sh/helm/v3)|v3.6.3|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.22.4|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.22.4|Apache License 2.0
