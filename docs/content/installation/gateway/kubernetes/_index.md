@@ -99,7 +99,7 @@ may not be correct if you install by directly applying the dry run manifests, e.
 ### Installing on Kubernetes with Helm
 
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge v1.8.0.
+Using Helm 2 is not supported in Gloo Edge.
 {{% /notice %}}
 
 As a first step, you have to add the Gloo Edge repository to the list of known chart repositories, as well as prepare the installation namespace:
