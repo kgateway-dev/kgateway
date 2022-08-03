@@ -15,7 +15,7 @@ and uses a set of rules to determine access to the web application. In enterpris
 deployed to an application or group of applications to provide a layer of protection between the applications and the 
 end users.
 
-Gloo Edge supports the popular Web Application Firewall framework/ruleset [ModSecurity](https://www.github.com/SpiderLabs/ModSecurity) 3.0.3.
+Gloo Edge supports the popular Web Application Firewall framework/ruleset [ModSecurity](https://www.github.com/SpiderLabs/ModSecurity) 3.0.4.
 
 ## **WAF in Gloo Edge**
 Gloo Edge Enterprise includes the ability to enable the ModSecurity Web Application Firewall for any incoming and outgoing HTTP connections. There is support for configuring rule sets based on the OWASP Core Rule Set as well as custom rule sets. More information on available rule sets, and the rules language generally, can be found [here](https://www.modsecurity.org/rules.html).

@@ -258,7 +258,7 @@ The setup above shows how the HTTPS traffic reaching the NLB is redirected to Gl
 
 ### Disabling the Gloo Edge HTTPS Gateway
 
-If you route all the traffic to the HTTP port of Envoy, then you can disable the HTTPS Gateway (Envoy Listener) in Gloo Edge using `disableHttpsGateway` (since Gloo v1.8). The traffic reaching the NLB on port 8443 will be refused since there is no active Envoy listener behind the NLB.
+If you route all the traffic to the HTTP port of Envoy, then you can disable the HTTPS Gateway (Envoy Listener) in Gloo Edge using `disableHttpsGateway`. The traffic reaching the NLB on port 8443 will be refused since there is no active Envoy listener behind the NLB.
 
 ```yaml
 gloo:
