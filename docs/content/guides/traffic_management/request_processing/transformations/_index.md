@@ -389,9 +389,6 @@ In addition to the standard functions available in the core _Inja_ library, you 
 You can use templates to mutate [headers](#headers), the [body](#body), and [dynamic metadata](#dynamicmetadatavalues).
 
 #### XSLT Transformation
-{{% notice note %}}
-The XSLT transformation has been introduced with **Gloo Edge Enterprise**, release v1.8.0-beta3. If you are using an earlier version, it will not work.
-{{% /notice %}}
 {{< protobuf display="XSLT transformations" name="envoy.config.transformer.xslt.v2.XsltTransformation" >}} allow transformations on HTTP requests using the XSLT transformation language.
 The following snippet illustrates the structure of the `xsltTransformation` object.
 ```yaml
