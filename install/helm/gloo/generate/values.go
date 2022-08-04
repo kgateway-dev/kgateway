@@ -317,6 +317,7 @@ type CertGenJob struct {
 	RunAsUser               *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 	Resources               *ResourceRequirements `json:"resources,omitempty"`
 	RunOnUpdate             *bool                 `json:"runOnUpdate,omitempty" desc:"enable to run the job also on pre-upgrade"`
+	ActiveDeadlineSeconds   *int                  `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for k8s jobs"`
 	Cron                    *CertGenCron          `json:"cron,omitempty" desc:"CronJob parameters"`
 }
 

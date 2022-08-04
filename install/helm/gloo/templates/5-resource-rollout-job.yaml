@@ -15,7 +15,7 @@ metadata:
     "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
-  activeDeadlineSeconds: 100
+  activeDeadlineSeconds: {{ .Values.gateway.certGenJob.activeDeadlineSeconds }}
   template:
     metadata:
       labels:

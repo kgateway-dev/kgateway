@@ -21,7 +21,7 @@ metadata:
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
-  activeDeadlineSeconds: 100
+  activeDeadlineSeconds: {{ .Values.gateway.certGenJob.activeDeadlineSeconds }}
   template:
     metadata:
       labels:
