@@ -22,6 +22,7 @@ spec:
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-rollout
+      {{- include "gloo.podSpecStandardFields" .Values.gateway.rolloutJob | nindent 6 -}}
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
