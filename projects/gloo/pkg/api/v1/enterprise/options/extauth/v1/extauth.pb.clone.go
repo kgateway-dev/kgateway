@@ -74,6 +74,8 @@ func (m *AuthConfig) Clone() proto.Message {
 		target.BooleanExpr = proto.Clone(m.GetBooleanExpr()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	}
 
+	target.FailOnRedirect = m.GetFailOnRedirect()
+
 	return target
 }
 
