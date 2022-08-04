@@ -442,6 +442,8 @@ spec:
                       type: object
                   type: object
                 type: array
+              failOnRedirect:
+                type: boolean
               namespacedStatuses:
                 properties:
                   statuses:
