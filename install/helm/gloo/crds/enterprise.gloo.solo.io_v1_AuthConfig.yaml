@@ -78,14 +78,14 @@ spec:
                       type: object
                     ldap:
                       properties:
-                        DisableGroupChecking:
-                          type: boolean
                         address:
                           type: string
                         allowedGroups:
                           items:
                             type: string
                           type: array
+                        disableGroupChecking:
+                          type: boolean
                         membershipAttributeName:
                           type: string
                         pool:
