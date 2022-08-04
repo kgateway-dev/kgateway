@@ -1,5 +1,0 @@
-changelog:
-- type: FIX
-  issuelink: https://github.com/solo-io/gloo/issues/6860
-  resolvesIssue: true
-  description: Restore the ability for ipv4 only clusters to work with our new 1.22 envoy build
