@@ -47,7 +47,7 @@ require (
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.0
-	github.com/solo-io/go-utils v0.22.0
+	github.com/solo-io/go-utils v0.22.1-0.20220804170423-3c11bf66a391
 	github.com/solo-io/k8s-utils v0.1.0
 	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/protoc-gen-openapi v0.1.0
