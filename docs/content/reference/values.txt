@@ -284,6 +284,7 @@
 |gateway.certGenJob.resources.requests.memory|string||amount of memory|
 |gateway.certGenJob.resources.requests.cpu|string||amount of CPUs|
 |gateway.certGenJob.runOnUpdate|bool|false|enable to run the job also on pre-upgrade|
+|gateway.certGenJob.activeDeadlineSeconds|int|100|Deadline in seconds for k8s jobs|
 |gateway.certGenJob.cron.enabled|bool|false|enable the cronjob|
 |gateway.certGenJob.cron.schedule|string|* * * * *|Cron job scheduling|
 |gateway.certGenJob.cron.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen cronjob.|

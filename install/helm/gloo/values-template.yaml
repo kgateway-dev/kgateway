@@ -85,7 +85,7 @@ gateway:
     setTtlAfterFinished: true
     ttlSecondsAfterFinished: 60
     runAsUser: 10101
-    activeDeadlineSeconds: {{ .Values.gateway.certGenJob.activeDeadlineSeconds }}
+    activeDeadlineSeconds: 100
     cron:
       enabled: false
       schedule: "* * * * *"
