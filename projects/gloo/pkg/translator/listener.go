@@ -63,7 +63,7 @@ func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) *env
 
 // computeListenerAddress returns the Address that this listener will listen for traffic
 func (l *listenerTranslatorInstance) computeListenerAddress() *envoy_config_core_v3.Address {
-	isIpv4Address, _, err := IsIpv4Address(l.listener.GetBindAddress())
+	_, isIpv4Address, err := IsIpv4Address(l.listener.GetBindAddress())
 	if err != nil {
 		validation.AppendListenerError(l.report,
 			validationapi.ListenerReport_Error_ProcessingError,

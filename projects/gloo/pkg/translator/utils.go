@@ -102,7 +102,7 @@ type typedConfigObject interface {
 // GetIpv6Address returns the IPv6 Address for a provided bindAddress
 // returns an error and the original address, if the bindAddress is not a valid IP address
 func GetIpv6Address(bindAddress string) (string, error) {
-	isIpv4Address, _, err := IsIpv4Address(bindAddress)
+	_, isIpv4Address, err := IsIpv4Address(bindAddress)
 	if err != nil {
 		return bindAddress, err
 	}
@@ -114,7 +114,7 @@ func GetIpv6Address(bindAddress string) (string, error) {
 }
 
 // IsIpv4Address returns whether
-// the provided address is IPv4, IPv4 in IPv6 format, and an error if not valid
+// the provided address is valid IPv4, is strict IPv4, and an error if not valid
 // This is used to distinguish between IPv4 and IPv6 addresses
 func IsIpv4Address(bindAddress string) (bool, bool, error) {
 	bindIP := net.ParseIP(bindAddress)
@@ -128,8 +128,8 @@ func IsIpv4Address(bindAddress string) (bool, bool, error) {
 		return false, false, nil
 	}
 
-	if len(bindIP) == net.IPv4len {
-		return false, true, nil
+	if len(bindIP) != net.IPv4len {
+		return true, false, nil
 	}
 	return true, true, nil
 

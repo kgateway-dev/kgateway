@@ -48,7 +48,7 @@ var _ = Describe("Utils", func() {
 	DescribeTable(
 		"IsIpv4Address",
 		func(address string, expectedIpv4 bool, expectedErr error) {
-			isIpv4Address, _, err := translator.IsIpv4Address(address)
+			_, isIpv4Address, err := translator.IsIpv4Address(address)
 
 			if expectedErr != nil {
 				Expect(err).To(HaveOccurred())
