@@ -209,26 +209,27 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 
 func (p *Plugin) convertTransformation(
 	ctx context.Context,
-	t *transformation.Transformations,
+	transformations *transformation.Transformations,
 	stagedTransformations *transformation.TransformationStages,
 ) (*envoytransformation.RouteTransformations, error) {
-	if t == nil && stagedTransformations == nil {
+	if transformations == nil && stagedTransformations == nil {
 		return nil, nil
 	}
 	ret := &envoytransformation.RouteTransformations{}
-	if t != nil && stagedTransformations.GetRegular() == nil {
+
+	if transformations != nil && stagedTransformations.GetRegular() == nil {
 		// keep deprecated config until we are sure we don't need it.
 		// on newer envoys it will be ignored.
-		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation())
+		requestTransform, err := p.TranslateTransformation(transformations.GetRequestTransformation())
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation())
+		responseTransform, err := p.TranslateTransformation(transformations.GetResponseTransformation())
 		if err != nil {
 			return nil, err
 		}
 		ret.RequestTransformation = requestTransform
-		ret.ClearRouteCache = t.GetClearRouteCache()
+		ret.ClearRouteCache = transformations.GetClearRouteCache()
 		ret.ResponseTransformation = responseTransform
 		// new config:
 		// we have to have it too, as if any new config is defined the deprecated config is ignored.
@@ -238,7 +239,7 @@ func (p *Plugin) convertTransformation(
 					RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 						Match:                  nil,
 						RequestTransformation:  requestTransform,
-						ClearRouteCache:        t.GetClearRouteCache(),
+						ClearRouteCache:        transformations.GetClearRouteCache(),
 						ResponseTransformation: responseTransform,
 					},
 				},

@@ -2,6 +2,7 @@ package extauth
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"strings"
 	"time"
 
@@ -78,7 +79,7 @@ func (d *DefaultConfigGenerator) GenerateListenerExtAuthzConfig(listener *v1.Htt
 		return nil, nil
 	}
 
-	extAuthCfg, err := GenerateEnvoyConfigForFilter(settings, upstreams)
+	extAuthCfg, err := GenerateEnvoyConfigForFilter(settings, listener, upstreams)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +215,58 @@ func BuildStagedHttpFilters(configurationGenerator func() ([]*envoyauth.ExtAuthz
 	return filters, nil
 }
 
-func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.UpstreamList) (*envoyauth.ExtAuthz, error) {
+func getMetaDataNamespacesFromTransforms(listener *v1.HttpListener) []string {
+	var voidMember struct{}
+	namespacesSet := make(map[string]struct{})
+
+	for _, host := range listener.GetVirtualHosts() {
+		for namespace, _ := range getMetaDataNamespacesFromVirtualHost(host) {
+			_, exists := namespacesSet[namespace]
+			if !exists {
+				namespacesSet[namespace] = voidMember
+			}
+		}
+	}
+	namespaces := make([]string, len(namespacesSet))
+	i := 0
+	for namespace, _ := range namespacesSet {
+		namespaces[i] = namespace
+		i++
+	}
+	return namespaces
+}
+
+func getMetaDataNamespacesFromVirtualHost(virtualHost *v1.VirtualHost) map[string]struct{} {
+	var voidMember struct{}
+	namespacesSet := make(map[string]struct{})
+
+	var requestMatches []*transformation.RequestMatch
+	//
+	if virtualHost.Options.StagedTransformations.Early.GetRequestTransforms() != nil {
+		requestMatches = append(requestMatches, virtualHost.Options.StagedTransformations.Early.GetRequestTransforms()...)
+	}
+
+	if virtualHost.Options.StagedTransformations.Regular.GetRequestTransforms() != nil {
+		requestMatches = append(requestMatches, virtualHost.Options.StagedTransformations.Regular.GetRequestTransforms()...)
+	}
+
+	for _, requestMatch := range requestMatches {
+		if requestMatch.GetRequestTransformation() != nil {
+			for _, metaData := range requestMatch.GetRequestTransformation().GetTransformationTemplate().GetDynamicMetadataValues() {
+				namespace := metaData.GetMetadataNamespace()
+				if namespace != "" {
+					_, exists := namespacesSet[namespace]
+					if !exists {
+						namespacesSet[namespace] = voidMember
+					}
+				}
+			}
+		}
+	}
+	return namespacesSet
+}
+
+func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, listener *v1.HttpListener, upstreams v1.UpstreamList) (*envoyauth.ExtAuthz, error) {
 	extauthUpstreamRef := settings.GetExtauthzServerRef()
 	if extauthUpstreamRef == nil {
 		return nil, NoServerRefErr
@@ -298,6 +350,9 @@ func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.Ups
 	default:
 		// Leave unset so it defaults to AUTO
 	}
+
+	//Give access to all metadata namespaces for ext-auth
+	cfg.MetadataContextNamespaces = append(cfg.MetadataContextNamespaces, getMetaDataNamespacesFromTransforms(listener)...)
 
 	return cfg, nil
 }
