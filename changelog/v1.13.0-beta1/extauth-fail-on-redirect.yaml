@@ -1,0 +1,8 @@
+CHANGELOG:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/6811
+  resolvesIssue: false
+  description: |
+    Add config to enable users to opt-in to configuring an AuthConfig to fail when
+    an OIDC provider returns a redirect instead of returning that redirect to the
+    client. When set to true, a 401 unauthorized will be returned instead of 302.
