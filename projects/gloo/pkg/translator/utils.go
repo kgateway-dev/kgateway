@@ -102,17 +102,28 @@ type typedConfigObject interface {
 // GetIpv6Address returns the IPv6 Address for a provided bindAddress
 // returns an error and the original address, if the bindAddress is not a valid IP address
 func GetIpv6Address(bindAddress string) (string, error) {
+	isIpv4Address, err := IsIpv4Address(bindAddress)
+	if err != nil {
+		return bindAddress, err
+	}
+
+	if isIpv4Address {
+		return fmt.Sprintf("::ffff:%s", bindAddress), nil
+	}
+	return bindAddress, nil
+}
+
+func IsIpv4Address(bindAddress string) (bool, error) {
 	bindIP := net.ParseIP(bindAddress)
 	if bindIP == nil {
 		// If bindAddress is not a valid textual representation of an IP address
-		return bindAddress, errors.Errorf("bindAddress %s is not a valid IP address", bindAddress)
+		return false, errors.Errorf("bindAddress %s is not a valid IP address", bindAddress)
 
 	} else if bindIP.To4() != nil {
 		// If bindIP is not an IPv4 address, To4 returns nil.
-		// Therefore, this is the case where the bindIP represents an IPv4 address and we need to convert
-		// it into an IPv4-mapped IPv6 address
-		return fmt.Sprintf("::ffff:%s", bindAddress), nil
+		// Therefore, this is the case where the bindIP represents an IPv4 address
+		return true, nil
 	}
 
-	return bindAddress, nil
+	return false, nil
 }

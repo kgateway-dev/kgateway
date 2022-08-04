@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Plugin", func() {
+var _ = Describe("Utils", func() {
 
 	It("empty namespace: should convert upstream to cluster name and back properly", func() {
 		ref := &core.ResourceRef{Name: "name", Namespace: ""}
@@ -44,5 +44,24 @@ var _ = Describe("Plugin", func() {
 		Entry("ipv4 returns ipv4-mapped", "0.0.0.0", "::ffff:0.0.0.0", nil),
 		Entry("ipv6 returns ipv6", "::", "::", nil),
 	)
+
+	DescribeTable(
+		"IsIpv4Address",
+		func(address string, expectedIpv4 bool, expectedErr error) {
+			isIpv4Address, err := translator.IsIpv4Address(address)
+
+			if expectedErr != nil {
+				Expect(err).To(HaveOccurred())
+			} else {
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			Expect(isIpv4Address).To(Equal(expectedIpv4))
+		},
+		Entry("invalid ip returns original", "invalid", false, errors.Errorf("bindAddress invalid is not a valid IP address")),
+		Entry("ipv4 returns true", "0.0.0.0", true, nil),
+		Entry("ipv6 returns false", "::", false, nil),
+	)
+
 
 })
