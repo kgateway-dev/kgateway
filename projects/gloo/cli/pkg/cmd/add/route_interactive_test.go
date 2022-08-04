@@ -15,7 +15,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = FDescribe("Routes interactive", func() {
+var _ = Describe("Routes interactive", func() {
 
 	var (
 		ctx    context.Context
