@@ -113,6 +113,8 @@ func GetIpv6Address(bindAddress string) (string, error) {
 	return bindAddress, nil
 }
 
+// IsIpv4Address returns true if the provided address has a valid IPv4 address
+// This is used to distinguish between IPv4 and IPv6 addresses
 func IsIpv4Address(bindAddress string) (bool, error) {
 	bindIP := net.ParseIP(bindAddress)
 	if bindIP == nil {

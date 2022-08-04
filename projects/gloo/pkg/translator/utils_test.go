@@ -61,7 +61,7 @@ var _ = Describe("Utils", func() {
 		Entry("invalid ip returns original", "invalid", false, errors.Errorf("bindAddress invalid is not a valid IP address")),
 		Entry("ipv4 returns true", "0.0.0.0", true, nil),
 		Entry("ipv6 returns false", "::", false, nil),
+		Entry("ipv4inipv6", "::ffff:0.0.0.0", false, nil),
 	)
-
 
 })
