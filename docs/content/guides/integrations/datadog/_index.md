@@ -156,7 +156,7 @@ spec:
 These annotations can also be added declaratively via helm, for example if using Gloo Edge Enterprise, these annotations can be added as a value for `gloo.gatewayProxies.gatewayProxy.podTemplate.extraAnnotations`.
 
 {{< notice note >}}
-If you upgrade the cluster using Helm version 3, these annotations should stay in place. Helm 3 uses a three-way merge when performing an update. Helm version 2 will also attempt a merge, but may have issues with changes made using kubectl edit. You should update the values used by Helm to include these annotations. Note that Helm 2 is not supported in Gloo Edge v1.8.0 and later.
+If you upgrade the cluster using Helm version 3, these annotations should stay in place. Helm 3 uses a three-way merge when performing an update. Helm version 2 will also attempt a merge, but may have issues with changes made using kubectl edit. You should update the values used by Helm to include these annotations. Note that Helm 2 is not supported in Gloo Edge.
 {{< /notice >}}
 
 For more information about merging strategies, see the [Helm documentation](https://helm.sh/docs/faq/changes_since_helm2/#improved-upgrade-strategy-3-way-strategic-merge-patches).

@@ -26,7 +26,7 @@ gloo:
 ```
 
 ### OpenAPI schema validation on CRDs
-Since Gloo v1.8, CRDs are given OpenAPI schemas. This way, the kube `api-server` (validation webhook) will refuse _Custom Resources_ with invalid definitions.
+CRDs are given OpenAPI schemas. This way, the kube `api-server` (validation webhook) will refuse _Custom Resources_ with invalid definitions.
 
 ### More validation hooks
 In addition to the CRD schemas, Gloo can perform a deeper inspection of the _Custom Resources_.
