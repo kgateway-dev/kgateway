@@ -545,7 +545,7 @@ redis socket types
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set, refresh expired id-tokens using the refresh-token. Defaults to false. Explicitly set to true to enable refreshing. |
-| `keyPrefix` | `string` | Prefix to append to cookies keys. Cookie keys will be stored in the form `<key_prefix>_<cookie_name>`. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes. |
+| `keyPrefix` | `string` | Prefix to append to cookie keys, such as for separate domain and subdomain prefixes. Cookie keys are stored in the form `<key_prefix>_<cookie_name>`. For more information, see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes. |
 
 
 
@@ -1096,6 +1096,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 "allowedGroups": []string
 "pool": .enterprise.gloo.solo.io.Ldap.ConnectionPool
 "searchFilter": string
+"disableGroupChecking": bool
 
 ```
 
@@ -1107,6 +1108,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 | `allowedGroups` | `[]string` | In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }. |
 | `pool` | [.enterprise.gloo.solo.io.Ldap.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |
 | `searchFilter` | `string` | Use to set a custom filter when searching a member. Defaults to "(uid=*)". |
+| `disableGroupChecking` | `bool` | Disables group checking, regardless of the value for allowedGroups, and disables validation for the membership attribute of the user entry. Group checking is enabled by default. |
 
 
 

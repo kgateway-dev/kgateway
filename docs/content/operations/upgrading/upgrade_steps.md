@@ -32,11 +32,10 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
 3. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version 1.11 from 1.9 or older, you must upgrade incrementally. For example, you must first upgrade from 1.9 to 1.10, and then upgrade from 1.10 to 1.11.
 4. Review the version-specific upgrade docs.
+   * [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
    * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
    * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
    * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
-   * [1.8.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.8/" >}})
-   * [1.7.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.7/" >}})
 5. If you still aren't sure about the version upgrade impact, scan our [Frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}). Also, feel free to post in the `#gloo` or `#gloo-enterprise` channels of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
 ### Enterprise-only: Understand the open source dependencies.
@@ -139,18 +138,17 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
 ## Step 3: Apply minor version-specific changes
 
 Each minor version might add custom resource definitions (CRDs) that Helm upgrades cannot handle seamlessly. Review the minor version-specific upgrading docs, which might include steps for installing new CRDs and removing outdated CRDs.
+   * [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
    * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
    * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
    * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
-   * [1.8.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.8/" >}})
-   * [1.7.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.7/" >}})
 
 ## Step 4: Upgrade Gloo Edge
 
 The following example upgrade process assumes that Gloo Edge is installed with Helm in a Kubernetes cluster and uses the Kubernetes load balancer.
 
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge v1.8.0 and later.
+Using Helm 2 is not supported in Gloo Edge.
 {{% /notice %}}
 
 {{% notice note %}}

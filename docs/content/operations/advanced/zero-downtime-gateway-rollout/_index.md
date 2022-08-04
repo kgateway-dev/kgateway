@@ -340,7 +340,7 @@ The results show good results and no errors.
 You can observe similar nice results during an upgrade:
 
 ```bash
-helm upgrade -n gloo-system gloo glooe/gloo-ee --version=1.8.13
+helm upgrade -n gloo-system gloo glooe/gloo-ee --version={{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
 ```
 
 **Grafana dashboards**

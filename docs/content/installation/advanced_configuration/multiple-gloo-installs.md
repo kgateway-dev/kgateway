@@ -66,7 +66,7 @@ helm install gloo gloo/gloo --namespace gloo1 -f gloo1-overrides.yaml
 {{< /tabs >}}
 
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge v1.8.0.
+Using Helm 2 is not supported in Gloo Edge.
 {{% /notice %}}
 
 Check that gloo pods are running: 

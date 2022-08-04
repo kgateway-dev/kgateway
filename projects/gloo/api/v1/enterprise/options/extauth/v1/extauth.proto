@@ -334,8 +334,9 @@ message UserSession {
         // When set, refresh expired id-tokens using the refresh-token. Defaults to false.
         // Explicitly set to true to enable refreshing.
         google.protobuf.BoolValue allow_refreshing = 1;
-        // Prefix to append to cookies keys. Cookie keys will be stored in the form `<key_prefix>_<cookie_name>`.
-        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes
+        // Prefix to append to cookie keys, such as for separate domain and subdomain prefixes.
+        // Cookie keys are stored in the form `<key_prefix>_<cookie_name>`.
+        // For more information, see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes
         string key_prefix = 2;
     }
     message RedisSession {
@@ -836,6 +837,11 @@ message Ldap {
 
     // Use to set a custom filter when searching a member. Defaults to "(uid=*)".
     string searchFilter = 6;
+
+    // Disables group checking, regardless of the value for allowedGroups,
+    // and disables validation for the membership attribute of the user entry.
+    // Group checking is enabled by default.
+    bool disable_group_checking = 7;
 }
 
 // Authorizes requests by querying a custom extauth server.
