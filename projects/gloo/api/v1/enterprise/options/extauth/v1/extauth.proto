@@ -695,9 +695,10 @@ message Ldap {
     // Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
     ConnectionPool pool = 5;
 
-    //Sometimes, it's enough to check for the user credentials so this flag disables group checking
-    //group checking is enabled by default
-    bool DisableGroupChecking = 6;
+    // Disables group checking, regardless of the value for allowedGroups,
+    // and disables validation for the membership attribute of the user entry.
+    // Group checking is enabled by default.
+    bool disable_group_checking = 7;
 }
 
 // Authorizes requests by querying a custom extauth server.
