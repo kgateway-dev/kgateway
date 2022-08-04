@@ -1037,6 +1037,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 "allowedGroups": []string
 "pool": .enterprise.gloo.solo.io.Ldap.ConnectionPool
 "searchFilter": string
+"disableGroupChecking": bool
 
 ```
 
@@ -1048,6 +1049,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 | `allowedGroups` | `[]string` | In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }. |
 | `pool` | [.enterprise.gloo.solo.io.Ldap.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |
 | `searchFilter` | `string` | Use to set a custom filter when searching a member. Defaults to "(uid=*)". |
+| `disableGroupChecking` | `bool` | Disables group checking, regardless of the value for allowedGroups, and disables validation for the membership attribute of the user entry. Group checking is enabled by default. |
 
 
 

@@ -992,6 +992,8 @@ func (m *Ldap) Clone() proto.Message {
 
 	target.SearchFilter = m.GetSearchFilter()
 
+	target.DisableGroupChecking = m.GetDisableGroupChecking()
+
 	return target
 }
 
