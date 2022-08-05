@@ -102,7 +102,7 @@ type typedConfigObject interface {
 // GetIpv6Address returns the IPv6 Address for a provided bindAddress
 // returns an error and the original address, if the bindAddress is not a valid IP address
 func GetIpv6Address(bindAddress string) (string, error) {
-	_, isIpv4Address, err := IsIpv4Address(bindAddress)
+	isIpv4Address, _, err := IsIpv4Address(bindAddress)
 	if err != nil {
 		return bindAddress, err
 	}
