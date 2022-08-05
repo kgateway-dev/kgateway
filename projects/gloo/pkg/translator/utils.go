@@ -116,7 +116,7 @@ func GetIpv6Address(bindAddress string) (string, error) {
 // IsIpv4Address returns whether
 // the provided address is valid IPv4, is strict IPv4, and an error if not valid
 // This is used to distinguish between IPv4 and IPv6 addresses
-func IsIpv4Address(bindAddress string) (bool, bool, error) {
+func IsIpv4Address(bindAddress string) (validIpv4, strictIPv4 bool, err error) {
 	bindIP := net.ParseIP(bindAddress)
 	if bindIP == nil {
 		// If bindAddress is not a valid textual representation of an IP address
@@ -127,10 +127,23 @@ func IsIpv4Address(bindAddress string) (bool, bool, error) {
 		// so this is not an acceptable ipv4
 		return false, false, nil
 	}
-
-	if len(bindIP) != net.IPv4len {
-		return true, false, nil
+	if isIPv4NotInv6(bindAddress) {
+		return true, true, nil
 	}
-	return true, true, nil
+	return true, false, nil
 
+}
+
+// isIPv4NotInv6 checks the string to see if it was unmapped.
+// Used as the standard net.Parse smashes everything to ipv6
+func isIPv4NotInv6(ipString string) bool {
+	for i := 0; i < len(ipString); i++ {
+		switch ipString[i] {
+		case '.':
+			return true
+		case ':':
+			return false
+		}
+	}
+	return false
 }
