@@ -120,8 +120,10 @@ func IsIpv4Address(bindAddress string) (validIpv4, strictIPv4 bool, err error) {
 
 }
 
-// isIPv4NotInv6 checks the string to see if it was unmapped.
-// Used as the standard net.Parse smashes everything to ipv6
+// isIPv4NotInv6 checks the string to see if it is
+// ipv4 and not ipv4 mapped into ipv6 space and not ipv6.
+// Used as the standard net.Parse smashes everything to ipv6.
+// Basically false if ::ffff:0.0.0.0 and true if 0.0.0.0
 func isIPv4NotInv6(ipString string) bool {
 	for i := 0; i < len(ipString); i++ {
 		switch ipString[i] {
