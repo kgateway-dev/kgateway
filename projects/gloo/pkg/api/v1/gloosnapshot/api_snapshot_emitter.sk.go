@@ -27,25 +27,25 @@ import (
 
 var (
 	// Deprecated. See mApiResourcesIn
-	mApiSnapshotIn = stats.Int64("api.gloosnapshot.gloo.solo.io/emitter/snap_in", "Deprecated. Use api.gloosnapshot.gloo.solo.io/emitter/resources_in. The number of snapshots in", "1")
+	mApiSnapshotIn = stats.Int64("api_gloosnapshot_gloo_solo_io/emitter/snap_in", "Deprecated. Use api_gloosnapshot_gloo_solo_io/emitter/resources_in. The number of snapshots in", "1")
 
 	// metrics for emitter
-	mApiResourcesIn    = stats.Int64("api.gloosnapshot.gloo.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
-	mApiSnapshotOut    = stats.Int64("api.gloosnapshot.gloo.solo.io/emitter/snap_out", "The number of snapshots out", "1")
-	mApiSnapshotMissed = stats.Int64("api.gloosnapshot.gloo.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
+	mApiResourcesIn    = stats.Int64("api_gloosnapshot_gloo_solo_io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mApiSnapshotOut    = stats.Int64("api_gloosnapshot_gloo_solo_io/emitter/snap_out", "The number of snapshots out", "1")
+	mApiSnapshotMissed = stats.Int64("api_gloosnapshot_gloo_solo_io/emitter/snap_missed", "The number of snapshots missed", "1")
 
 	// views for emitter
 	// deprecated: see apiResourcesInView
 	apisnapshotInView = &view.View{
-		Name:        "api.gloosnapshot.gloo.solo.io/emitter/snap_in",
+		Name:        "api_gloosnapshot_gloo_solo_io/emitter/snap_in",
 		Measure:     mApiSnapshotIn,
-		Description: "Deprecated. Use api.gloosnapshot.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
+		Description: "Deprecated. Use api_gloosnapshot_gloo_solo_io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 
 	apiResourcesInView = &view.View{
-		Name:        "api.gloosnapshot.gloo.solo.io/emitter/resources_in",
+		Name:        "api_gloosnapshot_gloo_solo_io/emitter/resources_in",
 		Measure:     mApiResourcesIn,
 		Description: "The number of resource lists received on open watch channels",
 		Aggregation: view.Count(),
@@ -55,14 +55,14 @@ var (
 		},
 	}
 	apisnapshotOutView = &view.View{
-		Name:        "api.gloosnapshot.gloo.solo.io/emitter/snap_out",
+		Name:        "api_gloosnapshot_gloo_solo_io/emitter/snap_out",
 		Measure:     mApiSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	apisnapshotMissedView = &view.View{
-		Name:        "api.gloosnapshot.gloo.solo.io/emitter/snap_missed",
+		Name:        "api_gloosnapshot_gloo_solo_io/emitter/snap_missed",
 		Measure:     mApiSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),

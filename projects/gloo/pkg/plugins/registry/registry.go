@@ -3,6 +3,8 @@ package registry
 
 import (
 	"context"
+	"os"
+	"strings"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -29,6 +31,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/healthcheck"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/istio_integration"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/listener"
@@ -114,7 +117,11 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	if opts.Consul.ConsulWatcher != nil {
 		glooPlugins = append(glooPlugins, consul.NewPlugin(opts.Consul.ConsulWatcher, consul.NewConsulDnsResolver(opts.Consul.DnsServer), opts.Consul.DnsPollingInterval))
 	}
-
+	lookupResult, found := os.LookupEnv("ENABLE_ISTIO_INTEGRATION")
+	istioEnabled := found && strings.ToLower(lookupResult) == "true"
+	if istioEnabled {
+		glooPlugins = append(glooPlugins, istio_integration.NewPlugin(opts.WatchOpts.Ctx, opts.Upstreams))
+	}
 	return glooPlugins
 }
 
