@@ -1,0 +1,4 @@
+# emicklei/go-restful - Authorization Bypass Through User-Controlled Key
+# This should be fixed in v2's 2.16.0, although talks were undergoing about why this still shows up as an issue.
+# https://github.com/emicklei/go-restful/pull/503
+CVE-2022-1996
