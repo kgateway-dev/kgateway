@@ -28,24 +28,6 @@ var _ = Describe("Utils", func() {
 	})
 
 	DescribeTable(
-		"GetIpv6Address",
-		func(address, expectedAddress string, expectedErr error) {
-			ipv6Address, err := translator.GetIpv6Address(address)
-
-			if expectedErr != nil {
-				Expect(err).To(HaveOccurred())
-			} else {
-				Expect(err).NotTo(HaveOccurred())
-			}
-
-			Expect(ipv6Address).To(Equal(expectedAddress))
-		},
-		Entry("invalid ip returns original", "invalid", "invalid", errors.Errorf("bindAddress invalid is not a valid IP address")),
-		Entry("ipv4 returns ipv4-mapped", "0.0.0.0", "::ffff:0.0.0.0", nil),
-		Entry("ipv6 returns ipv6", "::", "::", nil),
-	)
-
-	DescribeTable(
 		"IsIpv4Address",
 		func(address string, expectedIpv4 bool, expectedErr error) {
 			_, isIpv4Address, err := translator.IsIpv4Address(address)

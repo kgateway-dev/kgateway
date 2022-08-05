@@ -99,20 +99,6 @@ type typedConfigObject interface {
 	GetTypedConfig() *any.Any
 }
 
-// GetIpv6Address returns the IPv6 Address for a provided bindAddress
-// returns an error and the original address, if the bindAddress is not a valid IP address
-func GetIpv6Address(bindAddress string) (string, error) {
-	isIpv4Address, _, err := IsIpv4Address(bindAddress)
-	if err != nil {
-		return bindAddress, err
-	}
-
-	if isIpv4Address {
-		return fmt.Sprintf("::ffff:%s", bindAddress), nil
-	}
-	return bindAddress, nil
-}
-
 // IsIpv4Address returns whether
 // the provided address is valid IPv4, is strict IPv4, and an error if not valid
 // This is used to distinguish between IPv4 and IPv6 addresses

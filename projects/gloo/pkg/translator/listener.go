@@ -81,6 +81,7 @@ func (l *listenerTranslatorInstance) computeListenerAddress() *envoy_config_core
 				},
 				// As of Envoy 1.22: https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.22/v1.22.0.html
 				// the Ipv4Compat flag can only be set on Ipv6 address and Ipv4-mapped Ipv6 address.
+				// Check if this is a non-padded pure ipv4 address and unset the compat flag if so.
 				Ipv4Compat: !isIpv4Address,
 			},
 		},
