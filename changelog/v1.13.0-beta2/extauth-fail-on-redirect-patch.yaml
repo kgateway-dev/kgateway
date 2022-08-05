@@ -1,0 +1,4 @@
+CHANGELOG:
+- type: NON_USER_FACING
+  description: |
+    Fix missed field update for ExtAuthConfig
