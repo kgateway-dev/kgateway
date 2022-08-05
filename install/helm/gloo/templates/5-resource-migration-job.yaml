@@ -15,6 +15,7 @@ metadata:
     "helm.sh/hook-weight": "3" # run this job after the role/rolebinding is created, and before the validation webhook is upgraded
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
+  activeDeadlineSeconds: {{ .Values.gateway.rolloutJob.activeDeadlineSeconds }}
   template:
     metadata:
       labels:
