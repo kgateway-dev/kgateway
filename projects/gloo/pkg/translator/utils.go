@@ -100,7 +100,7 @@ type typedConfigObject interface {
 }
 
 // IsIpv4Address returns whether
-// the provided address is valid IPv4, is strict IPv4, and an error if not valid
+// the provided address is valid IPv4, is pure(unmapped) IPv4, and if there was an error in the bindaddr
 // This is used to distinguish between IPv4 and IPv6 addresses
 func IsIpv4Address(bindAddress string) (validIpv4, strictIPv4 bool, err error) {
 	bindIP := net.ParseIP(bindAddress)

@@ -29,8 +29,8 @@ var _ = Describe("Utils", func() {
 
 	DescribeTable(
 		"IsIpv4Address",
-		func(address string, expectedIpv4 bool, expectedErr error) {
-			_, isIpv4Address, err := translator.IsIpv4Address(address)
+		func(address string, expectedIPv4, expectedPureIPv4 bool, expectedErr error) {
+			isIPv4Address, isPureIPv4Address, err := translator.IsIpv4Address(address)
 
 			if expectedErr != nil {
 				Expect(err).To(HaveOccurred())
@@ -38,12 +38,13 @@ var _ = Describe("Utils", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			Expect(isIpv4Address).To(Equal(expectedIpv4))
+			Expect(isIPv4Address).To(Equal(expectedIPv4))
+			Expect(isPureIPv4Address).To(Equal(expectedPureIPv4))
 		},
-		Entry("invalid ip returns original", "invalid", false, errors.Errorf("bindAddress invalid is not a valid IP address")),
-		Entry("ipv4 returns true", "0.0.0.0", true, nil),
-		Entry("ipv6 returns false", "::", false, nil),
-		Entry("ipv4inipv6", "::ffff:0.0.0.0", false, nil),
+		Entry("invalid ip returns original", "invalid", false, false, errors.Errorf("bindAddress invalid is not a valid IP address")),
+		Entry("ipv4 returns true", "0.0.0.0", true, true, nil),
+		Entry("ipv6 returns false", "::", false, false, nil),
+		Entry("ipv4 mapped in ipv6", "::ffff:0.0.0.0", true, false, nil),
 	)
 
 })
