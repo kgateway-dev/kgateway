@@ -288,10 +288,10 @@
 |gateway.certGenJob.cron.enabled|bool|false|enable the cronjob|
 |gateway.certGenJob.cron.schedule|string|* * * * *|Cron job scheduling|
 |gateway.certGenJob.cron.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen cronjob.|
-|gateway.rolloutJob.image.tag|string|1.22.12|The image tag for the container.|
+|gateway.rolloutJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.rolloutJob.image.repository|string|kubectl|The image repository (name) for the container.|
 |gateway.rolloutJob.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|gateway.rolloutJob.image.registry|string|bitnami|The image hostname prefix and registry, such as quay.io/solo-io.|
+|gateway.rolloutJob.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
 |gateway.rolloutJob.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
 |gateway.rolloutJob.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |gateway.rolloutJob.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
@@ -303,7 +303,7 @@
 |gateway.cleanupJob.image.tag|string|1.22.12|The image tag for the container.|
 |gateway.cleanupJob.image.repository|string|kubectl|The image repository (name) for the container.|
 |gateway.cleanupJob.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|gateway.cleanupJob.image.registry|string|bitnami|The image hostname prefix and registry, such as quay.io/solo-io.|
+|gateway.cleanupJob.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
 |gateway.cleanupJob.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
 |gateway.cleanupJob.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |gateway.cleanupJob.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
