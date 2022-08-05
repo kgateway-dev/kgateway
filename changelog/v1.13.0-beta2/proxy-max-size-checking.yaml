@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/pull/6627
+    description: Added a check for proxy size before returning via grpc
+    resolvesIssue: true

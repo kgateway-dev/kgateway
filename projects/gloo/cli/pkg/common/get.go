@@ -162,6 +162,14 @@ func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, er
 	return list, nil
 }
 func getProxiesFromGrpc(name string, namespace string, opts *options.Options, proxyEndpointPort string) (gloov1.ProxyList, error) {
+	settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{Ctx: opts.Top.Ctx})
+
+	options := []grpc.CallOption{}
+	if settings.GetGateway().GetValidation() != nil {
+		options = append(options, grpc.MaxCallSendMsgSize(int(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue())))
+	}
+
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {
 		return nil, err
@@ -202,7 +210,7 @@ func getProxiesFromGrpc(name string, namespace string, opts *options.Options, pr
 			r, err := pxClient.GetProxies(opts.Top.Ctx, &debug.ProxyEndpointRequest{
 				Name:      name,
 				Namespace: opts.Metadata.GetNamespace(),
-			})
+			}, options...)
 			if err != nil {
 				errs <- err
 				time.Sleep(retryInterval)
