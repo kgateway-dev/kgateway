@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Plugin", func() {
+var _ = Describe("Utils", func() {
 
 	It("empty namespace: should convert upstream to cluster name and back properly", func() {
 		ref := &core.ResourceRef{Name: "name", Namespace: ""}
@@ -28,9 +28,9 @@ var _ = Describe("Plugin", func() {
 	})
 
 	DescribeTable(
-		"GetIpv6Address",
-		func(address, expectedAddress string, expectedErr error) {
-			ipv6Address, err := translator.GetIpv6Address(address)
+		"IsIpv4Address",
+		func(address string, expectedIPv4, expectedPureIPv4 bool, expectedErr error) {
+			isIPv4Address, isPureIPv4Address, err := translator.IsIpv4Address(address)
 
 			if expectedErr != nil {
 				Expect(err).To(HaveOccurred())
@@ -38,11 +38,13 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			Expect(ipv6Address).To(Equal(expectedAddress))
+			Expect(isIPv4Address).To(Equal(expectedIPv4))
+			Expect(isPureIPv4Address).To(Equal(expectedPureIPv4))
 		},
-		Entry("invalid ip returns original", "invalid", "invalid", errors.Errorf("bindAddress invalid is not a valid IP address")),
-		Entry("ipv4 returns ipv4-mapped", "0.0.0.0", "::ffff:0.0.0.0", nil),
-		Entry("ipv6 returns ipv6", "::", "::", nil),
+		Entry("invalid ip returns original", "invalid", false, false, errors.Errorf("bindAddress invalid is not a valid IP address")),
+		Entry("ipv4 returns true", "0.0.0.0", true, true, nil),
+		Entry("ipv6 returns false", "::", false, false, nil),
+		Entry("ipv4 mapped in ipv6", "::ffff:0.0.0.0", true, false, nil),
 	)
 
 })
