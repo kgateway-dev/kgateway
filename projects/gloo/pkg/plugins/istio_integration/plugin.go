@@ -30,10 +30,6 @@ func NewPlugin(ctx context.Context, upstreams factory.ResourceClientFactory) *pl
 	if err != nil {
 		return nil
 	}
-	//err = client.Register()
-	//if err != nil {
-	//	return nil
-	//}
 	return &plugin{
 		usClient: client,
 	}

@@ -27,16 +27,18 @@ var _ = Describe("Plugin", func() {
 		kubeUpstream *v1.Upstream
 		cancel       context.CancelFunc
 		ctx          context.Context
+		err          error
 	)
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		resourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		usClient, err := resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &v1.Upstream{}})
+		usClient, err = v1.NewUpstreamClient(ctx, resourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		kubeUpstream = makeKubeUpstream(upstreamName, glooNamespace, serviceName, serviceNamespace)
-		usClient.Write(kubeUpstream, clients.WriteOpts{})
+		_, err = usClient.Write(kubeUpstream, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() { cancel() })
 	It("Gets the host from a kube destination", func() {
@@ -48,6 +50,21 @@ var _ = Describe("Plugin", func() {
 							Namespace: serviceNamespace,
 							Name:      serviceName,
 						},
+					},
+				},
+			},
+		}
+		host, err := istio_integration.GetHostFromDestination(destination, usClient)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(host).To(Equal(rewrittenHost))
+	})
+	It("Gets the host from a gloo upstream", func() {
+		destination := &v1.RouteAction_Single{
+			Single: &v1.Destination{
+				DestinationType: &v1.Destination_Upstream{
+					Upstream: &core.ResourceRef{
+						Namespace: glooNamespace,
+						Name:      upstreamName,
 					},
 				},
 			},
