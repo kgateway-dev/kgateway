@@ -300,7 +300,7 @@
 |gateway.rolloutJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
 |gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.rolloutJob.activeDeadlineSeconds|int|100|Deadline in seconds for k8s jobs|
-|gateway.cleanupJob.image.tag|string|1.22.12|The image tag for the container.|
+|gateway.cleanupJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.cleanupJob.image.repository|string|kubectl|The image repository (name) for the container.|
 |gateway.cleanupJob.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
 |gateway.cleanupJob.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
