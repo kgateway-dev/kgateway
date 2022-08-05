@@ -317,7 +317,7 @@ type CertGenJob struct {
 	RunAsUser               *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 	Resources               *ResourceRequirements `json:"resources,omitempty"`
 	RunOnUpdate             *bool                 `json:"runOnUpdate,omitempty" desc:"enable to run the job also on pre-upgrade"`
-	ActiveDeadlineSeconds   *int                  `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for k8s jobs"`
+	ActiveDeadlineSeconds   *int                  `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
 	Cron                    *CertGenCron          `json:"cron,omitempty" desc:"CronJob parameters"`
 }
 
@@ -326,7 +326,7 @@ type RolloutJob struct {
 	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
 	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
-	ActiveDeadlineSeconds   *int     `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for k8s jobs"`
+	ActiveDeadlineSeconds   *int     `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
 }
 
 type CleanupJob struct {
@@ -334,7 +334,7 @@ type CleanupJob struct {
 	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
 	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
-	ActiveDeadlineSeconds   *int     `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for k8s jobs"`
+	ActiveDeadlineSeconds   *int     `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
 }
 
 /*
