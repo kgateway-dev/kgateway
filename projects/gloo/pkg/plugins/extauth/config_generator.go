@@ -2,9 +2,10 @@ package extauth
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 
@@ -242,12 +243,12 @@ func getMetaDataNamespacesFromVirtualHost(virtualHost *v1.VirtualHost) map[strin
 
 	var requestMatches []*transformation.RequestMatch
 	//
-	if virtualHost.Options.StagedTransformations.Early.GetRequestTransforms() != nil {
-		requestMatches = append(requestMatches, virtualHost.Options.StagedTransformations.Early.GetRequestTransforms()...)
+	if virtualHost.GetOptions().GetStagedTransformations().GetEarly().GetRequestTransforms() != nil {
+		requestMatches = append(requestMatches, virtualHost.GetOptions().GetStagedTransformations().GetEarly().GetRequestTransforms()...)
 	}
 
-	if virtualHost.Options.StagedTransformations.Regular.GetRequestTransforms() != nil {
-		requestMatches = append(requestMatches, virtualHost.Options.StagedTransformations.Regular.GetRequestTransforms()...)
+	if virtualHost.GetOptions().GetStagedTransformations().GetRegular().GetRequestTransforms() != nil {
+		requestMatches = append(requestMatches, virtualHost.GetOptions().GetStagedTransformations().GetRegular().GetRequestTransforms()...)
 	}
 
 	for _, requestMatch := range requestMatches {
@@ -352,7 +353,7 @@ func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, listener *v1.Htt
 	}
 
 	//Give access to all metadata namespaces for ext-auth
-	cfg.MetadataContextNamespaces = append(cfg.MetadataContextNamespaces, getMetaDataNamespacesFromTransforms(listener)...)
+	cfg.MetadataContextNamespaces = append(cfg.GetMetadataContextNamespaces(), getMetaDataNamespacesFromTransforms(listener)...)
 
 	return cfg, nil
 }
