@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any1 "github.com/golang/protobuf/ptypes/any"
+	any "github.com/golang/protobuf/ptypes/any"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
@@ -313,7 +313,7 @@ type VirtualHost struct {
 	// *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
 	// specific; see the `HTTP filter documentation (config_http_filters)`
 	// for if and how it is utilized.
-	TypedPerFilterConfig map[string]*any1.Any `protobuf:"bytes,15,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TypedPerFilterConfig map[string]*any.Any `protobuf:"bytes,15,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Decides whether the `x-envoy-attempt-count
 	// (config_http_filters_router_x-envoy-attempt-count)` header should be included
 	// in the upstream request. Setting this option will cause it to override any existing header
@@ -449,7 +449,7 @@ func (x *VirtualHost) GetPerFilterConfig() map[string]*_struct.Struct {
 	return nil
 }
 
-func (x *VirtualHost) GetTypedPerFilterConfig() map[string]*any1.Any {
+func (x *VirtualHost) GetTypedPerFilterConfig() map[string]*any.Any {
 	if x != nil {
 		return x.TypedPerFilterConfig
 	}
@@ -516,7 +516,7 @@ type Route struct {
 	// *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
 	// specific; see the `HTTP filter documentation (config_http_filters)` for
 	// if and how it is utilized.
-	TypedPerFilterConfig map[string]*any1.Any `protobuf:"bytes,13,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TypedPerFilterConfig map[string]*any.Any `protobuf:"bytes,13,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Specifies a set of headers that will be added to requests matching this
 	// route. Headers specified at this level are applied before headers from the
 	// enclosing `envoy_api_msg_route.VirtualHost` and
@@ -637,7 +637,7 @@ func (x *Route) GetPerFilterConfig() map[string]*_struct.Struct {
 	return nil
 }
 
-func (x *Route) GetTypedPerFilterConfig() map[string]*any1.Any {
+func (x *Route) GetTypedPerFilterConfig() map[string]*any.Any {
 	if x != nil {
 		return x.TypedPerFilterConfig
 	}
@@ -2664,7 +2664,7 @@ type WeightedCluster_ClusterWeight struct {
 	// *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
 	// specific; see the `HTTP filter documentation (config_http_filters)`
 	// for if and how it is utilized.
-	TypedPerFilterConfig map[string]*any1.Any `protobuf:"bytes,10,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TypedPerFilterConfig map[string]*any.Any `protobuf:"bytes,10,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *WeightedCluster_ClusterWeight) Reset() {
@@ -2755,7 +2755,7 @@ func (x *WeightedCluster_ClusterWeight) GetPerFilterConfig() map[string]*_struct
 	return nil
 }
 
-func (x *WeightedCluster_ClusterWeight) GetTypedPerFilterConfig() map[string]*any1.Any {
+func (x *WeightedCluster_ClusterWeight) GetTypedPerFilterConfig() map[string]*any.Any {
 	if x != nil {
 		return x.TypedPerFilterConfig
 	}
@@ -3343,7 +3343,7 @@ func (x *RetryPolicy_RetryPriority) GetConfig() *_struct.Struct {
 	return nil
 }
 
-func (x *RetryPolicy_RetryPriority) GetTypedConfig() *any1.Any {
+func (x *RetryPolicy_RetryPriority) GetTypedConfig() *any.Any {
 	if x, ok := x.GetConfigType().(*RetryPolicy_RetryPriority_TypedConfig); ok {
 		return x.TypedConfig
 	}
@@ -3359,7 +3359,7 @@ type RetryPolicy_RetryPriority_Config struct {
 }
 
 type RetryPolicy_RetryPriority_TypedConfig struct {
-	TypedConfig *any1.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
+	TypedConfig *any.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
 }
 
 func (*RetryPolicy_RetryPriority_Config) isRetryPolicy_RetryPriority_ConfigType() {}
@@ -3431,7 +3431,7 @@ func (x *RetryPolicy_RetryHostPredicate) GetConfig() *_struct.Struct {
 	return nil
 }
 
-func (x *RetryPolicy_RetryHostPredicate) GetTypedConfig() *any1.Any {
+func (x *RetryPolicy_RetryHostPredicate) GetTypedConfig() *any.Any {
 	if x, ok := x.GetConfigType().(*RetryPolicy_RetryHostPredicate_TypedConfig); ok {
 		return x.TypedConfig
 	}
@@ -3447,7 +3447,7 @@ type RetryPolicy_RetryHostPredicate_Config struct {
 }
 
 type RetryPolicy_RetryHostPredicate_TypedConfig struct {
-	TypedConfig *any1.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
+	TypedConfig *any.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
 }
 
 func (*RetryPolicy_RetryHostPredicate_Config) isRetryPolicy_RetryHostPredicate_ConfigType() {}
@@ -4888,7 +4888,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_api_v2_route_r
 	(core.RequestMethod)(0),                             // 53: solo.io.envoy.api.v2.core.RequestMethod
 	(*_type1.Int64Range)(nil),                           // 54: solo.io.envoy.type.Int64Range
 	(*_struct.Struct)(nil),                              // 55: google.protobuf.Struct
-	(*any1.Any)(nil),                                    // 56: google.protobuf.Any
+	(*any.Any)(nil),                                     // 56: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_api_v2_route_route_proto_depIdxs = []int32{
 	5,   // 0: solo.io.envoy.api.v2.route.VirtualHost.routes:type_name -> solo.io.envoy.api.v2.route.Route
