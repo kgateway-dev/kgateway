@@ -113,10 +113,7 @@ func IsIpv4Address(bindAddress string) (validIpv4, strictIPv4 bool, err error) {
 		// so this is not an acceptable ipv4
 		return false, false, nil
 	}
-	if isIPv4NotInv6(bindAddress) {
-		return true, true, nil
-	}
-	return true, false, nil
+	return true, isIPv4NotInv6(bindAddress), nil
 
 }
 
