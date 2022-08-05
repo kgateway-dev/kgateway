@@ -113,18 +113,18 @@ func IsIpv4Address(bindAddress string) (validIpv4, strictIPv4 bool, err error) {
 		// so this is not an acceptable ipv4
 		return false, false, nil
 	}
-	if isIPv4NotInv6(bindAddress) {
+	if isPureIPv4(bindAddress) {
 		return true, true, nil
 	}
 	return true, false, nil
 
 }
 
-// isIPv4NotInv6 checks the string to see if it is
+// isPureIPv4 checks the string to see if it is
 // ipv4 and not ipv4 mapped into ipv6 space and not ipv6.
 // Used as the standard net.Parse smashes everything to ipv6.
 // Basically false if ::ffff:0.0.0.0 and true if 0.0.0.0
-func isIPv4NotInv6(ipString string) bool {
+func isPureIPv4(ipString string) bool {
 	for i := 0; i < len(ipString); i++ {
 		switch ipString[i] {
 		case '.':
