@@ -83,6 +83,8 @@ spec:
                           items:
                             type: string
                           type: array
+                        disableGroupChecking:
+                          type: boolean
                         membershipAttributeName:
                           type: string
                         pool:
