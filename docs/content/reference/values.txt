@@ -288,6 +288,16 @@
 |gateway.certGenJob.cron.enabled|bool|false|enable the cronjob|
 |gateway.certGenJob.cron.schedule|string|* * * * *|Cron job scheduling|
 |gateway.certGenJob.cron.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen cronjob.|
+|gateway.rolloutJob.restartPolicy|string||restart policy to use when the pod exits|
+|gateway.rolloutJob.nodeName|string||name of node to run on|
+|gateway.rolloutJob.nodeSelector.NAME|string||label selector for nodes|
+|gateway.rolloutJob.tolerations[].key|string|||
+|gateway.rolloutJob.tolerations[].operator|string|||
+|gateway.rolloutJob.tolerations[].value|string|||
+|gateway.rolloutJob.tolerations[].effect|string|||
+|gateway.rolloutJob.tolerations[].tolerationSeconds|int64|||
+|gateway.rolloutJob.affinity.NAME|interface|||
+|gateway.rolloutJob.hostAliases[]|interface|||
 |gateway.rolloutJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.rolloutJob.image.repository|string|kubectl|The image repository (name) for the container.|
 |gateway.rolloutJob.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -300,6 +310,16 @@
 |gateway.rolloutJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
 |gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.rolloutJob.activeDeadlineSeconds|int|100|Deadline in seconds for Kubernetes jobs.|
+|gateway.cleanupJob.restartPolicy|string||restart policy to use when the pod exits|
+|gateway.cleanupJob.nodeName|string||name of node to run on|
+|gateway.cleanupJob.nodeSelector.NAME|string||label selector for nodes|
+|gateway.cleanupJob.tolerations[].key|string|||
+|gateway.cleanupJob.tolerations[].operator|string|||
+|gateway.cleanupJob.tolerations[].value|string|||
+|gateway.cleanupJob.tolerations[].effect|string|||
+|gateway.cleanupJob.tolerations[].tolerationSeconds|int64|||
+|gateway.cleanupJob.affinity.NAME|interface|||
+|gateway.cleanupJob.hostAliases[]|interface|||
 |gateway.cleanupJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.cleanupJob.image.repository|string|kubectl|The image repository (name) for the container.|
 |gateway.cleanupJob.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
