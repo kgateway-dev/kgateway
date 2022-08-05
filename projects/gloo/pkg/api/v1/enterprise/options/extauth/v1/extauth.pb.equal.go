@@ -1892,6 +1892,10 @@ func (m *ExtAuthConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetFailOnRedirect() != target.GetFailOnRedirect() {
+		return false
+	}
+
 	return true
 }
 
