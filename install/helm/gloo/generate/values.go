@@ -322,7 +322,7 @@ type CertGenJob struct {
 }
 
 type RolloutJob struct {
-  *JobSpec
+	*JobSpec
 	Image                   *Image   `json:"image,omitempty"`
 	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
 	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
@@ -331,7 +331,7 @@ type RolloutJob struct {
 }
 
 type CleanupJob struct {
-  *JobSpec
+	*JobSpec
 	Image                   *Image   `json:"image,omitempty"`
 	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
 	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
