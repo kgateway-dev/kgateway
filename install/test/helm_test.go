@@ -3777,6 +3777,45 @@ metadata:
 							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("kubectl apply"))
 							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("no custom resources to apply"))
 						})
+
+						It("can disable rollout, migration, and cleanup jobs", func() {
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{
+								"gateway.rolloutJob.enabled=false",
+								"gateway.cleanupJob.enabled=false",
+							}})
+							testManifest.Expect("Job", namespace, "gloo-resource-rollout").To(BeNil())
+							testManifest.Expect("Job", namespace, "gloo-resource-migration").To(BeNil())
+							testManifest.Expect("Job", namespace, "gloo-resource-cleanup").To(BeNil())
+						})
+
+						It("can set resource requirements for rollout, migration, and cleanup jobs", func() {
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{
+								"gateway.rolloutJob.resources.requests.memory=100Mi",
+								"gateway.rolloutJob.resources.requests.cpu=200m",
+								"gateway.rolloutJob.resources.limits.memory=300Mi",
+								"gateway.rolloutJob.resources.limits.cpu=400m",
+								"gateway.cleanupJob.resources.requests.memory=150Mi",
+								"gateway.cleanupJob.resources.requests.cpu=250m",
+								"gateway.cleanupJob.resources.limits.memory=350Mi",
+								"gateway.cleanupJob.resources.limits.cpu=450m",
+							}})
+							// rollout and migration jobs both use the gateway.rolloutJob helm values
+							rolloutJob := getJob(testManifest, namespace, "gloo-resource-rollout")
+							Expect(rolloutJob.Spec.Template.Spec.Containers[0].Resources.Requests.Memory().String()).To(Equal("100Mi"))
+							Expect(rolloutJob.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().String()).To(Equal("200m"))
+							Expect(rolloutJob.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String()).To(Equal("300Mi"))
+							Expect(rolloutJob.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().String()).To(Equal("400m"))
+							migrationJob := getJob(testManifest, namespace, "gloo-resource-migration")
+							Expect(migrationJob.Spec.Template.Spec.Containers[0].Resources.Requests.Memory().String()).To(Equal("100Mi"))
+							Expect(migrationJob.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().String()).To(Equal("200m"))
+							Expect(migrationJob.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String()).To(Equal("300Mi"))
+							Expect(migrationJob.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().String()).To(Equal("400m"))
+							cleanupJob := getJob(testManifest, namespace, "gloo-resource-cleanup")
+							Expect(cleanupJob.Spec.Template.Spec.Containers[0].Resources.Requests.Memory().String()).To(Equal("150Mi"))
+							Expect(cleanupJob.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().String()).To(Equal("250m"))
+							Expect(cleanupJob.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String()).To(Equal("350Mi"))
+							Expect(cleanupJob.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().String()).To(Equal("450m"))
+						})
 					})
 
 					It("creates the certgen job, rbac, and service account", func() {
@@ -5082,6 +5121,9 @@ metadata:
 					Entry("knative external proxy deployment", "Deployment", "knative-external-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
 					Entry("knative internal proxy deployment", "Deployment", "knative-internal-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
 					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+					Entry("resource rollout job", "Job", "gloo-resource-rollout", "gateway.rolloutJob"),
+					Entry("resource migration job", "Job", "gloo-resource-migration", "gateway.rolloutJob"),
+					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
 				)
 			})
 

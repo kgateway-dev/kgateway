@@ -1,3 +1,4 @@
+{{- if .Values.gateway.cleanupJob.enabled }}
 {{- $image := .Values.gateway.cleanupJob.image }}
 {{- if .Values.global }}
 {{- $image = merge .Values.gateway.cleanupJob.image .Values.global.image }}
@@ -20,9 +21,13 @@ spec:
     metadata:
       labels:
         gloo: resource-cleanup
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
+        sidecar.istio.io/inject: "false"
+        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-cleanup
+      {{- include "gloo.podSpecStandardFields" .Values.gateway.cleanupJob | nindent 6 -}}
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
@@ -32,6 +37,9 @@ spec:
             {{- if not .Values.gateway.cleanupJob.floatingUserId }}
             runAsUser: {{ printf "%.0f" (float64 .Values.gateway.cleanupJob.runAsUser) -}}
             {{- end }}
+          {{- with .Values.gateway.cleanupJob.resources }}
+          resources: {{ toYaml . | nindent 12}}
+          {{- end }}
           command:
           - /bin/sh
           - -c
@@ -43,7 +51,9 @@ spec:
             {{- range include "gloo.gatewayNamespaces" . | fromJsonArray }}
             kubectl delete --ignore-not-found gateways.gateway.solo.io -n {{ . }} -l app=gloo || exit $?
             {{- end }}
+      {{- if not .Values.gateway.cleanupJob.restartPolicy }}
       restartPolicy: OnFailure
+      {{- end }}
   ttlSecondsAfterFinished: {{ .Values.gateway.cleanupJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
@@ -137,3 +147,4 @@ subjects:
   name: gloo-resource-cleanup
   namespace: {{ .Release.Namespace }}
 {{- end }}{{/* if .Values.global.glooRbac.create */}}
+{{- end }}{{/* if .Values.gateway.cleanupJob.enabled  */}}
