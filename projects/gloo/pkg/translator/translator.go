@@ -155,6 +155,24 @@ func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.
 
 	endpoints := t.computeClusterEndpoints(params, upstreamRefKeyToEndpoints, reports)
 
+	upstreamMap := make(map[string]struct{}, len(params.Snapshot.Upstreams))
+	// make sure to call EndpointPlugin with empty endpoint
+	for _, upstream := range params.Snapshot.Upstreams {
+		key := UpstreamToClusterName(&core.ResourceRef{
+			Name:      upstream.GetMetadata().GetName(),
+			Namespace: upstream.GetMetadata().GetNamespace(),
+		})
+		upstreamMap[key] = struct{}{}
+	}
+	endpointMap := make(map[string][]*envoy_config_endpoint_v3.ClusterLoadAssignment, len(endpoints))
+	for _, ep := range endpoints {
+		if _, ok := endpointMap[ep.GetClusterName()]; !ok {
+			endpointMap[ep.GetClusterName()] = []*envoy_config_endpoint_v3.ClusterLoadAssignment{ep}
+		} else {
+			// TODO: should check why has duplicated upstream
+			endpointMap[ep.GetClusterName()] = append(endpointMap[ep.GetClusterName()], ep)
+		}
+	}
 	// Find all the EDS clusters without endpoints (can happen with kube service that have no endpoints), and create a zero sized load assignment
 	// this is important as otherwise envoy will wait for them forever wondering their fate and not doing much else.
 ClusterLoop:
@@ -171,31 +189,29 @@ ClusterLoop:
 		// Workaround for envoy bug: https://github.com/envoyproxy/envoy/issues/13009
 		// Change the cluster eds config, forcing envoy to re-request latest EDS config
 		c.GetEdsClusterConfig().ServiceName = endpointClusterName
-		for _, ep := range endpoints {
-			if ep.GetClusterName() == c.GetName() {
-
+		if eList, ok := endpointMap[c.GetName()]; ok {
+			for _, ep := range eList {
 				// the endpoint ClusterName needs to match the cluster's EdsClusterConfig ServiceName
 				ep.ClusterName = endpointClusterName
-				continue ClusterLoop
 			}
+			continue ClusterLoop
 		}
 		emptyEndpointList := &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: endpointClusterName,
 		}
 		// make sure to call EndpointPlugin with empty endpoint
-		for _, upstream := range params.Snapshot.Upstreams {
-			if UpstreamToClusterName(&core.ResourceRef{
-				Name:      upstream.GetMetadata().GetName(),
-				Namespace: upstream.GetMetadata().GetNamespace(),
-			}) == c.GetName() {
-				for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
-					if err := plugin.ProcessEndpoints(params, upstream, emptyEndpointList); err != nil {
-						reports.AddError(upstream, err)
-					}
+		if _, ok := upstreamMap[c.GetName()]; ok {
+			for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
+				if err := plugin.ProcessEndpoints(params, upstream, emptyEndpointList); err != nil {
+					reports.AddError(upstream, err)
 				}
 			}
 		}
-
+		if _, ok := endpointMap[emptyEndpointList.GetClusterName()]; !ok {
+			endpointMap[emptyEndpointList.GetClusterName()] = []*envoy_config_endpoint_v3.ClusterLoadAssignment{emptyEndpointList}
+		} else {
+			endpointMap[emptyEndpointList.GetClusterName()] = append(endpointMap[emptyEndpointList.GetClusterName()], emptyEndpointList)
+		}
 		endpoints = append(endpoints, emptyEndpointList)
 	}
 
