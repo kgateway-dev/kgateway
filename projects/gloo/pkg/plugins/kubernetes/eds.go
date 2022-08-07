@@ -23,6 +23,54 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+type podMap struct {
+	// ipMap will record pods which
+	// - pod.Status.Phase is kubev1.PodRunning
+	// - pod.Status.PodIP != ""
+	// - !pod.Spec.HostNetwork
+	// and use pod.Status.PodIP as map key
+	ipMap map[string]*kubev1.Pod
+
+	// metaMap will record all pods and use
+	// `pod.GetName()+"/"+pod.GetNamespace()` as map key
+	metaMap map[string]*kubev1.Pod
+}
+
+func generatePodsMap(pods []*kubev1.Pod) *podMap {
+	podsIPMap := make(map[string]*kubev1.Pod, len(pods))
+	podsMetaMap := make(map[string]*kubev1.Pod, len(pods))
+	for _, pod := range pods {
+		podsMetaMap[pod.GetName()+"/"+pod.GetNamespace()] = pod
+		if pod.Status.Phase != kubev1.PodRunning {
+			continue
+		}
+		if pod.Status.PodIP == "" {
+			continue
+		}
+		if pod.Spec.HostNetwork {
+			// we can't tell pods apart if they are all on the host network.
+			continue
+		}
+		podsIPMap[pod.Status.PodIP] = pod
+	}
+	return &podMap{podsIPMap, podsMetaMap}
+}
+
+func (pm *podMap) getPodForIp(ip string, podName, podNamespace string) (*kubev1.Pod, error) {
+	if podName != "" && podNamespace != "" {
+		if p, ok := pm.metaMap[podName+"/"+podNamespace]; ok {
+			return p, nil
+		}
+	}
+	if ip != "" {
+		if p, ok := pm.ipMap[ip]; ok {
+			return p, nil
+		}
+	}
+
+	return nil, errors.Errorf("running pod not found with IP %v", ip)
+}
+
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 
 	kubeFactory := func(namespaces []string) KubePluginSharedFactory {
@@ -250,6 +298,7 @@ func filterEndpoints(
 
 	var warnsToLog, errorsToLog []string
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
+	podMap := generatePodsMap(pods)
 
 	istioIntegrationEnabled := isIstioIntegrationEnabled()
 
@@ -278,19 +327,19 @@ func filterEndpoints(
 					copyRef := *usRef
 					endpointsMap[key] = append(endpointsMap[key], &copyRef)
 				} else {
-					warnings := processSubsetAddresses(subset, spec, pods, usRef, port, endpointsMap)
+					warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap)
 					warnsToLog = append(warnsToLog, warnings...)
 				}
 			}
 		}
 	}
 
-	endpoints = generateFilteredEndpointList(endpointsMap, services, pods, writeNamespace, endpoints, istioIntegrationEnabled)
+	endpoints = generateFilteredEndpointList(endpointsMap, services, podMap, writeNamespace, endpoints, istioIntegrationEnabled)
 
 	return endpoints, warnsToLog, errorsToLog
 }
 
-func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.UpstreamSpec, pods []*kubev1.Pod, usRef *core.ResourceRef, port uint32, endpointsMap map[Epkey][]*core.ResourceRef) []string {
+func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.UpstreamSpec, pods *podMap, usRef *core.ResourceRef, port uint32, endpointsMap map[Epkey][]*core.ResourceRef) []string {
 	var warnings []string
 	for _, addr := range subset.Addresses {
 		var podName, podNamespace string
@@ -303,13 +352,13 @@ func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.Upstr
 		}
 		if len(spec.GetSelector()) != 0 {
 			// determine whether labels for the owner of this ip (pod) matches the spec
-			podLabels, err := getPodLabelsForIp(addr.IP, podName, podNamespace, pods)
+			pod, err := pods.getPodForIp(addr.IP, podName, podNamespace)
 			if err != nil {
 				// pod not found for IP? what's that about?
 				warnings = append(warnings, fmt.Sprintf("error for upstream %v service %v: %v", usRef.Key(), spec.GetServiceName(), err))
 				continue
 			}
-			if !labels.SelectorFromSet(spec.GetSelector()).Matches(labels.Set(podLabels)) {
+			if !labels.SelectorFromSet(spec.GetSelector()).Matches(labels.Set(pod.Labels)) {
 				continue
 			}
 			// pod hasn't been assigned address yet
@@ -343,7 +392,7 @@ func findFirstPortInEndpointSubsets(subset kubev1.EndpointSubset, singlePortServ
 func generateFilteredEndpointList(
 	endpointsMap map[Epkey][]*core.ResourceRef,
 	services []*kubev1.Service,
-	pods []*kubev1.Pod,
+	pods *podMap,
 	writeNamespace string,
 	endpoints v1.EndpointList,
 	istioIntegrationEnabled bool) v1.EndpointList {
@@ -370,7 +419,7 @@ func generateFilteredEndpointList(
 			service, _ := getServiceForHostname(addr.Address, addr.Name, addr.Namespace, services)
 			ep = createEndpoint(writeNamespace, endpointName, refs, service.Spec.ClusterIP, addr.Port, service.GetObjectMeta().GetLabels()) // TODO: labels may be nil
 		} else {
-			if pod, _ := getPodForIp(addr.Address, addr.Name, addr.Namespace, pods); pod == nil {
+			if pod, _ := pods.getPodForIp(addr.Address, addr.Name, addr.Namespace); pod == nil {
 				ep = createEndpoint(writeNamespace, endpointName, refs, addr.Address, addr.Port, nil)
 			} else {
 				ep = createEndpoint(writeNamespace, endpointName, refs, addr.Address, addr.Port, pod.GetObjectMeta().GetLabels())
@@ -400,40 +449,6 @@ func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, addre
 
 	}
 	return ep
-}
-
-func getPodLabelsForIp(ip string, podName, podNamespace string, pods []*kubev1.Pod) (map[string]string, error) {
-	pod, err := getPodForIp(ip, podName, podNamespace, pods)
-	if err != nil {
-		return nil, err
-	}
-	return pod.Labels, nil
-}
-
-func getPodForIp(ip string, podName, podNamespace string, pods []*kubev1.Pod) (*kubev1.Pod, error) {
-
-	for _, pod := range pods {
-		if podName != "" && podNamespace != "" {
-			// no need for heuristics!
-			if podName == pod.Name && podNamespace == pod.Namespace {
-				return pod, nil
-			}
-		}
-
-		if pod.Status.PodIP != ip {
-			continue
-		}
-		if pod.Status.Phase != kubev1.PodRunning {
-			continue
-		}
-		if pod.Spec.HostNetwork {
-			// we can't tell pods apart if they are all on the host network.
-			continue
-		}
-		return pod, nil
-	}
-
-	return nil, errors.Errorf("running pod not found with IP %v", ip)
 }
 
 func getServiceForHostname(hostname string, serviceName, serviceNamespace string, services []*kubev1.Service) (*kubev1.Service, error) {
