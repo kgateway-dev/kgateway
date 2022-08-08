@@ -62,7 +62,7 @@ var _ = Describe("Hybrid", func() {
 				Static: &static.UpstreamSpec{
 					Hosts: []*static.Host{{
 						// this is a safe way of referring to localhost
-						Addr: envoyInstance.GlooAddr,
+						Addr: envoyInstance.LocalAddr(),
 						Port: 8095,
 					}},
 				},
@@ -93,6 +93,22 @@ var _ = Describe("Hybrid", func() {
 		proxy = getProxyHybridNoMatcher("default", "proxy", defaults.HttpPort, tcpUsRef)
 	})
 
+	JustBeforeEach(func() {
+		_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+		})
+	})
+
+	AfterEach(func() {
+		envoyInstance.Clean()
+		srv.GracefulStop()
+
+		cancel()
+	})
+
 	Context("catchall match for http", func() {
 		BeforeEach(func() {
 			// TcpGateway gets a matcher our request *will not* hit
@@ -106,26 +122,13 @@ var _ = Describe("Hybrid", func() {
 					},
 				},
 			}
-
-			_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			// Wait for proxy to be accepted
-			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
-			})
 		})
 
-		AfterEach(func() {
-			envoyInstance.Clean()
-			srv.GracefulStop()
-			cancel()
-		})
 
 		It("http request works as expected", func() {
 			client := &http.Client{}
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() (int, error) {
@@ -141,44 +144,25 @@ var _ = Describe("Hybrid", func() {
 	})
 
 	Context("SourcePrefixRanges match for http", func() {
+
 		BeforeEach(func() {
 			// HttpGateway gets a matcher our request will hit
 			proxy.Listeners[0].GetHybridListener().GetMatchedListeners()[0].Matcher = &gloov1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
 					{
-						AddressPrefix: "0.0.0.0",
-						PrefixLen: &wrappers.UInt32Value{
-							Value: 1,
-						},
-					},
-					{
-						AddressPrefix: "::",
+						AddressPrefix: envoyInstance.LocalAddr(),
 						PrefixLen: &wrappers.UInt32Value{
 							Value: 1,
 						},
 					},
 				},
 			}
-
-			_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
-			})
-		})
-
-		AfterEach(func() {
-			envoyInstance.Clean()
-			cancel()
-
-			srv.GracefulStop()
 		})
 
 		It("http request works as expected", func() {
 			client := &http.Client{}
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() (int, error) {
@@ -194,6 +178,7 @@ var _ = Describe("Hybrid", func() {
 	})
 
 	Context("SourcePrefixRanges miss for tcp", func() {
+
 		BeforeEach(func() {
 			// HttpGateway gets a filter our request *will not* hit
 			proxy.Listeners[0].GetHybridListener().GetMatchedListeners()[0].Matcher = &gloov1.Matcher{
@@ -206,34 +191,17 @@ var _ = Describe("Hybrid", func() {
 					},
 				},
 			}
-
-			_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
-			})
-		})
-
-		AfterEach(func() {
-			envoyInstance.Clean()
-			cancel()
-
-			srv.GracefulStop()
 		})
 
 		It("http request fails", func() {
 			client := &http.Client{}
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			Consistently(func() error {
 				_, err := client.Do(req)
-				if err != nil {
-					return err
-				}
-				return nil
+				return err
 			}, "3s", "0.5s").Should(HaveOccurred())
 
 		})
@@ -250,7 +218,7 @@ func getProxyHybridNoMatcher(namespace, name string, envoyPort uint32, tcpUpstea
 		},
 		Listeners: []*gloov1.Listener{{
 			Name:        "listener",
-			BindAddress: "0.0.0.0",
+			BindAddress: net.IPv4zero.String(),
 			BindPort:    envoyPort,
 			ListenerType: &gloov1.Listener_HybridListener{
 				HybridListener: &gloov1.HybridListener{

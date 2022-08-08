@@ -117,7 +117,11 @@ func Plugins(opts PluginOpts) []plugins.Plugin {
 		glooPlugins = append(glooPlugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))
 	}
 	if opts.Consul.ConsulWatcher != nil {
-		glooPlugins = append(glooPlugins, consul.NewPlugin(opts.Consul.ConsulWatcher, consul.NewConsulDnsResolver(opts.Consul.DnsServer), opts.Consul.DnsPollingInterval))
+		dnsAddress := opts.Consul.DnsServer
+		if len(dnsAddress) == 0 {
+			dnsAddress = consul.DefaultDnsAddress
+		}
+		glooPlugins = append(glooPlugins, consul.NewPlugin(opts.Consul.ConsulWatcher, consul.NewConsulDnsResolver(dnsAddress), opts.Consul.DnsPollingInterval))
 	}
 
 	return glooPlugins

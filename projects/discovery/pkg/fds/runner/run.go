@@ -10,7 +10,6 @@ import (
 	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"github.com/solo-io/go-utils/contextutils"
@@ -79,12 +78,8 @@ func (f *fdsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 
 	cache := v1.NewDiscoveryEmitter(glooClientset.Upstreams, nsClient, glooClientset.Secrets)
 
-	dnsAddress := settings.GetConsul().GetDnsAddress()
-	if len(dnsAddress) == 0 {
-		dnsAddress = consulplugin.DefaultDnsAddress
-	}
 
-	dnsPollingInterval := consulplugin.DefaultDnsPollingInterval
+	var dnsPollingInterval time.Duration
 	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
 		dnsPollingInterval = prototime.DurationFromProto(pollingInterval)
 	}
@@ -94,7 +89,7 @@ func (f *fdsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 		KubeCoreCache: typedClientset.KubeCoreCache,
 		Consul: registry.ConsulPluginOpts{
 			ConsulWatcher:      typedClientset.ConsulWatcher,
-			DnsServer:          dnsAddress,
+			DnsServer:          settings.GetConsul().GetDnsAddress(),
 			DnsPollingInterval: &dnsPollingInterval,
 		},
 	}
@@ -111,11 +106,11 @@ func (f *fdsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 	functionalPlugins := GetFunctionDiscoveriesWithExtensions(*f.extensions)
 
 	// TODO(yuval-k): max Concurrency here
-	updater := fds.NewUpdater(watchOpts.Ctx, resolvers, glooClientset.GraphQLApis, glooClientset.Upstreams, 0, functionalPlugins)
-	disc := fds.NewFunctionDiscovery(updater)
+	updater := fds.NewUpdater(ctx, resolvers, glooClientset.GraphQLApis, glooClientset.Upstreams, 0, functionalPlugins)
+	functionDiscovery := fds.NewFunctionDiscovery(updater)
 
-	sync := syncer.NewDiscoverySyncer(disc, fdsMode)
-	eventLoop := v1.NewDiscoveryEventLoop(cache, sync)
+	discoverySyncer := syncer.NewDiscoverySyncer(functionDiscovery, fdsMode)
+	eventLoop := v1.NewDiscoveryEventLoop(cache, discoverySyncer)
 
 	errs := make(chan error)
 

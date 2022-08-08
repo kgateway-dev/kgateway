@@ -27,7 +27,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
@@ -162,7 +161,6 @@ func RunGlooWithExtensions(opts RunOpts, extensions RunExtensions) error {
 	}
 
 	warmTimeout := opts.Settings.GetGloo().GetEndpointsWarmingTimeout()
-
 	if warmTimeout == nil {
 		warmTimeout = &duration.Duration{
 			Seconds: 5 * 60,
@@ -478,12 +476,8 @@ func RunGlooWithExtensions(opts RunOpts, extensions RunExtensions) error {
 
 func GetPluginOpts(opts RunOpts) registry.PluginOpts {
 	settings := opts.Settings
-	dnsAddress := settings.GetConsul().GetDnsAddress()
-	if len(dnsAddress) == 0 {
-		dnsAddress = consulplugin.DefaultDnsAddress
-	}
 
-	dnsPollingInterval := consulplugin.DefaultDnsPollingInterval
+	var dnsPollingInterval time.Duration
 	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
 		dnsPollingInterval = prototime.DurationFromProto(pollingInterval)
 	}
@@ -494,7 +488,7 @@ func GetPluginOpts(opts RunOpts) registry.PluginOpts {
 		KubeCoreCache: opts.TypedClientset.KubeCoreCache,
 		Consul: registry.ConsulPluginOpts{
 			ConsulWatcher:      opts.TypedClientset.ConsulWatcher,
-			DnsServer:          dnsAddress,
+			DnsServer:          settings.GetConsul().GetDnsAddress(),
 			DnsPollingInterval: &dnsPollingInterval,
 		},
 	}

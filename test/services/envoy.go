@@ -372,6 +372,8 @@ type EnvoyInstance struct {
 	// Envoy API Version to use, default to V3
 	ApiVersion string
 
+	LogLevel string
+
 	DockerOptions
 }
 
@@ -413,15 +415,6 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 	ef.instances = append(ef.instances, ei)
 	return ei, nil
 
-}
-
-func (ei *EnvoyInstance) RunWithId(id string) error {
-	ei.ID = id
-	return ei.RunWithRole(DefaultProxyName, 8081)
-}
-
-func (ei *EnvoyInstance) Run(port int) error {
-	return ei.RunWithRole(DefaultProxyName, port)
 }
 
 func (ei *EnvoyInstance) RunWith(eic EnvoyInstanceConfig) error {
@@ -504,9 +497,11 @@ func (ei *EnvoyInstance) runWithAll(eic EnvoyInstanceConfig, bootstrapBuilder En
 		<-eic.Context().Done()
 		ei.Clean()
 	}()
+
 	if ei.ID == "" {
 		ei.ID = "ingress~for-testing"
 	}
+	ei.LogLevel = "debug"
 	ei.Role = eic.Role()
 	ei.Port = eic.Port()
 	ei.RestXdsPort = eic.RestXdsPort()
@@ -516,7 +511,7 @@ func (ei *EnvoyInstance) runWithAll(eic EnvoyInstanceConfig, bootstrapBuilder En
 		return ei.runContainer(eic.Context())
 	}
 
-	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug"}
+	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", ei.LogLevel}
 
 	// run directly
 	cmd := exec.CommandContext(eic.Context(), ei.envoypath, args...)
@@ -605,7 +600,7 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 		"--entrypoint=envoy",
 		image,
 		"--disable-hot-restart",
-		"--log-level", "debug",
+		"--log-level", ei.LogLevel,
 		"--config-yaml", ei.envoycfg,
 	)
 

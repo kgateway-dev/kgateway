@@ -55,16 +55,15 @@ type ServicesAndDescriptor struct {
 }
 
 func NewPlugin() *plugin {
-	return &plugin{
-		recordedUpstreams: make(map[string]*v1.Upstream),
-	}
+	return &plugin{}
 }
 
 func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) {
+func (p *plugin) Init(_ plugins.InitParams) {
+	p.recordedUpstreams = make(map[string]*v1.Upstream)
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {

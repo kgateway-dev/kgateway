@@ -29,7 +29,7 @@ func GetUdsEnabled(settings *v1.Settings) bool {
 }
 
 func GetFdsMode(settings *v1.Settings) v1.Settings_DiscoveryOptions_FdsMode {
-	if settings == nil || settings.GetDiscovery() == nil {
+	if settings.GetDiscovery() == nil {
 		return v1.Settings_DiscoveryOptions_WHITELIST
 	}
 	return settings.GetDiscovery().GetFdsMode()

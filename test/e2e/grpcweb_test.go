@@ -92,7 +92,7 @@ var _ = Describe("Grpc Web", func() {
 					msgChan = runAccessLog(tc.Ctx, accessLogPort)
 
 					// make sure the vs is set and the upstream is ready
-					vs := getTrivialVirtualServiceForUpstream("gloo-system", grpcUpstream.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream(defaults.GlooSystem, grpcUpstream.Metadata.Ref())
 					_, err = tc.TestClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					v1helpers.ExpectGrpcHealthOK(nil, defaults.HttpPort, "AccessLog")
@@ -134,7 +134,7 @@ var _ = Describe("Grpc Web", func() {
 					var bufferbase64 bytes.Buffer
 					bufferbase64.Write(dest)
 
-					req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v3.AccessLogService/StreamAccessLogs", defaults.HttpPort), &bufferbase64)
+					req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v3.AccessLogService/StreamAccessLogs", defaults.HttpPort), &bufferbase64)
 					Expect(err).NotTo(HaveOccurred())
 
 					req.Header.Set("content-type", "application/grpc-web-text")
