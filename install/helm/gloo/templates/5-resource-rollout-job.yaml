@@ -64,9 +64,6 @@ spec:
             {{- range include "gloo.gatewayNamespaces" $ | fromJsonArray }}
             kubectl annotate gateways.gateway.solo.io -n {{ . }} -l app=gloo helm.sh/resource-policy- || exit $?
             {{- end }}
-      {{- if not .Values.gateway.rolloutJob.restartPolicy }}
-      restartPolicy: OnFailure
-      {{- end }}
   ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---

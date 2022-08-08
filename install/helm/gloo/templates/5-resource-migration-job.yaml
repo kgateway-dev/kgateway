@@ -60,9 +60,6 @@ spec:
             kubectl annotate --overwrite gateways.gateway.solo.io -n {{ . }} -l app=gloo helm.sh/hook- helm.sh/hook-weight- meta.helm.sh/release-name- meta.helm.sh/release-namespace- helm.sh/resource-policy=keep || exit $?
             kubectl label gateways.gateway.solo.io -n {{ . }} -l app=gloo,app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by- || exit $?
             {{- end }}
-      {{- if not .Values.gateway.rolloutJob.restartPolicy }}
-      restartPolicy: OnFailure
-      {{- end }}
   ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---

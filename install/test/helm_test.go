@@ -968,6 +968,28 @@ var _ = Describe("Helm Test", func() {
 					})
 				})
 
+				It("should be able to disable istio injection on all job pod templates", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"global.istioIntegration.disableAutoinjection=true",
+							"global.glooMtls.enabled=true",
+						},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Job"
+					}).ExpectAll(func(job *unstructured.Unstructured) {
+						jobObj, err := kuberesource.ConvertUnstructured(job)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Job %+v should be able to convert from unstructured", job))
+						structuredJob, ok := jobObj.(*jobsv1.Job)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %+v should be able to cast to a structured job", job))
+
+						val, ok := structuredJob.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %s should contain an istio injection annotation", job.GetName()))
+						Expect(val).To(Equal("false"), fmt.Sprintf("Job %s should have an istio annotation with value of 'false'", job.GetName()))
+					})
+				})
+
 				It("The created namespace can be labeled for Istio discovery", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"namespace.create=true",

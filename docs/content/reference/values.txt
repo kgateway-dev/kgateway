@@ -272,11 +272,12 @@
 |gateway.certGenJob.tolerations[].tolerationSeconds|int64|||
 |gateway.certGenJob.affinity.NAME|interface|||
 |gateway.certGenJob.hostAliases[]|interface|||
+|gateway.certGenJob.activeDeadlineSeconds|int|100|Deadline in seconds for Kubernetes jobs.|
+|gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.certGenJob.kubeResourceOverride.NAME|interface||override fields in the gateway-certgen job.|
 |gateway.certGenJob.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen job.|
 |gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
-|gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true|
-|gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
+|gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished on the job. Defaults to true|
 |gateway.certGenJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
 |gateway.certGenJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
 |gateway.certGenJob.resources.limits.memory|string||amount of memory|
@@ -284,11 +285,10 @@
 |gateway.certGenJob.resources.requests.memory|string||amount of memory|
 |gateway.certGenJob.resources.requests.cpu|string||amount of CPUs|
 |gateway.certGenJob.runOnUpdate|bool|false|enable to run the job also on pre-upgrade|
-|gateway.certGenJob.activeDeadlineSeconds|int|100|Deadline in seconds for Kubernetes jobs.|
 |gateway.certGenJob.cron.enabled|bool|false|enable the cronjob|
 |gateway.certGenJob.cron.schedule|string|* * * * *|Cron job scheduling|
 |gateway.certGenJob.cron.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen cronjob.|
-|gateway.rolloutJob.restartPolicy|string||restart policy to use when the pod exits|
+|gateway.rolloutJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
 |gateway.rolloutJob.nodeName|string||name of node to run on|
 |gateway.rolloutJob.nodeSelector.NAME|string||label selector for nodes|
 |gateway.rolloutJob.tolerations[].key|string|||
@@ -298,6 +298,8 @@
 |gateway.rolloutJob.tolerations[].tolerationSeconds|int64|||
 |gateway.rolloutJob.affinity.NAME|interface|||
 |gateway.rolloutJob.hostAliases[]|interface|||
+|gateway.rolloutJob.activeDeadlineSeconds|int|100|Deadline in seconds for Kubernetes jobs.|
+|gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.rolloutJob.enabled|bool|true|Enable the job that applies default Gloo Edge custom resources at install and upgrade time (default true).|
 |gateway.rolloutJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.rolloutJob.image.repository|string|kubectl|The image repository (name) for the container.|
@@ -313,9 +315,7 @@
 |gateway.rolloutJob.resources.requests.cpu|string||amount of CPUs|
 |gateway.rolloutJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
 |gateway.rolloutJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
-|gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
-|gateway.rolloutJob.activeDeadlineSeconds|int|100|Deadline in seconds for Kubernetes jobs.|
-|gateway.cleanupJob.restartPolicy|string||restart policy to use when the pod exits|
+|gateway.cleanupJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
 |gateway.cleanupJob.nodeName|string||name of node to run on|
 |gateway.cleanupJob.nodeSelector.NAME|string||label selector for nodes|
 |gateway.cleanupJob.tolerations[].key|string|||
@@ -325,6 +325,8 @@
 |gateway.cleanupJob.tolerations[].tolerationSeconds|int64|||
 |gateway.cleanupJob.affinity.NAME|interface|||
 |gateway.cleanupJob.hostAliases[]|interface|||
+|gateway.cleanupJob.activeDeadlineSeconds|int|100|Deadline in seconds for Kubernetes jobs.|
+|gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.cleanupJob.enabled|bool|true|Enable the job that removes Gloo Edge custom resources when Gloo Edge is uninstalled (default true).|
 |gateway.cleanupJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.cleanupJob.image.repository|string|kubectl|The image repository (name) for the container.|
@@ -340,8 +342,6 @@
 |gateway.cleanupJob.resources.requests.cpu|string||amount of CPUs|
 |gateway.cleanupJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
 |gateway.cleanupJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
-|gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
-|gateway.cleanupJob.activeDeadlineSeconds|int|100|Deadline in seconds for Kubernetes jobs.|
 |gateway.updateValues|bool||if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.proxyServiceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|

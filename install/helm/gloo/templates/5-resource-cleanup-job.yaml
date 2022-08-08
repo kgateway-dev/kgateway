@@ -51,9 +51,6 @@ spec:
             {{- range include "gloo.gatewayNamespaces" . | fromJsonArray }}
             kubectl delete --ignore-not-found gateways.gateway.solo.io -n {{ . }} -l app=gloo || exit $?
             {{- end }}
-      {{- if not .Values.gateway.cleanupJob.restartPolicy }}
-      restartPolicy: OnFailure
-      {{- end }}
   ttlSecondsAfterFinished: {{ .Values.gateway.cleanupJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---

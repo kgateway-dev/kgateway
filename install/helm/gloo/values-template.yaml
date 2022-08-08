@@ -94,6 +94,7 @@ gateway:
     enabled: true
     image:
       repository: kubectl
+    restartPolicy: OnFailure
     runAsUser: 10101
     activeDeadlineSeconds: 100
     ttlSecondsAfterFinished: 60
@@ -101,6 +102,7 @@ gateway:
     enabled: true
     image:
       repository: kubectl
+    restartPolicy: OnFailure
     runAsUser: 10101
     activeDeadlineSeconds: 100
     ttlSecondsAfterFinished: 60
