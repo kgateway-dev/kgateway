@@ -43,8 +43,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		defaults.HttpPort = services.NextBindPort()
 
 		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.MustEnvoyInstance()
 
 		writeNamespace = defaults.GlooSystem
 		ro := &services.RunOptions{
@@ -72,9 +71,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
 		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-
-		// TODO samheilbron
-		Skip("skipping")
 	})
 
 	AfterEach(func() {

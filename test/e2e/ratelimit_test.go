@@ -144,11 +144,13 @@ var _ = Describe("Rate Limit", func() {
 		)
 
 		BeforeEach(func() {
+			ctx, cancel = context.WithCancel(context.Background())
+
 			var err error
 			envoyInstance, err = envoyFactory.NewEnvoyInstance()
 			Expect(err).NotTo(HaveOccurred())
 			// add the rl service as a static upstream
-			rlserver := &gloov1.Upstream{
+			rlServer := &gloov1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "rl-server",
 					Namespace: "default",
@@ -157,19 +159,18 @@ var _ = Describe("Rate Limit", func() {
 				UpstreamType: &gloov1.Upstream_Static{
 					Static: &gloov1static.UpstreamSpec{
 						Hosts: []*gloov1static.Host{{
-							Addr: envoyInstance.GlooAddr,
+							Addr: envoyInstance.LocalAddr(),
 							Port: rlPort,
 						}},
 					},
 				},
 			}
-			ref := rlserver.Metadata.Ref()
+
 			rlSettings := &ratelimit.Settings{
-				RatelimitServerRef:      ref,
+				RatelimitServerRef:      rlServer.Metadata.Ref(),
 				EnableXRatelimitHeaders: true,
 			}
 
-			ctx, cancel = context.WithCancel(context.Background())
 			ro := &services.RunOptions{
 				NsToWrite: defaults.GlooSystem,
 				NsToWatch: []string{"default", defaults.GlooSystem},
@@ -184,7 +185,7 @@ var _ = Describe("Rate Limit", func() {
 			}
 
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			_, err = testClients.UpstreamClient.Write(rlserver, clients.WriteOpts{})
+			_, err = testClients.UpstreamClient.Write(rlServer, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			err = helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
@@ -203,9 +204,8 @@ var _ = Describe("Rate Limit", func() {
 		AfterEach(func() {
 			envoyInstance.Clean()
 			srv.GracefulStop()
-			if cancel != nil {
-				cancel()
-			}
+
+			cancel()
 		})
 
 		It("should rate limit", func() {

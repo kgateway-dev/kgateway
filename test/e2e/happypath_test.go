@@ -467,6 +467,7 @@ var _ = Describe("Happy path", func() {
 							NsToWatch: []string{namespace},
 							WhatToRun: services.What{
 								DisableGateway: true,
+								DisableUds:     false,
 							},
 							KubeClient: kubeClient,
 							Settings: &gloov1.Settings{

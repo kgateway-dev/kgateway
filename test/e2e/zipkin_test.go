@@ -171,13 +171,8 @@ var _ = Describe("Zipkin config loading", func() {
 			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// ensure the proxy and virtual service are created
 			Eventually(func() (*gloov1.Proxy, error) {
 				return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-			}, "5s", "0.1s").ShouldNot(BeNil())
-
-			Eventually(func() (*gatewayv1.VirtualService, error) {
-				return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
 			}, "5s", "0.1s").ShouldNot(BeNil())
 
 			// ensure the upstream is reachable
@@ -234,12 +229,8 @@ var _ = Describe("Zipkin config loading", func() {
 			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// ensure the proxy and virtual service are created
 			Eventually(func() (*gloov1.Proxy, error) {
 				return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-			}, "5s", "0.1s").ShouldNot(BeNil())
-			Eventually(func() (*gatewayv1.VirtualService, error) {
-				return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
 			}, "5s", "0.1s").ShouldNot(BeNil())
 
 			// ensure the upstream is reachable

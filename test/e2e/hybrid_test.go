@@ -124,7 +124,6 @@ var _ = Describe("Hybrid", func() {
 			}
 		})
 
-
 		It("http request works as expected", func() {
 			client := &http.Client{}
 

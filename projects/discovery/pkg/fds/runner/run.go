@@ -78,7 +78,6 @@ func (f *fdsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 
 	cache := v1.NewDiscoveryEmitter(glooClientset.Upstreams, nsClient, glooClientset.Secrets)
 
-
 	var dnsPollingInterval time.Duration
 	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
 		dnsPollingInterval = prototime.DurationFromProto(pollingInterval)

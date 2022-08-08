@@ -50,7 +50,7 @@ var _ = Describe("Access Log", func() {
 			defaults.HttpPort = services.NextBindPort()
 			defaults.HttpsPort = services.NextBindPort()
 
-			writeNamespace = "gloo-system"
+			writeNamespace = defaults.GlooSystem
 			ro := &services.RunOptions{
 				NsToWrite: writeNamespace,
 				NsToWatch: []string{"default", writeNamespace},
@@ -68,7 +68,7 @@ var _ = Describe("Access Log", func() {
 
 			// wait for the two gateways to be created.
 			Eventually(func() (gatewayv1.GatewayList, error) {
-				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
+				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{Ctx: ctx})
 			}, "10s", "0.1s").Should(HaveLen(2))
 		})
 
@@ -89,18 +89,20 @@ var _ = Describe("Access Log", func() {
 
 			BeforeEach(func() {
 				ctx, cancel = context.WithCancel(context.Background())
+
 				var err error
 				envoyInstance, err = envoyFactory.NewEnvoyInstance()
 				Expect(err).NotTo(HaveOccurred())
 
 				tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
-				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
+				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			AfterEach(func() {
 				envoyInstance.Clean()
+				cancel()
 			})
 
 			Context("Grpc", func() {
@@ -116,20 +118,18 @@ var _ = Describe("Access Log", func() {
 					err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 					Expect(err).NotTo(HaveOccurred())
 
-					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
+					gw, err = testClients.GatewayClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 					Expect(err).NotTo(HaveOccurred())
 
 					msgChan = runAccessLog(ctx, accessLogPort)
 				})
 
 				AfterEach(func() {
-					gatewaycli := testClients.GatewayClient
 					var err error
-					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
+					gw, err = testClients.GatewayClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 					Expect(err).NotTo(HaveOccurred())
 					gw.Options = nil
-					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
+					_, err = testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 
 				})
@@ -157,7 +157,7 @@ var _ = Describe("Access Log", func() {
 					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 
-					vs := getTrivialVirtualServiceForUpstream("gloo-system", tu.Upstream.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream(writeNamespace, tu.Upstream.Metadata.Ref())
 					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
@@ -216,7 +216,7 @@ var _ = Describe("Access Log", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
+					gw, err = gatewaycli.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					path = "/dev/stdout"
 					if !envoyInstance.UseDocker {
@@ -229,7 +229,7 @@ var _ = Describe("Access Log", func() {
 				AfterEach(func() {
 					gatewaycli := testClients.GatewayClient
 					var err error
-					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
+					gw, err = gatewaycli.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					gw.Options = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
