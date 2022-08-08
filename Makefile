@@ -192,6 +192,8 @@ clean:
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
 
+.PHONY: generate-all
+generate-all: generated-code
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-helm-files update-licenses init
 
