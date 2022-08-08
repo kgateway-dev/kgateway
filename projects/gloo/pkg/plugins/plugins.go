@@ -3,6 +3,7 @@ package plugins
 import (
 	"context"
 
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -38,9 +39,27 @@ type InitParams struct {
 }
 
 type Params struct {
-	Ctx      context.Context
-	Snapshot *v1snap.ApiSnapshot
-	Messages map[*core.ResourceRef][]string
+	Ctx         context.Context
+	Snapshot    *v1snap.ApiSnapshot
+	Messages    map[*core.ResourceRef][]string
+	UpstreamMap UpstreamMap
+}
+
+type UpstreamMap map[string]*v1.Upstream
+
+func NewUpstreamMap(upstreams v1.UpstreamList) UpstreamMap {
+	upstreamMap := make(map[string]*v1.Upstream, len(upstreams))
+	for _, u := range upstreams {
+		upstreamMap[u.GetMetadata().GetNamespace()+"/"+u.GetMetadata().GetName()] = u
+	}
+	return upstreamMap
+}
+
+func (up UpstreamMap) Find(namespace, name string) (*v1.Upstream, error) {
+	if u, ok := up[namespace+"/"+name]; ok {
+		return u, nil
+	}
+	return nil, errors.Errorf("list did not find upstream %v.%v", namespace, name)
 }
 
 // CopyWithoutContext returns a version of params without ctx

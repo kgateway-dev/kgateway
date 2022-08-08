@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/constants"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -70,7 +71,12 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 						return generatedClusters, nil, nil, generatedListeners, nil
 					}
 
-					us, err := upstreams.Find(ref.GetNamespace(), ref.GetName())
+					var us *v1.Upstream
+					if params.UpstreamMap == nil {
+						us, err = upstreams.Find(ref.GetNamespace(), ref.GetName())
+					} else {
+						us, err = params.UpstreamMap.Find(ref.GetNamespace(), ref.GetName())
+					}
 					if err != nil {
 						// return what we have so far, so that any modified input resources can still route
 						// successfully to their generated targets

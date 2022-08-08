@@ -45,7 +45,7 @@ func (p *plugin) Init(params plugins.InitParams) {
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return BuildStagedHttpFilters(func() ([]*envoyauth.ExtAuthz, error) {
-		return p.extAuthzConfigGenerator.GenerateListenerExtAuthzConfig(listener, params.Snapshot.Upstreams)
+		return p.extAuthzConfigGenerator.GenerateListenerExtAuthzConfig(listener, params.Snapshot.Upstreams, params.UpstreamMap)
 	}, FilterStage)
 }
 
@@ -61,7 +61,7 @@ func (p *plugin) ProcessVirtualHost(
 ) error {
 
 	// Ext_authz filter is not configured on listener, do nothing
-	if !p.isExtAuthzFilterConfigured(params.HttpListener, params.Snapshot.Upstreams) {
+	if !p.isExtAuthzFilterConfigured(params.HttpListener, params.Snapshot.Upstreams, params.UpstreamMap) {
 		return nil
 	}
 
@@ -83,7 +83,7 @@ func (p *plugin) ProcessVirtualHost(
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 
 	// Ext_authz filter is not configured on listener, do nothing
-	if !p.isExtAuthzFilterConfigured(params.HttpListener, params.Snapshot.Upstreams) {
+	if !p.isExtAuthzFilterConfigured(params.HttpListener, params.Snapshot.Upstreams, params.UpstreamMap) {
 		return nil
 	}
 
@@ -109,7 +109,7 @@ func (p *plugin) ProcessWeightedDestination(
 ) error {
 
 	// Ext_authz filter is not configured on listener, do nothing
-	if !p.isExtAuthzFilterConfigured(params.HttpListener, params.Snapshot.Upstreams) {
+	if !p.isExtAuthzFilterConfigured(params.HttpListener, params.Snapshot.Upstreams, params.UpstreamMap) {
 		return nil
 	}
 
@@ -124,10 +124,10 @@ func (p *plugin) ProcessWeightedDestination(
 	return pluginutils.SetWeightedClusterPerFilterConfig(out, wellknown.HTTPExternalAuthorization, extAuthPerRouteConfig)
 }
 
-func (p *plugin) isExtAuthzFilterConfigured(listener *v1.HttpListener, upstreams v1.UpstreamList) bool {
+func (p *plugin) isExtAuthzFilterConfigured(listener *v1.HttpListener, upstreams v1.UpstreamList, upstreamMap plugins.UpstreamMap) bool {
 	// Call the same function called by HttpFilters to verify whether the filter was created
 	stagedFilters, err := BuildStagedHttpFilters(func() ([]*envoyauth.ExtAuthz, error) {
-		return p.extAuthzConfigGenerator.GenerateListenerExtAuthzConfig(listener, upstreams)
+		return p.extAuthzConfigGenerator.GenerateListenerExtAuthzConfig(listener, upstreams, upstreamMap)
 	}, FilterStage)
 
 	if err != nil {

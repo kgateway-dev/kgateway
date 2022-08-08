@@ -30,7 +30,12 @@ func (t *translatorInstance) verifyUpstreamGroups(params plugins.Params, reports
 				continue
 			}
 
-			if _, err := upstreams.Find(upRef.GetNamespace(), upRef.GetName()); err != nil {
+			if params.UpstreamMap == nil {
+				_, err = upstreams.Find(upRef.GetNamespace(), upRef.GetName())
+			} else {
+				_, err = params.UpstreamMap.Find(upRef.GetNamespace(), upRef.GetName())
+			}
+			if err != nil {
 				reports.AddError(ug, errors.Wrapf(err, "destination # %d: upstream not found", i+1))
 				continue
 			}

@@ -67,7 +67,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 	trCfg.CustomTags = customTags
 	trCfg.Verbose = tracingSettings.GetVerbose().GetValue()
 
-	tracingProvider, err := processEnvoyTracingProvider(params.Snapshot, tracingSettings)
+	tracingProvider, err := processEnvoyTracingProvider(params.Snapshot, tracingSettings, params.UpstreamMap)
 	if err != nil {
 		return err
 	}
@@ -133,6 +133,7 @@ func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracin
 func processEnvoyTracingProvider(
 	snapshot *v1snap.ApiSnapshot,
 	tracingSettings *tracing.ListenerTracingSettings,
+	upstreamMap plugins.UpstreamMap,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	if tracingSettings.GetProviderConfig() == nil {
 		return nil, nil
@@ -140,13 +141,13 @@ func processEnvoyTracingProvider(
 
 	switch typed := tracingSettings.GetProviderConfig().(type) {
 	case *tracing.ListenerTracingSettings_ZipkinConfig:
-		return processEnvoyZipkinTracing(snapshot, typed)
+		return processEnvoyZipkinTracing(snapshot, typed, upstreamMap)
 
 	case *tracing.ListenerTracingSettings_DatadogConfig:
-		return processEnvoyDatadogTracing(snapshot, typed)
+		return processEnvoyDatadogTracing(snapshot, typed, upstreamMap)
 
 	case *tracing.ListenerTracingSettings_OpenTelemetryConfig:
-		return processEnvoyOpenTelemetryTracing(snapshot, typed)
+		return processEnvoyOpenTelemetryTracing(snapshot, typed, upstreamMap)
 
 	case *tracing.ListenerTracingSettings_OpenCensusConfig:
 		return processEnvoyOpenCensusTracing(snapshot, typed)
@@ -159,6 +160,7 @@ func processEnvoyTracingProvider(
 func processEnvoyZipkinTracing(
 	snapshot *v1snap.ApiSnapshot,
 	zipkinTracingSettings *tracing.ListenerTracingSettings_ZipkinConfig,
+	upstreamMap plugins.UpstreamMap,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	var collectorClusterName string
 
@@ -166,7 +168,7 @@ func processEnvoyZipkinTracing(
 	case *v3.ZipkinConfig_CollectorUpstreamRef:
 		// Support upstreams as the collector cluster
 		var err error
-		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef)
+		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef, upstreamMap)
 		if err != nil {
 			return nil, err
 		}
@@ -196,6 +198,7 @@ func processEnvoyZipkinTracing(
 func processEnvoyDatadogTracing(
 	snapshot *v1snap.ApiSnapshot,
 	datadogTracingSettings *tracing.ListenerTracingSettings_DatadogConfig,
+	upstreamMap plugins.UpstreamMap,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	var collectorClusterName string
 
@@ -203,7 +206,7 @@ func processEnvoyDatadogTracing(
 	case *v3.DatadogConfig_CollectorUpstreamRef:
 		// Support upstreams as the collector cluster
 		var err error
-		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef)
+		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef, upstreamMap)
 		if err != nil {
 			return nil, err
 		}
@@ -235,6 +238,7 @@ func processEnvoyDatadogTracing(
 func processEnvoyOpenTelemetryTracing(
 	snapshot *v1snap.ApiSnapshot,
 	openTelemetryTracingSettings *tracing.ListenerTracingSettings_OpenTelemetryConfig,
+	upstreamMap plugins.UpstreamMap,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	var collectorClusterName string
 
@@ -242,7 +246,7 @@ func processEnvoyOpenTelemetryTracing(
 	case *v3.OpenTelemetryConfig_CollectorUpstreamRef:
 		// Support upstreams as the collector cluster
 		var err error
-		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef)
+		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef, upstreamMap)
 		if err != nil {
 			return nil, err
 		}
@@ -293,7 +297,7 @@ func processEnvoyOpenCensusTracing(
 	}, nil
 }
 
-func getEnvoyTracingCollectorClusterName(snapshot *v1snap.ApiSnapshot, collectorUpstreamRef *core.ResourceRef) (string, error) {
+func getEnvoyTracingCollectorClusterName(snapshot *v1snap.ApiSnapshot, collectorUpstreamRef *core.ResourceRef, upstreamMap plugins.UpstreamMap) (string, error) {
 	if snapshot == nil {
 		return "", errors.Errorf("Invalid Snapshot (nil provided)")
 	}
@@ -303,7 +307,12 @@ func getEnvoyTracingCollectorClusterName(snapshot *v1snap.ApiSnapshot, collector
 	}
 
 	// Make sure the upstream exists
-	_, err := snapshot.Upstreams.Find(collectorUpstreamRef.GetNamespace(), collectorUpstreamRef.GetName())
+	var err error
+	if upstreamMap == nil {
+		_, err = snapshot.Upstreams.Find(collectorUpstreamRef.GetNamespace(), collectorUpstreamRef.GetName())
+	} else {
+		_, err = upstreamMap.Find(collectorUpstreamRef.GetNamespace(), collectorUpstreamRef.GetName())
+	}
 	if err != nil {
 		return "", errors.Errorf("Invalid CollectorUpstreamRef (no upstream found for ref %v)", collectorUpstreamRef)
 	}

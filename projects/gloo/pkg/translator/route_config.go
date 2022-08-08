@@ -267,7 +267,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 ) {
 	switch action := in.GetAction().(type) {
 	case *v1.Route_RouteAction:
-		if err := ValidateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
+		if err := ValidateRouteDestinations(params.Snapshot, action.RouteAction, params.UpstreamMap); err != nil {
 			validation.AppendRouteWarning(routeReport,
 				validationapi.RouteReport_Warning_InvalidDestinationWarning,
 				err.Error(),
@@ -559,7 +559,12 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 		return err
 	}
 
-	upstream, err := params.Snapshot.Upstreams.Find(ref.GetNamespace(), ref.GetName())
+	var upstream *v1.Upstream
+	if params.UpstreamMap == nil {
+		upstream, err = params.Snapshot.Upstreams.Find(ref.GetNamespace(), ref.GetName())
+	} else {
+		upstream, err = params.UpstreamMap.Find(ref.GetNamespace(), ref.GetName())
+	}
 	if err != nil {
 		return pluginutils.NewUpstreamNotFoundErr(*ref)
 	}
@@ -741,16 +746,16 @@ func ValidateVirtualHostDomains(virtualHosts []*v1.VirtualHost, httpListenerRepo
 	}
 }
 
-func ValidateRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.RouteAction) error {
+func ValidateRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.RouteAction, upstreamMap plugins.UpstreamMap) error {
 	upstreams := snap.Upstreams
 	// make sure the destination itself has the right structure
 	switch dest := action.GetDestination().(type) {
 	case *v1.RouteAction_Single:
-		return validateSingleDestination(upstreams, dest.Single)
+		return validateSingleDestination(upstreams, dest.Single, upstreamMap)
 	case *v1.RouteAction_Multi:
-		return validateMultiDestination(upstreams, dest.Multi.GetDestinations())
+		return validateMultiDestination(upstreams, dest.Multi.GetDestinations(), upstreamMap)
 	case *v1.RouteAction_UpstreamGroup:
-		return validateUpstreamGroup(snap, dest.UpstreamGroup)
+		return validateUpstreamGroup(snap, dest.UpstreamGroup, upstreamMap)
 	case *v1.RouteAction_ClusterHeader:
 		return validateClusterHeader(action.GetClusterHeader())
 	case *v1.RouteAction_DynamicForwardProxy:
@@ -760,23 +765,23 @@ func ValidateRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.RouteAction)
 	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup', 'clusterHeader', or 'dynamicForwardProxy' for action")
 }
 
-func ValidateTcpRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.TcpHost_TcpAction) error {
+func ValidateTcpRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.TcpHost_TcpAction, upstreamMap plugins.UpstreamMap) error {
 	upstreams := snap.Upstreams
 	// make sure the destination itself has the right structure
 	switch dest := action.GetDestination().(type) {
 	case *v1.TcpHost_TcpAction_Single:
-		return validateSingleDestination(upstreams, dest.Single)
+		return validateSingleDestination(upstreams, dest.Single, upstreamMap)
 	case *v1.TcpHost_TcpAction_Multi:
-		return validateMultiDestination(upstreams, dest.Multi.GetDestinations())
+		return validateMultiDestination(upstreams, dest.Multi.GetDestinations(), upstreamMap)
 	case *v1.TcpHost_TcpAction_UpstreamGroup:
-		return validateUpstreamGroup(snap, dest.UpstreamGroup)
+		return validateUpstreamGroup(snap, dest.UpstreamGroup, upstreamMap)
 	case *v1.TcpHost_TcpAction_ForwardSniClusterName:
 		return nil
 	}
 	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup' or 'forwardSniClusterName' for action")
 }
 
-func validateUpstreamGroup(snap *v1snap.ApiSnapshot, ref *core.ResourceRef) error {
+func validateUpstreamGroup(snap *v1snap.ApiSnapshot, ref *core.ResourceRef, upstreamMap plugins.UpstreamMap) error {
 
 	upstreamGroup, err := snap.UpstreamGroups.Find(ref.GetNamespace(), ref.GetName())
 	if err != nil {
@@ -784,28 +789,32 @@ func validateUpstreamGroup(snap *v1snap.ApiSnapshot, ref *core.ResourceRef) erro
 	}
 	upstreams := snap.Upstreams
 
-	err = validateMultiDestination(upstreams, upstreamGroup.GetDestinations())
+	err = validateMultiDestination(upstreams, upstreamGroup.GetDestinations(), upstreamMap)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func validateMultiDestination(upstreams []*v1.Upstream, destinations []*v1.WeightedDestination) error {
+func validateMultiDestination(upstreams []*v1.Upstream, destinations []*v1.WeightedDestination, upstreamMap plugins.UpstreamMap) error {
 	for _, dest := range destinations {
-		if err := validateSingleDestination(upstreams, dest.GetDestination()); err != nil {
+		if err := validateSingleDestination(upstreams, dest.GetDestination(), upstreamMap); err != nil {
 			return errors.Wrap(err, "invalid destination in weighted destination list")
 		}
 	}
 	return nil
 }
 
-func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destination) error {
+func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destination, upstreamMap plugins.UpstreamMap) error {
 	upstreamRef, err := usconversion.DestinationToUpstreamRef(destination)
 	if err != nil {
 		return err
 	}
-	_, err = upstreams.Find(upstreamRef.Strings())
+	if upstreamMap == nil {
+		_, err = upstreams.Find(upstreamRef.Strings())
+	} else {
+		_, err = upstreamMap.Find(upstreamRef.Strings())
+	}
 	if err != nil {
 		return pluginutils.NewUpstreamNotFoundErr(*upstreamRef)
 	}

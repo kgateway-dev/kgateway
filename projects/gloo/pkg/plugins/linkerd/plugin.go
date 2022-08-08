@@ -64,7 +64,12 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			return err
 		}
 
-		us, err := upstreams.Find(upstreamRef.GetNamespace(), upstreamRef.GetName())
+		var us *v1.Upstream
+		if params.UpstreamMap == nil {
+			us, err = upstreams.Find(upstreamRef.GetNamespace(), upstreamRef.GetName())
+		} else {
+			us, err = params.UpstreamMap.Find(upstreamRef.GetNamespace(), upstreamRef.GetName())
+		}
 		if err != nil {
 			return nil
 		}
@@ -80,7 +85,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 	case *v1.RouteAction_Multi:
 		destinations := destType.Multi.GetDestinations()
-		err := configForMultiDestination(destinations, upstreams, out)
+		err := configForMultiDestination(destinations, upstreams, out, params.UpstreamMap)
 		if err != nil {
 			return err
 		}
@@ -89,7 +94,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		if err != nil {
 			return pluginutils.NewUpstreamGroupNotFoundErr(*destType.UpstreamGroup)
 		}
-		err = configForMultiDestination(usg.GetDestinations(), upstreams, out)
+		err = configForMultiDestination(usg.GetDestinations(), upstreams, out, params.UpstreamMap)
 		if err != nil {
 			return err
 		}
@@ -103,6 +108,7 @@ func configForMultiDestination(
 	destinations []*v1.WeightedDestination,
 	upstreams v1.UpstreamList,
 	out *envoy_config_route_v3.Route,
+	upstreamMap plugins.UpstreamMap,
 ) error {
 	routeAction := out.GetRoute()
 	if routeAction == nil {
@@ -123,7 +129,12 @@ func configForMultiDestination(
 			return err
 		}
 
-		us, err := upstreams.Find(upstreamRef.GetNamespace(), upstreamRef.GetName())
+		var us *v1.Upstream
+		if upstreamMap == nil {
+			us, err = upstreams.Find(upstreamRef.GetNamespace(), upstreamRef.GetName())
+		} else {
+			us, err = upstreamMap.Find(upstreamRef.GetNamespace(), upstreamRef.GetName())
+		}
 		if err != nil {
 			continue
 		}

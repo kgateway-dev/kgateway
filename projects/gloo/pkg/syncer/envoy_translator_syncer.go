@@ -119,6 +119,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			}
 		}
 	}
+	upstreamMap := plugins.NewUpstreamMap(snap.Upstreams)
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.GetMetadata().Ref().Key())); err == nil {
@@ -126,9 +127,10 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		}
 
 		params := plugins.Params{
-			Ctx:      proxyCtx,
-			Snapshot: snap,
-			Messages: map[*core.ResourceRef][]string{},
+			Ctx:         proxyCtx,
+			Snapshot:    snap,
+			UpstreamMap: upstreamMap,
+			Messages:    map[*core.ResourceRef][]string{},
 		}
 
 		xdsSnapshot, reports, _ := s.translator.Translate(params, proxy)

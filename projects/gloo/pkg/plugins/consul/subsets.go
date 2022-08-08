@@ -26,7 +26,7 @@ func (p *plugin) ProcessRouteAction(
 			return nil
 		}
 
-		metadataMatch, _, err := getMetadataMatch(dest.Single, params.Snapshot.Upstreams)
+		metadataMatch, _, err := getMetadataMatch(dest.Single, params.Snapshot.Upstreams, params.UpstreamMap)
 		if err != nil {
 			return err
 		}
@@ -66,13 +66,19 @@ func (p *plugin) ProcessRouteAction(
 func getMetadataMatch(
 	dest *v1.Destination,
 	allUpstreams v1.UpstreamList,
+	upstreamMap plugins.UpstreamMap,
 ) (*envoy_config_core_v3.Metadata, *core.ResourceRef, error) {
 	usRef, err := upstreams.DestinationToUpstreamRef(dest)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	upstream, err := allUpstreams.Find(usRef.GetNamespace(), usRef.GetName())
+	var upstream *v1.Upstream
+	if upstreamMap == nil {
+		upstream, err = allUpstreams.Find(usRef.GetNamespace(), usRef.GetName())
+	} else {
+		upstream, err = upstreamMap.Find(usRef.GetNamespace(), usRef.GetName())
+	}
 	if err != nil {
 		return nil, nil, pluginutils.NewUpstreamNotFoundErr(*usRef) // should never happen, as we already validated the destination
 	}
@@ -94,7 +100,7 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 			continue
 		}
 
-		metadataMatch, usRef, err := getMetadataMatch(weightedDest.GetDestination(), params.Snapshot.Upstreams)
+		metadataMatch, usRef, err := getMetadataMatch(weightedDest.GetDestination(), params.Snapshot.Upstreams, params.UpstreamMap)
 		if err != nil {
 			return err
 		}

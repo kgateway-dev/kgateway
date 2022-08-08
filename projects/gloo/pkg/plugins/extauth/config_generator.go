@@ -37,7 +37,7 @@ var (
 
 type ExtAuthzConfigGenerator interface {
 	IsMulti() bool
-	GenerateListenerExtAuthzConfig(listener *v1.HttpListener, upstreams v1.UpstreamList) ([]*envoyauth.ExtAuthz, error)
+	GenerateListenerExtAuthzConfig(listener *v1.HttpListener, upstreams v1.UpstreamList, upstreamMap plugins.UpstreamMap) ([]*envoyauth.ExtAuthz, error)
 	GenerateVirtualHostExtAuthzConfig(virtualHost *v1.VirtualHost, params plugins.VirtualHostParams) (*envoyauth.ExtAuthzPerRoute, error)
 	GenerateRouteExtAuthzConfig(route *v1.Route) (*envoyauth.ExtAuthzPerRoute, error)
 	GenerateWeightedDestinationExtAuthzConfig(weightedDestination *v1.WeightedDestination) (*envoyauth.ExtAuthzPerRoute, error)
@@ -66,7 +66,7 @@ func (d *DefaultConfigGenerator) IsMulti() bool {
 	return false
 }
 
-func (d *DefaultConfigGenerator) GenerateListenerExtAuthzConfig(listener *v1.HttpListener, upstreams v1.UpstreamList) ([]*envoyauth.ExtAuthz, error) {
+func (d *DefaultConfigGenerator) GenerateListenerExtAuthzConfig(listener *v1.HttpListener, upstreams v1.UpstreamList, upstreamMap plugins.UpstreamMap) ([]*envoyauth.ExtAuthz, error) {
 	// If extauth isn't defined on the listener, fallback to the default extauth settings
 	settings := listener.GetOptions().GetExtauth()
 	if settings == nil {
@@ -78,7 +78,7 @@ func (d *DefaultConfigGenerator) GenerateListenerExtAuthzConfig(listener *v1.Htt
 		return nil, nil
 	}
 
-	extAuthCfg, err := GenerateEnvoyConfigForFilter(settings, upstreams)
+	extAuthCfg, err := GenerateEnvoyConfigForFilter(settings, upstreams, upstreamMap)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (m *MultiConfigGenerator) IsMulti() bool {
 	return true
 }
 
-func (m *MultiConfigGenerator) GenerateListenerExtAuthzConfig(listener *v1.HttpListener, upstreams v1.UpstreamList) ([]*envoyauth.ExtAuthz, error) {
+func (m *MultiConfigGenerator) GenerateListenerExtAuthzConfig(listener *v1.HttpListener, upstreams v1.UpstreamList, upstreamMap plugins.UpstreamMap) ([]*envoyauth.ExtAuthz, error) {
 	return nil, extauth.ErrEnterpriseOnly
 }
 
@@ -214,14 +214,19 @@ func BuildStagedHttpFilters(configurationGenerator func() ([]*envoyauth.ExtAuthz
 	return filters, nil
 }
 
-func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.UpstreamList) (*envoyauth.ExtAuthz, error) {
+func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.UpstreamList, upstreamMap plugins.UpstreamMap) (*envoyauth.ExtAuthz, error) {
 	extauthUpstreamRef := settings.GetExtauthzServerRef()
 	if extauthUpstreamRef == nil {
 		return nil, NoServerRefErr
 	}
 
 	// Make sure the server exists
-	_, err := upstreams.Find(extauthUpstreamRef.GetNamespace(), extauthUpstreamRef.GetName())
+	var err error
+	if upstreamMap == nil {
+		_, err = upstreams.Find(extauthUpstreamRef.GetNamespace(), extauthUpstreamRef.GetName())
+	} else {
+		_, err = upstreamMap.Find(extauthUpstreamRef.GetNamespace(), extauthUpstreamRef.GetName())
+	}
 	if err != nil {
 		return nil, ServerNotFound(extauthUpstreamRef)
 	}

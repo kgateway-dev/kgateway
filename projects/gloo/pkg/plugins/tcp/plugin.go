@@ -113,7 +113,7 @@ func (p *plugin) tcpProxyFilters(
 		}
 	}
 
-	if err := translatorutil.ValidateTcpRouteDestinations(params.Snapshot, host.GetDestination()); err != nil {
+	if err := translatorutil.ValidateTcpRouteDestinations(params.Snapshot, host.GetDestination(), nil); err != nil {
 		return nil, err
 	}
 	var filters []*envoy_config_listener_v3.Filter
