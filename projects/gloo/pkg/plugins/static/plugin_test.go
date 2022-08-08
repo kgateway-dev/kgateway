@@ -9,6 +9,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	core1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -152,8 +153,20 @@ var _ = Describe("Plugin", func() {
 			}
 			p.ProcessUpstream(params, upstream, out)
 			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].Metadata.FilterMetadata[AdvancedHttpCheckerName].Fields[PathFieldName].GetStringValue()).To(Equal("/foo"))
+			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetHealthCheckConfig().GetHostname()).To(Equal(upstreamSpec.Hosts[0].GetAddr()))
 		})
 
+		It("Should prefer top-level health-check hostnames, when available", func() {
+			upstream.HealthChecks = []*core1.HealthCheck{{
+				HealthChecker: &core1.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &core1.HealthCheck_HttpHealthCheck{
+						Host: "test.host.path",
+					},
+				},
+			}}
+			p.ProcessUpstream(params, upstream, out)
+			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetHealthCheckConfig().GetHostname()).To(Equal("test.host.path"))
+		})
 	})
 
 	Context("load balancing weight config", func() {
