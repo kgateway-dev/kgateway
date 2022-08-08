@@ -531,7 +531,7 @@ func startRestXdsServer(opts RunOpts) {
 }
 
 func generateValidationStartOpts(gatewayMode bool, settings *gloov1.Settings) (*gwtranslator.ValidationOpts, error) {
-	var validation *gwtranslator.ValidationOpts
+	var validationStartOpts *gwtranslator.ValidationOpts
 
 	validationCfg := settings.GetGateway().GetValidation()
 
@@ -548,7 +548,7 @@ func generateValidationStartOpts(gatewayMode bool, settings *gloov1.Settings) (*
 			allowWarnings = allowWarning.GetValue()
 		}
 
-		validation = &gwtranslator.ValidationOpts{
+		validationStartOpts = &gwtranslator.ValidationOpts{
 			ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
 			ValidatingWebhookPort:        gwdefaults.ValidationWebhookBindPort,
 			ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
@@ -558,27 +558,27 @@ func generateValidationStartOpts(gatewayMode bool, settings *gloov1.Settings) (*
 			AllowWarnings:                allowWarnings,
 			WarnOnRouteShortCircuiting:   validationCfg.GetWarnRouteShortCircuiting().GetValue(),
 		}
-		if validation.ProxyValidationServerAddress == "" {
-			validation.ProxyValidationServerAddress = gwdefaults.GlooProxyValidationServerAddr
+		if validationStartOpts.ProxyValidationServerAddress == "" {
+			validationStartOpts.ProxyValidationServerAddress = gwdefaults.GlooProxyValidationServerAddr
 		}
 		if overrideAddr := os.Getenv("PROXY_VALIDATION_ADDR"); overrideAddr != "" {
-			validation.ProxyValidationServerAddress = overrideAddr
+			validationStartOpts.ProxyValidationServerAddress = overrideAddr
 		}
-		if validation.ValidatingWebhookCertPath == "" {
-			validation.ValidatingWebhookCertPath = gwdefaults.ValidationWebhookTlsCertPath
+		if validationStartOpts.ValidatingWebhookCertPath == "" {
+			validationStartOpts.ValidatingWebhookCertPath = gwdefaults.ValidationWebhookTlsCertPath
 		}
-		if validation.ValidatingWebhookKeyPath == "" {
-			validation.ValidatingWebhookKeyPath = gwdefaults.ValidationWebhookTlsKeyPath
+		if validationStartOpts.ValidatingWebhookKeyPath == "" {
+			validationStartOpts.ValidatingWebhookKeyPath = gwdefaults.ValidationWebhookTlsKeyPath
 		}
 	} else {
 		// This will stop users from setting failurePolicy=fail and then removing the webhook configuration
 		if validationMustStart := os.Getenv("VALIDATION_MUST_START"); validationMustStart != "" && validationMustStart != "false" && gatewayMode {
-			return validation, errors.Errorf("A validation webhook was configured, but no validation configuration was provided in the settings. "+
+			return validationStartOpts, errors.Errorf("A validation webhook was configured, but no validation configuration was provided in the settings. "+
 				"Ensure the v1.Settings %v contains the spec.gateway.validation config."+
 				"If you have removed the webhook configuration from K8s since installing and want to disable validation, "+
 				"set the environment variable VALIDATION_MUST_START=false",
 				settings.GetMetadata().Ref())
 		}
 	}
-	return validation, nil
+	return validationStartOpts, nil
 }

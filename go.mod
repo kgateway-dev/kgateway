@@ -10,7 +10,6 @@ require (
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/envoyproxy/go-control-plane v0.10.1
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
-	github.com/fgrosse/zaptest v1.1.0
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -139,6 +138,7 @@ require (
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/fatih/color v1.7.0 // indirect
+	github.com/fgrosse/zaptest v1.1.0 // indirect
 	github.com/fvbommel/sortorder v1.0.1 // indirect
 	github.com/gertd/go-pluralize v0.1.1 // indirect
 	github.com/getkin/kin-openapi v0.80.0 // indirect

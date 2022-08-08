@@ -84,7 +84,7 @@ func (p *Plugin) Init(params plugins.InitParams) {
 	p.removeUnused = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
 	p.filterRequiredForListener = make(map[*v1.HttpListener]struct{})
 	p.settings = params.Settings
-	p.TranslateTransformation = TranslateTransformation
+	p.TranslateTransformation = p.translateOSSTransformations
 }
 
 func mergeFunc(tx *envoytransformation.RouteTransformations) pluginutils.ModifyFunc {
@@ -266,7 +266,7 @@ func (p *Plugin) convertTransformation(
 func (p *Plugin) translateOSSTransformations(
 	glooTransform *transformation.Transformation,
 ) (*envoytransformation.Transformation, error) {
-	transform, err := p.TranslateTransformation(glooTransform)
+	transform, err := TranslateTransformation(glooTransform)
 	if err != nil {
 		return nil, eris.Wrap(err, "this transformation type is not supported in open source Gloo Edge")
 	}

@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
 
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -62,13 +60,6 @@ var _ = Describe("dynamic forward proxy", func() {
 				DisableFds: true,
 				DisableUds: true,
 			},
-			Settings: &gloov1.Settings{
-				Gateway: &gloov1.GatewayOptions{
-					Validation: &gloov1.GatewayOptions_ValidationOptions{
-						DisableTransformationValidation: &wrappers.BoolValue{Value: true},
-					},
-				},
-			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
@@ -118,13 +109,12 @@ var _ = Describe("dynamic forward proxy", func() {
 			scheme := "http"
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s://%s:%d/get", scheme, "localhost", defaults.HttpPort), nil)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s://%s:%d/get", scheme, "localhost", defaults.HttpPort), nil)
 			if err != nil {
 				return err
 			}
-			if updateReq != nil {
-				updateReq(req)
-			}
+			updateReq(req)
+
 			res, err := client.Do(req)
 			if err != nil {
 				return err
@@ -147,10 +137,10 @@ var _ = Describe("dynamic forward proxy", func() {
 	It("should proxy http if dynamic forward proxy header provided on request", func() {
 		destEcho := `postman-echo.com`
 		expectedSubstr := `"host":"postman-echo.com"`
-		testReq := testRequest(destEcho, func(r *http.Request) {
+		testResponse := testRequest(destEcho, func(r *http.Request) {
 			r.Header.Set("x-rewrite-me", destEcho)
 		})
-		Expect(testReq).Should(ContainSubstring(expectedSubstr))
+		Expect(testResponse).Should(ContainSubstring(expectedSubstr))
 	})
 
 	Context("with transformation can set dynamic forward proxy header to rewrite authority", func() {
@@ -179,8 +169,10 @@ var _ = Describe("dynamic forward proxy", func() {
 		It("should proxy http", func() {
 			destEcho := `postman-echo.com`
 			expectedSubstr := `"host":"postman-echo.com"`
-			testReq := testRequest(destEcho, nil)
-			Expect(testReq).Should(ContainSubstring(expectedSubstr))
+			testResponse := testRequest(destEcho, func(r *http.Request) {
+				// do nothing to modify the request
+			})
+			Expect(testResponse).Should(ContainSubstring(expectedSubstr))
 		})
 	})
 
