@@ -165,9 +165,12 @@ func getProxiesFromGrpc(name string, namespace string, opts *options.Options, pr
 	settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{Ctx: opts.Top.Ctx})
 
+	// Translates/Stores all grpc options defined in settings.Gateway
 	options := []grpc.CallOption{}
 	if settings.GetGateway().GetValidation() != nil {
+		//Both of these default to 100MB (100 * 1024 * 1024)
 		options = append(options, grpc.MaxCallSendMsgSize(int(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue())))
+		options = append(options, grpc.MaxCallRecvMsgSize(int(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue())))
 	}
 
 	freePort, err := cliutil.GetFreePort()
