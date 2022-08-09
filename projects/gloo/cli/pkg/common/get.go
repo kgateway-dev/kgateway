@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"math"
 	"net"
 	"strconv"
 	"time"
@@ -169,10 +170,13 @@ func getProxiesFromGrpc(name string, namespace string, opts *options.Options, pr
 	}
 	// Translates/Stores all grpc options defined in settings.Gateway
 	options := []grpc.CallOption{}
+
+	//Default proxy size is now MaxInt, not 100MB
+	proxySize := math.MaxInt32
 	if settings.GetGateway().GetValidation() != nil {
-		//Both of these default to 100MB (100 * 1024 * 1024)
-		options = append(options, grpc.MaxCallRecvMsgSize(int(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue())))
+		proxySize = int(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue())
 	}
+	options = append(options, grpc.MaxCallRecvMsgSize(proxySize))
 
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {
