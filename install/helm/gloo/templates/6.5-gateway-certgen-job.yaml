@@ -18,14 +18,14 @@ metadata:
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
+  activeDeadlineSeconds: {{ .Values.gateway.certGenJob.activeDeadlineSeconds }}
   template:
     metadata:
       labels:
         gloo: gateway-certgen
-      {{- if .Values.global.istioIntegration.disableAutoinjection }}
-      annotations:
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
-      {{- end }}
+        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: certgen
@@ -45,17 +45,13 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           args:
-
             - "--secret-name={{ .Values.gateway.validation.secretName }}"
             - "--svc-name=gateway"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-{{ .Release.Namespace }}"
         {{- with .Values.gateway.certGenJob.resources }}
           resources: {{ toYaml . | nindent 12}}
         {{- end }}
-  # this feature is still in Alpha, which means it must be manually enabled in the k8s api server
-  # with --feature-gates="TTLAfterFinished=true". This flag also works with minikube start ...
-  # if the feature flag is not enabled in the k8s api server, this setting will be silently ignored at creation time
-  {{- if and .Values.gateway.certGenJob.setTtlAfterFinished (semverCompare ">=1.12" .Capabilities.KubeVersion.GitVersion) }}
+  {{- if .Values.gateway.certGenJob.setTtlAfterFinished }}
   ttlSecondsAfterFinished: {{ .Values.gateway.certGenJob.ttlSecondsAfterFinished }}
   {{- end }}
 {{- end }} {{/* if and gateway.enabled gateway.validation.enabled gateway.certGenJob.enabled */}}

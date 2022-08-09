@@ -1,3 +1,4 @@
+{{- if .Values.gateway.rolloutJob.enabled }}
 {{- $image := .Values.gateway.rolloutJob.image }}
 {{- if .Values.global }}
 {{- $image = merge .Values.gateway.rolloutJob.image .Values.global.image }}
@@ -15,13 +16,18 @@ metadata:
     "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
+  activeDeadlineSeconds: {{ .Values.gateway.rolloutJob.activeDeadlineSeconds }}
   template:
     metadata:
       labels:
         gloo: resource-rollout
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
+        sidecar.istio.io/inject: "false"
+        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-rollout
+      {{- include "gloo.podSpecStandardFields" .Values.gateway.rolloutJob | nindent 6 -}}
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
@@ -31,6 +37,9 @@ spec:
             {{- if not .Values.gateway.rolloutJob.floatingUserId }}
             runAsUser: {{ printf "%.0f" (float64 .Values.gateway.rolloutJob.runAsUser) -}}
             {{- end }}
+          {{- with .Values.gateway.rolloutJob.resources }}
+          resources: {{ toYaml . | nindent 12}}
+          {{- end }}
           command:
           - /bin/sh
           - -c
@@ -53,7 +62,6 @@ spec:
             # remove the resource-policy annotations that were added temporarily by the gloo-resource-migration job during upgrade
             kubectl annotate upstreams.gloo.solo.io -n {{ $.Release.Namespace }} -l app=gloo helm.sh/resource-policy- || exit $?
             kubectl annotate gateways.gateway.solo.io -n {{ $.Release.Namespace }} -l app=gloo helm.sh/resource-policy- || exit $?
-      restartPolicy: OnFailure
   ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
@@ -114,3 +122,4 @@ subjects:
   name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
 {{- end -}}{{/* if .Values.global.glooRbac.create */}}
+{{- end }}{{/* if .Values.gateway.rolloutJob.enabled  */}}
