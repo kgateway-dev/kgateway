@@ -52,12 +52,12 @@ var _ = BeforeSuite(func() {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
 		defaults.InstallNamespace = namespace
+		defaults.Verbose = true
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())
 
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
-	testHelper.Verbose = true
 
 	// Define helm overrides
 	valuesOverrideFile, cleanupFunc := getHelmValuesOverrideFile()

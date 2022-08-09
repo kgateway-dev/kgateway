@@ -31,11 +31,6 @@ import (
 
 var _ bootstrap.Runner = new(glooRunner)
 
-// TODO: (copied from gateway) switch AcceptAllResourcesByDefault to false after validation has been tested in user environments
-var AcceptAllResourcesByDefault = true
-
-var AllowWarnings = true
-
 type glooRunner struct {
 	extensions *RunExtensions
 
@@ -199,12 +194,12 @@ func (g *glooRunner) Run(ctx context.Context, kubeCache kube.SharedCache, memCac
 	// initialize the control plane context in this block either on the first loop, or if bind addr changed
 	if g.controlPlane == emptyControlPlane {
 		// create new context as the grpc server might survive multiple iterations of this loop.
-		ctx, cancel := context.WithCancel(context.Background())
+		serverCtx, cancel := context.WithCancel(context.Background())
 		var callbacks xdsserver.Callbacks
 		if g.extensions != nil {
 			callbacks = g.extensions.XdsCallbacks
 		}
-		g.controlPlane = NewControlPlane(ctx, g.makeGrpcServer(ctx), xdsTcpAddress, callbacks, true)
+		g.controlPlane = NewControlPlane(serverCtx, g.makeGrpcServer(serverCtx), xdsTcpAddress, callbacks, true)
 		g.previousXdsServer.cancel = cancel
 		g.previousXdsServer.addr = xdsAddr
 	}
@@ -212,13 +207,13 @@ func (g *glooRunner) Run(ctx context.Context, kubeCache kube.SharedCache, memCac
 	// initialize the validation server context in this block either on the first loop, or if bind addr changed
 	if g.validationServer == emptyValidationServer {
 		// create new context as the grpc server might survive multiple iterations of this loop.
-		ctx, cancel := context.WithCancel(context.Background())
+		serverCtx, cancel := context.WithCancel(context.Background())
 		var validationGrpcServerOpts []grpc.ServerOption
 		// if validationServerGrpcMaxSizeBytes was set this will be non-negative, otherwise use gRPC default
 		if maxGrpcRecvSize >= 0 {
 			validationGrpcServerOpts = append(validationGrpcServerOpts, grpc.MaxRecvMsgSize(maxGrpcRecvSize))
 		}
-		g.validationServer = NewValidationServer(ctx, g.makeGrpcServer(ctx, validationGrpcServerOpts...), validationTcpAddress, true)
+		g.validationServer = NewValidationServer(serverCtx, g.makeGrpcServer(serverCtx, validationGrpcServerOpts...), validationTcpAddress, true)
 		g.previousValidationServer.cancel = cancel
 		g.previousValidationServer.addr = validationAddr
 		g.previousValidationServer.maxGrpcRecvSize = maxGrpcRecvSize
@@ -226,10 +221,10 @@ func (g *glooRunner) Run(ctx context.Context, kubeCache kube.SharedCache, memCac
 	// initialize the proxy debug server context in this block either on the first loop, or if bind addr changed
 	if g.proxyDebugServer == emptyProxyDebugServer {
 		// create new context as the grpc server might survive multiple iterations of this loop.
-		ctx, cancel := context.WithCancel(context.Background())
+		serverCtx, cancel := context.WithCancel(context.Background())
 
 		proxyGrpcServerOpts := []grpc.ServerOption{grpc.MaxRecvMsgSize(maxGrpcRecvSize)}
-		g.proxyDebugServer = NewProxyDebugServer(ctx, g.makeGrpcServer(ctx, proxyGrpcServerOpts...), proxyDebugTcpAddress, true)
+		g.proxyDebugServer = NewProxyDebugServer(serverCtx, g.makeGrpcServer(serverCtx, proxyGrpcServerOpts...), proxyDebugTcpAddress, true)
 		g.previousProxyDebugServer.cancel = cancel
 		g.previousProxyDebugServer.addr = proxyDebugAddr
 		g.previousProxyDebugServer.maxGrpcRecvSize = maxGrpcRecvSize
@@ -263,7 +258,6 @@ func (g *glooRunner) Run(ctx context.Context, kubeCache kube.SharedCache, memCac
 		GatewayControllerEnabled: gatewayControllerEnabled,
 	}
 
-	// TODO (samheilbron) we should remove the whole concept of RunOpts
 	opts.ControlPlane = g.controlPlane
 	opts.ValidationServer = g.validationServer
 	opts.ProxyDebugServer = g.proxyDebugServer

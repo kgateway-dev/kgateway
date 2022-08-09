@@ -388,7 +388,7 @@ func RunGlooWithExtensions(opts RunOpts, extensions RunExtensions) error {
 		}
 	}()
 
-	//Start the validation webhook
+	// Start the validation webhook
 	glooNamespace := opts.WriteNamespace
 	validationServerErr := make(chan error, 1)
 	if gwOpts.Validation != nil {
@@ -528,16 +528,13 @@ func generateValidationStartOpts(gatewayMode bool, settings *gloov1.Settings) (*
 	var validationStartOpts *gwtranslator.ValidationOpts
 
 	validationCfg := settings.GetGateway().GetValidation()
-
 	if validationCfg != nil && gatewayMode {
-		alwaysAcceptResources := AcceptAllResourcesByDefault
-
+		alwaysAcceptResources := true
 		if alwaysAccept := validationCfg.GetAlwaysAccept(); alwaysAccept != nil {
 			alwaysAcceptResources = alwaysAccept.GetValue()
 		}
 
-		allowWarnings := AllowWarnings
-
+		allowWarnings := true
 		if allowWarning := validationCfg.GetAllowWarnings(); allowWarning != nil {
 			allowWarnings = allowWarning.GetValue()
 		}

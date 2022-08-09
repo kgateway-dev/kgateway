@@ -26,6 +26,7 @@ type ResourceClientSet struct {
 	UpstreamGroupClient     gloov1.UpstreamGroupClient
 	UpstreamClient          gloov1.UpstreamClient
 	ProxyClient             gloov1.ProxyClient
+	SettingsClient          gloov1.SettingsClient
 	ServiceClient           skkube.ServiceClient
 	KubeClientset           *kubernetes.Clientset
 }
@@ -174,6 +175,21 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 		return nil, err
 	}
 	resourceClientSet.RouteOptionClient = routeOptionClient
+
+	// Settings
+	settingsClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gloov1.SettingsCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	}
+	settingsClient, err := gloov1.NewSettingsClient(ctx, settingsClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = settingsClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.SettingsClient = settingsClient
 
 	// Kube Service
 	resourceClientSet.ServiceClient = service.NewServiceClient(kubeClient, kubeCoreCache)

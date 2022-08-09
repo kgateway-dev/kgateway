@@ -56,7 +56,7 @@ func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx co
 	go func() {
 		result.logger.Println("start validating admission webhook certificate change watcher goroutine")
 		for ctx.Err() == nil {
-			// Kublet caches Secrets and therefore has some delay until it realizes
+			// Kubelet caches Secrets and therefore has some delay until it realizes
 			// that a Secret has changed and applies the update to the mounted secret files.
 			// So, we can safely sleep some time here to safe CPU/IO resources and do not
 			// have to spin in a tight loop, watching for changes.

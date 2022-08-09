@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/solo-io/go-utils/testutils/goimpl"
 	"go.uber.org/zap/zapcore"
 
@@ -228,7 +230,7 @@ func UpdateSettings(ctx context.Context, updateSettings func(settings *v1.Settin
 
 func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Settings), waitForSettingsToPropagate func(), ctx context.Context, installNamespace string) {
 	settingsClient := clienthelpers.MustSettingsClient(ctx)
-	settings, err := settingsClient.Read(installNamespace, "default", clients.ReadOpts{})
+	settings, err := settingsClient.Read(installNamespace, defaults.SettingsName, clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
 	updateSettings(settings)
