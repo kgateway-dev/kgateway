@@ -140,7 +140,8 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 	}
 	var grpcService *envoycore.GrpcService
 
-	if targetUri := sslSecrets.GetTargetUri(); targetUri != "" {
+	// If TargetUri is specified and ClusterName is not, create a GrpcService with a GoogleGrpc TargetSpecifier
+	if targetUri := sslSecrets.GetTargetUri(); targetUri != "" && sslSecrets.GetClusterName() == "" {
 		grpcService = &envoycore.GrpcService{
 			TargetSpecifier: &envoycore.GrpcService_GoogleGrpc_{
 				GoogleGrpc: &envoycore.GrpcService_GoogleGrpc{
@@ -148,6 +149,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 				},
 			},
 		}
+		// Otherwise create a GrpcService with an EnvoyGrpc TargetSpecifier
 	} else {
 		clusterName := defaultSdsClusterName
 		if sslSecrets.GetClusterName() != "" {
