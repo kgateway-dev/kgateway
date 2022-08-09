@@ -317,7 +317,7 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 		}
 
 		requestUrl := fmt.Sprintf("%s://%s:%d%s", scheme, "localhost", request.Port, request.Path)
-		req, err := http.NewRequest("POST", requestUrl, &buf)
+		req, err := http.NewRequest(http.MethodPost, requestUrl, &buf)
 		if err != nil {
 			return err
 		}

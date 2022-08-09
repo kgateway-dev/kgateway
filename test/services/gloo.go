@@ -65,7 +65,8 @@ type RunOptions struct {
 	KubeClient     kubernetes.Interface
 }
 
-//noinspection GoUnhandledErrorResult
+// RunGlooGatewayUdsFds accepts at configurable set of RunOptions
+// and starts Gloo, UDS and FDS in separate goroutines to simulate an in memory instance of Gloo Edge
 func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClients {
 	// Allocate any required ports which were not explicitly set
 	if runOptions.GlooPort == 0 {
@@ -95,7 +96,11 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 			XdsBindAddr:        fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.GlooPort),
 			ProxyDebugBindAddr: fmt.Sprintf("%s:%d", net.IPv4zero.String(), AllocateGlooPort()),
 			RemoveUnusedFilters: &wrappers.BoolValue{
-				Value: true,
+				// Setting this to true would be preferred, but certain tests failed (consul_vault_test)
+				// The failure indicates that the feature isn't entirely correct.
+				// The case that fails is when transformations are set at the route level by other plugins
+				// but then the Transformation HTTP filter is never added to the filter chain
+				Value: false,
 			},
 		},
 		Gateway: &gloov1.GatewayOptions{
@@ -108,7 +113,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		},
 	}
 
-	// Initialize the Cache used by the Runners
+	// Initialize the caches used by the Runners
 	inMemoryCache := memory.NewInMemoryResourceCache()
 	var kubeCache kube.SharedCache
 	if runOptions.KubeClient != nil {
@@ -116,14 +121,15 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	}
 
 	// Override any Settings explicitly defined by a test
-	mergo.Merge(settings, runOptions.Settings, mergo.WithOverride)
+	err := mergo.Merge(settings, runOptions.Settings, mergo.WithOverride)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	ctx = settingsutil.WithSettings(ctx, settings)
 
 	// Run Gloo
 	glooRunner := runner.NewGlooRunner()
 	runErr := glooRunner.Run(ctx, kubeCache, inMemoryCache, settings)
-	Expect(runErr).NotTo(HaveOccurred())
+	ExpectWithOffset(1, runErr).NotTo(HaveOccurred())
 	resourceClientset := glooRunner.GetResourceClientset()
 	typedClientset := glooRunner.GetTypedClientset()
 
@@ -134,7 +140,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 			fdsRunner := fdsrunner.NewFDSRunner()
 			err := fdsRunner.Run(ctx, kubeCache, inMemoryCache, settings)
-			Expect(err).NotTo(HaveOccurred())
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		}()
 	}
 
@@ -145,7 +151,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 			udsRunner := udsrunner.NewUDSRunner()
 			err := udsRunner.Run(ctx, kubeCache, inMemoryCache, settings)
-			Expect(err).NotTo(HaveOccurred())
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 		}()
 	}

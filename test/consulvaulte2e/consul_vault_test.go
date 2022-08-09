@@ -106,8 +106,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
 		// Start Envoy
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.MustEnvoyInstance()
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -126,10 +125,10 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		}()
 
 		// Register services with consul
-		err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1.Port)
+		err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.LocalAddr(), []string{"svc", "1"}, svc1.Port)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = consulInstance.RegisterService("petstore", "petstore-1", envoyInstance.GlooAddr, []string{"svc", "petstore"}, uint32(petstorePort))
+		err = consulInstance.RegisterService("petstore", "petstore-1", envoyInstance.LocalAddr(), []string{"svc", "petstore"}, uint32(petstorePort))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -180,7 +179,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
 	})
 
-	It("can do function routing with consul services", func() {
+	FIt("can do function routing with consul services", func() {
 		us := &core.ResourceRef{Namespace: writeNamespace, Name: "petstore"}
 
 		vs := makeFunctionRoutingVirtualService(writeNamespace, us, "findPetById")
