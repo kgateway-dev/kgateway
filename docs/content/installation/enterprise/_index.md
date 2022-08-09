@@ -138,24 +138,27 @@ To install Gloo Edge Enterprise in an air-gapped environment:
    
    The example output includes the list of images.
    ```
-   quay.io/solo-io/gloo-fed-apiserver:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/gloo-federation-console:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/gloo-fed-apiserver-envoy:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/gloo-fed:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/gloo-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/discovery-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/gateway:{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
-   quay.io/solo-io/gloo-ee-envoy-wrapper:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/gloo-fed-apiserver:1.12.1
+   quay.io/solo-io/gloo-federation-console:1.12.1
+   quay.io/solo-io/gloo-fed-apiserver-envoy:1.12.1
+   quay.io/solo-io/gloo-fed:1.12.1
+   quay.io/solo-io/gloo-ee:1.12.1
+   quay.io/solo-io/discovery-ee:1.12.1
+   quay.io/solo-io/gloo-ee-envoy-wrapper:1.12.1
    "grafana/grafana:8.2.1"
    "quay.io/coreos/kube-state-metrics:v1.9.7"
    "jimmidyson/configmap-reload:v0.5.0"
    "quay.io/prometheus/prometheus:v2.24.0"
    docker.io/busybox:1.28
    docker.io/redis:6.2.4
-   quay.io/solo-io/rate-limit-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/extauth-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/observability-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/certgen:{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
+   quay.io/solo-io/rate-limit-ee:1.12.1
+   quay.io/solo-io/extauth-ee:1.12.1
+   quay.io/solo-io/observability-ee:1.12.1
+   bitnami/kubectl:1.22.9
+   bitnami/kubectl:1.22.9
+   bitnami/kubectl:1.22.9
+   quay.io/solo-io/certgen:1.12.0-rc6
+   bitnami/kubectl:1.22.9
     ```
 
 3. Push the images from the connected device to a private registry that the disconnected device can pull from. For instructions and any credentials you must set up to complete this step, consult your registry provider, such as [Nexus Repository Manager](https://help.sonatype.com/repomanager3/formats/docker-registry/pushing-images) or [JFrog Artifactory](https://www.jfrog.com/confluence/display/JFROG/Getting+Started+with+Artifactory+as+a+Docker+Registry).
