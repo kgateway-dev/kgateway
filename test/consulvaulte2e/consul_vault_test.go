@@ -179,7 +179,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
 	})
 
-	FIt("can do function routing with consul services", func() {
+	It("can do function routing with consul services", func() {
 		us := &core.ResourceRef{Namespace: writeNamespace, Name: "petstore"}
 
 		vs := makeFunctionRoutingVirtualService(writeNamespace, us, "findPetById")
