@@ -164,12 +164,13 @@ func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, er
 func getProxiesFromGrpc(name string, namespace string, opts *options.Options, proxyEndpointPort string) (gloov1.ProxyList, error) {
 	settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{Ctx: opts.Top.Ctx})
-
+	if err != nil {
+		return nil, err
+	}
 	// Translates/Stores all grpc options defined in settings.Gateway
 	options := []grpc.CallOption{}
 	if settings.GetGateway().GetValidation() != nil {
 		//Both of these default to 100MB (100 * 1024 * 1024)
-		options = append(options, grpc.MaxCallSendMsgSize(int(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue())))
 		options = append(options, grpc.MaxCallRecvMsgSize(int(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue())))
 	}
 
