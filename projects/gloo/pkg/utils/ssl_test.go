@@ -332,7 +332,6 @@ var _ = Describe("Ssl", func() {
 		)
 		BeforeEach(func() {
 			sdsConfig = &v1.SDSConfig{
-				TargetUri:              "TargetUri",
 				CertificatesSecretName: "CertificatesSecretName",
 				ValidationContextName:  "ValidationContextName",
 			}
@@ -371,7 +370,6 @@ var _ = Describe("Ssl", func() {
 				Sni: "test.com",
 				SslSecrets: &v1.UpstreamSslConfig_Sds{
 					Sds: &v1.SDSConfig{
-						TargetUri:              "TargetUri",
 						CertificatesSecretName: "CertificatesSecretName",
 						ValidationContextName:  "ValidationContextName",
 						SdsBuilder: &v1.SDSConfig_ClusterName{
@@ -400,6 +398,32 @@ var _ = Describe("Ssl", func() {
 
 		})
 
+		When("TargetUri is specified", func() {
+			BeforeEach(func() {
+				sdsConfig.TargetUri = "targetUri"
+			})
+
+			It("should have a sds setup with a default cluster name", func() {
+				c, err := resolveCommonSslConfig(upstreamCfg, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
+				Expect(c.ValidationContextType).ToNot(BeNil())
+
+				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContextSdsSecretConfig).ValidationContextSdsSecretConfig
+				cert := c.TlsCertificateSdsSecretConfigs[0]
+				Expect(vctx.Name).To(Equal("ValidationContextName"))
+				Expect(cert.Name).To(Equal("CertificatesSecretName"))
+				// If they are no equivalent, it means that any serialization is different.
+				// see here: https://github.com/envoyproxy/go-control-plane/pull/158
+				// and here: https://github.com/envoyproxy/envoy/pull/6241
+				// this may lead to envoy updates being too frequent
+				Expect(vctx.SdsConfig).To(BeEquivalentTo(cert.SdsConfig))
+
+				googleGrpc := vctx.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_GoogleGrpc_).GoogleGrpc
+				Expect(googleGrpc.TargetUri).To(Equal("targetUri"))
+			})
+		})
+
 		Context("san", func() {
 			It("should error with san and not validationContext", func() {
 				sdsConfig.ValidationContextName = ""
@@ -424,7 +448,6 @@ var _ = Describe("Ssl", func() {
 		)
 		BeforeEach(func() {
 			sdsConfig = &v1.SDSConfig{
-				TargetUri:              "TargetUri",
 				CertificatesSecretName: "CertificatesSecretName",
 				ValidationContextName:  "ValidationContextName",
 				SdsBuilder: &v1.SDSConfig_CallCredentials{

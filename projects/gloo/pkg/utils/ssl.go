@@ -138,11 +138,31 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 		// as it's a public API.
 		return buildDeprecatedSDS(name, sslSecrets)
 	}
+	var grpcService *envoycore.GrpcService
 
-	clusterName := defaultSdsClusterName
-	if sslSecrets.GetClusterName() != "" {
-		clusterName = sslSecrets.GetClusterName()
+	if targetUri := sslSecrets.GetTargetUri(); targetUri != "" {
+		grpcService = &envoycore.GrpcService{
+			TargetSpecifier: &envoycore.GrpcService_GoogleGrpc_{
+				GoogleGrpc: &envoycore.GrpcService_GoogleGrpc{
+					TargetUri: targetUri,
+				},
+			},
+		}
+	} else {
+		clusterName := defaultSdsClusterName
+		if sslSecrets.GetClusterName() != "" {
+			clusterName = sslSecrets.GetClusterName()
+		}
+
+		grpcService = &envoycore.GrpcService{
+			TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+					ClusterName: clusterName,
+				},
+			},
+		}
 	}
+
 	return &envoyauth.SdsSecretConfig{
 		Name: name,
 		SdsConfig: &envoycore.ConfigSource{
@@ -152,13 +172,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 					ApiType:             envoycore.ApiConfigSource_GRPC,
 					TransportApiVersion: envoycore.ApiVersion_V3,
 					GrpcServices: []*envoycore.GrpcService{
-						{
-							TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-								EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-									ClusterName: clusterName,
-								},
-							},
-						},
+						grpcService,
 					},
 				},
 			},
