@@ -311,27 +311,6 @@ replicaset.apps/rate-limit-74d459bfb6                            1         1    
 replicaset.apps/redis-57fd559c5c                                 1         1         1       5m22s
 ```
 
-```shell script
-kubectl --namespace gloo-fed get all
-```
-
-```noop
-NAME                                    READY   STATUS    RESTARTS   AGE
-pod/gloo-fed-695d6dd44c-v2l64           1/1     Running   0          57m
-pod/gloo-fed-console-774f958867-j7bwc   3/3     Running   0          57m
-
-NAME                       TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                       AGE
-service/gloo-fed-console   ClusterIP   10.96.107.54   <none>        10101/TCP,8090/TCP,8081/TCP   72m
-
-NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/gloo-fed           1/1     1            1           72m
-deployment.apps/gloo-fed-console   1/1     1            1           72m
-
-NAME                                          DESIRED   CURRENT   READY   AGE
-replicaset.apps/gloo-fed-695d6dd44c           1         1         1       72m
-replicaset.apps/gloo-fed-console-774f958867   1         1         1       72m
-```
-
 #### Looking for opened ports?
 You will NOT have any open ports listening on a default install. For Envoy to open the ports and actually listen, you need to have a Route defined in one of the VirtualServices that will be associated with that particular Gateway/Listener. Please see the [Hello World tutorial to get started]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}). 
 
