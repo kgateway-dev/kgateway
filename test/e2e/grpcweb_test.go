@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/solo-io/gloo/test/helpers"
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/helpers"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 

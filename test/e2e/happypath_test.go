@@ -491,10 +491,8 @@ var _ = Describe("Happy path", func() {
 						up, err := getUpstream()
 						Expect(err).NotTo(HaveOccurred())
 
-						proxycli := testClients.ProxyClient
 						proxy := getTrivialProxyForUpstream(namespace, envoyPort, up.Metadata.Ref())
-						var opts clients.WriteOpts
-						_, err = proxycli.Write(proxy, opts)
+						_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{Ctx: ctx})
 						Expect(err).NotTo(HaveOccurred())
 
 						TestUpstreamReachable()

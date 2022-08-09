@@ -7,7 +7,6 @@ Name|Version|License
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.10.1|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.6.1|Apache License 2.0
-[fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
 [form3tech-oss/jwt-go](https://github.com/form3tech-oss/jwt-go)|v3.2.3+incompatible|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.5.4|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
