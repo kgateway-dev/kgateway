@@ -17,8 +17,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
-	"github.com/solo-io/solo-kit/test/helpers"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -26,7 +24,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"k8s.io/client-go/kubernetes"
 )
 
 var glooPortBase = int32(30400)
@@ -43,7 +40,6 @@ func RunGateway(ctx context.Context, justGloo bool) TestClients {
 		WhatToRun: What{
 			DisableGateway: justGloo,
 		},
-		KubeClient: helpers.MustKubeClient(),
 	}
 	return RunGlooGatewayUdsFds(ctx, ro)
 }
@@ -62,7 +58,6 @@ type RunOptions struct {
 	ValidationPort int32
 	RestXdsPort    int32
 	Settings       *gloov1.Settings
-	KubeClient     kubernetes.Interface
 }
 
 // RunGlooGatewayUdsFds accepts at configurable set of RunOptions

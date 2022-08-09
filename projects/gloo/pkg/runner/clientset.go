@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+
 	vaultapi "github.com/hashicorp/vault/api"
 	errors "github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"

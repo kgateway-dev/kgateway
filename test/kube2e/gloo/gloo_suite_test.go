@@ -2,12 +2,13 @@ package gloo_test
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
