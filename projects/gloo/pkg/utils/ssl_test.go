@@ -403,7 +403,7 @@ var _ = Describe("Ssl", func() {
 				sdsConfig.TargetUri = "targetUri"
 			})
 
-			It("should have a sds setup with a default cluster name", func() {
+			It("should have a sds setup with a GoogleGrpc TargetSpecifier with the expected TargetUri", func() {
 				c, err := resolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
