@@ -2,7 +2,7 @@ package gloo_test
 
 import (
 	"context"
-	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -19,7 +19,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -40,20 +39,13 @@ var (
 	testHelper *helper.SoloTestHelper
 	ctx        context.Context
 	cancel     context.CancelFunc
-	namespace  string
+	namespace  = defaults.GlooSystem
 )
 
 var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 	ctx, cancel = context.WithCancel(context.Background())
-
-	randomNumber := time.Now().Unix() % 10000
-	namespace = "gloo-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
-
-	// necessary for non-default namespace
-	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
-	Expect(err).NotTo(HaveOccurred())
 
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")

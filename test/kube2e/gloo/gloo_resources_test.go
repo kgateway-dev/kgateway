@@ -3,7 +3,6 @@ package gloo_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -23,7 +22,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -33,10 +31,7 @@ import (
 )
 
 var _ = Describe("GlooResourcesTest", func() {
-	const (
-		gatewayProxy = defaults.GatewayProxyName
-		gatewayPort  = int(80)
-	)
+
 	var (
 		ctx        context.Context
 		cancel     context.CancelFunc
@@ -57,8 +52,6 @@ var _ = Describe("GlooResourcesTest", func() {
 	BeforeEach(func() {
 		var err error
 
-		// necessary for non-default namespace
-		err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 		Expect(err).NotTo(HaveOccurred())
 		ctx, cancel = context.WithCancel(context.Background())
 
@@ -276,7 +269,7 @@ spec:
 					Method:            "GET",
 					Host:              defaults.GatewayProxyName,
 					Service:           defaults.GatewayProxyName,
-					Port:              gatewayPort,
+					Port:              80,
 					ConnectionTimeout: 1,
 					WithoutStats:      true,
 				})

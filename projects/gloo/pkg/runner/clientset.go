@@ -2,7 +2,6 @@ package runner
 
 import (
 	"context"
-
 	vaultapi "github.com/hashicorp/vault/api"
 	errors "github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -68,6 +67,11 @@ func GenerateGlooClientsets(ctx context.Context, settings *gloov1.Settings, kube
 		consulClient,
 	)
 
+	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(params, gloov1.UpstreamCrd)
+	if err != nil {
+		return failedToConstruct(errors.Wrap(err, "creating config source from settings"))
+	}
+
 	kubeServiceClient, err := bootstrap.KubeServiceClientForSettings(
 		ctx,
 		settings,
@@ -78,11 +82,6 @@ func GenerateGlooClientsets(ctx context.Context, settings *gloov1.Settings, kube
 	)
 	if err != nil {
 		return failedToConstruct(err)
-	}
-
-	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(params, gloov1.UpstreamCrd)
-	if err != nil {
-		return failedToConstruct(errors.Wrap(err, "creating config source from settings"))
 	}
 
 	var proxyFactory factory.ResourceClientFactory

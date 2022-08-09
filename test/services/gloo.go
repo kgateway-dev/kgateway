@@ -115,10 +115,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	// Initialize the caches used by the Runners
 	inMemoryCache := memory.NewInMemoryResourceCache()
-	var kubeCache kube.SharedCache
-	if runOptions.KubeClient != nil {
-		kubeCache = kube.NewKubeCache(ctx)
-	}
+	kubeCache := kube.NewKubeCache(ctx)
 
 	// Override any Settings explicitly defined by a test
 	err := mergo.Merge(settings, runOptions.Settings, mergo.WithOverride)

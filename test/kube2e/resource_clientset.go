@@ -27,6 +27,7 @@ type ResourceClientSet struct {
 	UpstreamClient          gloov1.UpstreamClient
 	ProxyClient             gloov1.ProxyClient
 	ServiceClient           skkube.ServiceClient
+	KubeClientset           *kubernetes.Clientset
 }
 
 func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceClientSet, error) {
@@ -176,6 +177,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 
 	// Kube Service
 	resourceClientSet.ServiceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
+	resourceClientSet.KubeClientset = kubeClient
 
 	return resourceClientSet, nil
 }
