@@ -182,9 +182,8 @@ var _ = Describe("Consul e2e", func() {
 
 		By("requests only go to service with tag '1'")
 
-		// TODO (samheilbron) - This needs to be a CONSISTENTLY
 		// Service 2 does not match the tags on the route, so we should get only requests from service 1
-		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
+		Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
 			_, err := queryService()
 			return svc1.C, err
 		}, "2s", "0.2s").Should(Receive())
