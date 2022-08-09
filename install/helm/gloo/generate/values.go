@@ -78,6 +78,8 @@ type PodSpec struct {
 
 type JobSpec struct {
 	*PodSpec
+	ActiveDeadlineSeconds   *int `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	TtlSecondsAfterFinished *int `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 }
 
 type DeploymentSpecSansResources struct {
@@ -310,31 +312,31 @@ type Job struct {
 
 type CertGenJob struct {
 	Job
-	Enabled                 *bool                 `json:"enabled,omitempty" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
-	SetTtlAfterFinished     *bool                 `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
-	TtlSecondsAfterFinished *int                  `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
-	FloatingUserId          *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser               *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	Resources               *ResourceRequirements `json:"resources,omitempty"`
-	RunOnUpdate             *bool                 `json:"runOnUpdate,omitempty" desc:"enable to run the job also on pre-upgrade"`
-	ActiveDeadlineSeconds   *int                  `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
-	Cron                    *CertGenCron          `json:"cron,omitempty" desc:"CronJob parameters"`
+	Enabled             *bool                 `json:"enabled,omitempty" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
+	SetTtlAfterFinished *bool                 `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished on the job. Defaults to true"`
+	FloatingUserId      *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser           *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	Resources           *ResourceRequirements `json:"resources,omitempty"`
+	RunOnUpdate         *bool                 `json:"runOnUpdate,omitempty" desc:"enable to run the job also on pre-upgrade"`
+	Cron                *CertGenCron          `json:"cron,omitempty" desc:"CronJob parameters"`
 }
 
 type RolloutJob struct {
-	Image                   *Image   `json:"image,omitempty"`
-	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
-	ActiveDeadlineSeconds   *int     `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	*JobSpec
+	Enabled        *bool                 `json:"enabled,omitempty" desc:"Enable the job that applies default Gloo Edge custom resources at install and upgrade time (default true)."`
+	Image          *Image                `json:"image,omitempty"`
+	Resources      *ResourceRequirements `json:"resources,omitempty"`
+	FloatingUserId *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser      *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 }
 
 type CleanupJob struct {
-	Image                   *Image   `json:"image,omitempty"`
-	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
-	ActiveDeadlineSeconds   *int     `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	*JobSpec
+	Enabled        *bool                 `json:"enabled,omitempty" desc:"Enable the job that removes Gloo Edge custom resources when Gloo Edge is uninstalled (default true)."`
+	Image          *Image                `json:"image,omitempty"`
+	Resources      *ResourceRequirements `json:"resources,omitempty"`
+	FloatingUserId *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser      *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 }
 
 /*
