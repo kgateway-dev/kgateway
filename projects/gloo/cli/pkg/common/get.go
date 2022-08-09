@@ -164,9 +164,11 @@ func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, er
 }
 func getProxiesFromGrpc(name string, namespace string, opts *options.Options, proxyEndpointPort string) (gloov1.ProxyList, error) {
 
-	// Translates/Stores all grpc options defined in settings.Gateway
 	options := []grpc.CallOption{
-		grpc.MaxCallRecvMsgSize(int(math.MaxInt32)), //Default proxy size is now MaxInt, not 100MB
+		// Some proxies can become very large and exceed the default 100Mb limit
+		// For this reason we want remove the limit but will settle for a limit of MaxInt32
+		// as we don't anticipate proxies to exceed this
+		grpc.MaxCallRecvMsgSize(int(math.MaxInt32)),
 	}
 
 	freePort, err := cliutil.GetFreePort()
