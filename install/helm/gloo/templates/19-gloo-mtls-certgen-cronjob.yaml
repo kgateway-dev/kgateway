@@ -15,8 +15,8 @@ metadata:
 spec:
   schedule: {{ .Values.gateway.certGenJob.cron.schedule | quote }}
   jobTemplate:
-    activeDeadlineSeconds: {{ .Values.gateway.certGenJob.activeDeadlineSeconds }}
     spec:
+      activeDeadlineSeconds: {{ .Values.gateway.certGenJob.activeDeadlineSeconds }}
       template:
         metadata:
           labels:

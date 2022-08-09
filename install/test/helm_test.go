@@ -5117,18 +5117,22 @@ metadata:
 							}, extraArgs...),
 						})
 						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
 							if u.GetKind() == kind && u.GetName() == resourceName {
-								a := getFieldFromUnstructured(u, "spec", "template", "spec", "nodeSelector")
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "nodeSelector")...)
 								Expect(a).To(Equal(map[string]interface{}{"label": "someLabel"}))
-								a = getFieldFromUnstructured(u, "spec", "template", "spec", "nodeName")
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "nodeName")...)
 								Expect(a).To(Equal("someNodeName"))
-								a = getFieldFromUnstructured(u, "spec", "template", "spec", "tolerations")
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "tolerations")...)
 								Expect(a).To(Equal([]interface{}{map[string]interface{}{"operator": "someToleration"}}))
-								a = getFieldFromUnstructured(u, "spec", "template", "spec", "hostAliases")
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "hostAliases")...)
 								Expect(a).To(Equal([]interface{}{"someHostAlias"}))
-								a = getFieldFromUnstructured(u, "spec", "template", "spec", "affinity")
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "affinity")...)
 								Expect(a).To(Equal(map[string]interface{}{"nodeAffinity": "someNodeAffinity"}))
-								a = getFieldFromUnstructured(u, "spec", "template", "spec", "restartPolicy")
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "restartPolicy")...)
 								Expect(a).To(Equal("someRestartPolicy"))
 								return true
 							}
@@ -5143,6 +5147,40 @@ metadata:
 					Entry("knative external proxy deployment", "Deployment", "knative-external-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
 					Entry("knative internal proxy deployment", "Deployment", "knative-internal-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
 					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("resource rollout job", "Job", "gloo-resource-rollout", "gateway.rolloutJob"),
+					Entry("resource migration job", "Job", "gloo-resource-migration", "gateway.rolloutJob"),
+					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
+				)
+
+				DescribeTable("activeDeadlineSeconds and ttlSecondsAfterFinished on Jobs",
+					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								jobValuesPrefix + ".activeDeadlineSeconds=123",
+								jobValuesPrefix + ".ttlSecondsAfterFinished=42",
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "activeDeadlineSeconds")...)
+								Expect(a).To(Equal(int64(123)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
+								Expect(a).To(Equal(int64(42)))
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 					Entry("resource rollout job", "Job", "gloo-resource-rollout", "gateway.rolloutJob"),
 					Entry("resource migration job", "Job", "gloo-resource-migration", "gateway.rolloutJob"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
