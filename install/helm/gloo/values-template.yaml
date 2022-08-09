@@ -90,13 +90,17 @@ gateway:
       schedule: "* * * * *"
     runOnUpdate: false
   rolloutJob:
+    enabled: true
     image:
       repository: kubectl
+    restartPolicy: OnFailure
     runAsUser: 10101
     ttlSecondsAfterFinished: 60
   cleanupJob:
+    enabled: true
     image:
       repository: kubectl
+    restartPolicy: OnFailure
     runAsUser: 10101
     ttlSecondsAfterFinished: 60
   proxyServiceAccount: {}
