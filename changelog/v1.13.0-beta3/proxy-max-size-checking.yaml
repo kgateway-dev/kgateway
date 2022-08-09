@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/pull/6627
-    description: Added logic to check proxy size against ValidationServerGrpcMaxSizeBytes before returning via grpc
-    resolvesIssue: true
