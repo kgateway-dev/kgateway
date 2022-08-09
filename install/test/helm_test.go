@@ -932,7 +932,7 @@ var _ = Describe("Helm Test", func() {
 						structuredJob, ok := jobObj.(*jobsv1.Job)
 						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %+v should be able to cast to a structured job", job))
 
-						val, ok := structuredJob.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+						val, ok := structuredJob.Spec.Template.ObjectMeta.Labels["sidecar.istio.io/inject"]
 						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %s should contain an istio injection annotation", job.GetName()))
 						Expect(val).To(Equal("false"), fmt.Sprintf("Job %s should have an istio annotation with value of 'false'", job.GetName()))
 					})
