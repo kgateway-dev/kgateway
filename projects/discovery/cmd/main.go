@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
 	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
 	"github.com/solo-io/go-utils/log"
@@ -16,11 +18,14 @@ func main() {
 
 func run() error {
 	errs := make(chan error)
+	ctx := context.Background()
+
 	go func() {
-		errs <- fdssetup.Main(nil)
+		errs <- fdssetup.Main(ctx)
 	}()
 	go func() {
-		errs <- udssetup.Main(nil)
+		errs <- udssetup.Main(ctx)
 	}()
+
 	return <-errs
 }

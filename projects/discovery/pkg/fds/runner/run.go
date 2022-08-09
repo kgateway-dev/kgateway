@@ -5,13 +5,12 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/pkg/utils"
+	glooutils "github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
-	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/utils"
+	"github.com/solo-io/gloo/projects/discovery/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
@@ -20,7 +19,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
-	discoveryRegistry "github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/registry"
+	discoveryregistry "github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/registry"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
@@ -45,12 +44,12 @@ func NewFDSRunnerWithExtensions(extensions *RunExtensions) *fdsRunner {
 func (f *fdsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
 	ctx = contextutils.WithLogger(ctx, "fds")
 
-	fdsMode := syncerutils.GetFdsMode(settings)
+	fdsMode := utils.GetFdsMode(settings)
 	if fdsMode == v1.Settings_DiscoveryOptions_DISABLED {
 		contextutils.LoggerFrom(ctx).Infof("Function discovery "+
 			"(settings.discovery.fdsMode) disabled. To enable, modify "+
 			"gloo.solo.io/Settings - %v", settings.GetMetadata().Ref())
-		return syncerutils.ErrorIfDiscoveryServiceUnused(settings)
+		return utils.ErrorIfDiscoveryServiceUnused(settings)
 	}
 
 	refreshRate := time.Minute
@@ -61,10 +60,10 @@ func (f *fdsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 	watchOpts := clients.WatchOpts{
 		Ctx:         ctx,
 		RefreshRate: refreshRate,
-		Selector:    syncerutils.GetWatchLabels(settings),
+		Selector:    utils.GetWatchLabels(settings),
 	}
 
-	glooClientset, typedClientset, err := runner.GenerateGlooClientsets(ctx, settings, kubeCache, inMemoryCache)
+	glooClientset, typedClientset, err := utils.GenerateDiscoveryClientsets(ctx, settings, kubeCache, inMemoryCache)
 	if err != nil {
 		return err
 	}
@@ -117,7 +116,7 @@ func (f *fdsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 	if writeNamespace == "" {
 		writeNamespace = defaults.GlooSystem
 	}
-	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
+	watchNamespaces := glooutils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 
 	eventLoopErrs, err := eventLoop.Run(watchNamespaces, watchOpts)
 	if err != nil {
@@ -141,7 +140,7 @@ func (f *fdsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 }
 
 func GetFunctionDiscoveriesWithExtensions(extensions RunExtensions) []fds.FunctionDiscoveryFactory {
-	return GetFunctionDiscoveriesWithExtensionsAndRegistry(discoveryRegistry.Plugins, extensions)
+	return GetFunctionDiscoveriesWithExtensionsAndRegistry(discoveryregistry.Plugins, extensions)
 }
 
 func GetFunctionDiscoveriesWithExtensionsAndRegistry(registryDiscFacts func() []fds.FunctionDiscoveryFactory, extensions RunExtensions) []fds.FunctionDiscoveryFactory {

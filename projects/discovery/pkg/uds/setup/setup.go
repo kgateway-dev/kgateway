@@ -10,9 +10,9 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 )
 
-func Main(customCtx context.Context) error {
+func Main(ctx context.Context) error {
 	setupOptions := bootstrap.SetupOpts{
-		Ctx:        customCtx,
+		Ctx:        ctx,
 		LoggerName: "uds",
 		Version:    version.Version,
 		Runner:     runner.NewUDSRunner(),

@@ -51,9 +51,10 @@ func Setup(opts SetupOpts) error {
 
 	// initialize the context with logging
 	ctx := contextutils.WithLogger(opts.Ctx, opts.LoggerName)
-	ctx = contextutils.WithLoggerValues(ctx, []interface{}{
+	loggingContext := append([]interface{}{
 		"version", opts.Version,
 	})
+	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
 
 	// instantiate the settings client
 	settingsFactory, err := getSettingsResourceClientFactory(ctx, setupNamespace, setupDir)

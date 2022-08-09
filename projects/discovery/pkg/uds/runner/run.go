@@ -6,15 +6,14 @@ import (
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/pkg/utils"
+	glooutils "github.com/solo-io/gloo/pkg/utils"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	"github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
-	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/utils"
+	"github.com/solo-io/gloo/projects/discovery/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
-	"github.com/solo-io/gloo/projects/gloo/pkg/runner"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
@@ -45,12 +44,12 @@ func NewUDSRunnerWithExtensions(extensions *RunExtensions) *udsRunner {
 func (u *udsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
 	ctx = contextutils.WithLogger(ctx, "uds")
 
-	udsEnabled := syncerutils.GetUdsEnabled(settings)
+	udsEnabled := utils.GetUdsEnabled(settings)
 	if !udsEnabled {
 		contextutils.LoggerFrom(ctx).Infof("Upstream discovery "+
 			"(settings.discovery.udsOptions.enabled) disabled. To enable, modify "+
 			"gloo.solo.io/Settings - %v", settings.GetMetadata().Ref())
-		return syncerutils.ErrorIfDiscoveryServiceUnused(settings)
+		return utils.ErrorIfDiscoveryServiceUnused(settings)
 	}
 
 	refreshRate := time.Minute
@@ -61,10 +60,10 @@ func (u *udsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 	watchOpts := clients.WatchOpts{
 		Ctx:         ctx,
 		RefreshRate: refreshRate,
-		Selector:    syncerutils.GetWatchLabels(settings),
+		Selector:    utils.GetWatchLabels(settings),
 	}
 
-	glooClientset, typedClientset, err := runner.GenerateGlooClientsets(ctx, settings, kubeCache, inMemoryCache)
+	glooClientset, typedClientset, err := utils.GenerateDiscoveryClientsets(ctx, settings, kubeCache, inMemoryCache)
 	if err != nil {
 		return err
 	}
@@ -125,7 +124,7 @@ func (u *udsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 	if writeNamespace == "" {
 		writeNamespace = defaults.GlooSystem
 	}
-	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
+	watchNamespaces := glooutils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 
 	errs := make(chan error)
 
