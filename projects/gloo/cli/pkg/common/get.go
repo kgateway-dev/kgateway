@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"math"
 	"net"
 	"strconv"
 	"time"
@@ -162,6 +163,14 @@ func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, er
 	return list, nil
 }
 func getProxiesFromGrpc(name string, namespace string, opts *options.Options, proxyEndpointPort string) (gloov1.ProxyList, error) {
+
+	options := []grpc.CallOption{
+		// Some proxies can become very large and exceed the default 100Mb limit
+		// For this reason we want remove the limit but will settle for a limit of MaxInt32
+		// as we don't anticipate proxies to exceed this
+		grpc.MaxCallRecvMsgSize(int(math.MaxInt32)),
+	}
+
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {
 		return nil, err
@@ -202,7 +211,7 @@ func getProxiesFromGrpc(name string, namespace string, opts *options.Options, pr
 			r, err := pxClient.GetProxies(opts.Top.Ctx, &debug.ProxyEndpointRequest{
 				Name:      name,
 				Namespace: opts.Metadata.GetNamespace(),
-			})
+			}, options...)
 			if err != nil {
 				errs <- err
 				time.Sleep(retryInterval)
