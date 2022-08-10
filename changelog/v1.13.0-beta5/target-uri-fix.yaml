@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issuelink: https://github.com/solo-io/gloo/issues/6799
+    resolvesIssue: false
+    description: |
+      Fix bug causing SDS config to be generated with an EnvoyGrpc TargetSpecifier instead of GoogleGrpc when TargetUri
+      is provided
