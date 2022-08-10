@@ -48,8 +48,8 @@ func TestPlugins(t *testing.T) {
 
 func TestPluginsHttpFilterUsefulness(t *testing.T) {
 	opts := bootstrap.Opts{}
-	pluginRegistryFactory := GetPluginRegistryFactory()
-	pluginRegistry := pluginRegistryFactory(context.TODO(), opts)
+	pluginRegistryFactory := GetPluginRegistryFactory(opts)
+	pluginRegistry := pluginRegistryFactory(context.TODO())
 	t.Run("Http Filters are only added if needed", func(t *testing.T) {
 
 		ctx := context.Background()
