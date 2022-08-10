@@ -405,7 +405,7 @@ var _ = Describe("Ssl", func() {
 
 			When("only TargetUri is specified", func() {
 
-				It("should have a sds setup with a GoogleGrpc TargetSpecifier with the expected TargetUri", func() {
+				FIt("should have a sds setup with a GoogleGrpc TargetSpecifier with the expected TargetUri", func() {
 					c, err := resolveCommonSslConfig(upstreamCfg, nil)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
@@ -415,14 +415,20 @@ var _ = Describe("Ssl", func() {
 					cert := c.TlsCertificateSdsSecretConfigs[0]
 					Expect(vctx.Name).To(Equal("ValidationContextName"))
 					Expect(cert.Name).To(Equal("CertificatesSecretName"))
+
+					vctxGoogleGrpc := vctx.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_GoogleGrpc_).GoogleGrpc
+					Expect(vctxGoogleGrpc.TargetUri).To(Equal("targetUri"))
+					Expect(vctxGoogleGrpc.StatPrefix).To(Equal("ValidationContextName"))
+
+					// vctx and cert are expected to have different StatPrefixes on their GoogleGrpc TargetSpecifiers
+					// Modify vctxGoogleGrpc.StatPrefix, which has already been verified, to match that which we expect
+					// for cert
+					vctxGoogleGrpc.StatPrefix = "CertificatesSecretName"
 					// If they are no equivalent, it means that any serialization is different.
 					// see here: https://github.com/envoyproxy/go-control-plane/pull/158
 					// and here: https://github.com/envoyproxy/envoy/pull/6241
 					// this may lead to envoy updates being too frequent
 					Expect(vctx.SdsConfig).To(BeEquivalentTo(cert.SdsConfig))
-
-					googleGrpc := vctx.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_GoogleGrpc_).GoogleGrpc
-					Expect(googleGrpc.TargetUri).To(Equal("targetUri"))
 				})
 			})
 
@@ -454,6 +460,7 @@ var _ = Describe("Ssl", func() {
 				})
 			})
 		})
+
 		Context("san", func() {
 			It("should error with san and not validationContext", func() {
 				sdsConfig.ValidationContextName = ""
