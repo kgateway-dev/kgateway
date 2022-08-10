@@ -3,7 +3,7 @@ package runner
 import (
 	"context"
 
-	"github.com/go-errors/errors"
+	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/enterprise_warning"

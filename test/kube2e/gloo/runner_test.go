@@ -2,6 +2,7 @@ package gloo_test
 
 import (
 	"context"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -82,6 +83,12 @@ var _ = Describe("Runner", func() {
 			var err error
 			settings, err = resourceClientset.SettingsClient.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
+			settings.Gateway.Validation = nil
+			settings.Gloo = &v1.GlooOptions{
+				XdsBindAddr:        getRandomAddr(),
+				ValidationBindAddr: getRandomAddr(),
+				ProxyDebugBindAddr: getRandomAddr(),
+			}
 
 			kubeCoreCache = kube.NewKubeCache(ctx)
 			memCache = memory.NewInMemoryResourceCache()
@@ -129,7 +136,7 @@ var _ = Describe("Runner", func() {
 		}
 
 		startPortFwd := func() *os.Process {
-			validationPort := strconv.Itoa(9988)
+			validationPort := strconv.Itoa(defaults.GlooValidationPort)
 			portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
 				"deployment/gloo", validationPort)
 			portFwd.Stdout = os.Stderr
@@ -161,6 +168,14 @@ var _ = Describe("Runner", func() {
 		})
 	})
 })
+
+func getRandomAddr() string {
+	listener, err := net.Listen("tcp", "localhost:0")
+	Expect(err).NotTo(HaveOccurred())
+	addr := listener.Addr().String()
+	listener.Close()
+	return addr
+}
 
 var _ bootstrap.Runner = new(SynchronizedRunner)
 
