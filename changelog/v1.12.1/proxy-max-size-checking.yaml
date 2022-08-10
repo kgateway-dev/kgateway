@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/pull/6630
+    description: <glooctl get proxy> now returns proxies upto MaxInt32 bytes (100Mb prior)
+    resolvesIssue: true
