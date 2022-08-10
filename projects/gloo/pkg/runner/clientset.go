@@ -3,6 +3,9 @@ package runner
 import (
 	"context"
 
+	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+
 	vaultapi "github.com/hashicorp/vault/api"
 	errors "github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -19,6 +22,44 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+// ResourceClientset contains the set of clients that are used by the Gloo component
+// which interact with Edge resources
+type ResourceClientset struct {
+	// Gateway resources
+	VirtualServices       gatewayv1.VirtualServiceClient
+	RouteTables           gatewayv1.RouteTableClient
+	Gateways              gatewayv1.GatewayClient
+	MatchableHttpGateways gatewayv1.MatchableHttpGatewayClient
+	VirtualHostOptions    gatewayv1.VirtualHostOptionClient
+	RouteOptions          gatewayv1.RouteOptionClient
+
+	// Gloo resources
+	Endpoints      gloov1.EndpointClient
+	Upstreams      gloov1.UpstreamClient
+	UpstreamGroups gloov1.UpstreamGroupClient
+	Proxies        gloov1.ProxyClient
+	Secrets        gloov1.SecretClient
+	Artifacts      gloov1.ArtifactClient
+
+	// Gloo Enterprise resources
+	AuthConfigs       extauthv1.AuthConfigClient
+	GraphQLApis       v1beta1.GraphQLApiClient
+	RateLimitConfigs  ratelimitv1.RateLimitConfigClient
+	RateLimitReporter reporter.ReporterResourceClient
+}
+
+// TypedClientset contains the set of clients that are used by the Gloo component
+// which interact with non-Edge resources
+type TypedClientset struct {
+	// Kubernetes clients
+	KubeClient        kubernetes.Interface
+	KubeServiceClient skkube.ServiceClient
+	KubeCoreCache     corecache.KubeCoreCache
+
+	// Consul clients
+	ConsulWatcher consul.ConsulWatcher
+}
 
 // GenerateGlooClientsets returns the set of clients used to power the Gloo component
 func GenerateGlooClientsets(ctx context.Context, settings *gloov1.Settings, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache) (ResourceClientset, TypedClientset, error) {

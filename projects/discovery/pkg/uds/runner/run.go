@@ -28,17 +28,10 @@ import (
 var _ bootstrap.Runner = new(udsRunner)
 
 type udsRunner struct {
-	extensions *RunExtensions
 }
 
 func NewUDSRunner() *udsRunner {
-	return NewUDSRunnerWithExtensions(&RunExtensions{})
-}
-
-func NewUDSRunnerWithExtensions(extensions *RunExtensions) *udsRunner {
-	return &udsRunner{
-		extensions: extensions,
-	}
+	return &udsRunner{}
 }
 
 func (u *udsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
@@ -91,11 +84,6 @@ func (u *udsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 		emit <- struct{}{}
 	}()
 
-	dnsAddress := settings.GetConsul().GetDnsAddress()
-	if len(dnsAddress) == 0 {
-		dnsAddress = consulplugin.DefaultDnsAddress
-	}
-
 	dnsPollingInterval := consulplugin.DefaultDnsPollingInterval
 	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
 		dnsPollingInterval = prototime.DurationFromProto(pollingInterval)
@@ -106,7 +94,7 @@ func (u *udsRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemor
 		KubeCoreCache: typedClientset.KubeCoreCache,
 		Consul: registry.ConsulPluginOpts{
 			ConsulWatcher:      typedClientset.ConsulWatcher,
-			DnsServer:          dnsAddress,
+			DnsServer:          settings.GetConsul().GetDnsAddress(),
 			DnsPollingInterval: &dnsPollingInterval,
 		},
 	}

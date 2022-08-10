@@ -12,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gwreconciler "github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
@@ -20,10 +19,7 @@ import (
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
-	ratelimitv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -33,24 +29,18 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
-	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"go.uber.org/zap"
-	"k8s.io/client-go/kubernetes"
 )
-
-type RunWithOptions func(opts RunOpts) error
 
 type RunOpts struct {
 	WriteNamespace  string
@@ -69,50 +59,9 @@ type RunOpts struct {
 	ProxyDebugServer ProxyDebugServer
 }
 
-type ResourceClientset struct {
-	// Gateway resources
-	VirtualServices       gatewayv1.VirtualServiceClient
-	RouteTables           gatewayv1.RouteTableClient
-	Gateways              gatewayv1.GatewayClient
-	MatchableHttpGateways gatewayv1.MatchableHttpGatewayClient
-	VirtualHostOptions    gatewayv1.VirtualHostOptionClient
-	RouteOptions          gatewayv1.RouteOptionClient
-
-	// Gloo resources
-	Endpoints      gloov1.EndpointClient
-	Upstreams      gloov1.UpstreamClient
-	UpstreamGroups gloov1.UpstreamGroupClient
-	Proxies        gloov1.ProxyClient
-	Secrets        gloov1.SecretClient
-	Artifacts      gloov1.ArtifactClient
-
-	// Gloo Enterprise resources
-	AuthConfigs       extauthv1.AuthConfigClient
-	GraphQLApis       v1beta1.GraphQLApiClient
-	RateLimitConfigs  ratelimitv1.RateLimitConfigClient
-	RateLimitReporter reporter.ReporterResourceClient
-}
-
-type TypedClientset struct {
-	// Kubernetes clients
-	KubeClient        kubernetes.Interface
-	KubeServiceClient skkube.ServiceClient
-	KubeCoreCache     corecache.KubeCoreCache
-
-	// Consul clients
-	ConsulWatcher consul.ConsulWatcher
-}
-
 func RunGlooWithExtensions(opts RunOpts, extensions RunExtensions) error {
-	// Validate RunExtensions
-	if extensions.ApiEmitterChannel == nil {
-		return errors.Errorf("RunExtensions.ApiEmitterChannel must be defined, found nil")
-	}
-	if extensions.PluginRegistryFactory == nil {
-		return errors.Errorf("RunExtensions.PluginRegistryFactory must be defined, found nil")
-	}
-	if extensions.SyncerExtensions == nil {
-		return errors.Errorf("RunExtensions.SyncerExtensions must be defined, found nil")
+	if err := ValidateRunExtensions(extensions); err != nil {
+		return err
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()

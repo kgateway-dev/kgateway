@@ -55,6 +55,7 @@ var (
 	_ plugins.PluginRegistry = new(pluginRegistry)
 )
 
+// PluginOpts are the set of properties necessary to build the set of plugins used by Gloo Edge
 type PluginOpts struct {
 	SecretClient v1.SecretClient
 
@@ -64,12 +65,14 @@ type PluginOpts struct {
 	Consul ConsulPluginOpts
 }
 
+// ConsulPluginOpts are the set of properties necessary to build the Consul plugin
 type ConsulPluginOpts struct {
 	ConsulWatcher      consul2.ConsulWatcher
 	DnsServer          string
 	DnsPollingInterval *time.Duration
 }
 
+// Plugins returns the list of plugins for Gloo Edge OSS
 func Plugins(opts PluginOpts) []plugins.Plugin {
 	var glooPlugins []plugins.Plugin
 
