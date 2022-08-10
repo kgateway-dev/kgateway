@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6847
+    resolvesIssue: false
+    description: Add helm customization (pod spec fields, resource requirements, disabling istio injection) that was missing from the `gloo-resource-rollout`, `gloo-resource-migration`, and `gloo-resource-cleanup` jobs. Allow disabling the jobs (not recommended unless default Gateways/Upstreams are not needed).
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6821
+    description: Added activeDeadlineSeconds to all k8s jobs

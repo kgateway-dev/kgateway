@@ -63,9 +63,7 @@ func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) *env
 
 // computeListenerAddress returns the Address that this listener will listen for traffic
 func (l *listenerTranslatorInstance) computeListenerAddress() *envoy_config_core_v3.Address {
-	// As of Envoy 1.22: https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.22/v1.22.0.html
-	// the Ipv4Compat flag can only be set on Ipv6 address and Ipv4-mapped Ipv6 address.
-	listenerBindAddress, err := GetIpv6Address(l.listener.GetBindAddress())
+	_, isIpv4Address, err := IsIpv4Address(l.listener.GetBindAddress())
 	if err != nil {
 		validation.AppendListenerError(l.report,
 			validationapi.ListenerReport_Error_ProcessingError,
@@ -77,11 +75,14 @@ func (l *listenerTranslatorInstance) computeListenerAddress() *envoy_config_core
 		Address: &envoy_config_core_v3.Address_SocketAddress{
 			SocketAddress: &envoy_config_core_v3.SocketAddress{
 				Protocol: envoy_config_core_v3.SocketAddress_TCP,
-				Address:  listenerBindAddress,
+				Address:  l.listener.GetBindAddress(),
 				PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
 					PortValue: l.listener.GetBindPort(),
 				},
-				Ipv4Compat: true,
+				// As of Envoy 1.22: https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.22/v1.22.0.html
+				// the Ipv4Compat flag can only be set on Ipv6 address and Ipv4-mapped Ipv6 address.
+				// Check if this is a non-padded pure ipv4 address and unset the compat flag if so.
+				Ipv4Compat: !isIpv4Address,
 			},
 		},
 	}
