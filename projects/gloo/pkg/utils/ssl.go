@@ -146,7 +146,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 			TargetSpecifier: &envoycore.GrpcService_GoogleGrpc_{
 				GoogleGrpc: &envoycore.GrpcService_GoogleGrpc{
 					StatPrefix: name,
-					TargetUri: targetUri,
+					TargetUri:  targetUri,
 				},
 			},
 		}
