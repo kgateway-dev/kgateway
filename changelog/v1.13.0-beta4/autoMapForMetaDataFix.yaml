@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/6782
-    description: Fixing mapping of data to query parameters
-    resolvesIssue: false
