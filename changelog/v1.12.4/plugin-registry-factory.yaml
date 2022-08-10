@@ -5,3 +5,8 @@ changelog:
     description: >
       Ensure that each run of the translation loop has a separate instance of the plugins by creating them with a PluginRegistryFactory 
       at the start of translation. This solves the issue where Gloo crashes due to concurrent writes to maps.
+
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/pull/6627
+    description: <glooctl get proxy> now returns proxies upto MaxInt32 bytes (100Mb prior)
+    resolvesIssue: false
