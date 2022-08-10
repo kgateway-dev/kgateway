@@ -11,8 +11,6 @@ type Identity interface {
 }
 
 type identityImpl struct {
-	leader bool
-
 	leaderValue *atomic.Bool
 }
 
