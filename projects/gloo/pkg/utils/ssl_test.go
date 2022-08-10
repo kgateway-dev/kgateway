@@ -354,7 +354,7 @@ var _ = Describe("Ssl", func() {
 			cert := c.TlsCertificateSdsSecretConfigs[0]
 			Expect(vctx.Name).To(Equal("ValidationContextName"))
 			Expect(cert.Name).To(Equal("CertificatesSecretName"))
-			// If they are no equivalent, it means that any serialization is different.
+			// If they are not equivalent, it means that any serialization is different.
 			// see here: https://github.com/envoyproxy/go-control-plane/pull/158
 			// and here: https://github.com/envoyproxy/envoy/pull/6241
 			// this may lead to envoy updates being too frequent
@@ -387,7 +387,7 @@ var _ = Describe("Ssl", func() {
 			cert := c.TlsCertificateSdsSecretConfigs[0]
 			Expect(vctx.Name).To(Equal("ValidationContextName"))
 			Expect(cert.Name).To(Equal("CertificatesSecretName"))
-			// If they are no equivalent, it means that any serialization is different.
+			// If they are not equivalent, it means that any serialization is different.
 			// see here: https://github.com/envoyproxy/go-control-plane/pull/158
 			// and here: https://github.com/envoyproxy/envoy/pull/6241
 			// this may lead to envoy updates being too frequent
@@ -424,7 +424,7 @@ var _ = Describe("Ssl", func() {
 					// Modify vctxGoogleGrpc.StatPrefix, which has already been verified, to match that which we expect
 					// for cert
 					vctxGoogleGrpc.StatPrefix = "CertificatesSecretName"
-					// If they are no equivalent, it means that any serialization is different.
+					// If they are not equivalent, it means that any serialization is different.
 					// see here: https://github.com/envoyproxy/go-control-plane/pull/158
 					// and here: https://github.com/envoyproxy/envoy/pull/6241
 					// this may lead to envoy updates being too frequent
@@ -449,7 +449,7 @@ var _ = Describe("Ssl", func() {
 					cert := c.TlsCertificateSdsSecretConfigs[0]
 					Expect(vctx.Name).To(Equal("ValidationContextName"))
 					Expect(cert.Name).To(Equal("CertificatesSecretName"))
-					// If they are no equivalent, it means that any serialization is different.
+					// If they are not equivalent, it means that any serialization is different.
 					// see here: https://github.com/envoyproxy/go-control-plane/pull/158
 					// and here: https://github.com/envoyproxy/envoy/pull/6241
 					// this may lead to envoy updates being too frequent
@@ -515,7 +515,7 @@ var _ = Describe("Ssl", func() {
 			cert := c.TlsCertificateSdsSecretConfigs[0]
 			Expect(vctx.Name).To(Equal("ValidationContextName"))
 			Expect(cert.Name).To(Equal("CertificatesSecretName"))
-			// If they are no equivalent, it means that any serialization is different.
+			// If they are not equivalent, it means that any serialization is different.
 			// see here: https://github.com/envoyproxy/go-control-plane/pull/158
 			// and here: https://github.com/envoyproxy/envoy/pull/6241
 			// this may lead to envoy updates being too frequent
