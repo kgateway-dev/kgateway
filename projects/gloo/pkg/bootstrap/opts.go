@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"net"
 	"time"
 
@@ -56,6 +57,8 @@ type Opts struct {
 	ReadGatwaysFromAllNamespaces bool
 	GatewayControllerEnabled     bool
 	ProxyCleanup                 func()
+
+	LeaderElectionFactory leaderelector.ElectionFactory
 }
 
 type Consul struct {

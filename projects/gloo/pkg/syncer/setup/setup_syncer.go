@@ -3,6 +3,7 @@ package setup
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"net"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
@@ -573,6 +575,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	startRestXdsServer(opts)
 
+	identity, err := startLeaderElection(opts.WatchOpts.Ctx, opts.LeaderElectionFactory)
+	if err != nil {
+		return err
+	}
+
 	errs := make(chan error)
 
 	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
@@ -758,7 +765,16 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		logger.Debugf("Setting up gateway translator")
 		gatewayTranslator = gwtranslator.NewDefaultTranslator(gwOpts)
 		proxyReconciler := gwreconciler.NewProxyReconciler(validator.Validate, proxyClient, statusClient)
-		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(opts.WatchOpts.Ctx, opts.WriteNamespace, proxyClient, proxyReconciler, rpt, gatewayTranslator, statusClient, statusMetrics)
+		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(
+			opts.WatchOpts.Ctx,
+			opts.WriteNamespace,
+			proxyClient,
+			proxyReconciler,
+			rpt,
+			gatewayTranslator,
+			statusClient,
+			statusMetrics,
+			identity)
 	} else {
 		logger.Debugf("Gateway translation is disabled. Proxies are provided from another source")
 	}
@@ -794,7 +810,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		statusMetrics,
 		gwTranslatorSyncer,
 		proxyClient,
-		opts.WriteNamespace)
+		opts.WriteNamespace,
+		identity)
 
 	syncers := v1snap.ApiSyncers{
 		validator,
@@ -934,6 +951,21 @@ func startRestXdsServer(opts bootstrap.Opts) {
 		}
 	}()
 }
+
+func startLeaderElection(ctx context.Context, electionFactory leaderelector.ElectionFactory) (leaderelector.Identity, error) {
+	electionConfig := leaderelector.ElectionConfig{
+		Id:        "gloo",
+		Namespace: utils.GetPodNamespace(),
+		// no-op all the callbacks for now
+		// at the moment, leadership functionality is performed within components
+		// in the future we could pull that out and let these callbacks change configuration
+		OnStartedLeading: func(c context.Context) {},
+		OnStoppedLeading: func() {},
+		OnNewLeader:      func(leaderId string) {},
+	}
+	return electionFactory.StartElection(ctx, electionConfig)
+}
+
 func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings, writeNamespace string) (bootstrap.Opts, error) {
 
 	var (
@@ -1114,6 +1146,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		}
 	}
 	readGatewaysFromAllNamespaces := settings.GetGateway().GetReadGatewaysFromAllNamespaces()
+
 	return bootstrap.Opts{
 		Upstreams:                    upstreamFactory,
 		KubeServiceClient:            kubeServiceClient,
@@ -1135,5 +1168,8 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
 		GatewayControllerEnabled:     gatewayMode,
 		ProxyCleanup:                 proxyCleanup,
+
+		// Temporary, just introduce a single replica placeholder
+		LeaderElectionFactory: singlereplica.NewSingleReplicaElectionFactory(),
 	}, nil
 }

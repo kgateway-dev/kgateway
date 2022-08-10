@@ -4,9 +4,9 @@ import (
 	"context"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/atomic"
 	"k8s.io/client-go/rest"
 	k8sleaderelection "k8s.io/client-go/tools/leaderelection"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/leaderelection"
 	"time"
 )
@@ -24,7 +24,7 @@ func NewKubeElectionFactory(config *rest.Config) *kubeElectionFactory {
 }
 
 func (f *kubeElectionFactory) StartElection(ctx context.Context, config leaderelector.ElectionConfig) (leaderelector.Identity, error) {
-	var leader = pointer.BoolPtr(false)
+	var leader = atomic.NewBool(false)
 	identity := leaderelector.NewIdentity(leader)
 
 	leOpts := leaderelection.Options{
@@ -49,12 +49,12 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config leaderel
 			Callbacks: k8sleaderelection.LeaderCallbacks{
 				OnStartedLeading: func(callbackCtx context.Context) {
 					contextutils.LoggerFrom(ctx).Debugf("Started Leading")
-					*leader = true
+					leader.Store(true)
 					config.OnStartedLeading(callbackCtx)
 				},
 				OnStoppedLeading: func() {
 					contextutils.LoggerFrom(ctx).Error("Stopped Leading")
-					*leader = false
+					leader.Store(false)
 					config.OnStoppedLeading()
 				},
 				OnNewLeader: func(identity string) {

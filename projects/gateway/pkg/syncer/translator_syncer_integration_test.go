@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -80,7 +81,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		xlator := translator.NewDefaultTranslator(translator.Opts{
 			WriteNamespace: defaults.GlooSystem,
 		})
-		ts = NewTranslatorSyncer(ctx, defaults.GlooSystem, proxyClient, proxyReconciler, rpt, xlator, statusClient, statusMetrics)
+		ts = NewTranslatorSyncer(ctx, defaults.GlooSystem, proxyClient, proxyReconciler, rpt, xlator, statusClient, statusMetrics, singlereplica.Identity())
 
 		vs = &v1.VirtualService{
 			Metadata: &core.Metadata{

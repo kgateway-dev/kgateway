@@ -1,21 +1,27 @@
 package leaderelector
 
-var _ Identity = new(IdentityImpl)
+import (
+	"go.uber.org/atomic"
+)
+
+var _ Identity = new(identityImpl)
 
 type Identity interface {
 	IsLeader() bool
 }
 
-type IdentityImpl struct {
+type identityImpl struct {
 	leader bool
+
+	leaderValue *atomic.Bool
 }
 
-func NewIdentity(leader *bool) *IdentityImpl {
-	return &IdentityImpl{
-		leader: *leader,
+func NewIdentity(leaderValue *atomic.Bool) *identityImpl {
+	return &identityImpl{
+		leaderValue: leaderValue,
 	}
 }
 
-func (i IdentityImpl) IsLeader() bool {
-	return i.leader
+func (i identityImpl) IsLeader() bool {
+	return i.leaderValue.Load()
 }

@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"os"
 	"sort"
 	"sync"
@@ -62,13 +63,13 @@ var (
 	}
 )
 
-func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) *TranslatorSyncer {
+func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics, identity leaderelector.Identity) *TranslatorSyncer {
 	t := &TranslatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
-		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient, statusMetrics),
+		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient, statusMetrics, identity),
 	}
 	if pxStatusSizeEnv := os.Getenv("PROXY_STATUS_MAX_SIZE_BYTES"); pxStatusSizeEnv != "" {
 		t.proxyStatusMaxSize = pxStatusSizeEnv
@@ -170,9 +171,11 @@ type statusSyncer struct {
 	statusMetrics           metrics.ConfigStatusMetrics
 	syncNeeded              chan struct{}
 	previousProxyStatusHash uint64
+
+	identity leaderelector.Identity
 }
 
-func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, reporter reporter.StatusReporter, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics) statusSyncer {
+func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, reporter reporter.StatusReporter, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics, identity leaderelector.Identity) statusSyncer {
 	return statusSyncer{
 		proxyToLastStatus:       map[string]reportsAndStatus{},
 		currentGeneratedProxies: nil,
@@ -182,6 +185,7 @@ func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, repo
 		statusClient:            statusClient,
 		statusMetrics:           statusMetrics,
 		syncNeeded:              make(chan struct{}, 1),
+		identity:                identity,
 	}
 }
 
@@ -298,12 +302,14 @@ func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 	var retryChan <-chan time.Time
 
 	sync := func() {
-		err := s.syncStatus(ctx)
-		if err != nil {
-			contextutils.LoggerFrom(ctx).Debugw("failed to sync status; will try again shortly.", "error", err)
-			retryChan = time.After(time.Second)
-		} else {
-			retryChan = nil
+		if s.identity.IsLeader() {
+			err := s.syncStatus(ctx)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Debugw("failed to sync status; will try again shortly.", "error", err)
+				retryChan = time.After(time.Second)
+			} else {
+				retryChan = nil
+			}
 		}
 	}
 

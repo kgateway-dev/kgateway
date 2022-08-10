@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
@@ -31,6 +32,8 @@ type translatorSyncer struct {
 	proxyClient      v1.ProxyClient
 	writeNamespace   string
 
+	identity leaderelector.Identity
+
 	// used for debugging purposes only
 	latestSnap *v1snap.ApiSnapshot
 }
@@ -47,6 +50,7 @@ func NewTranslatorSyncer(
 	gatewaySyncer *gwsyncer.TranslatorSyncer,
 	proxyClient v1.ProxyClient,
 	writeNamespace string,
+	identity leaderelector.Identity,
 ) v1snap.ApiSyncer {
 	s := &translatorSyncer{
 		translator:       translator,
@@ -59,6 +63,7 @@ func NewTranslatorSyncer(
 		gatewaySyncer:    gatewaySyncer,
 		proxyClient:      proxyClient,
 		writeNamespace:   writeNamespace,
+		identity:         identity,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
@@ -96,15 +101,21 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 		reports.Merge(intermediateReports)
 	}
 
-	if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
-		logger.Debugf("Failed writing report for proxies: %v", err)
-		multiErr = multierror.Append(multiErr, eris.Wrapf(err, "writing reports"))
+	if s.identity.IsLeader() {
+		// Only leaders will write reports
+		if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
+			logger.Debugf("Failed writing report for proxies: %v", err)
+			multiErr = multierror.Append(multiErr, eris.Wrapf(err, "writing reports"))
+		}
+		// Update resource status metrics
+		for resource, report := range reports {
+			status := s.reporter.StatusFromReport(report, nil)
+			s.statusMetrics.SetResourceStatus(ctx, resource, status)
+		}
+	} else {
+		logger.Debugf("Not a leader, skipping status and metrics reporting")
 	}
-	// Update resource status metrics
-	for resource, report := range reports {
-		status := s.reporter.StatusFromReport(report, nil)
-		s.statusMetrics.SetResourceStatus(ctx, resource, status)
-	}
+
 	//After reports are written for proxies, save in gateway syncer (previously gw watched for status changes to proxies)
 	if s.gatewaySyncer != nil {
 		s.gatewaySyncer.UpdateProxies(ctx)
