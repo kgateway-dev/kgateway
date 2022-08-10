@@ -405,7 +405,7 @@ var _ = Describe("Ssl", func() {
 
 			When("only TargetUri is specified", func() {
 
-				FIt("should have a sds setup with a GoogleGrpc TargetSpecifier with the expected TargetUri", func() {
+				It("should have a sds setup with a GoogleGrpc TargetSpecifier with the expected TargetUri", func() {
 					c, err := resolveCommonSslConfig(upstreamCfg, nil)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
