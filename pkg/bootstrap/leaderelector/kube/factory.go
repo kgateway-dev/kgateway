@@ -2,13 +2,14 @@ package kube
 
 import (
 	"context"
+	"time"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/atomic"
 	"k8s.io/client-go/rest"
 	k8sleaderelection "k8s.io/client-go/tools/leaderelection"
 	"sigs.k8s.io/controller-runtime/pkg/leaderelection"
-	"time"
 )
 
 var _ leaderelector.ElectionFactory = new(kubeElectionFactory)

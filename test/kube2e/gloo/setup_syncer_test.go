@@ -9,8 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -157,7 +155,7 @@ var _ = Describe("SetupSyncer", func() {
 
 			It("should return plugins", func() {
 				extensions := Extensions{
-					PluginRegistryFactory: func(ctx context.Context, opts bootstrap.Opts) plugins.PluginRegistry {
+					PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
 						return registry.NewPluginRegistry([]plugins.Plugin{
 							plugin1,
 							plugin2,
@@ -165,7 +163,7 @@ var _ = Describe("SetupSyncer", func() {
 					},
 				}
 
-				pluginRegistry := extensions.PluginRegistryFactory(context.TODO(), bootstrap.Opts{})
+				pluginRegistry := extensions.PluginRegistryFactory(context.TODO())
 				plugins := pluginRegistry.GetPlugins()
 				Expect(plugins).To(ContainElement(plugin1))
 				Expect(plugins).To(ContainElement(plugin2))

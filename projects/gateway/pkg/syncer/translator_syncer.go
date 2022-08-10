@@ -3,11 +3,12 @@ package syncer
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"os"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"

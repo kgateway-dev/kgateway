@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"os"
+
+	"github.com/solo-io/gloo/pkg/utils/setuputils"
 )
 
 func AllNamespaces(watchNamespaces []string) bool {

@@ -3,8 +3,9 @@ package syncer
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"

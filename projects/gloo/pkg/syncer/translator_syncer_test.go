@@ -2,6 +2,7 @@ package syncer_test
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"

@@ -2,9 +2,10 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"net"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 

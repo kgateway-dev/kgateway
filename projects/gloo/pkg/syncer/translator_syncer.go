@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/rotisserie/eris"

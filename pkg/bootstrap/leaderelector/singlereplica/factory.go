@@ -2,6 +2,7 @@ package singlereplica
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/atomic"
