@@ -18,21 +18,26 @@ var (
 	mSetupsRun = utils.MakeSumCounter("gloo.solo.io/setups_run", "The number of times the main setup loop has run")
 )
 
-type SetupSyncer struct {
+var _ v1.SetupSyncer = new(SetupSyncerImpl)
+
+// A SetupSyncerImpl executes a Runner on each Sync
+// A sync occurs whenever the SetupSnapshot changes, which in this case is the Settings resource
+// This enables Gloo Edge Runners to be re-run without restarting containers
+type SetupSyncerImpl struct {
 	settingsRef   *core.ResourceRef
 	runner        Runner
 	inMemoryCache memory.InMemoryResourceCache
 }
 
-func NewSetupSyncer(settingsRef *core.ResourceRef, runner Runner) *SetupSyncer {
-	return &SetupSyncer{
+func NewSetupSyncer(settingsRef *core.ResourceRef, runner Runner) *SetupSyncerImpl {
+	return &SetupSyncerImpl{
 		settingsRef:   settingsRef,
 		runner:        runner,
 		inMemoryCache: memory.NewInMemoryResourceCache(),
 	}
 }
 
-func (s *SetupSyncer) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
+func (s *SetupSyncerImpl) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
 	settings, err := snap.Settings.Find(s.settingsRef.Strings())
 	if err != nil {
 		return errors.Wrapf(err, "finding bootstrap configuration")

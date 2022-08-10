@@ -36,7 +36,7 @@ type mockRunner struct {
 	lastRunSettings *v1.Settings
 }
 
-func (m *mockRunner) Run(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+func (m *mockRunner) Run(_ context.Context, _ kube.SharedCache, _ memory.InMemoryResourceCache, settings *v1.Settings) error {
 	m.lastRunSettings = settings
 	return nil
 }

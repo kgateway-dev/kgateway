@@ -1,11 +1,5 @@
-# Consul/Vault Tests
-
-## Setup
-The consul vault test downloads and runs vault and is disabled by default. To enable, set `RUN_VAULT_TESTS=1` and `RUN_CONSUL_TESTS=1` in your local environment.
-
-
-# Consul/Vault End-to-End tests
-This directory contains end-to-end tests that do not require Kubernetes
+# Consul and Vault End-to-End tests
+This directory contains end-to-end tests that store Gloo resources in Consul and Vault.
 
 *Note: All commands should be run from the root directory of the Gloo repository*
 

@@ -1,5 +1,5 @@
-# Envoy End-to-End tests
-This directory contains end-to-end tests that do not require Kubernetes
+# In Memory End-to-End tests
+This directory contains end-to-end tests that store Gloo resources in memory.
 
 *Note: All commands should be run from the root directory of the Gloo repository*
 
