@@ -140,11 +140,14 @@ apis:
   enterprise.gloo.solo.io.AccessTokenValidation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AccessTokenValidation
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.AerospikeApiKeyStorage:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AerospikeApiKeyStorage
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKey:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKey
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.ApiKeyAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyAuth
-    package: enterprise.gloo.solo.io
-  enterprise.gloo.solo.io.ApiKeySecret:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeySecret
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.AuthConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AuthConfig
@@ -194,6 +197,9 @@ apis:
   enterprise.gloo.solo.io.JwtValidation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#JwtValidation
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.K8sSecretApiKeyStorage:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#K8sSecretApiKeyStorage
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.Ldap:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#Ldap
     package: enterprise.gloo.solo.io
@@ -223,6 +229,9 @@ apis:
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.PassThroughHttp:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PassThroughHttp
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.RawApiKey:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#RawApiKey
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.RedisOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#RedisOptions

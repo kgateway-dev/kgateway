@@ -50,8 +50,11 @@ weight: 5
 - [ScopeList](#scopelist)
 - [OauthSecret](#oauthsecret)
 - [ApiKeyAuth](#apikeyauth)
+- [K8sSecretApiKeyStorage](#k8ssecretapikeystorage)
 - [SecretKey](#secretkey)
-- [ApiKeySecret](#apikeysecret)
+- [AerospikeApiKeyStorage](#aerospikeapikeystorage)
+- [tlsCurveID](#tlscurveid)
+- [ApiKey](#apikey)
 - [OpaAuth](#opaauth)
 - [OpaAuthOptions](#opaauthoptions)
 - [Ldap](#ldap)
@@ -75,6 +78,7 @@ weight: 5
 - [KeyMetadata](#keymetadata)
 - [OpaAuthConfig](#opaauthconfig)
 - [Config](#config)
+- [RawApiKey](#rawapikey)
   
 
 
@@ -984,10 +988,29 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 
 ```yaml
+"k8SSecretApikeyStorage": .enterprise.gloo.solo.io.K8sSecretApiKeyStorage
+"aerospikeApikeyStorage": .enterprise.gloo.solo.io.AerospikeApiKeyStorage
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage` or `aerospikeApikeyStorage` can be set. |
+| `aerospikeApikeyStorage` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage](../extauth.proto.sk/#aerospikeapikeystorage) |  Only one of `aerospikeApikeyStorage` or `k8sSecretApikeyStorage` can be set. |
+
+
+
+
+---
+### K8sSecretApiKeyStorage
+
+
+
+```yaml
 "labelSelector": map<string, string>
 "apiKeySecretRefs": []core.solo.io.ResourceRef
 "headerName": string
-"headersFromMetadata": map<string, .enterprise.gloo.solo.io.ApiKeyAuth.SecretKey>
+"headersFromMetadata": map<string, .enterprise.gloo.solo.io.K8sSecretApiKeyStorage.SecretKey>
 
 ```
 
@@ -996,7 +1019,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `labelSelector` | `map<string, string>` | Identify all valid API key secrets that match the provided label selector.<br/> API key secrets must be in one of the watch namespaces for gloo to locate them. |
 | `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred. |
 | `headerName` | `string` | When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
-| `headersFromMetadata` | `map<string, .enterprise.gloo.solo.io.ApiKeyAuth.SecretKey>` | API key secrets might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra keys included in the secret's `data` field. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the secret data that will be inspected to determine the value for the header. |
+| `headersFromMetadata` | `map<string, .enterprise.gloo.solo.io.K8sSecretApiKeyStorage.SecretKey>` | API key secrets might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra keys included in the secret's `data` field. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the secret data that will be inspected to determine the value for the header. |
 
 
 
@@ -1021,24 +1044,98 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 
 ---
-### ApiKeySecret
+### AerospikeApiKeyStorage
 
 
 
 ```yaml
-"generateApiKey": bool
+"hostname": string
+"namespace": string
+"set": string
+"port": int
+"batchSize": int
+"commitAll": int
+"commitMaster": int
+"session": int
+"linearize": int
+"replica": int
+"allowUnavailable": int
+"one": int
+"all": int
+"nodeTlsName": string
+"certPath": string
+"keyPath": string
+"allowInsecure": bool
+"rootCaPath": string
+"tlsVersion": string
+"tlsCurveGroups": []enterprise.gloo.solo.io.AerospikeApiKeyStorage.tlsCurveID
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `hostname` | `string` |  |
+| `namespace` | `string` |  |
+| `set` | `string` |  |
+| `port` | `int` |  |
+| `batchSize` | `int` |  |
+| `commitAll` | `int` | commit_all indicates the server should wait until successfully committing master and all replicas. Only one of `commitAll` or `commitMaster` can be set. |
+| `commitMaster` | `int` | commit_master indicates the server should wait until successfully committing master only. Only one of `commitMaster` or `commitAll` can be set. |
+| `session` | `int` | session ensures this client will only see an increasing sequence of record versions. Server only reads from master. This is the default. Only one of `session`, `linearize`, `replica`, or `allowUnavailable` can be set. |
+| `linearize` | `int` | linearize ensures ALL clients will only see an increasing sequence of record versions. Server only reads from master. Only one of `linearize`, `session`, `replica`, or `allowUnavailable` can be set. |
+| `replica` | `int` | replica indicates that the server may read from master or any full (non-migrating) replica. Increasing sequence of record versions is not guaranteed. Only one of `replica`, `session`, `linearize`, or `allowUnavailable` can be set. |
+| `allowUnavailable` | `int` | allow_unavailable indicates that the server may read from master or any full (non-migrating) replica or from unavailable partitions. Increasing sequence of record versions is not guaranteed. Only one of `allowUnavailable`, `session`, `linearize`, or `replica` can be set. |
+| `one` | `int` | one indicates that a single node should be involved in the read operation. Only one of `one` or `all` can be set. |
+| `all` | `int` | all indicates that all duplicates should be consulted in the read operation. Only one of `all` or `one` can be set. |
+| `nodeTlsName` | `string` | TLS Settings, mtls is enabled on the server side. |
+| `certPath` | `string` |  |
+| `keyPath` | `string` |  |
+| `allowInsecure` | `bool` | skip the client verifying the server's certificate chain and host name. |
+| `rootCaPath` | `string` | If the RootCA is not set, add the system certs bt default. |
+| `tlsVersion` | `string` | TLS version, defaults to 1.3. |
+| `tlsCurveGroups` | [[]enterprise.gloo.solo.io.AerospikeApiKeyStorage.tlsCurveID](../extauth.proto.sk/#tlscurveid) | TLS identifiers for the elliptic curves used. |
+
+
+
+
+---
+### tlsCurveID
+
+
+
+```yaml
+"curveP256": int
+"curveP384": int
+"curveP521": int
+"x25519": int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `curveP256` | `int` |  Only one of `curveP256`, `curveP384`, `curveP521`, or `x25519` can be set. |
+| `curveP384` | `int` |  Only one of `curveP384`, `curveP256`, `curveP521`, or `x25519` can be set. |
+| `curveP521` | `int` |  Only one of `curveP521`, `curveP256`, `curveP384`, or `x25519` can be set. |
+| `x25519` | `int` |  Only one of `x25519`, `curveP256`, `curveP384`, or `curveP521` can be set. |
+
+
+
+
+---
+### ApiKey
+
+
+
+```yaml
 "apiKey": string
-"labels": []string
 "metadata": map<string, string>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `generateApiKey` | `bool` | If true, generate an API key. This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API. |
-| `apiKey` | `string` | The value of the API key. |
-| `labels` | `[]string` | A list of labels (key=value) for the apikey secret.<br/> These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret. This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API. |
-| `metadata` | `map<string, string>` | If the secret data contains entries in addition to the API key one, they will be copied to this field. |
+| `apiKey` | `string` | The string value of the API key. |
+| `metadata` | `map<string, string>` | additional data the client needs associated with this API key. |
 
 
 
@@ -1557,7 +1654,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `validApiKeys` | `map<string, .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig.KeyMetadata>` | A mapping of valid API keys to their associated metadata. This map is automatically populated with the information from the relevant `ApiKeySecret`s. |
+| `validApiKeys` | `map<string, .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig.KeyMetadata>` | A mapping of valid API keys to their associated metadata. This map is automatically populated with the information from the relevant `ApiKey`s. |
 | `headerName` | `string` | (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
 | `headersFromKeyMetadata` | `map<string, string>` | Determines the key metadata that will be included as headers on the upstream request. Each entry represents a header to add: the key is the name of the header, and the value is the key that will be used to look up the data entry in the key metadata. |
 
@@ -1577,8 +1674,8 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `username` | `string` | The user is mapped as the name of `Secret` which contains the `ApiKeySecret`. |
-| `metadata` | `map<string, string>` | The metadata present on the `ApiKeySecret`. |
+| `username` | `string` | The user is mapped as the name of `Secret` which contains the `ApiKey`. |
+| `metadata` | `map<string, string>` | The metadata present on the `ApiKey`. |
 
 
 
@@ -1635,6 +1732,23 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `jwt`, or `passThroughAuth` can be set. |
 | `jwt` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication. If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config. In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour. Only one of `jwt`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, or `passThroughAuth` can be set. |
 | `passThroughAuth` | [.enterprise.gloo.solo.io.PassThroughAuth](../extauth.proto.sk/#passthroughauth) |  Only one of `passThroughAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, or `jwt` can be set. |
+
+
+
+
+---
+### RawApiKey
+
+
+
+```yaml
+"apiKey": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `apiKey` | `string` |  |
 
 
 

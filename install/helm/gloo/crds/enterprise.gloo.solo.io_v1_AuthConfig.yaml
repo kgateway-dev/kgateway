@@ -31,29 +31,100 @@ spec:
                   properties:
                     apiKeyAuth:
                       properties:
-                        apiKeySecretRefs:
-                          items:
-                            properties:
-                              name:
-                                type: string
-                              namespace:
-                                type: string
-                            type: object
-                          type: array
-                        headerName:
-                          type: string
-                        headersFromMetadata:
-                          additionalProperties:
-                            properties:
-                              name:
-                                type: string
-                              required:
-                                type: boolean
-                            type: object
+                        aerospikeApikeyStorage:
+                          properties:
+                            all:
+                              format: int32
+                              type: integer
+                            allowInsecure:
+                              type: boolean
+                            allowUnavailable:
+                              format: int32
+                              type: integer
+                            batchSize:
+                              format: int32
+                              type: integer
+                            certPath:
+                              type: string
+                            commitAll:
+                              format: int32
+                              type: integer
+                            commitMaster:
+                              format: int32
+                              type: integer
+                            hostname:
+                              type: string
+                            keyPath:
+                              type: string
+                            linearize:
+                              format: int32
+                              type: integer
+                            namespace:
+                              type: string
+                            nodeTlsName:
+                              type: string
+                            one:
+                              format: int32
+                              type: integer
+                            port:
+                              format: int32
+                              type: integer
+                            replica:
+                              format: int32
+                              type: integer
+                            rootCaPath:
+                              type: string
+                            session:
+                              format: int32
+                              type: integer
+                            set:
+                              type: string
+                            tlsCurveGroups:
+                              items:
+                                properties:
+                                  curveP256:
+                                    format: int32
+                                    type: integer
+                                  curveP384:
+                                    format: int32
+                                    type: integer
+                                  curveP521:
+                                    format: int32
+                                    type: integer
+                                  x25519:
+                                    format: int32
+                                    type: integer
+                                type: object
+                              type: array
+                            tlsVersion:
+                              type: string
                           type: object
-                        labelSelector:
-                          additionalProperties:
-                            type: string
+                        k8sSecretApikeyStorage:
+                          properties:
+                            apiKeySecretRefs:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              type: array
+                            headerName:
+                              type: string
+                            headersFromMetadata:
+                              additionalProperties:
+                                properties:
+                                  name:
+                                    type: string
+                                  required:
+                                    type: boolean
+                                type: object
+                              type: object
+                            labelSelector:
+                              additionalProperties:
+                                type: string
+                              type: object
                           type: object
                       type: object
                     basicAuth:

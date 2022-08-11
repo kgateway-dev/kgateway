@@ -1622,6 +1622,70 @@ func (m *ApiKeyAuth) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	switch m.StorageBackend.(type) {
+
+	case *ApiKeyAuth_K8SSecretApikeyStorage:
+
+		if h, ok := interface{}(m.GetK8SSecretApikeyStorage()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("K8SSecretApikeyStorage")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetK8SSecretApikeyStorage(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("K8SSecretApikeyStorage")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ApiKeyAuth_AerospikeApikeyStorage:
+
+		if h, ok := interface{}(m.GetAerospikeApikeyStorage()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("AerospikeApikeyStorage")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetAerospikeApikeyStorage(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("AerospikeApikeyStorage")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *K8SSecretApiKeyStorage) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.K8SSecretApiKeyStorage")); err != nil {
+		return 0, err
+	}
+
 	{
 		var result uint64
 		innerHash := fnv.New64()
@@ -1716,7 +1780,7 @@ func (m *ApiKeyAuth) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *ApiKeySecret) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *AerospikeApiKeyStorage) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1724,25 +1788,167 @@ func (m *ApiKeySecret) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ApiKeySecret")); err != nil {
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.AerospikeApiKeyStorage")); err != nil {
 		return 0, err
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetGenerateApiKey())
+	if _, err = hasher.Write([]byte(m.GetHostname())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetNamespace())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetSet())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetPort())
 	if err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetBatchSize())
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetNodeTlsName())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetCertPath())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetKeyPath())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetAllowInsecure())
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRootCaPath())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetTlsVersion())); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetTlsCurveGroups() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	switch m.CommitLevel.(type) {
+
+	case *AerospikeApiKeyStorage_CommitAll:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetCommitAll())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorage_CommitMaster:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetCommitMaster())
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	switch m.ReadModeSc.(type) {
+
+	case *AerospikeApiKeyStorage_Session:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetSession())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorage_Linearize:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetLinearize())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorage_Replica:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetReplica())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorage_AllowUnavailable:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetAllowUnavailable())
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	switch m.ReadModeAp.(type) {
+
+	case *AerospikeApiKeyStorage_One:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetOne())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorage_All:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetAll())
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ApiKey) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ApiKey")); err != nil {
 		return 0, err
 	}
 
 	if _, err = hasher.Write([]byte(m.GetApiKey())); err != nil {
 		return 0, err
-	}
-
-	for _, v := range m.GetLabels() {
-
-		if _, err = hasher.Write([]byte(v)); err != nil {
-			return 0, err
-		}
-
 	}
 
 	{
@@ -2188,6 +2394,26 @@ func (m *ExtAuthConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetFailOnRedirect())
 	if err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *RawApiKey) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.RawApiKey")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetApiKey())); err != nil {
 		return 0, err
 	}
 
@@ -2905,7 +3131,7 @@ func (m *AccessTokenValidation_ScopeList) Hash(hasher hash.Hash64) (uint64, erro
 }
 
 // Hash function
-func (m *ApiKeyAuth_SecretKey) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *K8SSecretApiKeyStorage_SecretKey) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -2913,7 +3139,7 @@ func (m *ApiKeyAuth_SecretKey) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ApiKeyAuth_SecretKey")); err != nil {
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.K8SSecretApiKeyStorage_SecretKey")); err != nil {
 		return 0, err
 	}
 
@@ -2924,6 +3150,54 @@ func (m *ApiKeyAuth_SecretKey) Hash(hasher hash.Hash64) (uint64, error) {
 	err = binary.Write(hasher, binary.LittleEndian, m.GetRequired())
 	if err != nil {
 		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *AerospikeApiKeyStorageTlsCurveID) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.AerospikeApiKeyStorageTlsCurveID")); err != nil {
+		return 0, err
+	}
+
+	switch m.CurveId.(type) {
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP256:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetCurveP256())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP384:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetCurveP384())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP521:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetCurveP521())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_X_25519:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetX_25519())
+		if err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil
