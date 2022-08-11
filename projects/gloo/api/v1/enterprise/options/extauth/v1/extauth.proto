@@ -1422,9 +1422,12 @@ service ExtAuthDiscoveryService {
     }
 }
 
+message RawApiKey {
+    string api_key = 1;
+}
 service ApiKeyService {
-    rpc Create (string) returns (ApiKey) {}
-    rpc Read (string) returns (ApiKey) {}
+    rpc Create (RawApiKey) returns (ApiKey) {}
+    rpc Read (RawApiKey) returns (ApiKey) {}
     rpc Update (ApiKey) returns (ApiKey) {}
-    rpc Delete (string) returns (google.protobuf.Empty) {}
+    rpc Delete (RawApiKey) returns (google.protobuf.Empty) {}
 }
