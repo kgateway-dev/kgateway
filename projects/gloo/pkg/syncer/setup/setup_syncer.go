@@ -968,7 +968,7 @@ func startLeaderElection(ctx context.Context, electionFactory leaderelector.Elec
 		OnStartedLeading: func(c context.Context) {
 			contextutils.LoggerFrom(c).Info("starting leadership")
 		},
-		OnNewLeader:      func(leaderId string) {
+		OnNewLeader: func(leaderId string) {
 			contextutils.LoggerFrom(ctx).Infof("new leader elected with ID: %s", leaderId)
 		},
 		OnStoppedLeading: func() {
