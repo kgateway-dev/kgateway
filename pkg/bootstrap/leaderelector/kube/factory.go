@@ -46,7 +46,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config leaderel
 	l, err := k8sleaderelection.NewLeaderElector(
 		k8sleaderelection.LeaderElectionConfig{
 			Lock: resourceLock,
-			// Define the following values according to the defaults according to:
+			// Define the following values according to the defaults:
 			// https://github.com/kubernetes/client-go/blob/master/tools/leaderelection/leaderelection.go
 			LeaseDuration: 15 * time.Second,
 			RenewDeadline: 10 * time.Second,
