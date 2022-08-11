@@ -334,10 +334,10 @@ var _ = Describe("RBAC Test", func() {
 				})
 			})
 
-			Context("kube-lease-mutator", func() {
+			Context("kube-leader-election", func() {
 				BeforeEach(func() {
 					resourceBuilder = ResourceBuilder{
-						Name: "kube-lease-mutator",
+						Name: "kube-leader-election",
 						Labels: map[string]string{
 							"app":  "gloo",
 							"gloo": "rbac",
@@ -348,11 +348,16 @@ var _ = Describe("RBAC Test", func() {
 								Resources: []string{"leases"},
 								Verbs:     []string{"*"},
 							},
+							{
+								APIGroups: []string{""},
+								Resources: []string{"configmaps"},
+								Verbs:     []string{"*"},
+							},
 						},
 						RoleRef: rbacv1.RoleRef{
 							APIGroup: "rbac.authorization.k8s.io",
 							Kind:     "ClusterRole",
-							Name:     "kube-lease-mutator",
+							Name:     "kube-leader-election",
 						},
 						Subjects: []rbacv1.Subject{
 							{

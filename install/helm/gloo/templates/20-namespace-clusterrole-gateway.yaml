@@ -29,7 +29,7 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: kube-lease-mutator{{ include "gloo.rbacNameSuffix" . }}
+  name: kube-leader-election{{ include "gloo.rbacNameSuffix" . }}
   {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
   {{- end }}
@@ -38,11 +38,17 @@ metadata:
     gloo: rbac
 rules:
 - apiGroups:
-    - coordination.k8s.io
+  - coordination.k8s.io
   resources:
-    - leases
+  - leases
   verbs:
-    - "*"
+  - "*"
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - "*"
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -52,8 +58,8 @@ metadata:
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
-        app: gloo
-        gloo: rbac
+      app: gloo
+      gloo: rbac
 rules:
 - apiGroups:
   - gloo.solo.io
