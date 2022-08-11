@@ -2383,6 +2383,10 @@ func (m *UserSession_InternalSession) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetTargetDomain(), target.GetTargetDomain()) != 0 {
+		return false
+	}
+
 	return true
 }
 
@@ -2443,6 +2447,10 @@ func (m *UserSession_RedisSession) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetPreExpiryBuffer(), target.GetPreExpiryBuffer()) {
 			return false
 		}
+	}
+
+	if strings.Compare(m.GetTargetDomain(), target.GetTargetDomain()) != 0 {
+		return false
 	}
 
 	return true
