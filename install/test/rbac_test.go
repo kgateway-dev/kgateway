@@ -354,11 +354,18 @@ var _ = Describe("RBAC Test", func() {
 							Kind:     "ClusterRole",
 							Name:     "kube-lease-mutator",
 						},
-						Subjects: []rbacv1.Subject{{
-							Kind:      "ServiceAccount",
-							Name:      "gloo",
-							Namespace: namespace,
-						}},
+						Subjects: []rbacv1.Subject{
+							{
+								Kind:      "ServiceAccount",
+								Name:      "gloo",
+								Namespace: namespace,
+							},
+							{
+								Kind:      "ServiceAccount",
+								Name:      "discovery",
+								Namespace: namespace,
+							},
+						},
 					}
 				})
 				Context("cluster scope", func() {

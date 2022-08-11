@@ -22,6 +22,13 @@ func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAc
 	permissions.AddExpectedPermission(
 		"gloo-system.gloo",
 		namespace,
+		[]string{"coordination.k8s.io"},
+		[]string{"leases"},
+		[]string{"*"},
+	)
+	permissions.AddExpectedPermission(
+		"gloo-system.gloo",
+		namespace,
 		[]string{"gloo.solo.io"},
 		[]string{"upstreams", "upstreamgroups", "proxies"},
 		[]string{"get", "list", "watch", "update"})
@@ -69,6 +76,13 @@ func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAc
 		[]string{"get", "list", "watch", "update"})
 
 	// Discovery
+	permissions.AddExpectedPermission(
+		"gloo-system.discovery",
+		namespace,
+		[]string{"coordination.k8s.io"},
+		[]string{"leases"},
+		[]string{"*"},
+	)
 	permissions.AddExpectedPermission(
 		"gloo-system.discovery",
 		namespace,
