@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	kube2 "github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
@@ -1154,6 +1156,18 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	}
 	readGatewaysFromAllNamespaces := settings.GetGateway().GetReadGatewaysFromAllNamespaces()
 
+	// Choose the LeaderElectionFactory
+	var electionFactory leaderelector.ElectionFactory
+	if settings.GetKubernetesConfigSource() != nil {
+		// If the component is configured to use Kubernetes as the source for configuration,
+		// we will also use kubernetes as the source for leader election
+		electionFactory = kube2.NewElectionFactory(cfg)
+	} else {
+		// Otherwise, we will use the no-op leader election, meaning only a single replica can be run
+		// at once, and it will be treated as the "leader"
+		electionFactory = singlereplica.NewElectionFactory()
+	}
+
 	return bootstrap.Opts{
 		Upstreams:                    upstreamFactory,
 		KubeServiceClient:            kubeServiceClient,
@@ -1175,8 +1189,6 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
 		GatewayControllerEnabled:     gatewayMode,
 		ProxyCleanup:                 proxyCleanup,
-
-		// Temporary, just introduce a single replica placeholder
-		LeaderElectionFactory: singlereplica.NewElectionFactory(),
+		LeaderElectionFactory:        electionFactory,
 	}, nil
 }

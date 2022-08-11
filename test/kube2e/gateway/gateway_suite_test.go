@@ -129,6 +129,9 @@ settings:
   replaceInvalidRoutes: true
 gateway:
   persistProxySpec: true
+gloo:
+  deployment:
+    replicas: 2
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0

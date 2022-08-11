@@ -45,10 +45,12 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config leaderel
 
 	l, err := k8sleaderelection.NewLeaderElector(
 		k8sleaderelection.LeaderElectionConfig{
-			Lock:          resourceLock,
-			LeaseDuration: 15 * time.Second, // Default value according to docs
-			RenewDeadline: 10 * time.Second, // Default value according to docs
-			RetryPeriod:   2 * time.Second,  // Default value according to docs
+			Lock: resourceLock,
+			// Define the following values according to the defaults according to:
+			// https://github.com/kubernetes/client-go/blob/master/tools/leaderelection/leaderelection.go
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 10 * time.Second,
+			RetryPeriod:   2 * time.Second,
 			Callbacks: k8sleaderelection.LeaderCallbacks{
 				OnStartedLeading: func(callbackCtx context.Context) {
 					contextutils.LoggerFrom(ctx).Debugf("Started Leading")
