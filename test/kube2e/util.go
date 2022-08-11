@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -107,8 +108,13 @@ gatewayProxies:
 func EventuallyReachesConsistentState(installNamespace string) {
 	metricsPort := 9091
 	metricsPortString := strconv.Itoa(metricsPort)
-	portFwd := exec.Command("kubectl", "port-forward", "-n", installNamespace,
-		"deployment/gloo", metricsPortString)
+	portFwd := exec.Command(
+		"kubectl",
+		"port-forward",
+		"-n",
+		installNamespace,
+		"deployment/gloo",
+		metricsPortString)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
 	err := portFwd.Start()
@@ -120,26 +126,27 @@ func EventuallyReachesConsistentState(installNamespace string) {
 		}
 	}()
 
-	// make sure we eventually reach an eventually consistent state
-	lastSnapOut := getSnapOut(metricsPortString)
+	// Gloo components are configured to log to the Info level by default
+	EventuallyLogLevel(metricsPort, zapcore.InfoLevel)
 
 	eventuallyConsistentPollingInterval := 7 * time.Second // >= 5s for metrics reporting, which happens every 5s
 	time.Sleep(eventuallyConsistentPollingInterval)
 
-	Eventually(func() bool {
+	// make sure we eventually reach an eventually consistent state
+	lastSnapOut := getSnapOut(metricsPortString)
+
+	EventuallyWithOffset(1, func() bool {
 		currentSnapOut := getSnapOut(metricsPortString)
 		consistent := lastSnapOut == currentSnapOut
 		lastSnapOut = currentSnapOut
 		return consistent
 	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(true))
 
-	Consistently(func() string {
+	ConsistentlyWithOffset(1, func() string {
 		currentSnapOut := getSnapOut(metricsPortString)
+		log.Printf("Current Snapout: %s, LastSnapOut: %s", currentSnapOut, lastSnapOut)
 		return currentSnapOut
 	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(lastSnapOut))
-
-	// Gloo components are configured to log to the Info level by default
-	EventuallyLogLevel(metricsPort, zapcore.InfoLevel)
 }
 
 // Copied from: https://github.com/solo-io/go-utils/blob/176c4c008b4d7cde836269c7a817f657b6981236/testutils/assertions.go#L20
