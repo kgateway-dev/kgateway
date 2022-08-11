@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -135,18 +134,18 @@ func EventuallyReachesConsistentState(installNamespace string) {
 	// make sure we eventually reach an eventually consistent state
 	lastSnapOut := getSnapOut(metricsPortString)
 
-	EventuallyWithOffset(1, func() bool {
+	consistentlyInARow := 0
+	EventuallyWithOffset(1, func() int {
 		currentSnapOut := getSnapOut(metricsPortString)
 		consistent := lastSnapOut == currentSnapOut
 		lastSnapOut = currentSnapOut
-		return consistent
-	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(true))
-
-	ConsistentlyWithOffset(1, func() string {
-		currentSnapOut := getSnapOut(metricsPortString)
-		log.Printf("Current Snapout: %s, LastSnapOut: %s", currentSnapOut, lastSnapOut)
-		return currentSnapOut
-	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(lastSnapOut))
+		if consistent {
+			consistentlyInARow += 1
+		} else {
+			consistentlyInARow = 0
+		}
+		return consistentlyInARow
+	}, "80s", eventuallyConsistentPollingInterval).Should(Equal(5))
 }
 
 // Copied from: https://github.com/solo-io/go-utils/blob/176c4c008b4d7cde836269c7a817f657b6981236/testutils/assertions.go#L20
