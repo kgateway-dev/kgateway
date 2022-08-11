@@ -157,6 +157,9 @@ spec:
       initContainers:
       {{- include $spec.extraInitContainersHelper . | nindent 6 }}
       {{- end }}
+      {{ - with .Values.gatewayProxies.gatewayProxy.kind.deployment.deploymentSpecSansResources.podSpec.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{ - end }}
       containers:
       - args:
           - --disable-hot-restart

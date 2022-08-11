@@ -23,6 +23,9 @@ spec:
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-cleanup
+      {{- with .Values.gateway.cleanupJob.job.podSpec.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}

@@ -39,6 +39,9 @@ spec:
       {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
+      {{- with .Values.ingressProxy.deployment.deploymentSpec.deploymentSpecSansResources.podSpec.priorityClassName}}
+      priorityClassName: {{ . }}
+      {{- end }}
       containers:
       - args: ["--disable-hot-restart"]
         env:

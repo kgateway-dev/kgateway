@@ -67,6 +67,9 @@ spec:
           defaultMode: 420
           secretName: {{ .Values.gateway.validation.secretName }}
       {{- end }}
+      {{- with .Values.gloo.deployment.deploymentSpec.deploymentSpecSansResources.podSpec.priorityClassName}}
+      priorityClassName: {{ . }}
+      {{- end }}
       containers:
 {{- if .Values.global.glooMtls.enabled }}
       {{- $sdsImage := merge .Values.global.glooMtls.sds.image .Values.global.image }}

@@ -53,6 +53,9 @@ spec:
         {{- if not .Values.accessLogger.floatingUserId }}
         runAsUser: {{ printf "%.0f" (float64 .Values.accessLogger.runAsUser) -}}
         {{- end }}
+      {{- with .Values.accessLogger.deploymentSpec.deploymentSpecSansResources.podSpec.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
       containers:
         - image: {{ template "gloo.image" $image }}
           imagePullPolicy: {{ $image.pullPolicy }}

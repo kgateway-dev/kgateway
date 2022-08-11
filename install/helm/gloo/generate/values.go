@@ -67,28 +67,30 @@ type ResourceRequirements struct {
 	Limits   *ResourceAllocation `json:"limits,omitempty" desc:"resource limits of this container"`
 	Requests *ResourceAllocation `json:"requests,omitempty" desc:"resource requests of this container"`
 }
+
 type PodSpec struct {
-	RestartPolicy *string                `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
-	NodeName      *string                `json:"nodeName,omitempty" desc:"name of node to run on"`
-	NodeSelector  map[string]string      `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
-	Tolerations   []*appsv1.Toleration   `json:"tolerations,omitempty"`
-	Affinity      map[string]interface{} `json:"affinity,omitempty"`
-	HostAliases   []interface{}          `json:"hostAliases,omitempty"`
+	RestartPolicy     *string                `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
+	PriorityClassName *string                `json:"priorityClassName,omitempty" desc:"name of a defined priority class"`
+	NodeName          *string                `json:"nodeName,omitempty" desc:"name of node to run on"`
+	NodeSelector      map[string]string      `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
+	Tolerations       []*appsv1.Toleration   `json:"tolerations,omitempty"`
+	Affinity          map[string]interface{} `json:"affinity,omitempty"`
+	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
 }
 
 type JobSpec struct {
-	*PodSpec
+	PodSpec *PodSpec `json:"podSpec,omitempty" desc:""`
 }
 
 type DeploymentSpecSansResources struct {
 	Replicas  *int             `json:"replicas,omitempty" desc:"number of instances to deploy"`
 	CustomEnv []*appsv1.EnvVar `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
-	*PodSpec
+	PodSpec   *PodSpec         `json:"podSpec,omitempty" desc:""`
 }
 
 type DeploymentSpec struct {
-	DeploymentSpecSansResources
-	Resources *ResourceRequirements `json:"resources,omitempty" desc:"resources for the main pod in the deployment"`
+	DeploymentSpecSansResources DeploymentSpecSansResources `json:"deploymentSpecSansResources" desc:""`
+	Resources                   *ResourceRequirements       `json:"resources,omitempty" desc:"resources for the main pod in the deployment"`
 	*KubeResourceOverride
 }
 
@@ -164,10 +166,10 @@ type KnativeProxy struct {
 	ExtraClusterIngressProxyLabels      map[string]string     `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment."`
 	ExtraClusterIngressProxyAnnotations map[string]string     `json:"extraClusterIngressProxyAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the cluster ingress proxy deployment."`
 	Internal                            *KnativeProxyInternal `json:"internal,omitempty" desc:"kube resource overrides for knative internal proxy resources"`
-	*DeploymentSpec
-	*ServiceSpec
-	ConfigMap  *KubeResourceOverride `json:"configMap,omitempty"`
-	Deployment *KubeResourceOverride `json:"deployment,omitempty"`
+	DeploymentSpec                      *DeploymentSpec       `json:"deploymentSpec" desc:""`
+	ServiceSpec                         *ServiceSpec          `json:"serviceSpec,omitempty" desc:""`
+	ConfigMap                           *KubeResourceOverride `json:"configMap,omitempty"`
+	Deployment                          *KubeResourceOverride `json:"deployment,omitempty"`
 }
 
 type KnativeProxyInternal struct {
@@ -230,7 +232,7 @@ type GlooDeployment struct {
 	ExtraGlooAnnotations  map[string]string `json:"extraGlooAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment."`
 	LivenessProbeEnabled  *bool             `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for Gloo Edge (default is false)."`
 	OssImageTag           *string           `json:"ossImageTag,omitempty" desc:"Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with."`
-	*DeploymentSpec
+	DeploymentSpec        *DeploymentSpec   `json:"deploymentSpec" desc:""`
 }
 
 type Discovery struct {
@@ -251,7 +253,7 @@ type DiscoveryDeployment struct {
 	ExtraDiscoveryLabels      map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment."`
 	ExtraDiscoveryAnnotations map[string]string `json:"extraDiscoveryAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the gloo edge discovery deployment."`
 	EnablePodSecurityContext  *bool             `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
-	*DeploymentSpec
+	DeploymentSpec            *DeploymentSpec   `json:"deploymentSpec" desc:""`
 }
 
 // Configuration options for the Upstream Discovery Service (UDS).
@@ -302,39 +304,39 @@ type Webhook struct {
 }
 
 type Job struct {
-	Image *Image `json:"image,omitempty"`
-	*JobSpec
+	Image                    *Image                 `json:"image,omitempty"`
+	JobSpec                  *JobSpec               `json:"jobSpec,omitempty" desc:""`
 	KubeResourceOverride     map[string]interface{} `json:"kubeResourceOverride,omitempty" desc:"override fields in the gateway-certgen job."`
 	MtlsKubeResourceOverride map[string]interface{} `json:"mtlsKubeResourceOverride,omitempty" desc:"override fields in the gloo-mtls-certgen job."`
 }
 
 type CertGenJob struct {
-	Job
-	Enabled                 *bool                 `json:"enabled,omitempty" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
-	SetTtlAfterFinished     *bool                 `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
-	TtlSecondsAfterFinished *int                  `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
-	FloatingUserId          *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser               *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	Resources               *ResourceRequirements `json:"resources,omitempty"`
-	RunOnUpdate             *bool                 `json:"runOnUpdate,omitempty" desc:"enable to run the job also on pre-upgrade"`
-	ActiveDeadlineSeconds   *int                  `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
-	Cron                    *CertGenCron          `json:"cron,omitempty" desc:"CronJob parameters"`
+	Job                 Job                   `json:"job,omitempty" desc:""`
+	Enabled             *bool                 `json:"enabled,omitempty" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
+	SetTtlAfterFinished *bool                 `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished on the job. Defaults to true"`
+	FloatingUserId      *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser           *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	Resources           *ResourceRequirements `json:"resources,omitempty"`
+	RunOnUpdate         *bool                 `json:"runOnUpdate,omitempty" desc:"enable to run the job also on pre-upgrade"`
+	Cron                *CertGenCron          `json:"cron,omitempty" desc:"CronJob parameters"`
 }
 
 type RolloutJob struct {
-	Image                   *Image   `json:"image,omitempty"`
-	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
-	ActiveDeadlineSeconds   *int     `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	Job            *JobSpec              `json:"job,omitempty" desc:""`
+	Enabled        *bool                 `json:"enabled,omitempty" desc:"Enable the job that applies default Gloo Edge custom resources at install and upgrade time (default true)."`
+	Image          *Image                `json:"image,omitempty"`
+	Resources      *ResourceRequirements `json:"resources,omitempty"`
+	FloatingUserId *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser      *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 }
 
 type CleanupJob struct {
-	Image                   *Image   `json:"image,omitempty"`
-	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
-	ActiveDeadlineSeconds   *int     `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	Job            *JobSpec              `json:"job,omitempty" desc:""`
+	Enabled        *bool                 `json:"enabled,omitempty" desc:"Enable the job that removes Gloo Edge custom resources when Gloo Edge is uninstalled (default true)."`
+	Image          *Image                `json:"image,omitempty"`
+	Resources      *ResourceRequirements `json:"resources,omitempty"`
+	FloatingUserId *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser      *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 }
 
 /*
@@ -420,7 +422,7 @@ type GatewayProxyKind struct {
 	DaemonSet  *DaemonSetSpec          `json:"daemonSet,omitempty" desc:"set to deploy as a kubernetes daemonset, otherwise nil"`
 }
 type GatewayProxyDeployment struct {
-	*DeploymentSpecSansResources
+	DeploymentSpecSansResources *DeploymentSpecSansResources `json:"deploymentSpecSansResources" desc:""`
 	*KubeResourceOverride
 }
 
@@ -519,7 +521,7 @@ type AccessLogger struct {
 	ExtraAccessLoggerAnnotations map[string]string     `json:"extraAccessLoggerAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the access logger deployment."`
 	Service                      *KubeResourceOverride `json:"service,omitempty"`
 	Deployment                   *KubeResourceOverride `json:"deployment,omitempty"`
-	*DeploymentSpec
+	DeploymentSpec               *DeploymentSpec       `json:"deploymentSpec" desc:""`
 }
 
 type GatewayProxyConfigMap struct {
@@ -540,7 +542,7 @@ type IngressDeployment struct {
 	ExtraIngressLabels      map[string]string `json:"extraIngressLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment."`
 	ExtraIngressAnnotations map[string]string `json:"extraIngressAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the ingress deployment."`
 	Stats                   *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
-	*DeploymentSpec
+	DeploymentSpec          *DeploymentSpec   `json:"deploymentSpec" desc:""`
 }
 
 type IngressProxy struct {
@@ -549,7 +551,7 @@ type IngressProxy struct {
 	Tracing         *string                 `json:"tracing,omitempty"`
 	LoopBackAddress *string                 `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	Label           *string                 `json:"label,omitempty" desc:"Value for label gloo. Use a unique value to use several ingress proxy instances in the same cluster. Default is ingress-proxy"`
-	*ServiceSpec
+	ServiceSpec     *ServiceSpec            `json:"serviceSpec,omitempty" desc:""`
 }
 
 type IngressProxyDeployment struct {
@@ -562,7 +564,7 @@ type IngressProxyDeployment struct {
 	RunAsUser               *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
 	ExtraIngressProxyLabels map[string]string `json:"extraIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress proxy deployment."`
 	Stats                   *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
-	*DeploymentSpec
+	DeploymentSpec          *DeploymentSpec   `json:"deploymentSpec" desc:""`
 }
 
 type ServiceSpec struct {
