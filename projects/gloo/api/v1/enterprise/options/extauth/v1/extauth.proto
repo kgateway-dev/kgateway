@@ -834,6 +834,8 @@ message AerospikeApiKeyStorage {
             uint32 curve_p384 = 2;
             uint32 curve_p521 = 3;
             uint32 x_25519 = 4;
+        }
+    }
 }
 
 message ApiKey {
