@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/ext-auth-service/issues/314
+    description: >
+      Adds the new field `TargetDomain` to our `RedisSession` and `InternalSession`
+      on our extauth api to be used to validate against the request hostname.
+    resolvesIssue: false
