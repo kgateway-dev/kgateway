@@ -79,7 +79,9 @@ type PodSpec struct {
 }
 
 type JobSpec struct {
-	PodSpec *PodSpec `json:"podSpec,omitempty" desc:""`
+	PodSpec                 *PodSpec `json:"podSpec,omitempty" desc:""`
+	ActiveDeadlineSeconds   *int     `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 }
 
 type DeploymentSpecSansResources struct {
