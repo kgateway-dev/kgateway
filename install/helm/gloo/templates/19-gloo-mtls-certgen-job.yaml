@@ -26,6 +26,9 @@ spec:
     metadata:
       labels:
         gloo: gloo-mtls-certs
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
+        sidecar.istio.io/inject: "false"
+        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: certgen
@@ -42,6 +45,9 @@ spec:
             {{- if not .Values.gateway.certGenJob.floatingUserId }}
             runAsUser: {{ printf "%.0f" (float64 .Values.gateway.certGenJob.runAsUser) -}}
             {{- end }}
+          {{- with .Values.gateway.certGenJob.resources }}
+          resources: {{ toYaml . | nindent 12}}
+          {{- end }}
           env:
             - name: POD_NAMESPACE
               valueFrom:
@@ -50,12 +56,8 @@ spec:
           args:
             - "--secret-name=gloo-mtls-certs"
             - "--svc-name=gloo"
-      restartPolicy: Never
-  # this feature is still in Alpha, which means it must be manually enabled in the k8s api server
-  # with --feature-gates="TTLAfterFinished=true". This flag also works with minikube start ...
-  # if the feature flag is not enabled in the k8s api server, this setting will be silently ignored at creation time
-  {{- if semverCompare ">=1.12" .Capabilities.KubeVersion.GitVersion }}
-  ttlSecondsAfterFinished: 60
+  {{- if .Values.gateway.certGenJob.setTtlAfterFinished }}
+  ttlSecondsAfterFinished: {{ .Values.gateway.certGenJob.ttlSecondsAfterFinished }}
   {{- end }}
 {{- end }} {{/* if .Values.global.glooMtls.enabled */}}
 {{- end }} {{/* define gateway.certGenJob.JobSpec*/}}

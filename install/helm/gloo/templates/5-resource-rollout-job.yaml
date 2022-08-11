@@ -1,3 +1,4 @@
+{{- if .Values.gateway.rolloutJob.enabled }}
 {{- $image := .Values.gateway.rolloutJob.image }}
 {{- if .Values.global }}
 {{- $image = merge .Values.gateway.rolloutJob.image .Values.global.image }}
@@ -20,9 +21,13 @@ spec:
     metadata:
       labels:
         gloo: resource-rollout
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
+        sidecar.istio.io/inject: "false"
+        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-rollout
+      {{- include "gloo.podSpecStandardFields" .Values.gateway.rolloutJob | nindent 6 -}}
       {{- with .Values.gateway.cleanupJob.job.podSpec.priorityClassName }}
       priorityClassName: {{ . }}
       {{- end }}
@@ -35,6 +40,9 @@ spec:
             {{- if not .Values.gateway.rolloutJob.floatingUserId }}
             runAsUser: {{ printf "%.0f" (float64 .Values.gateway.rolloutJob.runAsUser) -}}
             {{- end }}
+          {{- with .Values.gateway.rolloutJob.resources }}
+          resources: {{ toYaml . | nindent 12}}
+          {{- end }}
           command:
           - /bin/sh
           - -c
@@ -59,7 +67,6 @@ spec:
             {{- range include "gloo.gatewayNamespaces" $ | fromJsonArray }}
             kubectl annotate gateways.gateway.solo.io -n {{ . }} -l app=gloo helm.sh/resource-policy- || exit $?
             {{- end }}
-      restartPolicy: OnFailure
   ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
@@ -153,3 +160,4 @@ subjects:
   name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
 {{- end -}}{{/* if .Values.global.glooRbac.create */}}
+{{- end }}{{/* if .Values.gateway.rolloutJob.enabled  */}}

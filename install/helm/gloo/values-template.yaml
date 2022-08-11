@@ -91,14 +91,18 @@ gateway:
       schedule: "* * * * *"
     runOnUpdate: false
   rolloutJob:
+    enabled: true
     image:
       repository: kubectl
+    restartPolicy: OnFailure
     runAsUser: 10101
     activeDeadlineSeconds: 100
     ttlSecondsAfterFinished: 60
   cleanupJob:
+    enabled: true
     image:
       repository: kubectl
+    restartPolicy: OnFailure
     runAsUser: 10101
     activeDeadlineSeconds: 100
     ttlSecondsAfterFinished: 60
