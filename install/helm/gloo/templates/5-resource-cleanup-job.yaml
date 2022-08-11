@@ -28,7 +28,7 @@ spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-cleanup
       {{- include "gloo.podSpecStandardFields" .Values.gateway.cleanupJob | nindent 6 -}}
-      {{- with .Values.gateway.cleanupJob.job.podSpec.priorityClassName }}
+      {{- with .Values.gateway.cleanupJob.priorityClassName }}
       priorityClassName: {{ . }}
       {{- end }}
       containers:
