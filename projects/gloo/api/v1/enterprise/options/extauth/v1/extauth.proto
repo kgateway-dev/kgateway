@@ -740,6 +740,12 @@ message OauthSecret {
 }
 
 message ApiKeyAuth {
+    oneof storage_backend {
+        K8sSecretApiKeyStorage k8s_secret_apikey_storage = 1;
+        AerospikeApiKeyStorage aerospike_apikey_storage = 2;
+    }
+}
+message K8sSecretApiKeyStorage {
     // Identify all valid API key secrets that match the provided label selector.<br/>
     // API key secrets must be in one of the watch namespaces for gloo to locate them.
     map<string, string> label_selector = 1;
@@ -769,17 +775,71 @@ message ApiKeyAuth {
     }
 }
 
-message ApiKeySecret {
-    // If true, generate an API key.
-    // This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API.
-    bool generate_api_key = 1 [deprecated = true];
-    // The value of the API key.
+message AerospikeApiKeyStorage {
+	string hostname = 1;
+	string namespace = 2;
+	string set = 3;
+	int32 port = 4;
+	int32 batch_size = 5;
+
+	// Write settings for the desired consistency guarantee when committing a transaction on the aerospike server
+    oneof commit_level {
+        // commit_all indicates the server should wait until successfully committing master and all replicas.
+        uint32 commit_all = 6;
+        // commit_master indicates the server should wait until successfully committing master only.
+        uint32 commit_master = 7;
+    }
+	// Read settings for strong consistency (SC)
+    oneof read_mode_sc {
+        // session ensures this client will only see an increasing sequence of record versions.
+        // Server only reads from master.  This is the default.
+        uint32 session = 8;
+        // linearize ensures ALL clients will only see an increasing sequence of record versions.
+        // Server only reads from master.
+        uint32 linearize = 9;
+
+        // replica indicates that the server may read from master or any full (non-migrating) replica.
+        // Increasing sequence of record versions is not guaranteed.
+        uint32 replica = 10;
+
+        // allow_unavailable indicates that the server may read from master or any full (non-migrating) replica or from unavailable
+        // partitions.  Increasing sequence of record versions is not guaranteed.
+        uint32 allow_unavailable = 11;
+    }
+	// Read settings for availability (AP)
+    oneof read_mode_ap {
+        // one indicates that a single node should be involved in the read operation.
+        uint32 one = 12;
+
+        // all indicates that all duplicates should be consulted in
+        // the read operation.
+        uint32 all = 13;
+    }
+
+	// TLS Settings, mtls is enabled on the server side
+	string node_tls_name = 14;
+	string cert_path = 15;
+	string key_path = 16;
+	// skip the client verifying the server's certificate chain and host name
+	bool allow_insecure = 17;
+	// If the RootCA is not set, add the system certs bt default
+	string root_ca_path = 18;
+	// TLS version, defaults to 1.3
+	string tls_version = 19;
+	// TLS identifiers for the elliptic curves used
+    repeated tlsCurveID tls_curve_groups = 20;
+    message tlsCurveID {
+        oneof curve_id {
+            uint32 curve_p256 = 1;
+            uint32 curve_p384 = 2;
+            uint32 curve_p521 = 3;
+            uint32 x_25519 = 4;
+}
+
+message ApiKey {
+    // The string value of the API key.
     string api_key = 2;
-    // A list of labels (key=value) for the apikey secret.<br/>
-    // These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret.
-    // This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API.
-    repeated string labels = 3 [deprecated = true];
-    // If the secret data contains entries in addition to the API key one, they will be copied to this field.
+    // additional data the client needs associated with this API key
     map<string, string> metadata = 4;
 }
 
@@ -1358,4 +1418,11 @@ service ExtAuthDiscoveryService {
       body : "*"
     };
     }
+}
+
+service ApiKeyService {
+    rpc Create (string) returns (ApiKey) {}
+    rpc Read (string) returns (ApiKey) {}
+    rpc Update (ApiKey) returns (ApiKey) {}
+    rpc Delete (string) returns (google.protobuf.Empty) {}
 }
