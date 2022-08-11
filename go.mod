@@ -60,6 +60,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.8.1
 	go.opencensus.io v0.23.0
+	go.uber.org/atomic v1.9.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
@@ -82,8 +83,6 @@ require (
 	sigs.k8s.io/controller-runtime v0.10.3
 	sigs.k8s.io/yaml v1.3.0
 )
-
-require go.uber.org/atomic v1.9.0
 
 require (
 	cloud.google.com/go v0.98.0 // indirect

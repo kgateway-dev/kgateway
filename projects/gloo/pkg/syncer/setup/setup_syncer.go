@@ -965,11 +965,15 @@ func startLeaderElection(ctx context.Context, electionFactory leaderelector.Elec
 		// no-op all the callbacks for now
 		// at the moment, leadership functionality is performed within components
 		// in the future we could pull that out and let these callbacks change configuration
-		OnStartedLeading: func(c context.Context) {},
-		OnNewLeader:      func(leaderId string) {},
+		OnStartedLeading: func(c context.Context) {
+			contextutils.LoggerFrom(c).Info("starting leadership")
+		},
+		OnNewLeader:      func(leaderId string) {
+			contextutils.LoggerFrom(ctx).Infof("new leader elected with ID: %s", leaderId)
+		},
 		OnStoppedLeading: func() {
 			// Kill app if we lose leadership, we need to be VERY sure we don't continue any leader election processes.
-			contextutils.LoggerFrom(ctx).Fatalf("lost leadership, quitting app")
+			contextutils.LoggerFrom(ctx).Fatal("lost leadership, quitting app")
 		},
 	}
 	return electionFactory.StartElection(ctx, electionConfig)
