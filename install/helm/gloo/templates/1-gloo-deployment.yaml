@@ -67,7 +67,7 @@ spec:
           defaultMode: 420
           secretName: {{ .Values.gateway.validation.secretName }}
       {{- end }}
-      {{- with .Values.gloo.deployment.deploymentSpec.deploymentSpecSansResources.podSpec.priorityClassName}}
+      {{- with .Values.gloo.deployment.priorityClassName}}
       priorityClassName: {{ . }}
       {{- end }}
       containers:

@@ -53,7 +53,7 @@ spec:
         {{- if not .Values.accessLogger.floatingUserId }}
         runAsUser: {{ printf "%.0f" (float64 .Values.accessLogger.runAsUser) -}}
         {{- end }}
-      {{- with .Values.accessLogger.deploymentSpec.deploymentSpecSansResources.podSpec.priorityClassName }}
+      {{- with .Values.accessLogger.priorityClassName }}
       priorityClassName: {{ . }}
       {{- end }}
       containers:

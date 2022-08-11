@@ -47,7 +47,7 @@ spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: discovery
       {{- include "gloo.podSpecStandardFields" .Values.discovery.deployment | nindent 6 -}}
-      {{- with .Values.discovery.deployment.deploymentSpec.deploymentSpecSansResources.podSpec.priorityClassName}}
+      {{- with .Values.discovery.deployment.priorityClassName}}
       priorityClassName: {{ . }}
       {{- end }}
       containers:

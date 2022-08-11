@@ -43,7 +43,7 @@ spec:
         {{- if not .Values.ingress.deployment.floatingUserId }}
         runAsUser: {{ printf "%.0f" (float64 .Values.ingress.deployment.runAsUser) -}}
         {{- end }}
-      {{- with .Values.ingress.deployment.deploymentSpec.deploymentSpecSansResources.podSpec.priorityClassName }}
+      {{- with .Values.ingress.deployment.priorityClassName }}
       priorityClassName: {{ . }}
       {{- end }}
       containers:

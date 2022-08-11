@@ -157,7 +157,7 @@ spec:
       initContainers:
       {{- include $spec.extraInitContainersHelper . | nindent 6 }}
       {{- end }}
-      {{ - with .Values.gatewayProxies.gatewayProxy.kind.deployment.deploymentSpecSansResources.podSpec.priorityClassName }}
+      {{ - with .Values.gatewayProxies.gatewayProxy.kind.deployment.priorityClassName }}
       priorityClassName: {{ . }}
       {{ - end }}
       containers:
