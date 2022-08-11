@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
 	"time"
 
 	"github.com/solo-io/gloo/test/helpers"
@@ -26,7 +27,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Consul e2e", func() {
+var _ = FDescribe("Consul e2e", func() {
 
 	var (
 		ctx            context.Context
@@ -120,7 +121,7 @@ var _ = Describe("Consul e2e", func() {
 		cancel()
 	})
 
-	It("works as expected", func() {
+	FIt("works as expected", func() {
 		_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -128,8 +129,6 @@ var _ = Describe("Consul e2e", func() {
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		})
-
-		time.Sleep(3 * time.Second)
 
 		By("requests only go to service with tag '1'")
 
@@ -150,27 +149,29 @@ var _ = Describe("Consul e2e", func() {
 			return svc1.C, nil
 		}, "2s", "0.2s").Should(Receive())
 
-		err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
-		Expect(err).NotTo(HaveOccurred())
+		for i := 1; i <= 500000; i++ {
+			err = consulInstance.RegisterService("my-svc", fmt.Sprintf("my-svc-loop-%v", i), envoyInstance.GlooAddr, []string{"svc", fmt.Sprintf("%v", i)}, svc2.Port)
+			Expect(err).NotTo(HaveOccurred())
+		}
 
-		// Wait a bit for the new endpoint information to propagate
-		time.Sleep(3 * time.Second)
+		time.Sleep(time.Second * 5) // wait for in sync
 
 		By("requests are load balanced between the two services")
-		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-			_, err := queryService()
-			if err != nil {
-				return svc1.C, err
-			}
-			return svc1.C, nil
-		}, "10s", "0.2s").Should(Receive())
 
+		// svc2 first to ensure we also still route to svc1 after registering svc2
 		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
 			_, err := queryService()
 			if err != nil {
 				return svc2.C, err
 			}
 			return svc2.C, nil
+		}, "10s", "0.2s").Should(Receive())
+		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
+			_, err := queryService()
+			if err != nil {
+				return svc1.C, err
+			}
+			return svc1.C, nil
 		}, "10s", "0.2s").Should(Receive())
 
 	})
@@ -186,8 +187,6 @@ var _ = Describe("Consul e2e", func() {
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		})
-
-		time.Sleep(3 * time.Second)
 
 		// Wait for endpoints to be discovered
 		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
