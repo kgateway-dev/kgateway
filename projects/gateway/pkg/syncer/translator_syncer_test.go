@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	"sync"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -43,7 +44,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
 		statusMetrics, err := metrics.NewConfigStatusMetrics(metrics.GetDefaultConfigStatusOptions())
 		Expect(err).NotTo(HaveOccurred())
-		curSyncer := newStatusSyncer(defaults.GlooSystem, fakeProxyClient, mockReporter, statusClient, statusMetrics)
+		curSyncer := newStatusSyncer(defaults.GlooSystem, fakeProxyClient, mockReporter, statusClient, statusMetrics, singlereplica.Identity())
 		syncer = &curSyncer
 	})
 
