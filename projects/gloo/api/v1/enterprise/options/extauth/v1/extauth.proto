@@ -1325,14 +1325,14 @@ message ExtAuthConfig {
     message ApiKeyAuthConfig {
 
         message KeyMetadata {
-            // The user is mapped as the name of `Secret` which contains the `ApiKeySecret`
+            // The user is mapped as the name of `Secret` which contains the `ApiKey`
             string username = 1;
-            // The metadata present on the `ApiKeySecret`.
+            // The metadata present on the `ApiKey`.
             map<string, string> metadata = 2;
         }
 
         // A mapping of valid API keys to their associated metadata.
-        // This map is automatically populated with the information from the relevant `ApiKeySecret`s.
+        // This map is automatically populated with the information from the relevant `ApiKey`s.
         map<string, KeyMetadata> valid_api_keys = 1 [(extproto.sensitive) = true];
 
         // (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key
