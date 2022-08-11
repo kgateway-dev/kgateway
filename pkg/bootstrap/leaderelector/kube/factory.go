@@ -14,11 +14,13 @@ import (
 
 var _ leaderelector.ElectionFactory = new(kubeElectionFactory)
 
+// kubeElectionFactory is the implementation for coordinating leader election using
+// the k8s leader election tool: https://github.com/kubernetes/client-go/tree/master/tools/leaderelection
 type kubeElectionFactory struct {
 	restCfg *rest.Config
 }
 
-func NewKubeElectionFactory(config *rest.Config) *kubeElectionFactory {
+func NewElectionFactory(config *rest.Config) *kubeElectionFactory {
 	return &kubeElectionFactory{
 		restCfg: config,
 	}

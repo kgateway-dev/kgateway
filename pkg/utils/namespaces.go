@@ -2,8 +2,6 @@ package utils
 
 import (
 	"os"
-
-	"github.com/solo-io/gloo/pkg/utils/setuputils"
 )
 
 func AllNamespaces(watchNamespaces []string) bool {
@@ -37,7 +35,7 @@ func ProcessWatchNamespaces(watchNamespaces []string, writeNamespace string) []s
 }
 
 func GetPodNamespace() string {
-	if podNamespace := os.Getenv(setuputils.PodNamespace); podNamespace != "" {
+	if podNamespace := os.Getenv("POD_NAMESPACE"); podNamespace != "" {
 		return podNamespace
 	}
 	return "gloo-system"

@@ -302,15 +302,13 @@ func (s *statusSyncer) forceSync() {
 func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 	var retryChan <-chan time.Time
 
-	sync := func() {
-		if s.identity.IsLeader() {
-			err := s.syncStatus(ctx)
-			if err != nil {
-				contextutils.LoggerFrom(ctx).Debugw("failed to sync status; will try again shortly.", "error", err)
-				retryChan = time.After(time.Second)
-			} else {
-				retryChan = nil
-			}
+	doSync := func() {
+		err := s.syncStatus(ctx)
+		if err != nil {
+			contextutils.LoggerFrom(ctx).Debugw("failed to sync status; will try again shortly.", "error", err)
+			retryChan = time.After(time.Second)
+		} else {
+			retryChan = nil
 		}
 	}
 
@@ -319,9 +317,9 @@ func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-retryChan:
-			sync()
+			doSync()
 		case <-s.syncNeeded:
-			sync()
+			doSync()
 		}
 	}
 }
@@ -396,13 +394,19 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 
 		reports := reporter.ResourceReports{clonedInputResource: subresourceStatuses}
 		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
-		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
-			errs = multierror.Append(errs, err)
+
+		if s.identity.IsLeader() {
+			if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
+				errs = multierror.Append(errs, err)
+			} else {
+				// The inputResource's status was successfully written, update the cache and metric with that status
+				status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
+				localInputResourceLastStatus[inputResource] = status
+			}
 		} else {
-			// The inputResource's status was successfully written, update the cache and metric with that status
-			status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
-			localInputResourceLastStatus[inputResource] = status
+			contextutils.LoggerFrom(ctx).Debugf("Not a leader, skipping reports writing")
 		}
+
 		status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
 		s.statusMetrics.SetResourceStatus(ctx, inputResource, status)
 	}

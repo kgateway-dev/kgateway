@@ -108,13 +108,14 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 			logger.Debugf("Failed writing report for proxies: %v", err)
 			multiErr = multierror.Append(multiErr, eris.Wrapf(err, "writing reports"))
 		}
-		// Update resource status metrics
-		for resource, report := range reports {
-			status := s.reporter.StatusFromReport(report, nil)
-			s.statusMetrics.SetResourceStatus(ctx, resource, status)
-		}
 	} else {
-		logger.Debugf("Not a leader, skipping status and metrics reporting")
+		logger.Debugf("Not a leader, skipping reports writing")
+	}
+
+	// Update resource status metrics
+	for resource, report := range reports {
+		status := s.reporter.StatusFromReport(report, nil)
+		s.statusMetrics.SetResourceStatus(ctx, resource, status)
 	}
 
 	//After reports are written for proxies, save in gateway syncer (previously gw watched for status changes to proxies)

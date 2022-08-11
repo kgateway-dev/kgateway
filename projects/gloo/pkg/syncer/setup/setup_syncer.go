@@ -1177,6 +1177,6 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		ProxyCleanup:                 proxyCleanup,
 
 		// Temporary, just introduce a single replica placeholder
-		LeaderElectionFactory: singlereplica.NewSingleReplicaElectionFactory(),
+		LeaderElectionFactory: singlereplica.NewElectionFactory(),
 	}, nil
 }

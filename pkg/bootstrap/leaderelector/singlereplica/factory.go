@@ -10,10 +10,12 @@ import (
 
 var _ leaderelector.ElectionFactory = new(singleReplicaElectionFactory)
 
+// singleReplicaElectionFactory runs leader election for components that do not support true leader election
+// The election is a no-op and returns an Identity that is always considered the "leader" since there is only one
 type singleReplicaElectionFactory struct {
 }
 
-func NewSingleReplicaElectionFactory() *singleReplicaElectionFactory {
+func NewElectionFactory() *singleReplicaElectionFactory {
 	return &singleReplicaElectionFactory{}
 }
 

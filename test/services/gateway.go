@@ -3,10 +3,11 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	"net"
 	"sync/atomic"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
@@ -437,7 +438,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		},
 		GatewayControllerEnabled: true,
 		ValidationOpts:           validationOpts,
-		LeaderElectionFactory: singlereplica.NewSingleReplicaElectionFactory(),
+		LeaderElectionFactory:    singlereplica.NewElectionFactory(),
 	}
 }
 
