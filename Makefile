@@ -1,7 +1,7 @@
 ##########################################################################################
 # run-ci-regression-tests - runs a set of regression tests. Set KUBE2E_TESTS = (gateway, gloo, gloomtls, glooctl, helm, ingress)
 # run-tests - runs tests (see https://github.com/solo-io/gloo/blob/master/test/e2e/README.md)
-# 
+#
 ##########################################################################################
 #----------------------------------------------------------------------------------
 # Base
@@ -191,6 +191,9 @@ clean:
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
+
+.PHONY: generate-all
+generate-all: generated-code
 
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-helm-files update-licenses init

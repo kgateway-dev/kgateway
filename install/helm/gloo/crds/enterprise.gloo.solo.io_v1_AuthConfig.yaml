@@ -33,14 +33,8 @@ spec:
                       properties:
                         aerospikeApikeyStorage:
                           properties:
-                            all:
-                              format: int32
-                              type: integer
                             allowInsecure:
                               type: boolean
-                            allowUnavailable:
-                              format: int32
-                              type: integer
                             batchSize:
                               format: int32
                               type: integer
@@ -56,27 +50,39 @@ spec:
                               type: string
                             keyPath:
                               type: string
-                            linearize:
-                              format: int32
-                              type: integer
                             namespace:
                               type: string
                             nodeTlsName:
                               type: string
-                            one:
-                              format: int32
-                              type: integer
                             port:
                               format: int32
                               type: integer
-                            replica:
-                              format: int32
-                              type: integer
+                            readModeAp:
+                              properties:
+                                readModeApAll:
+                                  format: int32
+                                  type: integer
+                                readModeApOne:
+                                  format: int32
+                                  type: integer
+                              type: object
+                            readModeSc:
+                              properties:
+                                readModeScAllowUnavailable:
+                                  format: int32
+                                  type: integer
+                                readModeScLinearize:
+                                  format: int32
+                                  type: integer
+                                readModeScReplica:
+                                  format: int32
+                                  type: integer
+                                readModeScSession:
+                                  format: int32
+                                  type: integer
+                              type: object
                             rootCaPath:
                               type: string
-                            session:
-                              format: int32
-                              type: integer
                             set:
                               type: string
                             tlsCurveGroups:
@@ -99,6 +105,17 @@ spec:
                             tlsVersion:
                               type: string
                           type: object
+                        headerName:
+                          type: string
+                        headersFromMetadata:
+                          additionalProperties:
+                            properties:
+                              name:
+                                type: string
+                              required:
+                                type: boolean
+                            type: object
+                          type: object
                         k8sSecretApikeyStorage:
                           properties:
                             apiKeySecretRefs:
@@ -110,17 +127,6 @@ spec:
                                     type: string
                                 type: object
                               type: array
-                            headerName:
-                              type: string
-                            headersFromMetadata:
-                              additionalProperties:
-                                properties:
-                                  name:
-                                    type: string
-                                  required:
-                                    type: boolean
-                                type: object
-                              type: object
                             labelSelector:
                               additionalProperties:
                                 type: string

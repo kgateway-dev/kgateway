@@ -744,6 +744,26 @@ message ApiKeyAuth {
         K8sSecretApiKeyStorage k8s_secret_apikey_storage = 1;
         AerospikeApiKeyStorage aerospike_apikey_storage = 2;
     }
+
+    // When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header
+    // with this name. This field is optional; if not provided it defaults to `api-key`.
+    string header_name = 3;
+
+    // API key structures might contain additional data (e.g. the ID of the user that the API key belongs to)
+    // in the form of extra fields included in the API key metadata structure.
+    // This configuration can be used to add this data to the headers of successfully authenticated requests.
+    // Each key in the map represents the name of header to be added; the corresponding value determines the key
+    // in the API key metadata structure that will be inspected to determine the value for the header.
+    map<string, MetadataEntry> headers_from_metadata = 4;
+
+    message MetadataEntry {
+        // (Required) The key of the API key metadata entry to inspect.
+        string name = 1;
+        // If this field is set to `true`, Gloo will reject an API key structure that does not contain data for the given key.
+        // Defaults to `false`. In this case, if an API key structure does not contain the requested data, no header will be added
+        // to the request.
+        bool required = 2;
+    }
 }
 message K8sSecretApiKeyStorage {
     // Identify all valid API key secrets that match the provided label selector.<br/>
@@ -753,26 +773,6 @@ message K8sSecretApiKeyStorage {
     // A way to directly reference API key secrets. This configuration can be useful for testing,
     // but in general the more flexible label selector should be preferred.
     repeated core.solo.io.ResourceRef api_key_secret_refs = 2;
-
-    // When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header
-    // with this name. This field is optional; if not provided it defaults to `api-key`.
-    string header_name = 3;
-
-    // API key secrets might contain additional data (e.g. the ID of the user that the API key belongs to)
-    // in the form of extra keys included in the secret's `data` field.
-    // This configuration can be used to add this data to the headers of successfully authenticated requests.
-    // Each key in the map represents the name of header to be added; the corresponding value determines the key
-    // in the secret data that will be inspected to determine the value for the header.
-    map<string, SecretKey> headers_from_metadata = 4;
-
-    message SecretKey {
-        // (Required) The key of the secret data entry to inspect.
-        string name = 1;
-        // If this field is set to `true`, Gloo will reject an API key secret that does not contain the given key.
-        // Defaults to `false`. In this case, if a secret does not contain the requested data, no header will be added
-        // to the request.
-        bool required = 2;
-    }
 }
 
 message AerospikeApiKeyStorage {
@@ -789,45 +789,53 @@ message AerospikeApiKeyStorage {
         // commit_master indicates the server should wait until successfully committing master only.
         uint32 commit_master = 7;
     }
-	// Read settings for strong consistency (SC)
-    oneof read_mode_sc {
-        // session ensures this client will only see an increasing sequence of record versions.
-        // Server only reads from master.  This is the default.
-        uint32 session = 8;
-        // linearize ensures ALL clients will only see an increasing sequence of record versions.
-        // Server only reads from master.
-        uint32 linearize = 9;
 
-        // replica indicates that the server may read from master or any full (non-migrating) replica.
-        // Increasing sequence of record versions is not guaranteed.
-        uint32 replica = 10;
+    readModeSc read_mode_sc = 8;
+    message readModeSc {
+        // Read settings for strong consistency (SC)
+        oneof read_mode_sc {
+            // session ensures this client will only see an increasing sequence of record versions.
+            // Server only reads from master.  This is the default.
+            uint32 read_mode_sc_session = 1;
+            // linearize ensures ALL clients will only see an increasing sequence of record versions.
+            // Server only reads from master.
+            uint32 read_mode_sc_linearize = 2;
 
-        // allow_unavailable indicates that the server may read from master or any full (non-migrating) replica or from unavailable
-        // partitions.  Increasing sequence of record versions is not guaranteed.
-        uint32 allow_unavailable = 11;
+            // replica indicates that the server may read from master or any full (non-migrating) replica.
+            // Increasing sequence of record versions is not guaranteed.
+            uint32 read_mode_sc_replica = 3;
+
+            // allow_unavailable indicates that the server may read from master or any full (non-migrating) replica or from unavailable
+            // partitions.  Increasing sequence of record versions is not guaranteed.
+            uint32 read_mode_sc_allow_unavailable = 4;
+        }
     }
-	// Read settings for availability (AP)
-    oneof read_mode_ap {
-        // one indicates that a single node should be involved in the read operation.
-        uint32 one = 12;
 
-        // all indicates that all duplicates should be consulted in
-        // the read operation.
-        uint32 all = 13;
+    readModeAp read_mode_ap = 9;
+    message readModeAp {
+        // Read settings for availability (AP)
+        oneof read_mode_ap {
+            // one indicates that a single node should be involved in the read operation.
+            uint32 read_mode_ap_one = 1;
+
+            // all indicates that all duplicates should be consulted in
+            // the read operation.
+            uint32 read_mode_ap_all = 2;
+        }
     }
 
 	// TLS Settings, mtls is enabled on the server side
-	string node_tls_name = 14;
-	string cert_path = 15;
-	string key_path = 16;
+	string node_tls_name = 10;
+	string cert_path = 11;
+	string key_path = 12;
 	// skip the client verifying the server's certificate chain and host name
-	bool allow_insecure = 17;
+	bool allow_insecure = 13;
 	// If the RootCA is not set, add the system certs bt default
-	string root_ca_path = 18;
+	string root_ca_path = 14;
 	// TLS version, defaults to 1.3
-	string tls_version = 19;
+	string tls_version = 15;
 	// TLS identifiers for the elliptic curves used
-    repeated tlsCurveID tls_curve_groups = 20;
+    repeated tlsCurveID tls_curve_groups = 16;
     message tlsCurveID {
         oneof curve_id {
             uint32 curve_p256 = 1;

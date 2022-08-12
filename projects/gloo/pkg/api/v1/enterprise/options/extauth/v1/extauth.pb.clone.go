@@ -885,6 +885,21 @@ func (m *ApiKeyAuth) Clone() proto.Message {
 	}
 	target = &ApiKeyAuth{}
 
+	target.HeaderName = m.GetHeaderName()
+
+	if m.GetHeadersFromMetadata() != nil {
+		target.HeadersFromMetadata = make(map[string]*ApiKeyAuth_MetadataEntry, len(m.GetHeadersFromMetadata()))
+		for k, v := range m.GetHeadersFromMetadata() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HeadersFromMetadata[k] = h.Clone().(*ApiKeyAuth_MetadataEntry)
+			} else {
+				target.HeadersFromMetadata[k] = proto.Clone(v).(*ApiKeyAuth_MetadataEntry)
+			}
+
+		}
+	}
+
 	switch m.StorageBackend.(type) {
 
 	case *ApiKeyAuth_K8SSecretApikeyStorage:
@@ -946,21 +961,6 @@ func (m *K8SSecretApiKeyStorage) Clone() proto.Message {
 		}
 	}
 
-	target.HeaderName = m.GetHeaderName()
-
-	if m.GetHeadersFromMetadata() != nil {
-		target.HeadersFromMetadata = make(map[string]*K8SSecretApiKeyStorage_SecretKey, len(m.GetHeadersFromMetadata()))
-		for k, v := range m.GetHeadersFromMetadata() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.HeadersFromMetadata[k] = h.Clone().(*K8SSecretApiKeyStorage_SecretKey)
-			} else {
-				target.HeadersFromMetadata[k] = proto.Clone(v).(*K8SSecretApiKeyStorage_SecretKey)
-			}
-
-		}
-	}
-
 	return target
 }
 
@@ -981,6 +981,18 @@ func (m *AerospikeApiKeyStorage) Clone() proto.Message {
 	target.Port = m.GetPort()
 
 	target.BatchSize = m.GetBatchSize()
+
+	if h, ok := interface{}(m.GetReadModeSc()).(clone.Cloner); ok {
+		target.ReadModeSc = h.Clone().(*AerospikeApiKeyStorageReadModeSc)
+	} else {
+		target.ReadModeSc = proto.Clone(m.GetReadModeSc()).(*AerospikeApiKeyStorageReadModeSc)
+	}
+
+	if h, ok := interface{}(m.GetReadModeAp()).(clone.Cloner); ok {
+		target.ReadModeAp = h.Clone().(*AerospikeApiKeyStorageReadModeAp)
+	} else {
+		target.ReadModeAp = proto.Clone(m.GetReadModeAp()).(*AerospikeApiKeyStorageReadModeAp)
+	}
 
 	target.NodeTlsName = m.GetNodeTlsName()
 
@@ -1019,50 +1031,6 @@ func (m *AerospikeApiKeyStorage) Clone() proto.Message {
 
 		target.CommitLevel = &AerospikeApiKeyStorage_CommitMaster{
 			CommitMaster: m.GetCommitMaster(),
-		}
-
-	}
-
-	switch m.ReadModeSc.(type) {
-
-	case *AerospikeApiKeyStorage_Session:
-
-		target.ReadModeSc = &AerospikeApiKeyStorage_Session{
-			Session: m.GetSession(),
-		}
-
-	case *AerospikeApiKeyStorage_Linearize:
-
-		target.ReadModeSc = &AerospikeApiKeyStorage_Linearize{
-			Linearize: m.GetLinearize(),
-		}
-
-	case *AerospikeApiKeyStorage_Replica:
-
-		target.ReadModeSc = &AerospikeApiKeyStorage_Replica{
-			Replica: m.GetReplica(),
-		}
-
-	case *AerospikeApiKeyStorage_AllowUnavailable:
-
-		target.ReadModeSc = &AerospikeApiKeyStorage_AllowUnavailable{
-			AllowUnavailable: m.GetAllowUnavailable(),
-		}
-
-	}
-
-	switch m.ReadModeAp.(type) {
-
-	case *AerospikeApiKeyStorage_One:
-
-		target.ReadModeAp = &AerospikeApiKeyStorage_One{
-			One: m.GetOne(),
-		}
-
-	case *AerospikeApiKeyStorage_All:
-
-		target.ReadModeAp = &AerospikeApiKeyStorage_All{
-			All: m.GetAll(),
 		}
 
 	}
@@ -1699,16 +1667,82 @@ func (m *AccessTokenValidation_ScopeList) Clone() proto.Message {
 }
 
 // Clone function
-func (m *K8SSecretApiKeyStorage_SecretKey) Clone() proto.Message {
-	var target *K8SSecretApiKeyStorage_SecretKey
+func (m *ApiKeyAuth_MetadataEntry) Clone() proto.Message {
+	var target *ApiKeyAuth_MetadataEntry
 	if m == nil {
 		return target
 	}
-	target = &K8SSecretApiKeyStorage_SecretKey{}
+	target = &ApiKeyAuth_MetadataEntry{}
 
 	target.Name = m.GetName()
 
 	target.Required = m.GetRequired()
+
+	return target
+}
+
+// Clone function
+func (m *AerospikeApiKeyStorageReadModeSc) Clone() proto.Message {
+	var target *AerospikeApiKeyStorageReadModeSc
+	if m == nil {
+		return target
+	}
+	target = &AerospikeApiKeyStorageReadModeSc{}
+
+	switch m.ReadModeSc.(type) {
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScSession:
+
+		target.ReadModeSc = &AerospikeApiKeyStorageReadModeSc_ReadModeScSession{
+			ReadModeScSession: m.GetReadModeScSession(),
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize:
+
+		target.ReadModeSc = &AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize{
+			ReadModeScLinearize: m.GetReadModeScLinearize(),
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScReplica:
+
+		target.ReadModeSc = &AerospikeApiKeyStorageReadModeSc_ReadModeScReplica{
+			ReadModeScReplica: m.GetReadModeScReplica(),
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable:
+
+		target.ReadModeSc = &AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable{
+			ReadModeScAllowUnavailable: m.GetReadModeScAllowUnavailable(),
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AerospikeApiKeyStorageReadModeAp) Clone() proto.Message {
+	var target *AerospikeApiKeyStorageReadModeAp
+	if m == nil {
+		return target
+	}
+	target = &AerospikeApiKeyStorageReadModeAp{}
+
+	switch m.ReadModeAp.(type) {
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApOne:
+
+		target.ReadModeAp = &AerospikeApiKeyStorageReadModeAp_ReadModeApOne{
+			ReadModeApOne: m.GetReadModeApOne(),
+		}
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApAll:
+
+		target.ReadModeAp = &AerospikeApiKeyStorageReadModeAp_ReadModeApAll{
+			ReadModeApAll: m.GetReadModeApAll(),
+		}
+
+	}
 
 	return target
 }

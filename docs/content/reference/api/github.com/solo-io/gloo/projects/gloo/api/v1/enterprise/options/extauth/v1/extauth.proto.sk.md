@@ -50,9 +50,11 @@ weight: 5
 - [ScopeList](#scopelist)
 - [OauthSecret](#oauthsecret)
 - [ApiKeyAuth](#apikeyauth)
+- [MetadataEntry](#metadataentry)
 - [K8sSecretApiKeyStorage](#k8ssecretapikeystorage)
-- [SecretKey](#secretkey)
 - [AerospikeApiKeyStorage](#aerospikeapikeystorage)
+- [readModeSc](#readmodesc)
+- [readModeAp](#readmodeap)
 - [tlsCurveID](#tlscurveid)
 - [ApiKey](#apikey)
 - [OpaAuth](#opaauth)
@@ -990,6 +992,8 @@ These values will be encoded in a basic auth header in order to authenticate the
 ```yaml
 "k8SSecretApikeyStorage": .enterprise.gloo.solo.io.K8sSecretApiKeyStorage
 "aerospikeApikeyStorage": .enterprise.gloo.solo.io.AerospikeApiKeyStorage
+"headerName": string
+"headersFromMetadata": map<string, map<string, bool>>
 
 ```
 
@@ -997,6 +1001,27 @@ These values will be encoded in a basic auth header in order to authenticate the
 | ----- | ---- | ----------- | 
 | `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage` or `aerospikeApikeyStorage` can be set. |
 | `aerospikeApikeyStorage` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage](../extauth.proto.sk/#aerospikeapikeystorage) |  Only one of `aerospikeApikeyStorage` or `k8sSecretApikeyStorage` can be set. |
+| `headerName` | `string` | When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
+| `headersFromMetadata` | `map<string, map<string, bool>>` | API key structures might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra fields included in the API key metadata structure. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the API key metadata structure that will be inspected to determine the value for the header. |
+
+
+
+
+---
+### MetadataEntry
+
+
+
+```yaml
+"name": string
+"required": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | (Required) The key of the API key metadata entry to inspect. |
+| `required` | `bool` | If this field is set to `true`, Gloo will reject an API key structure that does not contain data for the given key. Defaults to `false`. In this case, if an API key structure does not contain the requested data, no header will be added to the request. |
 
 
 
@@ -1009,8 +1034,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 ```yaml
 "labelSelector": map<string, string>
 "apiKeySecretRefs": []core.solo.io.ResourceRef
-"headerName": string
-"headersFromMetadata": map<string, .enterprise.gloo.solo.io.K8sSecretApiKeyStorage.SecretKey>
 
 ```
 
@@ -1018,27 +1041,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 | ----- | ---- | ----------- | 
 | `labelSelector` | `map<string, string>` | Identify all valid API key secrets that match the provided label selector.<br/> API key secrets must be in one of the watch namespaces for gloo to locate them. |
 | `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred. |
-| `headerName` | `string` | When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
-| `headersFromMetadata` | `map<string, .enterprise.gloo.solo.io.K8sSecretApiKeyStorage.SecretKey>` | API key secrets might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra keys included in the secret's `data` field. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the secret data that will be inspected to determine the value for the header. |
-
-
-
-
----
-### SecretKey
-
-
-
-```yaml
-"name": string
-"required": bool
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `name` | `string` | (Required) The key of the secret data entry to inspect. |
-| `required` | `bool` | If this field is set to `true`, Gloo will reject an API key secret that does not contain the given key. Defaults to `false`. In this case, if a secret does not contain the requested data, no header will be added to the request. |
 
 
 
@@ -1056,12 +1058,8 @@ These values will be encoded in a basic auth header in order to authenticate the
 "batchSize": int
 "commitAll": int
 "commitMaster": int
-"session": int
-"linearize": int
-"replica": int
-"allowUnavailable": int
-"one": int
-"all": int
+"readModeSc": .enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeSc
+"readModeAp": .enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeAp
 "nodeTlsName": string
 "certPath": string
 "keyPath": string
@@ -1081,12 +1079,8 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `batchSize` | `int` |  |
 | `commitAll` | `int` | commit_all indicates the server should wait until successfully committing master and all replicas. Only one of `commitAll` or `commitMaster` can be set. |
 | `commitMaster` | `int` | commit_master indicates the server should wait until successfully committing master only. Only one of `commitMaster` or `commitAll` can be set. |
-| `session` | `int` | session ensures this client will only see an increasing sequence of record versions. Server only reads from master. This is the default. Only one of `session`, `linearize`, `replica`, or `allowUnavailable` can be set. |
-| `linearize` | `int` | linearize ensures ALL clients will only see an increasing sequence of record versions. Server only reads from master. Only one of `linearize`, `session`, `replica`, or `allowUnavailable` can be set. |
-| `replica` | `int` | replica indicates that the server may read from master or any full (non-migrating) replica. Increasing sequence of record versions is not guaranteed. Only one of `replica`, `session`, `linearize`, or `allowUnavailable` can be set. |
-| `allowUnavailable` | `int` | allow_unavailable indicates that the server may read from master or any full (non-migrating) replica or from unavailable partitions. Increasing sequence of record versions is not guaranteed. Only one of `allowUnavailable`, `session`, `linearize`, or `replica` can be set. |
-| `one` | `int` | one indicates that a single node should be involved in the read operation. Only one of `one` or `all` can be set. |
-| `all` | `int` | all indicates that all duplicates should be consulted in the read operation. Only one of `all` or `one` can be set. |
+| `readModeSc` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeSc](../extauth.proto.sk/#readmodesc) |  |
+| `readModeAp` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeAp](../extauth.proto.sk/#readmodeap) |  |
 | `nodeTlsName` | `string` | TLS Settings, mtls is enabled on the server side. |
 | `certPath` | `string` |  |
 | `keyPath` | `string` |  |
@@ -1094,6 +1088,48 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `rootCaPath` | `string` | If the RootCA is not set, add the system certs bt default. |
 | `tlsVersion` | `string` | TLS version, defaults to 1.3. |
 | `tlsCurveGroups` | [[]enterprise.gloo.solo.io.AerospikeApiKeyStorage.tlsCurveID](../extauth.proto.sk/#tlscurveid) | TLS identifiers for the elliptic curves used. |
+
+
+
+
+---
+### readModeSc
+
+
+
+```yaml
+"readModeScSession": int
+"readModeScLinearize": int
+"readModeScReplica": int
+"readModeScAllowUnavailable": int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `readModeScSession` | `int` | session ensures this client will only see an increasing sequence of record versions. Server only reads from master. This is the default. Only one of `readModeScSession`, `readModeScLinearize`, `readModeScReplica`, or `readModeScAllowUnavailable` can be set. |
+| `readModeScLinearize` | `int` | linearize ensures ALL clients will only see an increasing sequence of record versions. Server only reads from master. Only one of `readModeScLinearize`, `readModeScSession`, `readModeScReplica`, or `readModeScAllowUnavailable` can be set. |
+| `readModeScReplica` | `int` | replica indicates that the server may read from master or any full (non-migrating) replica. Increasing sequence of record versions is not guaranteed. Only one of `readModeScReplica`, `readModeScSession`, `readModeScLinearize`, or `readModeScAllowUnavailable` can be set. |
+| `readModeScAllowUnavailable` | `int` | allow_unavailable indicates that the server may read from master or any full (non-migrating) replica or from unavailable partitions. Increasing sequence of record versions is not guaranteed. Only one of `readModeScAllowUnavailable`, `readModeScSession`, `readModeScLinearize`, or `readModeScReplica` can be set. |
+
+
+
+
+---
+### readModeAp
+
+
+
+```yaml
+"readModeApOne": int
+"readModeApAll": int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `readModeApOne` | `int` | one indicates that a single node should be involved in the read operation. Only one of `readModeApOne` or `readModeApAll` can be set. |
+| `readModeApAll` | `int` | all indicates that all duplicates should be consulted in the read operation. Only one of `readModeApAll` or `readModeApOne` can be set. |
 
 
 
@@ -1128,14 +1164,14 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 ```yaml
 "apiKey": string
-"metadata": map<string, string>
+"metadata": map<string, bool>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `apiKey` | `string` | The string value of the API key. |
-| `metadata` | `map<string, string>` | additional data the client needs associated with this API key. |
+| `metadata` | `map<string, bool>` | additional data the client needs associated with this API key. |
 
 
 

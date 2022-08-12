@@ -1622,6 +1622,49 @@ func (m *ApiKeyAuth) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetHeaderName())); err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetHeadersFromMetadata() {
+			innerHash.Reset()
+
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+				if _, err = innerHash.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if _, err = h.Hash(innerHash); err != nil {
+					return 0, err
+				}
+			} else {
+				if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+					return 0, err
+				} else {
+					if _, err = innerHash.Write([]byte("")); err != nil {
+						return 0, err
+					}
+					if err := binary.Write(innerHash, binary.LittleEndian, fieldValue); err != nil {
+						return 0, err
+					}
+				}
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
 	switch m.StorageBackend.(type) {
 
 	case *ApiKeyAuth_K8SSecretApikeyStorage:
@@ -1733,49 +1776,6 @@ func (m *K8SSecretApiKeyStorage) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if _, err = hasher.Write([]byte(m.GetHeaderName())); err != nil {
-		return 0, err
-	}
-
-	{
-		var result uint64
-		innerHash := fnv.New64()
-		for k, v := range m.GetHeadersFromMetadata() {
-			innerHash.Reset()
-
-			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-				if _, err = innerHash.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if _, err = h.Hash(innerHash); err != nil {
-					return 0, err
-				}
-			} else {
-				if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
-					return 0, err
-				} else {
-					if _, err = innerHash.Write([]byte("")); err != nil {
-						return 0, err
-					}
-					if err := binary.Write(innerHash, binary.LittleEndian, fieldValue); err != nil {
-						return 0, err
-					}
-				}
-			}
-
-			if _, err = innerHash.Write([]byte(k)); err != nil {
-				return 0, err
-			}
-
-			result = result ^ innerHash.Sum64()
-		}
-		err = binary.Write(hasher, binary.LittleEndian, result)
-		if err != nil {
-			return 0, err
-		}
-
-	}
-
 	return hasher.Sum64(), nil
 }
 
@@ -1812,6 +1812,46 @@ func (m *AerospikeApiKeyStorage) Hash(hasher hash.Hash64) (uint64, error) {
 	err = binary.Write(hasher, binary.LittleEndian, m.GetBatchSize())
 	if err != nil {
 		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetReadModeSc()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ReadModeSc")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetReadModeSc(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ReadModeSc")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetReadModeAp()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ReadModeAp")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetReadModeAp(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ReadModeAp")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	if _, err = hasher.Write([]byte(m.GetNodeTlsName())); err != nil {
@@ -1875,56 +1915,6 @@ func (m *AerospikeApiKeyStorage) Hash(hasher hash.Hash64) (uint64, error) {
 	case *AerospikeApiKeyStorage_CommitMaster:
 
 		err = binary.Write(hasher, binary.LittleEndian, m.GetCommitMaster())
-		if err != nil {
-			return 0, err
-		}
-
-	}
-
-	switch m.ReadModeSc.(type) {
-
-	case *AerospikeApiKeyStorage_Session:
-
-		err = binary.Write(hasher, binary.LittleEndian, m.GetSession())
-		if err != nil {
-			return 0, err
-		}
-
-	case *AerospikeApiKeyStorage_Linearize:
-
-		err = binary.Write(hasher, binary.LittleEndian, m.GetLinearize())
-		if err != nil {
-			return 0, err
-		}
-
-	case *AerospikeApiKeyStorage_Replica:
-
-		err = binary.Write(hasher, binary.LittleEndian, m.GetReplica())
-		if err != nil {
-			return 0, err
-		}
-
-	case *AerospikeApiKeyStorage_AllowUnavailable:
-
-		err = binary.Write(hasher, binary.LittleEndian, m.GetAllowUnavailable())
-		if err != nil {
-			return 0, err
-		}
-
-	}
-
-	switch m.ReadModeAp.(type) {
-
-	case *AerospikeApiKeyStorage_One:
-
-		err = binary.Write(hasher, binary.LittleEndian, m.GetOne())
-		if err != nil {
-			return 0, err
-		}
-
-	case *AerospikeApiKeyStorage_All:
-
-		err = binary.Write(hasher, binary.LittleEndian, m.GetAll())
 		if err != nil {
 			return 0, err
 		}
@@ -3131,7 +3121,7 @@ func (m *AccessTokenValidation_ScopeList) Hash(hasher hash.Hash64) (uint64, erro
 }
 
 // Hash function
-func (m *K8SSecretApiKeyStorage_SecretKey) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *ApiKeyAuth_MetadataEntry) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -3139,7 +3129,7 @@ func (m *K8SSecretApiKeyStorage_SecretKey) Hash(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.K8SSecretApiKeyStorage_SecretKey")); err != nil {
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ApiKeyAuth_MetadataEntry")); err != nil {
 		return 0, err
 	}
 
@@ -3150,6 +3140,88 @@ func (m *K8SSecretApiKeyStorage_SecretKey) Hash(hasher hash.Hash64) (uint64, err
 	err = binary.Write(hasher, binary.LittleEndian, m.GetRequired())
 	if err != nil {
 		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *AerospikeApiKeyStorageReadModeSc) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.AerospikeApiKeyStorageReadModeSc")); err != nil {
+		return 0, err
+	}
+
+	switch m.ReadModeSc.(type) {
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScSession:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetReadModeScSession())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetReadModeScLinearize())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScReplica:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetReadModeScReplica())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetReadModeScAllowUnavailable())
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *AerospikeApiKeyStorageReadModeAp) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.AerospikeApiKeyStorageReadModeAp")); err != nil {
+		return 0, err
+	}
+
+	switch m.ReadModeAp.(type) {
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApOne:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetReadModeApOne())
+		if err != nil {
+			return 0, err
+		}
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApAll:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetReadModeApAll())
+		if err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

@@ -1501,6 +1501,27 @@ func (m *ApiKeyAuth) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetHeaderName(), target.GetHeaderName()) != 0 {
+		return false
+	}
+
+	if len(m.GetHeadersFromMetadata()) != len(target.GetHeadersFromMetadata()) {
+		return false
+	}
+	for k, v := range m.GetHeadersFromMetadata() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHeadersFromMetadata()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetHeadersFromMetadata()[k]) {
+				return false
+			}
+		}
+
+	}
+
 	switch m.StorageBackend.(type) {
 
 	case *ApiKeyAuth_K8SSecretApikeyStorage:
@@ -1592,27 +1613,6 @@ func (m *K8SSecretApiKeyStorage) Equal(that interface{}) bool {
 
 	}
 
-	if strings.Compare(m.GetHeaderName(), target.GetHeaderName()) != 0 {
-		return false
-	}
-
-	if len(m.GetHeadersFromMetadata()) != len(target.GetHeadersFromMetadata()) {
-		return false
-	}
-	for k, v := range m.GetHeadersFromMetadata() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetHeadersFromMetadata()[k]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetHeadersFromMetadata()[k]) {
-				return false
-			}
-		}
-
-	}
-
 	return true
 }
 
@@ -1655,6 +1655,26 @@ func (m *AerospikeApiKeyStorage) Equal(that interface{}) bool {
 
 	if m.GetBatchSize() != target.GetBatchSize() {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetReadModeSc()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReadModeSc()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetReadModeSc(), target.GetReadModeSc()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetReadModeAp()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReadModeAp()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetReadModeAp(), target.GetReadModeAp()) {
+			return false
+		}
 	}
 
 	if strings.Compare(m.GetNodeTlsName(), target.GetNodeTlsName()) != 0 {
@@ -1721,78 +1741,6 @@ func (m *AerospikeApiKeyStorage) Equal(that interface{}) bool {
 	default:
 		// m is nil but target is not nil
 		if m.CommitLevel != target.CommitLevel {
-			return false
-		}
-	}
-
-	switch m.ReadModeSc.(type) {
-
-	case *AerospikeApiKeyStorage_Session:
-		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorage_Session); !ok {
-			return false
-		}
-
-		if m.GetSession() != target.GetSession() {
-			return false
-		}
-
-	case *AerospikeApiKeyStorage_Linearize:
-		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorage_Linearize); !ok {
-			return false
-		}
-
-		if m.GetLinearize() != target.GetLinearize() {
-			return false
-		}
-
-	case *AerospikeApiKeyStorage_Replica:
-		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorage_Replica); !ok {
-			return false
-		}
-
-		if m.GetReplica() != target.GetReplica() {
-			return false
-		}
-
-	case *AerospikeApiKeyStorage_AllowUnavailable:
-		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorage_AllowUnavailable); !ok {
-			return false
-		}
-
-		if m.GetAllowUnavailable() != target.GetAllowUnavailable() {
-			return false
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.ReadModeSc != target.ReadModeSc {
-			return false
-		}
-	}
-
-	switch m.ReadModeAp.(type) {
-
-	case *AerospikeApiKeyStorage_One:
-		if _, ok := target.ReadModeAp.(*AerospikeApiKeyStorage_One); !ok {
-			return false
-		}
-
-		if m.GetOne() != target.GetOne() {
-			return false
-		}
-
-	case *AerospikeApiKeyStorage_All:
-		if _, ok := target.ReadModeAp.(*AerospikeApiKeyStorage_All); !ok {
-			return false
-		}
-
-		if m.GetAll() != target.GetAll() {
-			return false
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.ReadModeAp != target.ReadModeAp {
 			return false
 		}
 	}
@@ -2876,14 +2824,14 @@ func (m *AccessTokenValidation_ScopeList) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *K8SSecretApiKeyStorage_SecretKey) Equal(that interface{}) bool {
+func (m *ApiKeyAuth_MetadataEntry) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*K8SSecretApiKeyStorage_SecretKey)
+	target, ok := that.(*ApiKeyAuth_MetadataEntry)
 	if !ok {
-		that2, ok := that.(K8SSecretApiKeyStorage_SecretKey)
+		that2, ok := that.(ApiKeyAuth_MetadataEntry)
 		if ok {
 			target = &that2
 		} else {
@@ -2902,6 +2850,126 @@ func (m *K8SSecretApiKeyStorage_SecretKey) Equal(that interface{}) bool {
 
 	if m.GetRequired() != target.GetRequired() {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AerospikeApiKeyStorageReadModeSc) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AerospikeApiKeyStorageReadModeSc)
+	if !ok {
+		that2, ok := that.(AerospikeApiKeyStorageReadModeSc)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.ReadModeSc.(type) {
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScSession:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScSession); !ok {
+			return false
+		}
+
+		if m.GetReadModeScSession() != target.GetReadModeScSession() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize); !ok {
+			return false
+		}
+
+		if m.GetReadModeScLinearize() != target.GetReadModeScLinearize() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScReplica:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScReplica); !ok {
+			return false
+		}
+
+		if m.GetReadModeScReplica() != target.GetReadModeScReplica() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable); !ok {
+			return false
+		}
+
+		if m.GetReadModeScAllowUnavailable() != target.GetReadModeScAllowUnavailable() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ReadModeSc != target.ReadModeSc {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AerospikeApiKeyStorageReadModeAp) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AerospikeApiKeyStorageReadModeAp)
+	if !ok {
+		that2, ok := that.(AerospikeApiKeyStorageReadModeAp)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.ReadModeAp.(type) {
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApOne:
+		if _, ok := target.ReadModeAp.(*AerospikeApiKeyStorageReadModeAp_ReadModeApOne); !ok {
+			return false
+		}
+
+		if m.GetReadModeApOne() != target.GetReadModeApOne() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApAll:
+		if _, ok := target.ReadModeAp.(*AerospikeApiKeyStorageReadModeAp_ReadModeApAll); !ok {
+			return false
+		}
+
+		if m.GetReadModeApAll() != target.GetReadModeApAll() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ReadModeAp != target.ReadModeAp {
+			return false
+		}
 	}
 
 	return true
