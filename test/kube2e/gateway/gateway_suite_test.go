@@ -35,7 +35,6 @@ func TestGateway(t *testing.T) {
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
-	skhelpers.RegisterPreFailHandler(helpers.PrintGlooDebugLogs)
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, "Gateway Suite", []Reporter{junitReporter})
 }
@@ -59,6 +58,8 @@ func StartTestHelper() {
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())
+
+	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
 	// install xds-relay if needed
 	if os.Getenv("USE_XDS_RELAY") == "true" {
