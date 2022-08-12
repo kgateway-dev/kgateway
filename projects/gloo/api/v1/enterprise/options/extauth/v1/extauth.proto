@@ -1433,8 +1433,14 @@ service ExtAuthDiscoveryService {
 message RawApiKey {
     string api_key = 1;
 }
+message MaybeApiKey {
+    oneof api_key_or_empty {
+        ApiKey api_key = 1;
+        google.protobuf.Empty empty = 2;
+    }
+}
 service ApiKeyService {
-    rpc Create (RawApiKey) returns (ApiKey) {}
+    rpc Create (MaybeApiKey) returns (ApiKey) {}
     rpc Read (RawApiKey) returns (ApiKey) {}
     rpc Update (ApiKey) returns (ApiKey) {}
     rpc Delete (RawApiKey) returns (google.protobuf.Empty) {}

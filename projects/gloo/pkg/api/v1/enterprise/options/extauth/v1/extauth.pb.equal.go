@@ -2192,6 +2192,69 @@ func (m *RawApiKey) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *MaybeApiKey) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*MaybeApiKey)
+	if !ok {
+		that2, ok := that.(MaybeApiKey)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.ApiKeyOrEmpty.(type) {
+
+	case *MaybeApiKey_ApiKey:
+		if _, ok := target.ApiKeyOrEmpty.(*MaybeApiKey_ApiKey); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetApiKey()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKey()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetApiKey(), target.GetApiKey()) {
+				return false
+			}
+		}
+
+	case *MaybeApiKey_Empty:
+		if _, ok := target.ApiKeyOrEmpty.(*MaybeApiKey_Empty); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetEmpty()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetEmpty()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetEmpty(), target.GetEmpty()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ApiKeyOrEmpty != target.ApiKeyOrEmpty {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *AuthConfig_Config) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil

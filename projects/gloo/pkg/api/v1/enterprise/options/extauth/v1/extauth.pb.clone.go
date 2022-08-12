@@ -1284,6 +1284,45 @@ func (m *RawApiKey) Clone() proto.Message {
 }
 
 // Clone function
+func (m *MaybeApiKey) Clone() proto.Message {
+	var target *MaybeApiKey
+	if m == nil {
+		return target
+	}
+	target = &MaybeApiKey{}
+
+	switch m.ApiKeyOrEmpty.(type) {
+
+	case *MaybeApiKey_ApiKey:
+
+		if h, ok := interface{}(m.GetApiKey()).(clone.Cloner); ok {
+			target.ApiKeyOrEmpty = &MaybeApiKey_ApiKey{
+				ApiKey: h.Clone().(*ApiKey),
+			}
+		} else {
+			target.ApiKeyOrEmpty = &MaybeApiKey_ApiKey{
+				ApiKey: proto.Clone(m.GetApiKey()).(*ApiKey),
+			}
+		}
+
+	case *MaybeApiKey_Empty:
+
+		if h, ok := interface{}(m.GetEmpty()).(clone.Cloner); ok {
+			target.ApiKeyOrEmpty = &MaybeApiKey_Empty{
+				Empty: h.Clone().(*github_com_golang_protobuf_ptypes_empty.Empty),
+			}
+		} else {
+			target.ApiKeyOrEmpty = &MaybeApiKey_Empty{
+				Empty: proto.Clone(m.GetEmpty()).(*github_com_golang_protobuf_ptypes_empty.Empty),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
 func (m *AuthConfig_Config) Clone() proto.Message {
 	var target *AuthConfig_Config
 	if m == nil {

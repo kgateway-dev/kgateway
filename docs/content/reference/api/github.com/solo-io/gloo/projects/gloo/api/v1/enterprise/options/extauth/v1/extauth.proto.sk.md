@@ -81,6 +81,7 @@ weight: 5
 - [OpaAuthConfig](#opaauthconfig)
 - [Config](#config)
 - [RawApiKey](#rawapikey)
+- [MaybeApiKey](#maybeapikey)
   
 
 
@@ -1785,6 +1786,25 @@ These values will be encoded in a basic auth header in order to authenticate the
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `apiKey` | `string` |  |
+
+
+
+
+---
+### MaybeApiKey
+
+
+
+```yaml
+"apiKey": .enterprise.gloo.solo.io.ApiKey
+"empty": .google.protobuf.Empty
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `apiKey` | [.enterprise.gloo.solo.io.ApiKey](../extauth.proto.sk/#apikey) |  Only one of `apiKey` or `empty` can be set. |
+| `empty` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) |  Only one of `empty` or `apiKey` can be set. |
 
 
 

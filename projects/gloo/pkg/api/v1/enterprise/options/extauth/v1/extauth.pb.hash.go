@@ -2411,6 +2411,70 @@ func (m *RawApiKey) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+func (m *MaybeApiKey) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.MaybeApiKey")); err != nil {
+		return 0, err
+	}
+
+	switch m.ApiKeyOrEmpty.(type) {
+
+	case *MaybeApiKey_ApiKey:
+
+		if h, ok := interface{}(m.GetApiKey()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("ApiKey")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetApiKey(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("ApiKey")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *MaybeApiKey_Empty:
+
+		if h, ok := interface{}(m.GetEmpty()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Empty")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetEmpty(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Empty")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *AuthConfig_Config) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil

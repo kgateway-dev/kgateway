@@ -203,6 +203,9 @@ apis:
   enterprise.gloo.solo.io.Ldap:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#Ldap
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.MaybeApiKey:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#MaybeApiKey
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.OAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OAuth
     package: enterprise.gloo.solo.io
