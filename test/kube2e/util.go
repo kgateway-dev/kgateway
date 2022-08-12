@@ -149,7 +149,8 @@ func EventuallyMetricsBecomeConsistent(offset int, metricsPort int) {
 	EventuallyWithOffset(offset+1, func() int {
 		lastSnapOut = getSnapOut(metricsPort)
 		return lastSnapOut
-	}, "30s", eventuallyConsistentPollingInterval).Should(BeNumerically(">", 0))
+	}, "30s", eventuallyConsistentPollingInterval).Should(BeNumerically(">", 0),
+		"expected metrics to be found")
 
 	// wait for that snapOut reading to become consistent
 	consistentlyInARow := 0
@@ -163,7 +164,8 @@ func EventuallyMetricsBecomeConsistent(offset int, metricsPort int) {
 			consistentlyInARow = 0
 		}
 		return consistentlyInARow
-	}, "80s", eventuallyConsistentPollingInterval).Should(Equal(4))
+	}, "80s", eventuallyConsistentPollingInterval).Should(Equal(4),
+		"expected metrics to be consistent")
 }
 
 // needs a port-forward of the metrics port before a call to this will work
