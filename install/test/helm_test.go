@@ -5104,17 +5104,17 @@ metadata:
 			})
 
 			Describe("Standard k8s values", func() {
-				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, restartPolicy, priorityClassName on Deployments and Jobs",
+				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, priorityClassName, restartPolicy, on Deployments and Jobs",
 					func(kind string, resourceName string, value string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
 								value + ".nodeSelector.label=someLabel",
-								value + ".priorityClassName=somePriorityClass",
 								value + ".nodeName=someNodeName",
 								value + ".tolerations[0].operator=someToleration",
 								value + ".hostAliases[0]=someHostAlias",
 								value + ".affinity.nodeAffinity=someNodeAffinity",
 								value + ".restartPolicy=someRestartPolicy",
+								value + ".priorityClassName=somePriorityClass",
 							}, extraArgs...),
 						})
 						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
