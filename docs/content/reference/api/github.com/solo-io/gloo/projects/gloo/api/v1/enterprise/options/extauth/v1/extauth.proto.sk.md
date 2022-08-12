@@ -1150,6 +1150,7 @@ Authorizes requests by querying a custom extauth server.
 "grpc": .enterprise.gloo.solo.io.PassThroughGrpc
 "http": .enterprise.gloo.solo.io.PassThroughHttp
 "config": .google.protobuf.Struct
+"failureModeAllow": bool
 
 ```
 
@@ -1158,6 +1159,7 @@ Authorizes requests by querying a custom extauth server.
 | `grpc` | [.enterprise.gloo.solo.io.PassThroughGrpc](../extauth.proto.sk/#passthroughgrpc) |  Only one of `grpc` or `http` can be set. |
 | `http` | [.enterprise.gloo.solo.io.PassThroughHttp](../extauth.proto.sk/#passthroughhttp) |  Only one of `http` or `grpc` can be set. |
 | `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Custom config to be passed per request to the passthrough auth service. |
+| `failureModeAllow` | `bool` | In case of a failure or timeout querying the auth server, normally a request is denied. if this is set to true, the request will be allowed. |
 
 
 

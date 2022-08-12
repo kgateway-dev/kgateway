@@ -1053,6 +1053,8 @@ func (m *PassThroughAuth) Clone() proto.Message {
 		target.Config = proto.Clone(m.GetConfig()).(*github_com_golang_protobuf_ptypes_struct.Struct)
 	}
 
+	target.FailureModeAllow = m.GetFailureModeAllow()
+
 	switch m.Protocol.(type) {
 
 	case *PassThroughAuth_Grpc:
