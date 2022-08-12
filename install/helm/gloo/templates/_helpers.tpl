@@ -50,6 +50,9 @@ affinity: {{ toYaml . | nindent 2 }}
 {{- with .restartPolicy -}}
 restartPolicy: {{ . }}
 {{ end -}}
+{{- with .priorityClassName -}}
+priorityClassName: {{ . }}
+{{ end -}}
 {{- end -}}
 {{- /*
 This takes an array of three values:
