@@ -14,6 +14,12 @@ type ElectionConfig struct {
 	OnStoppedLeading func()
 	// Callback function that is executed when a new leader is elected
 	OnNewLeader func(leaderId string)
+	// ReleaseOnCancel should be set true if the lock should be released
+	// when the run context is cancelled. If you set this to true, you must
+	// ensure all code guarded by this lease has successfully completed
+	// prior to cancelling the context, or you may have two processes
+	// simultaneously acting on the critical path.
+	ReleaseOnCancel bool
 }
 
 // An ElectionFactory is an implementation for running a leader election
