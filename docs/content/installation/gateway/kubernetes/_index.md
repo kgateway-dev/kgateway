@@ -167,24 +167,18 @@ pod/gateway-proxy-9d79d48cd-wg8b8   1/1       Running   0          5m
 pod/gloo-5b7b748dbf-jdsvg           1/1       Running   0          5m
 
 NAME                    TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                     AGE
-service/gateway         ClusterIP      10.0.180.15     <none>        443/TCP                     5m
 service/gateway-proxy   LoadBalancer   10.97.232.107   <pending>     80:30221/TCP,443:32340/TCP  5m
 service/gloo            ClusterIP      10.100.64.166   <none>        9977/TCP,9988/TCP,9966/TCP  5m
 
 NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
 deployment.apps/discovery       1/1     1            1           5m
-deployment.apps/gateway         0/0     1            1           5m
 deployment.apps/gateway-proxy   1/1     1            1           5m
 deployment.apps/gloo            1/1     1            1           5m
 
 NAME                                      DESIRED   CURRENT   READY     AGE
 replicaset.apps/discovery-f7548d984       1         1         1         5m
-replicaset.apps/gateway-5689fd59d7        0         0         0         5m
 replicaset.apps/gateway-proxy-9d79d48cd   1         1         1         5m
 replicaset.apps/gloo-5b7b748dbf           1         1         1         5m
-
-NAME                        COMPLETIONS   DURATION   AGE
-job.batch/gateway-certgen   1/1           14s        5m
 ```
 #### Looking for opened ports?
 You will NOT have any open ports listening on a default install. For Envoy to open the ports and actually listen, you need to have a Route defined in one of the VirtualServices that will be associated with that particular Gateway/Listener. Please see the [Hello World tutorial to get started]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}). 

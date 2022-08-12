@@ -79,7 +79,7 @@ Now we are ready to deploy the containers using Docker Compose.
 
 ## Deploying with Docker Compose
 
-Now that we have all the necessary files, it is time to deploy the containers using Docker Compose. The `docker-compose.yaml` file will create seven containers: `consul`, `vault`, `petstore`, `gloo`, `discovery`, `gateway`, and `gateway-proxy`.
+Now that we have all the necessary files, it is time to deploy the containers using Docker Compose. The `docker-compose.yaml` file will create seven containers: `consul`, `vault`, `petstore`, `gloo`, `discovery`, and `gateway-proxy`.
 
 First we need to create some directories that will be used by the Gloo Edge containers. Running the `prepare-directories.sh` script will create the necessary directory structure in the `data` directory.
 
