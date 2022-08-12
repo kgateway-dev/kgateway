@@ -72,6 +72,9 @@ func Main(opts SetupOpts) error {
 	}
 
 	identity, err := startLeaderElection(ctx, setupDir, opts.ElectionConfig)
+	if err != nil {
+		return err
+	}
 
 	// settings come from the ResourceClient in the settingsClient
 	// the eventLoop will Watch the emitter's settingsClient to recieve settings from the ResourceClient
