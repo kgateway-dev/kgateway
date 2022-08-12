@@ -869,6 +869,9 @@ message PassThroughAuth {
     // Custom config to be passed per request to the passthrough auth service.
     google.protobuf.Struct config = 4;
 
+    // In case of a failure or timeout querying the auth server, normally a request is denied.
+    // if this is set to true, the request will be allowed.
+    bool failure_mode_allow = 5;
 }
 
 // Authorizes requests by querying a custom extauth grpc server
