@@ -5104,11 +5104,12 @@ metadata:
 			})
 
 			Describe("Standard k8s values", func() {
-				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, restartPolicy on Deployments and Jobs",
+				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, restartPolicy, priorityClassName on Deployments and Jobs",
 					func(kind string, resourceName string, value string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
 								value + ".nodeSelector.label=someLabel",
+								value + ".priorityClassName=somePriorityClass",
 								value + ".nodeName=someNodeName",
 								value + ".tolerations[0].operator=someToleration",
 								value + ".hostAliases[0]=someHostAlias",
@@ -5124,6 +5125,8 @@ metadata:
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "nodeSelector")...)
 								Expect(a).To(Equal(map[string]interface{}{"label": "someLabel"}))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "priorityClassName")...)
+								Expect(a).To(Equal("somePriorityClass"))
 								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "nodeName")...)
 								Expect(a).To(Equal("someNodeName"))
 								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "tolerations")...)
