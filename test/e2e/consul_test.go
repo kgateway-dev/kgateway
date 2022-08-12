@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"time"
-
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -149,12 +147,8 @@ var _ = FDescribe("Consul e2e", func() {
 			return svc1.C, nil
 		}, "2s", "0.2s").Should(Receive())
 
-		for i := 1; i <= 500000; i++ {
-			err = consulInstance.RegisterService("my-svc", fmt.Sprintf("my-svc-loop-%v", i), envoyInstance.GlooAddr, []string{"svc", fmt.Sprintf("%v", i)}, svc2.Port)
-			Expect(err).NotTo(HaveOccurred())
-		}
-
-		time.Sleep(time.Second * 5) // wait for in sync
+		err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
+		Expect(err).NotTo(HaveOccurred())
 
 		By("requests are load balanced between the two services")
 

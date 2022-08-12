@@ -2,6 +2,7 @@ package consul
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -46,6 +47,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	}
 
 	// based off the comments above from Marco, there should only be one upstream per Consul service name
+
+	// I think we should pass in opts.Selector / opts.Expression selector to WatchServices here
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters, p.consulUpstreamDiscoverySettings.GetConsistencyMode())
 
 	errChan := make(chan error)
@@ -89,6 +92,20 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					return
 				}
 
+				// is this an issue?? waitgroup in refreshSpecs() actually means we probably wait before reading off
+				// channel again..
+				//
+				// thoughts below may be incorrect. comments seem to indicate we can get here while
+				// previous iteration is running (if so, i believe a bug) but not sure this can actually happen..
+				//
+				//
+				// todo(kdorosh) should we rate limit this? (buffer size for serviceMetaChan)
+				// if we get too many things off of serviceMetaChan,
+				// i could see ctx always being cancelled before it has a chance to finish; thus no updates
+				//
+				// we would rather take our time and update less frequently
+				// we should be able to repro this in a test..
+
 				// Cancel any running requests from previous iteration and set new context/cancel
 				cancel()
 				ctx, newCancel := context.WithCancel(opts.Ctx)
@@ -98,6 +115,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				// associated with a single consul service on one datacenter.
 				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
+
+				fmt.Printf("KDOROSH len(endpoints): %v", len(endpoints))
 
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
@@ -159,7 +178,9 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 			// Get complete spec for each service in parallel
 			eg.Go(func() error {
 				queryOpts := NewConsulQueryOptions(dcName, cm)
-
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
 				services, _, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
 				if err != nil {
 					return err
@@ -192,6 +213,7 @@ func NewConsulQueryOptions(dataCenter string, cm glooConsul.UpstreamSpec_ConsulC
 	// choosing the Default Mode will clear both fields
 	requireConsistent := cm == glooConsul.UpstreamSpec_ConsistentMode
 	allowStale := cm == glooConsul.UpstreamSpec_StaleMode
+	// we may also want to use the endpoint selector filter here
 	return &consulapi.QueryOptions{Datacenter: dataCenter, AllowStale: allowStale, RequireConsistent: requireConsistent}
 }
 

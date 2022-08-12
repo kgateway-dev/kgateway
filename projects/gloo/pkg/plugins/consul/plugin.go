@@ -76,6 +76,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	}
 
 	options := NewConsulQueryOptions(dc, spec.GetConsistencyMode())
+	// we also may want to make tags configurable for filtering
 	instances, _, err := p.client.Service(spec.GetServiceName(), "", options)
 	if err != nil {
 		return nil, eris.Wrapf(err, "getting service from catalog")

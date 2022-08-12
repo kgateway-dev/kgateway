@@ -64,6 +64,10 @@ func (c *consul) Service(service, tag string, q *consulapi.QueryOptions) ([]*con
 	if err := c.validateDataCenter(q.Datacenter); err != nil {
 		return nil, nil, err
 	}
+	// our consul client uses version 1.3.0; has not been updated in years (latest is 1.14.0)
+	// we may want to update and see if there are performance gains / new queries to make
+	//
+	// i diffed the files only interesting change was https://github.com/hashicorp/consul/pull/11287
 	return c.api.Catalog().Service(service, tag, q)
 }
 
@@ -100,7 +104,7 @@ func (c *consul) validateDataCenter(dataCenter string) error {
 	}
 
 	// If empty, the Consul client will use the default agent data center, which we should allow
-	if dataCenter != "" && c.dataCenters[dataCenter] == false {
+	if dataCenter != "" && !c.dataCenters[dataCenter] {
 		return ForbiddenDataCenterErr(dataCenter)
 	}
 	return nil
@@ -112,5 +116,8 @@ func NewConsulQueryOptions(dataCenter string, cm v1.Settings_ConsulUpstreamDisco
 	// currently choosing Default Mode will clear both fields
 	requireConsistent := cm == v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsistentMode
 	allowStale := cm == v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode
-	return &consulapi.QueryOptions{Datacenter: dataCenter, RequireConsistent: requireConsistent, AllowStale: allowStale}
+	return &consulapi.QueryOptions{Datacenter: dataCenter, RequireConsistent: requireConsistent,
+		// Filter: TODO(ian) grab this from new api (service selector)
+		// executes on the server side per https://www.consul.io/api-docs/features/filtering
+		AllowStale: allowStale}
 }

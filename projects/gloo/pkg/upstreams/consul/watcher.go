@@ -62,6 +62,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 		// Copy before passing to goroutines!
 		dcName := dataCenter
 
+		// I think we should pass in opts.Selector / opts.Expression selector to watchServicesInDataCenter here
 		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName, cm)
 
 		// Collect services
