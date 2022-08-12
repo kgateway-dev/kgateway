@@ -163,7 +163,7 @@ func EventuallyMetricsBecomeConsistent(offset int, metricsPort int) {
 			consistentlyInARow = 0
 		}
 		return consistentlyInARow
-	}, "80s", eventuallyConsistentPollingInterval).Should(Equal(5))
+	}, "80s", eventuallyConsistentPollingInterval).Should(Equal(4))
 }
 
 // needs a port-forward of the metrics port before a call to this will work

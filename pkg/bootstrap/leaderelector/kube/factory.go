@@ -26,7 +26,7 @@ func NewElectionFactory(config *rest.Config) *kubeElectionFactory {
 	}
 }
 
-func (f *kubeElectionFactory) StartElection(ctx context.Context, config leaderelector.ElectionConfig) (leaderelector.Identity, error) {
+func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
 	var leader = atomic.NewBool(false)
 	identity := leaderelector.NewIdentity(leader)
 

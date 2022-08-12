@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -66,10 +68,10 @@ var _ = Describe("SetupSyncer", func() {
 		setupFunc := NewSetupFunc()
 
 		var synchronizedSetupFunc setuputils.SetupFunc
-		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
 			setupLock.Lock()
 			defer setupLock.Unlock()
-			return setupFunc(ctx, kubeCache, inMemoryCache, settings)
+			return setupFunc(ctx, kubeCache, inMemoryCache, settings, identity)
 		}
 
 		return synchronizedSetupFunc

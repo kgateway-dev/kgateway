@@ -19,7 +19,7 @@ func NewElectionFactory() *singleReplicaElectionFactory {
 	return &singleReplicaElectionFactory{}
 }
 
-func (f *singleReplicaElectionFactory) StartElection(ctx context.Context, _ leaderelector.ElectionConfig) (leaderelector.Identity, error) {
+func (f *singleReplicaElectionFactory) StartElection(ctx context.Context, _ *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
 	contextutils.LoggerFrom(ctx).Debugf("Starting Single Replica Leader Election")
 	return Identity(), nil
 }

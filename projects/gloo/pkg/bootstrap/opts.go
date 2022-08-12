@@ -59,7 +59,7 @@ type Opts struct {
 	GatewayControllerEnabled     bool
 	ProxyCleanup                 func()
 
-	LeaderElectionFactory leaderelector.ElectionFactory
+	Identity leaderelector.Identity
 }
 
 type Consul struct {

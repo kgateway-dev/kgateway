@@ -19,5 +19,5 @@ type ElectionConfig struct {
 // An ElectionFactory is an implementation for running a leader election
 type ElectionFactory interface {
 	// StartElection begins leader election and returns the Identity of the current component
-	StartElection(ctx context.Context, config ElectionConfig) (Identity, error)
+	StartElection(ctx context.Context, config *ElectionConfig) (Identity, error)
 }

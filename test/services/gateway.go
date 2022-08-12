@@ -438,7 +438,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		},
 		GatewayControllerEnabled: true,
 		ValidationOpts:           validationOpts,
-		LeaderElectionFactory:    singlereplica.NewElectionFactory(),
+		Identity:                 singlereplica.Identity(),
 	}
 }
 

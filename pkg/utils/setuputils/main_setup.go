@@ -6,6 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	kube2 "github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
@@ -31,6 +35,8 @@ type SetupOpts struct {
 	// optional - if present, report usage with the payload this discovers
 	// should really only provide it in very intentional places- in the gloo pod, and in glooctl
 	// otherwise, we'll provide redundant copies of the usage data
+
+	ElectionConfig *leaderelector.ElectionConfig
 }
 
 var once sync.Once
@@ -56,19 +62,22 @@ func Main(opts SetupOpts) error {
 	loggingContext := append([]interface{}{"version", opts.Version}, opts.LoggingPrefixVals...)
 	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
 
-	settingsClient, err := kubeOrFileSettingsClient(ctx, setupNamespace, setupDir)
+	settingsClient, err := fileOrKubeSettingsClient(ctx, setupNamespace, setupDir)
 	if err != nil {
 		return err
 	}
+
 	if err := settingsClient.Register(); err != nil {
 		return err
 	}
+
+	identity, err := startLeaderElection(ctx, setupDir, opts.ElectionConfig)
 
 	// settings come from the ResourceClient in the settingsClient
 	// the eventLoop will Watch the emitter's settingsClient to recieve settings from the ResourceClient
 	emitter := v1.NewSetupEmitter(settingsClient)
 	settingsRef := &core.ResourceRef{Namespace: setupNamespace, Name: setupName}
-	eventLoop := v1.NewSetupEventLoop(emitter, NewSetupSyncer(settingsRef, opts.SetupFunc))
+	eventLoop := v1.NewSetupEventLoop(emitter, NewSetupSyncer(settingsRef, opts.SetupFunc, identity))
 	errs, err := eventLoop.Run([]string{setupNamespace}, clients.WatchOpts{
 		Ctx:         ctx,
 		RefreshRate: time.Second,
@@ -85,13 +94,14 @@ func Main(opts SetupOpts) error {
 	return nil
 }
 
-func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir string) (v1.SettingsClient, error) {
+func fileOrKubeSettingsClient(ctx context.Context, setupNamespace, settingsDir string) (v1.SettingsClient, error) {
 	if settingsDir != "" {
 		contextutils.LoggerFrom(ctx).Infow("using filesystem for settings", zap.String("directory", settingsDir))
 		return v1.NewSettingsClient(ctx, &factory.FileResourceClientFactory{
 			RootDir: settingsDir,
 		})
 	}
+
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return nil, err
@@ -102,4 +112,16 @@ func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir s
 		SharedCache:        kube.NewKubeCache(ctx),
 		NamespaceWhitelist: []string{setupNamespace},
 	})
+}
+
+func startLeaderElection(ctx context.Context, settingsDir string, electionConfig *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
+	if electionConfig == nil || settingsDir != "" {
+		return singlereplica.NewElectionFactory().StartElection(ctx, electionConfig)
+	}
+
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, err
+	}
+	return kube2.NewElectionFactory(cfg).StartElection(ctx, electionConfig)
 }

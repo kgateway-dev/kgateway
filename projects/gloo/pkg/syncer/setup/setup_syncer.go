@@ -10,11 +10,7 @@ import (
 	"strings"
 	"time"
 
-	kube2 "github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
-
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
-
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
@@ -216,7 +212,7 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 	return &net.TCPAddr{IP: ip, Port: port}, nil
 }
 
-func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
 
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
@@ -361,6 +357,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if err != nil {
 		return err
 	}
+	opts.Identity = identity
 	opts.WriteNamespace = writeNamespace
 	opts.StatusReporterNamespace = gloostatusutils.GetStatusReporterNamespaceOrDefault(writeNamespace)
 	opts.WatchNamespaces = watchNamespaces
@@ -581,11 +578,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	startRestXdsServer(opts)
 
-	identity, err := startLeaderElection(opts.WatchOpts.Ctx, opts.LeaderElectionFactory)
-	if err != nil {
-		return err
-	}
-
 	errs := make(chan error)
 
 	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
@@ -780,7 +772,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			gatewayTranslator,
 			statusClient,
 			statusMetrics,
-			identity)
+			opts.Identity)
 	} else {
 		logger.Debugf("Gateway translation is disabled. Proxies are provided from another source")
 	}
@@ -817,7 +809,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		gwTranslatorSyncer,
 		proxyClient,
 		opts.WriteNamespace,
-		identity)
+		opts.Identity)
 
 	syncers := v1snap.ApiSyncers{
 		validator,
@@ -956,27 +948,6 @@ func startRestXdsServer(opts bootstrap.Opts) {
 			contextutils.LoggerFrom(opts.WatchOpts.Ctx).Warnf("error while shutting down REST xDS server", zap.Error(err))
 		}
 	}()
-}
-
-func startLeaderElection(ctx context.Context, electionFactory leaderelector.ElectionFactory) (leaderelector.Identity, error) {
-	electionConfig := leaderelector.ElectionConfig{
-		Id:        "gloo",
-		Namespace: utils.GetPodNamespace(),
-		// no-op all the callbacks for now
-		// at the moment, leadership functionality is performed within components
-		// in the future we could pull that out and let these callbacks change configuration
-		OnStartedLeading: func(c context.Context) {
-			contextutils.LoggerFrom(c).Info("starting leadership")
-		},
-		OnNewLeader: func(leaderId string) {
-			contextutils.LoggerFrom(ctx).Infof("new leader elected with ID: %s", leaderId)
-		},
-		OnStoppedLeading: func() {
-			// Kill app if we lose leadership, we need to be VERY sure we don't continue any leader election processes.
-			contextutils.LoggerFrom(ctx).Fatal("lost leadership, quitting app")
-		},
-	}
-	return electionFactory.StartElection(ctx, electionConfig)
 }
 
 func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings, writeNamespace string) (bootstrap.Opts, error) {
@@ -1160,18 +1131,6 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	}
 	readGatewaysFromAllNamespaces := settings.GetGateway().GetReadGatewaysFromAllNamespaces()
 
-	// Choose the LeaderElectionFactory
-	var electionFactory leaderelector.ElectionFactory
-	if settings.GetKubernetesConfigSource() != nil {
-		// If the component is configured to use Kubernetes as the source for configuration,
-		// we will also use kubernetes as the source for leader election
-		electionFactory = kube2.NewElectionFactory(cfg)
-	} else {
-		// Otherwise, we will use the no-op leader election, meaning only a single replica can be run
-		// at once, and it will be treated as the "leader"
-		electionFactory = singlereplica.NewElectionFactory()
-	}
-
 	return bootstrap.Opts{
 		Upstreams:                    upstreamFactory,
 		KubeServiceClient:            kubeServiceClient,
@@ -1193,6 +1152,5 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
 		GatewayControllerEnabled:     gatewayMode,
 		ProxyCleanup:                 proxyCleanup,
-		LeaderElectionFactory:        electionFactory,
 	}, nil
 }
