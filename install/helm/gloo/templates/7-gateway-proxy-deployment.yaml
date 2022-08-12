@@ -157,8 +157,9 @@ spec:
       initContainers:
       {{- include $spec.extraInitContainersHelper . | nindent 6 }}
       {{- end }}
-      {{- with .Values.gatewayProxies.gatewayProxy.kind.deployment.priorityClassName }}
-      priorityClassName: {{ . }}
+      {{- if $spec.kind.deployment }}
+      priorityClassName: {{ $spec.kind.deployment.priorityClassName }}
+      {{- end}}
       {{- end }}
       containers:
       - args:
