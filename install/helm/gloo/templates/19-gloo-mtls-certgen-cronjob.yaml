@@ -28,9 +28,9 @@ spec:
           {{- include "gloo.pullSecret" $image | nindent 10 -}}
           serviceAccountName: certgen
           {{- include "gloo.podSpecStandardFields" .Values.gateway.certGenJob | nindent 10 -}}
-          {{ - with .Values.gateway.certGenJob.priorityClassName }}
+          {{- with .Values.gateway.certGenJob.priorityClassName }}
           priorityClassName: {{ . }}
-          {{ - end }}
+          {{- end }}
           containers:
             - image: {{template "gloo.image" $image}}
               imagePullPolicy: {{ $image.pullPolicy }}

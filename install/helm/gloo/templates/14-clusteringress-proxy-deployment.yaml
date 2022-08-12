@@ -39,9 +39,9 @@ spec:
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       {{- include "gloo.podSpecStandardFields" .Values.settings.integrations.knative.proxy | nindent 6 -}}
-      {{ - with .Values.settings.integrations.knative.proxy.priorityClassName }}
+      {{- with .Values.settings.integrations.knative.proxy.priorityClassName }}
       priorityClassName: {{ . }}
-      {{ - end }}
+      {{- end }}
       containers:
       - args: ["--disable-hot-restart"]
         env:
