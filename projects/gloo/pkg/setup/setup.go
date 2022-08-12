@@ -43,10 +43,9 @@ func startSetupLoop(ctx context.Context) error {
 				contextutils.LoggerFrom(ctx).Infof("new leader elected with ID: %s", leaderId)
 			},
 			OnStoppedLeading: func() {
-				// In Gloo Edge, Settings changes cause the entire setup loop to be re-run. Therefore,
-				// leadership may be lost as a result of re-running setup.
-				// Instead of killing the app, we will log a notification
-				contextutils.LoggerFrom(ctx).Fatalf("lost leadership, continuing app")
+				// Kill app if we lose leadership, we need to be VERY sure we don't continue
+				// any leader election processes.
+				contextutils.LoggerFrom(ctx).Fatalf("lost leadership, quitting app")
 			},
 		},
 	})
