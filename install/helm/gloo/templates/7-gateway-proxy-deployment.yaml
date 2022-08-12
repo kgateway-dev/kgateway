@@ -159,7 +159,6 @@ spec:
       {{- end }}
       {{- if $spec.kind.deployment }}
       priorityClassName: {{ $spec.kind.deployment.priorityClassName }}
-      {{- end}}
       {{- end }}
       containers:
       - args:
