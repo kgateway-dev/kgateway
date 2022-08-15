@@ -90,6 +90,10 @@ func (m *UpstreamSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetAwsAccountId())); err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 

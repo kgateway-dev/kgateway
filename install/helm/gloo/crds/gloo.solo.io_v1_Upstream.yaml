@@ -25,6 +25,8 @@ spec:
             properties:
               aws:
                 properties:
+                  awsAccountId:
+                    type: string
                   lambdaFunctions:
                     items:
                       properties:

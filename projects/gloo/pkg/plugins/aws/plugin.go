@@ -332,14 +332,21 @@ func GenerateAWSLambdaRouteConfig(destination *aws.DestinationSpec, upstream *aw
 	logicalName := destination.GetLogicalName()
 	for _, lambdaFunc := range upstream.GetLambdaFunctions() {
 		if lambdaFunc.GetLogicalName() == logicalName {
+			functionName := lambdaFunc.GetLambdaFunctionName()
+			if len(upstream.GetAwsAccountId()) > 0 {
+				// eg arn:aws:lambda:us-east-2:986112284769:function:simplerhello
+				functionName = fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s",
+					upstream.GetRegion(), upstream.GetAwsAccountId(), functionName)
+			}
 
 			lambdaRouteFunc := &AWSLambdaPerRoute{
 				Async: destination.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
 				// we need to query escape per AWS spec:
 				// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
 				Qualifier:   url.QueryEscape(lambdaFunc.GetQualifier()),
-				Name:        lambdaFunc.GetLambdaFunctionName(),
+				Name:        url.QueryEscape(functionName),
 				UnwrapAsAlb: destination.GetUnwrapAsAlb(),
+
 				// TransformerConfig is intentionally not included as that is an enterprise only feature
 				TransformerConfig: nil,
 			}
