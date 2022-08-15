@@ -76,6 +76,7 @@ require (
 	k8s.io/apimachinery v0.22.4
 	k8s.io/client-go v0.22.4
 	k8s.io/code-generator v0.22.4
+	k8s.io/component-base v0.22.4
 	k8s.io/kubectl v0.22.4
 	k8s.io/utils v0.0.0-20211208161948-7d6a63dca704
 	knative.dev/networking v0.0.0-20211210083629-bace06e98aee
@@ -111,6 +112,7 @@ require (
 	github.com/armon/go-metrics v0.3.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/bugsnag/bugsnag-go v1.5.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
@@ -291,7 +293,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/apiserver v0.22.4 // indirect
 	k8s.io/cli-runtime v0.22.4 // indirect
-	k8s.io/component-base v0.22.4 // indirect
 	k8s.io/component-helpers v0.22.4 // indirect
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185 // indirect
 	k8s.io/klog/v2 v2.9.0 // indirect
