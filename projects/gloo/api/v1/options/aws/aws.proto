@@ -36,6 +36,9 @@ message UpstreamSpec {
     // This option will only be respected if STS credentials are enabled.
     // To enable STS credential fetching see Settings.Gloo.AwsOptions in settings.proto.
     string role_arn = 4;
+
+    // (Optional): The AWS Account ID to use while calling if using resource based access
+    string aws_account_id = 5;
 }
 
 // Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda functions:
