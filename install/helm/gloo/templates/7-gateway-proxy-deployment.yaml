@@ -157,9 +157,6 @@ spec:
       initContainers:
       {{- include $spec.extraInitContainersHelper . | nindent 6 }}
       {{- end }}
-      {{- if $spec.kind.deployment }}
-      priorityClassName: {{ $spec.kind.deployment.priorityClassName }}
-      {{- end }}
       containers:
       - args:
           - --disable-hot-restart
