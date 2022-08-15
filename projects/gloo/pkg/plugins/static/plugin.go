@@ -101,6 +101,23 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			}
 		}
 
+		healthCheckConfig := &envoy_config_endpoint_v3.Endpoint_HealthCheckConfig{
+			Hostname: host.GetAddr(),
+		}
+
+		if (in.GetHealthChecks() != nil) &&
+			(len(in.GetHealthChecks()) > 0) &&
+			(in.GetHealthChecks()[0].GetHttpHealthCheck().GetHost() != "") {
+
+			// The discerning reader may ask the question "Why are we hardcoding this to use the 0th healthcheck?"
+			// This was done with two assumptions:
+			// 		1) no one _currently_ uses this feature.  It was previously _always_ hardcoded to be a loopback call to host.GetAddr()
+			//		2) looking through our field engineering scripts/customer use-cases, _right now_, it appears that customers are using only a single top-level healthcheck
+			healthCheckConfig = &envoy_config_endpoint_v3.Endpoint_HealthCheckConfig{
+				Hostname: in.GetHealthChecks()[0].GetHttpHealthCheck().GetHost(),
+			}
+		}
+
 		out.GetLoadAssignment().GetEndpoints()[0].LbEndpoints = append(out.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints(),
 			&envoy_config_endpoint_v3.LbEndpoint{
 				Metadata: getMetadata(spec, host),
@@ -118,9 +135,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 								},
 							},
 						},
-						HealthCheckConfig: &envoy_config_endpoint_v3.Endpoint_HealthCheckConfig{
-							Hostname: host.GetAddr(),
-						},
+						HealthCheckConfig: healthCheckConfig,
 					},
 				},
 				LoadBalancingWeight: host.GetLoadBalancingWeight(),

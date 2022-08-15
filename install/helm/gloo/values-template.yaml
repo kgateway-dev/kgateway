@@ -85,23 +85,26 @@ gateway:
     setTtlAfterFinished: true
     ttlSecondsAfterFinished: 60
     runAsUser: 10101
+    activeDeadlineSeconds: 100
     cron:
       enabled: false
       schedule: "* * * * *"
     runOnUpdate: false
   rolloutJob:
+    enabled: true
     image:
-      registry: bitnami
       repository: kubectl
-      tag: 1.22.12
+    restartPolicy: OnFailure
     runAsUser: 10101
+    activeDeadlineSeconds: 100
     ttlSecondsAfterFinished: 60
   cleanupJob:
+    enabled: true
     image:
-      registry: bitnami
       repository: kubectl
-      tag: 1.22.12
+    restartPolicy: OnFailure
     runAsUser: 10101
+    activeDeadlineSeconds: 100
     ttlSecondsAfterFinished: 60
   proxyServiceAccount: {}
 gatewayProxies:

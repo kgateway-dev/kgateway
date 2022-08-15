@@ -84,6 +84,8 @@ spec:
                           items:
                             type: string
                           type: array
+                        disableGroupChecking:
+                          type: boolean
                         membershipAttributeName:
                           type: string
                         pool:
@@ -440,6 +442,8 @@ spec:
                       type: object
                   type: object
                 type: array
+              failOnRedirect:
+                type: boolean
               namespacedStatuses:
                 properties:
                   statuses:

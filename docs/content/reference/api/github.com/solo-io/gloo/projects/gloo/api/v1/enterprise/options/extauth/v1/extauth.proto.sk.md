@@ -98,6 +98,7 @@ format that will be included in the extauth snapshot.
 "metadata": .core.solo.io.Metadata
 "configs": []enterprise.gloo.solo.io.AuthConfig.Config
 "booleanExpr": .google.protobuf.StringValue
+"failOnRedirect": bool
 
 ```
 
@@ -107,6 +108,7 @@ format that will be included in the extauth snapshot.
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
 | `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
+| `failOnRedirect` | `bool` | How the service should handle a redirect response from an OIDC issuer. In the default false mode, the redirect will be considered a successful response, and the client will receive a 302 with a location header. If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where API calls are being made or other such occurrences where the client cannot handle the redirect. |
 
 
 
@@ -1096,6 +1098,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 "allowedGroups": []string
 "pool": .enterprise.gloo.solo.io.Ldap.ConnectionPool
 "searchFilter": string
+"disableGroupChecking": bool
 
 ```
 
@@ -1107,6 +1110,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 | `allowedGroups` | `[]string` | In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }. |
 | `pool` | [.enterprise.gloo.solo.io.Ldap.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |
 | `searchFilter` | `string` | Use to set a custom filter when searching a member. Defaults to "(uid=*)". |
+| `disableGroupChecking` | `bool` | Disables group checking, regardless of the value for allowedGroups, and disables validation for the membership attribute of the user entry. Group checking is enabled by default. |
 
 
 
@@ -1272,6 +1276,7 @@ JSON marshalling.
 "authConfigRefName": string
 "configs": []enterprise.gloo.solo.io.ExtAuthConfig.Config
 "booleanExpr": .google.protobuf.StringValue
+"failOnRedirect": bool
 
 ```
 
@@ -1280,6 +1285,7 @@ JSON marshalling.
 | `authConfigRefName` | `string` |  |
 | `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
 | `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
+| `failOnRedirect` | `bool` | How the service should handle a redirect response from an OIDC issuer. In the default false mode, the redirect will be considered a successful response, and the client will receive a 302 with a location header. If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where API calls are being made or other such occurrences where the client cannot handle the redirect. |
 
 
 
