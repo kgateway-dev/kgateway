@@ -2447,7 +2447,7 @@ func (m *ApiKeyCreateRequest) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *ApiKeyCreateReResponse) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *ApiKeyCreateResponse) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -2455,7 +2455,7 @@ func (m *ApiKeyCreateReResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ApiKeyCreateReResponse")); err != nil {
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ApiKeyCreateResponse")); err != nil {
 		return 0, err
 	}
 

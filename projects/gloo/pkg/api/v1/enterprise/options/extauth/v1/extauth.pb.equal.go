@@ -2227,14 +2227,14 @@ func (m *ApiKeyCreateRequest) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *ApiKeyCreateReResponse) Equal(that interface{}) bool {
+func (m *ApiKeyCreateResponse) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ApiKeyCreateReResponse)
+	target, ok := that.(*ApiKeyCreateResponse)
 	if !ok {
-		that2, ok := that.(ApiKeyCreateReResponse)
+		that2, ok := that.(ApiKeyCreateResponse)
 		if ok {
 			target = &that2
 		} else {

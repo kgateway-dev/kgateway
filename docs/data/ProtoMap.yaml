@@ -149,11 +149,11 @@ apis:
   enterprise.gloo.solo.io.ApiKeyAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyAuth
     package: enterprise.gloo.solo.io
-  enterprise.gloo.solo.io.ApiKeyCreateReResponse:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyCreateReResponse
-    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.ApiKeyCreateRequest:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyCreateRequest
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKeyCreateResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyCreateResponse
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.ApiKeyDeleteRequest:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyDeleteRequest

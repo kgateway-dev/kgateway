@@ -1313,12 +1313,12 @@ func (m *ApiKeyCreateRequest) Clone() proto.Message {
 }
 
 // Clone function
-func (m *ApiKeyCreateReResponse) Clone() proto.Message {
-	var target *ApiKeyCreateReResponse
+func (m *ApiKeyCreateResponse) Clone() proto.Message {
+	var target *ApiKeyCreateResponse
 	if m == nil {
 		return target
 	}
-	target = &ApiKeyCreateReResponse{}
+	target = &ApiKeyCreateResponse{}
 
 	if m.GetApiKeys() != nil {
 		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))

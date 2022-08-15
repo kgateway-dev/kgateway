@@ -1437,7 +1437,7 @@ message ApiKeyCreateRequest {
     repeated ApiKey api_keys = 1;
     repeated string raw_api_keys = 2;
 }
-message ApiKeyCreateReResponse {
+message ApiKeyCreateResponse {
     repeated ApiKey api_keys = 1;
 }
 message ApiKeyReadRequest {
@@ -1461,7 +1461,7 @@ message ApiKeyDeleteRequest {
 }
 message ApiKeyDeleteResponse {}
 service ApiKeyService {
-    rpc Create (ApiKeyCreateRequest) returns (ApiKeyCreateReResponse) {}
+    rpc Create (ApiKeyCreateRequest) returns (ApiKeyCreateResponse) {}
     rpc Read (ApiKeyReadRequest) returns (ApiKeyReadResponse) {}
     rpc Update (ApiKeyUpdateRequest) returns (ApiKeyUpdateResponse) {}
     rpc Delete (ApiKeyDeleteRequest) returns (ApiKeyDeleteResponse) {}

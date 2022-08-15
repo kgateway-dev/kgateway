@@ -81,7 +81,7 @@ weight: 5
 - [OpaAuthConfig](#opaauthconfig)
 - [Config](#config)
 - [ApiKeyCreateRequest](#apikeycreaterequest)
-- [ApiKeyCreateReResponse](#apikeycreatereresponse)
+- [ApiKeyCreateResponse](#apikeycreateresponse)
 - [ApiKeyReadRequest](#apikeyreadrequest)
 - [ApiKeyReadResponse](#apikeyreadresponse)
 - [ApiKeyUpdateRequest](#apikeyupdaterequest)
@@ -1801,7 +1801,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 
 ---
-### ApiKeyCreateReResponse
+### ApiKeyCreateResponse
 
 
 
