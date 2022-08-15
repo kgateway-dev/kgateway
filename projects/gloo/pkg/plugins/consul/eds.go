@@ -2,7 +2,6 @@ package consul
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -36,7 +35,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	var previousHash uint64
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
-			// We generate one upstream for every Consul service name, so this should never happen.
+			// discovery generates one upstream for every Consul service name;
+			// this should only happen if users define duplicate upstrems for a consul service name.
 			trackedServiceToUpstreams[consulUsSpec.GetServiceName()] = append(trackedServiceToUpstreams[consulUsSpec.GetServiceName()], us)
 		}
 	}
@@ -45,8 +45,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	if err != nil {
 		return nil, nil, err
 	}
-
-	// based off the comments above from Marco, there should only be one upstream per Consul service name
 
 	// I think we should pass in opts.Selector / opts.Expression selector to WatchServices here
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters, p.consulUpstreamDiscoverySettings.GetConsistencyMode())
@@ -64,11 +62,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	go func() {
 		defer close(endpointsChan)
 		defer wg.Done()
-
-		// Create a new context for each loop, cancel it before each loop
-		var cancel context.CancelFunc = func() {}
-		// Use closure to allow cancel function to be updated as context changes
-		defer func() { cancel() }()
 
 		timer := time.NewTicker(DefaultDnsPollingInterval)
 		defer timer.Stop()
@@ -92,31 +85,10 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					return
 				}
 
-				// is this an issue?? waitgroup in refreshSpecs() actually means we probably wait before reading off
-				// channel again..
-				//
-				// thoughts below may be incorrect. comments seem to indicate we can get here while
-				// previous iteration is running (if so, i believe a bug) but not sure this can actually happen..
-				//
-				//
-				// todo(kdorosh) should we rate limit this? (buffer size for serviceMetaChan)
-				// if we get too many things off of serviceMetaChan,
-				// i could see ctx always being cancelled before it has a chance to finish; thus no updates
-				//
-				// we would rather take our time and update less frequently
-				// we should be able to repro this in a test..
-
-				// Cancel any running requests from previous iteration and set new context/cancel
-				cancel()
-				ctx, newCancel := context.WithCancel(opts.Ctx)
-				cancel = newCancel
-
 				// Here is where the specs are produced; each resulting spec is a grouping of serviceInstances (aka endpoints)
 				// associated with a single consul service on one datacenter.
-				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
+				specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
-
-				fmt.Printf("KDOROSH len(endpoints): %v", len(endpoints))
 
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
