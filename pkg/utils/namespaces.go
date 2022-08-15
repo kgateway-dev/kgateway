@@ -1,5 +1,9 @@
 package utils
 
+import (
+	"os"
+)
+
 func AllNamespaces(watchNamespaces []string) bool {
 
 	if len(watchNamespaces) == 0 {
@@ -28,4 +32,11 @@ func ProcessWatchNamespaces(watchNamespaces []string, writeNamespace string) []s
 	}
 
 	return watchNamespaces
+}
+
+func GetPodNamespace() string {
+	if podNamespace := os.Getenv("POD_NAMESPACE"); podNamespace != "" {
+		return podNamespace
+	}
+	return "gloo-system"
 }
