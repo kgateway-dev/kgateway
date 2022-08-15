@@ -293,7 +293,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					return nil, eris.Errorf("Expected %d routes to test runner service, but found %d", expectedRoutesToTestRunner, actualRoutesToTestRunner)
 				}
 				return proxy, nil
-			}, 60*time.Second, 1*time.Second)
+			})
 
 			// modify the proxy to use the deprecated label
 			// this will simulate proxies that were persisted before the label change
