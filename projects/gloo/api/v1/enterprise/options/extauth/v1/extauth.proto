@@ -849,6 +849,9 @@ message AerospikeApiKeyStorage {
 message ApiKey {
     // The string value of the API key.
     string api_key = 2;
+    // A list of labels (key=value) for the apikey secret.
+    // These labels are used by the storage driver to facilitate lookups by label
+    repeated string labels = 3;
     // additional data the client needs associated with this API key
     map<string, string> metadata = 4;
 }
@@ -1430,18 +1433,36 @@ service ExtAuthDiscoveryService {
     }
 }
 
-message RawApiKey {
-    string api_key = 1;
+message ApiKeyCreateRequest {
+    repeated ApiKey api_keys = 1;
+    repeated string raw_api_keys = 2;
 }
-message MaybeApiKey {
-    oneof api_key_or_empty {
-        ApiKey api_key = 1;
-        google.protobuf.Empty empty = 2;
-    }
+message ApiKeyCreateReResponse {
+    repeated ApiKey api_keys = 1;
 }
+message ApiKeyReadRequest {
+    repeated string raw_api_keys = 1;
+    repeated string labels = 2;
+}
+message ApiKeyReadResponse {
+    repeated ApiKey api_keys = 1;
+}
+message ApiKeyUpdateRequest {
+    bool upsert = 1;
+    repeated ApiKey api_keys = 2;
+    repeated string raw_api_keys = 3;
+}
+message ApiKeyUpdateResponse {
+    repeated ApiKey api_keys = 1;
+}
+message ApiKeyDeleteRequest {
+    repeated string raw_api_keys = 1;
+    repeated string labels = 2;
+}
+message ApiKeyDeleteResponse {}
 service ApiKeyService {
-    rpc Create (MaybeApiKey) returns (ApiKey) {}
-    rpc Read (RawApiKey) returns (ApiKey) {}
-    rpc Update (ApiKey) returns (ApiKey) {}
-    rpc Delete (RawApiKey) returns (google.protobuf.Empty) {}
+    rpc Create (ApiKeyCreateRequest) returns (ApiKeyCreateReResponse) {}
+    rpc Read (ApiKeyReadRequest) returns (ApiKeyReadResponse) {}
+    rpc Update (ApiKeyUpdateRequest) returns (ApiKeyUpdateResponse) {}
+    rpc Delete (ApiKeyDeleteRequest) returns (ApiKeyDeleteResponse) {}
 }

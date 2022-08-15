@@ -80,8 +80,14 @@ weight: 5
 - [KeyMetadata](#keymetadata)
 - [OpaAuthConfig](#opaauthconfig)
 - [Config](#config)
-- [RawApiKey](#rawapikey)
-- [MaybeApiKey](#maybeapikey)
+- [ApiKeyCreateRequest](#apikeycreaterequest)
+- [ApiKeyCreateReResponse](#apikeycreatereresponse)
+- [ApiKeyReadRequest](#apikeyreadrequest)
+- [ApiKeyReadResponse](#apikeyreadresponse)
+- [ApiKeyUpdateRequest](#apikeyupdaterequest)
+- [ApiKeyUpdateResponse](#apikeyupdateresponse)
+- [ApiKeyDeleteRequest](#apikeydeleterequest)
+- [ApiKeyDeleteResponse](#apikeydeleteresponse)
   
 
 
@@ -1165,6 +1171,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 ```yaml
 "apiKey": string
+"labels": []string
 "metadata": map<string, bool>
 
 ```
@@ -1172,6 +1179,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `apiKey` | `string` | The string value of the API key. |
+| `labels` | `[]string` | A list of labels (key=value) for the apikey secret. These labels are used by the storage driver to facilitate lookups by label. |
 | `metadata` | `map<string, bool>` | additional data the client needs associated with this API key. |
 
 
@@ -1774,37 +1782,145 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 
 ---
-### RawApiKey
+### ApiKeyCreateRequest
 
 
 
 ```yaml
-"apiKey": string
+"apiKeys": []enterprise.gloo.solo.io.ApiKey
+"rawApiKeys": []string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `apiKey` | `string` |  |
+| `apiKeys` | [[]enterprise.gloo.solo.io.ApiKey](../extauth.proto.sk/#apikey) |  |
+| `rawApiKeys` | `[]string` |  |
 
 
 
 
 ---
-### MaybeApiKey
+### ApiKeyCreateReResponse
 
 
 
 ```yaml
-"apiKey": .enterprise.gloo.solo.io.ApiKey
-"empty": .google.protobuf.Empty
+"apiKeys": []enterprise.gloo.solo.io.ApiKey
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `apiKey` | [.enterprise.gloo.solo.io.ApiKey](../extauth.proto.sk/#apikey) |  Only one of `apiKey` or `empty` can be set. |
-| `empty` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) |  Only one of `empty` or `apiKey` can be set. |
+| `apiKeys` | [[]enterprise.gloo.solo.io.ApiKey](../extauth.proto.sk/#apikey) |  |
+
+
+
+
+---
+### ApiKeyReadRequest
+
+
+
+```yaml
+"rawApiKeys": []string
+"labels": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `rawApiKeys` | `[]string` |  |
+| `labels` | `[]string` |  |
+
+
+
+
+---
+### ApiKeyReadResponse
+
+
+
+```yaml
+"apiKeys": []enterprise.gloo.solo.io.ApiKey
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `apiKeys` | [[]enterprise.gloo.solo.io.ApiKey](../extauth.proto.sk/#apikey) |  |
+
+
+
+
+---
+### ApiKeyUpdateRequest
+
+
+
+```yaml
+"upsert": bool
+"apiKeys": []enterprise.gloo.solo.io.ApiKey
+"rawApiKeys": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `upsert` | `bool` |  |
+| `apiKeys` | [[]enterprise.gloo.solo.io.ApiKey](../extauth.proto.sk/#apikey) |  |
+| `rawApiKeys` | `[]string` |  |
+
+
+
+
+---
+### ApiKeyUpdateResponse
+
+
+
+```yaml
+"apiKeys": []enterprise.gloo.solo.io.ApiKey
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `apiKeys` | [[]enterprise.gloo.solo.io.ApiKey](../extauth.proto.sk/#apikey) |  |
+
+
+
+
+---
+### ApiKeyDeleteRequest
+
+
+
+```yaml
+"rawApiKeys": []string
+"labels": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `rawApiKeys` | `[]string` |  |
+| `labels` | `[]string` |  |
+
+
+
+
+---
+### ApiKeyDeleteResponse
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

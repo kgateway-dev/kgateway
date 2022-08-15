@@ -1773,6 +1773,17 @@ func (m *ApiKey) Equal(that interface{}) bool {
 		return false
 	}
 
+	if len(m.GetLabels()) != len(target.GetLabels()) {
+		return false
+	}
+	for idx, v := range m.GetLabels() {
+
+		if strings.Compare(v, target.GetLabels()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	if len(m.GetMetadata()) != len(target.GetMetadata()) {
 		return false
 	}
@@ -2164,14 +2175,14 @@ func (m *ExtAuthConfig) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *RawApiKey) Equal(that interface{}) bool {
+func (m *ApiKeyCreateRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*RawApiKey)
+	target, ok := that.(*ApiKeyCreateRequest)
 	if !ok {
-		that2, ok := that.(RawApiKey)
+		that2, ok := that.(ApiKeyCreateRequest)
 		if ok {
 			target = &that2
 		} else {
@@ -2184,22 +2195,46 @@ func (m *RawApiKey) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetApiKey(), target.GetApiKey()) != 0 {
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
 		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
 	}
 
 	return true
 }
 
 // Equal function
-func (m *MaybeApiKey) Equal(that interface{}) bool {
+func (m *ApiKeyCreateReResponse) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*MaybeApiKey)
+	target, ok := that.(*ApiKeyCreateReResponse)
 	if !ok {
-		that2, ok := that.(MaybeApiKey)
+		that2, ok := that.(ApiKeyCreateReResponse)
 		if ok {
 			target = &that2
 		} else {
@@ -2212,43 +2247,275 @@ func (m *MaybeApiKey) Equal(that interface{}) bool {
 		return false
 	}
 
-	switch m.ApiKeyOrEmpty.(type) {
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
 
-	case *MaybeApiKey_ApiKey:
-		if _, ok := target.ApiKeyOrEmpty.(*MaybeApiKey_ApiKey); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetApiKey()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetApiKey()) {
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetApiKey(), target.GetApiKey()) {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
 				return false
 			}
 		}
 
-	case *MaybeApiKey_Empty:
-		if _, ok := target.ApiKeyOrEmpty.(*MaybeApiKey_Empty); !ok {
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyReadRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyReadRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyReadRequest)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetEmpty()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetEmpty()) {
+	}
+
+	if len(m.GetLabels()) != len(target.GetLabels()) {
+		return false
+	}
+	for idx, v := range m.GetLabels() {
+
+		if strings.Compare(v, target.GetLabels()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyReadResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyReadResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyReadResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetEmpty(), target.GetEmpty()) {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
 				return false
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ApiKeyOrEmpty != target.ApiKeyOrEmpty {
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyUpdateRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyUpdateRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyUpdateRequest)
+		if ok {
+			target = &that2
+		} else {
 			return false
 		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetUpsert() != target.GetUpsert() {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyUpdateResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyUpdateResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyUpdateResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyDeleteRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyDeleteRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyDeleteRequest)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetLabels()) != len(target.GetLabels()) {
+		return false
+	}
+	for idx, v := range m.GetLabels() {
+
+		if strings.Compare(v, target.GetLabels()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyDeleteResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyDeleteResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyDeleteResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
 	}
 
 	return true

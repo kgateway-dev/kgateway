@@ -1048,6 +1048,15 @@ func (m *ApiKey) Clone() proto.Message {
 
 	target.ApiKey = m.GetApiKey()
 
+	if m.GetLabels() != nil {
+		target.Labels = make([]string, len(m.GetLabels()))
+		for idx, v := range m.GetLabels() {
+
+			target.Labels[idx] = v
+
+		}
+	}
+
 	if m.GetMetadata() != nil {
 		target.Metadata = make(map[string]string, len(m.GetMetadata()))
 		for k, v := range m.GetMetadata() {
@@ -1271,53 +1280,210 @@ func (m *ExtAuthConfig) Clone() proto.Message {
 }
 
 // Clone function
-func (m *RawApiKey) Clone() proto.Message {
-	var target *RawApiKey
+func (m *ApiKeyCreateRequest) Clone() proto.Message {
+	var target *ApiKeyCreateRequest
 	if m == nil {
 		return target
 	}
-	target = &RawApiKey{}
+	target = &ApiKeyCreateRequest{}
 
-	target.ApiKey = m.GetApiKey()
+	if m.GetApiKeys() != nil {
+		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))
+		for idx, v := range m.GetApiKeys() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeys[idx] = h.Clone().(*ApiKey)
+			} else {
+				target.ApiKeys[idx] = proto.Clone(v).(*ApiKey)
+			}
+
+		}
+	}
+
+	if m.GetRawApiKeys() != nil {
+		target.RawApiKeys = make([]string, len(m.GetRawApiKeys()))
+		for idx, v := range m.GetRawApiKeys() {
+
+			target.RawApiKeys[idx] = v
+
+		}
+	}
 
 	return target
 }
 
 // Clone function
-func (m *MaybeApiKey) Clone() proto.Message {
-	var target *MaybeApiKey
+func (m *ApiKeyCreateReResponse) Clone() proto.Message {
+	var target *ApiKeyCreateReResponse
 	if m == nil {
 		return target
 	}
-	target = &MaybeApiKey{}
+	target = &ApiKeyCreateReResponse{}
 
-	switch m.ApiKeyOrEmpty.(type) {
+	if m.GetApiKeys() != nil {
+		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))
+		for idx, v := range m.GetApiKeys() {
 
-	case *MaybeApiKey_ApiKey:
-
-		if h, ok := interface{}(m.GetApiKey()).(clone.Cloner); ok {
-			target.ApiKeyOrEmpty = &MaybeApiKey_ApiKey{
-				ApiKey: h.Clone().(*ApiKey),
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeys[idx] = h.Clone().(*ApiKey)
+			} else {
+				target.ApiKeys[idx] = proto.Clone(v).(*ApiKey)
 			}
-		} else {
-			target.ApiKeyOrEmpty = &MaybeApiKey_ApiKey{
-				ApiKey: proto.Clone(m.GetApiKey()).(*ApiKey),
-			}
+
 		}
-
-	case *MaybeApiKey_Empty:
-
-		if h, ok := interface{}(m.GetEmpty()).(clone.Cloner); ok {
-			target.ApiKeyOrEmpty = &MaybeApiKey_Empty{
-				Empty: h.Clone().(*github_com_golang_protobuf_ptypes_empty.Empty),
-			}
-		} else {
-			target.ApiKeyOrEmpty = &MaybeApiKey_Empty{
-				Empty: proto.Clone(m.GetEmpty()).(*github_com_golang_protobuf_ptypes_empty.Empty),
-			}
-		}
-
 	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyReadRequest) Clone() proto.Message {
+	var target *ApiKeyReadRequest
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyReadRequest{}
+
+	if m.GetRawApiKeys() != nil {
+		target.RawApiKeys = make([]string, len(m.GetRawApiKeys()))
+		for idx, v := range m.GetRawApiKeys() {
+
+			target.RawApiKeys[idx] = v
+
+		}
+	}
+
+	if m.GetLabels() != nil {
+		target.Labels = make([]string, len(m.GetLabels()))
+		for idx, v := range m.GetLabels() {
+
+			target.Labels[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyReadResponse) Clone() proto.Message {
+	var target *ApiKeyReadResponse
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyReadResponse{}
+
+	if m.GetApiKeys() != nil {
+		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))
+		for idx, v := range m.GetApiKeys() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeys[idx] = h.Clone().(*ApiKey)
+			} else {
+				target.ApiKeys[idx] = proto.Clone(v).(*ApiKey)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyUpdateRequest) Clone() proto.Message {
+	var target *ApiKeyUpdateRequest
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyUpdateRequest{}
+
+	target.Upsert = m.GetUpsert()
+
+	if m.GetApiKeys() != nil {
+		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))
+		for idx, v := range m.GetApiKeys() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeys[idx] = h.Clone().(*ApiKey)
+			} else {
+				target.ApiKeys[idx] = proto.Clone(v).(*ApiKey)
+			}
+
+		}
+	}
+
+	if m.GetRawApiKeys() != nil {
+		target.RawApiKeys = make([]string, len(m.GetRawApiKeys()))
+		for idx, v := range m.GetRawApiKeys() {
+
+			target.RawApiKeys[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyUpdateResponse) Clone() proto.Message {
+	var target *ApiKeyUpdateResponse
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyUpdateResponse{}
+
+	if m.GetApiKeys() != nil {
+		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))
+		for idx, v := range m.GetApiKeys() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeys[idx] = h.Clone().(*ApiKey)
+			} else {
+				target.ApiKeys[idx] = proto.Clone(v).(*ApiKey)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyDeleteRequest) Clone() proto.Message {
+	var target *ApiKeyDeleteRequest
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyDeleteRequest{}
+
+	if m.GetRawApiKeys() != nil {
+		target.RawApiKeys = make([]string, len(m.GetRawApiKeys()))
+		for idx, v := range m.GetRawApiKeys() {
+
+			target.RawApiKeys[idx] = v
+
+		}
+	}
+
+	if m.GetLabels() != nil {
+		target.Labels = make([]string, len(m.GetLabels()))
+		for idx, v := range m.GetLabels() {
+
+			target.Labels[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyDeleteResponse) Clone() proto.Message {
+	var target *ApiKeyDeleteResponse
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyDeleteResponse{}
 
 	return target
 }
