@@ -47,7 +47,6 @@ func startSetupLoop(ctx context.Context) error {
 				// any leader election processes.
 				contextutils.LoggerFrom(ctx).Fatalf("lost leadership, quitting app")
 			},
-			ReleaseOnCancel: true,
 		},
 	})
 }
