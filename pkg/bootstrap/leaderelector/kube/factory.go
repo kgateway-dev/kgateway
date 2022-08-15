@@ -2,6 +2,7 @@ package kube
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
@@ -48,7 +49,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 			Lock: resourceLock,
 			// Define the following values according to the defaults:
 			// https://github.com/kubernetes/client-go/blob/master/tools/leaderelection/leaderelection.go
-			LeaseDuration: 15 * time.Second,
+			LeaseDuration: leaseDurFromEnv(),
 			RenewDeadline: 10 * time.Second,
 			RetryPeriod:   2 * time.Second,
 			Callbacks: k8sleaderelection.LeaderCallbacks{
@@ -78,4 +79,12 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 	contextutils.LoggerFrom(ctx).Debugf("Starting Kube Leader Election")
 	go l.Run(ctx)
 	return identity, nil
+}
+
+func leaseDurFromEnv() time.Duration {
+	leaseDur := time.Duration(15 * time.Second)
+	if leaseDurStr := os.Getenv("LEADER_ELECTION_LEASE_DURATION"); leaseDurStr != "" {
+		leaseDur, _ = time.ParseDuration(leaseDurStr)
+	}
+	return leaseDur
 }
