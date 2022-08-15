@@ -43,9 +43,6 @@ spec:
         {{- if not .Values.ingress.deployment.floatingUserId }}
         runAsUser: {{ printf "%.0f" (float64 .Values.ingress.deployment.runAsUser) -}}
         {{- end }}
-      {{- with .Values.ingress.deployment.priorityClassName }}
-      priorityClassName: {{ . }}
-      {{- end }}
       containers:
       - image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}
