@@ -5,12 +5,14 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -131,7 +133,7 @@ var _ = Describe("tunneling", func() {
 		cancel()
 	})
 
-	testRequest := func(jsonStr string) string {
+	testRequest := func(jsonStr string, expectedStatusCode int) string {
 		By("Make request")
 		responseBody := ""
 		EventuallyWithOffset(1, func() error {
@@ -148,7 +150,7 @@ var _ = Describe("tunneling", func() {
 			if err != nil {
 				return err
 			}
-			if res.StatusCode != http.StatusOK {
+			if res.StatusCode != expectedStatusCode {
 				return fmt.Errorf("not ok")
 			}
 			p := new(bytes.Buffer)
@@ -176,7 +178,7 @@ var _ = Describe("tunneling", func() {
 			// and back. The HTTP proxy is sending unencrypted HTTP bytes over
 			// TCP to the test upstream (an echo server)
 			jsonStr := `{"value":"Hello, world!"}`
-			testReq := testRequest(jsonStr)
+			testReq := testRequest(jsonStr, http.StatusOK)
 			Expect(testReq).Should(ContainSubstring(jsonStr))
 		})
 	})
@@ -230,7 +232,7 @@ var _ = Describe("tunneling", func() {
 			It("should proxy plaintext bytes over encrypted HTTP Connect", func() {
 				// the request path here is [envoy] -- encrypted --> [local HTTP Connect proxy] -- plaintext --> TLS upstream
 				jsonStr := `{"value":"Hello, world!"}`
-				testReq := testRequest(jsonStr)
+				testReq := testRequest(jsonStr, http.StatusOK)
 				Expect(testReq).Should(ContainSubstring(jsonStr))
 			})
 		})
@@ -244,7 +246,7 @@ var _ = Describe("tunneling", func() {
 			It("should proxy encrypted bytes over plaintext HTTP Connect", func() {
 				// the request path here is [envoy] -- plaintext --> [local HTTP Connect proxy] -- encrypted --> TLS upstream
 				jsonStr := `{"value":"Hello, world!"}`
-				testReq := testRequest(jsonStr)
+				testReq := testRequest(jsonStr, http.StatusOK)
 				Expect(testReq).Should(ContainSubstring(jsonStr))
 			})
 		})
@@ -259,12 +261,57 @@ var _ = Describe("tunneling", func() {
 			It("should proxy encrypted bytes over encrypted HTTP Connect", func() {
 				// the request path here is [envoy] -- encrypted --> [local HTTP Connect proxy] -- encrypted --> TLS upstream
 				jsonStr := `{"value":"Hello, world!"}`
-				testReq := testRequest(jsonStr)
+				testReq := testRequest(jsonStr, http.StatusOK)
 				Expect(testReq).Should(ContainSubstring(jsonStr))
 			})
 		})
 	})
 
+	Context("with Proxy Authorization", func() {
+		var (
+			proxyAuthorizationUsername string
+			proxyAuthorizationPassword string
+		)
+		JustBeforeEach(func() {
+			up.HttpConnectHeaders = []*gloov1.HeaderValue{
+				{
+					Key:   "Proxy-Authorization",
+					Value: "Basic " + base64.StdEncoding.EncodeToString([]byte(proxyAuthorizationUsername+":"+proxyAuthorizationPassword)),
+				},
+			}
+
+			_, err := testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			checkProxy()
+		})
+
+		When("using invalid credentials", func() {
+			BeforeEach(func() {
+				proxyAuthorizationUsername = "somebody"
+				proxyAuthorizationPassword = "wrong"
+			})
+
+			It("should not proxy", func() {
+				jsonStr := `{"value":"Hello, world!"}`
+				testReq := testRequest(jsonStr, http.StatusServiceUnavailable)
+				Expect(testReq).Should(Equal("upstream connect error or disconnect/reset before headers. reset reason: connection termination"))
+			})
+		})
+
+		When("using valid credentials", func() {
+			BeforeEach(func() {
+				proxyAuthorizationUsername = "test"
+				proxyAuthorizationPassword = "secret"
+			})
+
+			It("should proxy", func() {
+				jsonStr := `{"value":"Hello, world!"}`
+				testReq := testRequest(jsonStr, http.StatusOK)
+				Expect(testReq).Should(ContainSubstring(jsonStr))
+			})
+		})
+	})
 })
 
 func startHttpProxy(ctx context.Context, useTLS bool) int {
@@ -325,6 +372,14 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(GinkgoWriter, "tls version %v\n", r.TLS.Version)
 		fmt.Fprintf(GinkgoWriter, "cipher suite %v\n", r.TLS.CipherSuite)
 		fmt.Fprintf(GinkgoWriter, "negotiated protocol %v\n", r.TLS.NegotiatedProtocol)
+	}
+
+	if proxyAuth := r.Header.Get("Proxy-Authorization"); proxyAuth != "" {
+		fmt.Fprintf(GinkgoWriter, "proxy authorization: %s\n", proxyAuth)
+		if username, password := parseBasicAuth(proxyAuth); username != "test" || password != "secret" {
+			w.WriteHeader(http.StatusProxyAuthRequired)
+			return
+		}
 	}
 
 	hij, ok := w.(http.Hijacker)
@@ -392,4 +447,21 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 
 	wg.Wait()
 	fmt.Fprintf(GinkgoWriter, "done proxying\n")
+}
+
+func parseBasicAuth(auth string) (string, string) {
+	const basicPrefix = "Basic "
+	if !strings.HasPrefix(auth, basicPrefix) {
+		return "", ""
+	}
+	decodedAuth, err := base64.StdEncoding.DecodeString(auth[len(basicPrefix):])
+	if err != nil {
+		return "", ""
+	}
+	decodedAuthString := string(decodedAuth)
+	username, password, ok := strings.Cut(decodedAuthString, ":")
+	if !ok {
+		return "", ""
+	}
+	return username, password
 }
