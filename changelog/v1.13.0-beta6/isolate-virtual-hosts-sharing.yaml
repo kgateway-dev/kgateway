@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issuelink: https://github.com/solo-io/gloo/issues/6677
-    resolvesIssue: false
-    description: Added support fo the `envoy.filters.listener.tls_inspector` listener_filter when using the gateway.isolateVirtualHostsBySslConfig=true global setting.
-      is provided

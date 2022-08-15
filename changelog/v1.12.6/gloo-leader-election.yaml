@@ -1,0 +1,13 @@
+changelog:
+  - type: FIX
+    issuelink: https://github.com/solo-io/gloo/issues/5795
+    resolvesIssue: false
+    description: |
+      Allow the Gloo component of the ControlPlane to be scaled when running in Kubernetes.
+      Using https://github.com/kubernetes/client-go/tree/master/tools/leaderelection,
+      leader election will take place automatically.
+  - type: FIX
+    issuelink: https://github.com/solo-io/gloo/issues/6677
+    resolvesIssue: false
+    description: Added support fo the `envoy.filters.listener.tls_inspector` listener_filter when using the gateway.isolateVirtualHostsBySslConfig=true global setting.
+      is provided
