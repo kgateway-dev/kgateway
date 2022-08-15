@@ -89,6 +89,9 @@ settings:
   replaceInvalidRoutes: true
 gateway:
   persistProxySpec: true
+gloo:
+  deployment:
+    replicas: 2
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
@@ -104,8 +107,13 @@ gatewayProxies:
 func EventuallyReachesConsistentState(installNamespace string) {
 	metricsPort := 9091
 	metricsPortString := strconv.Itoa(metricsPort)
-	portFwd := exec.Command("kubectl", "port-forward", "-n", installNamespace,
-		"deployment/gloo", metricsPortString)
+	portFwd := exec.Command(
+		"kubectl",
+		"port-forward",
+		"-n",
+		installNamespace,
+		"deployment/gloo",
+		metricsPortString)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
 	err := portFwd.Start()
@@ -117,26 +125,10 @@ func EventuallyReachesConsistentState(installNamespace string) {
 		}
 	}()
 
-	// make sure we eventually reach an eventually consistent state
-	lastSnapOut := getSnapOut(metricsPortString)
-
-	eventuallyConsistentPollingInterval := 7 * time.Second // >= 5s for metrics reporting, which happens every 5s
-	time.Sleep(eventuallyConsistentPollingInterval)
-
-	Eventually(func() bool {
-		currentSnapOut := getSnapOut(metricsPortString)
-		consistent := lastSnapOut == currentSnapOut
-		lastSnapOut = currentSnapOut
-		return consistent
-	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(true))
-
-	Consistently(func() string {
-		currentSnapOut := getSnapOut(metricsPortString)
-		return currentSnapOut
-	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(lastSnapOut))
-
 	// Gloo components are configured to log to the Info level by default
 	EventuallyLogLevel(metricsPort, zapcore.InfoLevel)
+
+	EventuallyMetricsBecomeConsistent(1, metricsPort)
 }
 
 // Copied from: https://github.com/solo-io/go-utils/blob/176c4c008b4d7cde836269c7a817f657b6981236/testutils/assertions.go#L20
@@ -148,11 +140,40 @@ func ExpectEqualProtoMessages(g Gomega, a, b proto.Message, optionalDescription 
 	g.Expect(a.String()).To(Equal(b.String()), optionalDescription...)
 }
 
+func EventuallyMetricsBecomeConsistent(offset int, metricsPort int) {
+	// make sure we eventually reach an eventually consistent state
+	eventuallyConsistentPollingInterval := 7 * time.Second // >= 5s for metrics reporting, which happens every 5s
+
+	// wait for the initial snapOut reading to be present
+	var lastSnapOut = 0
+	EventuallyWithOffset(offset+1, func() int {
+		lastSnapOut = getSnapOut(metricsPort)
+		return lastSnapOut
+	}, "30s", eventuallyConsistentPollingInterval).Should(BeNumerically(">", 0),
+		"expected metrics to be found")
+
+	// wait for that snapOut reading to become consistent
+	consistentlyInARow := 0
+	EventuallyWithOffset(offset+1, func() int {
+		currentSnapOut := getSnapOut(metricsPort)
+		consistent := lastSnapOut == currentSnapOut
+		lastSnapOut = currentSnapOut
+		if consistent {
+			consistentlyInARow += 1
+		} else {
+			consistentlyInARow = 0
+		}
+		return consistentlyInARow
+	}, "80s", eventuallyConsistentPollingInterval).Should(Equal(4),
+		"expected metrics to be consistent")
+}
+
 // needs a port-forward of the metrics port before a call to this will work
-func getSnapOut(metricsPort string) string {
+func getSnapOut(metricsPort int) int {
+	metricsPortString := strconv.Itoa(metricsPort)
 	var bodyResp string
 	Eventually(func() string {
-		res, err := http.Post("http://localhost:"+metricsPort+"/metrics", "", nil)
+		res, err := http.Post("http://localhost:"+metricsPortString+"/metrics", "", nil)
 		if err != nil || res.StatusCode != 200 {
 			return ""
 		}
@@ -163,11 +184,16 @@ func getSnapOut(metricsPort string) string {
 		return bodyResp
 	}, "5s", "1s").ShouldNot(BeEmpty())
 
-	Expect(bodyResp).To(ContainSubstring("api_gloosnapshot_gloo_solo_io_emitter_snap_out"))
-	findSnapOut := regexp.MustCompile("api_gloosnapshot_gloo_solo_io_emitter_snap_out ([\\d]+)")
+	findSnapOut, err := regexp.Compile("api_gloosnapshot_gloo_solo_io_emitter_snap_out ([\\d]+)")
+	if err != nil {
+		// No snapOut metrics were found, still starting up
+		return 0
+	}
+
 	matches := findSnapOut.FindAllStringSubmatch(bodyResp, -1)
 	Expect(matches).To(HaveLen(1))
-	snapOut := matches[0][1]
+	snapOut, err := strconv.Atoi(matches[0][1])
+	Expect(err).NotTo(HaveOccurred())
 	return snapOut
 }
 

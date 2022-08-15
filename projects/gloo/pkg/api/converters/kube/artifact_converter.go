@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
+
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
@@ -27,6 +29,21 @@ func (c *converter) FromKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceCl
 		// should never happen
 		return nil, errors.Errorf("expected [artifact] resource client, got: [%s]", rc.Kind())
 	}
+
+	if _, ok := configMap.GetAnnotations()[resourcelock.LeaderElectionRecordAnnotationKey]; ok {
+		// This is a temporary (hacky) solution
+		// ConfigMaps are used by our Kubernetes LeaderElection implementation to store that state of the
+		// current leader. This means that every election (2s interval) the ConfigMap is updated.
+		// Gloo Edge will recognize this change, and re-process the state of the world.
+		// The result is that the system does not become consistent.
+		//
+		// A preferred solution would be to filter out this resouce (either by annotation or label)
+		// Solo-Kit only supports inclusive label selection, not exclusive label selection.
+		// In a follow-up, we will extend the filtering of solo-kit to enable filtering out certain
+		// labels. But for now, we return nil, meaning that this resource will be skipped by our Watch.
+		return nil, nil
+	}
+
 	return KubeConfigMapToArtifact(configMap), nil
 }
 
