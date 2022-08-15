@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6599
+    resolvesIssue: false
+    description: Ratelimit emitters to once per second so Sync loops acting on Snapshot() have time to finish before being cancelled.
