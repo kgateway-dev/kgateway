@@ -236,7 +236,10 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
+		needsSync := false
+		// intentionally rate-limited so that our sync loops have time to complete before the next snapshot is sent
 		timer := time.NewTicker(time.Second * 1)
+		defer timer.Stop()
 		previousHash, err := currentSnapshot.Hash(nil)
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
@@ -247,7 +250,7 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
-			if previousHash == currentHash {
+			if !needsSync && previousHash == currentHash {
 				return
 			}
 
@@ -256,6 +259,7 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, mStatusSnapshotOut.M(1))
 				previousHash = currentHash
+				needsSync = false
 			default:
 				stats.Record(ctx, mStatusSnapshotMissed.M(1))
 			}
@@ -277,8 +281,7 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 			case <-ctx.Done():
 				return
 			case <-c.forceEmit:
-				sentSnapshot := currentSnapshot.Clone()
-				snapshots <- &sentSnapshot
+				needsSync = true
 			case kubeServiceNamespacedList, ok := <-kubeServiceChan:
 				if !ok {
 					return
