@@ -34,7 +34,7 @@ message Settings {
     // If empty, this will default to "gloo-system".
     string discovery_namespace = 1;
 
-    // Use this setting to restrict the namespaces that Gloo controllers take into consideration when watching for resources. In a
+    // Use this setting to restrict the namespaces that Gloo controllers take into consideration when watching for resources.In a
     // usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces`
     // contains namespaces outside of this whitelist, Gloo will fail to start.
     //
@@ -162,7 +162,6 @@ message Settings {
     // Deprecated: Will not be available in Gloo Edge 1.11
     KnativeOptions knative = 18 [deprecated=true];
 
-    // Pertains to the discovery pod; i.e. upstream discovery service (UDS) and function discovery service (FDS)
     message DiscoveryOptions {
 
         // Possible modes for running the function discovery service (FDS). FDS polls services in-cluster for Swagger
@@ -195,8 +194,7 @@ message Settings {
         UdsOptions uds_options = 2;
     }
 
-    // Options for configuring Gloo's Discovery service (discovery pod, i.e.
-    // upstream discovery service (UDS) and function discovery service (FDS).
+    // Options for configuring Gloo's Discovery service
     DiscoveryOptions discovery = 19;
 
     // Options for configuring `gloo`, the core Gloo controller,
@@ -204,7 +202,7 @@ message Settings {
     GlooOptions gloo = 24;
 
     // Options for configuring `gateway`, the Gateway Gloo controller,
-    // which enables the VirtualService/Gateway/Routeable APIs in Gloo
+    // which enables the VirtualService/Gateway API in Gloo
     GatewayOptions gateway = 25;
 
     // Provides overrides for the default configuration parameters used to connect to Consul.
@@ -574,26 +572,6 @@ message GlooOptions {
     // Whether or not to use rest xds for all EDS by default.
     // Rest XDS, as opposed to grpc, uses http polling rather than streaming
     google.protobuf.BoolValue enable_rest_eds = 12;
-
-    // EDS endpoint selector; configure k8s / consul / aws ec2 to watch a subset of endpoints
-    oneof endpoint_selector {
-        // At some point in the future we will probably want to do this for k8s / ec2 as well
-        // K8sLabelSelector similar to https://github.com/solo-io/gloo/blob/master/projects/gateway/api/v1/virtual_service.proto#L331-L333
-        // consul label selector
-        // TODO(ian): if we can convert k8s one to consul then that would be awesome / preferred, and 
-        // we would not need the oneof
-        google.protobuf.Empty todo = 123456789;
-    }
-
-    // EDS service selector; configure k8s / consul / aws ec2 to watch a subset of endpoints
-    oneof service_selector {
-        // At some point in the future we will probably want to do this for k8s / ec2 as well
-        // K8sLabelSelector similar to https://github.com/solo-io/gloo/blob/master/projects/gateway/api/v1/virtual_service.proto#L331-L333
-        // consul label selector
-        // TODO(ian): if we can convert k8s one to consul then that would be awesome / preferred, and 
-        // we would not need the oneof
-        google.protobuf.Empty todo = 123456789;
-    }
 
     // The polling interval for the DNS server if upstream failover is configured.
     // If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the

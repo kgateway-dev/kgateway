@@ -44,8 +44,6 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.EdsSnapshot) error {
 	opts := clients.WatchOpts{
 		Ctx:         ctx,
 		RefreshRate: s.refreshRate,
-		// Selector: , we may also at some point want to do this in addition to k8s watch namespaces for endpoints
-		// we will implement this in spirit for the consul client
 	}
 
 	udsErrs, err := s.eds.StartEds(snap.Upstreams, opts)
