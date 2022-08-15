@@ -39,7 +39,7 @@ spec:
       {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
-      {{- with .Values.ingressProxy.deployment.priorityClassName}}
+      {{- with .Values.ingressProxy.deployment.priorityClassName }}
       priorityClassName: {{ . }}
       {{- end }}
       containers:
