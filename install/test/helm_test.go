@@ -3745,7 +3745,6 @@ metadata:
     "helm.sh/hook-weight": "10"
 spec:
   ttlSecondsAfterFinished: 60
-  activeDeadlineSeconds: 100
   template:
     metadata:
       labels:
@@ -5182,7 +5181,7 @@ metadata:
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
 				)
 
-				DescribeTable("activeDeadlineSeconds and ttlSecondsAfterFinished on Jobs",
+				DescribeTable("can set activeDeadlineSeconds and ttlSecondsAfterFinished on Jobs",
 					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
@@ -5212,6 +5211,33 @@ metadata:
 					Entry("resource rollout job", "Job", "gloo-resource-rollout", "gateway.rolloutJob"),
 					Entry("resource migration job", "Job", "gloo-resource-migration", "gateway.rolloutJob"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
+				)
+
+				DescribeTable("by default, activeDeadlineSeconds is unset on Jobs",
+					func(kind string, resourceName string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "activeDeadlineSeconds")...)
+								Expect(a).To(BeNil())
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gateway certgen job", "Job", "gateway-certgen"),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("resource rollout job", "Job", "gloo-resource-rollout"),
+					Entry("resource migration job", "Job", "gloo-resource-migration"),
+					Entry("resource cleanup job", "Job", "gloo-resource-cleanup"),
 				)
 			})
 

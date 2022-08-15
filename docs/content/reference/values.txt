@@ -322,7 +322,7 @@
 |gateway.certGenJob.tolerations[].tolerationSeconds|int64|||
 |gateway.certGenJob.affinity.NAME|interface|||
 |gateway.certGenJob.hostAliases[]|interface|||
-|gateway.certGenJob.activeDeadlineSeconds|int|100|Deadline in seconds for Kubernetes jobs.|
+|gateway.certGenJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.certGenJob.kubeResourceOverride.NAME|interface||override fields in the gateway-certgen job.|
 |gateway.certGenJob.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen job.|
@@ -348,7 +348,7 @@
 |gateway.rolloutJob.tolerations[].tolerationSeconds|int64|||
 |gateway.rolloutJob.affinity.NAME|interface|||
 |gateway.rolloutJob.hostAliases[]|interface|||
-|gateway.rolloutJob.activeDeadlineSeconds|int|100|Deadline in seconds for Kubernetes jobs.|
+|gateway.rolloutJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.rolloutJob.enabled|bool|true|Enable the job that applies default Gloo Edge custom resources at install and upgrade time (default true).|
 |gateway.rolloutJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
@@ -375,7 +375,7 @@
 |gateway.cleanupJob.tolerations[].tolerationSeconds|int64|||
 |gateway.cleanupJob.affinity.NAME|interface|||
 |gateway.cleanupJob.hostAliases[]|interface|||
-|gateway.cleanupJob.activeDeadlineSeconds|int|100|Deadline in seconds for Kubernetes jobs.|
+|gateway.cleanupJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.cleanupJob.enabled|bool|true|Enable the job that removes Gloo Edge custom resources when Gloo Edge is uninstalled (default true).|
 |gateway.cleanupJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
