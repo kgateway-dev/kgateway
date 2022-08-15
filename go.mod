@@ -60,6 +60,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.8.1
 	go.opencensus.io v0.23.0
+	go.uber.org/atomic v1.9.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
@@ -75,6 +76,7 @@ require (
 	k8s.io/apimachinery v0.22.4
 	k8s.io/client-go v0.22.4
 	k8s.io/code-generator v0.22.4
+	k8s.io/component-base v0.22.4
 	k8s.io/kubectl v0.22.4
 	k8s.io/utils v0.0.0-20211208161948-7d6a63dca704
 	knative.dev/networking v0.0.0-20211210083629-bace06e98aee
@@ -110,6 +112,7 @@ require (
 	github.com/armon/go-metrics v0.3.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/bugsnag/bugsnag-go v1.5.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
@@ -267,7 +270,6 @@ require (
 	go.mongodb.org/mongo-driver v1.1.2 // indirect
 	go.opentelemetry.io/proto/otlp v0.7.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
@@ -291,7 +293,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/apiserver v0.22.4 // indirect
 	k8s.io/cli-runtime v0.22.4 // indirect
-	k8s.io/component-base v0.22.4 // indirect
 	k8s.io/component-helpers v0.22.4 // indirect
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185 // indirect
 	k8s.io/klog/v2 v2.9.0 // indirect
