@@ -58,6 +58,7 @@ Name|Version|License
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.22.4|Apache License 2.0
 [k8s.io/client-go](https://k8s.io/client-go)|v0.22.4|Apache License 2.0
 [k8s.io/code-generator](https://k8s.io/code-generator)|v0.22.4|Apache License 2.0
+[k8s.io/component-base](https://k8s.io/component-base)|v0.22.4|Apache License 2.0
 [k8s.io/kubectl](https://k8s.io/kubectl)|v0.22.4|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20211208161948-7d6a63dca704|Apache License 2.0
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0
