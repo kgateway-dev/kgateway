@@ -97,6 +97,11 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				}
 
 			case <-timer.C:
+				// ensure we have at least one spec to check against; otherwise we risk marking EDS as ready
+				// (by sending endpoints, even an empty list) too early
+				if len(previousSpecs) == 0 {
+					continue
+				}
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
 
