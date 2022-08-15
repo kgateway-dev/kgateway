@@ -1,9 +1,9 @@
 changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/6056
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6782
     resolvesIssue: false
     description: >
-      Adds AutoMapFromMetadata to the OIDC IssuerConfig struct.
+      Backport of fix - Adds AutoMapFromMetadata to the OIDC IssuerConfig struct.
       When configured, dynamic metadata values in the specified namespace
       will be mapped to query params on requests made to the OIDC auth
       endpoint and the OIDC token endpoint. 
