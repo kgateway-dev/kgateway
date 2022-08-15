@@ -36,7 +36,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
 			// discovery generates one upstream for every Consul service name;
-			// this should only happen if users define duplicate upstrems for a consul service name.
+			// this should only happen if users define duplicate upstreams for a consul service name.
 			trackedServiceToUpstreams[consulUsSpec.GetServiceName()] = append(trackedServiceToUpstreams[consulUsSpec.GetServiceName()], us)
 		}
 	}
@@ -46,7 +46,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		return nil, nil, err
 	}
 
-	// I think we should pass in opts.Selector / opts.Expression selector to WatchServices here
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters, p.consulUpstreamDiscoverySettings.GetConsistencyMode())
 
 	errChan := make(chan error)
@@ -128,20 +127,22 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 // belonging to that service within that datacenter.
 func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta []*consul.ServiceMeta, errChan chan error, serviceToUpstream map[string][]*v1.Upstream) []*consulapi.CatalogService {
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "consul_eds"))
-
 	specs := newSpecCollector()
 
 	// Get complete service information for every dataCenter:service tuple in separate goroutines
 	var eg errgroup.Group
 	for _, service := range serviceMeta {
-		// the default consistency mode
-		cm := glooConsul.UpstreamSpec_ConsistentMode
-		// Based on Marco's comments in WatchEndpoints, there's only be one upstream per Consul service name, so we use its ConsistencyMode
-		if arrayOfConsulUpstreams := serviceToUpstream[service.Name]; len(arrayOfConsulUpstreams) > 0 {
-			consulUpstream := arrayOfConsulUpstreams[0]
-			cm = consulUpstream.GetConsul().GetConsistencyMode()
+		var cm glooConsul.UpstreamSpec_ConsulConsistencyModes
+		if upstreams, ok := serviceToUpstream[service.Name]; len(upstreams) > 0 && ok {
+			cm = upstreams[0].GetConsul().GetConsistencyMode()
 		}
-
+		// we take the most consistent mode found on any upstream for a service for correctness
+		for _, consulUpstream := range serviceToUpstream[service.Name] {
+			// prefer earlier enum values (i.e. consistent > default > stale)
+			if consulUpstream.GetConsul().GetConsistencyMode() < glooConsul.UpstreamSpec_DefaultMode {
+				cm = consulUpstream.GetConsul().GetConsistencyMode()
+			}
+		}
 		for _, dataCenter := range service.DataCenters {
 			// Copy iterator variables before passing them to goroutines!
 			svc := service
@@ -185,7 +186,6 @@ func NewConsulQueryOptions(dataCenter string, cm glooConsul.UpstreamSpec_ConsulC
 	// choosing the Default Mode will clear both fields
 	requireConsistent := cm == glooConsul.UpstreamSpec_ConsistentMode
 	allowStale := cm == glooConsul.UpstreamSpec_StaleMode
-	// we may also want to use the endpoint selector filter here
 	return &consulapi.QueryOptions{Datacenter: dataCenter, AllowStale: allowStale, RequireConsistent: requireConsistent}
 }
 
