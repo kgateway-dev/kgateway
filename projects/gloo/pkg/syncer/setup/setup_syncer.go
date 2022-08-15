@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
@@ -210,7 +212,7 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 	return &net.TCPAddr{IP: ip, Port: port}, nil
 }
 
-func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
 
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
@@ -355,6 +357,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if err != nil {
 		return err
 	}
+	opts.Identity = identity
 	opts.WriteNamespace = writeNamespace
 	opts.StatusReporterNamespace = gloostatusutils.GetStatusReporterNamespaceOrDefault(writeNamespace)
 	opts.WatchNamespaces = watchNamespaces
@@ -760,7 +763,16 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		logger.Debugf("Setting up gateway translator")
 		gatewayTranslator = gwtranslator.NewDefaultTranslator(gwOpts)
 		proxyReconciler := gwreconciler.NewProxyReconciler(validator.Validate, proxyClient, statusClient)
-		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(opts.WatchOpts.Ctx, opts.WriteNamespace, proxyClient, proxyReconciler, rpt, gatewayTranslator, statusClient, statusMetrics)
+		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(
+			opts.WatchOpts.Ctx,
+			opts.WriteNamespace,
+			proxyClient,
+			proxyReconciler,
+			rpt,
+			gatewayTranslator,
+			statusClient,
+			statusMetrics,
+			opts.Identity)
 	} else {
 		logger.Debugf("Gateway translation is disabled. Proxies are provided from another source")
 	}
@@ -796,7 +808,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		statusMetrics,
 		gwTranslatorSyncer,
 		proxyClient,
-		opts.WriteNamespace)
+		opts.WriteNamespace,
+		opts.Identity)
 
 	syncers := v1snap.ApiSyncers{
 		validator,
@@ -936,6 +949,7 @@ func startRestXdsServer(opts bootstrap.Opts) {
 		}
 	}()
 }
+
 func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings, writeNamespace string) (bootstrap.Opts, error) {
 
 	var (
@@ -1116,6 +1130,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		}
 	}
 	readGatewaysFromAllNamespaces := settings.GetGateway().GetReadGatewaysFromAllNamespaces()
+
 	return bootstrap.Opts{
 		Upstreams:                    upstreamFactory,
 		KubeServiceClient:            kubeServiceClient,
