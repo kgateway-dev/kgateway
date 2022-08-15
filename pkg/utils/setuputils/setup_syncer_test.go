@@ -3,6 +3,9 @@ package setuputils_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -25,10 +28,12 @@ var _ = Describe("SetupSyncer", func() {
 				ctx context.Context,
 				kubeCache kube.SharedCache,
 				inMemoryCache memory.InMemoryResourceCache,
-				settings *v1.Settings) error {
+				settings *v1.Settings,
+				identity leaderelector.Identity) error {
 				actualSettings = expectedSettings
 				return nil
-			})
+			},
+			singlereplica.Identity())
 		err := setupSyncer.Sync(context.TODO(), &v1.SetupSnapshot{
 			Settings: v1.SettingsList{expectedSettings},
 		})

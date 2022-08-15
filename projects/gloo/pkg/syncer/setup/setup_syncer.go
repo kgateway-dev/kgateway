@@ -10,6 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
@@ -208,7 +212,7 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 	return &net.TCPAddr{IP: ip, Port: port}, nil
 }
 
-func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
 
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
@@ -353,6 +357,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if err != nil {
 		return err
 	}
+	opts.Identity = identity
 	opts.WriteNamespace = writeNamespace
 	opts.StatusReporterNamespace = gloostatusutils.GetStatusReporterNamespaceOrDefault(writeNamespace)
 	opts.WatchNamespaces = watchNamespaces
@@ -396,7 +401,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 }
 
 type Extensions struct {
-	PluginRegistryFactory registry.PluginRegistryFactory
+	PluginRegistryFactory plugins.PluginRegistryFactory
 	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
 	XdsCallbacks          xdsserver.Callbacks
 	ApiEmitterChannel     chan struct{}
@@ -404,7 +409,7 @@ type Extensions struct {
 
 func RunGloo(opts bootstrap.Opts) error {
 	glooExtensions := Extensions{
-		PluginRegistryFactory: registry.GetPluginRegistryFactory(),
+		PluginRegistryFactory: registry.GetPluginRegistryFactory(opts),
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,
@@ -560,9 +565,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
-	pluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx, opts)
+	discoveryPluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx)
 	var discoveryPlugins []discovery.DiscoveryPlugin
-	for _, plug := range pluginRegistry.GetPlugins() {
+	for _, plug := range discoveryPluginRegistry.GetPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
 			discoveryPlugins = append(discoveryPlugins, disc)
@@ -734,7 +739,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	resourceHasher := translator.MustEnvoyCacheResourcesListToFnvHash
 
-	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistry, resourceHasher)
+	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory, resourceHasher)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
@@ -758,7 +763,16 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		logger.Debugf("Setting up gateway translator")
 		gatewayTranslator = gwtranslator.NewDefaultTranslator(gwOpts)
 		proxyReconciler := gwreconciler.NewProxyReconciler(validator.Validate, proxyClient, statusClient)
-		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(opts.WatchOpts.Ctx, opts.WriteNamespace, proxyClient, proxyReconciler, rpt, gatewayTranslator, statusClient, statusMetrics)
+		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(
+			opts.WatchOpts.Ctx,
+			opts.WriteNamespace,
+			proxyClient,
+			proxyReconciler,
+			rpt,
+			gatewayTranslator,
+			statusClient,
+			statusMetrics,
+			opts.Identity)
 	} else {
 		logger.Debugf("Gateway translation is disabled. Proxies are provided from another source")
 	}
@@ -794,7 +808,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		statusMetrics,
 		gwTranslatorSyncer,
 		proxyClient,
-		opts.WriteNamespace)
+		opts.WriteNamespace,
+		opts.Identity)
 
 	syncers := v1snap.ApiSyncers{
 		validator,
@@ -934,6 +949,7 @@ func startRestXdsServer(opts bootstrap.Opts) {
 		}
 	}()
 }
+
 func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings, writeNamespace string) (bootstrap.Opts, error) {
 
 	var (
@@ -1114,6 +1130,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		}
 	}
 	readGatewaysFromAllNamespaces := settings.GetGateway().GetReadGatewaysFromAllNamespaces()
+
 	return bootstrap.Opts{
 		Upstreams:                    upstreamFactory,
 		KubeServiceClient:            kubeServiceClient,
