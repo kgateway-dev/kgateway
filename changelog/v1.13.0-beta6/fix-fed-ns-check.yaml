@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5832
+    resolvesIssue: false
+    description: Use the correct namespace to check for gloo installation when registering clusters for Gloo Fed.
