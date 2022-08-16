@@ -47,7 +47,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		return nil, nil, err
 	}
 
-	fmt.Printf("KDOROSH12 start watch services for eds client \n")
+	fmt.Printf("KDOROSH12 start watch services for eds client %v\n", p.client)
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters, p.consulUpstreamDiscoverySettings.GetConsistencyMode())
 
 	errChan := make(chan error)

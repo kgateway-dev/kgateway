@@ -77,7 +77,7 @@ func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts)
 	}
 
 	upstreamDiscoveryConfig := c.consulUpstreamDiscoveryConfig
-	fmt.Printf("KDOROSH12 start watch services for upstream client %v\n", c)
+	fmt.Printf("KDOROSH12 start watch services for upstream client %v\n", c.consul)
 	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, upstreamDiscoveryConfig.GetConsistencyMode())
 
 	upstreamsChan := make(chan v1.UpstreamList)
