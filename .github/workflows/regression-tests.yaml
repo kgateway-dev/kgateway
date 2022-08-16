@@ -140,6 +140,7 @@ jobs:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
         ACK_GINKGO_RC: true
         ACK_GINKGO_DEPRECATIONS: 1.16.5
+        LEADER_ELECTION_LEASE_DURATION: 2s
       run: |
         make run-ci-regression-tests
     - uses: testspace-com/setup-testspace@v1

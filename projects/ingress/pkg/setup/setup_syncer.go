@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/golang/protobuf/ptypes"
@@ -45,7 +47,7 @@ var defaultClusterIngressProxyAddress = "clusteringress-proxy." + gloodefaults.G
 var defaultKnativeExternalProxyAddress = "knative-external-proxy." + gloodefaults.GlooSystem + ".svc." + network.GetClusterDomainName()
 var defaultKnativeInternalProxyAddress = "knative-internal-proxy." + gloodefaults.GlooSystem + ".svc." + network.GetClusterDomainName()
 
-func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
+func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings, _ leaderelector.Identity) error {
 	var (
 		cfg           *rest.Config
 		clientset     kubernetes.Interface
