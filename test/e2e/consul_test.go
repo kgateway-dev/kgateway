@@ -119,7 +119,7 @@ var _ = Describe("Consul e2e", func() {
 		cancel()
 	})
 
-	It("works as expected", func() {
+	FIt("works as expected", func() {
 		_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 

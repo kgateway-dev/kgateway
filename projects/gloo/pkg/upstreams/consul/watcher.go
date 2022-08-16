@@ -2,6 +2,8 @@ package consul
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -34,13 +36,23 @@ func NewConsulWatcher(client *consulapi.Client, dataCenters []string) (ConsulWat
 }
 
 func NewConsulWatcherFromClient(client ConsulClient) ConsulWatcher {
-	return &consulWatcher{client}
+	return &consulWatcher{client, make(map[string]watchChannels)}
 }
 
 var _ ConsulWatcher = &consulWatcher{}
 
+type watchChannels struct {
+	// parent channel. each read off this channel will be duplicated and sent to each subscriber
+	servicesChan <-chan []*ServiceMeta
+	errChan      <-chan error
+	// list of subscribers to the parent channels
+	childServicesChans []chan []*ServiceMeta
+	childErrChans      []chan error
+}
+
 type consulWatcher struct {
 	ConsulClient
+	serviceWatches map[string]watchChannels
 }
 
 // Maps a data center name to the services (including tags) registered in it
@@ -57,6 +69,17 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 		errorChan       = make(chan error)
 		allServicesChan = make(chan *dataCenterServicesTuple)
 	)
+
+	// if all datacenters already have a watch, reuse to avoid duplicate watches
+	key := strings.Join(dataCenters, ",")
+	if watch, ok := c.serviceWatches[key]; ok {
+		// create a new channel for the new subscriber
+		newServicesChan := make(chan []*ServiceMeta)
+		newErrChan := make(chan error)
+		watch.childServicesChans = append(watch.childServicesChans, newServicesChan)
+		watch.childErrChans = append(watch.childErrChans, newErrChan)
+		return newServicesChan, newErrChan
+	}
 
 	for _, dataCenter := range dataCenters {
 		// Copy before passing to goroutines!
@@ -111,7 +134,51 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 			}
 		}
 	}()
-	return outputChan, errorChan
+
+	newServicesChan := make(chan []*ServiceMeta)
+	newErrChan := make(chan error)
+
+	c.serviceWatches[key] = watchChannels{
+		servicesChan:       outputChan,
+		errChan:            errorChan,
+		childServicesChans: []chan []*ServiceMeta{newServicesChan},
+		childErrChans:      []chan error{newErrChan},
+	}
+
+	go func() {
+		for {
+			select {
+			case services, ok := <-outputChan:
+				if !ok {
+					return
+				}
+				for _, childChan := range c.serviceWatches[key].childServicesChans {
+					copy := services
+					childChan <- copy
+				}
+			case err, ok := <-errorChan:
+				if !ok {
+					return
+				}
+				for _, childChan := range c.serviceWatches[key].childErrChans {
+					copy := err
+					childChan <- copy
+				}
+			case <-ctx.Done():
+				// Wait for the aggregation routines to shut down to avoid writing to closed channels
+				_ = eg.Wait() // will never error
+				for _, childChan := range c.serviceWatches[key].childServicesChans {
+					close(childChan)
+				}
+				for _, childChan := range c.serviceWatches[key].childErrChans {
+					close(childChan)
+				}
+				return
+			}
+		}
+	}()
+
+	return newServicesChan, newErrChan
 }
 
 // Honors the contract of Watch functions to open with an initial read.
@@ -122,10 +189,19 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 	go func(dataCenter string) {
 		defer close(servicesChan)
 		defer close(errsChan)
+
+		fmt.Printf("KDOROSH12 start watch for dc %v\n", dataCenter)
+		defer fmt.Printf("KDOROSH12 done with watch for dc %v\n", dataCenter)
+
 		lastIndex := uint64(0)
 
 		for {
 			select {
+
+			case <-ctx.Done():
+				// fmt.Printf("KDOROSH12 shut down outer, now %v\n", time.Now())
+				return
+
 			default:
 
 				var (
@@ -140,10 +216,18 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 
 						// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
 						// The first invocation (with lastIndex equal to zero) will return immediately
+						// fmt.Printf("KDOROSH12 before lastindex %v now %v\n", lastIndex, time.Now())
 						queryOpts := NewConsulQueryOptions(dataCenter, cm)
 						queryOpts.WaitIndex = lastIndex
-						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
 
+						if ctx.Err() != nil {
+							// ctx dead, return
+							fmt.Printf("KDOROSH12 ctx dead, now %v\n", time.Now())
+							return nil
+						}
+
+						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
+						// fmt.Printf("KDOROSH12 after lastindex %v now %v\n", lastIndex, time.Now())
 						return err
 					},
 					retry.Attempts(6),
@@ -151,6 +235,10 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 					retry.Delay(100*time.Millisecond),
 					retry.DelayType(retry.BackOffDelay),
 				)
+
+				if ctx.Err() != nil {
+					return
+				}
 
 				if err != nil {
 					errsChan <- err
@@ -169,13 +257,17 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 				select {
 				case servicesChan <- tuple:
 				case <-ctx.Done():
+					fmt.Printf("KDOROSH12 shut down inner, now %v\n", time.Now())
 					return
 				}
 				// Update the last index
-				lastIndex = queryMeta.LastIndex
-
-			case <-ctx.Done():
-				return
+				if queryMeta.LastIndex < lastIndex {
+					// update if index goes backwards per consul blocking query docs
+					// this can happen e.g. KV list operations where item with highest index is deleted
+					lastIndex = 0
+				} else {
+					lastIndex = queryMeta.LastIndex
+				}
 			}
 		}
 	}(dataCenter)
