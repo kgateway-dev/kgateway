@@ -28,9 +28,9 @@ type ConsulClient interface {
 }
 
 func NewConsulClient(client *consulapi.Client, dataCenters []string) (ConsulClient, error) {
-	dcMap := make(map[string]bool)
+	dcMap := make(map[string]struct{})
 	for _, dc := range dataCenters {
-		dcMap[dc] = true
+		dcMap[dc] = struct{}{}
 	}
 
 	return &consul{
@@ -42,7 +42,7 @@ func NewConsulClient(client *consulapi.Client, dataCenters []string) (ConsulClie
 type consul struct {
 	api *consulapi.Client
 	// Whitelist of data centers to consider when querying the agent
-	dataCenters map[string]bool
+	dataCenters map[string]struct{}
 }
 
 func (c *consul) DataCenters() ([]string, error) {
@@ -100,7 +100,7 @@ func (c *consul) validateDataCenter(dataCenter string) error {
 	}
 
 	// If empty, the Consul client will use the default agent data center, which we should allow
-	if dataCenter != "" && c.dataCenters[dataCenter] == false {
+	if _, ok := c.dataCenters[dataCenter]; dataCenter != "" && ok {
 		return ForbiddenDataCenterErr(dataCenter)
 	}
 	return nil
