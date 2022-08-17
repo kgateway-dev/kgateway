@@ -198,7 +198,7 @@ var _ = Describe("ConsulClient", func() {
 
 			})
 
-			FIt("correctly reacts to service updates", func() {
+			It("correctly reacts to service updates", func() {
 				usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client), nil)
 
 				upstreamChan, errChan, err := usClient.Watch(defaults.GlooSystem, clients.WatchOpts{Ctx: ctx})
@@ -228,9 +228,10 @@ var _ = Describe("ConsulClient", func() {
 
 				// Initial call, no delay
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc1,
-					RequireConsistent: true,
-					WaitIndex:         0,
+					Datacenter: dc1,
+					UseCache:   true,
+					WaitIndex:  0,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(100, []string{"svc-1"}, 0)).Times(1)
 
 				// We need this to react differently on the same expectation
@@ -238,9 +239,10 @@ var _ = Describe("ConsulClient", func() {
 
 				// Simulate failure
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc1,
-					RequireConsistent: true,
-					WaitIndex:         100,
+					Datacenter: dc1,
+					UseCache:   true,
+					WaitIndex:  100,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(
 					func(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error) {
 						time.Sleep(50 * time.Millisecond)
@@ -258,9 +260,10 @@ var _ = Describe("ConsulClient", func() {
 
 				// Expect any number of subsequent invocations and return same resource version (last index)
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc1,
-					RequireConsistent: true,
-					WaitIndex:         200,
+					Datacenter: dc1,
+					UseCache:   true,
+					WaitIndex:  200,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(200, []string{"svc-1", "svc-3"}, 200*time.Millisecond)).AnyTimes()
 			})
 
@@ -293,16 +296,18 @@ var _ = Describe("ConsulClient", func() {
 
 				// Initial call, no delay
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc1,
-					RequireConsistent: true,
-					WaitIndex:         0,
+					Datacenter: dc1,
+					UseCache:   true,
+					WaitIndex:  0,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(100, []string{"svc-1"}, 0)).Times(1)
 
 				// Expect any number of subsequent invocations and return same resource version (last index)
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc1,
-					RequireConsistent: true,
-					WaitIndex:         100,
+					Datacenter: dc1,
+					UseCache:   true,
+					WaitIndex:  100,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(100, []string{"svc-1"}, 100*time.Millisecond)).AnyTimes()
 			})
 

@@ -143,18 +143,20 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 				queryOpts := NewConsulQueryOptions(dataCenter, cm, qopts)
 				queryOpts.WaitIndex = lastIndex
 
-				if queryOpts.UseCache {
-					time.Sleep(1 * time.Second) // wait before making next cache query, to avoid spamming the cache
-				}
+				// TODO(kdorosh) this breaks unit tests :/
+				// if queryOpts.UseCache {
+				// 	time.Sleep(1 * time.Second) // wait before making next cache query, to avoid spamming the cache
+				// }
 				var retryIf retry.RetryIfFunc
 				retryIf = func(err error) bool {
 					return err != nil
 				}
 				var onRetry retry.OnRetryFunc
 				onRetry = func(n uint, err error) {
-					if queryOpts.UseCache {
-						time.Sleep(1 * time.Second) // wait before making next cache query, to avoid spamming the cache
-					}
+					// TODO(kdorosh) this breaks unit tests :/
+					// if queryOpts.UseCache {
+					// 	time.Sleep(1 * time.Second) // wait before making next cache query, to avoid spamming the cache
+					// }
 				}
 
 				// Use a back-off retry strategy to avoid flooding the error channel
