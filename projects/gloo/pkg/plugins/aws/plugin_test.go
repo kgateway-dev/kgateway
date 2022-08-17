@@ -1,6 +1,8 @@
 package aws_test
 
 import (
+	"net/url"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -590,7 +592,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).Should(BeNil())
 			cfg := msg.(*AWSLambdaPerRoute)
 
-			Expect(cfg.Name).Should(Equal("arn%3Aaws%3Alambda%3Aus-east1%3A222222222222%3Afunction%3Afoo"))
+			Expect(cfg.Name).Should(Equal(url.QueryEscape("arn:aws:lambda:us-east1:222222222222:function:foo")))
 		})
 	})
 })

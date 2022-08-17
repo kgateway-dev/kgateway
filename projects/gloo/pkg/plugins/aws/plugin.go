@@ -3,6 +3,7 @@ package aws
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"unicode/utf8"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -333,10 +334,14 @@ func GenerateAWSLambdaRouteConfig(destination *aws.DestinationSpec, upstream *aw
 	for _, lambdaFunc := range upstream.GetLambdaFunctions() {
 		if lambdaFunc.GetLogicalName() == logicalName {
 			functionName := lambdaFunc.GetLambdaFunctionName()
-			if len(upstream.GetAwsAccountId()) > 0 {
+			if upstream.GetAwsAccountId() != "" {
+				awsRegion := upstream.GetRegion()
+				if awsRegion == "" {
+					awsRegion = os.Getenv("AWS_REGION")
+				}
 				// eg arn:aws:lambda:us-east-2:986112284769:function:simplerhello
 				functionName = fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s",
-					upstream.GetRegion(), upstream.GetAwsAccountId(), functionName)
+					awsRegion, upstream.GetAwsAccountId(), functionName)
 			}
 
 			lambdaRouteFunc := &AWSLambdaPerRoute{
