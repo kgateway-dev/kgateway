@@ -43,7 +43,7 @@ var _ = Describe("Resolve", func() {
 
 		us := createTestFilteredUpstream(svcName, svcName, nil, []string{tag}, []string{dc})
 
-		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
+		queryOpts := &consulapi.QueryOptions{Datacenter: dc}
 
 		consulWatcherMock.EXPECT().Service(svcName, "", queryOpts).Return([]*consulapi.CatalogService{
 			{
@@ -80,7 +80,7 @@ var _ = Describe("Resolve", func() {
 
 		us := createTestFilteredUpstream(svcName, svcName, nil, []string{tag}, []string{dc})
 
-		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
+		queryOpts := &consulapi.QueryOptions{Datacenter: dc}
 
 		consulWatcherMock.EXPECT().Service(svcName, "", queryOpts).Return([]*consulapi.CatalogService{
 			{
@@ -109,7 +109,7 @@ var _ = Describe("Resolve", func() {
 
 		us := createTestFilteredUpstream(svcName, svcName, nil, nil, []string{dc})
 
-		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
+		queryOpts := &consulapi.QueryOptions{Datacenter: dc}
 
 		consulWatcherMock.EXPECT().Service(svcName, "", queryOpts).Return([]*consulapi.CatalogService{
 			{

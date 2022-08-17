@@ -11,8 +11,8 @@ import (
 //go:generate mockgen -destination=./mocks/mock_consul_client.go -source consul_client.go
 
 const (
-	defaultMaxAge     = 5 * time.Second
-	defaultStaleIfErr = 5 * time.Minute
+	DefaultMaxAge     = 5 * time.Second
+	DefaultStaleIfErr = 5 * time.Minute
 )
 
 var ForbiddenDataCenterErr = func(dataCenter string) error {
@@ -120,23 +120,23 @@ func NewConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyMod
 	requireConsistent := cm == glooConsul.ConsulConsistencyModes_ConsistentMode
 	allowStale := cm == glooConsul.ConsulConsistencyModes_StaleMode
 
-	var maxAge time.Duration
-	if ma := queryOptions.GetMaxAge(); ma != nil {
-		maxAge = ma.AsDuration()
-	} else {
-		maxAge = defaultMaxAge
-	}
-
-	var staleIfErr time.Duration
-	if stale := queryOptions.GetStaleIfError(); stale != nil {
-		staleIfErr = stale.AsDuration()
-	} else {
-		staleIfErr = defaultStaleIfErr
-	}
-
 	useCache := false // defaults to false for now
 	if use := queryOptions.GetUseCache(); use != nil {
 		useCache = use.GetValue()
+	}
+
+	var maxAge time.Duration
+	if ma := queryOptions.GetMaxAge(); useCache && ma != nil {
+		maxAge = ma.AsDuration()
+	} else if useCache {
+		maxAge = DefaultMaxAge
+	}
+
+	var staleIfErr time.Duration
+	if stale := queryOptions.GetStaleIfError(); useCache && stale != nil {
+		staleIfErr = stale.AsDuration()
+	} else if useCache {
+		staleIfErr = DefaultStaleIfErr
 	}
 
 	return &consulapi.QueryOptions{
