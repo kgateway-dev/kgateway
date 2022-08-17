@@ -120,23 +120,9 @@ func NewConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyMod
 	requireConsistent := cm == glooConsul.ConsulConsistencyModes_ConsistentMode
 	allowStale := cm == glooConsul.ConsulConsistencyModes_StaleMode
 
-	useCache := false // defaults to false for now
+	useCache := true // defaults to true for now
 	if use := queryOptions.GetUseCache(); use != nil {
 		useCache = use.GetValue()
-	}
-
-	var maxAge time.Duration
-	if ma := queryOptions.GetMaxAge(); useCache && ma != nil {
-		maxAge = ma.AsDuration()
-	} else if useCache {
-		maxAge = DefaultMaxAge
-	}
-
-	var staleIfErr time.Duration
-	if stale := queryOptions.GetStaleIfError(); useCache && stale != nil {
-		staleIfErr = stale.AsDuration()
-	} else if useCache {
-		staleIfErr = DefaultStaleIfErr
 	}
 
 	return &consulapi.QueryOptions{
@@ -144,7 +130,6 @@ func NewConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyMod
 		AllowStale:        allowStale,
 		RequireConsistent: requireConsistent,
 		UseCache:          useCache,
-		MaxAge:            maxAge,
-		StaleIfError:      staleIfErr,
+		WaitTime:          time.Second,
 	}
 }

@@ -125,6 +125,7 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 		defer close(errsChan)
 
 		lastIndex := uint64(0)
+		lastHardQuery := time.Now()
 
 		for {
 			select {
@@ -164,6 +165,13 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 							// ctx dead, return
 							return nil
 						}
+
+						if now := time.Now(); queryOpts.UseCache && now.Sub(lastHardQuery) > 5*time.Second {
+							// seems to be a bug; let's hard refresh to ensure we have latest cached at least once every 5s
+							queryOpts.UseCache = false
+							lastHardQuery = now
+						}
+
 						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
 						return err
 					},
