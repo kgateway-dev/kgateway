@@ -18,7 +18,7 @@ message QueryOptions{
     // https://www.consul.io/api/features/caching.html for more details on the
     // semantics.
     //
-    // Defaults to true.
+    // Defaults to false.
     google.protobuf.BoolValue use_cache = 1;
 
     // MaxAge limits how old a cached value will be returned if UseCache is true.

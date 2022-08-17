@@ -121,7 +121,7 @@ type QueryOptions struct {
 	// https://www.consul.io/api/features/caching.html for more details on the
 	// semantics.
 	//
-	// Defaults to true.
+	// Defaults to false.
 	UseCache *wrappers.BoolValue `protobuf:"bytes,1,opt,name=use_cache,json=useCache,proto3" json:"use_cache,omitempty"`
 	// MaxAge limits how old a cached value will be returned if UseCache is true.
 	// If there is a cached response that is older than the MaxAge, it is treated
