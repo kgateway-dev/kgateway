@@ -5,6 +5,7 @@ import (
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
@@ -57,7 +58,7 @@ var _ = Describe("ConsulClient", func() {
 					Services:   map[string][]string{"svc-1": {"tag-1"}, "svc-3": {}},
 				}}
 
-				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: true}, &dcServices)
+				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: false, UseCache: true, WaitTime: time.Second}, &dcServices)
 			})
 
 			It("returns the expected upstreams", func() {
@@ -85,11 +86,11 @@ var _ = Describe("ConsulClient", func() {
 					Services:   map[string][]string{"svc-1": {"tag-1"}, "svc-3": {}},
 				}}
 
-				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: true}, &dcServices)
+				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: true, UseCache: true, WaitTime: time.Second}, &dcServices)
 				usClient := NewConsulUpstreamClient(
 					NewConsulWatcherFromClient(client),
 					&v1.Settings_ConsulUpstreamDiscoveryConfiguration{
-						ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode,
+						ConsistencyMode: consulplugin.ConsulConsistencyModes_StaleMode,
 					})
 
 				upstreams, err := usClient.List(defaults.GlooSystem, clients.ListOpts{Ctx: ctx})
@@ -97,9 +98,9 @@ var _ = Describe("ConsulClient", func() {
 
 				Expect(upstreams).To(HaveLen(3))
 				Expect(upstreams).To(ConsistOf(
-					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
-					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
-					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: consulplugin.ConsulConsistencyModes_StaleMode})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: consulplugin.ConsulConsistencyModes_StaleMode})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: consulplugin.ConsulConsistencyModes_StaleMode})[0],
 				))
 			})
 
@@ -112,12 +113,12 @@ var _ = Describe("ConsulClient", func() {
 					Services:   map[string][]string{"svc-1": {"tag-1"}, "svc-3": {}},
 				}}
 
-				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: false}, &dcServices)
+				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: false, UseCache: true, WaitTime: time.Second}, &dcServices)
 
 				usClient := NewConsulUpstreamClient(
 					NewConsulWatcherFromClient(client),
 					&v1.Settings_ConsulUpstreamDiscoveryConfiguration{
-						ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_DefaultMode,
+						ConsistencyMode: consulplugin.ConsulConsistencyModes_DefaultMode,
 					})
 
 				upstreams, err := usClient.List(defaults.GlooSystem, clients.ListOpts{Ctx: ctx})
@@ -125,9 +126,9 @@ var _ = Describe("ConsulClient", func() {
 
 				Expect(upstreams).To(HaveLen(3))
 				Expect(upstreams).To(ConsistOf(
-					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_DefaultMode})[0],
-					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_DefaultMode})[0],
-					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: v1.Settings_ConsulUpstreamDiscoveryConfiguration_DefaultMode})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: consulplugin.ConsulConsistencyModes_DefaultMode})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: consulplugin.ConsulConsistencyModes_DefaultMode})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{ConsistencyMode: consulplugin.ConsulConsistencyModes_DefaultMode})[0],
 				))
 			})
 
@@ -146,23 +147,26 @@ var _ = Describe("ConsulClient", func() {
 
 				// Initial call, no delay
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc1,
-					RequireConsistent: true,
-					WaitIndex:         0,
+					Datacenter: dc1,
+					UseCache:   true,
+					WaitIndex:  0,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(100, []string{"svc-1"}, 0)).Times(1)
 
 				// Second call simulates blocking query that returns with updated resources
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc1,
-					RequireConsistent: true,
-					WaitIndex:         100,
+					Datacenter: dc1,
+					UseCache:   true,
+					WaitIndex:  100,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(200, []string{"svc-1", "svc-2"}, 100*time.Millisecond)).Times(1)
 
 				// Expect any number of subsequent invocations and return same resource version (last index)
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc1,
-					RequireConsistent: true,
-					WaitIndex:         200,
+					Datacenter: dc1,
+					UseCache:   true,
+					WaitIndex:  200,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(200, []string{"svc-1", "svc-2"}, 200*time.Millisecond)).AnyTimes()
 
 				// ----------- Data center 2 -----------
@@ -170,28 +174,31 @@ var _ = Describe("ConsulClient", func() {
 
 				// Initial call, no delay
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc2,
-					RequireConsistent: true,
-					WaitIndex:         0,
+					Datacenter: dc2,
+					UseCache:   true,
+					WaitIndex:  0,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(100, []string{}, 0)).Times(1)
 
 				// Second call simulates blocking query that returns with updated resources
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc2,
-					RequireConsistent: true,
-					WaitIndex:         100,
+					Datacenter: dc2,
+					UseCache:   true,
+					WaitIndex:  100,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(250, []string{"svc-1", "svc-3"}, 200*time.Millisecond)).Times(1)
 
 				// Expect any number of subsequent invocations and return same resource version (last index)
 				client.EXPECT().Services((&consulapi.QueryOptions{
-					Datacenter:        dc2,
-					RequireConsistent: true,
-					WaitIndex:         250,
+					Datacenter: dc2,
+					UseCache:   true,
+					WaitIndex:  250,
+					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(250, []string{"svc-1", "svc-3"}, 200*time.Millisecond)).AnyTimes()
 
 			})
 
-			It("correctly reacts to service updates", func() {
+			FIt("correctly reacts to service updates", func() {
 				usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client), nil)
 
 				upstreamChan, errChan, err := usClient.Watch(defaults.GlooSystem, clients.WatchOpts{Ctx: ctx})
@@ -352,6 +359,8 @@ func setupDatacenterServices(ctx context.Context, client *MockConsulClient, quer
 			Datacenter:        r.DataCenter,
 			RequireConsistent: queryOptions.RequireConsistent,
 			AllowStale:        queryOptions.AllowStale,
+			UseCache:          queryOptions.UseCache,
+			WaitTime:          time.Second,
 		}).WithContext(ctx)).Return(r.Services, nil, nil).Times(1)
 	}
 }
