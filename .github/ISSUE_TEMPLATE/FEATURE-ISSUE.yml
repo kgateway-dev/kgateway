@@ -8,11 +8,11 @@ body:
       label: Version
       description: What version of Gloo Edge are you using?
       options:
-        - 1.12.x (beta)
-        - 1.11.x (latest stable)
+        - 1.13.x (beta)
+        - 1.12.x (latest stable)
+        - 1.11.x
         - 1.10.x
         - 1.9.x
-        - 1.8.x
   - type: textarea
     id: problem-details
     attributes:
