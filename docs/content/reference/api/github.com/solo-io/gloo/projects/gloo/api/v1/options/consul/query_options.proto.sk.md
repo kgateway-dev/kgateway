@@ -56,11 +56,14 @@ mirrors client query options struct in consul catalog api
 Description: These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
 For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
 
+Note: Gloo handles staleness well (as it runs update loops ~ once/second) but makes many requests
+to get consul endpoints so users may want to opt into stale reads once the implications are understood.
+
 | Name | Description |
 | ----- | ----------- | 
-| ConsistentMode | RequireConsistent forces the read to be fully consistent. This is more expensive but prevents ever performing a stale read. |
-| DefaultMode | This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false. |
-| StaleMode | AllowStale allows any Consul server (non-leader) to service a read. This allows for lower latency and higher throughput |
+| DefaultMode | default - Consul HTTP API queries use default mode by default. It is strongly consistent in almost all cases. However, there is a small window in which a new leader may be elected during which the old leader may respond with stale values. The trade-off is fast reads but potentially stale values. The condition resulting in stale reads is hard to trigger, and most clients should not need to worry about this case. Also, note that this race condition only applies to reads, not writes. For more, see https://www.consul.io/api-docs/features/consistency#consul-http-api-queries |
+| StaleMode | AllowStale allows any Consul server (non-leader) to service a read. This allows for lower latency and higher throughput stale - Consul DNS queries use stale mode by default. This mode allows any server to handle the read regardless of whether it is the leader. The trade-off is very fast and scalable reads with a higher likelihood of stale values. Results are generally consistent to within 50 milliseconds of the leader, though there is no upper limit on this staleness. Since this mode allows reads without a leader, a cluster that is unavailable (no quorum) can still respond to queries. Gloo handles staleness well (as it runs update loops ~ once/second) so users may want to opt into this. |
+| ConsistentMode | RequireConsistent forces the read to be fully consistent. This is more expensive but prevents ever performing a stale read. consistent - This mode is strongly consistent without caveats. It requires that a leader verify with a quorum of peers that it is still leader. This introduces an additional round-trip to all server nodes. The trade-off is increased latency due to an extra round trip. Most clients should not use this unless they cannot tolerate a stale read. Gloo handles staleness well (as it runs update loops ~ once/second) so users may want to strongly consider their requirements before enabling this. |
 
 
 <!-- Start of HubSpot Embed Code -->

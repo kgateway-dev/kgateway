@@ -26,31 +26,61 @@ const (
 
 // These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
 // For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
+//
+// Note: Gloo handles staleness well (as it runs update loops ~ once/second) but makes many requests
+// to get consul endpoints so users may want to opt into stale reads once the implications are understood.
 type ConsulConsistencyModes int32
 
 const (
+	// default - Consul HTTP API queries use default mode by default.
+	// It is strongly consistent in almost all cases. However, there is a small
+	// window in which a new leader may be elected during which the old leader may
+	// respond with stale values. The trade-off is fast reads but potentially stale
+	// values. The condition resulting in stale reads is hard to trigger, and most
+	// clients should not need to worry about this case. Also, note that this race
+	// condition only applies to reads, not writes.
+	//
+	// For more, see https://www.consul.io/api-docs/features/consistency#consul-http-api-queries
+	ConsulConsistencyModes_DefaultMode ConsulConsistencyModes = 0
+	// AllowStale allows any Consul server (non-leader) to service
+	// a read. This allows for lower latency and higher throughput
+	//
+	// stale - Consul DNS queries use stale mode by default. This mode allows any
+	// server to handle the read regardless of whether it is the leader. The trade-off
+	// is very fast and scalable reads with a higher likelihood of stale values. Results
+	// are generally consistent to within 50 milliseconds of the leader, though there is
+	// no upper limit on this staleness. Since this mode allows reads without a leader, a
+	// cluster that is unavailable (no quorum) can still respond to queries.
+	//
+	// Gloo handles staleness well (as it runs update loops ~ once/second) so users may want
+	// to opt into this.
+	ConsulConsistencyModes_StaleMode ConsulConsistencyModes = 1
 	// RequireConsistent forces the read to be fully consistent.
 	// This is more expensive but prevents ever performing a stale
 	// read.
-	ConsulConsistencyModes_ConsistentMode ConsulConsistencyModes = 0
-	// This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false.
-	ConsulConsistencyModes_DefaultMode ConsulConsistencyModes = 2
-	// AllowStale allows any Consul server (non-leader) to service
-	// a read. This allows for lower latency and higher throughput
-	ConsulConsistencyModes_StaleMode ConsulConsistencyModes = 1
+	//
+	// consistent - This mode is strongly consistent without caveats. It requires that a
+	// leader verify with a quorum of peers that it is still leader. This introduces an
+	// additional round-trip to all server nodes. The trade-off is increased latency due
+	// to an extra round trip. Most clients should not use this unless they cannot tolerate
+	// a stale read.
+	//
+	// Gloo handles staleness well (as it runs update loops ~ once/second) so users may want
+	// to strongly consider their requirements before enabling this.
+	ConsulConsistencyModes_ConsistentMode ConsulConsistencyModes = 2
 )
 
 // Enum value maps for ConsulConsistencyModes.
 var (
 	ConsulConsistencyModes_name = map[int32]string{
-		0: "ConsistentMode",
-		2: "DefaultMode",
+		0: "DefaultMode",
 		1: "StaleMode",
+		2: "ConsistentMode",
 	}
 	ConsulConsistencyModes_value = map[string]int32{
-		"ConsistentMode": 0,
-		"DefaultMode":    2,
+		"DefaultMode":    0,
 		"StaleMode":      1,
+		"ConsistentMode": 2,
 	}
 )
 
@@ -194,10 +224,10 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_consul_query_optio
 	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x44, 0x75, 0x72, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x52, 0x0c, 0x73, 0x74, 0x61, 0x6c, 0x65, 0x49, 0x66, 0x45, 0x72, 0x72, 0x6f,
 	0x72, 0x2a, 0x4c, 0x0a, 0x16, 0x43, 0x6f, 0x6e, 0x73, 0x75, 0x6c, 0x43, 0x6f, 0x6e, 0x73, 0x69,
-	0x73, 0x74, 0x65, 0x6e, 0x63, 0x79, 0x4d, 0x6f, 0x64, 0x65, 0x73, 0x12, 0x12, 0x0a, 0x0e, 0x43,
-	0x6f, 0x6e, 0x73, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x74, 0x4d, 0x6f, 0x64, 0x65, 0x10, 0x00, 0x12,
-	0x0f, 0x0a, 0x0b, 0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x4d, 0x6f, 0x64, 0x65, 0x10, 0x02,
-	0x12, 0x0d, 0x0a, 0x09, 0x53, 0x74, 0x61, 0x6c, 0x65, 0x4d, 0x6f, 0x64, 0x65, 0x10, 0x01, 0x42,
+	0x73, 0x74, 0x65, 0x6e, 0x63, 0x79, 0x4d, 0x6f, 0x64, 0x65, 0x73, 0x12, 0x0f, 0x0a, 0x0b, 0x44,
+	0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x4d, 0x6f, 0x64, 0x65, 0x10, 0x00, 0x12, 0x0d, 0x0a, 0x09,
+	0x53, 0x74, 0x61, 0x6c, 0x65, 0x4d, 0x6f, 0x64, 0x65, 0x10, 0x01, 0x12, 0x12, 0x0a, 0x0e, 0x43,
+	0x6f, 0x6e, 0x73, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x74, 0x4d, 0x6f, 0x64, 0x65, 0x10, 0x02, 0x42,
 	0x4d, 0x5a, 0x3f, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f,
 	0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65,
 	0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69,
