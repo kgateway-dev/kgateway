@@ -2897,8 +2897,8 @@ type PassThroughAuth struct {
 	Protocol isPassThroughAuth_Protocol `protobuf_oneof:"protocol"`
 	// Custom config to be passed per request to the passthrough auth service.
 	Config *_struct.Struct `protobuf:"bytes,4,opt,name=config,proto3" json:"config,omitempty"`
-	// In case of a failure or timeout querying the auth server, normally a request is denied.
-	// if this is set to true, the request will be allowed.
+	// If set to true, the filter will accept client request even if the communication with
+	//  the authorization service has failed, or if the authorization service has returned a HTTP 5xx error.
 	FailureModeAllow bool `protobuf:"varint,5,opt,name=failure_mode_allow,json=failureModeAllow,proto3" json:"failure_mode_allow,omitempty"`
 }
 
