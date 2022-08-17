@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	errors "github.com/rotisserie/eris"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -155,12 +156,19 @@ func BuildHelm3Release(chartDir, namespace string, values helmValues) (*release.
 		return nil, err
 	}
 
-	client, err := buildRenderer(namespace)
-	if err != nil {
-		return nil, err
+	lintAction := createLintAction(namespace)
+	lintResult := lintAction.Run([]string{chartDir}, helmValues)
+	if len(lintResult.Errors) > 0 {
+		// todo - for now just return first
+		return nil, errors.Wrap(lintResult.Errors[0], "`Helm Lint` failed")
 	}
 
-	return client.Run(chartRequested, helmValues)
+	installAction, err := createInstallAction(namespace)
+	if err != nil {
+		return nil, errors.Wrap(err, "`Helm Install` failed")
+	}
+
+	return installAction.Run(chartRequested, helmValues)
 }
 
 // each entry in valuesArgs should look like `path.to.helm.field=value`
@@ -244,7 +252,7 @@ func readValuesFile(filePath string) (map[string]interface{}, error) {
 	return mapFromFile, nil
 }
 
-func buildRenderer(namespace string) (*action.Install, error) {
+func createInstallAction(namespace string) (*action.Install, error) {
 	settings := install.NewCLISettings(namespace, "")
 	actionConfig := new(action.Configuration)
 	noOpDebugLog := func(format string, v ...interface{}) {}
@@ -266,6 +274,15 @@ func buildRenderer(namespace string) (*action.Install, error) {
 	renderer.ClientOnly = true
 
 	return renderer, nil
+}
+
+func createLintAction(namespace string) *action.Lint {
+	lintAction := action.NewLint()
+	lintAction.Strict = false // todo sam
+	lintAction.Namespace = namespace
+	lintAction.WithSubcharts = false
+
+	return lintAction
 }
 
 // stolen from Helm internals
