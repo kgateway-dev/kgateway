@@ -119,10 +119,7 @@ var _ = Describe("Consul e2e", func() {
 		cancel()
 	})
 
-	// TODO(kdorosh) does our current impl even work if EDS _only_ updates? .. test it!
-	// also my caching optimization helps for service watching, but not for EDS since ctx changes each loop
-
-	FIt("works as expected", func() {
+	It("works as expected", func() {
 		_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
