@@ -10,8 +10,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	api "github.com/hashicorp/consul/api"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	consul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
+	consul0 "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 )
 
 // MockConsulWatcher is a mock of ConsulWatcher interface.
@@ -101,10 +101,10 @@ func (mr *MockConsulWatcherMockRecorder) Services(q interface{}) *gomock.Call {
 }
 
 // WatchServices mocks base method.
-func (m *MockConsulWatcher) WatchServices(ctx context.Context, dataCenters []string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) (<-chan []*consul.ServiceMeta, <-chan error) {
+func (m *MockConsulWatcher) WatchServices(ctx context.Context, dataCenters []string, cm consul.ConsulConsistencyModes) (<-chan []*consul0.ServiceMeta, <-chan error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WatchServices", ctx, dataCenters, cm)
-	ret0, _ := ret[0].(<-chan []*consul.ServiceMeta)
+	ret0, _ := ret[0].(<-chan []*consul0.ServiceMeta)
 	ret1, _ := ret[1].(<-chan error)
 	return ret0, ret1
 }

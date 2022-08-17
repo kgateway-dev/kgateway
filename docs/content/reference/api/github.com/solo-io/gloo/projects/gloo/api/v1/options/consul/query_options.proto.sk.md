@@ -36,13 +36,17 @@ weight: 5
 mirrors client query options struct in consul catalog api
 
 ```yaml
-"consistencyMode": .consul.options.gloo.solo.io.ConsulConsistencyModes
+"useCache": .google.protobuf.BoolValue
+"maxAge": .google.protobuf.Duration
+"staleIfError": .google.protobuf.Duration
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `consistencyMode` | [.consul.options.gloo.solo.io.ConsulConsistencyModes](../query_options.proto.sk/#consulconsistencymodes) |  |
+| `useCache` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | UseCache requests that the agent cache results locally. See https://www.consul.io/api/features/caching.html for more details on the semantics. Defaults to true. |
+| `maxAge` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | MaxAge limits how old a cached value will be returned if UseCache is true. If there is a cached response that is older than the MaxAge, it is treated as a cache miss and a new fetch invoked. If the fetch fails, the error is returned. Clients that wish to allow for stale results on error can set StaleIfError to a longer duration to change this behavior. It is ignored if the endpoint supports background refresh caching. See https://www.consul.io/api/features/caching.html for more details. Defaults to 5s. |
+| `staleIfError` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | StaleIfError specifies how stale the client will accept a cached response if the servers are unavailable to fetch a fresh one. Only makes sense when UseCache is true and MaxAge is set to a lower, non-zero value. It is ignored if the endpoint supports background refresh caching. See https://www.consul.io/api/features/caching.html for more details. Defaults to 5m. |
 
 
 
@@ -54,9 +58,9 @@ For more information please review https://pkg.go.dev/github.com/hashicorp/consu
 
 | Name | Description |
 | ----- | ----------- | 
-| ConsistentMode | This is strongly consistent. Sets the RequireConsistent in the consul api to true. |
+| ConsistentMode | RequireConsistent forces the read to be fully consistent. This is more expensive but prevents ever performing a stale read. |
 | DefaultMode | This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false. |
-| StaleMode | Allows stale reads when set. This will set the AllowStale in the consul api. |
+| StaleMode | AllowStale allows any Consul server (non-leader) to service a read. This allows for lower latency and higher throughput |
 
 
 <!-- Start of HubSpot Embed Code -->

@@ -1874,7 +1874,7 @@ type Settings_ConsulUpstreamDiscoveryConfiguration struct {
 	// be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those
 	// without the tlsTagName tag are sorted into the non-TLS upstream.
 	SplitTlsServices bool `protobuf:"varint,19,opt,name=splitTlsServices,proto3" json:"splitTlsServices,omitempty"`
-	// Sets the consistency mode. The default is the ConsistentMode.
+	// Sets the consistency mode. The default is ConsistentMode.
 	// Prefer query_options to set all client query options.
 	//
 	// Deprecated: Do not use.

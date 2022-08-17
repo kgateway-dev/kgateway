@@ -52,8 +52,8 @@ type UpstreamSpec struct {
 	InstanceBlacklistTags []string `protobuf:"bytes,8,rep,name=instance_blacklist_tags,json=instanceBlacklistTags,proto3" json:"instance_blacklist_tags,omitempty"`
 	// An optional Service Spec describing the service listening at this address
 	ServiceSpec *options.ServiceSpec `protobuf:"bytes,3,opt,name=service_spec,json=serviceSpec,proto3" json:"service_spec,omitempty"`
-	// Sets the consistency mode. The default is the ConsistentMode.
-	// Deprecated, pref
+	// Sets the consistency mode. The default is ConsistentMode.
+	// Prefer query_options to set all client query options.
 	//
 	// Deprecated: Do not use.
 	ConsistencyMode ConsulConsistencyModes `protobuf:"varint,9,opt,name=consistencyMode,proto3,enum=consul.options.gloo.solo.io.ConsulConsistencyModes" json:"consistencyMode,omitempty"`

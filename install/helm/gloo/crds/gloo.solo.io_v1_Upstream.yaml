@@ -195,9 +195,13 @@ spec:
                     type: array
                   queryOptions:
                     properties:
-                      consistencyMode:
+                      maxAge:
                         type: string
-                        x-kubernetes-int-or-string: true
+                      staleIfError:
+                        type: string
+                      useCache:
+                        nullable: true
+                        type: boolean
                     type: object
                   serviceName:
                     type: string

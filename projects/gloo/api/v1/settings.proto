@@ -307,7 +307,7 @@ message Settings {
          // without the tlsTagName tag are sorted into the non-TLS upstream.
          bool splitTlsServices = 19;
 
-        // Sets the consistency mode. The default is the ConsistentMode.
+        // Sets the consistency mode. The default is ConsistentMode.
         // Prefer query_options to set all client query options.
         .consul.options.gloo.solo.io.ConsulConsistencyModes consistencyMode = 20 [deprecated=true];
 

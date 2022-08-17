@@ -42,8 +42,8 @@ message UpstreamSpec {
     // An optional Service Spec describing the service listening at this address
     .options.gloo.solo.io.ServiceSpec service_spec = 3;
 
-    // Sets the consistency mode. The default is the ConsistentMode.
-    // Deprecated, pref
+    // Sets the consistency mode. The default is ConsistentMode.
+    // Prefer query_options to set all client query options.
     .consul.options.gloo.solo.io.ConsulConsistencyModes consistencyMode = 9 [deprecated=true];
 
     // QueryOptions are the query options to use for all Consul queries.
@@ -52,6 +52,7 @@ message UpstreamSpec {
 
     // Is this consul service connect enabled.
     bool connect_enabled = 4;
+
     // The data centers in which the service instance represented by this upstream is registered.
     repeated string data_centers = 5;
 }

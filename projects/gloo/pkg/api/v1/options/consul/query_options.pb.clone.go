@@ -12,6 +12,10 @@ import (
 
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
+
+	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+
+	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 )
 
 // ensure the imports are used
@@ -33,7 +37,23 @@ func (m *QueryOptions) Clone() proto.Message {
 	}
 	target = &QueryOptions{}
 
-	target.ConsistencyMode = m.GetConsistencyMode()
+	if h, ok := interface{}(m.GetUseCache()).(clone.Cloner); ok {
+		target.UseCache = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.UseCache = proto.Clone(m.GetUseCache()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if h, ok := interface{}(m.GetMaxAge()).(clone.Cloner); ok {
+		target.MaxAge = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.MaxAge = proto.Clone(m.GetMaxAge()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetStaleIfError()).(clone.Cloner); ok {
+		target.StaleIfError = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.StaleIfError = proto.Clone(m.GetStaleIfError()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
 
 	return target
 }

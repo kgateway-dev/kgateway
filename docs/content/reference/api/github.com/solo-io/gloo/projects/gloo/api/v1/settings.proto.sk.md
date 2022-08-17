@@ -425,7 +425,7 @@ upstreams to connect to those services and their instances.
 | `tlsTagName` | `string` | The tag that gloo should use to make TLS upstreams from consul services, and to partition consul serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'. |
 | `rootCa` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The reference for the root CA resource to be used by discovered consul TLS upstreams. |
 | `splitTlsServices` | `bool` | If true, then create two upstreams when the tlsTagName is found on a consul service, one with tls and one without. This requires a consul service's serviceInstances be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those without the tlsTagName tag are sorted into the non-TLS upstream. |
-| `consistencyMode` | [.consul.options.gloo.solo.io.ConsulConsistencyModes](../options/consul/query_options.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is the ConsistentMode. Prefer query_options to set all client query options. |
+| `consistencyMode` | [.consul.options.gloo.solo.io.ConsulConsistencyModes](../options/consul/query_options.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is ConsistentMode. Prefer query_options to set all client query options. |
 | `queryOptions` | [.consul.options.gloo.solo.io.QueryOptions](../options/consul/query_options.proto.sk/#queryoptions) | QueryOptions are the query options to use for all Consul queries. It is _highly_ recommended to configure caching and max age. |
 
 
