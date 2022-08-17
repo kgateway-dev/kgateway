@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -436,6 +438,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		},
 		GatewayControllerEnabled: true,
 		ValidationOpts:           validationOpts,
+		Identity:                 singlereplica.Identity(),
 	}
 }
 

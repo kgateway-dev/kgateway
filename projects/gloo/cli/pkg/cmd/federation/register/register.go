@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/gloo/pkg/cliutil"
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -33,7 +32,7 @@ func installCrdsToRemote(context string) error {
 
 	_, err = helmInstall.Run(chartObj, nil)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "\ngloo failed to install CRDs! Detailed logs available at %s.\n", cliutil.GetLogsPath())
+		_, _ = fmt.Fprintf(os.Stderr, "\ngloo failed to install CRDs: %+v\n", err)
 		return err
 	}
 	return nil
@@ -53,12 +52,12 @@ func Register(opts *options.Options) error {
 
 	// check to see if Gloo is installed onto RemoteContext.  If not, install CRDs to prevent a gloo-fed crash, per
 	// https://github.com/solo-io/gloo/issues/5832
-	serverVersion, err := version.NewKube(opts.Metadata.GetNamespace(), registerOpts.RemoteContext).Get(ctx)
+	serverVersion, err := version.NewKube(registerOpts.RemoteNamespace, registerOpts.RemoteContext).Get(ctx)
 	if err != nil {
 		return err
 	}
 	if serverVersion == nil {
-		fmt.Printf("No `gloo` install detected on %s.  Installing OSS CRDs.\n", registerOpts.RemoteContext)
+		fmt.Printf("No `gloo` install detected in namespace %s on remote context %s. Installing OSS CRDs.\n", registerOpts.RemoteNamespace, registerOpts.RemoteContext)
 		installCrdsToRemote(registerOpts.RemoteContext)
 	}
 

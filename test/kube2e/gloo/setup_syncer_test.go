@@ -9,6 +9,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
+
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -66,10 +70,10 @@ var _ = Describe("SetupSyncer", func() {
 		setupFunc := NewSetupFunc()
 
 		var synchronizedSetupFunc setuputils.SetupFunc
-		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
 			setupLock.Lock()
 			defer setupLock.Unlock()
-			return setupFunc(ctx, kubeCache, inMemoryCache, settings)
+			return setupFunc(ctx, kubeCache, inMemoryCache, settings, identity)
 		}
 
 		return synchronizedSetupFunc
@@ -128,13 +132,13 @@ var _ = Describe("SetupSyncer", func() {
 
 				setup := newSynchronizedSetupFunc()
 
-				err := setup(ctx, nil, memcache, settings)
+				err := setup(ctx, nil, memcache, settings, singlereplica.Identity())
 				Expect(err).NotTo(HaveOccurred())
 
 				testFunc := setupTestGrpcClient()
 
 				newContext()
-				err = setup(ctx, nil, memcache, settings)
+				err = setup(ctx, nil, memcache, settings, singlereplica.Identity())
 				Expect(err).NotTo(HaveOccurred())
 
 				// give things a chance to react
@@ -242,27 +246,27 @@ var _ = Describe("SetupSyncer", func() {
 
 			It("can be called with core cache", func() {
 				setup := newSynchronizedSetupFunc()
-				err := setup(ctx, kubeCoreCache, memcache, settings)
+				err := setup(ctx, kubeCoreCache, memcache, settings, singlereplica.Identity())
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("can be called with core cache warming endpoints", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(time.Minute)
 				setup := newSynchronizedSetupFunc()
-				err := setup(ctx, kubeCoreCache, memcache, settings)
+				err := setup(ctx, kubeCoreCache, memcache, settings, singlereplica.Identity())
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("panics when endpoints don't arrive in a timely manner", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(1 * time.Nanosecond)
 				setup := newSynchronizedSetupFunc()
-				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).To(Panic())
+				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings, singlereplica.Identity()) }).To(Panic())
 			})
 
 			It("doesn't panic when endpoints don't arrive in a timely manner if set to zero", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(0)
 				setup := newSynchronizedSetupFunc()
-				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).NotTo(Panic())
+				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings, singlereplica.Identity()) }).NotTo(Panic())
 			})
 
 			setupTestGrpcClient := func() func() error {

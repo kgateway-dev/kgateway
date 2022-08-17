@@ -67,13 +67,15 @@ type ResourceRequirements struct {
 	Limits   *ResourceAllocation `json:"limits,omitempty" desc:"resource limits of this container"`
 	Requests *ResourceAllocation `json:"requests,omitempty" desc:"resource requests of this container"`
 }
+
 type PodSpec struct {
-	RestartPolicy *string                `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
-	NodeName      *string                `json:"nodeName,omitempty" desc:"name of node to run on"`
-	NodeSelector  map[string]string      `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
-	Tolerations   []*appsv1.Toleration   `json:"tolerations,omitempty"`
-	Affinity      map[string]interface{} `json:"affinity,omitempty"`
-	HostAliases   []interface{}          `json:"hostAliases,omitempty"`
+	RestartPolicy     *string                `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
+	PriorityClassName *string                `json:"priorityClassName,omitempty" desc:"name of a defined priority class"`
+	NodeName          *string                `json:"nodeName,omitempty" desc:"name of node to run on"`
+	NodeSelector      map[string]string      `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
+	Tolerations       []*appsv1.Toleration   `json:"tolerations,omitempty"`
+	Affinity          map[string]interface{} `json:"affinity,omitempty"`
+	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
 }
 
 type JobSpec struct {

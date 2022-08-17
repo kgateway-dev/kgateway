@@ -3,6 +3,8 @@ package setuputils
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -22,19 +24,22 @@ var (
 type SetupFunc func(ctx context.Context,
 	kubeCache kube.SharedCache,
 	inMemoryCache memory.InMemoryResourceCache,
-	settings *v1.Settings) error
+	settings *v1.Settings,
+	identity leaderelector.Identity) error
 
 type SetupSyncer struct {
 	settingsRef   *core.ResourceRef
 	setupFunc     SetupFunc
 	inMemoryCache memory.InMemoryResourceCache
+	identity      leaderelector.Identity
 }
 
-func NewSetupSyncer(settingsRef *core.ResourceRef, setupFunc SetupFunc) *SetupSyncer {
+func NewSetupSyncer(settingsRef *core.ResourceRef, setupFunc SetupFunc, identity leaderelector.Identity) *SetupSyncer {
 	return &SetupSyncer{
 		settingsRef:   settingsRef,
 		setupFunc:     setupFunc,
 		inMemoryCache: memory.NewInMemoryResourceCache(),
+		identity:      identity,
 	}
 }
 
@@ -52,5 +57,5 @@ func (s *SetupSyncer) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
 		mSetupsRun,
 	)
 
-	return s.setupFunc(ctx, kube.NewKubeCache(ctx), s.inMemoryCache, settings)
+	return s.setupFunc(ctx, kube.NewKubeCache(ctx), s.inMemoryCache, settings, s.identity)
 }
