@@ -575,6 +575,24 @@ var _ = Describe("Plugin", func() {
 		})
 
 	})
+
+	Context("ExtraAccountCredentials", func() {
+		JustBeforeEach(func() {
+			upstream.UpstreamType.(*v1.Upstream_Aws).Aws.AwsAccountId = "222222222222"
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should process route", func() {
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+			msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
+			Expect(err).Should(BeNil())
+			cfg := msg.(*AWSLambdaPerRoute)
+
+			Expect(cfg.Name).Should(Equal("arn%3Aaws%3Alambda%3Aus-east1%3A222222222222%3Afunction%3Afoo"))
+		})
+	})
 })
 
 func getClusterTlsContext(cluster *envoy_config_cluster_v3.Cluster) *envoyauth.UpstreamTlsContext {
