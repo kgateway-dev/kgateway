@@ -156,16 +156,16 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 			}
 			if queryOptions := consulUpstream.GetConsul().GetQueryOptions(); queryOptions != nil {
 				// if any upstream can't use cache, disable for all
-				if useCache := queryOptions.GetUseCache().GetValue(); useCache {
-					queryOptions.UseCache = queryOptions.GetUseCache()
+				if useCache := queryOptions.GetUseCache(); useCache != nil && !useCache.Value {
+					queryOptions.UseCache = useCache
 				}
 				// take the lowest max age
 				if ma := queryOptions.GetMaxAge(); ma != nil && ma.AsDuration() < queryOptions.GetMaxAge().AsDuration() {
-					queryOptions.MaxAge = queryOptions.GetMaxAge()
+					queryOptions.MaxAge = ma
 				}
 				// take the lowest stale if error
 				if staleIfErr := queryOptions.GetStaleIfError(); staleIfErr != nil && staleIfErr.AsDuration() < queryOptions.GetStaleIfError().AsDuration() {
-					queryOptions.StaleIfError = queryOptions.GetStaleIfError()
+					queryOptions.StaleIfError = staleIfErr
 				}
 			}
 		}
