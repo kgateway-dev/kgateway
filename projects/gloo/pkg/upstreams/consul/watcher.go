@@ -62,7 +62,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 		// Copy before passing to goroutines!
 		dcName := dataCenter
 
-		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName, cm)
+		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName, cm, queryOpts)
 
 		// Collect services
 		eg.Go(func() error {
@@ -116,7 +116,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 }
 
 // Honors the contract of Watch functions to open with an initial read.
-func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter string, cm glooconsul.ConsulConsistencyModes) (<-chan *dataCenterServicesTuple, <-chan error) {
+func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter string, cm glooconsul.ConsulConsistencyModes, qopts *glooconsul.QueryOptions) (<-chan *dataCenterServicesTuple, <-chan error) {
 	servicesChan := make(chan *dataCenterServicesTuple)
 	errsChan := make(chan error)
 
@@ -144,7 +144,7 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 
 						// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
 						// The first invocation (with lastIndex equal to zero) will return immediately
-						queryOpts := NewConsulQueryOptions(dataCenter, cm, &glooconsul.QueryOptions{}) // TODO(kdorosh) wire up!
+						queryOpts := NewConsulQueryOptions(dataCenter, cm, qopts)
 						queryOpts.WaitIndex = lastIndex
 
 						if ctx.Err() != nil {
@@ -180,11 +180,6 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 					services:   services,
 				}
 
-				select {
-				case servicesChan <- tuple:
-				case <-ctx.Done():
-					return
-				}
 				// Update the last index
 				if queryMeta.LastIndex < lastIndex {
 					// update if index goes backwards per consul blocking query docs
@@ -193,6 +188,7 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 				} else {
 					lastIndex = queryMeta.LastIndex
 				}
+				servicesChan <- tuple
 			}
 		}
 	}(dataCenter)
