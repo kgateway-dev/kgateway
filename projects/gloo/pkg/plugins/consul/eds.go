@@ -159,14 +159,6 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 				if useCache := queryOptions.GetUseCache(); useCache != nil && !useCache.GetValue() {
 					queryOptions.UseCache = useCache
 				}
-				// take the lowest max age
-				if ma := queryOptions.GetMaxAge(); ma != nil && ma.AsDuration() < queryOptions.GetMaxAge().AsDuration() {
-					queryOptions.MaxAge = ma
-				}
-				// take the lowest stale if error
-				if staleIfErr := queryOptions.GetStaleIfError(); staleIfErr != nil && staleIfErr.AsDuration() < queryOptions.GetStaleIfError().AsDuration() {
-					queryOptions.StaleIfError = staleIfErr
-				}
 			}
 		}
 		for _, dataCenter := range service.DataCenters {

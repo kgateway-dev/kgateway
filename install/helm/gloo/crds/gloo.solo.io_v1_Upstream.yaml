@@ -195,10 +195,6 @@ spec:
                     type: array
                   queryOptions:
                     properties:
-                      maxAge:
-                        type: string
-                      staleIfError:
-                        type: string
                       useCache:
                         nullable: true
                         type: boolean

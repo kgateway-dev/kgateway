@@ -124,10 +124,6 @@ spec:
                     x-kubernetes-int-or-string: true
                   queryOptions:
                     properties:
-                      maxAge:
-                        type: string
-                      staleIfError:
-                        type: string
                       useCache:
                         nullable: true
                         type: boolean

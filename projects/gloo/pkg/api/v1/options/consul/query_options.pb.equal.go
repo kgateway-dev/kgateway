@@ -56,25 +56,5 @@ func (m *QueryOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetMaxAge()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMaxAge()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetMaxAge(), target.GetMaxAge()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetStaleIfError()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetStaleIfError()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetStaleIfError(), target.GetStaleIfError()) {
-			return false
-		}
-	}
-
 	return true
 }
