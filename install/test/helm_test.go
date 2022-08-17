@@ -1392,6 +1392,10 @@ metadata:
 					})
 
 					It("disabling http gateway disables corresponding service port", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway=true"},
+						})
+
 						var gatewayProxyService *v1.Service
 
 						serviceLabels := map[string]string{
@@ -1437,6 +1441,10 @@ metadata:
 					})
 
 					It("disabling https gateway disables corresponding service port", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpsGateway=true"},
+						})
+
 						var gatewayProxyService *v1.Service
 
 						serviceLabels := map[string]string{
@@ -3750,9 +3758,6 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
-        volumeMounts:
-          - mountPath: /etc/gateway/validation-certs
-            name: validation-certs
 apiVersion: apps/v1
 kind: Deployment
 metadata:
