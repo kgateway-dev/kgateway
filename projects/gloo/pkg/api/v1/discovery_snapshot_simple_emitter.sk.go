@@ -50,24 +50,22 @@ func (c *discoverySimpleEmitter) Snapshots(ctx context.Context) (<-chan *Discove
 
 	go func() {
 		currentSnapshot := DiscoverySnapshot{}
-		needsSync := false
-		// intentionally rate-limited so that our sync loops have time to complete before the next snapshot is sent
 		timer := time.NewTicker(time.Second * 1)
-		defer timer.Stop()
 		var previousHash uint64
 		sync := func() {
 			currentHash, err := currentSnapshot.Hash(nil)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
-			if !needsSync && previousHash == currentHash {
+			if previousHash == currentHash {
 				return
 			}
+
 			previousHash = currentHash
+
 			stats.Record(ctx, mDiscoverySnapshotOut.M(1))
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
-			needsSync = false
 		}
 
 		defer func() {
@@ -84,9 +82,11 @@ func (c *discoverySimpleEmitter) Snapshots(ctx context.Context) (<-chan *Discove
 			case <-ctx.Done():
 				return
 			case <-c.forceEmit:
-				needsSync = true
+				sentSnapshot := currentSnapshot.Clone()
+				snapshots <- &sentSnapshot
 			case untypedList := <-untyped:
 				record()
+
 				currentSnapshot = DiscoverySnapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {

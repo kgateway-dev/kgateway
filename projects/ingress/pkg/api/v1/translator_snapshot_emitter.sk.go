@@ -287,10 +287,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
-		needsSync := false
-		// intentionally rate-limited so that our sync loops have time to complete before the next snapshot is sent
 		timer := time.NewTicker(time.Second * 1)
-		defer timer.Stop()
 		previousHash, err := currentSnapshot.Hash(nil)
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
@@ -301,7 +298,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
-			if !needsSync && previousHash == currentHash {
+			if previousHash == currentHash {
 				return
 			}
 
@@ -310,7 +307,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, mTranslatorSnapshotOut.M(1))
 				previousHash = currentHash
-				needsSync = false
 			default:
 				stats.Record(ctx, mTranslatorSnapshotMissed.M(1))
 			}
@@ -332,7 +328,8 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			case <-ctx.Done():
 				return
 			case <-c.forceEmit:
-				needsSync = true
+				sentSnapshot := currentSnapshot.Clone()
+				snapshots <- &sentSnapshot
 			case upstreamNamespacedList, ok := <-upstreamChan:
 				if !ok {
 					return

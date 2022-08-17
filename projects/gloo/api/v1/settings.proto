@@ -20,6 +20,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rba
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/query_options.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -306,18 +307,13 @@ message Settings {
          // without the tlsTagName tag are sorted into the non-TLS upstream.
          bool splitTlsServices = 19;
 
-        // These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
-        // For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
-        enum ConsulConsistencyModes{
-            // This is strongly consistent. Sets the RequireConsistent in the consul api to true.
-            ConsistentMode = 0;
-            // This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false.
-            DefaultMode = 2;
-            // Allows stale reads when set. This will set the AllowStale in the consul api.
-            StaleMode = 1;
-        }
         // Sets the consistency mode. The default is the ConsistentMode.
-        ConsulConsistencyModes consistencyMode = 20;
+        // Prefer query_options to set all client query options.
+        .consul.options.gloo.solo.io.ConsulConsistencyModes consistencyMode = 20 [deprecated=true];
+
+        // QueryOptions are the query options to use for all Consul queries.
+        // It is _highly_ recommended to configure caching and max age.
+        .consul.options.gloo.solo.io.QueryOptions query_options = 21;
     }
 
     ConsulUpstreamDiscoveryConfiguration consulDiscovery = 30;

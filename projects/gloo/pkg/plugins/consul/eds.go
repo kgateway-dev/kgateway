@@ -139,14 +139,14 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 	// Get complete service information for every dataCenter:service tuple in separate goroutines
 	var eg errgroup.Group
 	for _, service := range serviceMeta {
-		var cm glooConsul.UpstreamSpec_ConsulConsistencyModes
+		var cm glooConsul.ConsulConsistencyModes
 		if upstreams, ok := serviceToUpstream[service.Name]; len(upstreams) > 0 && ok {
 			cm = upstreams[0].GetConsul().GetConsistencyMode()
 		}
 		// we take the most consistent mode found on any upstream for a service for correctness
 		for _, consulUpstream := range serviceToUpstream[service.Name] {
 			// prefer earlier enum values (i.e. consistent > default > stale)
-			if consulUpstream.GetConsul().GetConsistencyMode() < glooConsul.UpstreamSpec_DefaultMode {
+			if consulUpstream.GetConsul().GetConsistencyMode() < glooConsul.ConsulConsistencyModes_DefaultMode {
 				cm = consulUpstream.GetConsul().GetConsistencyMode()
 			}
 		}
@@ -188,11 +188,11 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 }
 
 // NewConsulQueryOptions returns a QueryOptions configuration that's used for Consul queries.
-func NewConsulQueryOptions(dataCenter string, cm glooConsul.UpstreamSpec_ConsulConsistencyModes) *consulapi.QueryOptions {
+func NewConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes) *consulapi.QueryOptions {
 	// it can either be requireConsistent or allowStale or neither
 	// choosing the Default Mode will clear both fields
-	requireConsistent := cm == glooConsul.UpstreamSpec_ConsistentMode
-	allowStale := cm == glooConsul.UpstreamSpec_StaleMode
+	requireConsistent := cm == glooConsul.ConsulConsistencyModes_ConsistentMode
+	allowStale := cm == glooConsul.ConsulConsistencyModes_StaleMode
 	return &consulapi.QueryOptions{Datacenter: dataCenter, AllowStale: allowStale, RequireConsistent: requireConsistent}
 }
 

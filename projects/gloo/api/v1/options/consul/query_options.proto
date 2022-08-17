@@ -1,0 +1,26 @@
+syntax = "proto3";
+package consul.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+
+
+// mirrors client query options struct in consul catalog api
+message QueryOptions{
+    ConsulConsistencyModes consistency_mode = 1;
+}
+
+// These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
+// For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
+enum ConsulConsistencyModes{
+    // This is strongly consistent. Sets the RequireConsistent in the consul api to true.
+    ConsistentMode = 0;
+    // This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false.
+    DefaultMode = 2;
+    // Allows stale reads when set. This will set the AllowStale in the consul api.
+    StaleMode = 1;
+}

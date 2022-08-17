@@ -879,10 +879,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
-		needsSync := false
-		// intentionally rate-limited so that our sync loops have time to complete before the next snapshot is sent
 		timer := time.NewTicker(time.Second * 1)
-		defer timer.Stop()
 		previousHash, err := currentSnapshot.Hash(nil)
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
@@ -893,7 +890,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
-			if !needsSync && previousHash == currentHash {
+			if previousHash == currentHash {
 				return
 			}
 
@@ -902,7 +899,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, mApiSnapshotOut.M(1))
 				previousHash = currentHash
-				needsSync = false
 			default:
 				stats.Record(ctx, mApiSnapshotMissed.M(1))
 			}
@@ -924,7 +920,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			case <-ctx.Done():
 				return
 			case <-c.forceEmit:
-				needsSync = true
+				sentSnapshot := currentSnapshot.Clone()
+				snapshots <- &sentSnapshot
 			case artifactNamespacedList, ok := <-artifactChan:
 				if !ok {
 					return

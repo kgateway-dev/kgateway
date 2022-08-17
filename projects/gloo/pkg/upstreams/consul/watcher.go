@@ -11,7 +11,7 @@ import (
 	"github.com/avast/retry-go"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/mitchellh/hashstructure"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glooconsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/go-utils/errutils"
 	"golang.org/x/sync/errgroup"
 )
@@ -27,7 +27,7 @@ type ServiceMeta struct {
 
 type ConsulWatcher interface {
 	ConsulClient
-	WatchServices(ctx context.Context, dataCenters []string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) (<-chan []*ServiceMeta, <-chan error)
+	WatchServices(ctx context.Context, dataCenters []string, cm glooconsul.ConsulConsistencyModes) (<-chan []*ServiceMeta, <-chan error)
 }
 
 func NewConsulWatcher(client *consulapi.Client, dataCenters []string) (ConsulWatcher, error) {
@@ -62,7 +62,7 @@ type dataCenterServicesTuple struct {
 	services   map[string][]string
 }
 
-func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) (<-chan []*ServiceMeta, <-chan error) {
+func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string, cm glooconsul.ConsulConsistencyModes) (<-chan []*ServiceMeta, <-chan error) {
 
 	var (
 		eg              errgroup.Group
@@ -176,7 +176,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 }
 
 // Honors the contract of Watch functions to open with an initial read.
-func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) (<-chan *dataCenterServicesTuple, <-chan error) {
+func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter string, cm glooconsul.ConsulConsistencyModes) (<-chan *dataCenterServicesTuple, <-chan error) {
 	servicesChan := make(chan *dataCenterServicesTuple)
 	errsChan := make(chan error)
 

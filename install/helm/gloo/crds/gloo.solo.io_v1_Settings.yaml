@@ -122,6 +122,12 @@ spec:
                   consistencyMode:
                     type: string
                     x-kubernetes-int-or-string: true
+                  queryOptions:
+                    properties:
+                      consistencyMode:
+                        type: string
+                        x-kubernetes-int-or-string: true
+                    type: object
                   rootCa:
                     properties:
                       name:

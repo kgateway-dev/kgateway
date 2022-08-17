@@ -193,6 +193,12 @@ spec:
                     items:
                       type: string
                     type: array
+                  queryOptions:
+                    properties:
+                      consistencyMode:
+                        type: string
+                        x-kubernetes-int-or-string: true
+                    type: object
                   serviceName:
                     type: string
                   serviceSpec:

@@ -3,7 +3,7 @@ package consul
 import (
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glooconsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 )
 
 //go:generate mockgen -destination=./mocks/mock_consul_client.go -source consul_client.go
@@ -107,10 +107,10 @@ func (c *consul) validateDataCenter(dataCenter string) error {
 }
 
 // NewConsulQueryOptions returns a QueryOptions configuration that's used for Consul queries.
-func NewConsulQueryOptions(dataCenter string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) *consulapi.QueryOptions {
+func NewConsulQueryOptions(dataCenter string, cm glooconsul.ConsulConsistencyModes) *consulapi.QueryOptions {
 	// it can either be requireConsistent or allowStale or neither
 	// currently choosing Default Mode will clear both fields
-	requireConsistent := cm == v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsistentMode
-	allowStale := cm == v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode
+	requireConsistent := cm == glooconsul.ConsulConsistencyModes_ConsistentMode
+	allowStale := cm == glooconsul.ConsulConsistencyModes_StaleMode
 	return &consulapi.QueryOptions{Datacenter: dataCenter, RequireConsistent: requireConsistent, AllowStale: allowStale}
 }

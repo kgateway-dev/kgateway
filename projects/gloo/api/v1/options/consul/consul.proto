@@ -9,6 +9,7 @@ option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/service_spec.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/query_options.proto";
 
 // Upstream Spec for Consul Upstreams
 // consul Upstreams represent a set of one or more addressable pods for a consul Service
@@ -41,18 +42,13 @@ message UpstreamSpec {
     // An optional Service Spec describing the service listening at this address
     .options.gloo.solo.io.ServiceSpec service_spec = 3;
 
-    // These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
-    // For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
-    enum ConsulConsistencyModes{
-        // This is strongly consistent. Sets the RequireConsistent in the consul api to true.
-        ConsistentMode = 0;
-        // This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false.
-        DefaultMode = 2;
-        // Allows stale reads when set. This will set the AllowStale in the consul api.
-        StaleMode = 1;
-    }
     // Sets the consistency mode. The default is the ConsistentMode.
-    ConsulConsistencyModes consistencyMode = 9;
+    // Deprecated, pref
+    .consul.options.gloo.solo.io.ConsulConsistencyModes consistencyMode = 9 [deprecated=true];
+
+    // QueryOptions are the query options to use for all Consul queries.
+    // It is _highly_ recommended to configure caching and max age.
+    .consul.options.gloo.solo.io.QueryOptions query_options = 10;
 
     // Is this consul service connect enabled.
     bool connect_enabled = 4;
