@@ -156,7 +156,7 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 			}
 			if queryOptions := consulUpstream.GetConsul().GetQueryOptions(); queryOptions != nil {
 				// if any upstream can't use cache, disable for all
-				if useCache := queryOptions.GetUseCache(); useCache != nil && !useCache.Value {
+				if useCache := queryOptions.GetUseCache(); useCache != nil && !useCache.GetValue() {
 					queryOptions.UseCache = useCache
 				}
 				// take the lowest max age
