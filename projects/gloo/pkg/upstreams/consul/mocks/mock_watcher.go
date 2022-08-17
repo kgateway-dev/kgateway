@@ -101,16 +101,16 @@ func (mr *MockConsulWatcherMockRecorder) Services(q interface{}) *gomock.Call {
 }
 
 // WatchServices mocks base method.
-func (m *MockConsulWatcher) WatchServices(ctx context.Context, dataCenters []string, cm consul.ConsulConsistencyModes) (<-chan []*consul0.ServiceMeta, <-chan error) {
+func (m *MockConsulWatcher) WatchServices(ctx context.Context, dataCenters []string, cm consul.ConsulConsistencyModes, queryOpts *consul.QueryOptions) (<-chan []*consul0.ServiceMeta, <-chan error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WatchServices", ctx, dataCenters, cm)
+	ret := m.ctrl.Call(m, "WatchServices", ctx, dataCenters, cm, queryOpts)
 	ret0, _ := ret[0].(<-chan []*consul0.ServiceMeta)
 	ret1, _ := ret[1].(<-chan error)
 	return ret0, ret1
 }
 
 // WatchServices indicates an expected call of WatchServices.
-func (mr *MockConsulWatcherMockRecorder) WatchServices(ctx, dataCenters, cm interface{}) *gomock.Call {
+func (mr *MockConsulWatcherMockRecorder) WatchServices(ctx, dataCenters, cm, queryOpts interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchServices", reflect.TypeOf((*MockConsulWatcher)(nil).WatchServices), ctx, dataCenters, cm)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchServices", reflect.TypeOf((*MockConsulWatcher)(nil).WatchServices), ctx, dataCenters, cm, queryOpts)
 }
