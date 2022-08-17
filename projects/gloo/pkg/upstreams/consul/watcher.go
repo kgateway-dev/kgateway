@@ -144,7 +144,7 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 
 						// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
 						// The first invocation (with lastIndex equal to zero) will return immediately
-						queryOpts := NewConsulQueryOptions(dataCenter, cm)
+						queryOpts := NewConsulQueryOptions(dataCenter, cm, &glooconsul.QueryOptions{}) // TODO(kdorosh) wire up!
 						queryOpts.WaitIndex = lastIndex
 
 						if ctx.Err() != nil {

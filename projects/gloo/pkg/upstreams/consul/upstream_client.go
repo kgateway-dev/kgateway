@@ -2,6 +2,7 @@ package consul
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glooconsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -52,7 +53,7 @@ func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (
 	for _, dataCenter := range dataCenters {
 
 		cm := c.consulUpstreamDiscoveryConfig.GetConsistencyMode()
-		queryOpts := NewConsulQueryOptions(dataCenter, cm)
+		queryOpts := NewConsulQueryOptions(dataCenter, cm, &glooconsul.QueryOptions{}) // TODO(kdorosh) wire up!
 
 		serviceNamesAndTags, _, err := c.consul.Services(queryOpts.WithContext(opts.Ctx))
 		if err != nil {

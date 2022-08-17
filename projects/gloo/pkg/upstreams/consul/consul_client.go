@@ -1,12 +1,19 @@
 package consul
 
 import (
+	"time"
+
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
-	glooconsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
+	glooConsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 )
 
 //go:generate mockgen -destination=./mocks/mock_consul_client.go -source consul_client.go
+
+const (
+	defaultMaxAge     = 5 * time.Second
+	defaultStaleIfErr = 5 * time.Minute
+)
 
 var ForbiddenDataCenterErr = func(dataCenter string) error {
 	return eris.Errorf("not allowed to query data center [%s]. "+
@@ -107,10 +114,37 @@ func (c *consul) validateDataCenter(dataCenter string) error {
 }
 
 // NewConsulQueryOptions returns a QueryOptions configuration that's used for Consul queries.
-func NewConsulQueryOptions(dataCenter string, cm glooconsul.ConsulConsistencyModes) *consulapi.QueryOptions {
+func NewConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, queryOptions *glooConsul.QueryOptions) *consulapi.QueryOptions {
 	// it can either be requireConsistent or allowStale or neither
-	// currently choosing Default Mode will clear both fields
-	requireConsistent := cm == glooconsul.ConsulConsistencyModes_ConsistentMode
-	allowStale := cm == glooconsul.ConsulConsistencyModes_StaleMode
-	return &consulapi.QueryOptions{Datacenter: dataCenter, RequireConsistent: requireConsistent, AllowStale: allowStale}
+	// choosing the Default Mode will clear both fields
+	requireConsistent := cm == glooConsul.ConsulConsistencyModes_ConsistentMode
+	allowStale := cm == glooConsul.ConsulConsistencyModes_StaleMode
+
+	var maxAge time.Duration
+	if ma := queryOptions.GetMaxAge(); ma != nil {
+		maxAge = ma.AsDuration()
+	} else {
+		maxAge = defaultMaxAge
+	}
+
+	var staleIfErr time.Duration
+	if stale := queryOptions.GetStaleIfError(); stale != nil {
+		staleIfErr = stale.AsDuration()
+	} else {
+		staleIfErr = defaultStaleIfErr
+	}
+
+	useCache := true // defaults to true
+	if use := queryOptions.GetUseCache(); use != nil {
+		useCache = use.GetValue()
+	}
+
+	return &consulapi.QueryOptions{
+		Datacenter:        dataCenter,
+		AllowStale:        allowStale,
+		RequireConsistent: requireConsistent,
+		UseCache:          useCache,
+		MaxAge:            maxAge,
+		StaleIfError:      staleIfErr,
+	}
 }
