@@ -137,24 +137,38 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 					queryMeta *consulapi.QueryMeta
 				)
 
+				// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
+				// The first invocation (with lastIndex equal to zero) will return immediately
+				queryOpts := NewConsulQueryOptions(dataCenter, cm, qopts)
+				queryOpts.WaitIndex = lastIndex
+
+				if queryOpts.UseCache {
+					time.Sleep(1 * time.Second) // wait before making next cache query, to avoid spamming the cache
+				}
+				var retryIf retry.RetryIfFunc
+				retryIf = func(err error) bool {
+					return err != nil
+				}
+				var onRetry retry.OnRetryFunc
+				onRetry = func(n uint, err error) {
+					if queryOpts.UseCache {
+						time.Sleep(1 * time.Second) // wait before making next cache query, to avoid spamming the cache
+					}
+				}
+
 				// Use a back-off retry strategy to avoid flooding the error channel
 				err := retry.Do(
 					func() error {
 						var err error
-
-						// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
-						// The first invocation (with lastIndex equal to zero) will return immediately
-						queryOpts := NewConsulQueryOptions(dataCenter, cm, qopts)
-						queryOpts.WaitIndex = lastIndex
-
 						if ctx.Err() != nil {
 							// ctx dead, return
 							return nil
 						}
-
 						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
 						return err
 					},
+					retry.RetryIf(retryIf),
+					retry.OnRetry(onRetry),
 					retry.Attempts(6),
 					//  Last delay is 2^6 * 100ms = 3.2s
 					retry.Delay(100*time.Millisecond),
