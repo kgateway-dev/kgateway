@@ -1,8 +1,6 @@
 package consul
 
 import (
-	"fmt"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
@@ -77,7 +75,6 @@ func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts)
 	}
 
 	upstreamDiscoveryConfig := c.consulUpstreamDiscoveryConfig
-	fmt.Printf("KDOROSH12 start watch services for upstream client %v\n", c.consul)
 	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, upstreamDiscoveryConfig.GetConsistencyMode())
 
 	upstreamsChan := make(chan v1.UpstreamList)
