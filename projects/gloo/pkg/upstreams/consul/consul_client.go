@@ -120,7 +120,7 @@ func NewConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyMod
 	requireConsistent := cm == glooConsul.ConsulConsistencyModes_ConsistentMode
 	allowStale := cm == glooConsul.ConsulConsistencyModes_StaleMode
 
-	useCache := true // defaults to true for now
+	useCache := false // defaults to false for now (still need to debug issues)
 	if use := queryOptions.GetUseCache(); use != nil {
 		useCache = use.GetValue()
 	}

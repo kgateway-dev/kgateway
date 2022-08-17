@@ -2,6 +2,8 @@ package consul
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -125,7 +127,7 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 		defer close(errsChan)
 
 		lastIndex := uint64(0)
-		lastHardQuery := time.Now()
+		// lastHardQuery := time.Now()
 
 		for {
 			select {
@@ -168,13 +170,16 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 							return nil
 						}
 
-						if now := time.Now(); queryOpts.UseCache && now.Sub(lastHardQuery) > 5*time.Second {
-							// seems to be a bug; let's hard refresh to ensure we have latest cached at least once every 5s
-							queryOpts.UseCache = false
-							lastHardQuery = now
-						}
+						// if now := time.Now(); queryOpts.UseCache && now.Sub(lastHardQuery) > 5*time.Second {
+						// 	// seems to be a bug; let's hard refresh to ensure we have latest cached at least once every 5s
+						// 	queryOpts.UseCache = false
+						// 	lastHardQuery = now
+						// }
 
 						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
+						if strings.Contains(fmt.Sprintf("%v", ctx), "eds") {
+							fmt.Printf("KDOROSH123 useCache %v waitIndex %v services %v, queryMeta %+v\n", queryOpts.UseCache, queryOpts.WaitIndex, services, queryMeta)
+						}
 						return err
 					},
 					retry.RetryIf(retryIf),
