@@ -4072,11 +4072,18 @@ metadata:
 									},
 								},
 							}}
-						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
-							Name:      "validation-certs",
-							MountPath: "/etc/gateway/validation-certs",
-							ReadOnly:  false,
-						}}
+						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{
+							{
+								Name:      "validation-certs",
+								MountPath: "/etc/gateway/validation-certs",
+								ReadOnly:  false,
+							},
+							{
+								Name:      "labels-volume",
+								MountPath: "/etc/gloo",
+								ReadOnly:  true,
+							},
+						}
 
 						deploy.Spec.Template.Spec.Containers[0].Ports = glooPorts
 						deploy.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
