@@ -55,7 +55,19 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 func shouldIncludeTlsInspectorListenerFilter(in *v1.Listener) bool {
 	return includeTlsInspectorForListener(in) ||
 		includeTlsInspectorForTcpListener(in.GetTcpListener()) ||
-		includeTlsInspectorForHybridListener(in.GetHybridListener())
+		includeTlsInspectorForHybridListener(in.GetHybridListener()) ||
+		includeTlsInspectorForAggregateListener(in.GetAggregateListener())
+}
+
+func includeTlsInspectorForAggregateListener(in *v1.AggregateListener) bool {
+	// check all httpFilterChains for a matcher-specified ssl config
+	for _, filterChain := range in.GetHttpFilterChains() {
+		if filterChain.GetMatcher().GetSslConfig() != nil {
+			return true
+		}
+	}
+
+	return false
 }
 
 func includeTlsInspectorForListener(in *v1.Listener) bool {

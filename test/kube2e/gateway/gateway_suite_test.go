@@ -133,7 +133,7 @@ gateway:
   persistProxySpec: true
 gloo:
   deployment:
-    replicas: 2
+    replicas: 1
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
