@@ -46,7 +46,12 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		return nil, nil, err
 	}
 
-	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters, p.consulUpstreamDiscoverySettings.GetConsistencyMode())
+	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(
+		opts.Ctx,
+		dataCenters,
+		p.consulUpstreamDiscoverySettings.GetConsistencyMode(),
+		p.consulUpstreamDiscoverySettings.GetQueryOptions(),
+	)
 
 	errChan := make(chan error)
 	var wg sync.WaitGroup

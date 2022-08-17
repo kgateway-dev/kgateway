@@ -2,7 +2,6 @@ package consul
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	glooconsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -53,7 +52,8 @@ func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (
 	for _, dataCenter := range dataCenters {
 
 		cm := c.consulUpstreamDiscoveryConfig.GetConsistencyMode()
-		queryOpts := NewConsulQueryOptions(dataCenter, cm, &glooconsul.QueryOptions{}) // TODO(kdorosh) wire up!
+		qopts := c.consulUpstreamDiscoveryConfig.GetQueryOptions()
+		queryOpts := NewConsulQueryOptions(dataCenter, cm, qopts)
 
 		serviceNamesAndTags, _, err := c.consul.Services(queryOpts.WithContext(opts.Ctx))
 		if err != nil {
@@ -76,7 +76,8 @@ func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts)
 	}
 
 	upstreamDiscoveryConfig := c.consulUpstreamDiscoveryConfig
-	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, upstreamDiscoveryConfig.GetConsistencyMode())
+	qopts := c.consulUpstreamDiscoveryConfig.GetQueryOptions()
+	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, upstreamDiscoveryConfig.GetConsistencyMode(), qopts)
 
 	upstreamsChan := make(chan v1.UpstreamList)
 	go func() {
