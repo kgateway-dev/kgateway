@@ -171,6 +171,8 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 			eg.Go(func() error {
 				queryOpts := consul.NewConsulQueryOptions(dcName, cm)
 				if ctx.Err() != nil {
+					// intentionally return early if context is already done
+					// we create a lot of requests; by the time we get here ctx may be done
 					return ctx.Err()
 				}
 				services, _, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))

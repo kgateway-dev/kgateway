@@ -148,12 +148,16 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 					return err != nil
 				}
 
+				ctxDead := false
+
 				// Use a back-off retry strategy to avoid flooding the error channel
 				err := retry.Do(
 					func() error {
 						var err error
 						if ctx.Err() != nil {
-							// ctx dead, return
+							// intentionally return early if context is already done
+							// this is a backoff loop; by the time we get here ctx may be done
+							ctxDead = true
 							return nil
 						}
 						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
@@ -166,8 +170,7 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 					retry.DelayType(retry.BackOffDelay),
 				)
 
-				if ctx.Err() != nil {
-					// ctx dead, return
+				if ctxDead {
 					return
 				}
 
