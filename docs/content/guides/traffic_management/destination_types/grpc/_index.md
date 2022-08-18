@@ -97,15 +97,14 @@ The descriptors field above was truncated for brevity.
 
 As you can see Gloo Edge's function discovery detected the gRPC functions on that service.
 
-### Enable HTTP/2 for the service (optional)
+### Enable HTTP/2 for the service
 
-If you would like to configure the Envoy proxy to use HTTP/2 for its communications protocol, there are two ways to accomplish this. 
+To use use gRPC, you must configure the Envoy proxy to use HTTP/2 for its communications protocol in one of the following ways: 
 
-1. Add an annotation to the gRPC service with the field: `gloo.solo.io/h2_service` set to `true`
-1. Name the port for the gRPC service one of the following: `grpc`, `http2`, or `h2`
+* Add an annotation to the gRPC service with the field: `gloo.solo.io/h2_service` set to `true`
+* Name the port for the gRPC service one of the following: `grpc`, `http2`, or `h2`
 
-For example the port information of the `grpcstore-demo` would look like this:
-
+For example, to change the port information for the `grpcstore-demo`:
 ```yaml
 spec:
   clusterIP: 10.101.199.96
@@ -116,7 +115,7 @@ spec:
     targetPort: 8080
 ```
 
-Following one of these approaches will set the Upstream value `useHttp2` to `true`.
+After you annotate or edit the ports for the gRPC service, the Upstream value `useHttp2` is set to `true`.
 
 ---
 
