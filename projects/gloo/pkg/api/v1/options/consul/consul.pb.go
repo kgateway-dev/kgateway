@@ -58,7 +58,6 @@ type UpstreamSpec struct {
 	// to get consul endpoints so users may want to opt into stale reads once the implications are understood.
 	ConsistencyMode ConsulConsistencyModes `protobuf:"varint,9,opt,name=consistencyMode,proto3,enum=consul.options.gloo.solo.io.ConsulConsistencyModes" json:"consistencyMode,omitempty"`
 	// QueryOptions are the query options to use for all Consul queries.
-	// It is _highly_ recommended to configure caching and max age.
 	QueryOptions *QueryOptions `protobuf:"bytes,10,opt,name=query_options,json=queryOptions,proto3" json:"query_options,omitempty"`
 	// Is this consul service connect enabled.
 	ConnectEnabled bool `protobuf:"varint,4,opt,name=connect_enabled,json=connectEnabled,proto3" json:"connect_enabled,omitempty"`

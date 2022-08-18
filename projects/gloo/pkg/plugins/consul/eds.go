@@ -51,7 +51,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		dataCenters,
 		p.consulUpstreamDiscoverySettings.GetServiceFilter().GetValue(),
 		p.consulUpstreamDiscoverySettings.GetConsistencyMode(),
-		p.consulUpstreamDiscoverySettings.GetQueryOptions(),
 	)
 
 	errChan := make(chan error)
@@ -144,10 +143,8 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 	var eg errgroup.Group
 	for _, service := range serviceMeta {
 		var cm glooConsul.ConsulConsistencyModes
-		var queryOptions *glooConsul.QueryOptions
 		if upstreams, ok := serviceToUpstream[service.Name]; len(upstreams) > 0 && ok {
 			cm = upstreams[0].GetConsul().GetConsistencyMode()
-			queryOptions = upstreams[0].GetConsul().GetQueryOptions()
 		}
 		// we take the most consistent mode found on any upstream for a service for correctness
 		for _, consulUpstream := range serviceToUpstream[service.Name] {
@@ -164,12 +161,6 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 					cm = glooConsul.ConsulConsistencyModes_StaleMode
 				}
 			}
-			if queryOptions := consulUpstream.GetConsul().GetQueryOptions(); queryOptions != nil {
-				// if any upstream can't use cache, disable for all
-				if useCache := queryOptions.GetUseCache(); useCache != nil && !useCache.GetValue() {
-					queryOptions.UseCache = useCache
-				}
-			}
 		}
 		for _, dataCenter := range service.DataCenters {
 			// Copy iterator variables before passing them to goroutines!
@@ -178,7 +169,7 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 
 			// Get complete spec for each service in parallel
 			eg.Go(func() error {
-				queryOpts := consul.NewConsulQueryOptions(dcName, cm, queryOptions)
+				queryOpts := consul.NewConsulQueryOptions(dcName, cm)
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}

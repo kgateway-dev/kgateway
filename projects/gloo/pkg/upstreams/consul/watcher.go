@@ -2,8 +2,6 @@ package consul
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -24,7 +22,7 @@ type ServiceMeta struct {
 
 type ConsulWatcher interface {
 	ConsulClient
-	WatchServices(ctx context.Context, dataCenters []string, filter string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error)
+	WatchServices(ctx context.Context, dataCenters []string, filter string, cm glooconsul.ConsulConsistencyModes) (<-chan []*ServiceMeta, <-chan error)
 }
 
 func NewConsulWatcher(client *consulapi.Client, dataCenters []string) (ConsulWatcher, error) {
@@ -51,7 +49,7 @@ type dataCenterServicesTuple struct {
 	services   map[string][]string
 }
 
-func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string, filter string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error) {
+func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string, filter string, cm glooconsul.ConsulConsistencyModes) (<-chan []*ServiceMeta, <-chan error) {
 
 	var (
 		eg              errgroup.Group
@@ -64,7 +62,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 		// Copy before passing to goroutines!
 		dcName := dataCenter
 
-		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName, filter, cm, queryOpts)
+		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName, filter, cm)
 
 		// Collect services
 		eg.Go(func() error {
@@ -118,7 +116,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 }
 
 // Honors the contract of Watch functions to open with an initial read.
-func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter, filter string, cm glooconsul.ConsulConsistencyModes, qopts *glooconsul.QueryOptions) (<-chan *dataCenterServicesTuple, <-chan error) {
+func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter, filter string, cm glooconsul.ConsulConsistencyModes) (<-chan *dataCenterServicesTuple, <-chan error) {
 	servicesChan := make(chan *dataCenterServicesTuple)
 	errsChan := make(chan error)
 
@@ -127,7 +125,6 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 		defer close(errsChan)
 
 		lastIndex := uint64(0)
-		// lastHardQuery := time.Now()
 
 		for {
 			select {
@@ -142,24 +139,13 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 
 				// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
 				// The first invocation (with lastIndex equal to zero) will return immediately
-				queryOpts := NewConsulQueryOptions(dataCenter, cm, qopts)
+				queryOpts := NewConsulQueryOptions(dataCenter, cm)
 				queryOpts.WaitIndex = lastIndex
 				queryOpts.Filter = filter
 
-				// TODO(kdorosh) this breaks unit tests :/
-				// if queryOpts.UseCache {
-				// 	time.Sleep(1 * time.Second) // wait before making next cache query, to avoid spamming the cache
-				// }
 				var retryIf retry.RetryIfFunc
 				retryIf = func(err error) bool {
 					return err != nil
-				}
-				var onRetry retry.OnRetryFunc
-				onRetry = func(n uint, err error) {
-					// TODO(kdorosh) this breaks unit tests :/
-					// if queryOpts.UseCache {
-					// 	time.Sleep(1 * time.Second) // wait before making next cache query, to avoid spamming the cache
-					// }
 				}
 
 				// Use a back-off retry strategy to avoid flooding the error channel
@@ -170,21 +156,10 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 							// ctx dead, return
 							return nil
 						}
-
-						// if now := time.Now(); queryOpts.UseCache && now.Sub(lastHardQuery) > 5*time.Second {
-						// 	// seems to be a bug; let's hard refresh to ensure we have latest cached at least once every 5s
-						// 	queryOpts.UseCache = false
-						// 	lastHardQuery = now
-						// }
-
 						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
-						if strings.Contains(fmt.Sprintf("%v", ctx), "eds") {
-							fmt.Printf("KDOROSH123 useCache %v waitIndex %v services %v, queryMeta %+v\n", queryOpts.UseCache, queryOpts.WaitIndex, services, queryMeta)
-						}
 						return err
 					},
 					retry.RetryIf(retryIf),
-					retry.OnRetry(onRetry),
 					retry.Attempts(6),
 					//  Last delay is 2^6 * 100ms = 3.2s
 					retry.Delay(100*time.Millisecond),

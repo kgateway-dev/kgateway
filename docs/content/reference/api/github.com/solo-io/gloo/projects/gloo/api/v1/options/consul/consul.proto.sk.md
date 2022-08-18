@@ -55,7 +55,7 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 | `instanceBlacklistTags` | `[]string` | The opposite of instanceTags, this is a list of service tags that gloo should ensure are not in a service instance before including it in an upstream. |
 | `serviceSpec` | [.options.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk/#servicespec) | An optional Service Spec describing the service listening at this address. |
 | `consistencyMode` | [.consul.options.gloo.solo.io.ConsulConsistencyModes](../query_options.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is DefaultMode. Note: Gloo handles staleness well (as it runs update loops ~ once/second) but makes many requests to get consul endpoints so users may want to opt into stale reads once the implications are understood. |
-| `queryOptions` | [.consul.options.gloo.solo.io.QueryOptions](../query_options.proto.sk/#queryoptions) | QueryOptions are the query options to use for all Consul queries. It is _highly_ recommended to configure caching and max age. |
+| `queryOptions` | [.consul.options.gloo.solo.io.QueryOptions](../query_options.proto.sk/#queryoptions) | QueryOptions are the query options to use for all Consul queries. |
 | `connectEnabled` | `bool` | Is this consul service connect enabled. |
 | `dataCenters` | `[]string` | The data centers in which the service instance represented by this upstream is registered. |
 

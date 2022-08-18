@@ -37,13 +37,11 @@ somewhat mirrors client query options struct in consul catalog api
 only has options that we know we want configurable at both upstream and settings-wide discovery levels
 
 ```yaml
-"useCache": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `useCache` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | UseCache requests that the agent cache results locally. See https://www.consul.io/api/features/caching.html for more details on the semantics. Defaults to true. opts users into background refresh caching https://www.consul.io/api-docs/features/caching#background-refresh-caching. |
 
 
 

@@ -46,15 +46,5 @@ func (m *QueryOptions) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetUseCache()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetUseCache()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetUseCache(), target.GetUseCache()) {
-			return false
-		}
-	}
-
 	return true
 }
