@@ -101,11 +101,7 @@ var _ = Describe("Helm Test", func() {
 			// each entry in valuesArgs should look like `path.to.helm.field=value`
 			prepareMakefile := func(namespace string, values helmValues) {
 				tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
-				if err != nil {
-					panic(fmt.Sprintf("Failed to render manifest: %v", err))
-				}
-				// todo -why is this not working
-				//ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+				ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
 				testManifest = tm
 			}
 
@@ -5283,7 +5279,7 @@ metadata:
 					//Entry("25-namespace-clusterrolebinding-knative", ""),
 				)
 
-				DescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string) {
+				FDescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string) {
 					// Override property should be the path to `kubeResourceOverride`, like gloo.deployment.kubeResourceOverride
 					proxies := []string{"gatewayProxy", "anotherProxy", "proxyThree"}
 					var args []string
@@ -5315,7 +5311,7 @@ metadata:
 					Entry("8-gateway-proxy-horizontal-pod-autoscaler", "horizontalPodAutoscaler.kubeResourceOverride", []string{"kind.deployment.replicas=2", "horizontalPodAutoscaler.apiVersion=v2"}),
 					Entry("8-gateway-proxy-pod-disruption-budget", "podDisruptionBudget.kubeResourceOverride", []string{"kind.deployment.replicas=2"}),
 					Entry("8-gateway-proxy-service service", "service.kubeResourceOverride", nil),
-					Entry("8-gateway-proxy-service config-dump-service", "service.configDumpService.kubeResourceOverride", []string{"readConfig=true", "readConfigMulticluster=true"}),
+					FEntry("8-gateway-proxy-service config-dump-service", "service.configDumpService.kubeResourceOverride", []string{"readConfig=true", "readConfigMulticluster=true"}),
 					Entry("9-gateway-proxy-configmap", "configMap.kubeResourceOverride", nil),
 				)
 			})

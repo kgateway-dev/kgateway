@@ -1,4 +1,4 @@
-{{- define "gatewayProxy.disruptionBudgetSpec"}}
+{{ define "gatewayProxy.disruptionBudgetSpec"}}
 {{- $name := (index . 1) }}
 {{- $gatewaySpec := (index . 2) }}
 {{- with (first .) }}
@@ -35,6 +35,6 @@ spec:
 {{- end -}} {{/*if $gatewaySpec.podDisruptionBudget*/}}
 {{- $ctx := (list $ $name $gatewaySpec)}}
 ---
-{{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.disruptionBudgetSpec") -}}
+{{ include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.disruptionBudgetSpec") -}}
 {{- end }}{{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
 {{- end }}{{/* if .Values.gateway.enabled */}}

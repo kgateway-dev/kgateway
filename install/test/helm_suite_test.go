@@ -39,6 +39,18 @@ import (
 	k8syamlutil "sigs.k8s.io/yaml"
 )
 
+const (
+	namespace = defaults.GlooSystem
+	releaseName = "gloo"
+	chartDir  = "../helm/gloo"
+	outputDir = "../../_output/helm/charts"
+)
+
+var (
+	version    string
+	pullPolicy v1.PullPolicy
+)
+
 func TestHelm(t *testing.T) {
 	RegisterFailHandler(Fail)
 	testutils.RegisterCommonFailHandlers()
@@ -67,7 +79,7 @@ type renderTestCase struct {
 }
 
 var renderers = []renderTestCase{
-	{"Helm 3", helm3Renderer{chartDir}},
+	{"Helm 3", helm3Renderer{chartDir: chartDir}},
 }
 
 func runTests(callback func(testCase renderTestCase)) {
@@ -76,15 +88,7 @@ func runTests(callback func(testCase renderTestCase)) {
 	}
 }
 
-const (
-	namespace = defaults.GlooSystem
-	chartDir  = "../helm/gloo"
-)
 
-var (
-	version    string
-	pullPolicy v1.PullPolicy
-)
 
 func MustMake(dir string, args ...string) {
 	makeCmd := exec.Command("make", args...)
@@ -151,24 +155,30 @@ func BuildHelm3Release(chartDir, namespace string, values helmValues) (*release.
 		return nil, err
 	}
 
+	// Validate that the provided values match the Go types used to construct out docs
 	err = validateHelmValues(helmValues)
 	if err != nil {
 		return nil, err
 	}
 
-	lintAction := createLintAction(namespace)
-	lintResult := lintAction.Run([]string{chartDir}, helmValues)
-	if len(lintResult.Errors) > 0 {
-		// todo - for now just return first
-		return nil, errors.Wrap(lintResult.Errors[0], "`Helm Lint` failed")
-	}
-
+	// Install the chart, outputting the templates into the _output/helm directory for easier debugging
 	installAction, err := createInstallAction(namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "`Helm Install` failed")
 	}
+	helmRelease, err :=  installAction.Run(chartRequested, helmValues)
+	if err != nil {
+		return nil, err
+	}
 
-	return installAction.Run(chartRequested, helmValues)
+	// Lint the generated templates
+	lintAction := createLintAction(namespace)
+	lintResult := lintAction.Run([]string{chartDir}, helmValues)
+	if len(lintResult.Errors) > 0 {
+		return nil, errors.Errorf("`Helm Lint` failed. Messages: %+v", lintResult.Messages)
+	}
+
+	return helmRelease, nil
 }
 
 // each entry in valuesArgs should look like `path.to.helm.field=value`
@@ -259,7 +269,7 @@ func createInstallAction(namespace string) (*action.Install, error) {
 
 	if err := actionConfig.Init(
 		settings.RESTClientGetter(),
-		defaults.GlooSystem,
+		namespace,
 		os.Getenv("HELM_DRIVER"),
 		noOpDebugLog,
 	); err != nil {
@@ -268,9 +278,9 @@ func createInstallAction(namespace string) (*action.Install, error) {
 
 	renderer := action.NewInstall(actionConfig)
 	renderer.DryRun = true
+	renderer.OutputDir = outputDir
 	renderer.Namespace = namespace
-	renderer.ReleaseName = "gloo"
-	renderer.Namespace = defaults.GlooSystem
+	renderer.ReleaseName = releaseName
 	renderer.ClientOnly = true
 
 	return renderer, nil
@@ -278,7 +288,7 @@ func createInstallAction(namespace string) (*action.Install, error) {
 
 func createLintAction(namespace string) *action.Lint {
 	lintAction := action.NewLint()
-	lintAction.Strict = false // todo sam
+	lintAction.Strict = false
 	lintAction.Namespace = namespace
 	lintAction.WithSubcharts = false
 

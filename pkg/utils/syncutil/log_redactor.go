@@ -59,9 +59,9 @@ func StringifySnapshot(snapshot interface{}) string {
 func writeRedactedResourceList(stringBuilder *strings.Builder, resourceList resources.ResourceList) {
 	stringBuilder.Write([]byte("["))
 
-	var redactedArtifacts []string
+	var redactedResources []string
 	resourceList.Each(func(r resources.Resource) {
-		redactedArtifact := fmt.Sprintf(
+		redactedResource := fmt.Sprintf(
 			"%v{name: %s namespace: %s data: %s}",
 			reflect.TypeOf(r),
 			r.GetMetadata().GetName(),
@@ -69,10 +69,10 @@ func writeRedactedResourceList(stringBuilder *strings.Builder, resourceList reso
 			Redacted,
 		)
 
-		redactedArtifacts = append(redactedArtifacts, redactedArtifact)
+		redactedResources = append(redactedResources, redactedResource)
 	})
 
-	stringBuilder.Write([]byte(strings.Join(redactedArtifacts, " '")))
+	stringBuilder.Write([]byte(strings.Join(redactedResources, " '")))
 	stringBuilder.Write([]byte("]"))
 }
 
