@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
@@ -396,7 +398,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 }
 
 type Extensions struct {
-	PluginRegistryFactory registry.PluginRegistryFactory
+	PluginRegistryFactory plugins.PluginRegistryFactory
 	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
 	XdsCallbacks          xdsserver.Callbacks
 	ApiEmitterChannel     chan struct{}
@@ -404,7 +406,7 @@ type Extensions struct {
 
 func RunGloo(opts bootstrap.Opts) error {
 	glooExtensions := Extensions{
-		PluginRegistryFactory: registry.GetPluginRegistryFactory(),
+		PluginRegistryFactory: registry.GetPluginRegistryFactory(opts),
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,
@@ -560,9 +562,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
-	pluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx, opts)
+	discoveryPluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx)
 	var discoveryPlugins []discovery.DiscoveryPlugin
-	for _, plug := range pluginRegistry.GetPlugins() {
+	for _, plug := range discoveryPluginRegistry.GetPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
 			discoveryPlugins = append(discoveryPlugins, disc)
@@ -734,7 +736,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	resourceHasher := translator.MustEnvoyCacheResourcesListToFnvHash
 
-	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, pluginRegistry, resourceHasher)
+	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory, resourceHasher)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
