@@ -77,7 +77,8 @@ func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts)
 
 	upstreamDiscoveryConfig := c.consulUpstreamDiscoveryConfig
 	qopts := c.consulUpstreamDiscoveryConfig.GetQueryOptions()
-	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, upstreamDiscoveryConfig.GetConsistencyMode(), qopts)
+	filter := c.consulUpstreamDiscoveryConfig.GetServiceFilter().GetValue()
+	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, filter, upstreamDiscoveryConfig.GetConsistencyMode(), qopts)
 
 	upstreamsChan := make(chan v1.UpstreamList)
 	go func() {

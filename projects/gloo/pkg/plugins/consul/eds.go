@@ -49,6 +49,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(
 		opts.Ctx,
 		dataCenters,
+		p.consulUpstreamDiscoverySettings.GetServiceFilter().GetValue(),
 		p.consulUpstreamDiscoverySettings.GetConsistencyMode(),
 		p.consulUpstreamDiscoverySettings.GetQueryOptions(),
 	)
