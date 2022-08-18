@@ -52,7 +52,8 @@ func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (
 	for _, dataCenter := range dataCenters {
 
 		cm := c.consulUpstreamDiscoveryConfig.GetConsistencyMode()
-		queryOpts := NewConsulQueryOptions(dataCenter, cm)
+		filter := c.consulUpstreamDiscoveryConfig.GetServiceFilter().GetValue()
+		queryOpts := NewConsulServicesQueryOptions(dataCenter, cm, filter)
 
 		serviceNamesAndTags, _, err := c.consul.Services(queryOpts.WithContext(opts.Ctx))
 		if err != nil {

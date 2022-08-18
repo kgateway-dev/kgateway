@@ -139,14 +139,8 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 
 				// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
 				// The first invocation (with lastIndex equal to zero) will return immediately
-				queryOpts := NewConsulQueryOptions(dataCenter, cm)
+				queryOpts := NewConsulServicesQueryOptions(dataCenter, cm, filter)
 				queryOpts.WaitIndex = lastIndex
-				queryOpts.Filter = filter
-
-				var retryIf retry.RetryIfFunc
-				retryIf = func(err error) bool {
-					return err != nil
-				}
 
 				ctxDead := false
 
@@ -163,7 +157,6 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
 						return err
 					},
-					retry.RetryIf(retryIf),
 					retry.Attempts(6),
 					//  Last delay is 2^6 * 100ms = 3.2s
 					retry.Delay(100*time.Millisecond),
@@ -192,6 +185,7 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 				if queryMeta.LastIndex < lastIndex {
 					// update if index goes backwards per consul blocking query docs
 					// this can happen e.g. KV list operations where item with highest index is deleted
+					// for more, see https://www.consul.io/api-docs/features/blocking#implementation-details
 					lastIndex = 0
 				} else {
 					lastIndex = queryMeta.LastIndex

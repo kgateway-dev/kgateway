@@ -169,7 +169,7 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 
 			// Get complete spec for each service in parallel
 			eg.Go(func() error {
-				queryOpts := consul.NewConsulQueryOptions(dcName, cm)
+				queryOpts := consul.NewConsulCatalogServiceQueryOptions(dcName, cm)
 				if ctx.Err() != nil {
 					// intentionally return early if context is already done
 					// we create a lot of requests; by the time we get here ctx may be done

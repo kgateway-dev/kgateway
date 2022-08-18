@@ -75,7 +75,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 		dc = spec.GetDataCenters()[0]
 	}
 
-	options := consul.NewConsulQueryOptions(dc, spec.GetConsistencyMode())
+	options := consul.NewConsulCatalogServiceQueryOptions(dc, spec.GetConsistencyMode())
 	instances, _, err := p.client.Service(spec.GetServiceName(), "", options)
 	if err != nil {
 		return nil, eris.Wrapf(err, "getting service from catalog")
