@@ -68,14 +68,21 @@ If you're a new user whose trial license has expired, contact your Solo.io Accou
 
 The Gloo Edge Enterprise license is installed by default into a Kubernetes `Secret` named `license` in the `gloo-system` namespace. If that is the case for your installation, then you can use a simple bash script to replace the expired key by patching the `license` secret:
 
-```bash
-GLOO_KEY=your-new-enterprise-key-string
-echo $GLOO_KEY | base64 | read output;kubectl patch secret license -n gloo-system -p="{\"data\":{\"license-key\": \"$output\"}}" -v=1
-```
+1. Save the new license key in an environment variable.
+   ```bash
+   export GLOO_EDGE_LICENSE_KEY=<your-new-enterprise-key-string>
+   ```
 
-{{% notice note %}}
-Make sure that the base64 encoding does not add new lines. If new lines are added, trim the new lines by running the command again with the `-w 0` option.
-{{% /notice %}}
+2. Encode the license key in base64.
+   ```sh
+   export GLOO_KEY_BASE64=$(echo $GLOO_KEY | base64 -w 0)
+   echo $GLOO_KEY_BASE64
+   ```
+
+3. Patch the `license` secret with the base64-encoded key.
+   ```sh
+   kubectl patch secret license -n gloo-system -p="{\"data\":{\"license-key\": \"$GLOO_KEY_BASE64\"}}" -v=1
+   ```
 
 If successful, this script should respond with: `secret/license patched`.
 
