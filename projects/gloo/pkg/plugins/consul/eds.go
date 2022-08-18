@@ -150,9 +150,18 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 		}
 		// we take the most consistent mode found on any upstream for a service for correctness
 		for _, consulUpstream := range serviceToUpstream[service.Name] {
-			// prefer earlier enum values (i.e. consistent > default > stale)
-			if consulUpstream.GetConsul().GetConsistencyMode() < glooConsul.ConsulConsistencyModes_DefaultMode {
-				cm = consulUpstream.GetConsul().GetConsistencyMode()
+			// prefer earlier more restrictive query type (i.e. consistent > default > stale)
+			switch consulUpstream.GetConsul().GetConsistencyMode() {
+			case glooConsul.ConsulConsistencyModes_ConsistentMode:
+				cm = glooConsul.ConsulConsistencyModes_ConsistentMode
+			case glooConsul.ConsulConsistencyModes_DefaultMode:
+				if cm != glooConsul.ConsulConsistencyModes_ConsistentMode {
+					cm = glooConsul.ConsulConsistencyModes_DefaultMode
+				}
+			case glooConsul.ConsulConsistencyModes_StaleMode:
+				if cm != glooConsul.ConsulConsistencyModes_ConsistentMode && cm != glooConsul.ConsulConsistencyModes_DefaultMode {
+					cm = glooConsul.ConsulConsistencyModes_StaleMode
+				}
 			}
 			if queryOptions := consulUpstream.GetConsul().GetQueryOptions(); queryOptions != nil {
 				// if any upstream can't use cache, disable for all
