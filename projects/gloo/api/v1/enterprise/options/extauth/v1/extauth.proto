@@ -740,10 +740,15 @@ message OauthSecret {
 }
 
 message ApiKeyAuth {
-    oneof storage_backend {
-        K8sSecretApiKeyStorage k8s_secret_apikey_storage = 1;
-        AerospikeApiKeyStorage aerospike_apikey_storage = 2;
-    }
+    // DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend.
+    // Identify all valid API key secrets that match the provided label selector.
+    // API key secrets must be in one of the watch namespaces for gloo to locate them.
+    map<string, string> label_selector = 1 [deprecated = true];
+
+    // DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend.
+    // A way to directly reference API key secrets. This configuration can be useful for testing,
+    // but in general the more flexible label selector should be preferred.
+    repeated core.solo.io.ResourceRef api_key_secret_refs = 2 [deprecated = true];
 
     // When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header
     // with this name. This field is optional; if not provided it defaults to `api-key`.
@@ -755,6 +760,11 @@ message ApiKeyAuth {
     // Each key in the map represents the name of header to be added; the corresponding value determines the key
     // in the API key metadata structure that will be inspected to determine the value for the header.
     map<string, MetadataEntry> headers_from_metadata = 4;
+
+    oneof storage_backend {
+        K8sSecretApiKeyStorage k8s_secret_apikey_storage = 5;
+        AerospikeApiKeyStorage aerospike_apikey_storage = 6;
+    }
 
     message MetadataEntry {
         // (Required) The key of the API key metadata entry to inspect.

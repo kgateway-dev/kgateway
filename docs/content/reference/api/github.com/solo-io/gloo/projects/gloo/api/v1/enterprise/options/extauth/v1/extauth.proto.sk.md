@@ -997,19 +997,23 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 
 ```yaml
-"k8SSecretApikeyStorage": .enterprise.gloo.solo.io.K8sSecretApiKeyStorage
-"aerospikeApikeyStorage": .enterprise.gloo.solo.io.AerospikeApiKeyStorage
+"labelSelector": map<string, string>
+"apiKeySecretRefs": []core.solo.io.ResourceRef
 "headerName": string
 "headersFromMetadata": map<string, map<string, bool>>
+"k8SSecretApikeyStorage": .enterprise.gloo.solo.io.K8sSecretApiKeyStorage
+"aerospikeApikeyStorage": .enterprise.gloo.solo.io.AerospikeApiKeyStorage
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage` or `aerospikeApikeyStorage` can be set. |
-| `aerospikeApikeyStorage` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage](../extauth.proto.sk/#aerospikeapikeystorage) |  Only one of `aerospikeApikeyStorage` or `k8sSecretApikeyStorage` can be set. |
+| `labelSelector` | `map<string, string>` | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Identify all valid API key secrets that match the provided label selector. API key secrets must be in one of the watch namespaces for gloo to locate them. |
+| `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred. |
 | `headerName` | `string` | When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
 | `headersFromMetadata` | `map<string, map<string, bool>>` | API key structures might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra fields included in the API key metadata structure. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the API key metadata structure that will be inspected to determine the value for the header. |
+| `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage` or `aerospikeApikeyStorage` can be set. |
+| `aerospikeApikeyStorage` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage](../extauth.proto.sk/#aerospikeapikeystorage) |  Only one of `aerospikeApikeyStorage` or `k8sSecretApikeyStorage` can be set. |
 
 
 

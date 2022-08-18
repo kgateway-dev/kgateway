@@ -105,6 +105,15 @@ spec:
                             tlsVersion:
                               type: string
                           type: object
+                        apiKeySecretRefs:
+                          items:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                          type: array
                         headerName:
                           type: string
                         headersFromMetadata:
@@ -131,6 +140,10 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
+                          type: object
+                        labelSelector:
+                          additionalProperties:
+                            type: string
                           type: object
                       type: object
                     basicAuth:

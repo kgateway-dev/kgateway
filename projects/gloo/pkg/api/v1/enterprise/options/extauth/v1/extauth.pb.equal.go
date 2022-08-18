@@ -1501,6 +1501,34 @@ func (m *ApiKeyAuth) Equal(that interface{}) bool {
 		return false
 	}
 
+	if len(m.GetLabelSelector()) != len(target.GetLabelSelector()) {
+		return false
+	}
+	for k, v := range m.GetLabelSelector() {
+
+		if strings.Compare(v, target.GetLabelSelector()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetApiKeySecretRefs()) != len(target.GetApiKeySecretRefs()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeySecretRefs() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeySecretRefs()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeySecretRefs()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	if strings.Compare(m.GetHeaderName(), target.GetHeaderName()) != 0 {
 		return false
 	}

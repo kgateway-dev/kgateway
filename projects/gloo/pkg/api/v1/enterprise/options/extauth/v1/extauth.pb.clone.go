@@ -885,6 +885,28 @@ func (m *ApiKeyAuth) Clone() proto.Message {
 	}
 	target = &ApiKeyAuth{}
 
+	if m.GetLabelSelector() != nil {
+		target.LabelSelector = make(map[string]string, len(m.GetLabelSelector()))
+		for k, v := range m.GetLabelSelector() {
+
+			target.LabelSelector[k] = v
+
+		}
+	}
+
+	if m.GetApiKeySecretRefs() != nil {
+		target.ApiKeySecretRefs = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetApiKeySecretRefs()))
+		for idx, v := range m.GetApiKeySecretRefs() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeySecretRefs[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			} else {
+				target.ApiKeySecretRefs[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			}
+
+		}
+	}
+
 	target.HeaderName = m.GetHeaderName()
 
 	if m.GetHeadersFromMetadata() != nil {
