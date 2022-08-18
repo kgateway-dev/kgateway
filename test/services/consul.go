@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 
 	"io/ioutil"
 
@@ -116,7 +115,7 @@ func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(ef.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir,
+	cmd := exec.Command(ef.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir, "-auto-reload-config",
 		"-node", "consul-dev")
 	cmd.Dir = ef.tmpdir
 	cmd.Stdout = GinkgoWriter
@@ -152,14 +151,6 @@ func (i *ConsulInstance) AddConfigFromStruct(svcId string, cfg interface{}) erro
 		return err
 	}
 	return i.AddConfig(svcId, string(content))
-}
-
-func (i *ConsulInstance) ReloadConfig() error {
-	err := i.cmd.Process.Signal(syscall.SIGHUP)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (i *ConsulInstance) Silence() {
@@ -213,5 +204,5 @@ func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []
 		return err
 	}
 
-	return i.ReloadConfig()
+	return nil
 }
