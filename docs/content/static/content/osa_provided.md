@@ -42,6 +42,7 @@ Name|Version|License
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
 [spf13/viper](https://github.com/spf13/viper)|v1.8.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.23.0|Apache License 2.0
+[go.uber.org/atomic](https://go.uber.org/atomic)|v1.9.0|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.19.1|MIT License
 [x/mod](https://golang.org/x/mod)|v0.6.0-dev.0.20220106191415-9b9b3d81d5e3|BSD 3-clause "New" or "Revised" License
@@ -57,6 +58,7 @@ Name|Version|License
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.22.4|Apache License 2.0
 [k8s.io/client-go](https://k8s.io/client-go)|v0.22.4|Apache License 2.0
 [k8s.io/code-generator](https://k8s.io/code-generator)|v0.22.4|Apache License 2.0
+[k8s.io/component-base](https://k8s.io/component-base)|v0.22.4|Apache License 2.0
 [k8s.io/kubectl](https://k8s.io/kubectl)|v0.22.4|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20211208161948-7d6a63dca704|Apache License 2.0
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0

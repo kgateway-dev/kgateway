@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6821
+    description: Remove default activeDeadlineSeconds from jobs.

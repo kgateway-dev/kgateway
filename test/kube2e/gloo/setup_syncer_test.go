@@ -9,7 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
+
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
@@ -68,10 +70,10 @@ var _ = Describe("SetupSyncer", func() {
 		setupFunc := NewSetupFunc()
 
 		var synchronizedSetupFunc setuputils.SetupFunc
-		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+		synchronizedSetupFunc = func(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
 			setupLock.Lock()
 			defer setupLock.Unlock()
-			return setupFunc(ctx, kubeCache, inMemoryCache, settings)
+			return setupFunc(ctx, kubeCache, inMemoryCache, settings, identity)
 		}
 
 		return synchronizedSetupFunc
@@ -130,13 +132,13 @@ var _ = Describe("SetupSyncer", func() {
 
 				setup := newSynchronizedSetupFunc()
 
-				err := setup(ctx, nil, memcache, settings)
+				err := setup(ctx, nil, memcache, settings, singlereplica.Identity())
 				Expect(err).NotTo(HaveOccurred())
 
 				testFunc := setupTestGrpcClient()
 
 				newContext()
-				err = setup(ctx, nil, memcache, settings)
+				err = setup(ctx, nil, memcache, settings, singlereplica.Identity())
 				Expect(err).NotTo(HaveOccurred())
 
 				// give things a chance to react
@@ -157,7 +159,7 @@ var _ = Describe("SetupSyncer", func() {
 
 			It("should return plugins", func() {
 				extensions := Extensions{
-					PluginRegistryFactory: func(ctx context.Context, opts bootstrap.Opts) plugins.PluginRegistry {
+					PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
 						return registry.NewPluginRegistry([]plugins.Plugin{
 							plugin1,
 							plugin2,
@@ -165,7 +167,7 @@ var _ = Describe("SetupSyncer", func() {
 					},
 				}
 
-				pluginRegistry := extensions.PluginRegistryFactory(context.TODO(), bootstrap.Opts{})
+				pluginRegistry := extensions.PluginRegistryFactory(context.TODO())
 				plugins := pluginRegistry.GetPlugins()
 				Expect(plugins).To(ContainElement(plugin1))
 				Expect(plugins).To(ContainElement(plugin2))
@@ -244,27 +246,27 @@ var _ = Describe("SetupSyncer", func() {
 
 			It("can be called with core cache", func() {
 				setup := newSynchronizedSetupFunc()
-				err := setup(ctx, kubeCoreCache, memcache, settings)
+				err := setup(ctx, kubeCoreCache, memcache, settings, singlereplica.Identity())
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("can be called with core cache warming endpoints", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(time.Minute)
 				setup := newSynchronizedSetupFunc()
-				err := setup(ctx, kubeCoreCache, memcache, settings)
+				err := setup(ctx, kubeCoreCache, memcache, settings, singlereplica.Identity())
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("panics when endpoints don't arrive in a timely manner", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(1 * time.Nanosecond)
 				setup := newSynchronizedSetupFunc()
-				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).To(Panic())
+				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings, singlereplica.Identity()) }).To(Panic())
 			})
 
 			It("doesn't panic when endpoints don't arrive in a timely manner if set to zero", func() {
 				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(0)
 				setup := newSynchronizedSetupFunc()
-				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).NotTo(Panic())
+				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings, singlereplica.Identity()) }).NotTo(Panic())
 			})
 
 			setupTestGrpcClient := func() func() error {

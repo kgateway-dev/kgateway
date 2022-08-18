@@ -334,6 +334,78 @@ var _ = Describe("RBAC Test", func() {
 				})
 			})
 
+			Context("kube-leader-election", func() {
+				BeforeEach(func() {
+					resourceBuilder = ResourceBuilder{
+						Name: "kube-leader-election",
+						Labels: map[string]string{
+							"app":  "gloo",
+							"gloo": "rbac",
+						},
+						Rules: []rbacv1.PolicyRule{
+							{
+								APIGroups: []string{"coordination.k8s.io"},
+								Resources: []string{"leases"},
+								Verbs:     []string{"*"},
+							},
+							{
+								APIGroups: []string{""},
+								Resources: []string{"configmaps"},
+								Verbs:     []string{"*"},
+							},
+						},
+						RoleRef: rbacv1.RoleRef{
+							APIGroup: "rbac.authorization.k8s.io",
+							Kind:     "ClusterRole",
+							Name:     "kube-leader-election",
+						},
+						Subjects: []rbacv1.Subject{
+							{
+								Kind:      "ServiceAccount",
+								Name:      "gloo",
+								Namespace: namespace,
+							},
+							{
+								Kind:      "ServiceAccount",
+								Name:      "discovery",
+								Namespace: namespace,
+							},
+						},
+					}
+				})
+				Context("cluster scope", func() {
+					It("role", func() {
+						resourceBuilder.Name += "-" + namespace
+						prepareMakefile("global.glooRbac.namespaced=false")
+						testManifest.ExpectClusterRole(resourceBuilder.GetClusterRole())
+					})
+
+					It("role binding", func() {
+						resourceBuilder.Name += "-binding-" + namespace
+						resourceBuilder.RoleRef.Name += "-" + namespace
+						prepareMakefile("global.glooRbac.namespaced=false")
+						testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
+					})
+				})
+				Context("namespace scope", func() {
+					BeforeEach(func() {
+						resourceBuilder.RoleRef.Kind = "Role"
+						resourceBuilder.Namespace = namespace
+					})
+
+					It("role", func() {
+						prepareMakefile("global.glooRbac.namespaced=true")
+						testManifest.ExpectRole(resourceBuilder.GetRole())
+					})
+
+					It("role binding", func() {
+						resourceBuilder.Name += "-binding"
+						prepareMakefile("global.glooRbac.namespaced=true")
+						testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
+					})
+				})
+			})
+
 			Context("gloo-graphqlapi-mutator", func() {
 				BeforeEach(func() {
 					resourceBuilder = ResourceBuilder{
