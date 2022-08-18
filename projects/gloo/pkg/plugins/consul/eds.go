@@ -31,8 +31,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 	// Filter out non-consul upstreams
 	trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
-	var previousSpecs []*consulapi.CatalogService
-	var previousHash uint64
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
 			// discovery generates one upstream for every Consul service name;
@@ -69,6 +67,9 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 		timer := time.NewTicker(DefaultDnsPollingInterval)
 		defer timer.Stop()
+
+		var previousSpecs []*consulapi.CatalogService
+		var previousHash uint64
 
 		publishEndpoints := func(endpoints v1.EndpointList) bool {
 			if opts.Ctx.Err() != nil {
