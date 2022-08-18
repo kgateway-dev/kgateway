@@ -750,6 +750,12 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Clone() proto.Message {
 		target.QueryOptions = proto.Clone(m.GetQueryOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul.QueryOptions)
 	}
 
+	if h, ok := interface{}(m.GetServiceFilter()).(clone.Cloner); ok {
+		target.ServiceFilter = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.ServiceFilter = proto.Clone(m.GetServiceFilter()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	}
+
 	return target
 }
 

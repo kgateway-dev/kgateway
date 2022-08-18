@@ -1283,6 +1283,16 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Equal(that interface{}) 
 		}
 	}
 
+	if h, ok := interface{}(m.GetServiceFilter()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetServiceFilter()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetServiceFilter(), target.GetServiceFilter()) {
+			return false
+		}
+	}
+
 	return true
 }
 

@@ -33,7 +33,8 @@ weight: 5
 ### QueryOptions
 
  
-mirrors client query options struct in consul catalog api
+somewhat mirrors client query options struct in consul catalog api
+only has options that we know we want configurable at both upstream and settings-wide discovery levels
 
 ```yaml
 "useCache": .google.protobuf.BoolValue
@@ -50,7 +51,7 @@ mirrors client query options struct in consul catalog api
 ### ConsulConsistencyModes
 
 Description: These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
-For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
+and https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
 
 Note: Gloo handles staleness well (as it runs update loops ~ once/second) but makes many requests
 to get consul endpoints so users may want to opt into stale reads once the implications are understood.
