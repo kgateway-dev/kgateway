@@ -97,6 +97,11 @@ var _ = Describe("Helm Test", func() {
 			statsAnnotations map[string]string
 		)
 
+		BeforeEach(func() {
+			// Ensure that tests do not shares manifests by accident
+			testManifest = nil
+		})
+
 		Describe(rendererTestCase.rendererName, func() {
 			// each entry in valuesArgs should look like `path.to.helm.field=value`
 			prepareMakefile := func(namespace string, values helmValues) {
@@ -1677,6 +1682,7 @@ spec:
 					})
 
 					It("gwp hpa disabled by default", func() {
+						prepareMakefile(namespace, helmValues{})
 
 						testManifest.ExpectUnstructured("HorizontalPodAutoscaler", namespace, defaults.GatewayProxyName+"-hpa").To(BeNil())
 					})
@@ -1759,6 +1765,7 @@ apiVersion: autoscaling/v2beta2
 					})
 
 					It("gwp pdb disabled by default", func() {
+						prepareMakefile(namespace, helmValues{})
 
 						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeNil())
 					})
