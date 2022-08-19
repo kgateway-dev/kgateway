@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/3975
+    resolvesIssue: false
+    description: |
+      Redact Artifact contents when stringifying the Gloo API Snapshot. Previously Secrets were redacted,
+      as they contain sensitive information. It's possible that ConfigMaps could as well, so we redact
+      Artifacts as well.
