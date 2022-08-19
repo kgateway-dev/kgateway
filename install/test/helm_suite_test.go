@@ -42,7 +42,6 @@ const (
 	namespace = defaults.GlooSystem
 	releaseName = "gloo"
 	chartDir  = "../helm/gloo"
-	outputDir = "../../_output/helm/charts"
 )
 
 var (
@@ -265,7 +264,6 @@ func createInstallAction(namespace string) (*action.Install, error) {
 
 	renderer := action.NewInstall(actionConfig)
 	renderer.DryRun = true
-	renderer.OutputDir = outputDir
 	renderer.Namespace = namespace
 	renderer.ReleaseName = releaseName
 	renderer.ClientOnly = true
