@@ -97,6 +97,11 @@ var _ = Describe("Helm Test", func() {
 			statsAnnotations map[string]string
 		)
 
+		BeforeEach(func() {
+			// Ensure that tests do not shares manifests by accident
+			testManifest = nil
+		})
+
 		Describe(rendererTestCase.rendererName, func() {
 			// each entry in valuesArgs should look like `path.to.helm.field=value`
 			prepareMakefile := func(namespace string, values helmValues) {
@@ -1392,6 +1397,10 @@ metadata:
 					})
 
 					It("disabling http gateway disables corresponding service port", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway=true"},
+						})
+
 						var gatewayProxyService *v1.Service
 
 						serviceLabels := map[string]string{
@@ -1437,6 +1446,10 @@ metadata:
 					})
 
 					It("disabling https gateway disables corresponding service port", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpsGateway=true"},
+						})
+
 						var gatewayProxyService *v1.Service
 
 						serviceLabels := map[string]string{
@@ -1669,6 +1682,7 @@ spec:
 					})
 
 					It("gwp hpa disabled by default", func() {
+						prepareMakefile(namespace, helmValues{})
 
 						testManifest.ExpectUnstructured("HorizontalPodAutoscaler", namespace, defaults.GatewayProxyName+"-hpa").To(BeNil())
 					})
@@ -1751,6 +1765,7 @@ apiVersion: autoscaling/v2beta2
 					})
 
 					It("gwp pdb disabled by default", func() {
+						prepareMakefile(namespace, helmValues{})
 
 						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeNil())
 					})
@@ -3750,9 +3765,6 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
-        volumeMounts:
-          - mountPath: /etc/gateway/validation-certs
-            name: validation-certs
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -4072,11 +4084,18 @@ metadata:
 									},
 								},
 							}}
-						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
-							Name:      "validation-certs",
-							MountPath: "/etc/gateway/validation-certs",
-							ReadOnly:  false,
-						}}
+						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{
+							{
+								Name:      "validation-certs",
+								MountPath: "/etc/gateway/validation-certs",
+								ReadOnly:  false,
+							},
+							{
+								Name:      "labels-volume",
+								MountPath: "/etc/gloo",
+								ReadOnly:  true,
+							},
+						}
 
 						deploy.Spec.Template.Spec.Containers[0].Ports = glooPorts
 						deploy.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
@@ -5282,14 +5301,17 @@ metadata:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append(args, extraArgs...),
 					})
-					job := getJob(testManifest, namespace, "gloo-resource-rollout")
+
 					// We are overriding the generated yaml by adding our own label to the metadata
 					resources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetLabels()["overriddenLabel"] == "label" && resource.GetKind() != ""
 					})
 					countFromResources := resources.NumResources()
+
 					// gloo custom resources are applied by a job so don't appear in the resources count.
+					job := getJob(testManifest, namespace, "gloo-resource-rollout")
 					countFromJob := strings.Count(job.Spec.Template.Spec.Containers[0].Command[2], "overriddenLabel: label")
+
 					Expect(countFromResources + countFromJob).To(Equal(len(proxies)))
 				},
 					Entry("7-gateway-proxy-deployment", "kubeResourceOverride", nil),
