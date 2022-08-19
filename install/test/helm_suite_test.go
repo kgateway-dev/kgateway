@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"testing"
 	"text/template"
 
@@ -38,6 +39,18 @@ import (
 	k8syamlutil "sigs.k8s.io/yaml"
 )
 
+const (
+	namespace      = defaults.GlooSystem
+	releaseName    = "gloo"
+	chartDir       = "../helm/gloo"
+	debugOutputDir = "../../_output/helm/charts"
+)
+
+var (
+	version    string
+	pullPolicy v1.PullPolicy
+)
+
 func TestHelm(t *testing.T) {
 	RegisterFailHandler(Fail)
 	testutils.RegisterCommonFailHandlers()
@@ -66,7 +79,10 @@ type renderTestCase struct {
 }
 
 var renderers = []renderTestCase{
-	{"Helm 3", helm3Renderer{chartDir}},
+	{"Helm 3", helm3Renderer{
+		chartDir:          chartDir,
+		manifestOutputDir: "", // set to debugOutputDir when debugging locally
+	}},
 }
 
 func runTests(callback func(testCase renderTestCase)) {
@@ -74,16 +90,6 @@ func runTests(callback func(testCase renderTestCase)) {
 		callback(r)
 	}
 }
-
-const (
-	namespace = defaults.GlooSystem
-	chartDir  = "../helm/gloo"
-)
-
-var (
-	version    string
-	pullPolicy v1.PullPolicy
-)
 
 func MustMake(dir string, args ...string) {
 	makeCmd := exec.Command("make", args...)
@@ -110,36 +116,54 @@ var _ ChartRenderer = &helm3Renderer{}
 
 type helm3Renderer struct {
 	chartDir string
+	// manifestOutputDir is a useful field to set when running tests locally
+	// it will output the generated manifest to a directory that you can easily
+	// inspect. If this value is an empty string, it will print the manifest to a temporary
+	// file and automatically clean it up.
+	manifestOutputDir string
 }
 
 func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (TestManifest, error) {
-	rel, err := BuildHelm3Release(h3.chartDir, namespace, values)
+	rel, err := buildHelm3Release(h3.chartDir, namespace, values)
 	if err != nil {
 		return nil, err
 	}
 
-	// the test manifest utils can only read from a file, ugh
-	f, err := ioutil.TempFile("", "*.yaml")
-	Expect(err).NotTo(HaveOccurred(), "Should be able to write a temp file for the helm unit test manifest")
-	defer func() { _ = os.Remove(f.Name()) }()
+	// the test manifest utils can only read from a file
+	var testManifestFile *os.File
 
-	_, err = f.Write([]byte(rel.Manifest))
-	Expect(err).NotTo(HaveOccurred(), "Should be able to write the release manifest to the temp file for the helm unit tests")
+	if h3.manifestOutputDir == "" {
+		testManifestFile, err = ioutil.TempFile("", "*.yaml")
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write a temp file for the helm unit test manifest")
+		defer func() {
+			_ = os.Remove(testManifestFile.Name())
+
+		}()
+	} else {
+		// Create a new file, with the version name, or truncate the file if one already exists
+		testManifestFile, err = os.Create(fmt.Sprintf("%s.yaml", filepath.Join(h3.manifestOutputDir, version)))
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write a file to the manifestOutputDir for the helm unit test manifest")
+	}
+
+	_, err = testManifestFile.Write([]byte(rel.Manifest))
+	Expect(err).NotTo(HaveOccurred(), "Should be able to write the release manifest to the manifest file for the helm unit tests")
 
 	hooks, err := helm.GetHooks(rel.Hooks)
-
 	Expect(err).NotTo(HaveOccurred(), "Should be able to get the hooks in the helm unit test setup")
 
 	for _, hook := range hooks {
 		manifest := hook.Manifest
-		_, err = f.Write([]byte("\n---\n" + manifest))
-		Expect(err).NotTo(HaveOccurred(), "Should be able to write the hook manifest to the temp file for the helm unit tests")
+		_, err = testManifestFile.Write([]byte("\n---\n" + manifest))
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write the hook manifest to the manifest file for the helm unit tests")
 	}
 
-	return NewTestManifest(f.Name()), nil
+	err = testManifestFile.Close()
+	Expect(err).NotTo(HaveOccurred(), "Should be able to close the manifest file")
+
+	return NewTestManifest(testManifestFile.Name()), nil
 }
 
-func BuildHelm3Release(chartDir, namespace string, values helmValues) (*release.Release, error) {
+func buildHelm3Release(chartDir, namespace string, values helmValues) (*release.Release, error) {
 	chartRequested, err := loader.Load(chartDir)
 	if err != nil {
 		return nil, err
@@ -150,17 +174,18 @@ func BuildHelm3Release(chartDir, namespace string, values helmValues) (*release.
 		return nil, err
 	}
 
+	// Validate that the provided values match the Go types used to construct out docs
 	err = validateHelmValues(helmValues)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := buildRenderer(namespace)
+	// Install the chart
+	installAction, err := createInstallAction(namespace)
 	if err != nil {
 		return nil, err
 	}
-
-	return client.Run(chartRequested, helmValues)
+	return installAction.Run(chartRequested, helmValues)
 }
 
 // each entry in valuesArgs should look like `path.to.helm.field=value`
@@ -244,14 +269,14 @@ func readValuesFile(filePath string) (map[string]interface{}, error) {
 	return mapFromFile, nil
 }
 
-func buildRenderer(namespace string) (*action.Install, error) {
+func createInstallAction(namespace string) (*action.Install, error) {
 	settings := install.NewCLISettings(namespace, "")
 	actionConfig := new(action.Configuration)
 	noOpDebugLog := func(format string, v ...interface{}) {}
 
 	if err := actionConfig.Init(
 		settings.RESTClientGetter(),
-		defaults.GlooSystem,
+		namespace,
 		os.Getenv("HELM_DRIVER"),
 		noOpDebugLog,
 	); err != nil {
@@ -261,8 +286,7 @@ func buildRenderer(namespace string) (*action.Install, error) {
 	renderer := action.NewInstall(actionConfig)
 	renderer.DryRun = true
 	renderer.Namespace = namespace
-	renderer.ReleaseName = "gloo"
-	renderer.Namespace = defaults.GlooSystem
+	renderer.ReleaseName = releaseName
 	renderer.ClientOnly = true
 
 	return renderer, nil
