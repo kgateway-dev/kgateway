@@ -12,11 +12,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Log Redacter", func() {
+var _ = Describe("Log Redactor", func() {
 	var (
-		secretName      = "my-test-secret"
-		secretNamespace = "my-secret-namespace"
-		privateKey      = "RSA PRIVATE KEY CONTENT"
+		privateKey = "RSA PRIVATE KEY CONTENT"
+		caCrt      = "CA CERT CONTENT"
 
 		noSecretsSnapshot = &v1.SetupSnapshot{
 			Settings: []*v1.Settings{{
@@ -38,8 +37,20 @@ var _ = Describe("Log Redacter", func() {
 					PrivateKey: privateKey,
 				}},
 				Metadata: &core.Metadata{
-					Name:      secretName,
-					Namespace: secretNamespace,
+					Name:      "secret-name",
+					Namespace: "ns",
+				},
+			}},
+		}
+
+		snapshotWithArtifacts = &v1snap.ApiSnapshot{
+			Artifacts: []*v1.Artifact{{
+				Data: map[string]string{
+					"ca.crt": caCrt,
+				},
+				Metadata: &core.Metadata{
+					Name:      "artifact-name",
+					Namespace: "ns",
 				},
 			}},
 		}
@@ -49,11 +60,18 @@ var _ = Describe("Log Redacter", func() {
 		Expect(syncutil.StringifySnapshot(noSecretsSnapshot)).NotTo(ContainSubstring(syncutil.Redacted))
 	})
 
-	It("contains redacted content when secrets are present", func() {
+	It("replaces secret content with [REDACTED] placeholder", func() {
 		s := syncutil.StringifySnapshot(snapshotWithSecrets)
 
 		Expect(s).To(ContainSubstring(syncutil.Redacted))
 		Expect(s).NotTo(ContainSubstring(privateKey))
+	})
+
+	It("replaces artifact content with [REDACTED] placeholder", func() {
+		s := syncutil.StringifySnapshot(snapshotWithArtifacts)
+
+		Expect(s).To(ContainSubstring(syncutil.Redacted))
+		Expect(s).NotTo(ContainSubstring(caCrt))
 	})
 
 	DescribeTable("AuthConfig logging", func(secretPhrase string, config *xdsproto.ExtAuthConfig) {
