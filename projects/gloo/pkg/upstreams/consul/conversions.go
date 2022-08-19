@@ -90,6 +90,7 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 						ServiceTags:     service.Tags,
 						InstanceTags:    tlsInstanceTags,
 						ConsistencyMode: consulplugin.ConsulConsistencyModes(consulConfig.GetConsistencyMode()),
+						QueryOptions:    consulConfig.GetQueryOptions(),
 					},
 				},
 			})
@@ -111,6 +112,7 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 				ServiceTags:           service.Tags,
 				InstanceBlacklistTags: tlsInstanceTags, // Set blacklist on non-tls upstreams to the tls tag.
 				ConsistencyMode:       consulplugin.ConsulConsistencyModes(consulConfig.GetConsistencyMode()),
+				QueryOptions:          consulConfig.GetQueryOptions(),
 			},
 		},
 	})

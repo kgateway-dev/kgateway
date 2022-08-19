@@ -107,13 +107,17 @@ func (c *consul) validateDataCenter(dataCenter string) error {
 }
 
 // NewConsulServicesQueryOptions returns a QueryOptions configuration that's used for Consul queries to /catalog/services
-func NewConsulServicesQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, filter string) *consulapi.QueryOptions {
+func NewConsulServicesQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, filter string, _ *glooConsul.QueryOptions) *consulapi.QueryOptions {
 	return internalConsulQueryOptions(dataCenter, cm, filter, false) // caching not supported by endpoint
 }
 
 // NewConsulCatalogServiceQueryOptions returns a QueryOptions configuration that's used for Consul queries to /catalog/services/:servicename
-func NewConsulCatalogServiceQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes) *consulapi.QueryOptions {
-	return internalConsulQueryOptions(dataCenter, cm, "", false) // TODO(kdorosh) add caching query option and instrument here
+func NewConsulCatalogServiceQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, queryOptions *glooConsul.QueryOptions) *consulapi.QueryOptions {
+	useCache := true
+	if use := queryOptions.GetUseCache(); use != nil {
+		useCache = use.GetValue()
+	}
+	return internalConsulQueryOptions(dataCenter, cm, "", useCache)
 }
 
 func internalConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, filter string, useCache bool) *consulapi.QueryOptions {
