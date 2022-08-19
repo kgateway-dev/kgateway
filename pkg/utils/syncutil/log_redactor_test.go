@@ -60,14 +60,14 @@ var _ = Describe("Log Redactor", func() {
 		Expect(syncutil.StringifySnapshot(noSecretsSnapshot)).NotTo(ContainSubstring(syncutil.Redacted))
 	})
 
-	It("contains redacted content when secrets are present", func() {
+	It("replaces secret content with [REDACTED] placeholder", func() {
 		s := syncutil.StringifySnapshot(snapshotWithSecrets)
 
 		Expect(s).To(ContainSubstring(syncutil.Redacted))
 		Expect(s).NotTo(ContainSubstring(privateKey))
 	})
 
-	It("contains redacted content when artifacts are present", func() {
+	It("replaces artifact content with [REDACTED] placeholder", func() {
 		s := syncutil.StringifySnapshot(snapshotWithArtifacts)
 
 		Expect(s).To(ContainSubstring(syncutil.Redacted))
