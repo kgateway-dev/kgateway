@@ -107,8 +107,8 @@ func (c *consul) validateDataCenter(dataCenter string) error {
 }
 
 // NewConsulServicesQueryOptions returns a QueryOptions configuration that's used for Consul queries to /catalog/services
-func NewConsulServicesQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, filter string, _ *glooConsul.QueryOptions) *consulapi.QueryOptions {
-	return internalConsulQueryOptions(dataCenter, cm, filter, false) // caching not supported by endpoint
+func NewConsulServicesQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, _ *glooConsul.QueryOptions) *consulapi.QueryOptions {
+	return internalConsulQueryOptions(dataCenter, cm, false) // caching not supported by endpoint
 }
 
 // NewConsulCatalogServiceQueryOptions returns a QueryOptions configuration that's used for Consul queries to /catalog/services/:servicename
@@ -117,10 +117,10 @@ func NewConsulCatalogServiceQueryOptions(dataCenter string, cm glooConsul.Consul
 	if use := queryOptions.GetUseCache(); use != nil {
 		useCache = use.GetValue()
 	}
-	return internalConsulQueryOptions(dataCenter, cm, "", useCache)
+	return internalConsulQueryOptions(dataCenter, cm, useCache)
 }
 
-func internalConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, filter string, useCache bool) *consulapi.QueryOptions {
+func internalConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, useCache bool) *consulapi.QueryOptions {
 	// it can either be requireConsistent or allowStale or neither
 	// choosing the Default Mode will clear both fields
 	requireConsistent := cm == glooConsul.ConsulConsistencyModes_ConsistentMode
@@ -129,7 +129,6 @@ func internalConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsisten
 		Datacenter:        dataCenter,
 		AllowStale:        allowStale,
 		RequireConsistent: requireConsistent,
-		Filter:            filter,
 		UseCache:          useCache,
 	}
 }

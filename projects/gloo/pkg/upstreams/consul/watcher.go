@@ -22,7 +22,7 @@ type ServiceMeta struct {
 
 type ConsulWatcher interface {
 	ConsulClient
-	WatchServices(ctx context.Context, dataCenters []string, filter string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error)
+	WatchServices(ctx context.Context, dataCenters []string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error)
 }
 
 func NewConsulWatcher(client *consulapi.Client, dataCenters []string) (ConsulWatcher, error) {
@@ -49,7 +49,7 @@ type dataCenterServicesTuple struct {
 	services   map[string][]string
 }
 
-func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string, filter string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error) {
+func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error) {
 
 	var (
 		eg              errgroup.Group
@@ -62,7 +62,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 		// Copy before passing to goroutines!
 		dcName := dataCenter
 
-		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName, filter, cm, queryOpts)
+		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName, cm, queryOpts)
 
 		// Collect services
 		eg.Go(func() error {
@@ -116,7 +116,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 }
 
 // Honors the contract of Watch functions to open with an initial read.
-func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter, filter string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan *dataCenterServicesTuple, <-chan error) {
+func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan *dataCenterServicesTuple, <-chan error) {
 	servicesChan := make(chan *dataCenterServicesTuple)
 	errsChan := make(chan error)
 
@@ -139,7 +139,7 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 
 				// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
 				// The first invocation (with lastIndex equal to zero) will return immediately
-				queryOpts := NewConsulServicesQueryOptions(dataCenter, cm, filter, queryOpts)
+				queryOpts := NewConsulServicesQueryOptions(dataCenter, cm, queryOpts)
 				queryOpts.WaitIndex = lastIndex
 
 				ctxDead := false

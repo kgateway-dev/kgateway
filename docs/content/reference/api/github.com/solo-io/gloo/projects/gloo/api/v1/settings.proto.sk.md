@@ -416,7 +416,6 @@ upstreams to connect to those services and their instances.
 "splitTlsServices": bool
 "consistencyMode": .consul.options.gloo.solo.io.ConsulConsistencyModes
 "queryOptions": .consul.options.gloo.solo.io.QueryOptions
-"serviceFilter": .google.protobuf.StringValue
 
 ```
 
@@ -428,7 +427,6 @@ upstreams to connect to those services and their instances.
 | `splitTlsServices` | `bool` | If true, then create two upstreams when the tlsTagName is found on a consul service, one with tls and one without. This requires a consul service's serviceInstances be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those without the tlsTagName tag are sorted into the non-TLS upstream. |
 | `consistencyMode` | [.consul.options.gloo.solo.io.ConsulConsistencyModes](../options/consul/query_options.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is DefaultMode. Note: Gloo handles staleness well (as it runs update loops ~ once/second) but makes many requests to get consul endpoints so users may want to opt into stale reads once the implications are understood. |
 | `queryOptions` | [.consul.options.gloo.solo.io.QueryOptions](../options/consul/query_options.proto.sk/#queryoptions) | QueryOptions are the query options to use for all Consul queries. |
-| `serviceFilter` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Filter requests filtering data prior to it being returned. The string is a go-bexpr compatible expression. for more, see https://github.com/hashicorp/go-bexpr. |
 
 
 
