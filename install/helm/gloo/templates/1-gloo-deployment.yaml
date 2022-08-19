@@ -248,11 +248,6 @@ spec:
           periodSeconds: 10
           failureThreshold: 3
 {{- end }}
-  {{- if and .Values.gateway.validation.enabled .Values.gateway.enabled }}
-        volumeMounts:
-          - mountPath: /etc/gateway/validation-certs
-            name: validation-certs
-  {{- end }} {{/* if .Values.gateway.validation.enabled */}}
 {{- end }}{{/* if not .Values.global.glooMtls.enabled */}}
 {{- end }} {{/* define "gloo.deploymentSpec "*/}}
 
