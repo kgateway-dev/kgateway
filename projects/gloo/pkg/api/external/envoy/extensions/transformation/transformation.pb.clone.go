@@ -310,6 +310,15 @@ func (m *TransformationTemplate) Clone() proto.Message {
 		}
 	}
 
+	if m.GetHeadersToRemove() != nil {
+		target.HeadersToRemove = make([]string, len(m.GetHeadersToRemove()))
+		for idx, v := range m.GetHeadersToRemove() {
+
+			target.HeadersToRemove[idx] = v
+
+		}
+	}
+
 	target.ParseBodyBehavior = m.GetParseBodyBehavior()
 
 	target.IgnoreErrorOnParse = m.GetIgnoreErrorOnParse()
