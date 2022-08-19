@@ -222,6 +222,10 @@ message TransformationTemplate {
   // See `headers` documentation to see an example of usage.
   repeated HeaderToAppend headers_to_append = 10;
 
+  // Attribute to remove headers from requests. If a header is present multiple
+  // times, all instances of the header will be removed.
+  repeated string headers_to_remove = 11;
+
   // Determines the type of transformation to apply to the request/response body
   oneof body_transformation {
     // Apply a template to the body

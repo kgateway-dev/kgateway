@@ -590,6 +590,14 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	for _, v := range m.GetHeadersToRemove() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
 	err = binary.Write(hasher, binary.LittleEndian, m.GetParseBodyBehavior())
 	if err != nil {
 		return 0, err
