@@ -111,7 +111,7 @@ func NewConsulServicesQueryOptions(dataCenter string, cm glooConsul.ConsulConsis
 	return internalConsulQueryOptions(dataCenter, cm, false) // caching not supported by endpoint
 }
 
-// NewConsulCatalogServiceQueryOptions returns a QueryOptions configuration that's used for Consul queries to /catalog/services/:servicename
+// NewConsulCatalogServiceQueryOptions returns a QueryOptions configuration that's used for Consul queries to /catalog/service/:servicename
 func NewConsulCatalogServiceQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, queryOptions *glooConsul.QueryOptions) *consulapi.QueryOptions {
 	useCache := true
 	if use := queryOptions.GetUseCache(); use != nil {
