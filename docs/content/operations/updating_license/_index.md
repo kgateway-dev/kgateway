@@ -70,7 +70,7 @@ The Gloo Edge Enterprise license is installed by default into a Kubernetes `Secr
 
 1. Save the new license key in an environment variable.
    ```bash
-   export GLOO_EDGE_LICENSE_KEY=<your-new-enterprise-key-string>
+   export GLOO_KEY=<your-new-enterprise-key-string>
    ```
 
 2. Encode the license key in base64.
