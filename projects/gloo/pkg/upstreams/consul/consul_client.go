@@ -114,8 +114,8 @@ func NewConsulServicesQueryOptions(dataCenter string, cm glooConsul.ConsulConsis
 // NewConsulCatalogServiceQueryOptions returns a QueryOptions configuration that's used for Consul queries to /catalog/service/:servicename
 func NewConsulCatalogServiceQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, queryOptions *glooConsul.QueryOptions) *consulapi.QueryOptions {
 	useCache := true
-	if use := queryOptions.GetUseCache(); use != nil {
-		useCache = use.GetValue()
+	if cache := queryOptions.GetUseCache(); cache != nil {
+		useCache = cache.GetValue()
 	}
 	return internalConsulQueryOptions(dataCenter, cm, useCache)
 }

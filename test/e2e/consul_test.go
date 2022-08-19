@@ -170,7 +170,7 @@ var _ = Describe("Consul e2e", func() {
 
 	})
 
-	FIt("resolves eds even if services aren't updated", func() {
+	It("resolves eds even if services aren't updated", func() {
 		_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
