@@ -39,9 +39,9 @@ import (
 )
 
 const (
-	namespace = defaults.GlooSystem
+	namespace   = defaults.GlooSystem
 	releaseName = "gloo"
-	chartDir  = "../helm/gloo"
+	chartDir    = "../helm/gloo"
 )
 
 var (
@@ -85,8 +85,6 @@ func runTests(callback func(testCase renderTestCase)) {
 		callback(r)
 	}
 }
-
-
 
 func MustMake(dir string, args ...string) {
 	makeCmd := exec.Command("make", args...)
