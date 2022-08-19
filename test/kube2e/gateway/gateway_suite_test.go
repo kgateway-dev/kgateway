@@ -59,6 +59,8 @@ func StartTestHelper() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
+	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
+
 	// install xds-relay if needed
 	if os.Getenv("USE_XDS_RELAY") == "true" {
 		err = installXdsRelay()
@@ -129,6 +131,9 @@ settings:
   replaceInvalidRoutes: true
 gateway:
   persistProxySpec: true
+gloo:
+  deployment:
+    replicas: 1
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0

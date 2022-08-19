@@ -388,6 +388,8 @@ spec:
                                       type: boolean
                                     keyPrefix:
                                       type: string
+                                    targetDomain:
+                                      type: string
                                   type: object
                                 cookieOptions:
                                   properties:
@@ -438,6 +440,8 @@ spec:
                                           type: string
                                       type: object
                                     preExpiryBuffer:
+                                      type: string
+                                    targetDomain:
                                       type: string
                                   type: object
                               type: object

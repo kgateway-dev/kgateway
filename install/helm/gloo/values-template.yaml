@@ -85,7 +85,6 @@ gateway:
     setTtlAfterFinished: true
     ttlSecondsAfterFinished: 60
     runAsUser: 10101
-    activeDeadlineSeconds: 100
     cron:
       enabled: false
       schedule: "* * * * *"
@@ -96,7 +95,6 @@ gateway:
       repository: kubectl
     restartPolicy: OnFailure
     runAsUser: 10101
-    activeDeadlineSeconds: 100
     ttlSecondsAfterFinished: 60
   cleanupJob:
     enabled: true
@@ -104,7 +102,6 @@ gateway:
       repository: kubectl
     restartPolicy: OnFailure
     runAsUser: 10101
-    activeDeadlineSeconds: 100
     ttlSecondsAfterFinished: 60
   proxyServiceAccount: {}
 gatewayProxies:

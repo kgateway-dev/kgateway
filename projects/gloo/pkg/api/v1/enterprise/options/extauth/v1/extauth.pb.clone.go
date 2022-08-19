@@ -1770,6 +1770,8 @@ func (m *UserSession_InternalSession) Clone() proto.Message {
 
 	target.KeyPrefix = m.GetKeyPrefix()
 
+	target.TargetDomain = m.GetTargetDomain()
+
 	return target
 }
 
@@ -1802,6 +1804,8 @@ func (m *UserSession_RedisSession) Clone() proto.Message {
 	} else {
 		target.PreExpiryBuffer = proto.Clone(m.GetPreExpiryBuffer()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
+
+	target.TargetDomain = m.GetTargetDomain()
 
 	return target
 }

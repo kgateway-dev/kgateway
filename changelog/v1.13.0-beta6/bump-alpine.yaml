@@ -1,0 +1,8 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: linux
+  dependencyRepo: alpine
+  dependencyTag: 3.15.6
+  description: Bump alpine to fix CVE-2022-37434
+  issueLink: https://github.com/solo-io/gloo/issues/6901
+  resolvesIssue: false

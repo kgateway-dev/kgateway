@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	defaultEventuallyTimeout         = 15 * time.Second
+	defaultEventuallyTimeout         = 30 * time.Second
 	defaultEventuallyPollingInterval = 1 * time.Second
 )
 

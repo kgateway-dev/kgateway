@@ -235,11 +235,6 @@ var _ = Describe("Robustness tests", func() {
 				return writeErr
 			}, "12s", "1s").ShouldNot(HaveOccurred())
 
-			// Wait for the proxy to be accepted
-			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				return proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			}, 60*time.Second, 1*time.Second)
-
 			// Ensure we can route to the service
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",

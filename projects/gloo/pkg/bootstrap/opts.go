@@ -5,6 +5,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
@@ -56,6 +58,8 @@ type Opts struct {
 	ReadGatwaysFromAllNamespaces bool
 	GatewayControllerEnabled     bool
 	ProxyCleanup                 func()
+
+	Identity leaderelector.Identity
 }
 
 type Consul struct {
