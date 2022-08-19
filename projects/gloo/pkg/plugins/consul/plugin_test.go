@@ -3,7 +3,6 @@ package consul
 import (
 	"net"
 	"net/url"
-	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -44,7 +43,7 @@ var _ = Describe("Resolve", func() {
 
 		us := createTestFilteredUpstream(svcName, svcName, nil, []string{tag}, []string{dc})
 
-		queryOpts := &consulapi.QueryOptions{Datacenter: dc, UseCache: true, WaitTime: time.Second}
+		queryOpts := &consulapi.QueryOptions{Datacenter: dc, UseCache: true}
 
 		consulWatcherMock.EXPECT().Service(svcName, "", queryOpts).Return([]*consulapi.CatalogService{
 			{
@@ -81,7 +80,7 @@ var _ = Describe("Resolve", func() {
 
 		us := createTestFilteredUpstream(svcName, svcName, nil, []string{tag}, []string{dc})
 
-		queryOpts := &consulapi.QueryOptions{Datacenter: dc, UseCache: true, WaitTime: time.Second}
+		queryOpts := &consulapi.QueryOptions{Datacenter: dc, UseCache: true}
 
 		consulWatcherMock.EXPECT().Service(svcName, "", queryOpts).Return([]*consulapi.CatalogService{
 			{
@@ -110,7 +109,7 @@ var _ = Describe("Resolve", func() {
 
 		us := createTestFilteredUpstream(svcName, svcName, nil, nil, []string{dc})
 
-		queryOpts := &consulapi.QueryOptions{Datacenter: dc, UseCache: true, WaitTime: time.Second}
+		queryOpts := &consulapi.QueryOptions{Datacenter: dc, UseCache: true}
 
 		consulWatcherMock.EXPECT().Service(svcName, "", queryOpts).Return([]*consulapi.CatalogService{
 			{
