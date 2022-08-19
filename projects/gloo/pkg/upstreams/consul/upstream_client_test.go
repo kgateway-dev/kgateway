@@ -58,7 +58,7 @@ var _ = Describe("ConsulClient", func() {
 					Services:   map[string][]string{"svc-1": {"tag-1"}, "svc-3": {}},
 				}}
 
-				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: false, UseCache: true, WaitTime: time.Second}, &dcServices)
+				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: false, UseCache: true}, &dcServices)
 			})
 
 			It("returns the expected upstreams", func() {
@@ -86,7 +86,7 @@ var _ = Describe("ConsulClient", func() {
 					Services:   map[string][]string{"svc-1": {"tag-1"}, "svc-3": {}},
 				}}
 
-				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: true, UseCache: true, WaitTime: time.Second}, &dcServices)
+				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: true, UseCache: true}, &dcServices)
 				usClient := NewConsulUpstreamClient(
 					NewConsulWatcherFromClient(client),
 					&v1.Settings_ConsulUpstreamDiscoveryConfiguration{
@@ -113,7 +113,7 @@ var _ = Describe("ConsulClient", func() {
 					Services:   map[string][]string{"svc-1": {"tag-1"}, "svc-3": {}},
 				}}
 
-				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: false, UseCache: true, WaitTime: time.Second}, &dcServices)
+				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: false, UseCache: true}, &dcServices)
 
 				usClient := NewConsulUpstreamClient(
 					NewConsulWatcherFromClient(client),
@@ -148,25 +148,19 @@ var _ = Describe("ConsulClient", func() {
 				// Initial call, no delay
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc1,
-					UseCache:   true,
 					WaitIndex:  0,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(100, []string{"svc-1"}, 0)).Times(1)
 
 				// Second call simulates blocking query that returns with updated resources
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc1,
-					UseCache:   true,
 					WaitIndex:  100,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(200, []string{"svc-1", "svc-2"}, 100*time.Millisecond)).Times(1)
 
 				// Expect any number of subsequent invocations and return same resource version (last index)
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc1,
-					UseCache:   true,
 					WaitIndex:  200,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(200, []string{"svc-1", "svc-2"}, 200*time.Millisecond)).AnyTimes()
 
 				// ----------- Data center 2 -----------
@@ -175,25 +169,19 @@ var _ = Describe("ConsulClient", func() {
 				// Initial call, no delay
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc2,
-					UseCache:   true,
 					WaitIndex:  0,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(100, []string{}, 0)).Times(1)
 
 				// Second call simulates blocking query that returns with updated resources
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc2,
-					UseCache:   true,
 					WaitIndex:  100,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(250, []string{"svc-1", "svc-3"}, 200*time.Millisecond)).Times(1)
 
 				// Expect any number of subsequent invocations and return same resource version (last index)
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc2,
-					UseCache:   true,
 					WaitIndex:  250,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(250, []string{"svc-1", "svc-3"}, 200*time.Millisecond)).AnyTimes()
 
 			})
@@ -229,9 +217,7 @@ var _ = Describe("ConsulClient", func() {
 				// Initial call, no delay
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc1,
-					UseCache:   true,
 					WaitIndex:  0,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(100, []string{"svc-1"}, 0)).Times(1)
 
 				// We need this to react differently on the same expectation
@@ -240,9 +226,7 @@ var _ = Describe("ConsulClient", func() {
 				// Simulate failure
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc1,
-					UseCache:   true,
 					WaitIndex:  100,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(
 					func(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error) {
 						time.Sleep(50 * time.Millisecond)
@@ -261,9 +245,7 @@ var _ = Describe("ConsulClient", func() {
 				// Expect any number of subsequent invocations and return same resource version (last index)
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc1,
-					UseCache:   true,
 					WaitIndex:  200,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(200, []string{"svc-1", "svc-3"}, 200*time.Millisecond)).AnyTimes()
 			})
 
@@ -297,17 +279,13 @@ var _ = Describe("ConsulClient", func() {
 				// Initial call, no delay
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc1,
-					UseCache:   true,
 					WaitIndex:  0,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(100, []string{"svc-1"}, 0)).Times(1)
 
 				// Expect any number of subsequent invocations and return same resource version (last index)
 				client.EXPECT().Services((&consulapi.QueryOptions{
 					Datacenter: dc1,
-					UseCache:   true,
 					WaitIndex:  100,
-					WaitTime:   time.Second,
 				}).WithContext(ctx)).DoAndReturn(returnWithDelay(100, []string{"svc-1"}, 100*time.Millisecond)).AnyTimes()
 			})
 
@@ -364,8 +342,6 @@ func setupDatacenterServices(ctx context.Context, client *MockConsulClient, quer
 			Datacenter:        r.DataCenter,
 			RequireConsistent: queryOptions.RequireConsistent,
 			AllowStale:        queryOptions.AllowStale,
-			UseCache:          queryOptions.UseCache,
-			WaitTime:          time.Second,
 		}).WithContext(ctx)).Return(r.Services, nil, nil).Times(1)
 	}
 }
