@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/avast/retry-go"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/constants"
@@ -24,14 +23,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/sync/errgroup"
 )
-
-type svcNameToEndpoints struct {
-	svcNameToSpecs map[string][]*consulapi.CatalogService
-}
-
-type endpointsTuple struct {
-	dcToSvcTuple map[string]*svcNameToEndpoints
-}
 
 // Starts a watch on the Consul service metadata endpoint for all the services associated with the tracked upstreams.
 // Whenever it detects an update to said services, it fetches the complete specs for the tracked services,
@@ -68,10 +59,10 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		errutils.AggregateErrs(opts.Ctx, errChan, servicesWatchErrChan, "consul eds")
 	}()
 
-	allEndpointsListChan := make(chan v1.EndpointList)
+	endpointsChan := make(chan v1.EndpointList)
 	wg.Add(1)
 	go func() {
-		defer close(allEndpointsListChan)
+		defer close(endpointsChan)
 		defer wg.Done()
 
 		timer := time.NewTicker(DefaultDnsPollingInterval)
@@ -87,104 +78,30 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 			select {
 			case <-opts.Ctx.Done():
 				return false
-			case allEndpointsListChan <- endpoints:
+			case endpointsChan <- endpoints:
 			}
 			return true
 		}
 
-		epsTuple := &endpointsTuple{
-			dcToSvcTuple: make(map[string]*svcNameToEndpoints),
-		}
-
-		var (
-			eg               errgroup.Group
-			allEndpointsChan = make(chan []*consulapi.CatalogService)
-		)
-
-		defer close(allEndpointsChan)
-
-		// Create a new context for each loop, cancel it before each loop
-		var cancel context.CancelFunc = func() {}
-		// Use closure to allow cancel function to be updated as context changes
-		defer func() { cancel() }()
-
 		for {
 			select {
-
 			case serviceMeta, ok := <-serviceMetaChan:
 				if !ok {
 					return
 				}
 
-				// Cancel any running requests from previous iteration and set new context/cancel
-				cancel()
-				ctx, newCancel := context.WithCancel(opts.Ctx)
-				cancel = newCancel
-
-				epsTuple = &endpointsTuple{
-					dcToSvcTuple: make(map[string]*svcNameToEndpoints),
-				}
-
-				for _, meta := range serviceMeta {
-					for _, dc := range meta.DataCenters {
-						// Copy before passing to goroutines!
-						dcName := dc
-						svcName := meta.Name
-
-						endpointsChan, epErrChan := p.watchEndpointsInDataCenter(ctx, dcName, svcName)
-
-						// Collect endpoints
-						eg.Go(func() error {
-							aggregateEndpoints(ctx, allEndpointsChan, endpointsChan)
-							return nil
-						})
-
-						// Collect errors
-						eg.Go(func() error {
-							errutils.AggregateErrs(ctx, errChan, epErrChan, "data center: "+dcName)
-							return nil
-						})
-					}
-				}
-
-			case eps, ok := <-allEndpointsChan:
-				if !ok {
-					return
-				}
-
-				// add ep to our persisted struct
-				for _, ep := range eps {
-					if epsTuple.dcToSvcTuple == nil {
-						epsTuple.dcToSvcTuple = make(map[string]*svcNameToEndpoints)
-					}
-					if epsTuple.dcToSvcTuple[ep.Datacenter] == nil {
-						epsTuple.dcToSvcTuple[ep.Datacenter] = &svcNameToEndpoints{}
-					}
-					if epsTuple.dcToSvcTuple[ep.Datacenter].svcNameToSpecs == nil {
-						epsTuple.dcToSvcTuple[ep.Datacenter].svcNameToSpecs = make(map[string][]*consulapi.CatalogService)
-					}
-					if epsTuple.dcToSvcTuple[ep.Datacenter].svcNameToSpecs[ep.ServiceName] == nil {
-						epsTuple.dcToSvcTuple[ep.Datacenter].svcNameToSpecs[ep.ServiceName] = []*consulapi.CatalogService{}
-					}
-					// TODO(kdorosh) reason about removing stale eps... don't just always append
-					epsTuple.dcToSvcTuple[ep.Datacenter].svcNameToSpecs[ep.ServiceName] = append(epsTuple.dcToSvcTuple[ep.Datacenter].svcNameToSpecs[ep.ServiceName], ep)
-				}
-
-				collector := newSpecCollector()
-				for _, svcTuple := range epsTuple.dcToSvcTuple {
-					for _, svc := range svcTuple.svcNameToSpecs {
-						collector.Add(svc)
-					}
-				}
-				specs := collector.Get() // TODO(kdorosh) this does not need to be synchronized anymore!
-
+				// Here is where the specs are produced; each resulting spec is a grouping of serviceInstances (aka endpoints)
+				// associated with a single consul service on one datacenter.
+				specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
+
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
 
 				if !publishEndpoints(endpoints) {
 					return
 				}
+
 			case <-timer.C:
 				// ensure we have at least one spec to check against; otherwise we risk marking EDS as ready
 				// (by sending endpoints, even an empty list) too early
@@ -214,87 +131,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		wg.Wait()
 		close(errChan)
 	}()
-	return allEndpointsListChan, errChan, nil
-}
-
-// Honors the contract of Watch functions to open with an initial read.
-func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svcName string) (<-chan []*consulapi.CatalogService, <-chan error) {
-	endpointsChan := make(chan []*consulapi.CatalogService)
-	errsChan := make(chan error)
-
-	go func(dataCenter string) {
-		defer close(endpointsChan)
-		defer close(errsChan)
-
-		lastIndex := uint64(0)
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-
-				var (
-					endpoints []*consulapi.CatalogService
-					queryMeta *consulapi.QueryMeta
-				)
-
-				// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
-				// The first invocation (with lastIndex equal to zero) will return immediately
-				queryOpts := consul.NewConsulCatalogServiceQueryOptions(dataCenter, glooConsul.ConsulConsistencyModes_ConsistentMode) // TODO(kdorosh) make configurable
-				queryOpts.WaitIndex = lastIndex
-
-				ctxDead := false
-
-				// Use a back-off retry strategy to avoid flooding the error channel
-				err := retry.Do(
-					func() error {
-						var err error
-						if ctx.Err() != nil {
-							// intentionally return early if context is already done
-							// this is a backoff loop; by the time we get here ctx may be done
-							ctxDead = true
-							return nil
-						}
-						// TODO(kdorosh) provide tag?
-						endpoints, queryMeta, err = p.client.Service(svcName, "", queryOpts.WithContext(ctx))
-						return err
-					},
-					retry.Attempts(6),
-					//  Last delay is 2^6 * 100ms = 3.2s
-					retry.Delay(100*time.Millisecond),
-					retry.DelayType(retry.BackOffDelay),
-				)
-
-				if ctxDead {
-					return
-				}
-
-				if err != nil {
-					errsChan <- err
-					continue
-				}
-
-				// If index is the same, there have been no changes since last query
-				if queryMeta.LastIndex == lastIndex {
-					continue
-				}
-
-				// Update the last index
-				if queryMeta.LastIndex < lastIndex {
-					// update if index goes backwards per consul blocking query docs
-					// this can happen e.g. KV list operations where item with highest index is deleted
-					// for more, see https://www.consul.io/api-docs/features/blocking#implementation-details
-					lastIndex = 0
-				} else {
-					lastIndex = queryMeta.LastIndex
-				}
-				endpointsChan <- endpoints
-			}
-		}
-	}(dataCenter)
-
-	return endpointsChan, errsChan
+	return endpointsChan, errChan, nil
 }
 
 // For each service AND data center combination, return a CatalogService that contains a list of all service instances
@@ -648,22 +485,4 @@ func (c *collector) Get() []*consulapi.CatalogService {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	return c.specs
-}
-
-func aggregateEndpoints(ctx context.Context, dest chan []*consulapi.CatalogService, src <-chan []*consulapi.CatalogService) {
-	for {
-		select {
-		case services, ok := <-src:
-			if !ok {
-				return
-			}
-			select {
-			case <-ctx.Done():
-				return
-			case dest <- services:
-			}
-		case <-ctx.Done():
-			return
-		}
-	}
 }
