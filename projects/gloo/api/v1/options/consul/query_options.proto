@@ -14,7 +14,13 @@ option (extproto.clone_all) = true;
 // somewhat mirrors client query options struct in consul catalog api
 // only has options that we know we want configurable at both upstream and settings-wide discovery levels
 message QueryOptions{
-    // TODO(kdorosh) open issue for codegen and importing enum only files with clonegen
+    // UseCache requests that the agent cache results locally. See
+    // https://www.consul.io/api/features/caching.html for more details on the
+    // semantics.
+    //
+    // Defaults to true.
+    // opts users into background refresh caching https://www.consul.io/api-docs/features/caching#background-refresh-caching
+    google.protobuf.BoolValue use_cache = 1;
 }
 
 // These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
