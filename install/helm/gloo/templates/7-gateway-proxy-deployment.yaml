@@ -1,7 +1,7 @@
 {{- if .Values.gateway.updateValues -}}
 {{- include "gloo.updatevalues" . -}}
 {{- end -}}
-{{ define "gatewayProxy.deploymentSpec" }}
+{{- define "gatewayProxy.deploymentSpec" }}
 {{- $name := (index . 1) }}
 {{- $gatewaySpec := (index . 2) }}
 {{- with (first .) }}
@@ -502,7 +502,7 @@ spec:
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- /* Render each gatewayProxy template with it's yaml overrides */}}
 ---
-{{ $kubeResourceOverride := $gatewaySpec.kubeResourceOverride  }}
+{{- $kubeResourceOverride := $gatewaySpec.kubeResourceOverride  }}
 {{- $ctx := (list $ $name $gatewaySpec)}}
 {{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.deploymentSpec") -}}
 {{- end }} {{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}

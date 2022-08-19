@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	errors "github.com/rotisserie/eris"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -79,7 +78,7 @@ type renderTestCase struct {
 }
 
 var renderers = []renderTestCase{
-	{"Helm 3", helm3Renderer{chartDir: chartDir}},
+	{"Helm 3", helm3Renderer{chartDir}},
 }
 
 func runTests(callback func(testCase renderTestCase)) {
@@ -164,21 +163,9 @@ func BuildHelm3Release(chartDir, namespace string, values helmValues) (*release.
 	// Install the chart, outputting the templates into the _output/helm directory for easier debugging
 	installAction, err := createInstallAction(namespace)
 	if err != nil {
-		return nil, errors.Wrap(err, "`Helm Install` failed")
-	}
-	helmRelease, err :=  installAction.Run(chartRequested, helmValues)
-	if err != nil {
 		return nil, err
 	}
-
-	// Lint the generated templates
-	lintAction := createLintAction(namespace)
-	lintResult := lintAction.Run([]string{chartDir}, helmValues)
-	if len(lintResult.Errors) > 0 {
-		return nil, errors.Errorf("`Helm Lint` failed. Messages: %+v", lintResult.Messages)
-	}
-
-	return helmRelease, nil
+	return installAction.Run(chartRequested, helmValues)
 }
 
 // each entry in valuesArgs should look like `path.to.helm.field=value`
@@ -284,15 +271,6 @@ func createInstallAction(namespace string) (*action.Install, error) {
 	renderer.ClientOnly = true
 
 	return renderer, nil
-}
-
-func createLintAction(namespace string) *action.Lint {
-	lintAction := action.NewLint()
-	lintAction.Strict = false
-	lintAction.Namespace = namespace
-	lintAction.WithSubcharts = false
-
-	return lintAction
 }
 
 // stolen from Helm internals

@@ -1,4 +1,4 @@
-{{ define "gatewayProxy.autoscalerSpec"}}
+{{- define "gatewayProxy.autoscalerSpec"}}
 {{- $name := (index . 1) }}
 {{- $gatewaySpec := (index . 2) }}
 {{- with (first .) }}
@@ -42,7 +42,7 @@ spec:
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
 ---
-{{ $kubeResourceOverride := dict }}
+{{- $kubeResourceOverride := dict }}
 {{- if $gatewaySpec.horizontalPodAutoscaler -}}
 {{ $kubeResourceOverride = $gatewaySpec.horizontalPodAutoscaler.kubeResourceOverride}}
 {{- end -}} {{/*if $gatewaySpec.horizontalPodAutoscaler*/}}

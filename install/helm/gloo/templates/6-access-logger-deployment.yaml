@@ -5,6 +5,7 @@
 {{- if .Values.global }}
 {{- $image = merge .Values.accessLogger.image .Values.global.image }}
 {{- end }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:

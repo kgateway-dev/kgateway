@@ -5279,7 +5279,7 @@ metadata:
 					//Entry("25-namespace-clusterrolebinding-knative", ""),
 				)
 
-				FDescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string) {
+				DescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string) {
 					// Override property should be the path to `kubeResourceOverride`, like gloo.deployment.kubeResourceOverride
 					proxies := []string{"gatewayProxy", "anotherProxy", "proxyThree"}
 					var args []string
@@ -5294,14 +5294,17 @@ metadata:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append(args, extraArgs...),
 					})
-					job := getJob(testManifest, namespace, "gloo-resource-rollout")
+
 					// We are overriding the generated yaml by adding our own label to the metadata
 					resources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetLabels()["overriddenLabel"] == "label" && resource.GetKind() != ""
 					})
 					countFromResources := resources.NumResources()
+
 					// gloo custom resources are applied by a job so don't appear in the resources count.
+					job := getJob(testManifest, namespace, "gloo-resource-rollout")
 					countFromJob := strings.Count(job.Spec.Template.Spec.Containers[0].Command[2], "overriddenLabel: label")
+
 					Expect(countFromResources + countFromJob).To(Equal(len(proxies)))
 				},
 					Entry("7-gateway-proxy-deployment", "kubeResourceOverride", nil),
@@ -5311,7 +5314,7 @@ metadata:
 					Entry("8-gateway-proxy-horizontal-pod-autoscaler", "horizontalPodAutoscaler.kubeResourceOverride", []string{"kind.deployment.replicas=2", "horizontalPodAutoscaler.apiVersion=v2"}),
 					Entry("8-gateway-proxy-pod-disruption-budget", "podDisruptionBudget.kubeResourceOverride", []string{"kind.deployment.replicas=2"}),
 					Entry("8-gateway-proxy-service service", "service.kubeResourceOverride", nil),
-					FEntry("8-gateway-proxy-service config-dump-service", "service.configDumpService.kubeResourceOverride", []string{"readConfig=true", "readConfigMulticluster=true"}),
+					Entry("8-gateway-proxy-service config-dump-service", "service.configDumpService.kubeResourceOverride", []string{"readConfig=true", "readConfigMulticluster=true"}),
 					Entry("9-gateway-proxy-configmap", "configMap.kubeResourceOverride", nil),
 				)
 			})

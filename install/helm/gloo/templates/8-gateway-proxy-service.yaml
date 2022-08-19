@@ -1,4 +1,4 @@
-{{ define "gatewayProxy.serviceSpec" }}
+{{- define "gatewayProxy.serviceSpec" }}
 {{- $name := (index . 1) }}
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
@@ -98,7 +98,7 @@ spec:
   {{- end }} {{/* $spec.service.type "LoadBalancer" */}}
   {{- end }} {{/* with */}}
   {{- end }} {{/* define gatewayProxy.serviceSpec */}}
-{{ define "gatewayProxy.configDumpServiceSpec" }}
+{{- define "gatewayProxy.configDumpServiceSpec" }}
 {{- $name := (index . 1) }}
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
@@ -121,7 +121,7 @@ spec:
       port: 8082
 {{- end }} {{/* with (first .) */}}
 {{- end }} {{/* define gatewayProxy.configDumpServiceSpec */}}
-{{ define "gatewayProxy.monitoringServiceSpec" }}
+{{- define "gatewayProxy.monitoringServiceSpec" }}
 {{- $name := (index . 1) -}}
 {{- $spec := (index . 2) -}}
 {{- with (first .) }}
@@ -164,15 +164,15 @@ spec:
 {{- $ctx := (list $ $name $spec)}}
 {{- if not $spec.disabled }}
 ---
-{{ include "gloo.util.merge" (list $ctx $serviceYamlOverride "gatewayProxy.serviceSpec") -}}
+{{- include "gloo.util.merge" (list $ctx $serviceYamlOverride "gatewayProxy.serviceSpec") -}}
 {{- if and $spec.readConfig $spec.readConfigMulticluster }}
 ---
-{{ include "gloo.util.merge" (list $ctx $configDumpServiceYamlOverride "gatewayProxy.configDumpServiceSpec") -}}
+{{- include "gloo.util.merge" (list $ctx $configDumpServiceYamlOverride "gatewayProxy.configDumpServiceSpec") -}}
 {{- end }} {{/* if and ($spec.readConfig $spec.readConfigMulticluster) */}}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
 {{- if and $statsConfig.enabled $statsConfig.serviceMonitorEnabled }}
 ---
-{{ include "gatewayProxy.monitoringServiceSpec" $ctx -}}
+{{- include "gatewayProxy.monitoringServiceSpec" $ctx -}}
 {{- end }} {{/* if $statsConfig.serviceMonitorEnabled */}}
 {{- end }}{{/* if not $spec.disabled */}}
 {{- end }} {{/* range $name, $spec := .Values.gatewayProxies */}}

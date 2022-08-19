@@ -1,4 +1,4 @@
-{{ define "gloo.gatewayCertGenJobSpec" -}}
+{{- define "gloo.gatewayCertGenJobSpec" -}}
 {{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled }}
 
 {{- $image := .Values.gateway.certGenJob.image }}

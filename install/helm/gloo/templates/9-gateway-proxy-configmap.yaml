@@ -1,7 +1,7 @@
 {{- if .Values.gateway.updateValues -}}
 {{- include "gloo.updatevalues" . -}}
 {{- end -}}
-{{ define "gatewayProxy.configMapSpec" }}
+{{- define "gatewayProxy.configMapSpec" }}
 {{- $name := (index . 1) }}
 {{- $gatewaySpec := (index . 2) }}
 {{- with (first .) }}
@@ -379,11 +379,11 @@ data:
 
 {{- end }} {{/* define gatewayProxy.configMapSpec*/}}
 
-{{ if .Values.gateway.enabled }}
+{{- if .Values.gateway.enabled }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
 ---
-{{ $kubeResourceOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if $gatewaySpec.configMap -}}
 {{- $kubeResourceOverride = $gatewaySpec.configMap.kubeResourceOverride -}}
 {{- end -}} {{/* if $gatewaySpec.configMap */}}
