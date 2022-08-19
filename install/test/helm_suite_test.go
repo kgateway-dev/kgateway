@@ -140,12 +140,13 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 
 		}()
 	} else {
+		// Create a new file, with the version name, or truncate the file if one already exists
 		testManifestFile, err = os.Create(fmt.Sprintf("%s.yaml", filepath.Join(h3.manifestOutputDir, version)))
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write a file to the manifestOutputDir for the helm unit test manifest")
 	}
 
 	_, err = testManifestFile.Write([]byte(rel.Manifest))
-	Expect(err).NotTo(HaveOccurred(), "Should be able to write the release manifest to the temp file for the helm unit tests")
+	Expect(err).NotTo(HaveOccurred(), "Should be able to write the release manifest to the manifest file for the helm unit tests")
 
 	hooks, err := helm.GetHooks(rel.Hooks)
 	Expect(err).NotTo(HaveOccurred(), "Should be able to get the hooks in the helm unit test setup")
@@ -153,8 +154,11 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 	for _, hook := range hooks {
 		manifest := hook.Manifest
 		_, err = testManifestFile.Write([]byte("\n---\n" + manifest))
-		Expect(err).NotTo(HaveOccurred(), "Should be able to write the hook manifest to the temp file for the helm unit tests")
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write the hook manifest to the manifest file for the helm unit tests")
 	}
+
+	err = testManifestFile.Close()
+	Expect(err).NotTo(HaveOccurred(), "Should be able to close the manifest file")
 
 	return NewTestManifest(testManifestFile.Name()), nil
 }
