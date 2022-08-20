@@ -1,0 +1,7 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.18.0
+    description: >-
+      Upgrade envoy-gloo version to handle CVEs https://groups.google.com/g/envoy-announce/c/DGegalK__BA

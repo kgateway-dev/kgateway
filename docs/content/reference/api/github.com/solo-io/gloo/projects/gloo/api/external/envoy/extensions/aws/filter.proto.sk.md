@@ -67,6 +67,7 @@ http calls to AWS Lambda invocations.
 "secretKey": string
 "sessionToken": string
 "roleArn": string
+"disableRoleChaining": bool
 
 ```
 
@@ -78,6 +79,7 @@ http calls to AWS Lambda invocations.
 | `secretKey` | `string` | The secret_key for AWS this cluster. |
 | `sessionToken` | `string` | The session_token for AWS this cluster. |
 | `roleArn` | `string` | The role_arn to use when generating credentials for the mounted projected SA token. |
+| `disableRoleChaining` | `bool` | Optional override to disable role chaining;. |
 
 
 
