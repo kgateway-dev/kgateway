@@ -82,6 +82,8 @@ func (m *AWSLambdaProtocolExtension) Clone() proto.Message {
 
 	target.RoleArn = m.GetRoleArn()
 
+	target.DisableRoleChaining = m.GetDisableRoleChaining()
+
 	return target
 }
 
