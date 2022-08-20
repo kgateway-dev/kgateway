@@ -60,6 +60,8 @@ func (m *UpstreamSpec) Clone() proto.Message {
 
 	target.AwsAccountId = m.GetAwsAccountId()
 
+	target.DisableRoleChaining = m.GetDisableRoleChaining()
+
 	return target
 }
 
