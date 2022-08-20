@@ -27,6 +27,8 @@ spec:
                 properties:
                   awsAccountId:
                     type: string
+                  disableRoleChaining:
+                    type: boolean
                   lambdaFunctions:
                     items:
                       properties:
