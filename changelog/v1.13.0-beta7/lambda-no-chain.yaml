@@ -2,6 +2,8 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: envoy-gloo
     dependencyRepo: solo-io
-    dependencyTag: v1.18.0
+    dependencyTag: v1.23.0-patch3
     description: >-
-      Upgrade envoy-gloo version to handle CVEs https://groups.google.com/g/envoy-announce/c/DGegalK__BA
+      Upgrade envoy-gloo to get lambda metrics,
+      new per upstream no chain options,
+      chained credential hardening.
