@@ -1,0 +1,9 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.23.0-patch3
+    description: >-
+      Upgrade envoy-gloo to get lambda metrics,
+      new per upstream no chain options,
+      chained credential hardening.

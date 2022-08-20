@@ -154,12 +154,13 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	lpe := &AWSLambdaProtocolExtension{
-		Host:         lambdaHostname,
-		Region:       upstreamSpec.Aws.GetRegion(),
-		AccessKey:    accessKey,
-		SecretKey:    secretKey,
-		SessionToken: sessionToken,
-		RoleArn:      upstreamSpec.Aws.GetRoleArn(),
+		Host:                lambdaHostname,
+		Region:              upstreamSpec.Aws.GetRegion(),
+		AccessKey:           accessKey,
+		SecretKey:           secretKey,
+		SessionToken:        sessionToken,
+		RoleArn:             upstreamSpec.Aws.GetRoleArn(),
+		DisableRoleChaining: upstreamSpec.Aws.GetDisableRoleChaining(),
 	}
 
 	if err := pluginutils.SetExtensionProtocolOptions(out, FilterName, lpe); err != nil {

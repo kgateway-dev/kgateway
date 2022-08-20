@@ -68,6 +68,7 @@ var _ = Describe("Plugin", func() {
 						Namespace: "ns",
 						Name:      "secretref",
 					},
+					DisableRoleChaining: true,
 				},
 			},
 		}
@@ -572,6 +573,7 @@ var _ = Describe("Plugin", func() {
 			Expect(lpe.SecretKey).To(Equal(secretKeyValue))
 			Expect(lpe.SessionToken).To(Equal(sessionTokenValue))
 			Expect(lpe.RoleArn).To(Equal(roleArn))
+			Expect(lpe.DisableRoleChaining).To(Equal(true))
 		})
 
 	})

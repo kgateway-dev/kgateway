@@ -25,6 +25,8 @@ spec:
             properties:
               aws:
                 properties:
+                  disableRoleChaining:
+                    type: boolean
                   lambdaFunctions:
                     items:
                       properties:

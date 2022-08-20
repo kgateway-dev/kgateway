@@ -81,6 +81,10 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetDisableRoleChaining() != target.GetDisableRoleChaining() {
+		return false
+	}
+
 	return true
 }
 

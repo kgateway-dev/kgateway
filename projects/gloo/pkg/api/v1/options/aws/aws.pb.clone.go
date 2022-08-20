@@ -58,6 +58,8 @@ func (m *UpstreamSpec) Clone() proto.Message {
 
 	target.RoleArn = m.GetRoleArn()
 
+	target.DisableRoleChaining = m.GetDisableRoleChaining()
+
 	return target
 }
 
