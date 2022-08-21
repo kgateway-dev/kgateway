@@ -4,4 +4,4 @@ changelog:
     resolvesIssue: false
     description: |
       Allow for more easily denoting a seperate account's lambda that is 
-      allowed to be used from a resource policy basis.
+      allowed to be used via a resource policy basis.
