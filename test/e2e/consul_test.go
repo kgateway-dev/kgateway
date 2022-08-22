@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -129,8 +128,6 @@ var _ = Describe("Consul e2e", func() {
 			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		})
 
-		time.Sleep(3 * time.Second)
-
 		By("requests only go to service with tag '1'")
 
 		// Wait for the endpoints to be registered
@@ -153,10 +150,16 @@ var _ = Describe("Consul e2e", func() {
 		err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
 		Expect(err).NotTo(HaveOccurred())
 
-		// Wait a bit for the new endpoint information to propagate
-		time.Sleep(3 * time.Second)
-
 		By("requests are load balanced between the two services")
+
+		// svc2 first to ensure we also still route to svc1 after registering svc2
+		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
+			_, err := queryService()
+			if err != nil {
+				return svc2.C, err
+			}
+			return svc2.C, nil
+		}, "10s", "0.2s").Should(Receive())
 		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
 			_, err := queryService()
 			if err != nil {
@@ -165,13 +168,58 @@ var _ = Describe("Consul e2e", func() {
 			return svc1.C, nil
 		}, "10s", "0.2s").Should(Receive())
 
+	})
+
+	It("resolves eds even if services aren't updated", func() {
+		_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		// Wait for proxy to be accepted
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		})
+
+		By("requests only go to endpoints behind test upstream 1")
+
+		// Wait for the endpoints to be registered
+		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
+			_, err := queryService()
+			if err != nil {
+				return svc1.C, err
+			}
+			return svc1.C, nil
+		}, "20s", "0.2s").Should(Receive())
+		// Service 2 does not match the tags on the route, so we should get only requests from service 1 with test upstream 1 endpoint
+		Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
+			_, err := queryService()
+			if err != nil {
+				return svc1.C, err
+			}
+			return svc1.C, nil
+		}, "2s", "0.2s").Should(Receive())
+
+		// update service one to point to test upstream 2 port
+		err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("requests only go to endpoints behind test upstream 2")
+
+		// ensure EDS picked up this endpoint-only change
 		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
 			_, err := queryService()
 			if err != nil {
 				return svc2.C, err
 			}
 			return svc2.C, nil
-		}, "10s", "0.2s").Should(Receive())
+		}, "20s", "0.2s").Should(Receive())
+		// test upstream 1 endpoint is now stale; should only get requests to endpoints for test upstream 2 for svc1
+		Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
+			_, err := queryService()
+			if err != nil {
+				return svc2.C, err
+			}
+			return svc2.C, nil
+		}, "2s", "0.2s").Should(Receive())
 
 	})
 
@@ -186,8 +234,6 @@ var _ = Describe("Consul e2e", func() {
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		})
-
-		time.Sleep(3 * time.Second)
 
 		// Wait for endpoints to be discovered
 		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {

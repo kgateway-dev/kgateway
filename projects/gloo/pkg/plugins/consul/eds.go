@@ -31,11 +31,10 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 	// Filter out non-consul upstreams
 	trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
-	var previousSpecs []*consulapi.CatalogService
-	var previousHash uint64
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
-			// We generate one upstream for every Consul service name, so this should never happen.
+			// discovery generates one upstream for every Consul service name;
+			// this should only happen if users define duplicate upstreams for a consul service name.
 			trackedServiceToUpstreams[consulUsSpec.GetServiceName()] = append(trackedServiceToUpstreams[consulUsSpec.GetServiceName()], us)
 		}
 	}
@@ -45,8 +44,12 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		return nil, nil, err
 	}
 
-	// based off the comments above from Marco, there should only be one upstream per Consul service name
-	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters, p.consulUpstreamDiscoverySettings.GetConsistencyMode())
+	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(
+		opts.Ctx,
+		dataCenters,
+		p.consulUpstreamDiscoverySettings.GetConsistencyMode(),
+		p.consulUpstreamDiscoverySettings.GetQueryOptions(),
+	)
 
 	errChan := make(chan error)
 	var wg sync.WaitGroup
@@ -62,13 +65,11 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		defer close(endpointsChan)
 		defer wg.Done()
 
-		// Create a new context for each loop, cancel it before each loop
-		var cancel context.CancelFunc = func() {}
-		// Use closure to allow cancel function to be updated as context changes
-		defer func() { cancel() }()
-
 		timer := time.NewTicker(DefaultDnsPollingInterval)
 		defer timer.Stop()
+
+		var previousSpecs []*consulapi.CatalogService
+		var previousHash uint64
 
 		publishEndpoints := func(endpoints v1.EndpointList) bool {
 			if opts.Ctx.Err() != nil {
@@ -89,14 +90,9 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					return
 				}
 
-				// Cancel any running requests from previous iteration and set new context/cancel
-				cancel()
-				ctx, newCancel := context.WithCancel(opts.Ctx)
-				cancel = newCancel
-
 				// Here is where the specs are produced; each resulting spec is a grouping of serviceInstances (aka endpoints)
 				// associated with a single consul service on one datacenter.
-				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
+				specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
 				previousHash = hashutils.MustHash(endpoints)
@@ -107,6 +103,11 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				}
 
 			case <-timer.C:
+				// ensure we have at least one spec to check against; otherwise we risk marking EDS as ready
+				// (by sending endpoints, even an empty list) too early
+				if len(previousSpecs) == 0 {
+					continue
+				}
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
 
@@ -137,20 +138,39 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 // belonging to that service within that datacenter.
 func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta []*consul.ServiceMeta, errChan chan error, serviceToUpstream map[string][]*v1.Upstream) []*consulapi.CatalogService {
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "consul_eds"))
-
 	specs := newSpecCollector()
 
 	// Get complete service information for every dataCenter:service tuple in separate goroutines
 	var eg errgroup.Group
 	for _, service := range serviceMeta {
-		// the default consistency mode
-		cm := glooConsul.UpstreamSpec_ConsistentMode
-		// Based on Marco's comments in WatchEndpoints, there's only be one upstream per Consul service name, so we use its ConsistencyMode
-		if arrayOfConsulUpstreams := serviceToUpstream[service.Name]; len(arrayOfConsulUpstreams) > 0 {
-			consulUpstream := arrayOfConsulUpstreams[0]
-			cm = consulUpstream.GetConsul().GetConsistencyMode()
+		var cm glooConsul.ConsulConsistencyModes
+		var queryOptions *glooConsul.QueryOptions
+		if upstreams, ok := serviceToUpstream[service.Name]; len(upstreams) > 0 && ok {
+			cm = upstreams[0].GetConsul().GetConsistencyMode()
+			queryOptions = upstreams[0].GetConsul().GetQueryOptions()
 		}
-
+		// we take the most consistent mode found on any upstream for a service for correctness
+		for _, consulUpstream := range serviceToUpstream[service.Name] {
+			// prefer earlier more restrictive query type (i.e. consistent > default > stale)
+			switch consulUpstream.GetConsul().GetConsistencyMode() {
+			case glooConsul.ConsulConsistencyModes_ConsistentMode:
+				cm = glooConsul.ConsulConsistencyModes_ConsistentMode
+			case glooConsul.ConsulConsistencyModes_DefaultMode:
+				if cm != glooConsul.ConsulConsistencyModes_ConsistentMode {
+					cm = glooConsul.ConsulConsistencyModes_DefaultMode
+				}
+			case glooConsul.ConsulConsistencyModes_StaleMode:
+				if cm != glooConsul.ConsulConsistencyModes_ConsistentMode && cm != glooConsul.ConsulConsistencyModes_DefaultMode {
+					cm = glooConsul.ConsulConsistencyModes_StaleMode
+				}
+			}
+			if queryOptions := consulUpstream.GetConsul().GetQueryOptions(); queryOptions != nil {
+				// if any upstream can't use cache, disable for all
+				if useCache := queryOptions.GetUseCache(); useCache != nil && !useCache.GetValue() {
+					queryOptions.UseCache = useCache
+				}
+			}
+		}
 		for _, dataCenter := range service.DataCenters {
 			// Copy iterator variables before passing them to goroutines!
 			svc := service
@@ -158,8 +178,12 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 
 			// Get complete spec for each service in parallel
 			eg.Go(func() error {
-				queryOpts := NewConsulQueryOptions(dcName, cm)
-
+				queryOpts := consul.NewConsulCatalogServiceQueryOptions(dcName, cm, queryOptions)
+				if ctx.Err() != nil {
+					// intentionally return early if context is already done
+					// we create a lot of requests; by the time we get here ctx may be done
+					return ctx.Err()
+				}
 				services, _, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
 				if err != nil {
 					return err
@@ -184,15 +208,6 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 		}
 	}
 	return specs.Get()
-}
-
-// NewConsulQueryOptions returns a QueryOptions configuration that's used for Consul queries.
-func NewConsulQueryOptions(dataCenter string, cm glooConsul.UpstreamSpec_ConsulConsistencyModes) *consulapi.QueryOptions {
-	// it can either be requireConsistent or allowStale or neither
-	// choosing the Default Mode will clear both fields
-	requireConsistent := cm == glooConsul.UpstreamSpec_ConsistentMode
-	allowStale := cm == glooConsul.UpstreamSpec_StaleMode
-	return &consulapi.QueryOptions{Datacenter: dataCenter, AllowStale: allowStale, RequireConsistent: requireConsistent}
 }
 
 // build gloo endpoints out of consul catalog services and gloo upstreams

@@ -195,6 +195,12 @@ spec:
                     items:
                       type: string
                     type: array
+                  queryOptions:
+                    properties:
+                      useCache:
+                        nullable: true
+                        type: boolean
+                    type: object
                   serviceName:
                     type: string
                   serviceSpec:
