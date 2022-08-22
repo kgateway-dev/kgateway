@@ -30,8 +30,8 @@ ifneq ($(TEST_ASSET_ID),)
 endif
 
 # ensure we have a valid version from a forked repo, so community users can submit PRs
-ORIGIN_URL := "$(shell git remote get-url origin)"
-UPSTREAM_ORIGIN_URL := "git@github.com:solo-io/gloo.git"
+ORIGIN_URL ?= "$(shell git remote get-url origin)"
+UPSTREAM_ORIGIN_URL ?= "git@github.com:solo-io/gloo.git"
 ifneq ($(ORIGIN_URL),$(UPSTREAM_ORIGIN_URL))
 	VERSION := 0.0.0-fork
 	CREATE_TEST_ASSETS := "false"
