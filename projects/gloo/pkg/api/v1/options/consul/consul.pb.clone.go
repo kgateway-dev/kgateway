@@ -81,6 +81,12 @@ func (m *UpstreamSpec) Clone() proto.Message {
 
 	target.ConsistencyMode = m.GetConsistencyMode()
 
+	if h, ok := interface{}(m.GetQueryOptions()).(clone.Cloner); ok {
+		target.QueryOptions = h.Clone().(*QueryOptions)
+	} else {
+		target.QueryOptions = proto.Clone(m.GetQueryOptions()).(*QueryOptions)
+	}
+
 	target.ConnectEnabled = m.GetConnectEnabled()
 
 	if m.GetDataCenters() != nil {

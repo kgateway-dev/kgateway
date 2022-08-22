@@ -99,7 +99,7 @@ var _ = Describe("Consul EDS", func() {
 
 			consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
 			consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
-			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters, v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsistentMode).Return(serviceMetaProducer, errorProducer).Times(1)
+			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters, consulplugin.ConsulConsistencyModes_DefaultMode, gomock.Any()).Return(serviceMetaProducer, errorProducer).Times(1)
 			testService := createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3456, 100)
 			consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 				func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
@@ -269,7 +269,7 @@ var _ = Describe("Consul EDS", func() {
 
 			consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
 			consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
-			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters, v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsistentMode).Return(serviceMetaProducer, errorProducer).Times(1)
+			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters, consulplugin.ConsulConsistencyModes_DefaultMode, gomock.Any()).Return(serviceMetaProducer, errorProducer).Times(1)
 
 			// The Service function gets always invoked with the same parameters for same service. This makes it
 			// impossible to mock in an idiomatic way. Just use a single match on everything and use the DoAndReturn
