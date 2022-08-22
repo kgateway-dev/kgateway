@@ -16,7 +16,7 @@ on:
 jobs:
   prepare_env:
     name: Prepare Environment
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     outputs:
       should-build-docs: ${{ steps.build-docs.outputs.build_value }}
       should-pass-docs: ${{ steps.build-docs.outputs.pass_value }}
@@ -62,7 +62,7 @@ jobs:
     name: Generate versioned docs site
     needs: prepare_env
     if: needs.prepare_env.outputs.should-build-docs == 'true'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
     - name: Free disk space
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
