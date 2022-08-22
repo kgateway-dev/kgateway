@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/plugin"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"k8s.io/kubernetes/pkg/kubectl/cmd"
+	"k8s.io/kubectl/pkg/cmd"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"

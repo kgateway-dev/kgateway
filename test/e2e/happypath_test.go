@@ -38,8 +38,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	kubecore "k8s.io/kubernetes/pkg/apis/core"
-	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
 var _ = Describe("Happy path", func() {
@@ -438,7 +436,7 @@ var _ = Describe("Happy path", func() {
 						},
 						Subsets: []kubev1.EndpointSubset{{
 							Addresses: []kubev1.EndpointAddress{{
-								IP:       getIpThatsNotLocalhost(envoyInstance),
+								IP:       getNonSpecialIP(envoyInstance),
 								Hostname: "localhost",
 							}},
 							Ports: []kubev1.EndpointPort{{
@@ -621,24 +619,13 @@ func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 	}
 }
 
-func getIpThatsNotLocalhost(instance *services.EnvoyInstance) string {
-	// kubernetes endpoints doesn't like localhost, so we just give it some other local address
-	// from: k8s.io/kubernetes/pkg/apis/core/validation/validation.go
-	/*
-		func validateNonSpecialIP(ipAddress string, fldPath *field.Path) field.ErrorList {
-		        // We disallow some IPs as endpoints or external-ips.  Specifically,
-		        // unspecified and loopback addresses are nonsensical and link-local
-		        // addresses tend to be used for node-centric purposes (e.g. metadata
-		        // service).
-	*/
-
+// getNonSpecialIP returns a non-special IP that Kubernetes will allow in an endpoint.
+func getNonSpecialIP(instance *services.EnvoyInstance) string {
 	if instance.UseDocker {
 		return instance.LocalAddr()
 	}
-
 	ifaces, err := net.Interfaces()
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
 	for _, iface := range ifaces {
 		if iface.Flags&net.FlagLoopback != 0 {
 			continue
@@ -657,33 +644,34 @@ func getIpThatsNotLocalhost(instance *services.EnvoyInstance) string {
 			default:
 				continue
 			}
-
-			// make sure that kubernetes like this endpoint:
-			endpoints := &kubecore.Endpoints{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "validate",
-					Name:      "validate",
-				},
-				Subsets: []kubecore.EndpointSubset{{
-					Addresses: []kubecore.EndpointAddress{{
-						IP:       ip.String(),
-						Hostname: "localhost",
-					}},
-					Ports: []kubecore.EndpointPort{{
-						Port:     int32(5555),
-						Protocol: kubecore.ProtocolTCP,
-					}},
-				}},
+			if isNonSpecialIP(ip) {
+				return ip.String()
 			}
-
-			errs := validation.ValidateEndpoints(endpoints, false)
-			if len(errs) != 0 {
-				continue
-			}
-
-			return ip.String()
 		}
 	}
 	Fail("no ip address available", 1)
 	return ""
+}
+
+// isNonSpecialIP is adapted from ValidateNonSpecialIP in k8s.io/kubernetes/pkg/apis/core/validation/validation.go
+//
+// Specifically disallowed are unspecified, loopback addresses, and link-local addresses
+// which tend to be used for node-centric purposes (e.g. metadata service).
+func isNonSpecialIP(ip net.IP) bool {
+	if ip == nil {
+		return false // must be a valid IP address
+	}
+	if ip.IsUnspecified() {
+		return false // may not be unspecified
+	}
+	if ip.IsLoopback() {
+		return false // may not be in the loopback range (127.0.0.0/8, ::1/128)
+	}
+	if ip.IsLinkLocalUnicast() {
+		return false // may not be in the link-local range (169.254.0.0/16, fe80::/10)
+	}
+	if ip.IsLinkLocalMulticast() {
+		return false // may not be in the link-local multicast range (224.0.0.0/24, ff02::/10)
+	}
+	return true
 }
