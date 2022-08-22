@@ -17,6 +17,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/onsi/gomega/types"
+
 	"github.com/solo-io/gloo/test/v1helpers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -133,35 +135,31 @@ var _ = Describe("tunneling", func() {
 		cancel()
 	})
 
-	testRequest := func(jsonStr string, expectedStatusCode int) string {
-		By("Make request")
-		responseBody := ""
-		EventuallyWithOffset(1, func() error {
+	expectResponseBodyOnRequest := func(requestJsonBody string, expectedResponseStatusCode int, expectedResponseBodyMatcher types.GomegaMatcher) {
+		EventuallyWithOffset(1, func() (string, error) {
 			var client http.Client
 			scheme := "http"
-			var json = []byte(jsonStr)
+			var json = []byte(requestJsonBody)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
 			if err != nil {
-				return err
+				return "", err
 			}
 			res, err := client.Do(req)
 			if err != nil {
-				return err
+				return "", err
 			}
-			if res.StatusCode != expectedStatusCode {
-				return fmt.Errorf("not ok")
+			if res.StatusCode != expectedResponseStatusCode {
+				return "", fmt.Errorf("not ok")
 			}
 			p := new(bytes.Buffer)
 			if _, err := io.Copy(p, res.Body); err != nil {
-				return err
+				return "", err
 			}
 			defer res.Body.Close()
-			responseBody = p.String()
-			return nil
-		}, "10s", "0.5s").Should(BeNil())
-		return responseBody
+			return p.String(), nil
+		}, "10s", "0.5s").Should(expectedResponseBodyMatcher)
 	}
 
 	Context("plaintext", func() {
@@ -178,8 +176,7 @@ var _ = Describe("tunneling", func() {
 			// and back. The HTTP proxy is sending unencrypted HTTP bytes over
 			// TCP to the test upstream (an echo server)
 			jsonStr := `{"value":"Hello, world!"}`
-			testReq := testRequest(jsonStr, http.StatusOK)
-			Expect(testReq).Should(ContainSubstring(jsonStr))
+			expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
 		})
 	})
 
@@ -232,8 +229,7 @@ var _ = Describe("tunneling", func() {
 			It("should proxy plaintext bytes over encrypted HTTP Connect", func() {
 				// the request path here is [envoy] -- encrypted --> [local HTTP Connect proxy] -- plaintext --> TLS upstream
 				jsonStr := `{"value":"Hello, world!"}`
-				testReq := testRequest(jsonStr, http.StatusOK)
-				Expect(testReq).Should(ContainSubstring(jsonStr))
+				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
 			})
 		})
 
@@ -246,8 +242,7 @@ var _ = Describe("tunneling", func() {
 			It("should proxy encrypted bytes over plaintext HTTP Connect", func() {
 				// the request path here is [envoy] -- plaintext --> [local HTTP Connect proxy] -- encrypted --> TLS upstream
 				jsonStr := `{"value":"Hello, world!"}`
-				testReq := testRequest(jsonStr, http.StatusOK)
-				Expect(testReq).Should(ContainSubstring(jsonStr))
+				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
 			})
 		})
 
@@ -261,8 +256,7 @@ var _ = Describe("tunneling", func() {
 			It("should proxy encrypted bytes over encrypted HTTP Connect", func() {
 				// the request path here is [envoy] -- encrypted --> [local HTTP Connect proxy] -- encrypted --> TLS upstream
 				jsonStr := `{"value":"Hello, world!"}`
-				testReq := testRequest(jsonStr, http.StatusOK)
-				Expect(testReq).Should(ContainSubstring(jsonStr))
+				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
 			})
 		})
 	})
@@ -294,8 +288,7 @@ var _ = Describe("tunneling", func() {
 
 			It("should not proxy", func() {
 				jsonStr := `{"value":"Hello, world!"}`
-				testReq := testRequest(jsonStr, http.StatusServiceUnavailable)
-				Expect(testReq).Should(Equal("upstream connect error or disconnect/reset before headers. reset reason: connection termination"))
+				expectResponseBodyOnRequest(jsonStr, http.StatusServiceUnavailable, Equal("upstream connect error or disconnect/reset before headers. reset reason: connection termination"))
 			})
 		})
 
@@ -307,8 +300,7 @@ var _ = Describe("tunneling", func() {
 
 			It("should proxy", func() {
 				jsonStr := `{"value":"Hello, world!"}`
-				testReq := testRequest(jsonStr, http.StatusOK)
-				Expect(testReq).Should(ContainSubstring(jsonStr))
+				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
 			})
 		})
 	})
