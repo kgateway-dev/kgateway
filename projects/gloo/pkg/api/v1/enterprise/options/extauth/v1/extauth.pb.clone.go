@@ -2383,6 +2383,34 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Clone() proto.Message {
 		}
 	}
 
+	switch m.StorageBackend.(type) {
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage:
+
+		if h, ok := interface{}(m.GetK8SSecretApikeyStorage()).(clone.Cloner); ok {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage{
+				K8SSecretApikeyStorage: h.Clone().(*K8SSecretApiKeyStorage),
+			}
+		} else {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage{
+				K8SSecretApikeyStorage: proto.Clone(m.GetK8SSecretApikeyStorage()).(*K8SSecretApiKeyStorage),
+			}
+		}
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage:
+
+		if h, ok := interface{}(m.GetAerospikeApikeyStorage()).(clone.Cloner); ok {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage{
+				AerospikeApikeyStorage: h.Clone().(*AerospikeApiKeyStorage),
+			}
+		} else {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage{
+				AerospikeApikeyStorage: proto.Clone(m.GetAerospikeApikeyStorage()).(*AerospikeApiKeyStorage),
+			}
+		}
+
+	}
+
 	return target
 }
 

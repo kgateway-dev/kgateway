@@ -4017,6 +4017,45 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Equal(that interface{}) bool {
 
 	}
 
+	switch m.StorageBackend.(type) {
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage:
+		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetK8SSecretApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetK8SSecretApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetK8SSecretApikeyStorage(), target.GetK8SSecretApikeyStorage()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage:
+		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAerospikeApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAerospikeApikeyStorage(), target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.StorageBackend != target.StorageBackend {
+			return false
+		}
+	}
+
 	return true
 }
 
