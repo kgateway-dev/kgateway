@@ -7,7 +7,7 @@ on:
 jobs:
   regression_tests:
     name: k8s regression tests
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         # knative support has been deprecated: https://github.com/solo-io/gloo/issues/5707

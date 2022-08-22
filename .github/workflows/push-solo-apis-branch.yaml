@@ -17,7 +17,7 @@ on:
 jobs:
   prepare-env:
     name: Prepare Environment Variables
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     outputs:
       # The tag for the release commit (ie v1.8.0)
       release-tag-name: ${{ steps.release-tag-name.outputs.value }}
@@ -49,7 +49,7 @@ jobs:
       RELEASE_BRANCH: ${{ needs.prepare-env.outputs.release-branch }}
       SOLO_APIS_PREFIX: ${{ needs.prepare-env.outputs.solo-apis-prefix }}
     name: Publish Gloo APIs
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
