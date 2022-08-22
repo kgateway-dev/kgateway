@@ -3,7 +3,7 @@ package consul
 import (
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glooConsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 )
 
 //go:generate mockgen -destination=./mocks/mock_consul_client.go -source consul_client.go
@@ -28,9 +28,9 @@ type ConsulClient interface {
 }
 
 func NewConsulClient(client *consulapi.Client, dataCenters []string) (ConsulClient, error) {
-	dcMap := make(map[string]bool)
+	dcMap := make(map[string]struct{})
 	for _, dc := range dataCenters {
-		dcMap[dc] = true
+		dcMap[dc] = struct{}{}
 	}
 
 	return &consul{
@@ -42,7 +42,7 @@ func NewConsulClient(client *consulapi.Client, dataCenters []string) (ConsulClie
 type consul struct {
 	api *consulapi.Client
 	// Whitelist of data centers to consider when querying the agent
-	dataCenters map[string]bool
+	dataCenters map[string]struct{}
 }
 
 func (c *consul) DataCenters() ([]string, error) {
@@ -100,17 +100,35 @@ func (c *consul) validateDataCenter(dataCenter string) error {
 	}
 
 	// If empty, the Consul client will use the default agent data center, which we should allow
-	if dataCenter != "" && c.dataCenters[dataCenter] == false {
+	if _, ok := c.dataCenters[dataCenter]; dataCenter != "" && ok {
 		return ForbiddenDataCenterErr(dataCenter)
 	}
 	return nil
 }
 
-// NewConsulQueryOptions returns a QueryOptions configuration that's used for Consul queries.
-func NewConsulQueryOptions(dataCenter string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) *consulapi.QueryOptions {
+// NewConsulServicesQueryOptions returns a QueryOptions configuration that's used for Consul queries to /catalog/services
+func NewConsulServicesQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, _ *glooConsul.QueryOptions) *consulapi.QueryOptions {
+	return internalConsulQueryOptions(dataCenter, cm, false) // caching not supported by endpoint
+}
+
+// NewConsulCatalogServiceQueryOptions returns a QueryOptions configuration that's used for Consul queries to /catalog/service/:servicename
+func NewConsulCatalogServiceQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, queryOptions *glooConsul.QueryOptions) *consulapi.QueryOptions {
+	useCache := true
+	if cache := queryOptions.GetUseCache(); cache != nil {
+		useCache = cache.GetValue()
+	}
+	return internalConsulQueryOptions(dataCenter, cm, useCache)
+}
+
+func internalConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, useCache bool) *consulapi.QueryOptions {
 	// it can either be requireConsistent or allowStale or neither
-	// currently choosing Default Mode will clear both fields
-	requireConsistent := cm == v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsistentMode
-	allowStale := cm == v1.Settings_ConsulUpstreamDiscoveryConfiguration_StaleMode
-	return &consulapi.QueryOptions{Datacenter: dataCenter, RequireConsistent: requireConsistent, AllowStale: allowStale}
+	// choosing the Default Mode will clear both fields
+	requireConsistent := cm == glooConsul.ConsulConsistencyModes_ConsistentMode
+	allowStale := cm == glooConsul.ConsulConsistencyModes_StaleMode
+	return &consulapi.QueryOptions{
+		Datacenter:        dataCenter,
+		AllowStale:        allowStale,
+		RequireConsistent: requireConsistent,
+		UseCache:          useCache,
+	}
 }
