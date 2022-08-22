@@ -25,8 +25,8 @@ type ConsulWatcher interface {
 	WatchServices(ctx context.Context, dataCenters []string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error)
 }
 
-func NewConsulWatcher(client *consulapi.Client, dataCenters []string) (ConsulWatcher, error) {
-	clientWrapper, err := NewConsulClient(client, dataCenters)
+func NewConsulWatcher(client *consulapi.Client, dataCenters []string, serviceTagsAllowlist []string) (ConsulWatcher, error) {
+	clientWrapper, err := NewConsulClient(client, dataCenters, serviceTagsAllowlist)
 	if err != nil {
 		return nil, err
 	}

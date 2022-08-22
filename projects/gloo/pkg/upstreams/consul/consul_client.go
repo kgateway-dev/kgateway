@@ -4,6 +4,7 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
 	glooConsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
+	"k8s.io/utils/strings/slices"
 )
 
 //go:generate mockgen -destination=./mocks/mock_consul_client.go -source consul_client.go
@@ -27,7 +28,7 @@ type ConsulClient interface {
 	Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error)
 }
 
-func NewConsulClient(client *consulapi.Client, dataCenters []string) (ConsulClient, error) {
+func NewConsulClient(client *consulapi.Client, dataCenters []string, serviceTagsAllowlist []string) (ConsulClient, error) {
 	dcMap := make(map[string]struct{})
 	for _, dc := range dataCenters {
 		dcMap[dc] = struct{}{}
@@ -36,6 +37,7 @@ func NewConsulClient(client *consulapi.Client, dataCenters []string) (ConsulClie
 	return &consul{
 		api:         client,
 		dataCenters: dcMap,
+		serviceTags: serviceTagsAllowlist,
 	}, nil
 }
 
@@ -43,6 +45,7 @@ type consul struct {
 	api *consulapi.Client
 	// Whitelist of data centers to consider when querying the agent
 	dataCenters map[string]struct{}
+	serviceTags []string
 }
 
 func (c *consul) DataCenters() ([]string, error) {
@@ -50,14 +53,16 @@ func (c *consul) DataCenters() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c.filter(dc), nil
+	return c.filterDataCenters(dc), nil
 }
 
 func (c *consul) Services(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error) {
 	if err := c.validateDataCenter(q.Datacenter); err != nil {
 		return nil, nil, err
 	}
-	return c.api.Catalog().Services(q)
+	services, queryMeta, err := c.api.Catalog().Services(q)
+	services = c.filterServices(services)
+	return services, queryMeta, err
 }
 
 func (c *consul) Service(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
@@ -75,7 +80,7 @@ func (c *consul) Connect(service, tag string, q *consulapi.QueryOptions) ([]*con
 }
 
 // Filters out the data centers not listed in the config
-func (c *consul) filter(dataCenters []string) []string {
+func (c *consul) filterDataCenters(dataCenters []string) []string {
 
 	// If empty, all are allowed
 	if len(c.dataCenters) == 0 {
@@ -89,6 +94,31 @@ func (c *consul) filter(dataCenters []string) []string {
 		}
 	}
 	return filtered
+}
+
+// Filters out the services that do not have matching tags from the service_tags_allowlist
+//input from services is a map of service name to slice of tags
+func (c *consul) filterServices(services map[string][]string) map[string][]string {
+
+	var outputServices map[string][]string
+	for serviceName, serviceTags := range services {
+		tagFound := false
+		if c.serviceTags == nil || len(c.serviceTags) == 0 {
+			tagFound = true
+		}
+		for _, tag := range serviceTags {
+			if tagFound {
+				//if tag has been found we are filtered in and no longer need to check other tags
+				break
+			}
+			tagFound = slices.Contains(c.serviceTags, tag)
+		}
+
+		if tagFound {
+			outputServices[serviceName] = serviceTags
+		}
+	}
+	return outputServices
 }
 
 // Checks whether we are allowed to query the given data center

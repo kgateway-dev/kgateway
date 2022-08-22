@@ -28,14 +28,14 @@ import (
 var _ = Describe("Consul e2e", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		consulInstance *services.ConsulInstance
-		envoyInstance  *services.EnvoyInstance
-		envoyPort      uint32
-		svc1, svc2     *v1helpers.TestUpstream
-		err            error
+		ctx              context.Context
+		cancel           context.CancelFunc
+		testClients      services.TestClients
+		consulInstance   *services.ConsulInstance
+		envoyInstance    *services.EnvoyInstance
+		envoyPort        uint32
+		svc1, svc2, svc3 *v1helpers.TestUpstream
+		err              error
 	)
 
 	const writeNamespace = defaults.GlooSystem
@@ -75,7 +75,7 @@ var _ = Describe("Consul e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Start Gloo
-		consulClient, err := consul.NewConsulWatcher(client, nil)
+		consulClient, err := consul.NewConsulWatcher(client, nil, nil)
 		Expect(err).NotTo(HaveOccurred())
 
 		ro := &services.RunOptions{
@@ -85,6 +85,14 @@ var _ = Describe("Consul e2e", func() {
 				DisableGateway: true,
 				DisableUds:     true,
 				DisableFds:     true,
+			},
+			Settings: &gloov1.Settings{
+				ConsulDiscovery: &gloov1.Settings_ConsulUpstreamDiscoveryConfiguration{
+					ServiceTagsAllowlist: []string{
+						"1",
+						"2",
+					},
+				},
 			},
 			ConsulClient:     consulClient,
 			ConsulDnsAddress: consul2.DefaultDnsAddress,
@@ -102,11 +110,15 @@ var _ = Describe("Consul e2e", func() {
 		// Run two simple web applications locally
 		svc1 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-1")
 		svc2 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-2")
+		svc3 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-3")
 
 		// Register services with consul
 		err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1.Port)
 		Expect(err).NotTo(HaveOccurred())
 		err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "2"}, svc2.Port)
+		Expect(err).NotTo(HaveOccurred())
+		//we should not discover this service as it will be filtered out
+		err = consulInstance.RegisterService("my-svc-1", "my-svc-3", envoyInstance.GlooAddr, []string{"svc", "3"}, svc3.Port)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -119,7 +131,7 @@ var _ = Describe("Consul e2e", func() {
 		cancel()
 	})
 
-	It("works as expected", func() {
+	FIt("works as expected", func() {
 		_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
