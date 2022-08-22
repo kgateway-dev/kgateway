@@ -16,7 +16,7 @@ on:
 jobs:
   build:
     name: Generate versioned docs site
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
     - name: Free disk space
       run: |
