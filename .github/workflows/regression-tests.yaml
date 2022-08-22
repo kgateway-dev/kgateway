@@ -7,7 +7,7 @@ on:
 jobs:
   prepare_env:
     name: Prepare Environment
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     outputs:
       should-run-regression-tests: ${{ steps.regression-tests.outputs.run_value }}
       should-pass-regression-tests: ${{ steps.regression-tests.outputs.pass_value }}
@@ -58,7 +58,7 @@ jobs:
     name: k8s regression tests
     needs: prepare_env
     if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         # knative support has been deprecated: https://github.com/solo-io/gloo/issues/5707
