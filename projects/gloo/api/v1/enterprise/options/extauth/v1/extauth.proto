@@ -1372,6 +1372,12 @@ message ExtAuthConfig {
         // Each entry represents a header to add: the key is the name of the header, and the
         // value is the key that will be used to look up the data entry in the key metadata.
         map<string, string> headers_from_key_metadata = 3;
+
+        oneof storage_backend {
+            K8sSecretApiKeyStorage k8s_secret_apikey_storage = 4;
+            AerospikeApiKeyStorage aerospike_apikey_storage = 5;
+        }
+
     }
 
     message OpaAuthConfig {
