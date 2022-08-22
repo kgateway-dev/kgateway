@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5859
+    description: Add HTTPConnect headers to Upstream to support Proxy-Authorization header.

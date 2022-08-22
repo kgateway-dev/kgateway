@@ -29,6 +29,14 @@ ifneq ($(TEST_ASSET_ID),)
 	CREATE_TEST_ASSETS := "true"
 endif
 
+# ensure we have a valid version from a forked repo, so community users can submit PRs
+ORIGIN_URL := "$(shell git remote get-url origin)"
+UPSTREAM_ORIGIN_URL := "git@github.com:solo-io/gloo.git"
+ifneq ($(ORIGIN_URL),$(UPSTREAM_ORIGIN_URL))
+	VERSION := 0.0.0-fork
+	CREATE_TEST_ASSETS := "false"
+endif
+
 # If TAGGED_VERSION does not exist, this is not a release in CI
 ifeq ($(TAGGED_VERSION),)
 	# If we want to create test assets, set version to be PR-unique rather than commit-unique for charts and images
