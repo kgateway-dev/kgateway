@@ -96,7 +96,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 	errMsg := "didn't say the magic word"
 
-	DescribeTable("processes admission requests with auto-accept validator", func(expectAllowed bool, crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
+	DescribeTable("processes admission requests with auto-accept validator", func(crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
 		reviewRequest := makeReviewRequest(srv.URL, crd, gvk, op, resourceOrRef)
 		res, err := srv.Client().Do(reviewRequest)
 		Expect(err).NotTo(HaveOccurred())
@@ -105,28 +105,21 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(review.Response).NotTo(BeNil())
 
-		if expectAllowed {
-			Expect(review.Response.Allowed).To(BeTrue())
-			Expect(review.Proxies).To(BeEmpty())
-		} else {
-			Expect(review.Response.Allowed).To(BeFalse())
-			Expect(review.Response.Result).NotTo(BeNil())
-			Expect(review.Response.Result.Message).To(ContainSubstring(errMsg))
-			Expect(review.Proxies).To(BeEmpty())
-		}
+		Expect(review.Response.Allowed).To(BeTrue())
+		Expect(review.Proxies).To(BeEmpty())
 	},
-		Entry("gateway, accepted", true, v1.GatewayCrd, v1.GatewayCrd.GroupVersionKind(), v1beta1.Create, gateway),
-		Entry("virtual service, accepted", true, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Create, vs),
-		Entry("virtual service deletion, accepted", true, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Delete, vs.GetMetadata().Ref()),
-		Entry("route table, accepted", true, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable),
-		Entry("route table deletion, accepted", true, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Delete, routeTable.GetMetadata().Ref()),
-		Entry("unstructured list, accepted", true, nil, ListGVK, v1beta1.Create, unstructuredList),
-		Entry("upstream, accepted", true, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
-		Entry("upstream deletion, accepted", true, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
-		Entry("secret deletion, accepted", true, gloov1.SecretCrd, gloov1.SecretCrd.GroupVersionKind(), v1beta1.Delete, secret.GetMetadata().Ref()),
+		Entry("gateway, accepted", v1.GatewayCrd, v1.GatewayCrd.GroupVersionKind(), v1beta1.Create, gateway),
+		Entry("virtual service, accepted", v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Create, vs),
+		Entry("virtual service deletion, accepted", v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Delete, vs.GetMetadata().Ref()),
+		Entry("route table, accepted", v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable),
+		Entry("route table deletion, accepted", v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Delete, routeTable.GetMetadata().Ref()),
+		Entry("unstructured list, accepted", nil, ListGVK, v1beta1.Create, unstructuredList),
+		Entry("upstream, accepted", gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
+		Entry("upstream deletion, accepted", gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
+		Entry("secret deletion, accepted", gloov1.SecretCrd, gloov1.SecretCrd.GroupVersionKind(), v1beta1.Delete, secret.GetMetadata().Ref()),
 	)
 
-	DescribeTable("processes admission requests with auto-fail validator", func(expectAllowed bool, crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
+	DescribeTable("processes admission requests with auto-fail validator", func(crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
 		mv.fValidateList = func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*validation.Reports, *multierror.Error) {
 			return reports(), &multierror.Error{Errors: []error{fmt.Errorf(errMsg)}}
 		}
@@ -164,25 +157,21 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(review.Response).NotTo(BeNil())
 
-		if expectAllowed {
-			Expect(review.Response.Allowed).To(BeTrue())
-			Expect(review.Proxies).To(BeEmpty())
-		} else {
-			Expect(review.Response.Allowed).To(BeFalse())
-			Expect(review.Response.Result).NotTo(BeNil())
-			Expect(review.Response.Result.Message).To(ContainSubstring(errMsg))
-			Expect(review.Proxies).To(BeEmpty())
-		}
+		Expect(review.Response.Allowed).To(BeFalse())
+		Expect(review.Response.Result).NotTo(BeNil())
+		Expect(review.Response.Result.Message).To(ContainSubstring(errMsg))
+		Expect(review.Proxies).To(BeEmpty())
+
 	},
-		Entry("gateway, rejected", false, v1.GatewayCrd, v1.GatewayCrd.GroupVersionKind(), v1beta1.Create, gateway),
-		Entry("virtual service, rejected", false, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Create, vs),
-		Entry("virtual service deletion, rejected", false, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Delete, vs.GetMetadata().Ref()),
-		Entry("route table, rejected", false, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable),
-		Entry("route table deletion, rejected", false, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Delete, routeTable.GetMetadata().Ref()),
-		Entry("unstructured list, rejected", false, nil, ListGVK, v1beta1.Create, unstructuredList),
-		Entry("upstream, rejected", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
-		Entry("upstream deletion, rejected", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
-		Entry("secret deletion, rejected", false, gloov1.SecretCrd, gloov1.SecretCrd.GroupVersionKind(), v1beta1.Delete, secret.GetMetadata().Ref()),
+		Entry("gateway, rejected", v1.GatewayCrd, v1.GatewayCrd.GroupVersionKind(), v1beta1.Create, gateway),
+		Entry("virtual service, rejected", v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Create, vs),
+		Entry("virtual service deletion, rejected", v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Delete, vs.GetMetadata().Ref()),
+		Entry("route table, rejected", v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable),
+		Entry("route table deletion, rejected", v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Delete, routeTable.GetMetadata().Ref()),
+		Entry("unstructured list, rejected", nil, ListGVK, v1beta1.Create, unstructuredList),
+		Entry("upstream, rejected", gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
+		Entry("upstream deletion, rejected", gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
+		Entry("secret deletion, rejected", gloov1.SecretCrd, gloov1.SecretCrd.GroupVersionKind(), v1beta1.Delete, secret.GetMetadata().Ref()),
 	)
 
 	DescribeTable("processes status updates with auto-fail validator", func(expectAllowed bool, crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resource resources.InputResource) {
