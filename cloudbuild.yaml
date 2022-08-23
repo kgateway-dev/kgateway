@@ -100,10 +100,28 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'TAGGED_VERSION=$TAG_NAME'
   dir: *dir
-  args: ['run-tests']
+  args: ['print-UPSTREAM_ORIGIN_URL']
   waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials', 'install-go-tools']
   secretEnv: ['AWS_ARN_ROLE_1', "AWS_ROLE_ARN_STS", "JWT_PRIVATE_KEY"]
   id: 'test'
+
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.24'
+  entrypoint: make
+  env:
+  - 'ACK_GINKGO_RC=true'
+  - 'ACK_GINKGO_DEPRECATIONS=1.16.5'
+  - 'ENVOY_BINARY=/workspace/envoy'
+  - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
+  - 'RUN_KUBE_TESTS=1'
+  - 'RUN_CONSUL_TESTS=1'
+  - 'RUN_VAULT_TESTS=1'
+  - 'DOCKER_CONFIG=/workspace/.docker/'
+  - 'TAGGED_VERSION=$TAG_NAME'
+  dir: *dir
+  args: ['print-ORIGIN_URL']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials', 'install-go-tools']
+  secretEnv: ['AWS_ARN_ROLE_1', "AWS_ROLE_ARN_STS", "JWT_PRIVATE_KEY"]
+  id: 'test2'
 
 # Log into quay.io
 - name: 'gcr.io/cloud-builders/docker'
