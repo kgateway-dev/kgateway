@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issuelink: https://github.com/solo-io/gloo/issues/6941
+    resolvesIssue: false
+    description: |
+      Allow for more easily denoting a seperate account's lambda that is 
+      allowed to be used via a resource policy basis.
