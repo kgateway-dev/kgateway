@@ -5,16 +5,12 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"time"
-
-	"github.com/solo-io/go-utils/hashutils"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-
-	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -462,12 +458,12 @@ func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []
 }
 func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
 	var (
-		gw      gwv1.Gateway
-		reports *validation.Reports
-		err     error
+		gw, oldGw gwv1.Gateway
+		reports   *validation.Reports
+		err       error
 	)
 
-	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &gw)
+	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &gw, &oldGw)
 	if shouldValidateErr != nil {
 		return nil, &multierror.Error{Errors: []error{shouldValidateErr}}
 	}
@@ -483,12 +479,12 @@ func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, admissi
 
 func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
 	var (
-		vs      gwv1.VirtualService
-		reports *validation.Reports
-		err     error
+		vs, oldVs gwv1.VirtualService
+		reports   *validation.Reports
+		err       error
 	)
 
-	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &vs)
+	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &vs, &oldVs)
 	if shouldValidateErr != nil {
 		return nil, &multierror.Error{Errors: []error{shouldValidateErr}}
 	}
@@ -504,12 +500,12 @@ func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, 
 
 func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
 	var (
-		rt      gwv1.RouteTable
-		reports *validation.Reports
-		err     error
+		rt, oldRt gwv1.RouteTable
+		reports   *validation.Reports
+		err       error
 	)
 
-	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &rt)
+	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &rt, &oldRt)
 	if shouldValidateErr != nil {
 		return nil, &multierror.Error{Errors: []error{shouldValidateErr}}
 	}
@@ -525,12 +521,12 @@ func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, admi
 
 func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
 	var (
-		us      gloov1.Upstream
-		reports *validation.Reports
-		err     error
+		us, oldUs gloov1.Upstream
+		reports   *validation.Reports
+		err       error
 	)
 
-	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &us)
+	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &us, &oldUs)
 	if shouldValidateErr != nil {
 		return nil, &multierror.Error{Errors: []error{shouldValidateErr}}
 	}
@@ -544,7 +540,13 @@ func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, admiss
 	return reports, nil
 }
 
-func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest, resource resources.InputResource) (bool, error) {
+type HashableInputResource interface {
+	resources.InputResource
+	Hash(hasher hash.Hash64) (uint64, error)
+	MustHash() uint64
+}
+
+func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest, resource, oldResource HashableInputResource) (bool, error) {
 	logger := contextutils.LoggerFrom(ctx)
 
 	if err := protoutils.UnmarshalResource(admissionRequest.Object.Raw, resource); err != nil {
@@ -561,20 +563,12 @@ func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, 
 
 	// For update requests, we check to see if this is a status update
 	// If it is, we do not need to validate the resource
-	var newResource, oldResource crdv1.Resource
-	if err := json.Unmarshal(admissionRequest.Object.Raw, &newResource); err != nil {
-		return false, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
-	}
-	if err := json.Unmarshal(admissionRequest.OldObject.Raw, &oldResource); err != nil {
+	if err := protoutils.UnmarshalResource(admissionRequest.OldObject.Raw, oldResource); err != nil {
 		return false, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
 
-	newMetadata := kubeutils.FromKubeMeta(newResource.ObjectMeta, true)
-	oldMetadata := kubeutils.FromKubeMeta(oldResource.ObjectMeta, true)
-
-	equalSpec := hashutils.MustHash(newResource.Spec) == hashutils.MustHash(oldResource.Spec)
-	equalMetadata := hashutils.MustHash(newMetadata) == hashutils.MustHash(oldMetadata)
-	if equalSpec && equalMetadata {
+	equalResources := resource.MustHash() == oldResource.MustHash()
+	if equalResources {
 		logger.Debugf("Skipping validation. Reason: status only update")
 		return false, nil
 	}
