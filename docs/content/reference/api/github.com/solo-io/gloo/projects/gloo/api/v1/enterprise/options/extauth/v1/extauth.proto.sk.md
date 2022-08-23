@@ -42,6 +42,7 @@ weight: 5
 - [EndSessionProperties](#endsessionproperties)
 - [MethodType](#methodtype)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
+- [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
 - [LocalJwks](#localjwks)
@@ -461,13 +462,15 @@ Deprecated: Prefer OAuth2
 ```yaml
 "oidcAuthorizationCode": .enterprise.gloo.solo.io.OidcAuthorizationCode
 "accessTokenValidation": .enterprise.gloo.solo.io.AccessTokenValidation
+"plainOauth2": .enterprise.gloo.solo.io.PlainOAuth2
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.OidcAuthorizationCode](../extauth.proto.sk/#oidcauthorizationcode) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode` or `accessTokenValidation` can be set. |
-| `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidation` or `oidcAuthorizationCode` can be set. |
+| `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.OidcAuthorizationCode](../extauth.proto.sk/#oidcauthorizationcode) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode`, `accessTokenValidation`, or `plainOauth2` can be set. |
+| `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidation`, `oidcAuthorizationCode`, or `plainOauth2` can be set. |
+| `plainOauth2` | [.enterprise.gloo.solo.io.PlainOAuth2](../extauth.proto.sk/#plainoauth2) | todo (fabian) description Prefer to use OIDC for better security. Only one of `plainOauth2`, `oidcAuthorizationCode`, or `accessTokenValidation` can be set. |
 
 
 
@@ -767,6 +770,59 @@ The Method used to make the request.
 
 ---
 ### OidcAuthorizationCode
+
+
+
+```yaml
+"clientId": string
+"clientSecretRef": .core.solo.io.ResourceRef
+"issuerUrl": string
+"authEndpointQueryParams": map<string, string>
+"tokenEndpointQueryParams": map<string, string>
+"appUrl": string
+"callbackPath": string
+"logoutPath": string
+"afterLogoutUrl": string
+"scopes": []string
+"session": .enterprise.gloo.solo.io.UserSession
+"headers": .enterprise.gloo.solo.io.HeaderConfiguration
+"discoveryOverride": .enterprise.gloo.solo.io.DiscoveryOverride
+"discoveryPollInterval": .google.protobuf.Duration
+"jwksCacheRefreshPolicy": .enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy
+"sessionIdHeaderName": string
+"parseCallbackPathAsRegex": bool
+"autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
+"endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientId` | `string` | your client id as registered with the issuer. |
+| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |
+| `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration". |
+| `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
+| `tokenEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's token request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
+| `appUrl` | `string` | where to redirect after successful auth, if we can't determine the original url. this should be your publicly available app url. |
+| `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. should not be used by the application. |
+| `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OIDC session. should not be used by the application. If not provided, logout functionality will be disabled. |
+| `afterLogoutUrl` | `string` | url to redirect to after logout. This should be a publicly available URL. If not provided, will default to the `app_url`. |
+| `scopes` | `[]string` | Scopes to request in addition to openid scope. |
+| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |
+| `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |
+| `discoveryOverride` | [.enterprise.gloo.solo.io.DiscoveryOverride](../extauth.proto.sk/#discoveryoverride) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The discovery override defines any properties that should override this discovery configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system issuer_url: https://accounts.google.com discovery_override: token_endpoint: "https://token.url/gettoken" ``` And this will ensure that regardless of what value is discovered at <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint. |
+| `discoveryPollInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes. |
+| `jwksCacheRefreshPolicy` | [.enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy](../extauth.proto.sk/#jwksondemandcacherefreshpolicy) | If a user executes a request with a key that is not found in the JWKS, it could be that the keys have rotated on the remote source, and not yet in the local cache. This policy lets you define the behavior for how to refresh the local cache during a request where an invalid key is provided. |
+| `sessionIdHeaderName` | `string` | If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
+| `parseCallbackPathAsRegex` | `bool` | If set, CallbackPath will be evaluated as a regular expression. |
+| `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
+| `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
+
+
+
+
+---
+### PlainOAuth2
 
 
 

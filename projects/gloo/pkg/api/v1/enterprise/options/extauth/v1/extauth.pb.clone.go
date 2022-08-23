@@ -389,6 +389,18 @@ func (m *OAuth2) Clone() proto.Message {
 			}
 		}
 
+	case *OAuth2_PlainOauth2:
+
+		if h, ok := interface{}(m.GetPlainOauth2()).(clone.Cloner); ok {
+			target.OauthType = &OAuth2_PlainOauth2{
+				PlainOauth2: h.Clone().(*PlainOAuth2),
+			}
+		} else {
+			target.OauthType = &OAuth2_PlainOauth2{
+				PlainOauth2: proto.Clone(m.GetPlainOauth2()).(*PlainOAuth2),
+			}
+		}
+
 	}
 
 	return target
@@ -636,6 +648,108 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 		return target
 	}
 	target = &OidcAuthorizationCode{}
+
+	target.ClientId = m.GetClientId()
+
+	if h, ok := interface{}(m.GetClientSecretRef()).(clone.Cloner); ok {
+		target.ClientSecretRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.ClientSecretRef = proto.Clone(m.GetClientSecretRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	target.IssuerUrl = m.GetIssuerUrl()
+
+	if m.GetAuthEndpointQueryParams() != nil {
+		target.AuthEndpointQueryParams = make(map[string]string, len(m.GetAuthEndpointQueryParams()))
+		for k, v := range m.GetAuthEndpointQueryParams() {
+
+			target.AuthEndpointQueryParams[k] = v
+
+		}
+	}
+
+	if m.GetTokenEndpointQueryParams() != nil {
+		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
+		for k, v := range m.GetTokenEndpointQueryParams() {
+
+			target.TokenEndpointQueryParams[k] = v
+
+		}
+	}
+
+	target.AppUrl = m.GetAppUrl()
+
+	target.CallbackPath = m.GetCallbackPath()
+
+	target.LogoutPath = m.GetLogoutPath()
+
+	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
+
+	if m.GetScopes() != nil {
+		target.Scopes = make([]string, len(m.GetScopes()))
+		for idx, v := range m.GetScopes() {
+
+			target.Scopes[idx] = v
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetSession()).(clone.Cloner); ok {
+		target.Session = h.Clone().(*UserSession)
+	} else {
+		target.Session = proto.Clone(m.GetSession()).(*UserSession)
+	}
+
+	if h, ok := interface{}(m.GetHeaders()).(clone.Cloner); ok {
+		target.Headers = h.Clone().(*HeaderConfiguration)
+	} else {
+		target.Headers = proto.Clone(m.GetHeaders()).(*HeaderConfiguration)
+	}
+
+	if h, ok := interface{}(m.GetDiscoveryOverride()).(clone.Cloner); ok {
+		target.DiscoveryOverride = h.Clone().(*DiscoveryOverride)
+	} else {
+		target.DiscoveryOverride = proto.Clone(m.GetDiscoveryOverride()).(*DiscoveryOverride)
+	}
+
+	if h, ok := interface{}(m.GetDiscoveryPollInterval()).(clone.Cloner); ok {
+		target.DiscoveryPollInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.DiscoveryPollInterval = proto.Clone(m.GetDiscoveryPollInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetJwksCacheRefreshPolicy()).(clone.Cloner); ok {
+		target.JwksCacheRefreshPolicy = h.Clone().(*JwksOnDemandCacheRefreshPolicy)
+	} else {
+		target.JwksCacheRefreshPolicy = proto.Clone(m.GetJwksCacheRefreshPolicy()).(*JwksOnDemandCacheRefreshPolicy)
+	}
+
+	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
+
+	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
+
+	if h, ok := interface{}(m.GetAutoMapFromMetadata()).(clone.Cloner); ok {
+		target.AutoMapFromMetadata = h.Clone().(*AutoMapFromMetadata)
+	} else {
+		target.AutoMapFromMetadata = proto.Clone(m.GetAutoMapFromMetadata()).(*AutoMapFromMetadata)
+	}
+
+	if h, ok := interface{}(m.GetEndSessionProperties()).(clone.Cloner); ok {
+		target.EndSessionProperties = h.Clone().(*EndSessionProperties)
+	} else {
+		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *PlainOAuth2) Clone() proto.Message {
+	var target *PlainOAuth2
+	if m == nil {
+		return target
+	}
+	target = &PlainOAuth2{}
 
 	target.ClientId = m.GetClientId()
 

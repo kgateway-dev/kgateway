@@ -362,6 +362,182 @@ spec:
                                 type: string
                               type: object
                           type: object
+                        plainOauth2:
+                          properties:
+                            afterLogoutUrl:
+                              type: string
+                            appUrl:
+                              type: string
+                            authEndpointQueryParams:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            autoMapFromMetadata:
+                              properties:
+                                namespace:
+                                  type: string
+                              type: object
+                            callbackPath:
+                              type: string
+                            clientId:
+                              type: string
+                            clientSecretRef:
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                            discoveryOverride:
+                              properties:
+                                authEndpoint:
+                                  type: string
+                                authMethods:
+                                  items:
+                                    type: string
+                                  type: array
+                                claims:
+                                  items:
+                                    type: string
+                                  type: array
+                                endSessionEndpoint:
+                                  type: string
+                                idTokenAlgs:
+                                  items:
+                                    type: string
+                                  type: array
+                                jwksUri:
+                                  type: string
+                                responseTypes:
+                                  items:
+                                    type: string
+                                  type: array
+                                revocationEndpoint:
+                                  type: string
+                                scopes:
+                                  items:
+                                    type: string
+                                  type: array
+                                subjects:
+                                  items:
+                                    type: string
+                                  type: array
+                                tokenEndpoint:
+                                  type: string
+                              type: object
+                            discoveryPollInterval:
+                              type: string
+                            endSessionProperties:
+                              properties:
+                                methodType:
+                                  type: string
+                                  x-kubernetes-int-or-string: true
+                              type: object
+                            headers:
+                              properties:
+                                accessTokenHeader:
+                                  type: string
+                                idTokenHeader:
+                                  type: string
+                                useBearerSchemaForAuthorization:
+                                  nullable: true
+                                  type: boolean
+                              type: object
+                            issuerUrl:
+                              type: string
+                            jwksCacheRefreshPolicy:
+                              properties:
+                                always:
+                                  maxProperties: 0
+                                  type: object
+                                maxIdpReqPerPollingInterval:
+                                  format: int32
+                                  type: integer
+                                never:
+                                  maxProperties: 0
+                                  type: object
+                              type: object
+                            logoutPath:
+                              type: string
+                            parseCallbackPathAsRegex:
+                              type: boolean
+                            scopes:
+                              items:
+                                type: string
+                              type: array
+                            session:
+                              properties:
+                                cookie:
+                                  properties:
+                                    allowRefreshing:
+                                      nullable: true
+                                      type: boolean
+                                    keyPrefix:
+                                      type: string
+                                    targetDomain:
+                                      type: string
+                                  type: object
+                                cookieOptions:
+                                  properties:
+                                    domain:
+                                      type: string
+                                    httpOnly:
+                                      nullable: true
+                                      type: boolean
+                                    maxAge:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
+                                      type: integer
+                                    notSecure:
+                                      type: boolean
+                                    path:
+                                      nullable: true
+                                      type: string
+                                    sameSite:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                  type: object
+                                failOnFetchFailure:
+                                  type: boolean
+                                redis:
+                                  properties:
+                                    allowRefreshing:
+                                      nullable: true
+                                      type: boolean
+                                    cookieName:
+                                      type: string
+                                    keyPrefix:
+                                      type: string
+                                    options:
+                                      properties:
+                                        db:
+                                          format: int32
+                                          type: integer
+                                        host:
+                                          type: string
+                                        poolSize:
+                                          format: int32
+                                          type: integer
+                                        socketType:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        tlsCertMountPath:
+                                          type: string
+                                      type: object
+                                    preExpiryBuffer:
+                                      type: string
+                                    targetDomain:
+                                      type: string
+                                  type: object
+                              type: object
+                            sessionIdHeaderName:
+                              type: string
+                            tokenEndpointQueryParams:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
                       type: object
                     opaAuth:
                       properties:
