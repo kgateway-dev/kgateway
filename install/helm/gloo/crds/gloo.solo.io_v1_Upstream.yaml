@@ -195,6 +195,12 @@ spec:
                     items:
                       type: string
                     type: array
+                  queryOptions:
+                    properties:
+                      useCache:
+                        nullable: true
+                        type: boolean
+                    type: object
                   serviceName:
                     type: string
                   serviceSpec:
@@ -600,6 +606,15 @@ spec:
                       minimum: 0
                       nullable: true
                       type: integer
+                  type: object
+                type: array
+              httpConnectHeaders:
+                items:
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
                   type: object
                 type: array
               httpConnectSslConfig:
