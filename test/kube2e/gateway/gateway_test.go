@@ -2297,7 +2297,7 @@ spec:
 			Context("gloo", func() {
 
 				var (
-					// ValidationOpts of Gloo resources requires that a Proxy resource exist
+					// Validation of Gloo resources requires that a Proxy resource exist
 					// Therefore, before the tests start, we must create valid resources that produce a Proxy
 					placeholderVs *gatewayv1.VirtualService
 				)
@@ -2361,6 +2361,7 @@ spec:
 				})
 
 			})
+
 		})
 
 		It("rejects invalid inja template in transformation", func() {
