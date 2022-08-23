@@ -2,9 +2,9 @@ package consul
 
 import (
 	"context"
-	"fmt"
-	"strings"
+	"time"
 
+	"github.com/avast/retry-go"
 	consulapi "github.com/hashicorp/consul/api"
 	glooconsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/go-utils/errutils"
@@ -129,7 +129,6 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 		for {
 			select {
 			case <-ctx.Done():
-				fmt.Printf("KDOROSH123 ctx.Done() dataCenter: %v\n", dataCenter)
 				return
 			default:
 
@@ -144,54 +143,25 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 				queryOpts.WaitIndex = lastIndex
 
 				ctxDead := false
-				if lastIndex > 0 && strings.Contains(fmt.Sprintf("%v", ctx), "span") {
-					fmt.Printf("KDorosh")
-				}
 
-				if strings.Contains(fmt.Sprintf("%v", ctx), "span") {
-					fmt.Printf("KDorosh")
-				}
-
-				var err error
-				services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
-				fmt.Printf("KDOROSH123 queryMeta %+v\n", queryMeta)
-				for _, s := range services {
-					fmt.Printf("KDOROSH123 svc %+v\n", s)
-				}
-				if err != nil {
-					fmt.Printf("KDOROSH123 err %+v\n", err)
-					select {
-					case <-ctx.Done():
-						if strings.Contains(fmt.Sprintf("%v", ctx), "span") {
-							fmt.Printf("KDOROSH123 ctx.Done() pt 2 dataCenter: %v\n", dataCenter)
+				// Use a back-off retry strategy to avoid flooding the error channel
+				err := retry.Do(
+					func() error {
+						var err error
+						if ctx.Err() != nil {
+							// intentionally return early if context is already done
+							// this is a backoff loop; by the time we get here ctx may be done
+							ctxDead = true
+							return nil
 						}
-						return
-					default:
-					}
-				}
-
-				// // Use a back-off retry strategy to avoid flooding the error channel
-				// err := retry.Do(
-				// 	func() error {
-				// 		var err error
-				// 		if ctx.Err() != nil {
-				// 			// intentionally return early if context is already done
-				// 			// this is a backoff loop; by the time we get here ctx may be done
-				// 			ctxDead = true
-				// 			return nil
-				// 		}
-				// 		services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
-				// 		fmt.Printf("KDOROSH123 queryMeta %+v\n", queryMeta)
-				// 		for _, s := range services {
-				// 			fmt.Printf("KDOROSH123 svc %+v\n", s)
-				// 		}
-				// 		return err
-				// 	},
-				// 	retry.Attempts(6),
-				// 	//  Last delay is 2^6 * 100ms = 3.2s
-				// 	retry.Delay(100*time.Millisecond),
-				// 	retry.DelayType(retry.BackOffDelay),
-				// )
+						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
+						return err
+					},
+					retry.Attempts(6),
+					//  Last delay is 2^6 * 100ms = 3.2s
+					retry.Delay(100*time.Millisecond),
+					retry.DelayType(retry.BackOffDelay),
+				)
 
 				if ctxDead {
 					return
@@ -220,11 +190,6 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 				} else {
 					lastIndex = queryMeta.LastIndex
 				}
-				// fmt.Printf("KDOROSH123 svcs tuple %+v\n", tuple)
-				// for _, s := range tuple.services {
-				// 	fmt.Printf("KDOROSH123 svc %+v\n", s)
-				// }
-
 				servicesChan <- tuple
 			}
 		}
