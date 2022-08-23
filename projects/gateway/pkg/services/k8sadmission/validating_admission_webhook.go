@@ -9,8 +9,10 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"reflect"
 	"time"
+
+	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 
@@ -560,15 +562,13 @@ func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, 
 		return false, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
 
-	// A status-only update will only differ by status and generation, so we nil both fields before comparing
-	newResource.Status = nil
-	oldResource.Status = nil
-	newResource.Generation = 0
-	oldResource.Generation = 0
+	newMetadata := kubeutils.FromKubeMeta(newResource.ObjectMeta, true)
+	oldMetadata := kubeutils.FromKubeMeta(oldResource.ObjectMeta, true)
 
-	specsAreEqual := reflect.DeepEqual(newResource, oldResource)
-	if specsAreEqual {
-		logger.Debugf("Skipping validatation. Reason: status only update")
+	equalSpec := hashutils.MustHash(newResource.Spec) == hashutils.MustHash(oldResource.Spec)
+	equalMetadata := hashutils.MustHash(newMetadata) == hashutils.MustHash(oldMetadata)
+	if equalSpec && equalMetadata {
+		logger.Debugf("Skipping validation. Reason: status only update")
 		return false, nil
 	}
 	return true, nil

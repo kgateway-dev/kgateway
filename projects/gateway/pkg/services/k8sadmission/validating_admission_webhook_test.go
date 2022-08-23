@@ -219,19 +219,22 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		raw, err := json.Marshal(resourceCrd)
 		Expect(err).NotTo(HaveOccurred())
 
-		// Ensure the oldResource only differs by a status change
-		oldResource := resource
-		oldResource.SetNamespacedStatuses(&core.NamespacedStatuses{
-			Statuses: map[string]*core.Status{
-				"namespace": {
-					State: core.Status_Pending,
-				},
-			},
-		})
+		// Ensure the oldResource only differs by a status change and metadata that shouldn't affect the resource hash
 		oldResourceCrd, err := crd.KubeResource(resource)
 		Expect(err).NotTo(HaveOccurred())
+		oldResourceCrd.Status = map[string]interface{}{
+			"namespace": core.Status{
+				State: core.Status_Pending,
+			},
+		}
+		oldResourceCrd.Generation = 123
+		oldResourceCrd.ResourceVersion = "123"
 		oldRaw, err := json.Marshal(oldResourceCrd)
 		Expect(err).NotTo(HaveOccurred())
+
+		Expect(oldResourceCrd.Status).NotTo(Equal(resourceCrd.Status))
+		Expect(oldResourceCrd.Generation).NotTo(Equal(resourceCrd.Generation))
+		Expect(oldResourceCrd.ResourceVersion).NotTo(Equal(resourceCrd.ResourceVersion))
 
 		admissionReview := AdmissionReviewWithProxies{
 			AdmissionRequestWithProxies: AdmissionRequestWithProxies{
