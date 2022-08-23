@@ -9,6 +9,7 @@ import (
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -75,6 +76,17 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 						continue
 					}
 
+					var tunnelingHeaders []*envoy_config_core_v3.HeaderValueOption
+					for _, header := range us.GetHttpConnectHeaders() {
+						tunnelingHeaders = append(tunnelingHeaders, &envoy_config_core_v3.HeaderValueOption{
+							Header: &envoy_config_core_v3.HeaderValue{
+								Key:   header.GetKey(),
+								Value: header.GetValue(),
+							},
+							Append: &wrappers.BoolValue{Value: false},
+						})
+					}
+
 					selfCluster := "solo_io_generated_self_cluster_" + cluster
 					selfPipe := "@/" + cluster // use an in-memory pipe to ourselves (only works on linux)
 
@@ -113,7 +125,7 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 						}
 					}
 					generatedClusters = append(generatedClusters, generateSelfCluster(selfCluster, selfPipe, originalTransportSocket))
-					generatedListeners = append(generatedListeners, generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname))
+					generatedListeners = append(generatedListeners, generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname, tunnelingHeaders))
 				}
 			}
 		}
@@ -162,10 +174,10 @@ func generateSelfCluster(selfCluster, selfPipe string, originalTransportSocket *
 }
 
 // the generated cluster routes to this generated listener, which forwards TCP traffic to an HTTP Connect proxy
-func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string) *envoy_config_listener_v3.Listener {
+func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string, tunnelingHeadersToAdd []*envoy_config_core_v3.HeaderValueOption) *envoy_config_listener_v3.Listener {
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix:       "soloioTcpStats" + cluster,
-		TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname},
+		TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname, HeadersToAdd: tunnelingHeadersToAdd},
 		ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: cluster}, // route to original target
 	}
 
