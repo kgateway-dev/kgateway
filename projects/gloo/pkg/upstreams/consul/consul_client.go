@@ -1,8 +1,6 @@
 package consul
 
 import (
-	"time"
-
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
 	glooConsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
@@ -115,7 +113,7 @@ func NewConsulServicesQueryOptions(dataCenter string, cm glooConsul.ConsulConsis
 
 // NewConsulCatalogServiceQueryOptions returns a QueryOptions configuration that's used for Consul queries to /catalog/service/:servicename
 func NewConsulCatalogServiceQueryOptions(dataCenter string, cm glooConsul.ConsulConsistencyModes, queryOptions *glooConsul.QueryOptions) *consulapi.QueryOptions {
-	useCache := false
+	useCache := true
 	if cache := queryOptions.GetUseCache(); cache != nil {
 		useCache = cache.GetValue()
 	}
@@ -132,6 +130,5 @@ func internalConsulQueryOptions(dataCenter string, cm glooConsul.ConsulConsisten
 		AllowStale:        allowStale,
 		RequireConsistent: requireConsistent,
 		UseCache:          useCache,
-		WaitTime:          time.Minute,
 	}
 }
