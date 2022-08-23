@@ -227,6 +227,23 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetHttpConnectHeaders()) != len(target.GetHttpConnectHeaders()) {
+		return false
+	}
+	for idx, v := range m.GetHttpConnectHeaders() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHttpConnectHeaders()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetHttpConnectHeaders()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	if h, ok := interface{}(m.GetIgnoreHealthOnHostRemoval()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetIgnoreHealthOnHostRemoval()) {
 			return false
@@ -384,6 +401,38 @@ func (m *DiscoveryMetadata) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HeaderValue) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HeaderValue)
+	if !ok {
+		that2, ok := that.(HeaderValue)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetValue(), target.GetValue()) != 0 {
+		return false
 	}
 
 	return true
