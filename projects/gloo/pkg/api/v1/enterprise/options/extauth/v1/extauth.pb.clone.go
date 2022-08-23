@@ -1866,6 +1866,104 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
+	var target *ExtAuthConfig_PlainOAuth2Config
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_PlainOAuth2Config{}
+
+	target.ClientId = m.GetClientId()
+
+	target.ClientSecret = m.GetClientSecret()
+
+	target.IssuerUrl = m.GetIssuerUrl()
+
+	if m.GetAuthEndpointQueryParams() != nil {
+		target.AuthEndpointQueryParams = make(map[string]string, len(m.GetAuthEndpointQueryParams()))
+		for k, v := range m.GetAuthEndpointQueryParams() {
+
+			target.AuthEndpointQueryParams[k] = v
+
+		}
+	}
+
+	if m.GetTokenEndpointQueryParams() != nil {
+		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
+		for k, v := range m.GetTokenEndpointQueryParams() {
+
+			target.TokenEndpointQueryParams[k] = v
+
+		}
+	}
+
+	target.AppUrl = m.GetAppUrl()
+
+	target.CallbackPath = m.GetCallbackPath()
+
+	target.LogoutPath = m.GetLogoutPath()
+
+	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
+
+	if m.GetScopes() != nil {
+		target.Scopes = make([]string, len(m.GetScopes()))
+		for idx, v := range m.GetScopes() {
+
+			target.Scopes[idx] = v
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetSession()).(clone.Cloner); ok {
+		target.Session = h.Clone().(*UserSession)
+	} else {
+		target.Session = proto.Clone(m.GetSession()).(*UserSession)
+	}
+
+	if h, ok := interface{}(m.GetHeaders()).(clone.Cloner); ok {
+		target.Headers = h.Clone().(*HeaderConfiguration)
+	} else {
+		target.Headers = proto.Clone(m.GetHeaders()).(*HeaderConfiguration)
+	}
+
+	if h, ok := interface{}(m.GetDiscoveryOverride()).(clone.Cloner); ok {
+		target.DiscoveryOverride = h.Clone().(*DiscoveryOverride)
+	} else {
+		target.DiscoveryOverride = proto.Clone(m.GetDiscoveryOverride()).(*DiscoveryOverride)
+	}
+
+	if h, ok := interface{}(m.GetDiscoveryPollInterval()).(clone.Cloner); ok {
+		target.DiscoveryPollInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.DiscoveryPollInterval = proto.Clone(m.GetDiscoveryPollInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetJwksCacheRefreshPolicy()).(clone.Cloner); ok {
+		target.JwksCacheRefreshPolicy = h.Clone().(*JwksOnDemandCacheRefreshPolicy)
+	} else {
+		target.JwksCacheRefreshPolicy = proto.Clone(m.GetJwksCacheRefreshPolicy()).(*JwksOnDemandCacheRefreshPolicy)
+	}
+
+	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
+
+	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
+
+	if h, ok := interface{}(m.GetAutoMapFromMetadata()).(clone.Cloner); ok {
+		target.AutoMapFromMetadata = h.Clone().(*AutoMapFromMetadata)
+	} else {
+		target.AutoMapFromMetadata = proto.Clone(m.GetAutoMapFromMetadata()).(*AutoMapFromMetadata)
+	}
+
+	if h, ok := interface{}(m.GetEndSessionProperties()).(clone.Cloner); ok {
+		target.EndSessionProperties = h.Clone().(*EndSessionProperties)
+	} else {
+		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_OAuth2Config) Clone() proto.Message {
 	var target *ExtAuthConfig_OAuth2Config
 	if m == nil {
@@ -1896,6 +1994,18 @@ func (m *ExtAuthConfig_OAuth2Config) Clone() proto.Message {
 		} else {
 			target.OauthType = &ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig{
 				AccessTokenValidationConfig: proto.Clone(m.GetAccessTokenValidationConfig()).(*ExtAuthConfig_AccessTokenValidationConfig),
+			}
+		}
+
+	case *ExtAuthConfig_OAuth2Config_PlainOauth2Config:
+
+		if h, ok := interface{}(m.GetPlainOauth2Config()).(clone.Cloner); ok {
+			target.OauthType = &ExtAuthConfig_OAuth2Config_PlainOauth2Config{
+				PlainOauth2Config: h.Clone().(*ExtAuthConfig_PlainOAuth2Config),
+			}
+		} else {
+			target.OauthType = &ExtAuthConfig_OAuth2Config_PlainOauth2Config{
+				PlainOauth2Config: proto.Clone(m.GetPlainOauth2Config()).(*ExtAuthConfig_PlainOAuth2Config),
 			}
 		}
 
