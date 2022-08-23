@@ -182,14 +182,6 @@ var _ = Describe("Consul e2e", func() {
 	})
 
 	FIt("resolves eds even if services aren't updated", func() {
-
-		// cfg := api.DefaultConfig()
-		// consulClient, err := api.NewClient(cfg)
-		// Expect(err).NotTo(HaveOccurred())
-		// consulClientWrapper, err := consul.NewConsulWatcher(consulClient, nil) // dcs
-		// Expect(err).NotTo(HaveOccurred())
-
-		// TODO(kdorosh) switch to endpoints once reproed
 		svcsChan, errChan := consulClient.WatchServices(ctx, []string{"dc1"}, consulplugin.ConsulConsistencyModes_DefaultMode, nil)
 
 		Eventually(func() <-chan []*consul.ServiceMeta {
@@ -203,8 +195,6 @@ var _ = Describe("Consul e2e", func() {
 		Consistently(func() <-chan error {
 			return errChan
 		}, "0.5s", "0.2s").ShouldNot(Receive())
-
-		// fmt.Printf("%v", consulClient)
 
 		err = consulInstance.LiveUpdateServiceInstance("my-svc", "my-svc-1", "127.0.0.1", []string{"svc", "1"}, 80)
 		Expect(err).NotTo(HaveOccurred())
@@ -224,8 +214,6 @@ var _ = Describe("Consul e2e", func() {
 		err = consulInstance.LiveUpdateServiceInstance("my-svc", "my-svc-1", "127.0.0.1", []string{"svc", "1"}, 81)
 		Expect(err).NotTo(HaveOccurred())
 
-		// time.Sleep(time.Second * 2)
-
 		// this is where golang client differs from cli!
 		Eventually(func() <-chan []*consul.ServiceMeta {
 			return svcsChan
@@ -238,77 +226,6 @@ var _ = Describe("Consul e2e", func() {
 		Consistently(func() <-chan error {
 			return errChan
 		}, "0.5s", "0.2s").ShouldNot(Receive())
-
-		// Eventually(func() <-chan []*consul.ServiceMeta {
-		// 	return svcsChan
-		// }, "5s", "0.2s").ShouldNot(Receive())
-
-		// Consistently(func() <-chan []*consul.ServiceMeta {
-		// 	return svcsChan
-		// }, "5s", "0.2s").ShouldNot(Receive())
-
-		// new port!
-		// err = consulInstance.LiveUpdateServiceInstance("my-svc", "my-svc-1", "127.0.0.1", []string{"svc", "1"}, 81)
-		// Expect(err).NotTo(HaveOccurred())
-
-		// Consistently(func() <-chan error {
-		// 	return errChan
-		// }, "2s", "0.2s").ShouldNot(Receive())
-
-		// Eventually(func() <-chan []*consul.ServiceMeta {
-		// 	return svcsChan
-		// }, "2s", "0.2s").Should(Receive())
-
-		// _, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
-		// Expect(err).NotTo(HaveOccurred())
-
-		// // Wait for proxy to be accepted
-		// helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-		// 	return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-		// })
-
-		// By("requests only go to endpoints behind test upstream 1")
-
-		// // Wait for the endpoints to be registered
-		// Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-		// 	_, err := queryService()
-		// 	if err != nil {
-		// 		return svc1.C, err
-		// 	}
-		// 	return svc1.C, nil
-		// }, "20s", "0.2s").Should(Receive())
-		// // Service 2 does not match the tags on the route, so we should get only requests from service 1 with test upstream 1 endpoint
-		// Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
-		// 	_, err := queryService()
-		// 	if err != nil {
-		// 		return svc1.C, err
-		// 	}
-		// 	return svc1.C, nil
-		// }, "2s", "0.2s").Should(Receive())
-
-		// // update service one to point to test upstream 2 port
-		// err = consulInstance.LiveUpdateServiceInstance("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
-		// Expect(err).NotTo(HaveOccurred())
-
-		// By("requests only go to endpoints behind test upstream 2")
-
-		// // ensure EDS picked up this endpoint-only change
-		// Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-		// 	_, err := queryService()
-		// 	if err != nil {
-		// 		return svc2.C, err
-		// 	}
-		// 	return svc2.C, nil
-		// }, "20s", "0.2s").Should(Receive())
-		// // test upstream 1 endpoint is now stale; should only get requests to endpoints for test upstream 2 for svc1
-		// Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
-		// 	_, err := queryService()
-		// 	if err != nil {
-		// 		return svc2.C, err
-		// 	}
-		// 	return svc2.C, nil
-		// }, "2s", "0.2s").Should(Receive())
-
 	})
 
 	It("resolves consul services with hostname addresses (as opposed to IPs addresses)", func() {
