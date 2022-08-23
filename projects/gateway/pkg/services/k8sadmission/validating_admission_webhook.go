@@ -12,6 +12,8 @@ import (
 	"reflect"
 	"time"
 
+	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/hashicorp/go-multierror"
@@ -21,8 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
-	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
@@ -560,7 +560,13 @@ func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, 
 		return false, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
 
-	specsAreEqual := reflect.DeepEqual(newResource.Spec, oldResource.Spec)
+	// A status-only update will only differ by status and generation, so we nil both fields before comparing
+	newResource.Status = nil
+	oldResource.Status = nil
+	newResource.Generation = 0
+	oldResource.Generation = 0
+
+	specsAreEqual := reflect.DeepEqual(newResource, oldResource)
 	if specsAreEqual {
 		logger.Debugf("Skipping validatation. Reason: status only update")
 		return false, nil
