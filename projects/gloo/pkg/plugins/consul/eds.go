@@ -68,6 +68,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		timer := time.NewTicker(DefaultDnsPollingInterval)
 		defer timer.Stop()
 
+		// var previousServiceMeta []*consul.ServiceMeta
 		var previousSpecs []*consulapi.CatalogService
 		var previousHash uint64
 
@@ -97,6 +98,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
+				// previousServiceMeta = serviceMeta
 
 				if !publishEndpoints(endpoints) {
 					return
@@ -109,6 +111,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					continue
 				}
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
+				// specs := refreshSpecs(opts.Ctx, p.client, previousServiceMeta, errChan, trackedServiceToUpstreams)
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
 
 				currentHash := hashutils.MustHash(endpoints)

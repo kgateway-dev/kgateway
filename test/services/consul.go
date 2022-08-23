@@ -54,7 +54,7 @@ func NewConsulFactory() (*ConsulFactory, error) {
 		}, nil
 	}
 
-	// try to grab one form docker...
+	// try to grab one from docker...
 	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "consul")
 	if err != nil {
 		return nil, err
@@ -92,19 +92,19 @@ docker rm -f $CID
 	}, nil
 }
 
-func (ef *ConsulFactory) Clean() error {
-	if ef == nil {
+func (cf *ConsulFactory) Clean() error {
+	if cf == nil {
 		return nil
 	}
-	if ef.tmpdir != "" {
-		_ = os.RemoveAll(ef.tmpdir)
+	if cf.tmpdir != "" {
+		_ = os.RemoveAll(cf.tmpdir)
 
 	}
 	return nil
 }
 
-func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
-	// try to grab one form docker...
+func (cf *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
+	// try to grab one from docker...
 	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "consul")
 	if err != nil {
 		return nil, err
@@ -116,13 +116,18 @@ func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(ef.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir,
+	// Security Warning: Because -enable-script-checks allows script checks to be registered via HTTP API,
+	// it may introduce a remote execution vulnerability known to be targeted by malware. For production
+	// environments, we strongly recommend using -enable-local-script-checks instead, which removes that
+	// vulnerability by allowing script checks to only be defined in the Consul agent's local configuration
+	// files, not via HTTP API.
+	cmd := exec.Command(cf.consulPath, "agent", "-dev", "--client=0.0.0.0", "-enable-script-checks", //"-config-dir", cfgDir,
 		"-node", "consul-dev")
-	cmd.Dir = ef.tmpdir
+	cmd.Dir = cf.tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
 	return &ConsulInstance{
-		consulPath:         ef.consulPath,
+		consulPath:         cf.consulPath,
 		tmpdir:             tmpdir,
 		cfgDir:             cfgDir,
 		cmd:                cmd,
@@ -214,4 +219,33 @@ func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []
 	}
 
 	return i.ReloadConfig()
+}
+
+func (i *ConsulInstance) LiveUpdateServiceInstance(svcName, svcId, address string, tags []string, port uint32) error {
+	svcDef := &serviceDef{
+		Service: &consulService{
+			ID:      svcId,
+			Name:    svcName,
+			Address: address,
+			Tags:    tags,
+			Port:    port,
+		},
+	}
+	content, err := json.Marshal(svcDef.Service)
+	if err != nil {
+		return err
+	}
+	postData := string(content)
+	updatedSvcFile := filepath.Join(i.cfgDir, "kdorosh.json")
+	_ = os.Remove(updatedSvcFile)
+	err = ioutil.WriteFile(updatedSvcFile, []byte(postData), 0644)
+	Expect(err).ToNot(HaveOccurred())
+	cmd := exec.Command("curl", "--request", "PUT", "--data", fmt.Sprintf("@%s", updatedSvcFile), "localhost:8500/v1/agent/service/register")
+	cmd.Dir = i.tmpdir
+	cmd.Stdout = GinkgoWriter
+	cmd.Stderr = GinkgoWriter
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
 }
