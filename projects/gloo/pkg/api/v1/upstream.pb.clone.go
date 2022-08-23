@@ -166,6 +166,19 @@ func (m *Upstream) Clone() proto.Message {
 		target.HttpConnectSslConfig = proto.Clone(m.GetHttpConnectSslConfig()).(*UpstreamSslConfig)
 	}
 
+	if m.GetHttpConnectHeaders() != nil {
+		target.HttpConnectHeaders = make([]*HeaderValue, len(m.GetHttpConnectHeaders()))
+		for idx, v := range m.GetHttpConnectHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HttpConnectHeaders[idx] = h.Clone().(*HeaderValue)
+			} else {
+				target.HttpConnectHeaders[idx] = proto.Clone(v).(*HeaderValue)
+			}
+
+		}
+	}
+
 	if h, ok := interface{}(m.GetIgnoreHealthOnHostRemoval()).(clone.Cloner); ok {
 		target.IgnoreHealthOnHostRemoval = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
@@ -279,6 +292,21 @@ func (m *DiscoveryMetadata) Clone() proto.Message {
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *HeaderValue) Clone() proto.Message {
+	var target *HeaderValue
+	if m == nil {
+		return target
+	}
+	target = &HeaderValue{}
+
+	target.Key = m.GetKey()
+
+	target.Value = m.GetValue()
 
 	return target
 }
