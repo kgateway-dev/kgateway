@@ -29,7 +29,17 @@ func (p *Ingress) Clone() *Ingress {
 	return &newIng
 }
 
-// todo (mholland) we should eventually update this, and any of our dependant logic, to use non-deprecated values
 func (p *Ingress) IsPublic() bool {
-	return p.Spec.DeprecatedVisibility == "" || p.Spec.DeprecatedVisibility == v1alpha1.IngressVisibilityExternalIP
+	// by default, ingresses are public if they have no rules saying otherwise
+	isPublic := true
+	for _, ingressRule := range p.Spec.Rules {
+		// if there is _any_ ingress rule, it is not public
+		isPublic = false
+
+		// ...unless we match a configured IngressVisibilityExternalIP
+		if ingressRule.Visibility == "" || ingressRule.Visibility == v1alpha1.IngressVisibilityExternalIP {
+			return true
+		}
+	}
+	return isPublic
 }

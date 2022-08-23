@@ -124,7 +124,7 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 
 	secretSnapshot := cache.Snapshot{}
 	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)
-	return s.snapshotCache.SetSnapshot(s.sdsClient, secretSnapshot)
+	return s.snapshotCache.SetSnapshot(ctx, s.sdsClient, secretSnapshot)
 }
 
 // GetSnapshotVersion generates a version string by hashing the certs

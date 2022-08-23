@@ -396,6 +396,7 @@
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.periodSeconds|int32|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.successThreshold|int32|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.failureThreshold|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.terminationGracePeriodSeconds|int64|||
 |gatewayProxies.NAME.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.NAME.podTemplate.enablePodSecurityContext|bool||Whether or not to render the pod security context. Default is true|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
@@ -567,6 +568,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds|int32|0||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.successThreshold|int32|0||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold|int32|0||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.terminationGracePeriodSeconds|int64|||
 |gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext|bool|true|Whether or not to render the pod security context. Default is true|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||

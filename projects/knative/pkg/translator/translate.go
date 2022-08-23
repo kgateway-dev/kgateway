@@ -6,9 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/golang/protobuf/ptypes"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
 	"knative.dev/networking/pkg/apis/networking"
@@ -22,7 +20,6 @@ import (
 
 	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
@@ -169,22 +166,6 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 					pathRegex = ".*"
 				}
 
-				var timeout time.Duration
-				if route.DeprecatedTimeout != nil {
-					timeout = route.DeprecatedTimeout.Duration
-				}
-				var retryPolicy *retries.RetryPolicy
-				if route.DeprecatedRetries != nil {
-					var perTryTimeout time.Duration
-					if route.DeprecatedRetries.PerTryTimeout != nil {
-						perTryTimeout = route.DeprecatedRetries.PerTryTimeout.Duration
-					}
-					retryPolicy = &retries.RetryPolicy{
-						NumRetries:    uint32(route.DeprecatedRetries.Attempts),
-						PerTryTimeout: ptypes.DurationProto(perTryTimeout),
-					}
-				}
-
 				action, err := routeActionFromSplits(route.Splits)
 				if err != nil {
 					return nil, nil, nil, errors.Wrapf(err, "")
@@ -201,8 +182,6 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 					},
 					Options: &gloov1.RouteOptions{
 						HeaderManipulation: getHeaderManipulation(route.AppendHeaders),
-						Timeout:            ptypes.DurationProto(timeout),
-						Retries:            retryPolicy,
 					},
 				}
 				routes = append(routes, route)
