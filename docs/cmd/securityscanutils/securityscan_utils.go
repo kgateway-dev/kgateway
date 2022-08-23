@@ -19,14 +19,14 @@ func BuildSecurityScanReportGloo(tags []string) error {
 		}
 		if ix == 0 || semver.Minor() != prevMinorVersion.Minor() {
 			fmt.Printf("\n***Latest %d.%d.x Gloo Open Source Release: %s***\n\n", semver.Major(), semver.Minor(), tag)
-			err = printImageReportGloo(tag)
+			err = printImageReportGloo(semver)
 			if err != nil {
 				return err
 			}
 			prevMinorVersion = semver
 		} else {
 			fmt.Printf("<details><summary> Release %s </summary>\n\n", tag)
-			err = printImageReportGloo(tag)
+			err = printImageReportGloo(semver)
 			if err != nil {
 				return err
 			}
@@ -67,8 +67,11 @@ func BuildSecurityScanReportGlooE(tags []string) error {
 }
 
 // List of images included in gloo edge open source
-func OpenSourceImages() []string {
-	return []string{"access-logger", "certgen", "discovery", "gateway", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
+func OpenSourceImages(before11 bool) []string {
+	if before11 {
+		return []string{"access-logger", "certgen", "discovery", "gateway", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
+	}
+	return []string{"access-logger", "certgen", "discovery", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
 }
 
 // List of images only included in gloo edge enterprise
@@ -82,8 +85,11 @@ func EnterpriseImages(before17 bool) []string {
 	return append([]string{"rate-limit-ee", "gloo-ee", "gloo-ee-envoy-wrapper", "observability-ee", "extauth-ee"}, extraImages...)
 }
 
-func printImageReportGloo(tag string) error {
-	for _, image := range OpenSourceImages() {
+func printImageReportGloo(semver *version.Version) error {
+	tag := semver.String()
+	hasFedVersion, _ := semver.Compare("1.7.0")
+
+	for _, image := range OpenSourceImages(hasFedVersion < 0) {
 		fmt.Printf("**Gloo %s image**\n\n", image)
 		url := "https://storage.googleapis.com/solo-gloo-security-scans/gloo/" + tag + "/" + image + "_cve_report.docgen"
 		report, err := GetSecurityScanReport(url)
