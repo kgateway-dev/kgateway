@@ -1,0 +1,20 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: helm.sh/helm
+    dependencyRepo: v3
+    dependencyTag: 3.6.3
+    description: Bump alpine to fix CVE-2021-32690
+    issueLink: https://github.com/solo-io/gloo/issues/6998
+    resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: all
+    dependencyTag: 0.22.4
+    issueLink: https://github.com/solo-io/gloo/issues/6998
+    resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoyproxy
+    dependencyRepo: go-control-plane
+    dependencyTag: 0.10.1
+    issueLink: https://github.com/solo-io/gloo/issues/6998
+    resolvesIssue: false
