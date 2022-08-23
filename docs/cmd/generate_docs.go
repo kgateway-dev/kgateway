@@ -320,7 +320,7 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 				OutputDir: outputDir,
 				ImagesPerVersion: map[string][]string{
 					">=v1.12.0":          OpenSourceImages(false),
-					"<v1.12.0, >=v1.6.0": OpenSourceImages(true),
+					"<v1.12.0, >=v1.8.0": OpenSourceImages(true),
 				},
 				VersionConstraint:                      versionConstraint,
 				ImageRepo:                              "quay.io/solo-io",

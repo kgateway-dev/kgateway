@@ -67,8 +67,8 @@ func BuildSecurityScanReportGlooE(tags []string) error {
 }
 
 // List of images included in gloo edge open source
-func OpenSourceImages(before11 bool) []string {
-	if before11 {
+func OpenSourceImages(before12 bool) []string {
+	if before12 {
 		return []string{"access-logger", "certgen", "discovery", "gateway", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
 	}
 	return []string{"access-logger", "certgen", "discovery", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
@@ -82,7 +82,7 @@ func EnterpriseImages(before17 bool) []string {
 	if before17 {
 		extraImages = []string{"grpcserver-ui", "grpcserver-envoy", "grpcserver-ee"}
 	}
-	return append([]string{"rate-limit-ee", "gloo-ee", "gloo-ee-envoy-wrapper", "observability-ee", "extauth-ee"}, extraImages...)
+	return append([]string{"rate-limit-ee", "gloo-ee", "gloo-ee-envoy-wrapper", "observability-ee", "extauth-ee", "discovery-ee", "caching-ee"}, extraImages...)
 }
 
 func printImageReportGloo(semver *version.Version) error {
