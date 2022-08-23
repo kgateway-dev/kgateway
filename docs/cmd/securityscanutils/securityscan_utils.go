@@ -87,7 +87,7 @@ func EnterpriseImages(before17 bool) []string {
 
 func printImageReportGloo(semver *version.Version) error {
 	tag := semver.String()
-	hasFedVersion, _ := semver.Compare("1.7.0")
+	hasFedVersion, _ := semver.Compare("1.12.0")
 
 	for _, image := range OpenSourceImages(hasFedVersion < 0) {
 		fmt.Printf("**Gloo %s image**\n\n", image)
