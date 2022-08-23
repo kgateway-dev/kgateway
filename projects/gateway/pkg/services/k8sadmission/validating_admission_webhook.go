@@ -274,12 +274,19 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 }
 
 func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, review *AdmissionReviewWithProxies) *AdmissionResponseWithProxies {
-	logger := contextutils.LoggerFrom(ctx)
-
+	oldLogger := contextutils.LoggerFrom(ctx)
 	req := review.Request
 
-	logger.Debugf("AdmissionReview for Kind=%v, Namespace=%v Name=%v UID=%v patchOperation=%v UserInfo=%v",
-		req.Kind, req.Namespace, req.Name, req.UID, req.Operation, req.UserInfo)
+	logger := oldLogger.With("Kind", req.Kind,
+		"Namespace", req.Namespace,
+		"Name", req.Name,
+		"UID", req.UID,
+		"PatchOperation", req.Operation,
+		"UserInfo", req.UserInfo,
+	)
+	ctx = contextutils.WithExistingLogger(ctx, logger)
+
+	logger.Debugf("Start AdmissionReview")
 
 	gvk := schema.GroupVersionKind{
 		Group:   req.Kind.Group,
