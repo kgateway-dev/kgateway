@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/4006
-    resolvesIssue: false
-    description: Trivy no longer scans nonexistant gateway image for Gloo >=1.12
