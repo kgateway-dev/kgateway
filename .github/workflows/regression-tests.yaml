@@ -60,6 +60,7 @@ jobs:
     if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         # knative support has been deprecated: https://github.com/solo-io/gloo/issues/5707
         # We have removed it from our CI regression tests
