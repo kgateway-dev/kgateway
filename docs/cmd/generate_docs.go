@@ -6,12 +6,12 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
-
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap/zapcore"
+	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/version"
+	"log"
+	"os"
 
 	"github.com/solo-io/go-utils/securityscanutils"
 
@@ -319,8 +319,8 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 			Opts: &securityscanutils.SecurityScanOpts{
 				OutputDir: outputDir,
 				ImagesPerVersion: map[string][]string{
-					">=v1.12.0":          OpenSourceImages(false),
-					"<v1.12.0, >=v1.8.0": OpenSourceImages(true),
+					">=v1.12.0":          OpenSourceImages(version.MustParseSemantic("1.12.0")),
+					"<v1.12.0, >=v1.8.0": OpenSourceImages(version.MustParseSemantic("1.8.0")),
 				},
 				VersionConstraint:                      versionConstraint,
 				ImageRepo:                              "quay.io/solo-io",
@@ -338,7 +338,7 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 			Opts: &securityscanutils.SecurityScanOpts{
 				OutputDir: outputDir,
 				ImagesPerVersion: map[string][]string{
-					">=v1.7.x": EnterpriseImages(false),
+					">=v1.7.x": EnterpriseImages(version.MustParseSemantic(("1.7.0"))),
 				},
 				VersionConstraint:                      versionConstraint,
 				ImageRepo:                              "quay.io/solo-io",
