@@ -631,8 +631,8 @@ message PlainOAuth2 {
     // your client secret as registered with the issuer
     core.solo.io.ResourceRef client_secret_ref = 2;
 
-    // The url of the issuer. We will look for OIDC information in issuerUrl+
-    // ".well-known/openid-configuration"
+    // The url of the issuer, including path to config.
+    // We will look for OIDC information in issuerUrl+".well-known/openid-configuration" if use_server_config is set.
     string issuer_url = 3;
 
     // extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
@@ -728,6 +728,10 @@ message PlainOAuth2 {
     // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
     // in the OIDC documentation.
     EndSessionProperties end_session_properties = 19;
+
+    // If set, we will look for the configuration at issuerUrl+".well-known/openid-configuration"
+    // disabled by default, as oauth2 doesn't have a set discovery in specs.
+    bool use_server_config = 20;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -1373,8 +1377,8 @@ message ExtAuthConfig {
         // your client secret as registered with the issuer
         string client_secret = 2 [(extproto.sensitive) = true];
 
-        // The url of the issuer, including path to config. We will look for OIDC information in issuerUrl
-        // If not set, will configure OAuth based on discovery_override
+        // The url of the issuer, including path to config.
+        // We will look for OIDC information in issuerUrl+".well-known/openid-configuration" if use_server_config is set.
         string issuer_url = 3;
 
         // extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
@@ -1405,7 +1409,6 @@ message ExtAuthConfig {
         string after_logout_url = 15;
 
         // scopes to request
-        // todo (fabian) <company> should set to ["trust"]
         repeated string scopes = 7;
 
         UserSession session = 8;
@@ -1452,7 +1455,6 @@ message ExtAuthConfig {
 
         // in the future we may implement this:
         // add optional configuration for validation of the access token received during the OIDC flow
-        // todo (fabian) do we need to set this & add logic to validate on the <company> introspection url /oauth/check_token?
         // AccessTokenValidation access_token_validation = 8;
 
         // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
@@ -1471,6 +1473,10 @@ message ExtAuthConfig {
         // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
         // in the OIDC documentation.
         EndSessionProperties end_session_properties = 19;
+
+        // If set, we will look for the configuration at issuerUrl+".well-known/openid-configuration"
+        // disabled by default, as oauth2 doesn't have a set discovery in specs.
+        bool use_server_config = 20;
     }
 
     message OAuth2Config {
