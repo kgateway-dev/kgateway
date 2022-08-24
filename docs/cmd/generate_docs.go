@@ -6,12 +6,13 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap/zapcore"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/version"
 	"log"
 	"os"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap/zapcore"
+	"k8s.io/apimachinery/pkg/util/version"
 
 	"github.com/solo-io/go-utils/securityscanutils"
 
