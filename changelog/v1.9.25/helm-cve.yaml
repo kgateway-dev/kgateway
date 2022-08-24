@@ -3,7 +3,7 @@ changelog:
     dependencyOwner: helm.sh/helm
     dependencyRepo: v3
     dependencyTag: 3.6.3
-    description: Bump alpine to fix CVE-2021-32690
+    description: Bump helm to fix CVE-2021-32690
     issueLink: https://github.com/solo-io/gloo/issues/6998
     resolvesIssue: true
   - type: DEPENDENCY_BUMP
