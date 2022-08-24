@@ -842,6 +842,8 @@ func (m *PlainOAuth2) Clone() proto.Message {
 		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
 	}
 
+	target.UseServerConfig = m.GetUseServerConfig()
+
 	return target
 }
 
@@ -2073,6 +2075,8 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 	} else {
 		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
 	}
+
+	target.UseServerConfig = m.GetUseServerConfig()
 
 	return target
 }

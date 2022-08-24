@@ -1635,6 +1635,11 @@ func (m *PlainOAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetUseServerConfig())
+	if err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -4053,6 +4058,11 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Hash(hasher hash.Hash64) (uint64, erro
 				return 0, err
 			}
 		}
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetUseServerConfig())
+	if err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil

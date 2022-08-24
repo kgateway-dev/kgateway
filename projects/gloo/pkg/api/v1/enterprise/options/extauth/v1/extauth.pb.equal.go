@@ -1410,6 +1410,10 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetUseServerConfig() != target.GetUseServerConfig() {
+		return false
+	}
+
 	return true
 }
 
@@ -3488,6 +3492,10 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetEndSessionProperties(), target.GetEndSessionProperties()) {
 			return false
 		}
+	}
+
+	if m.GetUseServerConfig() != target.GetUseServerConfig() {
+		return false
 	}
 
 	return true

@@ -537,6 +537,8 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
+                            useServerConfig:
+                              type: boolean
                           type: object
                       type: object
                     opaAuth:
