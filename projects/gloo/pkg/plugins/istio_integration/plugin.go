@@ -3,6 +3,7 @@ package istio_integration
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -25,9 +26,11 @@ type plugin struct {
 }
 
 func NewPlugin(ctx context.Context, upstreams factory.ResourceClientFactory) *plugin {
-	// TODO: handle situation when we can't create an upstream client
 	client, err := v1.NewUpstreamClient(ctx, upstreams)
 	if err != nil {
+		contextutils.LoggerFrom(ctx).Warn(
+			"Unable to initialize the Istio integration plugin. Host rewrites for services that are part of the mesh will not be applied and Istio may not handle them correctly. ",
+			err)
 		return nil
 	}
 	return &plugin{
@@ -50,7 +53,8 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	//check if this is a kubernetes destination
 	dest, ok := in.GetRouteAction().GetDestination().(*v1.RouteAction_Single)
 	if !ok {
-		// TODO: possibly do something with other types of destinations
+		// With current use cases it only makes sense to handle k8s single destinations
+		// If this use case expands we would need to figure out Istio's expected hostname format for each type of destination.
 		return nil
 	}
 	hostInMesh, err := GetHostFromDestination(dest, p.usClient)
