@@ -16,7 +16,7 @@ var ForbiddenDataCenterErr = func(dataCenter string) error {
 
 // TODO(marco): consider adding ctx to signatures instead on relying on caller to set it
 // Wrap the Consul API in an interface to allow mocking
-type ConsulClient interface {
+type InternalConsulClient interface {
 	// DataCenters is used to query for all the known data centers.
 	// Results will be filtered based on the data center whitelist provided in the Gloo settings.
 	DataCenters() ([]string, error)
@@ -33,7 +33,7 @@ type consulClientWrapper struct {
 }
 
 //NewConsulClientWrapper wraps the original consul client to allow for access in testing + simplification of calls
-func NewConsulClientWrapper(consulClient *consulapi.Client) ConsulClient {
+func NewConsulClientWrapper(consulClient *consulapi.Client) InternalConsulClient {
 	return &consulClientWrapper{consulClient}
 }
 
@@ -55,7 +55,7 @@ func (c *consulClientWrapper) Connect(service, tag string, q *consulapi.QueryOpt
 
 // NewFilteredConsulClient is used to create a new client for filtered consul requests.
 // We have a wrapper around the consul api client *consulapi.Client - so that we can filter requests
-func NewFilteredConsulClient(client ConsulClient, dataCenters []string, serviceTagsAllowlist []string) (ConsulClient, error) {
+func NewFilteredConsulClient(client InternalConsulClient, dataCenters []string, serviceTagsAllowlist []string) (InternalConsulClient, error) {
 	dcMap := make(map[string]struct{})
 	for _, dc := range dataCenters {
 		dcMap[dc] = struct{}{}
@@ -69,7 +69,7 @@ func NewFilteredConsulClient(client ConsulClient, dataCenters []string, serviceT
 }
 
 type consul struct {
-	api ConsulClient
+	api InternalConsulClient
 	// allowlist of data centers to consider when querying the agent
 	dataCenters map[string]struct{}
 	// allowlist of serviceTags to consider when querying the agent

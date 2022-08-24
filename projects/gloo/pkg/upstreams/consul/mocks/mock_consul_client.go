@@ -11,31 +11,31 @@ import (
 	api "github.com/hashicorp/consul/api"
 )
 
-// MockConsulClient is a mock of ConsulClient interface.
-type MockConsulClient struct {
+// MockInternalConsulClient is a mock of InternalConsulClient interface.
+type MockInternalConsulClient struct {
 	ctrl     *gomock.Controller
-	recorder *MockConsulClientMockRecorder
+	recorder *MockInternalConsulClientMockRecorder
 }
 
-// MockConsulClientMockRecorder is the mock recorder for MockConsulClient.
-type MockConsulClientMockRecorder struct {
-	mock *MockConsulClient
+// MockInternalConsulClientMockRecorder is the mock recorder for MockInternalConsulClient.
+type MockInternalConsulClientMockRecorder struct {
+	mock *MockInternalConsulClient
 }
 
-// NewMockConsulClient creates a new mock instance.
-func NewMockConsulClient(ctrl *gomock.Controller) *MockConsulClient {
-	mock := &MockConsulClient{ctrl: ctrl}
-	mock.recorder = &MockConsulClientMockRecorder{mock}
+// NewMockInternalConsulClient creates a new mock instance.
+func NewMockInternalConsulClient(ctrl *gomock.Controller) *MockInternalConsulClient {
+	mock := &MockInternalConsulClient{ctrl: ctrl}
+	mock.recorder = &MockInternalConsulClientMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockConsulClient) EXPECT() *MockConsulClientMockRecorder {
+func (m *MockInternalConsulClient) EXPECT() *MockInternalConsulClientMockRecorder {
 	return m.recorder
 }
 
 // Connect mocks base method.
-func (m *MockConsulClient) Connect(service, tag string, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
+func (m *MockInternalConsulClient) Connect(service, tag string, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Connect", service, tag, q)
 	ret0, _ := ret[0].([]*api.CatalogService)
@@ -45,13 +45,13 @@ func (m *MockConsulClient) Connect(service, tag string, q *api.QueryOptions) ([]
 }
 
 // Connect indicates an expected call of Connect.
-func (mr *MockConsulClientMockRecorder) Connect(service, tag, q interface{}) *gomock.Call {
+func (mr *MockInternalConsulClientMockRecorder) Connect(service, tag, q interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Connect", reflect.TypeOf((*MockConsulClient)(nil).Connect), service, tag, q)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Connect", reflect.TypeOf((*MockInternalConsulClient)(nil).Connect), service, tag, q)
 }
 
 // DataCenters mocks base method.
-func (m *MockConsulClient) DataCenters() ([]string, error) {
+func (m *MockInternalConsulClient) DataCenters() ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DataCenters")
 	ret0, _ := ret[0].([]string)
@@ -60,13 +60,13 @@ func (m *MockConsulClient) DataCenters() ([]string, error) {
 }
 
 // DataCenters indicates an expected call of DataCenters.
-func (mr *MockConsulClientMockRecorder) DataCenters() *gomock.Call {
+func (mr *MockInternalConsulClientMockRecorder) DataCenters() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DataCenters", reflect.TypeOf((*MockConsulClient)(nil).DataCenters))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DataCenters", reflect.TypeOf((*MockInternalConsulClient)(nil).DataCenters))
 }
 
 // Service mocks base method.
-func (m *MockConsulClient) Service(service, tag string, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
+func (m *MockInternalConsulClient) Service(service, tag string, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Service", service, tag, q)
 	ret0, _ := ret[0].([]*api.CatalogService)
@@ -76,13 +76,13 @@ func (m *MockConsulClient) Service(service, tag string, q *api.QueryOptions) ([]
 }
 
 // Service indicates an expected call of Service.
-func (mr *MockConsulClientMockRecorder) Service(service, tag, q interface{}) *gomock.Call {
+func (mr *MockInternalConsulClientMockRecorder) Service(service, tag, q interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Service", reflect.TypeOf((*MockConsulClient)(nil).Service), service, tag, q)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Service", reflect.TypeOf((*MockInternalConsulClient)(nil).Service), service, tag, q)
 }
 
 // Services mocks base method.
-func (m *MockConsulClient) Services(q *api.QueryOptions) (map[string][]string, *api.QueryMeta, error) {
+func (m *MockInternalConsulClient) Services(q *api.QueryOptions) (map[string][]string, *api.QueryMeta, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Services", q)
 	ret0, _ := ret[0].(map[string][]string)
@@ -92,7 +92,7 @@ func (m *MockConsulClient) Services(q *api.QueryOptions) (map[string][]string, *
 }
 
 // Services indicates an expected call of Services.
-func (mr *MockConsulClientMockRecorder) Services(q interface{}) *gomock.Call {
+func (mr *MockInternalConsulClientMockRecorder) Services(q interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Services", reflect.TypeOf((*MockConsulClient)(nil).Services), q)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Services", reflect.TypeOf((*MockInternalConsulClient)(nil).Services), q)
 }

@@ -2,6 +2,7 @@ package consul_test
 
 import (
 	"context"
+
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
@@ -10,17 +11,17 @@ import (
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 )
 
-var _ = Describe("ConsulClient", func() {
+var _ = Describe("InternalConsulClient", func() {
 
 	var (
 		cancel     context.CancelFunc
 		ctrl       *gomock.Controller
-		mockClient *mock_consul.MockConsulClient
+		mockClient *mock_consul.MockInternalConsulClient
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(T)
-		mockClient = mock_consul.NewMockConsulClient(ctrl)
+		mockClient = mock_consul.NewMockInternalConsulClient(ctrl)
 	})
 
 	AfterEach(func() {
@@ -33,7 +34,7 @@ var _ = Describe("ConsulClient", func() {
 	Describe("Services operation", func() {
 		Context("When Filtering By Tags", func() {
 			var (
-				client ConsulClient
+				client InternalConsulClient
 			)
 			BeforeEach(func() {
 				dc := []string{"dc1"}

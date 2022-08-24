@@ -21,7 +21,7 @@ type ServiceMeta struct {
 }
 
 type ConsulWatcher interface {
-	ConsulClient
+	InternalConsulClient
 	WatchServices(ctx context.Context, dataCenters []string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error)
 }
 
@@ -33,14 +33,14 @@ func NewConsulWatcher(client *consulapi.Client, dataCenters []string, serviceTag
 	return NewConsulWatcherFromClient(clientWrapper), nil
 }
 
-func NewConsulWatcherFromClient(client ConsulClient) ConsulWatcher {
+func NewConsulWatcherFromClient(client InternalConsulClient) ConsulWatcher {
 	return &consulWatcher{client}
 }
 
 var _ ConsulWatcher = &consulWatcher{}
 
 type consulWatcher struct {
-	ConsulClient
+	InternalConsulClient
 }
 
 // Maps a data center name to the services (including tags) registered in it
