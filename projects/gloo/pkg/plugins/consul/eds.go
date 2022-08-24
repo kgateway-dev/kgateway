@@ -2,6 +2,7 @@ package consul
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -137,6 +138,17 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	return endpointsChan, errChan, nil
 }
 
+var (
+	cacheHits, cacheMisses uint
+	lock                   sync.Mutex
+)
+
+func init() {
+	cacheHits = 0
+	cacheMisses = 0
+	lock = sync.Mutex{}
+}
+
 // For each service AND data center combination, return a CatalogService that contains a list of all service instances
 // belonging to that service within that datacenter.
 func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta []*consul.ServiceMeta, errChan chan error, serviceToUpstream map[string][]*v1.Upstream) []*consulapi.CatalogService {
@@ -187,10 +199,18 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 					// we create a lot of requests; by the time we get here ctx may be done
 					return ctx.Err()
 				}
-				services, _, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
+				services, qm, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
 				if err != nil {
 					return err
 				}
+				lock.Lock()
+				if qm.CacheHit {
+					cacheHits++
+				} else {
+					cacheMisses++
+				}
+				fmt.Printf("KD123 cache hits: %v, cache misses: %v\n", cacheHits, cacheMisses)
+				lock.Unlock()
 
 				specs.Add(services)
 

@@ -18,6 +18,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -79,35 +80,35 @@ var _ = Describe("Consul e2e", func() {
 		consulClient, err = consul.NewConsulWatcher(client, nil)
 		Expect(err).NotTo(HaveOccurred())
 
-		// ro := &services.RunOptions{
-		// 	NsToWrite: writeNamespace,
-		// 	NsToWatch: []string{"default", writeNamespace},
-		// 	WhatToRun: services.What{
-		// 		DisableGateway: true,
-		// 		DisableUds:     true,
-		// 		DisableFds:     true,
-		// 	},
-		// 	ConsulClient:     consulClient,
-		// 	ConsulDnsAddress: consul2.DefaultDnsAddress,
-		// }
-		// testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+		ro := &services.RunOptions{
+			NsToWrite: writeNamespace,
+			NsToWatch: []string{"default", writeNamespace},
+			WhatToRun: services.What{
+				DisableGateway: true,
+				DisableUds:     true,
+				DisableFds:     true,
+			},
+			ConsulClient:     consulClient,
+			ConsulDnsAddress: consul2.DefaultDnsAddress,
+		}
+		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
 		// Start Envoy
-		// envoyPort = defaults.HttpPort
-		// envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		// Expect(err).NotTo(HaveOccurred())
-		// envoyInstance.RestXdsPort = uint32(testClients.RestXdsPort)
-		// err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
-		// Expect(err).NotTo(HaveOccurred())
+		envoyPort = defaults.HttpPort
+		envoyInstance, err = envoyFactory.NewEnvoyInstance()
+		Expect(err).NotTo(HaveOccurred())
+		envoyInstance.RestXdsPort = uint32(testClients.RestXdsPort)
+		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		Expect(err).NotTo(HaveOccurred())
 
-		// // Run two simple web applications locally
-		// svc1 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-1")
-		// svc2 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-2")
+		// Run two simple web applications locally
+		svc1 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-1")
+		svc2 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-2")
 
 		// Register services with consul
 		// update service one to point to test upstream 2 port
-		// err = consulInstance.LiveUpdateServiceInstance("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1.Port)
-		// Expect(err).NotTo(HaveOccurred())
+		err = consulInstance.LiveUpdateServiceInstance("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1.Port)
+		Expect(err).NotTo(HaveOccurred())
 
 		// TODO(kdorosh) write e2e with just consul client that proves service updates even if cli watch on services does not...
 
@@ -130,7 +131,7 @@ var _ = Describe("Consul e2e", func() {
 		cancel()
 	})
 
-	It("works as expected", func() {
+	FIt("works as expected", func() {
 		_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -158,7 +159,7 @@ var _ = Describe("Consul e2e", func() {
 			return svc1.C, nil
 		}, "2s", "0.2s").Should(Receive())
 
-		err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
+		err = consulInstance.LiveUpdateServiceInstance("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("requests are load balanced between the two services")
@@ -181,7 +182,7 @@ var _ = Describe("Consul e2e", func() {
 
 	})
 
-	FIt("resolves eds even if services aren't updated", func() {
+	It("resolves eds even if services aren't updated", func() {
 		svcsChan, errChan := consulClient.WatchServices(ctx, []string{"dc1"}, consulplugin.ConsulConsistencyModes_DefaultMode, nil)
 
 		Eventually(func() <-chan []*consul.ServiceMeta {
