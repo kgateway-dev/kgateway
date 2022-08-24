@@ -99,5 +99,9 @@ func GetHostFromDestination(dest *v1.RouteAction_Single, usClient v1.UpstreamCli
 		name = d.Kube.GetRef().GetName()
 		namespace = d.Kube.GetRef().GetNamespace()
 	}
+	// Any unhandled destination type
+	if name == "" || namespace == "" {
+		return "", nil
+	}
 	return fmt.Sprintf("%s.%s", name, namespace), nil
 }
