@@ -2,7 +2,6 @@ package consul
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -95,11 +94,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				// associated with a single consul service on one datacenter.
 				specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
-
-				fmt.Println("-------------------------------")
-				fmt.Println(len(endpoints))
-				fmt.Println("-------------------------------")
-
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
 
