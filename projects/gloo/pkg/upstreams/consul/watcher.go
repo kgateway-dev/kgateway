@@ -6,7 +6,7 @@ import (
 
 	"github.com/avast/retry-go"
 	consulapi "github.com/hashicorp/consul/api"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glooconsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/go-utils/errutils"
 	"golang.org/x/sync/errgroup"
 )
@@ -22,7 +22,7 @@ type ServiceMeta struct {
 
 type ConsulWatcher interface {
 	ConsulClient
-	WatchServices(ctx context.Context, dataCenters []string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) (<-chan []*ServiceMeta, <-chan error)
+	WatchServices(ctx context.Context, dataCenters []string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error)
 }
 
 func NewConsulWatcher(client *consulapi.Client, dataCenters []string) (ConsulWatcher, error) {
@@ -49,7 +49,7 @@ type dataCenterServicesTuple struct {
 	services   map[string][]string
 }
 
-func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) (<-chan []*ServiceMeta, <-chan error) {
+func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error) {
 
 	var (
 		eg              errgroup.Group
@@ -62,7 +62,7 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 		// Copy before passing to goroutines!
 		dcName := dataCenter
 
-		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName, cm)
+		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName, cm, queryOpts)
 
 		// Collect services
 		eg.Go(func() error {
@@ -111,21 +111,25 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string,
 			}
 		}
 	}()
+
 	return outputChan, errorChan
 }
 
 // Honors the contract of Watch functions to open with an initial read.
-func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter string, cm v1.Settings_ConsulUpstreamDiscoveryConfiguration_ConsulConsistencyModes) (<-chan *dataCenterServicesTuple, <-chan error) {
+func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCenter string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan *dataCenterServicesTuple, <-chan error) {
 	servicesChan := make(chan *dataCenterServicesTuple)
 	errsChan := make(chan error)
 
 	go func(dataCenter string) {
 		defer close(servicesChan)
 		defer close(errsChan)
+
 		lastIndex := uint64(0)
 
 		for {
 			select {
+			case <-ctx.Done():
+				return
 			default:
 
 				var (
@@ -133,17 +137,24 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 					queryMeta *consulapi.QueryMeta
 				)
 
+				// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
+				// The first invocation (with lastIndex equal to zero) will return immediately
+				queryOpts := NewConsulServicesQueryOptions(dataCenter, cm, queryOpts)
+				queryOpts.WaitIndex = lastIndex
+
+				ctxDead := false
+
 				// Use a back-off retry strategy to avoid flooding the error channel
 				err := retry.Do(
 					func() error {
 						var err error
-
-						// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
-						// The first invocation (with lastIndex equal to zero) will return immediately
-						queryOpts := NewConsulQueryOptions(dataCenter, cm)
-						queryOpts.WaitIndex = lastIndex
+						if ctx.Err() != nil {
+							// intentionally return early if context is already done
+							// this is a backoff loop; by the time we get here ctx may be done
+							ctxDead = true
+							return nil
+						}
 						services, queryMeta, err = c.Services(queryOpts.WithContext(ctx))
-
 						return err
 					},
 					retry.Attempts(6),
@@ -151,6 +162,10 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 					retry.Delay(100*time.Millisecond),
 					retry.DelayType(retry.BackOffDelay),
 				)
+
+				if ctxDead {
+					return
+				}
 
 				if err != nil {
 					errsChan <- err
@@ -166,16 +181,16 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 					services:   services,
 				}
 
-				select {
-				case servicesChan <- tuple:
-				case <-ctx.Done():
-					return
-				}
 				// Update the last index
-				lastIndex = queryMeta.LastIndex
-
-			case <-ctx.Done():
-				return
+				if queryMeta.LastIndex < lastIndex {
+					// update if index goes backwards per consul blocking query docs
+					// this can happen e.g. KV list operations where item with highest index is deleted
+					// for more, see https://www.consul.io/api-docs/features/blocking#implementation-details
+					lastIndex = 0
+				} else {
+					lastIndex = queryMeta.LastIndex
+				}
+				servicesChan <- tuple
 			}
 		}
 	}(dataCenter)

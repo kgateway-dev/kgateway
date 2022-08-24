@@ -25,6 +25,10 @@ spec:
             properties:
               aws:
                 properties:
+                  awsAccountId:
+                    type: string
+                  disableRoleChaining:
+                    type: boolean
                   lambdaFunctions:
                     items:
                       properties:
@@ -193,6 +197,12 @@ spec:
                     items:
                       type: string
                     type: array
+                  queryOptions:
+                    properties:
+                      useCache:
+                        nullable: true
+                        type: boolean
+                    type: object
                   serviceName:
                     type: string
                   serviceSpec:
@@ -282,6 +292,10 @@ spec:
                                             type: string
                                         type: object
                                     type: object
+                                  type: array
+                                headersToRemove:
+                                  items:
+                                    type: string
                                   type: array
                                 ignoreErrorOnParse:
                                   type: boolean
@@ -596,6 +610,15 @@ spec:
                       type: integer
                   type: object
                 type: array
+              httpConnectHeaders:
+                items:
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type: array
               httpConnectSslConfig:
                 properties:
                   allowRenegotiation:
@@ -782,6 +805,10 @@ spec:
                                             type: string
                                         type: object
                                     type: object
+                                  type: array
+                                headersToRemove:
+                                  items:
+                                    type: string
                                   type: array
                                 ignoreErrorOnParse:
                                   type: boolean
@@ -1035,6 +1062,10 @@ spec:
                                         type: object
                                     type: object
                                   type: array
+                                headersToRemove:
+                                  items:
+                                    type: string
+                                  type: array
                                 ignoreErrorOnParse:
                                   type: boolean
                                 mergeExtractorsToBody:
@@ -1238,6 +1269,10 @@ spec:
                                             type: string
                                         type: object
                                     type: object
+                                  type: array
+                                headersToRemove:
+                                  items:
+                                    type: string
                                   type: array
                                 ignoreErrorOnParse:
                                   type: boolean

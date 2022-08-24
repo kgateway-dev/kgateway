@@ -1,6 +1,8 @@
 package aws_test
 
 import (
+	"net/url"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -68,6 +70,7 @@ var _ = Describe("Plugin", func() {
 						Namespace: "ns",
 						Name:      "secretref",
 					},
+					DisableRoleChaining: true,
 				},
 			},
 		}
@@ -572,8 +575,27 @@ var _ = Describe("Plugin", func() {
 			Expect(lpe.SecretKey).To(Equal(secretKeyValue))
 			Expect(lpe.SessionToken).To(Equal(sessionTokenValue))
 			Expect(lpe.RoleArn).To(Equal(roleArn))
+			Expect(lpe.DisableRoleChaining).To(Equal(true))
 		})
 
+	})
+
+	Context("ExtraAccountCredentials", func() {
+		JustBeforeEach(func() {
+			upstream.UpstreamType.(*v1.Upstream_Aws).Aws.AwsAccountId = "222222222222"
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should process route", func() {
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+			msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
+			Expect(err).Should(BeNil())
+			cfg := msg.(*AWSLambdaPerRoute)
+
+			Expect(cfg.Name).Should(Equal(url.QueryEscape("arn:aws:lambda:us-east1:222222222222:function:foo")))
+		})
 	})
 })
 

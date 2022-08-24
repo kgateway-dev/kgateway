@@ -52,7 +52,8 @@ func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (
 	for _, dataCenter := range dataCenters {
 
 		cm := c.consulUpstreamDiscoveryConfig.GetConsistencyMode()
-		queryOpts := NewConsulQueryOptions(dataCenter, cm)
+		qopts := c.consulUpstreamDiscoveryConfig.GetQueryOptions()
+		queryOpts := NewConsulServicesQueryOptions(dataCenter, cm, qopts)
 
 		serviceNamesAndTags, _, err := c.consul.Services(queryOpts.WithContext(opts.Ctx))
 		if err != nil {
@@ -75,7 +76,8 @@ func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts)
 	}
 
 	upstreamDiscoveryConfig := c.consulUpstreamDiscoveryConfig
-	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, upstreamDiscoveryConfig.GetConsistencyMode())
+	qopts := c.consulUpstreamDiscoveryConfig.GetQueryOptions()
+	servicesChan, errorChan := c.consul.WatchServices(opts.Ctx, dataCenters, upstreamDiscoveryConfig.GetConsistencyMode(), qopts)
 
 	upstreamsChan := make(chan v1.UpstreamList)
 	go func() {

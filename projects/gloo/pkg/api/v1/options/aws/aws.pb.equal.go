@@ -81,6 +81,14 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetAwsAccountId(), target.GetAwsAccountId()) != 0 {
+		return false
+	}
+
+	if m.GetDisableRoleChaining() != target.GetDisableRoleChaining() {
+		return false
+	}
+
 	return true
 }
 

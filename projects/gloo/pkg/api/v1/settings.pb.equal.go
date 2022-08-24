@@ -12,6 +12,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	equality "github.com/solo-io/protoc-gen-ext/pkg/equality"
+
+	consul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 )
 
 // ensure the imports are used
@@ -23,6 +25,8 @@ var (
 	_ = strings.Compare
 	_ = equality.Equalizer(nil)
 	_ = proto.Message(nil)
+
+	_ = consul.ConsulConsistencyModes(0)
 )
 
 // Equal function
@@ -1267,6 +1271,16 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Equal(that interface{}) 
 
 	if m.GetConsistencyMode() != target.GetConsistencyMode() {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetQueryOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetQueryOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetQueryOptions(), target.GetQueryOptions()) {
+			return false
+		}
 	}
 
 	return true

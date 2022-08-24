@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6599
+    resolvesIssue: false
+    description: Use consul agent cache by default when fetching CatalogServices to build endpoints for EDS, which should help improve performance. Caching is configurable.
