@@ -11,17 +11,17 @@ import (
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 )
 
-var _ = Describe("InternalConsulClient", func() {
+var _ = Describe("ClientWrapper", func() {
 
 	var (
 		cancel     context.CancelFunc
 		ctrl       *gomock.Controller
-		mockClient *mock_consul.MockInternalConsulClient
+		mockClient *mock_consul.MockClientWrapper
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(T)
-		mockClient = mock_consul.NewMockInternalConsulClient(ctrl)
+		mockClient = mock_consul.NewMockClientWrapper(ctrl)
 	})
 
 	AfterEach(func() {
@@ -34,7 +34,7 @@ var _ = Describe("InternalConsulClient", func() {
 	Describe("Services operation", func() {
 		Context("When Filtering By Tags", func() {
 			var (
-				client InternalConsulClient
+				client ClientWrapper
 			)
 			BeforeEach(func() {
 				dc := []string{"dc1"}

@@ -384,7 +384,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	// if vault service discovery specified, initialize consul watcher
 	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {
-		// Set up Consul client
 		consulClientWrapper, err := consul.NewConsulWatcher(consulClient, consulServiceDiscovery.GetDataCenters(), settings.GetConsulDiscovery().GetServiceTagsAllowlist())
 		if err != nil {
 			return err
