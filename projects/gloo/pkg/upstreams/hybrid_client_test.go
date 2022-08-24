@@ -29,7 +29,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 
 		svcClient                skkube.ServiceClient
 		baseUsClient             v1.UpstreamClient
-		mockInternalConsulClient *mock_consul.MockInternalConsulClient
+		mockInternalConsulClient *mock_consul.MockClientWrapper
 
 		hybridClient v1.UpstreamClient
 
@@ -70,7 +70,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		svcClient, err = skkube.NewServiceClient(ctx, inMemoryFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		mockInternalConsulClient = mock_consul.NewMockInternalConsulClient(ctrl)
+		mockInternalConsulClient = mock_consul.NewMockClientWrapper(ctrl)
 		mockInternalConsulClient.EXPECT().DataCenters().Return([]string{"dc1"}, nil).AnyTimes()
 		mockInternalConsulClient.EXPECT().Services(gomock.Any()).Return(
 			map[string][]string{"svc-1": {}},
