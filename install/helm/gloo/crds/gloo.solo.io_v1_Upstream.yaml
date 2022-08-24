@@ -25,6 +25,8 @@ spec:
             properties:
               aws:
                 properties:
+                  awsAccountId:
+                    type: string
                   disableRoleChaining:
                     type: boolean
                   lambdaFunctions:
@@ -606,6 +608,15 @@ spec:
                       minimum: 0
                       nullable: true
                       type: integer
+                  type: object
+                type: array
+              httpConnectHeaders:
+                items:
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
                   type: object
                 type: array
               httpConnectSslConfig:

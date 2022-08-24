@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 	"text/template"
 
@@ -23,11 +24,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
-	glooVersion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils"
-	"github.com/solo-io/go-utils/versionutils/git"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -59,15 +58,7 @@ func TestHelm(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	version = os.Getenv("TAGGED_VERSION")
-	if !glooVersion.IsReleaseVersion() {
-		gitInfo, err := git.GetGitRefInfo("./")
-		Expect(err).NotTo(HaveOccurred())
-		// remove the "v" prefix
-		version = gitInfo.Tag[1:]
-	} else {
-		version = version[1:]
-	}
+	version = MustGetVersion()
 	pullPolicy = v1.PullIfNotPresent
 	// generate the values.yaml and Chart.yaml files
 	MustMake(".", "-C", "../../", "generate-helm-files", "-B")
@@ -100,6 +91,30 @@ func MustMake(dir string, args ...string) {
 	err := makeCmd.Run()
 
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+}
+
+func MustMakeReturnStdout(dir string, args ...string) string {
+	makeCmd := exec.Command("make", args...)
+	makeCmd.Dir = dir
+
+	var stdout bytes.Buffer
+	makeCmd.Stdout = &stdout
+
+	makeCmd.Stderr = GinkgoWriter
+	err := makeCmd.Run()
+
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	return stdout.String()
+}
+
+func MustGetVersion() string {
+	output := MustMakeReturnStdout(".", "-C", "../../", "print-VERSION") // use print-VERSION so version matches on forks
+	// sample output
+	// make: Entering directory '/var/home/kdorosh/git/forks/gloo'\n0.0.0-fork\nmake: Leaving directory '/var/home/kdorosh/git/forks/gloo'\n"
+	lines := strings.Split(output, "\n")
+	Expect(len(lines)).To(BeNumerically(">", 2))
+	return lines[1]
 }
 
 type helmValues struct {
