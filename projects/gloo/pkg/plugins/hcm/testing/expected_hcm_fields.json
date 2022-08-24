@@ -47,5 +47,5 @@
     "PathNormalizationOptions",
     "StripTrailingHostDot",
     "ProxyStatusConfig",
-    "TypedHeaderValidationConfig",
+    "TypedHeaderValidationConfig"
 ]
