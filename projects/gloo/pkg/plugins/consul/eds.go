@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/avast/retry-go"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/constants"
@@ -24,6 +25,24 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/sync/errgroup"
 )
+
+type epWatchTuple struct {
+	// the last seen endpoints for this svc in this datacenter
+	endpoints []*consulapi.CatalogService
+	// a cancel function we can call when we no longer care about this watch (call before removal from map)
+	cancel context.CancelFunc
+}
+
+// map of service name to endpoints tuple
+type svcEndpointWatches map[string]*epWatchTuple
+
+// map of datacenter to svcEndpointWatches
+type dataCenterEndpointWatches map[string]svcEndpointWatches
+
+type dataCenterServiceEndpointsTuple struct {
+	dataCenter, service string
+	endpoints           []*consulapi.CatalogService
+}
 
 // Starts a watch on the Consul service metadata endpoint for all the services associated with the tracked upstreams.
 // Whenever it detects an update to said services, it fetches the complete specs for the tracked services,
@@ -45,6 +64,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		return nil, nil, err
 	}
 
+	fmt.Printf("KD1234 start watch services for dcs %v\n", dataCenters)
+
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(
 		opts.Ctx,
 		dataCenters,
@@ -60,10 +81,10 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		errutils.AggregateErrs(opts.Ctx, errChan, servicesWatchErrChan, "consul eds")
 	}()
 
-	endpointsChan := make(chan v1.EndpointList)
+	allEndpointsListChan := make(chan v1.EndpointList)
 	wg.Add(1)
 	go func() {
-		defer close(endpointsChan)
+		defer close(allEndpointsListChan)
 		defer wg.Done()
 
 		timer := time.NewTicker(DefaultDnsPollingInterval)
@@ -80,10 +101,19 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 			select {
 			case <-opts.Ctx.Done():
 				return false
-			case endpointsChan <- endpoints:
+			case allEndpointsListChan <- endpoints:
 			}
 			return true
 		}
+
+		dcEndpointWatches := dataCenterEndpointWatches{}
+
+		var (
+			eg               errgroup.Group
+			allEndpointsChan = make(chan *dataCenterServiceEndpointsTuple)
+		)
+
+		defer close(allEndpointsChan)
 
 		for {
 			select {
@@ -92,9 +122,99 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					return
 				}
 
-				// Here is where the specs are produced; each resulting spec is a grouping of serviceInstances (aka endpoints)
-				// associated with a single consul service on one datacenter.
-				specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
+				// // non-blocking; more cache misses but more network calls?
+				// specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
+				// endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
+
+				// previousHash = hashutils.MustHash(endpoints)
+				// previousSpecs = specs
+				// // previousServiceMeta = serviceMeta
+
+				// if !publishEndpoints(endpoints) {
+				// 	return
+				// }
+				// continue
+
+				// construct a set of the present services by datacenter
+				dcToSvcs := map[string]map[string]struct{}{}
+				for _, meta := range serviceMeta {
+					for _, dc := range meta.DataCenters {
+						// add to set of datacenter/svc pairs present
+						if _, ok := dcToSvcs[dc]; !ok {
+							dcToSvcs[dc] = map[string]struct{}{}
+						}
+						dcToSvcs[dc][meta.Name] = struct{}{}
+
+						// additionally, if not already a watch for this, add to set of datacenter/svc pairs to create watch for
+						if _, ok := dcEndpointWatches[dc]; !ok {
+							dcEndpointWatches[dc] = svcEndpointWatches{}
+						}
+						if _, ok := dcEndpointWatches[dc][meta.Name]; ok {
+							// watch already exists, don't recreate
+							continue
+						}
+						// watch does not exist, create it
+						ctx, newCancel := context.WithCancel(opts.Ctx)
+						dcEndpointWatches[dc][meta.Name] = &epWatchTuple{
+							cancel: newCancel,
+						}
+
+						// Copy before passing to goroutines!
+						dcName := dc
+						svcName := meta.Name
+
+						fmt.Printf("KD1234 start watch on dcName %s svcName %s\n", dcName, svcName)
+						endpointsChan, epErrChan := p.watchEndpointsInDataCenter(ctx, dcName, svcName, p.consulUpstreamDiscoverySettings.GetConsistencyMode(), p.consulUpstreamDiscoverySettings.GetQueryOptions())
+
+						// Collect endpoints
+						eg.Go(func() error {
+							aggregateEndpoints(ctx, allEndpointsChan, endpointsChan)
+							return nil
+						})
+
+						// Collect errors
+						eg.Go(func() error {
+							errutils.AggregateErrs(ctx, errChan, epErrChan, "data center: "+dcName)
+							return nil
+						})
+					}
+				}
+
+				// create a set of the dc / svc combos we will delete (do not delete from the map that we iterate over)
+				dcToSvcsToCancel := map[string]map[string]struct{}{}
+				for dc, svcWatchesMap := range dcEndpointWatches {
+					for svcName := range svcWatchesMap {
+						if _, ok := dcToSvcs[dc]; !ok {
+							dcToSvcsToCancel[dc] = map[string]struct{}{}
+						}
+						if _, ok := dcToSvcs[dc][svcName]; !ok {
+							dcToSvcsToCancel[dc][svcName] = struct{}{}
+						}
+					}
+				}
+
+				// cancel the watches we need to cancel
+				for dc, svcsMap := range dcToSvcsToCancel {
+					for svc, _ := range svcsMap {
+						fmt.Printf("KD1234 cancel watch on dcName %s svcName %s\n", dc, svc)
+						dcEndpointWatches[dc][svc].cancel()
+						delete(dcEndpointWatches[dc], svc)
+					}
+				}
+
+			case eps, ok := <-allEndpointsChan:
+				if !ok {
+					return
+				}
+				dcEndpointWatches[eps.dataCenter][eps.service].endpoints = eps.endpoints
+				collector := newSpecCollector()
+				for _, svcTuple := range dcEndpointWatches {
+					for _, svc := range svcTuple {
+						collector.Add(svc.endpoints)
+					}
+				}
+				specs := collector.Get() // TODO(kdorosh) this does not need to be synchronized anymore!
+
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
 				previousHash = hashutils.MustHash(endpoints)
@@ -135,7 +255,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		wg.Wait()
 		close(errChan)
 	}()
-	return endpointsChan, errChan, nil
+	return allEndpointsListChan, errChan, nil
 }
 
 var (
@@ -147,6 +267,124 @@ func init() {
 	cacheHits = 0
 	cacheMisses = 0
 	lock = sync.Mutex{}
+}
+
+// Honors the contract of Watch functions to open with an initial read.
+func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svcName string, cm glooConsul.ConsulConsistencyModes, queryOpts *glooConsul.QueryOptions) (<-chan *dataCenterServiceEndpointsTuple, <-chan error) {
+	endpointsChan := make(chan *dataCenterServiceEndpointsTuple)
+	errsChan := make(chan error)
+
+	go func(dataCenter string) {
+		defer close(endpointsChan)
+		defer close(errsChan)
+
+		lastIndex := uint64(0)
+
+		for {
+			select {
+			case <-ctx.Done():
+				fmt.Printf("KD1234 watchEndpointsInDataCenter ctx done\n")
+				return
+			default:
+
+				var (
+					endpoints []*consulapi.CatalogService
+					queryMeta *consulapi.QueryMeta
+				)
+
+				// time.Sleep(2 * time.Second) // give time for cache hit?
+
+				// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
+				// The first invocation (with lastIndex equal to zero) will return immediately
+				queryOpts := consul.NewConsulCatalogServiceQueryOptions(dataCenter, cm, queryOpts)
+				queryOpts.WaitIndex = lastIndex
+
+				ctxDead := false
+
+				// Use a back-off retry strategy to avoid flooding the error channel
+				err := retry.Do(
+					func() error {
+						var err error
+						if ctx.Err() != nil {
+							// intentionally return early if context is already done
+							// this is a backoff loop; by the time we get here ctx may be done
+							ctxDead = true
+							return nil
+						}
+						// TODO(kdorosh) provide tag?
+						endpoints, queryMeta, err = p.client.Service(svcName, "", queryOpts.WithContext(ctx))
+						if err == nil {
+							lock.Lock()
+							if queryMeta != nil && queryMeta.CacheHit {
+								cacheHits++
+							} else {
+								cacheMisses++
+							}
+							fmt.Printf("KD123 cache hits: %v, cache misses: %v ... err %v lastindex %v qm %+v\n", cacheHits, cacheMisses, err, lastIndex, queryMeta)
+							lock.Unlock()
+						}
+						return err
+					},
+					retry.Attempts(6),
+					//  Last delay is 2^6 * 100ms = 3.2s
+					retry.Delay(100*time.Millisecond),
+					retry.DelayType(retry.BackOffDelay),
+				)
+
+				if ctxDead {
+					fmt.Printf("KD1234 watchEndpointsInDataCenter ctx inner done\n")
+					return
+				}
+
+				if err != nil {
+					errsChan <- err
+					continue
+				}
+
+				// If index is the same, there have been no changes since last query
+				if queryMeta.LastIndex == lastIndex {
+					continue
+				}
+
+				tuple := &dataCenterServiceEndpointsTuple{
+					dataCenter: dataCenter,
+					service:    svcName,
+					endpoints:  endpoints,
+				}
+
+				// Update the last index
+				if queryMeta.LastIndex < lastIndex {
+					// update if index goes backwards per consul blocking query docs
+					// this can happen e.g. KV list operations where item with highest index is deleted
+					// for more, see https://www.consul.io/api-docs/features/blocking#implementation-details
+					lastIndex = 0
+				} else {
+					lastIndex = queryMeta.LastIndex
+				}
+				endpointsChan <- tuple
+			}
+		}
+	}(dataCenter)
+
+	return endpointsChan, errsChan
+}
+
+func aggregateEndpoints(ctx context.Context, dest chan *dataCenterServiceEndpointsTuple, src <-chan *dataCenterServiceEndpointsTuple) {
+	for {
+		select {
+		case services, ok := <-src:
+			if !ok {
+				return
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case dest <- services:
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // For each service AND data center combination, return a CatalogService that contains a list of all service instances
@@ -199,18 +437,20 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 					// we create a lot of requests; by the time we get here ctx may be done
 					return ctx.Err()
 				}
-				services, qm, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
+				services, queryMeta, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
 				if err != nil {
 					return err
 				}
-				lock.Lock()
-				if qm.CacheHit {
-					cacheHits++
-				} else {
-					cacheMisses++
+				if err == nil {
+					lock.Lock()
+					if queryMeta != nil && queryMeta.CacheHit {
+						cacheHits++
+					} else {
+						cacheMisses++
+					}
+					fmt.Printf("KD123 cache hits: %v, cache misses: %v ... err %v qm %+v\n", cacheHits, cacheMisses, err, queryMeta)
+					lock.Unlock()
 				}
-				fmt.Printf("KD123 cache hits: %v, cache misses: %v\n", cacheHits, cacheMisses)
-				lock.Unlock()
 
 				specs.Add(services)
 
