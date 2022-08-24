@@ -82,11 +82,20 @@ func OpenSourceImages(semver *version.Version) []string {
 // List of images only included in gloo edge enterprise
 // In 1.7, we replaced the grpcserver images with gloo-fed images.
 func EnterpriseImages(semver *version.Version) []string {
-	extraImages := []string{"gloo-fed", "gloo-fed-apiserver", "gloo-fed-apiserver-envoy", "gloo-federation-console", "gloo-fed-rbac-validating-webhook"}
-	if semver.LessThan(version.MustParseSemantic("1.7.0")) {
-		extraImages = []string{"grpcserver-ui", "grpcserver-envoy", "grpcserver-ee"}
+	images := []string{"rate-limit-ee", "gloo-ee", "gloo-ee-envoy-wrapper", "observability-ee", "extauth-ee"}
+	if semver.AtLeast(version.MustParseSemantic("1.12.0")) {
+		images = append(images, "caching-ee")
 	}
-	return append([]string{"rate-limit-ee", "gloo-ee", "gloo-ee-envoy-wrapper", "observability-ee", "extauth-ee", "discovery-ee", "caching-ee"}, extraImages...)
+	if semver.AtLeast(version.MustParseSemantic("1.10.0")) {
+		images = append(images, "discovery-ee")
+	}
+	if semver.AtLeast(version.MustParseSemantic("1.7.0")) {
+		images = append(images, "gloo-fed", "gloo-fed-apiserver", "gloo-fed-apiserver-envoy", "gloo-federation-console", "gloo-fed-rbac-validating-webhook")
+	} else if semver.LessThan(version.MustParseSemantic("1.7.0")) {
+		images = append(images, "grpcserver-ui", "grpcserver-envoy", "grpcserver-ee")
+	}
+
+	return images
 }
 
 func printImageReportGloo(semver *version.Version) error {
