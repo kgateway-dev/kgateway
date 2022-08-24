@@ -26,7 +26,7 @@ type ConsulWatcher interface {
 }
 
 func NewConsulWatcher(client *consulapi.Client, dataCenters []string, serviceTagsAllowlist []string) (ConsulWatcher, error) {
-	clientWrapper, err := NewConsulClient(client, dataCenters, serviceTagsAllowlist)
+	clientWrapper, err := NewFilteredConsulClient(NewConsulClientWrapper(client), dataCenters, serviceTagsAllowlist)
 	if err != nil {
 		return nil, err
 	}

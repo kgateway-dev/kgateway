@@ -76,6 +76,51 @@ var _ = Describe("ConsulClient", func() {
 			})
 		})
 
+		Context("When Filtering By Tags", func() {
+
+			BeforeEach(func() {
+				dcServices := []dataCenterServicesTuple{{
+					DataCenter: "dc1",
+					Services: map[string][]string{
+						"svc-1": {"tag-1", "tag-2"}, //filtered in with tag-1
+						"svc-2": {"tag-2"},          //filtered out
+						"svc-3": {"tag-1", "tag-4"}, //filtered in with both tags
+						"svc-4": {"tag-4", "tag-5"}, //filtered in with tag-4
+						"svc-5": {},                 //filtered out
+					},
+				}, {
+					DataCenter: "dc2",
+					Services: map[string][]string{
+						"svc-1": {"tag-4"}, //filtered in
+						"svc-3": {"tag-2"}, //filtered out
+					},
+				}}
+
+				setupDatacenterServices(ctx, client, &consulapi.QueryOptions{RequireConsistent: false, AllowStale: false, UseCache: true}, &dcServices)
+			})
+
+			It("returns the filtered upstreams", func() {
+				usClient := NewConsulUpstreamClient(
+					NewConsulWatcherFromClient(client),
+					&v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+						ServiceTagsAllowlist: []string{
+							"tag-1",
+							"tag-4",
+						},
+					})
+
+				upstreams, err := usClient.List(defaults.GlooSystem, clients.ListOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(upstreams).To(HaveLen(3))
+				Expect(upstreams).To(ConsistOf(
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2", "tag-4"}}, nil)[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc1"}, Tags: []string{"tag-1", "tag-4"}}, nil)[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-4", DataCenters: []string{"dc1"}, Tags: []string{"tag-1", "tag-4"}}, nil)[0],
+				))
+			})
+		})
+
 		Context("non-default consistency mode", func() {
 			It("returns the expected upstreams using stale consistency mode", func() {
 				dcServices := []dataCenterServicesTuple{{

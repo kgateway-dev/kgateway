@@ -28,7 +28,34 @@ type ConsulClient interface {
 	Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error)
 }
 
-func NewConsulClient(client *consulapi.Client, dataCenters []string, serviceTagsAllowlist []string) (ConsulClient, error) {
+type consulClientWrapper struct {
+	api *consulapi.Client
+}
+
+//NewConsulClientWrapper wraps the original consul client to allow for access in testing + simplification of calls
+func NewConsulClientWrapper(consulClient *consulapi.Client) ConsulClient {
+	return &consulClientWrapper{consulClient}
+}
+
+func (c *consulClientWrapper) DataCenters() ([]string, error) {
+	return c.api.Catalog().Datacenters()
+}
+
+func (c *consulClientWrapper) Services(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error) {
+	return c.api.Catalog().Services(q)
+}
+
+func (c *consulClientWrapper) Service(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+	return c.api.Catalog().Service(service, tag, q)
+}
+
+func (c *consulClientWrapper) Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+	return c.api.Catalog().Connect(service, tag, q)
+}
+
+// NewFilteredConsulClient is used to create a new client for filtered consul requests.
+// We have a wrapper around the consul api client *consulapi.Client - so that we can filter requests
+func NewFilteredConsulClient(client ConsulClient, dataCenters []string, serviceTagsAllowlist []string) (ConsulClient, error) {
 	dcMap := make(map[string]struct{})
 	for _, dc := range dataCenters {
 		dcMap[dc] = struct{}{}
@@ -42,14 +69,15 @@ func NewConsulClient(client *consulapi.Client, dataCenters []string, serviceTags
 }
 
 type consul struct {
-	api *consulapi.Client
-	// Whitelist of data centers to consider when querying the agent
+	api ConsulClient
+	// allowlist of data centers to consider when querying the agent
 	dataCenters map[string]struct{}
+	// allowlist of serviceTags to consider when querying the agent
 	serviceTags []string
 }
 
 func (c *consul) DataCenters() ([]string, error) {
-	dc, err := c.api.Catalog().Datacenters()
+	dc, err := c.api.DataCenters()
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +88,7 @@ func (c *consul) Services(q *consulapi.QueryOptions) (map[string][]string, *cons
 	if err := c.validateDataCenter(q.Datacenter); err != nil {
 		return nil, nil, err
 	}
-	services, queryMeta, err := c.api.Catalog().Services(q)
+	services, queryMeta, err := c.api.Services(q)
 	services = c.filterServices(services)
 	return services, queryMeta, err
 }
@@ -69,14 +97,14 @@ func (c *consul) Service(service, tag string, q *consulapi.QueryOptions) ([]*con
 	if err := c.validateDataCenter(q.Datacenter); err != nil {
 		return nil, nil, err
 	}
-	return c.api.Catalog().Service(service, tag, q)
+	return c.api.Service(service, tag, q)
 }
 
 func (c *consul) Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 	if err := c.validateDataCenter(q.Datacenter); err != nil {
 		return nil, nil, err
 	}
-	return c.api.Catalog().Connect(service, tag, q)
+	return c.api.Connect(service, tag, q)
 }
 
 // Filters out the data centers not listed in the config
@@ -100,13 +128,13 @@ func (c *consul) filterDataCenters(dataCenters []string) []string {
 //input from services is a map of service name to slice of tags
 func (c *consul) filterServices(services map[string][]string) map[string][]string {
 
-	var outputServices map[string][]string
-	for serviceName, serviceTags := range services {
+	filteredServices := make(map[string][]string)
+	for serviceName, sTags := range services {
 		tagFound := false
-		if c.serviceTags == nil || len(c.serviceTags) == 0 {
+		if len(c.serviceTags) == 0 {
 			tagFound = true
 		}
-		for _, tag := range serviceTags {
+		for _, tag := range sTags {
 			if tagFound {
 				//if tag has been found we are filtered in and no longer need to check other tags
 				break
@@ -115,10 +143,10 @@ func (c *consul) filterServices(services map[string][]string) map[string][]strin
 		}
 
 		if tagFound {
-			outputServices[serviceName] = serviceTags
+			filteredServices[serviceName] = sTags
 		}
 	}
-	return outputServices
+	return filteredServices
 }
 
 // Checks whether we are allowed to query the given data center

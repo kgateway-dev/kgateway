@@ -29,7 +29,8 @@ const (
 func NewHybridUpstreamClient(
 	upstreamClient v1.UpstreamClient,
 	serviceClient skkube.ServiceClient,
-	consulClient consul.ConsulWatcher) (v1.UpstreamClient, error) {
+	consulClient consul.ConsulWatcher,
+	settings *v1.Settings) (v1.UpstreamClient, error) {
 
 	clientMap := make(map[string]v1.UpstreamClient)
 
@@ -43,7 +44,7 @@ func NewHybridUpstreamClient(
 	}
 
 	if consulClient != nil {
-		clientMap[sourceConsul] = consul.NewConsulUpstreamClient(consulClient, nil)
+		clientMap[sourceConsul] = consul.NewConsulUpstreamClient(consulClient, settings.GetConsulDiscovery())
 	}
 
 	return &hybridUpstreamClient{

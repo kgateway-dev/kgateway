@@ -84,6 +84,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			baseUsClient,
 			svcClient,
 			consul.NewConsulWatcherFromClient(mockConsulClient),
+			nil,
 		)
 		Expect(err).NotTo(HaveOccurred())
 	})

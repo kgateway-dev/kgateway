@@ -22,6 +22,7 @@ import (
 	_ "github.com/envoyproxy/protoc-gen-validate"
 	_ "github.com/golang/mock/mockgen"
 	_ "github.com/onsi/ginkgo/ginkgo"
+	_ "github.com/rjeczalik/interfaces/cmd/interfacer"
 	_ "github.com/saiskee/gettercheck"
 	_ "github.com/solo-io/protoc-gen-ext"
 	_ "github.com/solo-io/protoc-gen-openapi"

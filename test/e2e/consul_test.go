@@ -74,8 +74,10 @@ var _ = Describe("Consul e2e", func() {
 		client, err := api.NewClient(api.DefaultConfig())
 		Expect(err).NotTo(HaveOccurred())
 
+		serviceTagsAllowlist := []string{"1", "2"}
+
 		// Start Gloo
-		consulClient, err := consul.NewConsulWatcher(client, nil, nil)
+		consulClient, err := consul.NewConsulWatcher(client, nil, serviceTagsAllowlist)
 		Expect(err).NotTo(HaveOccurred())
 
 		ro := &services.RunOptions{
@@ -88,10 +90,7 @@ var _ = Describe("Consul e2e", func() {
 			},
 			Settings: &gloov1.Settings{
 				ConsulDiscovery: &gloov1.Settings_ConsulUpstreamDiscoveryConfiguration{
-					ServiceTagsAllowlist: []string{
-						"1",
-						"2",
-					},
+					ServiceTagsAllowlist: serviceTagsAllowlist,
 				},
 			},
 			ConsulClient:     consulClient,
