@@ -100,7 +100,8 @@ var _ = Describe("Make", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			remoteUrl := string(out)
-			if !strings.Contains(remoteUrl, "git@github.com:solo-io/gloo.git") {
+			if !strings.Contains(remoteUrl, "git@github.com:solo-io/gloo.git") &&
+				!strings.Contains(remoteUrl, "https://www.github.com/solo-io/gloo.git") {
 				// we are on a fork
 				Skip("skip")
 			}
@@ -119,7 +120,8 @@ var _ = Describe("Make", func() {
 
 			expectedVersion := "0.0.0-fork"
 			remoteUrl := string(out)
-			if strings.Contains(remoteUrl, "git@github.com:solo-io/gloo.git") {
+			if strings.Contains(remoteUrl, "git@github.com:solo-io/gloo.git") ||
+				strings.Contains(remoteUrl, "https://www.github.com/solo-io/gloo.git") {
 				out, err := exec.Command("git", "describe", "--tags", "--abbrev=0").CombinedOutput()
 				Expect(err).NotTo(HaveOccurred())
 				gitDesc := strings.TrimSpace(string(out))
@@ -140,7 +142,8 @@ var _ = Describe("Make", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			remoteUrl := string(out)
-			if !strings.Contains(remoteUrl, "git@github.com:solo-io/gloo.git") {
+			if !strings.Contains(remoteUrl, "git@github.com:solo-io/gloo.git") &&
+				!strings.Contains(remoteUrl, "https://www.github.com/solo-io/gloo.git") {
 				// we are on a fork
 				Skip("skip")
 			}
