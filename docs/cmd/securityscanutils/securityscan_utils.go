@@ -75,6 +75,7 @@ func OpenSourceImages(semver *version.Version) []string {
 		//Added kubectl
 		return []string{"access-logger", "certgen", "discovery", "gateway", "gloo", "gloo-envoy-wrapper", "ingress", "sds", "kubectl"}
 	} else {
+		fmt.Printf("ELSE", semver.String())
 		return []string{"access-logger", "certgen", "discovery", "gateway", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
 	}
 }
