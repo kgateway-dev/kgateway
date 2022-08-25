@@ -38,6 +38,7 @@ in a particular region
 "secretRef": .core.solo.io.ResourceRef
 "lambdaFunctions": []aws.options.gloo.solo.io.LambdaFunctionSpec
 "roleArn": string
+"awsAccountId": string
 "disableRoleChaining": bool
 
 ```
@@ -48,6 +49,7 @@ in a particular region
 | `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A [Gloo Secret Ref](https://docs.solo.io/gloo-edge/latest/reference/cli/glooctl_create_secret_aws/) to an AWS Secret AWS Secrets can be created with `glooctl secret create aws ...` If the secret is created manually, it must conform to the following structure: ``` access_key: <aws access key> secret_key: <aws secret key> session_token: <(optional) aws session token> ```. |
 | `lambdaFunctions` | [[]aws.options.gloo.solo.io.LambdaFunctionSpec](../aws.proto.sk/#lambdafunctionspec) | The list of Lambda Functions contained within this region. This list will be automatically populated by Gloo if discovery is enabled for AWS Lambda Functions. |
 | `roleArn` | `string` | (Optional): role_arn to use when assuming a role for a given request via STS. If set this role_arn will override the value found in AWS_ROLE_ARN This option will only be respected if STS credentials are enabled. To enable STS credential fetching see Settings.Gloo.AwsOptions in settings.proto. |
+| `awsAccountId` | `string` | (Optional): The AWS Account ID to use while calling if using resource based access. |
 | `disableRoleChaining` | `bool` | Optional override to disable role chaining;. |
 
 

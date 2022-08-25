@@ -15,7 +15,7 @@ var ForbiddenDataCenterErr = func(dataCenter string) error {
 
 // TODO(marco): consider adding ctx to signatures instead on relying on caller to set it
 // Wrap the Consul API in an interface to allow mocking
-type ConsulClient interface {
+type ClientWrapper interface {
 	// DataCenters is used to query for all the known data centers.
 	// Results will be filtered based on the data center whitelist provided in the Gloo settings.
 	DataCenters() ([]string, error)
@@ -27,55 +27,92 @@ type ConsulClient interface {
 	Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error)
 }
 
-func NewConsulClient(client *consulapi.Client, dataCenters []string) (ConsulClient, error) {
+type clientWrapper struct {
+	api *consulapi.Client
+}
+
+//NewConsulClientWrapper wraps the original consul client to allow for access in testing + simplification of calls
+func NewConsulClientWrapper(consulClient *consulapi.Client) ClientWrapper {
+	return &clientWrapper{consulClient}
+}
+
+func (c *clientWrapper) DataCenters() ([]string, error) {
+	return c.api.Catalog().Datacenters()
+}
+
+func (c *clientWrapper) Services(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error) {
+	return c.api.Catalog().Services(q)
+}
+
+func (c *clientWrapper) Service(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+	return c.api.Catalog().Service(service, tag, q)
+}
+
+func (c *clientWrapper) Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+	return c.api.Catalog().Connect(service, tag, q)
+}
+
+// NewFilteredConsulClient is used to create a new client for filtered consul requests.
+// We have a wrapper around the consul api client *consulapi.Client - so that we can filter requests
+func NewFilteredConsulClient(client ClientWrapper, dataCenters []string, serviceTagsAllowlist []string) (ClientWrapper, error) {
 	dcMap := make(map[string]struct{})
+	tagsMap := make(map[string]struct{})
 	for _, dc := range dataCenters {
 		dcMap[dc] = struct{}{}
 	}
 
+	for _, tag := range serviceTagsAllowlist {
+		tagsMap[tag] = struct{}{}
+	}
+
 	return &consul{
-		api:         client,
-		dataCenters: dcMap,
+		api:                  client,
+		dataCenters:          dcMap,
+		serviceTagsAllowlist: tagsMap,
 	}, nil
 }
 
 type consul struct {
-	api *consulapi.Client
-	// Whitelist of data centers to consider when querying the agent
+	api ClientWrapper
+	// allowlist of data centers to consider when querying the agent - If empty, all are allowed
 	dataCenters map[string]struct{}
+	// allowlist of serviceTags to consider when querying the agent - If emtpy, all are allowed
+	serviceTagsAllowlist map[string]struct{}
 }
 
 func (c *consul) DataCenters() ([]string, error) {
-	dc, err := c.api.Catalog().Datacenters()
+	dc, err := c.api.DataCenters()
 	if err != nil {
 		return nil, err
 	}
-	return c.filter(dc), nil
+	return c.filterDataCenters(dc), nil
 }
 
 func (c *consul) Services(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error) {
 	if err := c.validateDataCenter(q.Datacenter); err != nil {
 		return nil, nil, err
 	}
-	return c.api.Catalog().Services(q)
+	services, queryMeta, err := c.api.Services(q)
+	services = c.filterServices(services)
+	return services, queryMeta, err
 }
 
 func (c *consul) Service(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 	if err := c.validateDataCenter(q.Datacenter); err != nil {
 		return nil, nil, err
 	}
-	return c.api.Catalog().Service(service, tag, q)
+	return c.api.Service(service, tag, q)
 }
 
 func (c *consul) Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 	if err := c.validateDataCenter(q.Datacenter); err != nil {
 		return nil, nil, err
 	}
-	return c.api.Catalog().Connect(service, tag, q)
+	return c.api.Connect(service, tag, q)
 }
 
 // Filters out the data centers not listed in the config
-func (c *consul) filter(dataCenters []string) []string {
+func (c *consul) filterDataCenters(dataCenters []string) []string {
 
 	// If empty, all are allowed
 	if len(c.dataCenters) == 0 {
@@ -89,6 +126,27 @@ func (c *consul) filter(dataCenters []string) []string {
 		}
 	}
 	return filtered
+}
+
+// Filters out the services that do not have matching tags from the service_tags_allowlist
+//input from services is a map of service name to slice of tags
+func (c *consul) filterServices(services map[string][]string) map[string][]string {
+	//if there is no allowlist, allow for all services
+	if len(c.serviceTagsAllowlist) == 0 {
+		return services
+	}
+
+	//Filter services by tags
+	filteredServices := make(map[string][]string)
+	for serviceName, sTags := range services {
+		for _, tag := range sTags {
+			if _, found := c.serviceTagsAllowlist[tag]; found {
+				filteredServices[serviceName] = sTags
+				break
+			}
+		}
+	}
+	return filteredServices
 }
 
 // Checks whether we are allowed to query the given data center

@@ -29,15 +29,15 @@ import (
 var _ = Describe("Consul e2e", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		consulInstance *services.ConsulInstance
-		envoyInstance  *services.EnvoyInstance
-		envoyPort      uint32
-		svc1, svc2     *v1helpers.TestUpstream
-		err            error
-		consulClient   consul.ConsulWatcher
+		ctx              context.Context
+		cancel           context.CancelFunc
+		testClients      services.TestClients
+		consulInstance   *services.ConsulInstance
+		envoyInstance    *services.EnvoyInstance
+		envoyPort        uint32
+		svc1, svc2, svc3 *v1helpers.TestUpstream
+		err              error
+		consulClient     consul.ConsulWatcher
 	)
 
 	const writeNamespace = defaults.GlooSystem
@@ -76,8 +76,11 @@ var _ = Describe("Consul e2e", func() {
 		client, err := api.NewClient(api.DefaultConfig())
 		Expect(err).NotTo(HaveOccurred())
 
+		serviceTagsAllowlist := []string{"1", "2"}
+
 		// Start Gloo
-		consulClient, err = consul.NewConsulWatcher(client, nil)
+		consulClient, err := consul.NewConsulWatcher(client, nil, serviceTagsAllowlist)
+
 		Expect(err).NotTo(HaveOccurred())
 
 		ro := &services.RunOptions{
@@ -87,6 +90,11 @@ var _ = Describe("Consul e2e", func() {
 				DisableGateway: true,
 				DisableUds:     true,
 				DisableFds:     true,
+			},
+			Settings: &gloov1.Settings{
+				ConsulDiscovery: &gloov1.Settings_ConsulUpstreamDiscoveryConfiguration{
+					ServiceTagsAllowlist: serviceTagsAllowlist,
+				},
 			},
 			ConsulClient:     consulClient,
 			ConsulDnsAddress: consul2.DefaultDnsAddress,
@@ -104,6 +112,7 @@ var _ = Describe("Consul e2e", func() {
 		// Run two simple web applications locally
 		svc1 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-1")
 		svc2 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-2")
+		svc3 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-3")
 
 		// Register services with consul
 		// update service one to point to test upstream 2 port
@@ -120,6 +129,11 @@ var _ = Describe("Consul e2e", func() {
 		// Expect(err).NotTo(HaveOccurred())
 		// err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "2"}, svc2.Port)
 		// Expect(err).NotTo(HaveOccurred())
+
+		//we should not discover this service as it will be filtered out
+		err = consulInstance.LiveUpdateServiceInstance("my-svc-1", "my-svc-3", envoyInstance.GlooAddr, []string{"svc", "3"}, svc3.Port)
+		Expect(err).NotTo(HaveOccurred())
+
 	})
 
 	AfterEach(func() {

@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6990
+    resolvesIssue: false
+    description: |
+      Modify the Validation Webhook to auto-accept status updates to resources.
+      Previously, a full translation run would kick off to validate status updates.
