@@ -2,6 +2,7 @@ package consul
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -182,7 +183,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 						// Collect errors
 						eg.Go(func() error {
-							errutils.AggregateErrs(ctx, errChan, epErrChan, "data center: "+dcName)
+							errutils.AggregateErrs(ctx, errChan, epErrChan, fmt.Sprintf("data center: %s, service: %s", dcName, svcName))
 							return nil
 						})
 					}
