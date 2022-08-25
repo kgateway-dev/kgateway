@@ -14,6 +14,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 )
 
@@ -71,12 +72,13 @@ func RunUDS(opts bootstrap.Opts) error {
 		emit <- struct{}{}
 	}()
 
-	plugins := registry.Plugins(opts)
+	plugs := registry.Plugins(opts)
 
 	var discoveryPlugins []discovery.DiscoveryPlugin
-	for _, plug := range plugins {
+	for _, plug := range plugs {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
+			disc.Init(plugins.InitParams{Ctx: watchOpts.Ctx, Settings: opts.Settings})
 			discoveryPlugins = append(discoveryPlugins, disc)
 		}
 	}
