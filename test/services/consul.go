@@ -200,28 +200,28 @@ func (i *ConsulInstance) Clean() error {
 	return nil
 }
 
+// func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port uint32) error {
+// 	svcDef := &serviceDef{
+// 		Service: &consulService{
+// 			ID:      svcId,
+// 			Name:    svcName,
+// 			Address: address,
+// 			Tags:    tags,
+// 			Port:    port,
+// 		},
+// 	}
+
+// 	i.registeredServices[svcId] = svcDef
+
+// 	err := i.AddConfigFromStruct(svcId, svcDef)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return i.ReloadConfig()
+// }
+
 func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port uint32) error {
-	svcDef := &serviceDef{
-		Service: &consulService{
-			ID:      svcId,
-			Name:    svcName,
-			Address: address,
-			Tags:    tags,
-			Port:    port,
-		},
-	}
-
-	i.registeredServices[svcId] = svcDef
-
-	err := i.AddConfigFromStruct(svcId, svcDef)
-	if err != nil {
-		return err
-	}
-
-	return i.ReloadConfig()
-}
-
-func (i *ConsulInstance) LiveUpdateServiceInstance(svcName, svcId, address string, tags []string, port uint32) error {
 	svcDef := &serviceDef{
 		Service: &consulService{
 			ID:      svcId,
@@ -236,7 +236,7 @@ func (i *ConsulInstance) LiveUpdateServiceInstance(svcName, svcId, address strin
 		return err
 	}
 	postData := string(content)
-	updatedSvcFile := filepath.Join(i.cfgDir, "kdorosh.json")
+	updatedSvcFile := filepath.Join(i.cfgDir, fmt.Sprintf("%s.json", svcId))
 	_ = os.Remove(updatedSvcFile)
 	err = ioutil.WriteFile(updatedSvcFile, []byte(postData), 0644)
 	Expect(err).ToNot(HaveOccurred())
