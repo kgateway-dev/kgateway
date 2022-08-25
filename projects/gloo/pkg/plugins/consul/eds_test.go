@@ -148,15 +148,16 @@ var _ = Describe("Consul EDS", func() {
 
 		It("blocking queries happypath", func() {
 
+			// queue up an update to the catalog svc
+			testServiceUpdated := createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3457, 100) // port updated
 			consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 				func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 					if q.Datacenter == dc2 {
-						return []*consulapi.CatalogService{testService}, &consulapi.QueryMeta{LastIndex: 2}, nil
+						return []*consulapi.CatalogService{testServiceUpdated}, &consulapi.QueryMeta{LastIndex: 2}, nil
 					}
 					return []*consulapi.CatalogService{}, &consulapi.QueryMeta{LastIndex: 2}, nil
 				}).AnyTimes()
 
-			// we have to put all the mock expects before the test starts or else the test may have data races
 			initialIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 10)}}
 			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
 			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context, string) {
@@ -182,7 +183,7 @@ var _ = Describe("Consul EDS", func() {
 				Fail("err chan closed prematurely")
 			case endpointsReceived := <-endpointsChan:
 				Expect(endpointsReceived).To(matchers.BeEquivalentToDiff(expectedEndpointsFirstAttempt))
-			case <-time.After(time.Hour): // TODO(kdorosh) until done debugging
+			case <-time.After(time.Second):
 				Fail("timeout waiting for endpoints")
 			}
 
@@ -194,6 +195,23 @@ var _ = Describe("Consul EDS", func() {
 				Expect(err).To(MatchError(ContainSubstring(failErr.Error())))
 			case <-time.After(time.Second):
 				Fail("timeout waiting for error")
+			}
+
+			// use select instead of eventually for easier debugging.
+			select {
+			case err := <-errorChan:
+				Expect(err).NotTo(HaveOccurred())
+				Fail("err chan closed prematurely")
+			case endpointsReceived := <-endpointsChan:
+				Expect(expectedEndpointsFirstAttempt).To(HaveLen(1))
+				// we updated port from 3456 to 3457, so that's what we expect now
+				expectedEndpoint := expectedEndpointsFirstAttempt[0].Clone().(*v1.Endpoint)
+				expectedEndpoint.Metadata.Name = "2-1-0-10-svc-1-c-3457"
+				expectedEndpoint.Port = 3457
+				expectedEndpoints := v1.EndpointList{expectedEndpoint}
+				Expect(endpointsReceived).To(matchers.BeEquivalentToDiff(expectedEndpoints))
+			case <-time.After(time.Second):
+				Fail("timeout waiting for endpoints")
 			}
 
 			// Cancel and verify that all the channels have been closed
