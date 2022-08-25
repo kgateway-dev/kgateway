@@ -200,10 +200,10 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				dcToSvcsToCancel := map[string]map[string]struct{}{}
 				for dc, svcWatchesMap := range dcEndpointWatches {
 					for svcName := range svcWatchesMap {
-						if _, ok := dcToSvcs[dc]; !ok {
+						if _, ok := dcToSvcsToCancel[dc]; !ok {
 							dcToSvcsToCancel[dc] = map[string]struct{}{}
 						}
-						if _, ok := dcToSvcs[dc][svcName]; !ok {
+						if _, ok := dcToSvcsToCancel[dc][svcName]; !ok {
 							dcToSvcsToCancel[dc][svcName] = struct{}{}
 						}
 					}
