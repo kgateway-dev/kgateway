@@ -2,7 +2,6 @@ package consul
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -63,8 +62,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	if err != nil {
 		return nil, nil, err
 	}
-
-	fmt.Printf("KD1234 start watch services for dcs %v\n", dataCenters)
 
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(
 		opts.Ctx,
@@ -175,7 +172,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 						dcName := dc
 						svcName := meta.Name
 
-						fmt.Printf("KD1234 start watch on dcName %s svcName %s\n", dcName, svcName)
 						endpointsChan, epErrChan := p.watchEndpointsInDataCenter(ctx, dcName, svcName, p.consulUpstreamDiscoverySettings.GetConsistencyMode(), p.consulUpstreamDiscoverySettings.GetQueryOptions())
 
 						// Collect endpoints
@@ -208,7 +204,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				// cancel the watches we need to cancel
 				for dc, svcsMap := range dcToSvcsToCancel {
 					for svc, _ := range svcsMap {
-						fmt.Printf("KD1234 cancel watch on dcName %s svcName %s\n", dc, svc)
 						dcEndpointWatches[dc][svc].cancel()
 						delete(dcEndpointWatches[dc], svc)
 					}
@@ -293,7 +288,6 @@ func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svc
 		for {
 			select {
 			case <-ctx.Done():
-				fmt.Printf("KD1234 watchEndpointsInDataCenter ctx done\n")
 				return
 			default:
 
@@ -301,8 +295,6 @@ func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svc
 					endpoints []*consulapi.CatalogService
 					queryMeta *consulapi.QueryMeta
 				)
-
-				// time.Sleep(2 * time.Second) // give time for cache hit?
 
 				// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
 				// The first invocation (with lastIndex equal to zero) will return immediately
@@ -321,18 +313,7 @@ func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svc
 							ctxDead = true
 							return nil
 						}
-						// TODO(kdorosh) provide tag?
-						endpoints, queryMeta, err = p.client.Service(svcName, "", queryOpts.WithContext(ctx))
-						if err == nil {
-							lock.Lock()
-							if queryMeta != nil && queryMeta.CacheHit {
-								cacheHits++
-							} else {
-								cacheMisses++
-							}
-							fmt.Printf("KD123 cache hits: %v, cache misses: %v ... err %v lastindex %v qm %+v\n", cacheHits, cacheMisses, err, lastIndex, queryMeta)
-							lock.Unlock()
-						}
+						endpoints, _, err = p.client.Service(svcName, "", queryOpts.WithContext(ctx))
 						return err
 					},
 					retry.Attempts(6),
@@ -342,7 +323,6 @@ func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svc
 				)
 
 				if ctxDead {
-					fmt.Printf("KD1234 watchEndpointsInDataCenter ctx inner done\n")
 					return
 				}
 
@@ -447,21 +427,10 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 					// we create a lot of requests; by the time we get here ctx may be done
 					return ctx.Err()
 				}
-				services, queryMeta, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
+				services, _, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
 				if err != nil {
 					return err
 				}
-				if err == nil {
-					lock.Lock()
-					if queryMeta != nil && queryMeta.CacheHit {
-						cacheHits++
-					} else {
-						cacheMisses++
-					}
-					fmt.Printf("KD123 cache hits: %v, cache misses: %v ... err %v qm %+v\n", cacheHits, cacheMisses, err, queryMeta)
-					lock.Unlock()
-				}
-
 				specs.Add(services)
 
 				return nil
