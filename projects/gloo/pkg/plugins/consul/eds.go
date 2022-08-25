@@ -263,17 +263,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	return allEndpointsListChan, errChan, nil
 }
 
-var (
-	cacheHits, cacheMisses uint
-	lock                   sync.Mutex
-)
-
-func init() {
-	cacheHits = 0
-	cacheMisses = 0
-	lock = sync.Mutex{}
-}
-
 // Honors the contract of Watch functions to open with an initial read.
 func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svcName string, cm glooConsul.ConsulConsistencyModes, queryOpts *glooConsul.QueryOptions) (<-chan *dataCenterServiceEndpointsTuple, <-chan error) {
 	endpointsChan := make(chan *dataCenterServiceEndpointsTuple)
