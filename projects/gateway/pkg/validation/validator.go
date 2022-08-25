@@ -707,10 +707,11 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *cor
 		}
 	}
 
-	reports, err := v.getReportsFromGlooValidationResponse(response)
-	// reports are gauranteed to not be nil at this point and we can more easily not report on the proxy
-	// than on the response itself without more loops on non-debug calls
-	logger.Debugf("Got response from GlooValidationService: UpstreamReports: %v, ProxyReports: %v", *reports.UpstreamReports, *reports.ProxyReports)
+	// dont log the responsse as proxies and status reports may be too large in large envs.
+	logger.Debugf("Got response from GlooValidationService with %d reports", len(response.GetValidationReports()))
+
+	_, err = v.getReportsFromGlooValidationResponse(response)
+
 	return err
 }
 
