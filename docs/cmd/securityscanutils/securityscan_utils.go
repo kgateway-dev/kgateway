@@ -68,16 +68,17 @@ func BuildSecurityScanReportGlooE(tags []string) error {
 
 // List of images included in gloo edge open source version 1.<version>.x
 func OpenSourceImages(semver *version.Version) []string {
-	if semver.AtLeast(version.MustParseSemantic("1.12.0")) {
-		//Removed gateway
-		return []string{"access-logger", "certgen", "discovery", "gloo", "gloo-envoy-wrapper", "ingress", "sds", "kubectl"}
-	} else if semver.LessThan(version.MustParseSemantic("1.12.0")) && semver.AtLeast(version.MustParseSemantic("1.11.0")) {
-		//Added kubectl
-		return []string{"access-logger", "certgen", "discovery", "gateway", "gloo", "gloo-envoy-wrapper", "ingress", "sds", "kubectl"}
-	} else {
-		fmt.Printf("ELSE", semver.String())
-		return []string{"access-logger", "certgen", "discovery", "gateway", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
+	images := []string{"access-logger", "certgen", "discovery", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
+
+	kubectlTwelve := semver.Minor() == 12 && semver.AtLeast(version.MustParseSemantic("1.12.3"))
+	kubectlEleven := semver.Minor() == 11 && semver.AtLeast(version.MustParseSemantic("1.11.28"))
+	if kubectlTwelve || kubectlEleven {
+		images = append(images, "kubectl")
 	}
+	if semver.LessThan(version.MustParseSemantic("1.12.0")) {
+		images = append(images, "gateway")
+	}
+	return images
 }
 
 // List of images only included in gloo edge enterprise

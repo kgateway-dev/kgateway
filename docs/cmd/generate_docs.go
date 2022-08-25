@@ -320,9 +320,10 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 			Opts: &securityscanutils.SecurityScanOpts{
 				OutputDir: outputDir,
 				ImagesPerVersion: map[string][]string{
-					">=v1.12.0":          OpenSourceImages(version.MustParseSemantic("1.12.0")),
-					"<v1.12.0, >=v1.1.0": OpenSourceImages(version.MustParseSemantic("1.11.0")),
-					"<v1.11.0, >=v1.8.0": OpenSourceImages(version.MustParseSemantic("1.8.0")),
+					">=v1.12.3":            OpenSourceImages(version.MustParseSemantic("1.12.3")),  //extra images: [kubectl]
+					"<v1.12.3, >=v1.12.0":  OpenSourceImages(version.MustParseSemantic("1.12.0")),  //extra images: []
+					"<v1.12.0, >=v1.11.28": OpenSourceImages(version.MustParseSemantic("1.11.28")), //extra images: [gateway, kubectl]
+					"<v1.11.0, >=v1.8.0":   OpenSourceImages(version.MustParseSemantic("1.8.0")),   //extra images: [gateway]
 				},
 				VersionConstraint:                      versionConstraint,
 				ImageRepo:                              "quay.io/solo-io",
