@@ -27,9 +27,9 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		cancel context.CancelFunc
 		ctrl   *gomock.Controller
 
-		svcClient        skkube.ServiceClient
-		baseUsClient     v1.UpstreamClient
-		mockConsulClient *mock_consul.MockConsulClient
+		svcClient                skkube.ServiceClient
+		baseUsClient             v1.UpstreamClient
+		mockInternalConsulClient *mock_consul.MockClientWrapper
 
 		hybridClient v1.UpstreamClient
 
@@ -70,9 +70,9 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		svcClient, err = skkube.NewServiceClient(ctx, inMemoryFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		mockConsulClient = mock_consul.NewMockConsulClient(ctrl)
-		mockConsulClient.EXPECT().DataCenters().Return([]string{"dc1"}, nil).AnyTimes()
-		mockConsulClient.EXPECT().Services(gomock.Any()).Return(
+		mockInternalConsulClient = mock_consul.NewMockClientWrapper(ctrl)
+		mockInternalConsulClient.EXPECT().DataCenters().Return([]string{"dc1"}, nil).AnyTimes()
+		mockInternalConsulClient.EXPECT().Services(gomock.Any()).Return(
 			map[string][]string{"svc-1": {}},
 			&api.QueryMeta{LastIndex: 100},
 			nil,
@@ -83,7 +83,8 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		hybridClient, err = upstreams.NewHybridUpstreamClient(
 			baseUsClient,
 			svcClient,
-			consul.NewConsulWatcherFromClient(mockConsulClient),
+			consul.NewConsulWatcherFromClient(mockInternalConsulClient),
+			nil,
 		)
 		Expect(err).NotTo(HaveOccurred())
 	})
