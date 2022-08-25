@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6815
+    resolvesIssue: false
+    description: Allowlist added to filter in consul services with specified tags

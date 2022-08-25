@@ -135,6 +135,10 @@ spec:
                       namespace:
                         type: string
                     type: object
+                  serviceTagsAllowlist:
+                    items:
+                      type: string
+                    type: array
                   splitTlsServices:
                     type: boolean
                   tlsTagName:

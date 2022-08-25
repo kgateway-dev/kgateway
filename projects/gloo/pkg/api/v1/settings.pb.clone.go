@@ -750,6 +750,15 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Clone() proto.Message {
 		target.QueryOptions = proto.Clone(m.GetQueryOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul.QueryOptions)
 	}
 
+	if m.GetServiceTagsAllowlist() != nil {
+		target.ServiceTagsAllowlist = make([]string, len(m.GetServiceTagsAllowlist()))
+		for idx, v := range m.GetServiceTagsAllowlist() {
+
+			target.ServiceTagsAllowlist[idx] = v
+
+		}
+	}
+
 	return target
 }
 
