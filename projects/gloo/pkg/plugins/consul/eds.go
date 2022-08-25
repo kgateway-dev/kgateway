@@ -133,11 +133,15 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					//
 					// i.e., even an update to a single catalog service will cause a full refresh of all services
 					specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
-					endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
-
-					previousHash = hashutils.MustHash(endpoints)
 					previousSpecs = specs
 
+					// Build new endpoints from specs and publish if ctx is not cancelled
+					endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
+					currentHash := hashutils.MustHash(endpoints)
+					if previousHash == currentHash {
+						continue
+					}
+					previousHash = currentHash
 					if !publishEndpoints(endpoints) {
 						return
 					}
@@ -244,12 +248,15 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					}
 				}
 				specs := collector.Get()
-
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
-
-				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
 
+				// Build new endpoints from specs and publish if ctx is not cancelled
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
+				currentHash := hashutils.MustHash(endpoints)
+				if previousHash == currentHash {
+					continue
+				}
+				previousHash = currentHash
 				if !publishEndpoints(endpoints) {
 					return
 				}
@@ -260,19 +267,17 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				if len(previousSpecs) == 0 {
 					continue
 				}
+
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
-
 				currentHash := hashutils.MustHash(endpoints)
 				if previousHash == currentHash {
 					continue
 				}
-
 				previousHash = currentHash
 				if !publishEndpoints(endpoints) {
 					return
 				}
-
 			case <-opts.Ctx.Done():
 				return
 			}
