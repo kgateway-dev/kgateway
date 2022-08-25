@@ -58,7 +58,7 @@ var _ = Describe("Discovery", func() {
 		makeEdsPlugin := func() (DiscoveryPlugin, chan v1.EndpointList) {
 			discoveryPlugin := discmocks.NewMockDiscoveryPlugin(ctl)
 			edsChan := make(chan v1.EndpointList, 1)
-			discoveryPlugin.EXPECT().WatchEndpoints(ns, nil, wo).Return(edsChan, nil, nil).Times(2) // 1 time for each StartEds call
+			discoveryPlugin.EXPECT().WatchEndpoints(ns, nil, wo, nil).Return(edsChan, nil, nil).Times(2) // 1 time for each StartEds call
 			return discoveryPlugin, edsChan
 		}
 
@@ -77,7 +77,7 @@ var _ = Describe("Discovery", func() {
 		// start eds once
 		// we don't care about the upstreams here,
 		// we just want to verify endpoints are preserved across calls to StartEds
-		_, err := eds.StartEds(nil, wo)
+		_, err := eds.StartEds(nil, wo, nil)
 		Expect(err).NotTo(HaveOccurred())
 
 		ep := func(suffix string) *v1.Endpoint {
@@ -120,7 +120,7 @@ var _ = Describe("Discovery", func() {
 
 		// start eds again
 		// verify that discovery never removes endpoints from the client
-		_, err = eds.StartEds(nil, wo)
+		_, err = eds.StartEds(nil, wo, nil)
 		Expect(err).NotTo(HaveOccurred())
 
 		// update eds by sending another eds list
