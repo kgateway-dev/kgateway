@@ -133,24 +133,17 @@ func (c *consul) filterDataCenters(dataCenters []string) []string {
 func (c *consul) filterServices(services map[string][]string) map[string][]string {
 	filteredServices := make(map[string][]string)
 	for serviceName, sTags := range services {
-		tagFound := false
 
-		//if there is no allowlist all for all services
+		//if there is no allowlist, allow for all services
 		if len(c.serviceTagsAllowlist) == 0 {
-			tagFound = true
+			return services
 		}
 		//Filter services by tags
 		for _, tag := range sTags {
-			if tagFound {
-				//if tag has been found we are filtered in and no longer need to check other tags
+			if _, found := c.serviceTagsAllowlist[tag]; found {
+				filteredServices[serviceName] = sTags
 				break
 			}
-			if _, found := c.serviceTagsAllowlist[tag]; found {
-				tagFound = found
-			}
-		}
-		if tagFound {
-			filteredServices[serviceName] = sTags
 		}
 	}
 	return filteredServices

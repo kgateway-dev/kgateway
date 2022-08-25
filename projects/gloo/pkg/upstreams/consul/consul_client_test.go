@@ -31,39 +31,65 @@ var _ = Describe("ClientWrapper", func() {
 		ctrl.Finish()
 	})
 
-	Describe("Services operation", func() {
-		Context("When Filtering By Tags", func() {
+	Describe("When calling consul.Catalog.Services operation", func() {
+
+		var (
+			services map[string][]string
+		)
+
+		BeforeEach(func() {
+			services = map[string][]string{
+				"svc-1": {"tag-1", "tag-2"}, //filtered in with tag-1
+				"svc-2": {"tag-2"},          //filtered out
+				"svc-3": {"tag-1", "tag-4"}, //filtered in with both tags
+				"svc-4": {"tag-4", "tag-5"}, //filtered in with tag-4
+				"svc-5": {},                 //filtered out
+			}
+		})
+
+		Context("When Filtering response By Tags", func() {
 			var (
 				client ClientWrapper
 			)
 			BeforeEach(func() {
 				dc := []string{"dc1"}
 				serviceTagsAllowlist := []string{"tag-1", "tag-4"}
-				services := map[string][]string{
-					"svc-1": {"tag-1", "tag-2"}, //filtered in with tag-1
-					"svc-2": {"tag-2"},          //filtered out
-					"svc-3": {"tag-1", "tag-4"}, //filtered in with both tags
-					"svc-4": {"tag-4", "tag-5"}, //filtered in with tag-4
-					"svc-5": {},                 //filtered out
-				}
-
 				apiQueryMeta := &api.QueryMeta{}
 				client, _ = NewFilteredConsulClient(mockClient, dc, serviceTagsAllowlist)
 				mockClient.EXPECT().Services(gomock.Any()).Return(services, apiQueryMeta, nil)
 			})
 
-			It("returns the filtered upstreams", func() {
-				services, _, err := client.Services(&api.QueryOptions{RequireConsistent: false, AllowStale: false, UseCache: true})
+			It("returns the filtered services", func() {
+				responseServices, _, err := client.Services(&api.QueryOptions{RequireConsistent: false, AllowStale: false, UseCache: true})
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(services).To(HaveLen(3))
+				Expect(responseServices).To(HaveLen(3))
 
 				expectedServices := map[string][]string{
 					"svc-1": {"tag-1", "tag-2"}, //filtered in with tag-1
 					"svc-3": {"tag-1", "tag-4"}, //filtered in with both tags
 					"svc-4": {"tag-4", "tag-5"}, //filtered in with tag-4
 				}
-				Expect(services).To(Equal(expectedServices))
+				Expect(responseServices).To(Equal(expectedServices))
+			})
+		})
+		Context("When not Filtering response By Tags", func() {
+			var (
+				client ClientWrapper
+			)
+			BeforeEach(func() {
+				dc := []string{"dc1"}
+				apiQueryMeta := &api.QueryMeta{}
+				client, _ = NewFilteredConsulClient(mockClient, dc, []string{})
+				mockClient.EXPECT().Services(gomock.Any()).Return(services, apiQueryMeta, nil)
+			})
+
+			It("returns all services", func() {
+				responseServices, _, err := client.Services(&api.QueryOptions{RequireConsistent: false, AllowStale: false, UseCache: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(responseServices).To(HaveLen(5))
+				Expect(responseServices).To(Equal(services))
 			})
 		})
 	})
