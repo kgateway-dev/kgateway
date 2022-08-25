@@ -152,14 +152,14 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				// in testing, I only saw cache hits here if last index was zero (first call during blocking)
 
 				// construct a set of the present services by datacenter
-				dcToSvcs := map[string]map[string]struct{}{}
+				dcToCurrentSvcs := map[string]map[string]struct{}{}
 				for _, meta := range serviceMeta {
 					for _, dc := range meta.DataCenters {
 						// add to set of datacenter/svc pairs present
-						if _, ok := dcToSvcs[dc]; !ok {
-							dcToSvcs[dc] = map[string]struct{}{}
+						if _, ok := dcToCurrentSvcs[dc]; !ok {
+							dcToCurrentSvcs[dc] = map[string]struct{}{}
 						}
-						dcToSvcs[dc][meta.Name] = struct{}{}
+						dcToCurrentSvcs[dc][meta.Name] = struct{}{}
 
 						// additionally, if not already a watch for this, create a watch
 						if _, ok := dcEndpointWatches[dc]; !ok {
@@ -203,7 +203,12 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 						if _, ok := dcToSvcsToCancel[dc]; !ok {
 							dcToSvcsToCancel[dc] = map[string]struct{}{}
 						}
-						if _, ok := dcToSvcsToCancel[dc][svcName]; !ok {
+						// if dc/svc combo is present in our watch map, but not in parsed current state of the world, cancel the watch
+						if _, ok := dcToCurrentSvcs[dc]; !ok {
+							// dc not current, we should delete the watch
+							dcToSvcsToCancel[dc][svcName] = struct{}{}
+						} else if _, ok := dcToCurrentSvcs[dc][svcName]; !ok {
+							// svc not current, we should delete
 							dcToSvcsToCancel[dc][svcName] = struct{}{}
 						}
 					}

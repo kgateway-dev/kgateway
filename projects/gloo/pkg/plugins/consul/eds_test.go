@@ -146,7 +146,7 @@ var _ = Describe("Consul EDS", func() {
 			close(errorProducer)
 		})
 
-		It("blocking queries happypath", func() {
+		FIt("blocking queries happypath", func() {
 
 			// queue up an update to the catalog svc
 			testServiceUpdated := createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3457, 100) // port updated
