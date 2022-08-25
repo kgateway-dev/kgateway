@@ -117,6 +117,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 			edsBlockingQueries = bq.GetValue()
 		}
 
+		logger := contextutils.LoggerFrom(opts.Ctx)
+
 		for {
 			select {
 			case serviceMeta, ok := <-serviceMetaChan:
@@ -205,6 +207,16 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				// cancel the watches we need to cancel
 				for dc, svcsMap := range dcToSvcsToCancel {
 					for svc, _ := range svcsMap {
+						if _, ok := dcEndpointWatches[dc]; !ok {
+							// developer logic error, skip to prevent panic
+							logger.DPanicf("tried to cancel watch for endpoints in unknown data center: %s", dc)
+							continue
+						}
+						if _, ok := dcEndpointWatches[dc][svc]; !ok {
+							// developer logic error, skip to prevent panic
+							logger.DPanicf("tried to cancel watch for endpoints for unknown service: %s", svc)
+							continue
+						}
 						dcEndpointWatches[dc][svc].cancel()
 						delete(dcEndpointWatches[dc], svc)
 					}
@@ -213,6 +225,16 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 			case eps, ok := <-allEndpointsChan:
 				if !ok {
 					return
+				}
+				if _, ok := dcEndpointWatches[eps.dataCenter]; !ok {
+					// developer logic error, skip to prevent panic
+					logger.DPanicf("received endpoints in unknown data center: %s", eps.dataCenter)
+					continue
+				}
+				if _, ok := dcEndpointWatches[eps.dataCenter][eps.service]; !ok {
+					// developer logic error, skip to prevent panic
+					logger.DPanicf("received endpoints for unknown service: %s", eps.dataCenter)
+					continue
 				}
 				dcEndpointWatches[eps.dataCenter][eps.service].endpoints = eps.endpoints
 				collector := newSpecCollector()
