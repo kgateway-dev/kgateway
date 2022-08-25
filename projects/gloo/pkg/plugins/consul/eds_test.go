@@ -63,6 +63,7 @@ var _ = Describe("Consul EDS", func() {
 
 			// Service names
 			svc1 = "svc-1"
+			svc2 = "svc-2"
 
 			// Tag names
 			primary   = "primary"
@@ -113,7 +114,7 @@ var _ = Describe("Consul EDS", func() {
 						return []*consulapi.CatalogService{testService}, &consulapi.QueryMeta{LastIndex: 1}, nil
 					}
 					return []*consulapi.CatalogService{}, &consulapi.QueryMeta{LastIndex: 1}, nil
-				}).Times(3) // once for each datacenter
+				}).AnyTimes() // once for each datacenter
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
 				createExpectedEndpoint(buildEndpointName("2.1.0.10", testService), svc1, testService.Address, "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
@@ -146,7 +147,7 @@ var _ = Describe("Consul EDS", func() {
 			close(errorProducer)
 		})
 
-		FIt("blocking queries happypath", func() {
+		It("blocking queries happypath", func() {
 
 			// queue up an update to the catalog svc
 			testServiceUpdated := createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3457, 100) // port updated
@@ -213,6 +214,63 @@ var _ = Describe("Consul EDS", func() {
 			case <-time.After(time.Second):
 				Fail("timeout waiting for endpoints")
 			}
+
+			// Cancel and verify that all the channels have been closed
+			cancel()
+			Eventually(endpointsChan).Should(BeClosed())
+			Eventually(errorChan).Should(BeClosed())
+		})
+
+		FIt("blocking queries cancel other watches", func() {
+
+			// queue up an update to the catalog svc
+			testServiceUpdated := createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3457, 100) // port updated
+			consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
+				func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+					if q.Datacenter == dc2 {
+						return []*consulapi.CatalogService{testServiceUpdated}, &consulapi.QueryMeta{LastIndex: 2}, nil
+					}
+					return []*consulapi.CatalogService{}, &consulapi.QueryMeta{LastIndex: 2}, nil
+				}).AnyTimes()
+
+			initialIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 10)}}
+			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
+			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context, string) {
+				fmt.Fprint(GinkgoWriter, "Initial resolve called.")
+			}).Return(initialIps, nil).AnyTimes() // once for each consul service
+
+			eds := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
+
+			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, &v1.Settings{
+				ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+					EdsBlockingQueries: &wrapperspb.BoolValue{Value: true},
+				},
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+
+			// Simulate the initial read when starting watch
+			serviceMetaProducer <- consulServiceSnapshot
+			// use select instead of eventually for easier debugging.
+			select {
+			case err := <-errorChan:
+				Expect(err).NotTo(HaveOccurred())
+				Fail("err chan closed prematurely")
+			case endpointsReceived := <-endpointsChan:
+				Expect(endpointsReceived).ToNot(BeEmpty())
+			case <-time.After(time.Second):
+				Fail("timeout waiting for endpoints")
+			}
+
+			consulServiceSnapshot = []*consul.ServiceMeta{
+				{
+					Name:        svc2,
+					DataCenters: []string{dc1, dc2},
+					Tags:        []string{primary, secondary},
+				},
+			}
+
+			serviceMetaProducer <- consulServiceSnapshot // removed svc1 and added svc2; this means we will close watch on svc1 and open a new one on svc2
 
 			// Cancel and verify that all the channels have been closed
 			cancel()
