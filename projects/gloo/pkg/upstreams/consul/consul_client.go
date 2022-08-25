@@ -131,14 +131,14 @@ func (c *consul) filterDataCenters(dataCenters []string) []string {
 // Filters out the services that do not have matching tags from the service_tags_allowlist
 //input from services is a map of service name to slice of tags
 func (c *consul) filterServices(services map[string][]string) map[string][]string {
+	//if there is no allowlist, allow for all services
+	if len(c.serviceTagsAllowlist) == 0 {
+		return services
+	}
+
+	//Filter services by tags
 	filteredServices := make(map[string][]string)
 	for serviceName, sTags := range services {
-
-		//if there is no allowlist, allow for all services
-		if len(c.serviceTagsAllowlist) == 0 {
-			return services
-		}
-		//Filter services by tags
 		for _, tag := range sTags {
 			if _, found := c.serviceTagsAllowlist[tag]; found {
 				filteredServices[serviceName] = sTags
