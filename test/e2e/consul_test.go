@@ -126,22 +126,11 @@ var _ = Describe("Consul e2e", func() {
 			svc3 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-3")
 
 			// Register services with consul
-			// update service one to point to test upstream 2 port
 			err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1.Port)
 			Expect(err).NotTo(HaveOccurred())
-
-			// TODO(kdorosh) write e2e with just consul client that proves service updates even if cli watch on services does not...
-
-			// err = consulInstance.LiveUpdateServiceInstance("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
-			// Expect(err).NotTo(HaveOccurred())
-
-			// Expect(1).To(Equal(2))
-			// err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1.Port)
-			// Expect(err).NotTo(HaveOccurred())
-			// err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "2"}, svc2.Port)
-			// Expect(err).NotTo(HaveOccurred())
-
-			//we should not discover this service as it will be filtered out
+			err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "2"}, svc2.Port)
+			Expect(err).NotTo(HaveOccurred())
+			// we should not discover this service as it will be filtered out
 			err = consulInstance.RegisterService("my-svc-1", "my-svc-3", envoyInstance.GlooAddr, []string{"svc", "3"}, svc3.Port)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -150,7 +139,7 @@ var _ = Describe("Consul e2e", func() {
 			envoyInstance.Clean()
 		})
 
-		FIt("works as expected", func() {
+		It("works as expected", func() {
 			_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -287,7 +276,10 @@ var _ = Describe("Consul e2e", func() {
 
 	})
 
-	It("resolves eds even if services aren't updated", func() {
+	// This test was written to prove that the consul golang client behaves differently than the consul CLI, and thus
+	// that our `refreshSpecs()` usage in consul eds.go is correct and does not miss updates (which also allows
+	// us to make performance optimizations at scale, since our current implementation has a lot more cache hits).
+	It("fires service watch even if catalog service is the only update", func() {
 		svcsChan, errChan := consulWatcher.WatchServices(ctx, []string{"dc1"}, consulplugin.ConsulConsistencyModes_DefaultMode, nil)
 
 		Eventually(func() <-chan []*consul.ServiceMeta {
@@ -302,6 +294,14 @@ var _ = Describe("Consul e2e", func() {
 			return errChan
 		}, "0.5s", "0.2s").ShouldNot(Receive())
 
+		// add a single service.
+		// this will fire a watch via consul CLI for both:
+		// - consul watch -type=service -service my-svc ./echo.sh
+		// - consul watch -type=services ./echo.sh
+		//
+		// as the service is new
+		//
+		// echo.sh is just a shell script with the contents: `echo "watch fired!"` so we can check that the watch fired.
 		err = consulInstance.RegisterService("my-svc", "my-svc-1", "127.0.0.1", []string{"svc", "1"}, 80)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -317,6 +317,21 @@ var _ = Describe("Consul e2e", func() {
 			return errChan
 		}, "0.5s", "0.2s").ShouldNot(Receive())
 
+		// update an existing service.
+		// this will fire a watch via consul CLI only for:
+		// - consul watch -type=service -service my-svc ./echo.sh
+		//
+		// as the service is new
+		//
+		// However this WILL fire an update on our golang client watch for services (last index increments)
+		// and thus we can depend on this to signal that we should query again for all catalog services in eds.go
+		//
+		// It appears the golang client lastIndex mirrors the raft index (per `consul info`), and while dated,
+		// this behavior still seems to hold: https://github.com/hashicorp/consul/issues/1244#issuecomment-141146851
+		//
+		// In the event this behavior changes (this test fails on newer consul versions),
+		// we may need to move completely to the `eds_blocking_queries` as true despite the performance implications
+		// for correctness.
 		err = consulInstance.RegisterService("my-svc", "my-svc-1", "127.0.0.1", []string{"svc", "1"}, 81)
 		Expect(err).NotTo(HaveOccurred())
 

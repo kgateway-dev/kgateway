@@ -90,7 +90,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		timer := time.NewTicker(DefaultDnsPollingInterval)
 		defer timer.Stop()
 
-		// var previousServiceMeta []*consul.ServiceMeta
 		var previousSpecs []*consulapi.CatalogService
 		var previousHash uint64
 
@@ -127,14 +126,17 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					return
 				}
 
-				// non-blocking; more cache hits but more network calls if caching disabled
+				// non-blocking; more cache hits but more network calls if caching disabled (or cache misses per consul install settings)
 				if !edsBlockingQueries {
+					// the correctness of this implementation depending on updates on `serviceMetaChan` whenever a single catalog
+					// service is updated is tested in "fires service watch even if catalog service is the only update"
+					//
+					// i.e., even an update to a single catalog service will cause a full refresh of all services
 					specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
 					endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
 					previousHash = hashutils.MustHash(endpoints)
 					previousSpecs = specs
-					// previousServiceMeta = serviceMeta
 
 					if !publishEndpoints(endpoints) {
 						return
@@ -155,7 +157,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 						}
 						dcToSvcs[dc][meta.Name] = struct{}{}
 
-						// additionally, if not already a watch for this, add to set of datacenter/svc pairs to create watch for
+						// additionally, if not already a watch for this, create a watch
 						if _, ok := dcEndpointWatches[dc]; !ok {
 							dcEndpointWatches[dc] = svcEndpointWatches{}
 						}
@@ -229,7 +231,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
-				// previousServiceMeta = serviceMeta
 
 				if !publishEndpoints(endpoints) {
 					return
@@ -242,7 +243,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					continue
 				}
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
-				// specs := refreshSpecs(opts.Ctx, p.client, previousServiceMeta, errChan, trackedServiceToUpstreams)
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
 
 				currentHash := hashutils.MustHash(endpoints)
