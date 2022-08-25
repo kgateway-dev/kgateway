@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 
 	"io/ioutil"
 
@@ -116,12 +115,7 @@ func (cf *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		return nil, err
 	}
 
-	// Security Warning: Because -enable-script-checks allows script checks to be registered via HTTP API,
-	// it may introduce a remote execution vulnerability known to be targeted by malware. For production
-	// environments, we strongly recommend using -enable-local-script-checks instead, which removes that
-	// vulnerability by allowing script checks to only be defined in the Consul agent's local configuration
-	// files, not via HTTP API.
-	cmd := exec.Command(cf.consulPath, "agent", "-dev", "--client=0.0.0.0", "-enable-script-checks", //"-config-dir", cfgDir,
+	cmd := exec.Command(cf.consulPath, "agent", "-dev", "--client=0.0.0.0",
 		"-node", "consul-dev")
 	cmd.Dir = cf.tmpdir
 	cmd.Stdout = GinkgoWriter
@@ -146,25 +140,9 @@ type ConsulInstance struct {
 	registeredServices map[string]*serviceDef
 }
 
-func (i *ConsulInstance) AddConfig(svcId, content string) error {
+func (i *ConsulInstance) AddConfig(svcId, content string) (string, error) {
 	fileName := filepath.Join(i.cfgDir, svcId+".json")
-	return ioutil.WriteFile(fileName, []byte(content), 0644)
-}
-
-func (i *ConsulInstance) AddConfigFromStruct(svcId string, cfg interface{}) error {
-	content, err := json.Marshal(cfg)
-	if err != nil {
-		return err
-	}
-	return i.AddConfig(svcId, string(content))
-}
-
-func (i *ConsulInstance) ReloadConfig() error {
-	err := i.cmd.Process.Signal(syscall.SIGHUP)
-	if err != nil {
-		return err
-	}
-	return nil
+	return fileName, ioutil.WriteFile(fileName, []byte(content), 0644)
 }
 
 func (i *ConsulInstance) Silence() {
@@ -200,27 +178,10 @@ func (i *ConsulInstance) Clean() error {
 	return nil
 }
 
-// func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port uint32) error {
-// 	svcDef := &serviceDef{
-// 		Service: &consulService{
-// 			ID:      svcId,
-// 			Name:    svcName,
-// 			Address: address,
-// 			Tags:    tags,
-// 			Port:    port,
-// 		},
-// 	}
-
-// 	i.registeredServices[svcId] = svcDef
-
-// 	err := i.AddConfigFromStruct(svcId, svcDef)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return i.ReloadConfig()
-// }
-
+// While it may be tempting to just reload all config using `consul reload` or marshalling new json and
+// sending SIGHUP to the process (per https://www.consul.io/commands/reload), it is preferable to live update
+// using the consul APIs as this is a more realistic flow and doesn't fire our watches too actively (which can
+// both make debugging hard and hide bugs)
 func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port uint32) error {
 	svcDef := &serviceDef{
 		Service: &consulService{
@@ -236,11 +197,11 @@ func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []
 		return err
 	}
 	postData := string(content)
-	updatedSvcFile := filepath.Join(i.cfgDir, fmt.Sprintf("%s.json", svcId))
-	_ = os.Remove(updatedSvcFile)
-	err = ioutil.WriteFile(updatedSvcFile, []byte(postData), 0644)
-	Expect(err).ToNot(HaveOccurred())
-	cmd := exec.Command("curl", "--request", "PUT", "--data", fmt.Sprintf("@%s", updatedSvcFile), "localhost:8500/v1/agent/service/register")
+	fileName, err := i.AddConfig(svcId, postData)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("curl", "--request", "PUT", "--data", fmt.Sprintf("@%s", fileName), "localhost:8500/v1/agent/service/register")
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
