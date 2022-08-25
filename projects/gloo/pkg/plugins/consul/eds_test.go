@@ -12,6 +12,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
 	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
@@ -69,12 +71,16 @@ var _ = Describe("Consul EDS", func() {
 			yes       = ConsulEndpointMetadataMatchTrue
 			no        = ConsulEndpointMetadataMatchFalse
 
+			testService *consulapi.CatalogService
+
 			upstreamsToTrack      v1.UpstreamList
 			consulServiceSnapshot []*consul.ServiceMeta
 			serviceMetaProducer   chan []*consul.ServiceMeta
 			errorProducer         chan error
 
-			expectedEndpointsFirstAttempt  v1.EndpointList
+			// first DNS query
+			expectedEndpointsFirstAttempt v1.EndpointList
+			// second DNS query
 			expectedEndpointsSecondAttempt v1.EndpointList
 		)
 
@@ -100,13 +106,13 @@ var _ = Describe("Consul EDS", func() {
 			consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
 			consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
 			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters, consulplugin.ConsulConsistencyModes_DefaultMode, gomock.Any()).Return(serviceMetaProducer, errorProducer).Times(1)
-			testService := createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3456, 100)
+			testService = createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3456, 100)
 			consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 				func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 					if q.Datacenter == dc2 {
-						return []*consulapi.CatalogService{testService}, nil, nil
+						return []*consulapi.CatalogService{testService}, &consulapi.QueryMeta{LastIndex: 1}, nil
 					}
-					return nil, nil, nil
+					return []*consulapi.CatalogService{}, &consulapi.QueryMeta{LastIndex: 1}, nil
 				}).Times(3) // once for each datacenter
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
@@ -133,13 +139,67 @@ var _ = Describe("Consul EDS", func() {
 		})
 
 		AfterEach(func() {
-
 			if cancel != nil {
 				cancel()
 			}
-
 			close(serviceMetaProducer)
 			close(errorProducer)
+		})
+
+		It("blocking queries happypath", func() {
+
+			consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
+				func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+					if q.Datacenter == dc2 {
+						return []*consulapi.CatalogService{testService}, &consulapi.QueryMeta{LastIndex: 2}, nil
+					}
+					return []*consulapi.CatalogService{}, &consulapi.QueryMeta{LastIndex: 2}, nil
+				}).AnyTimes()
+
+			// we have to put all the mock expects before the test starts or else the test may have data races
+			initialIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 10)}}
+			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
+			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context, string) {
+				fmt.Fprint(GinkgoWriter, "Initial resolve called.")
+			}).Return(initialIps, nil).AnyTimes() // once for each consul service
+
+			eds := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
+
+			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, &v1.Settings{
+				ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+					EdsBlockingQueries: &wrapperspb.BoolValue{Value: true},
+				},
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+
+			// Simulate the initial read when starting watch
+			serviceMetaProducer <- consulServiceSnapshot
+			// use select instead of eventually for easier debugging.
+			select {
+			case err := <-errorChan:
+				Expect(err).NotTo(HaveOccurred())
+				Fail("err chan closed prematurely")
+			case endpointsReceived := <-endpointsChan:
+				Expect(endpointsReceived).To(matchers.BeEquivalentToDiff(expectedEndpointsFirstAttempt))
+			case <-time.After(time.Hour): // TODO(kdorosh) until done debugging
+				Fail("timeout waiting for endpoints")
+			}
+
+			// simulate an error
+			failErr := eris.New("fail")
+			errorProducer <- failErr
+			select {
+			case err := <-errorChan:
+				Expect(err).To(MatchError(ContainSubstring(failErr.Error())))
+			case <-time.After(time.Second):
+				Fail("timeout waiting for error")
+			}
+
+			// Cancel and verify that all the channels have been closed
+			cancel()
+			Eventually(endpointsChan).Should(BeClosed())
+			Eventually(errorChan).Should(BeClosed())
 		})
 
 		It("handles DNS updates even if consul services are unchanged", func() {
@@ -159,7 +219,7 @@ var _ = Describe("Consul EDS", func() {
 				fmt.Fprint(GinkgoWriter, "Updated resolve called.")
 			}).Return(updatedIps, nil).Times(2)
 
-			eds := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
+			eds := NewPlugin(consulWatcherMock, mockDnsResolver, &durationpb.Duration{Nanos: 100})
 
 			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, nil)
 
@@ -178,7 +238,7 @@ var _ = Describe("Consul EDS", func() {
 				Fail("timeout waiting for endpoints")
 			}
 
-			// simulate and error
+			// simulate an error
 			failErr := eris.New("fail")
 			errorProducer <- failErr
 			select {

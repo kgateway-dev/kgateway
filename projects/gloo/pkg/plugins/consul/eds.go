@@ -85,7 +85,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		defer close(allEndpointsListChan)
 		defer wg.Done()
 
-		timer := time.NewTicker(DefaultDnsPollingInterval)
+		timer := time.NewTicker(p.dnsPollingInterval)
 		defer timer.Stop()
 
 		var previousSpecs []*consulapi.CatalogService
