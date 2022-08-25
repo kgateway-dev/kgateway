@@ -218,10 +218,18 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		runOptions.Cache = memory.NewInMemoryResourceCache()
 	}
 
-	settings := &gloov1.Settings{
-		WatchNamespaces:    runOptions.NsToWatch,
-		DiscoveryNamespace: runOptions.NsToWrite,
+	var settings *gloov1.Settings
+
+	if nil != runOptions.Settings { //capture any setting set by the test
+		settings = runOptions.Settings
+	} else { //we have no settings from testing - create a new setting struct to hold run option values
+		settings = &gloov1.Settings{}
 	}
+
+	//override needed settings for testing
+	settings.WatchNamespaces = runOptions.NsToWatch
+	settings.DiscoveryNamespace = runOptions.NsToWrite
+
 	ctx = settingsutil.WithSettings(ctx, settings)
 	glooOpts := defaultGlooOpts(ctx, runOptions)
 
