@@ -47,7 +47,7 @@ type dataCenterServiceEndpointsTuple struct {
 // Starts a watch on the Consul service metadata endpoint for all the services associated with the tracked upstreams.
 // Whenever it detects an update to said services, it fetches the complete specs for the tracked services,
 // converts them to endpoints, and sends the result on the returned channel.
-func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
+func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts, settings *v1.Settings) (<-chan v1.EndpointList, <-chan error, error) {
 
 	// Filter out non-consul upstreams
 	trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
@@ -115,6 +115,11 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 		defer close(allEndpointsChan)
 
+		edsBlockingQueries := false // defaults to false because caching defaults to true; in testing I only saw cache hits when lastIndex was 0
+		if bq := settings.GetConsulDiscovery().GetEdsBlockingQueries(); bq != nil {
+			edsBlockingQueries = bq.GetValue()
+		}
+
 		for {
 			select {
 			case serviceMeta, ok := <-serviceMetaChan:
@@ -122,18 +127,23 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					return
 				}
 
-				// non-blocking; more cache misses but more network calls?
-				specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
+				// non-blocking; more cache hits but more network calls if caching disabled
+				if !edsBlockingQueries {
+					specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
+					endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
-				previousHash = hashutils.MustHash(endpoints)
-				previousSpecs = specs
-				// previousServiceMeta = serviceMeta
+					previousHash = hashutils.MustHash(endpoints)
+					previousSpecs = specs
+					// previousServiceMeta = serviceMeta
 
-				if !publishEndpoints(endpoints) {
-					return
+					if !publishEndpoints(endpoints) {
+						return
+					}
+					continue
 				}
-				continue
+
+				// blocking; fewer network calls but fewer cache hits
+				// in testing, I only saw cache hits here if last index was zero (first call during blocking)
 
 				// construct a set of the present services by datacenter
 				dcToSvcs := map[string]map[string]struct{}{}
