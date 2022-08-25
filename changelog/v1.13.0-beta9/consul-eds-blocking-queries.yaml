@@ -1,10 +1,14 @@
 changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/6599
-    resolvesIssue: false
+    resolvesIssue: true
     description: >-
       Consul EDS discovery query mode is now configurable (blocking vs non-blocking consul queries) via
       `eds_blocking_queries` on the Gloo `Settings`. The default remains the same (non-blocking queries)
       becuase this is more performant with cache hits on the consul agent (caching also enabled by default)
       but can be more performant when caching is disabled since blocking queries should result in fewer network
       calls.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7037
+    resolvesIssue: true
+    description: Fix consul DNS polling interval to honor configuration on the Gloo `Settings` (default 5s).

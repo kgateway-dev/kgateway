@@ -1,9 +1,5 @@
 changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/6815
-    resolvesIssue: true
+    resolvesIssue: false
     description: Allowlist added to filter in consul services with specified tags
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/7037
-    resolvesIssue: true
-    description: Fix consul DNS polling interval to honor configuration (default 5s).
