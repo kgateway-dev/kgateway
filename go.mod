@@ -8,8 +8,8 @@ require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.34.9
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
-	github.com/envoyproxy/go-control-plane v0.10.1
-	github.com/envoyproxy/protoc-gen-validate v0.6.1
+	github.com/envoyproxy/go-control-plane v0.10.3
+	github.com/envoyproxy/protoc-gen-validate v0.6.7
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/fsnotify/fsnotify v1.5.4
@@ -66,9 +66,9 @@ require (
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/tools v0.1.10
-	google.golang.org/genproto v0.0.0-20211129164237-f09f9a12af12
-	google.golang.org/grpc v1.42.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/genproto v0.0.0-20220329172620-7be39ac1afc7
+	google.golang.org/grpc v1.45.0
+	google.golang.org/protobuf v1.28.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	helm.sh/helm/v3 v3.6.3
 	k8s.io/api v0.22.4
@@ -117,7 +117,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/chai2010/gettext-go v0.0.0-20160711120539-c6fed771bfd5 // indirect
-	github.com/cncf/xds/go v0.0.0-20211001041855-01bcc9b48dfe // indirect
+	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect
 	github.com/cockroachdb/apd/v2 v2.0.1 // indirect
 	github.com/containerd/cgroups v0.0.0-20200531161412-0dbf7f05ba59 // indirect
 	github.com/containerd/containerd v1.4.4 // indirect
@@ -189,7 +189,7 @@ require (
 	github.com/hashicorp/serf v0.8.5 // indirect
 	github.com/hashicorp/vault/sdk v0.1.14-0.20191112033314-390e96e22eb2 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
-	github.com/iancoleman/strcase v0.1.3 // indirect
+	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/ilackarms/protoc-gen-doc v1.0.0 // indirect
 	github.com/imroc/req v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -268,7 +268,7 @@ require (
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca // indirect
 	github.com/yuin/goldmark v1.4.1 // indirect
 	go.mongodb.org/mongo-driver v1.1.2 // indirect
-	go.opentelemetry.io/proto/otlp v0.7.0 // indirect
+	go.opentelemetry.io/proto/otlp v0.15.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
@@ -316,6 +316,9 @@ replace (
 	// to avoid error about it being used for two different module paths
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
 	github.com/docker/docker => github.com/moby/moby v20.10.14+incompatible
+	// Newer versions result in changes to the names of generated metrics
+	// remove this when we fix https://github.com/solo-io/solo-kit/issues/516
+	github.com/iancoleman/strcase => github.com/iancoleman/strcase v0.1.3
 	github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
 	// skv2 uses a newer version than the imported solo-kit version which causes issues. Replaces the version with the solo-kit version
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
@@ -325,7 +328,6 @@ replace (
 	// version upgrade to 1.40.2 fails a specific unit test
 	// see https://github.com/solo-io/gloo/issues/5719
 	google.golang.org/grpc => google.golang.org/grpc v1.40.0
-
 	// klog is likely unused, but if it is we want to use this fork
 	// see https://github.com/solo-io/gloo/pull/1880
 	k8s.io/klog => github.com/stefanprodan/klog v0.0.0-20190418165334-9cbb78b20423
