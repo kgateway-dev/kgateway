@@ -706,9 +706,11 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *cor
 			return err
 		}
 	}
-	logger.Debugf("Got response from GlooValidationService: %s", response.String())
 
-	_, err = v.getReportsFromGlooValidationResponse(response)
+	reports, err := v.getReportsFromGlooValidationResponse(response)
+	// reports are gauranteed to not be nil at this point and we can more easily not report on the proxy
+	// than on the response itself without more loops on non-debug calls
+	logger.Debugf("Got response from GlooValidationService: UpstreamReports: %v, ProxyReports: %v", *reports.UpstreamReports, *reports.ProxyReports)
 	return err
 }
 
@@ -730,6 +732,7 @@ func (v *validator) ValidateDeleteSecret(ctx context.Context, secretRef *core.Re
 			return err
 		}
 	}
+
 	logger.Debugf("Got response from GlooValidationService: %s", response.String())
 
 	_, err = v.getReportsFromGlooValidationResponse(response)
@@ -789,7 +792,9 @@ func (v *validator) sendGlooValidationServiceRequest(
 	req *validation.GlooValidationServiceRequest,
 ) (*validation.GlooValidationServiceResponse, error) {
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Debugf("Sending request to GlooValidationService: %s", req.String())
+	logger.Debugf("Sending request validation request modified:%s, deleted:%s",
+		req.GetModifiedResources().String(), req.GetDeletedResources().String())
+
 	return v.validationFunc(ctx, req)
 }
 
