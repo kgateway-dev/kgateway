@@ -122,18 +122,18 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					return
 				}
 
-				// // non-blocking; more cache misses but more network calls?
-				// specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
-				// endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
+				// non-blocking; more cache misses but more network calls?
+				specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
-				// previousHash = hashutils.MustHash(endpoints)
-				// previousSpecs = specs
-				// // previousServiceMeta = serviceMeta
+				previousHash = hashutils.MustHash(endpoints)
+				previousSpecs = specs
+				// previousServiceMeta = serviceMeta
 
-				// if !publishEndpoints(endpoints) {
-				// 	return
-				// }
-				// continue
+				if !publishEndpoints(endpoints) {
+					return
+				}
+				continue
 
 				// construct a set of the present services by datacenter
 				dcToSvcs := map[string]map[string]struct{}{}
@@ -213,7 +213,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 						collector.Add(svc.endpoints)
 					}
 				}
-				specs := collector.Get() // TODO(kdorosh) this does not need to be synchronized anymore!
+				specs := collector.Get()
 
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
@@ -391,7 +391,7 @@ func aggregateEndpoints(ctx context.Context, dest chan *dataCenterServiceEndpoin
 // belonging to that service within that datacenter.
 func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta []*consul.ServiceMeta, errChan chan error, serviceToUpstream map[string][]*v1.Upstream) []*consulapi.CatalogService {
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "consul_eds"))
-	specs := newSpecCollector()
+	specs := newThreadSafeSpecCollector()
 
 	// Get complete service information for every dataCenter:service tuple in separate goroutines
 	var eg errgroup.Group
@@ -732,28 +732,44 @@ func getUniqueUpstreamDataCenters(upstreams []*v1.Upstream) (dataCenters []strin
 	return
 }
 
-func newSpecCollector() specCollector {
-	return &collector{}
-}
-
 type specCollector interface {
 	Add([]*consulapi.CatalogService)
 	Get() []*consulapi.CatalogService
 }
 
-type collector struct {
+func newThreadSafeSpecCollector() specCollector {
+	return &threadSafeCollector{}
+}
+
+type threadSafeCollector struct {
 	mutex sync.RWMutex
 	specs []*consulapi.CatalogService
 }
 
-func (c *collector) Add(specs []*consulapi.CatalogService) {
+func (c *threadSafeCollector) Add(specs []*consulapi.CatalogService) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.specs = append(c.specs, specs...)
 }
 
-func (c *collector) Get() []*consulapi.CatalogService {
+func (c *threadSafeCollector) Get() []*consulapi.CatalogService {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
+	return c.specs
+}
+
+func newSpecCollector() specCollector {
+	return &collector{}
+}
+
+type collector struct {
+	specs []*consulapi.CatalogService
+}
+
+func (c *collector) Add(specs []*consulapi.CatalogService) {
+	c.specs = append(c.specs, specs...)
+}
+
+func (c *collector) Get() []*consulapi.CatalogService {
 	return c.specs
 }

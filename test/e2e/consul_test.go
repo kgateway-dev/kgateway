@@ -150,7 +150,7 @@ var _ = Describe("Consul e2e", func() {
 			envoyInstance.Clean()
 		})
 
-		It("works as expected", func() {
+		FIt("works as expected", func() {
 			_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -287,7 +287,7 @@ var _ = Describe("Consul e2e", func() {
 
 	})
 
-	FIt("resolves eds even if services aren't updated", func() {
+	It("resolves eds even if services aren't updated", func() {
 		svcsChan, errChan := consulWatcher.WatchServices(ctx, []string{"dc1"}, consulplugin.ConsulConsistencyModes_DefaultMode, nil)
 
 		Eventually(func() <-chan []*consul.ServiceMeta {
