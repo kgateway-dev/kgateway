@@ -172,7 +172,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 						// watch does not exist, create it
 						ctx, newCancel := context.WithCancel(opts.Ctx)
 						dcEndpointWatches[dc][meta.Name] = &epWatchTuple{
-							cancel: newCancel,
+							endpoints: nil, // intentionally nil until we get the first update
+							cancel:    newCancel,
 						}
 
 						// Copy before passing to goroutines!
@@ -244,6 +245,10 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				collector := newSpecCollector()
 				for _, svcTuple := range dcEndpointWatches {
 					for _, svc := range svcTuple {
+						if svc.endpoints == nil {
+							// no update received yet, skip
+							continue
+						}
 						collector.Add(svc.endpoints)
 					}
 				}
