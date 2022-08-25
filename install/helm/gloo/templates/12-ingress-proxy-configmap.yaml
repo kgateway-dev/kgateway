@@ -18,6 +18,7 @@ data:
         static_layer:
           overload:
             global_downstream_max_connections: 250000
+          envoy.reloadable_features.require_strict_1xx_and_204_response_headers: false
       - name: admin_layer
         admin_layer: {}
     node:
