@@ -302,7 +302,7 @@ func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svc
 							ctxDead = true
 							return nil
 						}
-						endpoints, _, err = p.client.Service(svcName, "", queryOpts.WithContext(ctx))
+						endpoints, queryMeta, err = p.client.Service(svcName, "", queryOpts.WithContext(ctx))
 						return err
 					},
 					retry.Attempts(6),

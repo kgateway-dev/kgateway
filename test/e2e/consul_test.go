@@ -8,6 +8,7 @@ import (
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -38,7 +39,6 @@ var _ = Describe("Consul e2e", func() {
 		svc1, svc2, svc3     *v1helpers.TestUpstream
 		err                  error
 		serviceTagsAllowlist []string
-		client               *api.Client
 		consulWatcher        consul.ConsulWatcher
 	)
 
@@ -75,7 +75,7 @@ var _ = Describe("Consul e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// init consul client
-		client, err = api.NewClient(api.DefaultConfig())
+		client, err := api.NewClient(api.DefaultConfig())
 		Expect(err).NotTo(HaveOccurred())
 		serviceTagsAllowlist = []string{"1", "2"}
 		consulWatcher, err = consul.NewConsulWatcher(client, nil, serviceTagsAllowlist)
@@ -92,9 +92,13 @@ var _ = Describe("Consul e2e", func() {
 
 	Context("with envoy and gloo", func() {
 
+		var (
+			ro *services.RunOptions
+		)
+
 		BeforeEach(func() {
 			// Start Gloo
-			ro := &services.RunOptions{
+			ro = &services.RunOptions{
 				NsToWrite: writeNamespace,
 				NsToWatch: []string{"default", writeNamespace},
 				WhatToRun: services.What{
@@ -110,6 +114,9 @@ var _ = Describe("Consul e2e", func() {
 				ConsulClient:     consulWatcher,
 				ConsulDnsAddress: consul2.DefaultDnsAddress,
 			}
+		})
+
+		JustBeforeEach(func() {
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
 			// Start Envoy
@@ -189,56 +196,77 @@ var _ = Describe("Consul e2e", func() {
 			}, "10s", "0.2s").Should(Receive())
 		})
 
-		It("resolves eds even if services aren't updated", func() {
-			_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
+		Context("test eds only updates", func() {
 
-			// Wait for proxy to be accepted
-			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			runTest := func() {
+				_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Wait for proxy to be accepted
+				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				})
+
+				By("requests only go to endpoints behind test upstream 1")
+
+				// Wait for the endpoints to be registered
+				Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
+					_, err := queryService()
+					if err != nil {
+						return svc1.C, err
+					}
+					return svc1.C, nil
+				}, "20s", "0.2s").Should(Receive())
+				// Service 2 does not match the tags on the route, so we should get only requests from service 1 with test upstream 1 endpoint
+				Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
+					_, err := queryService()
+					if err != nil {
+						return svc1.C, err
+					}
+					return svc1.C, nil
+				}, "2s", "0.2s").Should(Receive())
+
+				// update service one to point to test upstream 2 port
+				err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("requests only go to endpoints behind test upstream 2")
+
+				// ensure EDS picked up this endpoint-only change
+				Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
+					_, err := queryService()
+					if err != nil {
+						return svc2.C, err
+					}
+					return svc2.C, nil
+				}, "20s", "0.2s").Should(Receive())
+				// test upstream 1 endpoint is now stale; should only get requests to endpoints for test upstream 2 for svc1
+				Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
+					_, err := queryService()
+					if err != nil {
+						return svc2.C, err
+					}
+					return svc2.C, nil
+				}, "2s", "0.2s").Should(Receive())
+			}
+
+			Context("non-blocking EDS queries", func() {
+				It("works as expected", func() {
+					runTest()
+				})
 			})
 
-			By("requests only go to endpoints behind test upstream 1")
+			Context("blocking EDS queries", func() {
 
-			// Wait for the endpoints to be registered
-			Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-				_, err := queryService()
-				if err != nil {
-					return svc1.C, err
-				}
-				return svc1.C, nil
-			}, "20s", "0.2s").Should(Receive())
-			// Service 2 does not match the tags on the route, so we should get only requests from service 1 with test upstream 1 endpoint
-			Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
-				_, err := queryService()
-				if err != nil {
-					return svc1.C, err
-				}
-				return svc1.C, nil
-			}, "2s", "0.2s").Should(Receive())
+				BeforeEach(func() {
+					ro.Settings.ConsulDiscovery.EdsBlockingQueries = &wrapperspb.BoolValue{Value: true}
+				})
 
-			// update service one to point to test upstream 2 port
-			err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
-			Expect(err).NotTo(HaveOccurred())
+				It("works as expected", func() {
+					runTest()
+				})
+			})
 
-			By("requests only go to endpoints behind test upstream 2")
-
-			// ensure EDS picked up this endpoint-only change
-			Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-				_, err := queryService()
-				if err != nil {
-					return svc2.C, err
-				}
-				return svc2.C, nil
-			}, "20s", "0.2s").Should(Receive())
-			// test upstream 1 endpoint is now stale; should only get requests to endpoints for test upstream 2 for svc1
-			Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
-				_, err := queryService()
-				if err != nil {
-					return svc2.C, err
-				}
-				return svc2.C, nil
-			}, "2s", "0.2s").Should(Receive())
 		})
 
 		It("resolves consul services with hostname addresses (as opposed to IPs addresses)", func() {
