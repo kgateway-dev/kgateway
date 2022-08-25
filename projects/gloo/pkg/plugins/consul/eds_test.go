@@ -161,7 +161,7 @@ var _ = Describe("Consul EDS", func() {
 
 			eds := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
 
-			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
+			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, nil)
 
 			Expect(err).NotTo(HaveOccurred())
 
@@ -428,7 +428,7 @@ var _ = Describe("Consul EDS", func() {
 		It("works as expected", func() {
 			eds := NewPlugin(consulWatcherMock, nil, nil)
 
-			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
+			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, nil)
 
 			Expect(err).NotTo(HaveOccurred())
 
