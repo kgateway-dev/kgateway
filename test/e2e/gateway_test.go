@@ -145,9 +145,15 @@ var _ = Describe("Gateway", func() {
 							},
 						}
 					}
-
-					_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-					Expect(err).NotTo(HaveOccurred())
+					Eventually(func() error {
+						current, err := gatewayClient.Read(g.Metadata.Namespace, g.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+						if err != nil {
+							return err
+						}
+						g.Metadata.ResourceVersion = current.Metadata.ResourceVersion
+						_, err = gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+						return err
+					}, "5s", "0.3s").ShouldNot(HaveOccurred())
 				}
 
 				// write a virtual service so we have a proxy
@@ -727,9 +733,16 @@ var _ = Describe("Gateway", func() {
 						if tcpGateway != nil {
 							tcpGateway.TcpHosts = []*gloov1.TcpHost{host}
 						}
+						Eventually(func() error {
+							current, err := gatewayClient.Read(g.Metadata.Namespace, g.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+							if err != nil {
+								return err
+							}
+							g.Metadata.ResourceVersion = current.Metadata.ResourceVersion
+							_, err = gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+							return err
+						}, "5s", "0.3s").ShouldNot(HaveOccurred())
 
-						_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-						Expect(err).NotTo(HaveOccurred())
 					}
 
 					// Check tls inspector is correctly configured
@@ -835,8 +848,15 @@ var _ = Describe("Gateway", func() {
 						},
 					},
 				}
-				_, err = testClients.GatewayClient.Write(modifiedHybridGateway, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() error {
+					current, err := testClients.GatewayClient.Read(modifiedHybridGateway.Metadata.Namespace, modifiedHybridGateway.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+					if err != nil {
+						return err
+					}
+					modifiedHybridGateway.Metadata.ResourceVersion = current.Metadata.ResourceVersion
+					_, err = testClients.GatewayClient.Write(modifiedHybridGateway, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+					return err
+				}, "5s", "0.3s").ShouldNot(HaveOccurred())
 
 				// wait for hybrid listener to propagate to the proxy
 				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
@@ -883,8 +903,15 @@ var _ = Describe("Gateway", func() {
 						Port: uint32(svc.Spec.Ports[0].Port),
 					},
 				}
-				_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() error {
+					current, err := testClients.VirtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+					if err != nil {
+						return err
+					}
+					virtualService.Metadata.ResourceVersion = current.Metadata.ResourceVersion
+					_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+					return err
+				}, "5s", "0.3s").ShouldNot(HaveOccurred())
 
 				// Wait for proxy to be accepted
 				var proxy *gloov1.Proxy
@@ -1018,8 +1045,15 @@ var _ = Describe("Gateway", func() {
 							},
 						}}}
 
-					_, err := testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-					Expect(err).NotTo(HaveOccurred())
+					Eventually(func() error {
+						current, err := testClients.VirtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+						if err != nil {
+							return err
+						}
+						virtualService.Metadata.ResourceVersion = current.Metadata.ResourceVersion
+						_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+						return err
+					}, "5s", "0.3s").ShouldNot(HaveOccurred())
 
 					// Create a regular request
 					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HybridPort), nil)
@@ -1093,14 +1127,27 @@ var _ = Describe("Gateway", func() {
 									SslConfig: sslConfig,
 								}
 							}
-
-							_, err := testClients.GatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-							Expect(err).NotTo(HaveOccurred())
+							Eventually(func() error {
+								current, err := testClients.GatewayClient.Read(g.Metadata.Namespace, g.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+								if err != nil {
+									return err
+								}
+								g.Metadata.ResourceVersion = current.Metadata.ResourceVersion
+								_, err = testClients.GatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+								return err
+							}, "5s", "0.3s").ShouldNot(HaveOccurred())
 						}
 
 						virtualService.SslConfig = sslConfig
-						_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-						Expect(err).NotTo(HaveOccurred())
+						Eventually(func() error {
+							current, err := testClients.VirtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+							if err != nil {
+								return err
+							}
+							virtualService.Metadata.ResourceVersion = current.Metadata.ResourceVersion
+							_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+							return err
+						}, "5s", "0.3s").ShouldNot(HaveOccurred())
 
 						TestUpstreamSslReachable()
 
@@ -1204,9 +1251,15 @@ var _ = Describe("Gateway", func() {
 								},
 							}
 						}
-
-						_, err := testClients.GatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-						Expect(err).NotTo(HaveOccurred())
+						Eventually(func() error {
+							current, err := testClients.GatewayClient.Read(g.Metadata.Namespace, g.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+							if err != nil {
+								return err
+							}
+							g.Metadata.ResourceVersion = current.Metadata.ResourceVersion
+							_, err = testClients.GatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+							return err
+						}, "5s", "0.3s").ShouldNot(HaveOccurred())
 					}
 
 					// Check tls inspector is correctly configured
