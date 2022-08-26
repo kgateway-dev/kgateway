@@ -46,7 +46,7 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.EdsSnapshot) error {
 		RefreshRate: s.refreshRate,
 	}
 
-	udsErrs, err := s.eds.StartEds(snap.Upstreams, opts, s.discOpts.Settings)
+	udsErrs, err := s.eds.StartEds(snap.Upstreams, opts)
 	if err != nil {
 		return err
 	}

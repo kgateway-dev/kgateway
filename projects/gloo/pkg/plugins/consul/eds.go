@@ -47,7 +47,7 @@ type dataCenterServiceEndpointsTuple struct {
 // Starts a watch on the Consul service metadata endpoint for all the services associated with the tracked upstreams.
 // Whenever it detects an update to said services, it fetches the complete specs for the tracked services,
 // converts them to endpoints, and sends the result on the returned channel.
-func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts, settings *v1.Settings) (<-chan v1.EndpointList, <-chan error, error) {
+func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 
 	// Filter out non-consul upstreams
 	trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
@@ -118,7 +118,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		}()
 
 		edsBlockingQueries := false // defaults to false because caching defaults to true; in testing I only saw cache hits when lastIndex was 0
-		if bq := settings.GetConsulDiscovery().GetEdsBlockingQueries(); bq != nil {
+		if bq := p.settings.GetConsulDiscovery().GetEdsBlockingQueries(); bq != nil {
 			edsBlockingQueries = bq.GetValue()
 		}
 

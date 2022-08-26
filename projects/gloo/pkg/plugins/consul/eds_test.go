@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
 	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -180,12 +181,15 @@ var _ = Describe("Consul EDS", func() {
 					}).Return(initialIps, nil).AnyTimes() // once for each consul service
 
 					eds := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
-
-					endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, &v1.Settings{
-						ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
-							EdsBlockingQueries: &wrapperspb.BoolValue{Value: true},
+					eds.Init(plugins.InitParams{
+						Settings: &v1.Settings{
+							ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+								EdsBlockingQueries: &wrapperspb.BoolValue{Value: true},
+							},
 						},
 					})
+
+					endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
 
 					Expect(err).NotTo(HaveOccurred())
 
@@ -269,12 +273,15 @@ var _ = Describe("Consul EDS", func() {
 					}).Return(initialIps, nil).AnyTimes() // once for each consul service
 
 					eds := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
-
-					endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, &v1.Settings{
-						ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
-							EdsBlockingQueries: &wrapperspb.BoolValue{Value: true},
+					eds.Init(plugins.InitParams{
+						Settings: &v1.Settings{
+							ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+								EdsBlockingQueries: &wrapperspb.BoolValue{Value: true},
+							},
 						},
 					})
+
+					endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
 
 					Expect(err).NotTo(HaveOccurred())
 
@@ -341,7 +348,7 @@ var _ = Describe("Consul EDS", func() {
 				duration := &durationpb.Duration{Seconds: 0, Nanos: 100000}
 				eds := NewPlugin(consulWatcherMock, mockDnsResolver, duration)
 
-				endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, nil)
+				endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
 
 				Expect(err).NotTo(HaveOccurred())
 
@@ -619,7 +626,7 @@ var _ = Describe("Consul EDS", func() {
 		It("works as expected", func() {
 			eds := NewPlugin(consulWatcherMock, nil, nil)
 
-			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, nil)
+			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
 
 			Expect(err).NotTo(HaveOccurred())
 
