@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fixes docs for new logo, links, typos, and version bumps.
+    issueLink: https://github.com/solo-io/gloo/issues/7014
+  - type: NON_USER_FACING
+    description: Fixes invalid Knative link.
+    issueLink: https://github.com/solo-io/gloo/issues/6975
