@@ -151,7 +151,7 @@ var _ = Describe("Consul EDS", func() {
 
 				BeforeEach(func() {
 					testSvcCp := *testService
-					testSvcCpPtr := &testSvcCp
+					testSvcCpPtr := &testSvcCp // copy so no data races with test pollution (goroutines still reading this value as the next test writes it)
 					consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 						func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 							if q.Datacenter == dc2 {
@@ -240,7 +240,7 @@ var _ = Describe("Consul EDS", func() {
 
 				BeforeEach(func() {
 					testSvcCp := *testService
-					testSvcCpPtr := &testSvcCp
+					testSvcCpPtr := &testSvcCp // copy so no data races with test pollution (goroutines still reading this value as the next test writes it)
 					consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 						func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 							if q.Datacenter == dc2 {
@@ -324,8 +324,6 @@ var _ = Describe("Consul EDS", func() {
 			})
 
 			It("handles DNS updates even if consul services are unchanged", func() {
-
-				// we have to put all the mock expects before the test starts or else the test may have data races
 				initialIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 10)}}
 				mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
 				mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context, string) {
@@ -338,9 +336,10 @@ var _ = Describe("Consul EDS", func() {
 				// the second poll, DNS will resolve to the same thing and we do not expect to receive new endpoints
 				mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context, string) {
 					fmt.Fprint(GinkgoWriter, "Updated resolve called.")
-				}).Return(updatedIps, nil).Times(2)
+				}).Return(updatedIps, nil).AnyTimes()
 
-				eds := NewPlugin(consulWatcherMock, mockDnsResolver, &durationpb.Duration{Seconds: 5, Nanos: 100})
+				duration := &durationpb.Duration{Seconds: 0, Nanos: 100000}
+				eds := NewPlugin(consulWatcherMock, mockDnsResolver, duration)
 
 				endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, nil)
 
@@ -369,13 +368,23 @@ var _ = Describe("Consul EDS", func() {
 					Fail("timeout waiting for error")
 				}
 
-				// Simulate an update to DNS entries
-				// by default we poll DNS every 5s for updates
-				pollingInterval := DefaultDnsPollingInterval + time.Second
-				Eventually(endpointsChan, pollingInterval, "1s").Should(Receive(BeEquivalentTo(expectedEndpointsSecondAttempt)))
+				// Simulate an update to DNS entries via the mock DNS resolver expects set up above
+				pollingInterval := duration.AsDuration() + (duration.AsDuration() / 5)
+				totalInterval := duration.AsDuration() * 3
+
+				// use select instead of eventually for easier debugging.
+				select {
+				case err := <-errorChan:
+					Expect(err).NotTo(HaveOccurred())
+					Fail("err chan closed prematurely")
+				case endpointsReceived := <-endpointsChan:
+					Expect(endpointsReceived).To(matchers.BeEquivalentToDiff(expectedEndpointsSecondAttempt))
+				case <-time.After(totalInterval):
+					Fail("timeout waiting for endpoints")
+				}
 
 				// ensure we don't receive anything else on channel even though we receive more DNS queries
-				Consistently(endpointsChan, pollingInterval, "1s").ShouldNot(Receive())
+				Consistently(endpointsChan, pollingInterval, totalInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
