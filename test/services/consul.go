@@ -196,7 +196,7 @@ func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("curl", "--request", "PUT", "--data", fmt.Sprintf("@%s", fileName), "localhost:8500/v1/agent/service/register")
+	cmd := exec.Command("curl", "--request", "PUT", "--data", fmt.Sprintf("@%s", fileName), "127.0.0.1:8500/v1/agent/service/register")
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
