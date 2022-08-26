@@ -105,6 +105,9 @@ var _ = Describe("Consul EDS", func() {
 				},
 			}
 
+			consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
+			consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
+			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters, consulplugin.ConsulConsistencyModes_DefaultMode, gomock.Any()).Return(serviceMetaProducer, errorProducer).Times(1)
 			testService = createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3456, 100)
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
@@ -144,13 +147,9 @@ var _ = Describe("Consul EDS", func() {
 				svc2 = "svc-2"
 			)
 
-			Context("svc1 gets update", func() {
+			Context("svc1 gets updated endpoints", func() {
 
 				BeforeEach(func() {
-					consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
-					consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
-					consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters, consulplugin.ConsulConsistencyModes_DefaultMode, gomock.Any()).Return(serviceMetaProducer, errorProducer).Times(1)
-					testService = createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3456, 100)
 					consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 						func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 							if q.Datacenter == dc2 {
@@ -235,13 +234,9 @@ var _ = Describe("Consul EDS", func() {
 				})
 			})
 
-			Context("svc1 gets removed", func() {
+			Context("svc1 gets removed from services catalog", func() {
 
 				BeforeEach(func() {
-					consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
-					consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
-					consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters, consulplugin.ConsulConsistencyModes_DefaultMode, gomock.Any()).Return(serviceMetaProducer, errorProducer).Times(1)
-					testService = createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3456, 100)
 					consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 						func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 							if q.Datacenter == dc2 {
@@ -315,10 +310,6 @@ var _ = Describe("Consul EDS", func() {
 		Context("non-blocking EDS queries", func() {
 
 			BeforeEach(func() {
-				consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
-				consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
-				consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters, consulplugin.ConsulConsistencyModes_DefaultMode, gomock.Any()).Return(serviceMetaProducer, errorProducer).Times(1)
-				testService = createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3456, 100)
 				consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 					func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 						if q.Datacenter == dc2 {
