@@ -166,7 +166,7 @@ func (i *ConsulInstance) Binary() string {
 }
 
 func (i *ConsulInstance) Clean() error {
-	cmd := exec.Command("consul", "leave") /// gracefully leave so tests can run consecutively without issues
+	cmd := exec.Command(i.consulPath, "leave") // gracefully leave so tests can run consecutively without issues
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
