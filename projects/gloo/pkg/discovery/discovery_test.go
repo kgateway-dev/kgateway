@@ -58,7 +58,7 @@ var _ = Describe("Discovery", func() {
 		makeEdsPlugin := func() (DiscoveryPlugin, chan v1.EndpointList) {
 			discoveryPlugin := discmocks.NewMockDiscoveryPlugin(ctl)
 			edsChan := make(chan v1.EndpointList, 1)
-			discoveryPlugin.EXPECT().WatchEndpoints(ns, nil, wo, nil).Return(edsChan, nil, nil).Times(2) // 1 time for each StartEds call
+			discoveryPlugin.EXPECT().WatchEndpoints(ns, nil, wo).Return(edsChan, nil, nil).Times(2) // 1 time for each StartEds call
 			return discoveryPlugin, edsChan
 		}
 
