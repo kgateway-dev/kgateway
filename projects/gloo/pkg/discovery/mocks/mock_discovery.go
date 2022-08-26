@@ -95,9 +95,9 @@ func (mr *MockDiscoveryPluginMockRecorder) UpdateUpstream(arg0, arg1 interface{}
 }
 
 // WatchEndpoints mocks base method.
-func (m *MockDiscoveryPlugin) WatchEndpoints(arg0 string, arg1 v1.UpstreamList, arg2 clients.WatchOpts, arg3 *v1.Settings) (<-chan v1.EndpointList, <-chan error, error) {
+func (m *MockDiscoveryPlugin) WatchEndpoints(arg0 string, arg1 v1.UpstreamList, arg2 clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WatchEndpoints", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "WatchEndpoints", arg0, arg1, arg2)
 	ret0, _ := ret[0].(<-chan v1.EndpointList)
 	ret1, _ := ret[1].(<-chan error)
 	ret2, _ := ret[2].(error)
@@ -105,7 +105,7 @@ func (m *MockDiscoveryPlugin) WatchEndpoints(arg0 string, arg1 v1.UpstreamList, 
 }
 
 // WatchEndpoints indicates an expected call of WatchEndpoints.
-func (mr *MockDiscoveryPluginMockRecorder) WatchEndpoints(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockDiscoveryPluginMockRecorder) WatchEndpoints(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchEndpoints", reflect.TypeOf((*MockDiscoveryPlugin)(nil).WatchEndpoints), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchEndpoints", reflect.TypeOf((*MockDiscoveryPlugin)(nil).WatchEndpoints), arg0, arg1, arg2)
 }

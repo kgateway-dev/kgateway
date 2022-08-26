@@ -77,7 +77,7 @@ var _ = Describe("Discovery", func() {
 		// start eds once
 		// we don't care about the upstreams here,
 		// we just want to verify endpoints are preserved across calls to StartEds
-		_, err := eds.StartEds(nil, wo, nil)
+		_, err := eds.StartEds(nil, wo)
 		Expect(err).NotTo(HaveOccurred())
 
 		ep := func(suffix string) *v1.Endpoint {
@@ -120,7 +120,7 @@ var _ = Describe("Discovery", func() {
 
 		// start eds again
 		// verify that discovery never removes endpoints from the client
-		_, err = eds.StartEds(nil, wo, nil)
+		_, err = eds.StartEds(nil, wo)
 		Expect(err).NotTo(HaveOccurred())
 
 		// update eds by sending another eds list
