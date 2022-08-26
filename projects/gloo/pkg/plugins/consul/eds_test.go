@@ -345,7 +345,7 @@ var _ = Describe("Consul EDS", func() {
 					fmt.Fprint(GinkgoWriter, "Updated resolve called.")
 				}).Return(updatedIps, nil).Times(2)
 
-				eds := NewPlugin(consulWatcherMock, mockDnsResolver, &durationpb.Duration{Nanos: 100})
+				eds := NewPlugin(consulWatcherMock, mockDnsResolver, &durationpb.Duration{Seconds: 5, Nanos: 100})
 
 				endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, nil)
 
