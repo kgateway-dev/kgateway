@@ -46,7 +46,7 @@ Gloo Edge is a feature-rich, Kubernetes-native ingress controller, and next-gene
 
 ## Why Gloo Edge?
 
-Gloo Edge makes it easy to solve your challenges of managing ingress traffic into your application architectures (not just Kubernetes) regardless of where they run. Backend services can be discovered when running or registered in Kubernetes, AWS Lambda, VMs, EC2, Consul, et. al. Gloo Edge is so powerful it was also selected to be the [first alternative ingress endpoint for the KNative project](https://knative.dev/docs/install/knative-with-gloo/). Please see the [Gloo Edge announcement](https://medium.com/solo-io/announcing-gloo-the-function-gateway-3f0860ef6600) for more on its origin. 
+Gloo Edge makes it easy to solve your challenges of managing ingress traffic into your application architectures (not just Kubernetes) regardless of where they run. Backend services can be discovered when running or registered in Kubernetes, AWS Lambda, VMs, EC2, Consul, et. al. Please see the [Gloo Edge announcement](https://medium.com/solo-io/announcing-gloo-the-function-gateway-3f0860ef6600) for more on its origin. 
 
 * **Solve difficult cloud-native and hybrid challenges**: Microservices make understanding an application's API difficult. Gloo Edge implements the [API Gateway pattern](https://microservices.io/patterns/apigateway.html) to add shape and structure to your architecture.
 

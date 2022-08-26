@@ -116,7 +116,7 @@ spec:
 
 Once this config has been accepted run the following to test that the rule has been applied
 ```bash
-curl -v -H user-agent:scammer $(glooctl proxy url)/sample-route-1
+curl -v -H User-Agent: scammer $(glooctl proxy url)/sample-route-1
 ```
 should respond with
 ```
