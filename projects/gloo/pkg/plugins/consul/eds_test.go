@@ -150,10 +150,12 @@ var _ = Describe("Consul EDS", func() {
 			Context("svc1 gets updated endpoints", func() {
 
 				BeforeEach(func() {
+					testSvcCp := *testService
+					testSvcCpPtr := &testSvcCp
 					consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 						func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 							if q.Datacenter == dc2 {
-								return []*consulapi.CatalogService{testService}, &consulapi.QueryMeta{LastIndex: 1}, nil
+								return []*consulapi.CatalogService{testSvcCpPtr}, &consulapi.QueryMeta{LastIndex: 1}, nil
 							}
 							return []*consulapi.CatalogService{}, &consulapi.QueryMeta{LastIndex: 1}, nil
 						}).Times(100) // busy loop that eventually ends
@@ -237,10 +239,12 @@ var _ = Describe("Consul EDS", func() {
 			Context("svc1 gets removed from services catalog", func() {
 
 				BeforeEach(func() {
+					testSvcCp := *testService
+					testSvcCpPtr := &testSvcCp
 					consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 						func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 							if q.Datacenter == dc2 {
-								return []*consulapi.CatalogService{testService}, &consulapi.QueryMeta{LastIndex: 1}, nil
+								return []*consulapi.CatalogService{testSvcCpPtr}, &consulapi.QueryMeta{LastIndex: 1}, nil
 							}
 							return []*consulapi.CatalogService{}, &consulapi.QueryMeta{LastIndex: 1}, nil
 						}).AnyTimes()
