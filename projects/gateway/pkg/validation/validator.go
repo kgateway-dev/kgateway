@@ -683,7 +683,8 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 			return &Reports{}, err
 		}
 	}
-	logger.Debugf("Got response from GlooValidationService: %s", response.String())
+	// dont log the responsse as proxies and status reports may be too large in large envs.
+	logger.Debugf("Got response from GlooValidationService with %d reports", len(response.GetValidationReports()))
 
 	return v.getReportsFromGlooValidationResponse(response)
 }
@@ -706,9 +707,12 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *cor
 			return err
 		}
 	}
-	logger.Debugf("Got response from GlooValidationService: %s", response.String())
+
+	// dont log the responsse as proxies and status reports may be too large in large envs.
+	logger.Debugf("Got response from GlooValidationService with %d reports", len(response.GetValidationReports()))
 
 	_, err = v.getReportsFromGlooValidationResponse(response)
+
 	return err
 }
 
@@ -730,7 +734,9 @@ func (v *validator) ValidateDeleteSecret(ctx context.Context, secretRef *core.Re
 			return err
 		}
 	}
-	logger.Debugf("Got response from GlooValidationService: %s", response.String())
+
+	// dont log the responsse as proxies and status reports may be too large in large envs.
+	logger.Debugf("Got response from GlooValidationService with %d reports", len(response.GetValidationReports()))
 
 	_, err = v.getReportsFromGlooValidationResponse(response)
 	return err
@@ -789,7 +795,9 @@ func (v *validator) sendGlooValidationServiceRequest(
 	req *validation.GlooValidationServiceRequest,
 ) (*validation.GlooValidationServiceResponse, error) {
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Debugf("Sending request to GlooValidationService: %s", req.String())
+	logger.Debugf("Sending request validation request modified:%s, deleted:%s",
+		req.GetModifiedResources().String(), req.GetDeletedResources().String())
+
 	return v.validationFunc(ctx, req)
 }
 
