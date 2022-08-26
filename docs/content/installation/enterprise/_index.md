@@ -257,7 +257,7 @@ NAME                                                       READY   STATUS    RES
 pod/caching-service-5d7f867cdc-jgrbb                       1/1     Running   0               5m22s
 pod/discovery-755c4f9f45-n5qxp                             1/1     Running   0               5m22s
 pod/extauth-7c4c7f5999-m5zmc                               1/1     Running   0               5m22s
-pod/gateway-proxy-59bf9f7d5f-7xm2f                         1/1     Running   2 (6d15h ago)   5m22s
+pod/gateway-proxy-59bf9f7d5f-7xm2f                         1/1     Running   0               5m22s
 pod/gloo-7bb4dcf577-g6mcm                                  1/1     Running   0               5m22s
 pod/gloo-fed-7b55f67c5d-m6mdk                              1/1     Running   0               5m22s
 pod/gloo-fed-console-7c446775c-mpzq8                       3/3     Running   0               5m22s

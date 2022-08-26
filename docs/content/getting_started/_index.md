@@ -44,11 +44,6 @@ After you have a cluster, you can install Gloo Edge through the command line wit
 {{% /tab %}}
 {{< /tabs >}}
 
-That's it! Now, you can try the [Hello World example]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) or the following [hands-on demo](#demo) to get an idea of how Gloo Edge can be used.
+That's it! Now, you can try the [Hello World example]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) to get an idea of how Gloo Edge can be used.
 
-## From zero to Gloo Edge in 15 minutes {#demo}
-
-Configure your first cloud-native application with the Gloo Edge API gateway by working your way through the following Instruqt sandbox environment. 
-
-<iframe width="1140" height="640" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" src="https://play.instruqt.com/embed/soloio/tracks/zero-to-gloo-edge?token=em_pweesjcvxxsdfzdy" style="border: 0;"></iframe>
-
+{{% notice tip %}} Looking for more training? Check out [Solo Academy](https://www.solo.io/solo-academy/) for on-demand and instructor-led courses and certifications in the latest Envoy, Istio, and application networking technologies.{{% /notice %}}
