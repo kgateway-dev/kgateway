@@ -166,16 +166,11 @@ func (i *ConsulInstance) Binary() string {
 }
 
 func (i *ConsulInstance) Clean() error {
-	if i.session != nil {
-		i.session.Kill()
-	}
-	if i.cmd != nil && i.cmd.Process != nil {
-		i.cmd.Process.Kill()
-	}
-	if i.tmpdir != "" {
-		return os.RemoveAll(i.tmpdir)
-	}
-	return nil
+	cmd := exec.Command("consul", "leave") /// gracefully leave so tests can run consecutively without issues
+	cmd.Dir = i.tmpdir
+	cmd.Stdout = GinkgoWriter
+	cmd.Stderr = GinkgoWriter
+	return cmd.Run()
 }
 
 // While it may be tempting to just reload all config using `consul reload` or marshalling new json and
