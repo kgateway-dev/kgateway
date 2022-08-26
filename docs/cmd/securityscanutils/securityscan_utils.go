@@ -70,9 +70,10 @@ func BuildSecurityScanReportGlooE(tags []string) error {
 func OpenSourceImages(semver *version.Version) []string {
 	images := []string{"access-logger", "certgen", "discovery", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
 
+	kubectlThirteen := semver.Minor() == 13
 	kubectlTwelve := semver.Minor() == 12 && semver.AtLeast(version.MustParseSemantic("1.12.3"))
 	kubectlEleven := semver.Minor() == 11 && semver.AtLeast(version.MustParseSemantic("1.11.28"))
-	if kubectlTwelve || kubectlEleven {
+	if kubectlThirteen || kubectlTwelve || kubectlEleven {
 		images = append(images, "kubectl")
 	}
 	if semver.LessThan(version.MustParseSemantic("1.12.0")) {
