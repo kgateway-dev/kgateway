@@ -16,12 +16,14 @@ import (
 type syncer struct {
 	eds         *EndpointDiscovery
 	refreshRate time.Duration
+	discOpts    Opts
 }
 
 func NewEdsSyncer(disc *EndpointDiscovery, discOpts Opts, refreshRate time.Duration) v1.EdsSyncer {
 	s := &syncer{
 		eds:         disc,
 		refreshRate: refreshRate,
+		discOpts:    discOpts,
 	}
 	return s
 }
