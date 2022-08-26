@@ -110,7 +110,12 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 			allEndpointsChan = make(chan *dataCenterServiceEndpointsTuple)
 		)
 
-		defer close(allEndpointsChan)
+		wg.Add(1)
+		defer func() {
+			wg.Done()     // delay closing errChan until all goroutines are done
+			_ = eg.Wait() // will never error
+			close(allEndpointsChan)
+		}()
 
 		edsBlockingQueries := false // defaults to false because caching defaults to true; in testing I only saw cache hits when lastIndex was 0
 		if bq := settings.GetConsulDiscovery().GetEdsBlockingQueries(); bq != nil {
