@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 
 	"io/ioutil"
 
@@ -116,7 +115,7 @@ func (cf *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(cf.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir,
+	cmd := exec.Command(cf.consulPath, "agent", "-dev", "--client=0.0.0.0",
 		"-node", "consul-dev")
 	cmd.Dir = cf.tmpdir
 	cmd.Stdout = GinkgoWriter
@@ -141,25 +140,9 @@ type ConsulInstance struct {
 	registeredServices map[string]*serviceDef
 }
 
-func (i *ConsulInstance) AddConfig(svcId, content string) error {
+func (i *ConsulInstance) AddConfig(svcId, content string) (string, error) {
 	fileName := filepath.Join(i.cfgDir, svcId+".json")
-	return ioutil.WriteFile(fileName, []byte(content), 0644)
-}
-
-func (i *ConsulInstance) AddConfigFromStruct(svcId string, cfg interface{}) error {
-	content, err := json.Marshal(cfg)
-	if err != nil {
-		return err
-	}
-	return i.AddConfig(svcId, string(content))
-}
-
-func (i *ConsulInstance) ReloadConfig() error {
-	err := i.cmd.Process.Signal(syscall.SIGHUP)
-	if err != nil {
-		return err
-	}
-	return nil
+	return fileName, ioutil.WriteFile(fileName, []byte(content), 0644)
 }
 
 func (i *ConsulInstance) Silence() {
@@ -190,6 +173,10 @@ func (i *ConsulInstance) Clean() error {
 	return cmd.Run()
 }
 
+// While it may be tempting to just reload all config using `consul reload` or marshalling new json and
+// sending SIGHUP to the process (per https://www.consul.io/commands/reload), it is preferable to live update
+// using the consul APIs as this is a more realistic flow and doesn't fire our watches too actively (which can
+// both make debugging hard and hide bugs)
 func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port uint32) error {
 	svcDef := &serviceDef{
 		Service: &consulService{
@@ -200,13 +187,21 @@ func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []
 			Port:    port,
 		},
 	}
-
-	i.registeredServices[svcId] = svcDef
-
-	err := i.AddConfigFromStruct(svcId, svcDef)
+	content, err := json.Marshal(svcDef.Service)
 	if err != nil {
 		return err
 	}
-
-	return i.ReloadConfig()
+	postData := string(content)
+	fileName, err := i.AddConfig(svcId, postData)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("curl", "--request", "PUT", "--data", fmt.Sprintf("@%s", fileName), "127.0.0.1:8500/v1/agent/service/register")
+	cmd.Dir = i.tmpdir
+	cmd.Stdout = GinkgoWriter
+	cmd.Stderr = GinkgoWriter
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
 }
