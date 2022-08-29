@@ -140,11 +140,6 @@ type ConsulInstance struct {
 	registeredServices map[string]*serviceDef
 }
 
-func (i *ConsulInstance) AddConfig(svcId, content string) (string, error) {
-	fileName := filepath.Join(i.cfgDir, svcId+".json")
-	return fileName, ioutil.WriteFile(fileName, []byte(content), 0644)
-}
-
 func (i *ConsulInstance) Silence() {
 	i.cmd.Stdout = nil
 	i.cmd.Stderr = nil
@@ -204,8 +199,12 @@ func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []
 	if err != nil {
 		return err
 	}
-	postData := string(content)
-	fileName, err := i.AddConfig(svcId, postData)
+	fileName := filepath.Join(i.cfgDir, svcId+".json")
+	err = os.Remove(fileName) // ensure we upsert the config update
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	err = ioutil.WriteFile(fileName, content, 0644)
 	if err != nil {
 		return err
 	}
