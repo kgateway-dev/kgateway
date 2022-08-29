@@ -504,6 +504,26 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		}
 	}
 
+	if h, ok := interface{}(m.GetInternalAddressConfig()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("InternalAddressConfig")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetInternalAddressConfig(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("InternalAddressConfig")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
@@ -632,6 +652,91 @@ func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) Hash(hasher 
 				return 0, err
 			}
 		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *HttpConnectionManagerSettings_CidrRange) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_CidrRange")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAddressPrefix())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetPrefixLen()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("PrefixLen")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetPrefixLen(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("PrefixLen")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *HttpConnectionManagerSettings_InternalAddressConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_InternalAddressConfig")); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetUnixSockets())
+	if err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetCidrRanges() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil
