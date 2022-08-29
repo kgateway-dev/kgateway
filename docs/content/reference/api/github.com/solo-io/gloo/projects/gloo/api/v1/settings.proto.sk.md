@@ -417,6 +417,7 @@ upstreams to connect to those services and their instances.
 "consistencyMode": .consul.options.gloo.solo.io.ConsulConsistencyModes
 "queryOptions": .consul.options.gloo.solo.io.QueryOptions
 "serviceTagsAllowlist": []string
+"edsBlockingQueries": .google.protobuf.BoolValue
 
 ```
 
@@ -429,6 +430,7 @@ upstreams to connect to those services and their instances.
 | `consistencyMode` | [.consul.options.gloo.solo.io.ConsulConsistencyModes](../options/consul/query_options.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is DefaultMode. Note: Gloo handles staleness well (as it runs update loops ~ once/second) but makes many requests to get consul endpoints so users may want to opt into stale reads once the implications are understood. |
 | `queryOptions` | [.consul.options.gloo.solo.io.QueryOptions](../options/consul/query_options.proto.sk/#queryoptions) | QueryOptions are the query options to use for all Consul queries. |
 | `serviceTagsAllowlist` | `[]string` | All Services with tags in the allowlisted values will have endpoints and upstreams discovered. Default is all services - if values specified this will limit discovery to only services with specified tags. |
+| `edsBlockingQueries` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enables blocking queries for Gloo's requests to the Consul Catalog API for each service (`/catalog/service/:servicename`) to get endpoints for EDS. For more on blocking queries, see https://www.consul.io/api-docs/features/blocking Enabling this feature will likely result in fewer network calls to Consul, but may also result in fewer local consul agent cache hits for Gloo's requests to the Consul Catalog API. (see `query_options` above to configure caching; caching is enabled by default). Defaults to false. |
 
 
 
