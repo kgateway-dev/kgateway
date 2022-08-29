@@ -170,7 +170,14 @@ func (i *ConsulInstance) Clean() error {
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
-	return cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	if i.tmpdir != "" {
+		return os.RemoveAll(i.tmpdir)
+	}
+	return nil
 }
 
 // While it may be tempting to just reload all config using `consul reload` or marshalling new json and
