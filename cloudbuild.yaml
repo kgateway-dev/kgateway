@@ -99,6 +99,7 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'TAGGED_VERSION=$TAG_NAME'
+  - 'TEST_PKG=./test/e2e/...'
   dir: *dir
   args: ['run-tests']
   waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials', 'install-go-tools']
@@ -117,7 +118,7 @@ steps:
 
   # 1) Run make targets to push docker images to quay.io
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
-  args: ['docker-push-extended']
+  args: ['print-VERSION']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
@@ -152,7 +153,7 @@ steps:
 
 # Run make targets to retag and push docker images to GCR
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
-  args: ['docker-push-retag']
+  args: ['print-VERSION']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
