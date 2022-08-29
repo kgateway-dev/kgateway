@@ -311,7 +311,7 @@ var _ = Describe("Consul e2e", func() {
 	// This test was written to prove that the consul golang client behaves differently than the consul CLI, and thus
 	// that our `refreshSpecs()` usage in consul eds.go is correct and does not miss updates (which also allows
 	// us to make performance optimizations at scale, since our current implementation has a lot more cache hits).
-	It("fires service watch even if catalog service is the only update", func() {
+	FIt("fires service watch even if catalog service is the only update", func() {
 		svcsChan, errChan := consulWatcher.WatchServices(ctx, []string{"dc1"}, consulplugin.ConsulConsistencyModes_DefaultMode, nil)
 
 		// use select instead of eventually for easier debugging.
@@ -334,6 +334,21 @@ var _ = Describe("Consul e2e", func() {
 			case svcsReceived := <-svcsChan:
 				// happy path, continue
 				ExpectWithOffset(1, svcsReceived).To(HaveLen(0))
+			case <-time.After(100 * time.Millisecond):
+				// happy path, continue
+			}
+			return nil
+		}, "2s", "0.2s").Should(Succeed())
+
+		// now that consul has a chance to update raft index with all internal updates; we should see no more updates
+		Consistently(func() error {
+			select {
+			case err := <-errChan:
+				Expect(err).NotTo(HaveOccurred())
+				return errors.New("err chan closed prematurely")
+			case svcsReceived := <-svcsChan:
+				Expect(svcsReceived).To(HaveLen(0)) // we actually expect len(0) if anything; this is just here to get a nice output / diff before we fail regardless
+				Fail("did not expect to receive empty services")
 			case <-time.After(100 * time.Millisecond):
 				// happy path, continue
 			}
@@ -377,6 +392,21 @@ var _ = Describe("Consul e2e", func() {
 				ExpectWithOffset(1, svcsReceived[0].Name).To(Equal("my-svc"))
 				ExpectWithOffset(1, svcsReceived[0].Tags).To(ConsistOf([]string{"svc", "1"}))
 				ExpectWithOffset(1, svcsReceived[0].DataCenters).To(ConsistOf([]string{"dc1"}))
+			case <-time.After(100 * time.Millisecond):
+				// happy path, continue
+			}
+			return nil
+		}, "2s", "0.2s").Should(Succeed())
+
+		// now that consul has a chance to update raft index with all internal updates; we should see no more updates
+		Consistently(func() error {
+			select {
+			case err := <-errChan:
+				Expect(err).NotTo(HaveOccurred())
+				return errors.New("err chan closed prematurely")
+			case svcsReceived := <-svcsChan:
+				Expect(svcsReceived).To(HaveLen(0)) // we actually expect len(1) if anything; this is just here to get a nice output / diff before we fail regardless
+				Fail("did not expect to receive services")
 			case <-time.After(100 * time.Millisecond):
 				// happy path, continue
 			}
@@ -428,6 +458,21 @@ var _ = Describe("Consul e2e", func() {
 				ExpectWithOffset(1, svcsReceived[0].Name).To(Equal("my-svc"))
 				ExpectWithOffset(1, svcsReceived[0].Tags).To(ConsistOf([]string{"svc", "1"}))
 				ExpectWithOffset(1, svcsReceived[0].DataCenters).To(ConsistOf([]string{"dc1"}))
+			case <-time.After(100 * time.Millisecond):
+				// happy path, continue
+			}
+			return nil
+		}, "2s", "0.2s").Should(Succeed())
+
+		// now that consul has a chance to update raft index with all internal updates; we should see no more updates
+		Consistently(func() error {
+			select {
+			case err := <-errChan:
+				Expect(err).NotTo(HaveOccurred())
+				return errors.New("err chan closed prematurely")
+			case svcsReceived := <-svcsChan:
+				Expect(svcsReceived).To(HaveLen(0)) // we actually expect len(1) if anything; this is just here to get a nice output / diff before we fail regardless
+				Fail("did not expect to receive services")
 			case <-time.After(100 * time.Millisecond):
 				// happy path, continue
 			}
