@@ -112,10 +112,9 @@ func MustGetVersion() string {
 	output := MustMakeReturnStdout(".", "-C", "../../", "print-VERSION") // use print-VERSION so version matches on forks
 	// sample output
 	// make: Entering directory '/var/home/kdorosh/git/forks/gloo'\n0.0.0-fork\nmake: Leaving directory '/var/home/kdorosh/git/forks/gloo'\n"
-	//TODO: temporary change to make this work locally, revert before merging
 	lines := strings.Split(output, "\n")
-	//Expect(len(lines)).To(BeNumerically(">", 2))
-	return lines[0]
+	Expect(len(lines)).To(BeNumerically(">", 2))
+	return lines[1]
 }
 
 type helmValues struct {
