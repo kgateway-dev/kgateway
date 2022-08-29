@@ -174,6 +174,8 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 				}
 
 				// If index is the same, there have been no changes since last query
+				// since this follows the raft index, this can also change even if the services / tags do not;
+				// in fact, we depend on this (which is tested in "fires service watch even if catalog service is the only update")
 				if queryMeta.LastIndex == lastIndex {
 					continue
 				}

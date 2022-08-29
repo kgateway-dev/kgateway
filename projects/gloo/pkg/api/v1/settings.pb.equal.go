@@ -1294,6 +1294,16 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Equal(that interface{}) 
 
 	}
 
+	if h, ok := interface{}(m.GetEdsBlockingQueries()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEdsBlockingQueries()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEdsBlockingQueries(), target.GetEdsBlockingQueries()) {
+			return false
+		}
+	}
+
 	return true
 }
 
