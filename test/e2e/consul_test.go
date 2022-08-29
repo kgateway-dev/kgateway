@@ -320,7 +320,7 @@ var _ = Describe("Consul e2e", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Fail("err chan closed prematurely")
 		case svcsReceived := <-svcsChan:
-			// the default consul svc in dc1 does not show up in our watch
+			// the default consul svc in dc1 does not show up in our watch because of service tag filtering
 			Expect(svcsReceived).To(HaveLen(0))
 		case <-time.After(5 * time.Second):
 			Fail("timeout waiting for services")
@@ -344,10 +344,10 @@ var _ = Describe("Consul e2e", func() {
 		Consistently(func() error {
 			select {
 			case err := <-errChan:
-				Expect(err).NotTo(HaveOccurred())
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				return errors.New("err chan closed prematurely")
 			case svcsReceived := <-svcsChan:
-				Expect(svcsReceived).To(HaveLen(0)) // we actually expect len(0) if anything; this is just here to get a nice output / diff before we fail regardless
+				ExpectWithOffset(1, svcsReceived).To(HaveLen(0)) // we actually expect len(0) if anything; this is just here to get a nice output / diff before we fail regardless
 				Fail("did not expect to receive empty services")
 			case <-time.After(100 * time.Millisecond):
 				// happy path, continue
@@ -384,7 +384,7 @@ var _ = Describe("Consul e2e", func() {
 		Consistently(func() error {
 			select {
 			case err := <-errChan:
-				Expect(err).NotTo(HaveOccurred())
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				return errors.New("err chan closed prematurely")
 			case svcsReceived := <-svcsChan:
 				// happy path, continue
@@ -402,10 +402,10 @@ var _ = Describe("Consul e2e", func() {
 		Consistently(func() error {
 			select {
 			case err := <-errChan:
-				Expect(err).NotTo(HaveOccurred())
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				return errors.New("err chan closed prematurely")
 			case svcsReceived := <-svcsChan:
-				Expect(svcsReceived).To(HaveLen(0)) // we actually expect len(1) if anything; this is just here to get a nice output / diff before we fail regardless
+				ExpectWithOffset(1, svcsReceived).To(HaveLen(0)) // we actually expect len(1) if anything; this is just here to get a nice output / diff before we fail regardless
 				Fail("did not expect to receive services")
 			case <-time.After(100 * time.Millisecond):
 				// happy path, continue
@@ -431,7 +431,7 @@ var _ = Describe("Consul e2e", func() {
 		err = consulInstance.RegisterLiveService("my-svc", "my-svc-1", "127.0.0.1", []string{"svc", "1"}, 81)
 		Expect(err).NotTo(HaveOccurred())
 
-		// this is where golang client differs from cli!
+		// this is where golang client differs from cli! CLI registers watch on svc but not svcs; but we get for both
 		// use select instead of eventually for easier debugging.
 		select {
 		case err := <-errChan:
@@ -450,7 +450,7 @@ var _ = Describe("Consul e2e", func() {
 		Consistently(func() error {
 			select {
 			case err := <-errChan:
-				Expect(err).NotTo(HaveOccurred())
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				return errors.New("err chan closed prematurely")
 			case svcsReceived := <-svcsChan:
 				// happy path, continue
@@ -468,10 +468,10 @@ var _ = Describe("Consul e2e", func() {
 		Consistently(func() error {
 			select {
 			case err := <-errChan:
-				Expect(err).NotTo(HaveOccurred())
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				return errors.New("err chan closed prematurely")
 			case svcsReceived := <-svcsChan:
-				Expect(svcsReceived).To(HaveLen(0)) // we actually expect len(1) if anything; this is just here to get a nice output / diff before we fail regardless
+				ExpectWithOffset(1, svcsReceived).To(HaveLen(0)) // we actually expect len(1) if anything; this is just here to get a nice output / diff before we fail regardless
 				Fail("did not expect to receive services")
 			case <-time.After(100 * time.Millisecond):
 				// happy path, continue

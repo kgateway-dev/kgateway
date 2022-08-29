@@ -24,6 +24,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type epWatchTuple struct {
@@ -157,14 +158,14 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				// in testing, I only saw cache hits here if last index was zero (first call during blocking)
 
 				// construct a set of the present services by datacenter
-				dcToCurrentSvcs := map[string]map[string]struct{}{}
+				dcToCurrentSvcs := map[string]sets.String{}
 				for _, meta := range serviceMeta {
 					for _, dc := range meta.DataCenters {
 						// add to set of datacenter/svc pairs present
 						if _, ok := dcToCurrentSvcs[dc]; !ok {
-							dcToCurrentSvcs[dc] = map[string]struct{}{}
+							dcToCurrentSvcs[dc] = sets.NewString()
 						}
-						dcToCurrentSvcs[dc][meta.Name] = struct{}{}
+						dcToCurrentSvcs[dc].Insert(meta.Name)
 
 						// additionally, if not already a watch for this, create a watch
 						if _, ok := dcEndpointWatches[dc]; !ok {
@@ -202,19 +203,19 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				}
 
 				// create a set of the dc / svc combos we will delete (do not delete from the map that we iterate over)
-				dcToSvcsToCancel := map[string]map[string]struct{}{}
+				dcToSvcsToCancel := map[string]sets.String{}
 				for dc, svcWatchesMap := range dcEndpointWatches {
 					for svcName := range svcWatchesMap {
 						if _, ok := dcToSvcsToCancel[dc]; !ok {
-							dcToSvcsToCancel[dc] = map[string]struct{}{}
+							dcToSvcsToCancel[dc] = sets.NewString()
 						}
 						// if dc/svc combo is present in our watch map, but not in parsed current state of the world, cancel the watch
 						if _, ok := dcToCurrentSvcs[dc]; !ok {
 							// dc not current, we should delete the watch
-							dcToSvcsToCancel[dc][svcName] = struct{}{}
+							dcToSvcsToCancel[dc].Insert(svcName)
 						} else if _, ok := dcToCurrentSvcs[dc][svcName]; !ok {
 							// svc not current, we should delete
-							dcToSvcsToCancel[dc][svcName] = struct{}{}
+							dcToSvcsToCancel[dc].Insert(svcName)
 						}
 					}
 				}
