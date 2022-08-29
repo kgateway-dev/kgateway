@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 
 	"io/ioutil"
 
@@ -53,7 +54,7 @@ func NewConsulFactory() (*ConsulFactory, error) {
 		}, nil
 	}
 
-	// try to grab one from docker...
+	// try to grab one form docker...
 	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "consul")
 	if err != nil {
 		return nil, err
@@ -91,19 +92,19 @@ docker rm -f $CID
 	}, nil
 }
 
-func (cf *ConsulFactory) Clean() error {
-	if cf == nil {
+func (ef *ConsulFactory) Clean() error {
+	if ef == nil {
 		return nil
 	}
-	if cf.tmpdir != "" {
-		_ = os.RemoveAll(cf.tmpdir)
+	if ef.tmpdir != "" {
+		_ = os.RemoveAll(ef.tmpdir)
 
 	}
 	return nil
 }
 
-func (cf *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
-	// try to grab one from docker...
+func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
+	// try to grab one form docker...
 	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "consul")
 	if err != nil {
 		return nil, err
@@ -115,16 +116,17 @@ func (cf *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(cf.consulPath, "agent", "-dev", "--client=0.0.0.0",
+	cmd := exec.Command(ef.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir,
 		"-node", "consul-dev")
-	cmd.Dir = cf.tmpdir
+	cmd.Dir = ef.tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
 	return &ConsulInstance{
-		consulPath: cf.consulPath,
-		tmpdir:     tmpdir,
-		cfgDir:     cfgDir,
-		cmd:        cmd,
+		consulPath:         ef.consulPath,
+		tmpdir:             tmpdir,
+		cfgDir:             cfgDir,
+		cmd:                cmd,
+		registeredServices: map[string]*serviceDef{},
 	}, nil
 }
 
@@ -135,6 +137,29 @@ type ConsulInstance struct {
 	cmd        *exec.Cmd
 
 	session *gexec.Session
+
+	registeredServices map[string]*serviceDef
+}
+
+func (i *ConsulInstance) AddConfig(svcId, content string) error {
+	fileName := filepath.Join(i.cfgDir, svcId+".json")
+	return ioutil.WriteFile(fileName, []byte(content), 0644)
+}
+
+func (i *ConsulInstance) AddConfigFromStruct(svcId string, cfg interface{}) error {
+	content, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+	return i.AddConfig(svcId, string(content))
+}
+
+func (i *ConsulInstance) ReloadConfig() error {
+	err := i.cmd.Process.Signal(syscall.SIGHUP)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (i *ConsulInstance) Silence() {
@@ -158,14 +183,6 @@ func (i *ConsulInstance) Binary() string {
 }
 
 func (i *ConsulInstance) Clean() error {
-	cmd := exec.Command(i.consulPath, "leave") // gracefully leave so tests can run consecutively without issues
-	cmd.Dir = i.tmpdir
-	cmd.Stdout = GinkgoWriter
-	cmd.Stderr = GinkgoWriter
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
 	if i.session != nil {
 		i.session.Kill()
 	}
@@ -178,11 +195,32 @@ func (i *ConsulInstance) Clean() error {
 	return nil
 }
 
+func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port uint32) error {
+	svcDef := &serviceDef{
+		Service: &consulService{
+			ID:      svcId,
+			Name:    svcName,
+			Address: address,
+			Tags:    tags,
+			Port:    port,
+		},
+	}
+
+	i.registeredServices[svcId] = svcDef
+
+	err := i.AddConfigFromStruct(svcId, svcDef)
+	if err != nil {
+		return err
+	}
+
+	return i.ReloadConfig()
+}
+
 // While it may be tempting to just reload all config using `consul reload` or marshalling new json and
 // sending SIGHUP to the process (per https://www.consul.io/commands/reload), it is preferable to live update
 // using the consul APIs as this is a more realistic flow and doesn't fire our watches too actively (which can
 // both make debugging hard and hide bugs)
-func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port uint32) error {
+func (i *ConsulInstance) RegisterLiveService(svcName, svcId, address string, tags []string, port uint32) error {
 	svcDef := &serviceDef{
 		Service: &consulService{
 			ID:      svcId,
