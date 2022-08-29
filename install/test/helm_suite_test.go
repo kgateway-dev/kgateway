@@ -113,8 +113,8 @@ func MustGetVersion() string {
 	// sample output
 	// make: Entering directory '/var/home/kdorosh/git/forks/gloo'\n0.0.0-fork\nmake: Leaving directory '/var/home/kdorosh/git/forks/gloo'\n"
 	lines := strings.Split(output, "\n")
-	Expect(len(lines)).To(BeNumerically(">", 2))
-	return lines[1]
+	//Expect(len(lines)).To(BeNumerically(">", 2))
+	return lines[0]
 }
 
 type helmValues struct {

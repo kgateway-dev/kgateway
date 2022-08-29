@@ -938,6 +938,7 @@ var _ = Describe("Helm Test", func() {
 							"global.istioIntegration.enableIstioSidecarOnGateway=true",
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
+							fmt.Sprintf("gatewayProxies.namedGatewayProxy.disabled=false"),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpPort=%d", secondDeploymentHttpPort),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpsPort=%d", secondDeploymentHttpsPort),
 						},
@@ -969,6 +970,10 @@ var _ = Describe("Helm Test", func() {
 							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
 							Expect(ok).To(BeTrue())
 							Expect(excludedPortString).To(Equal(fmt.Sprintf("%d,%d", secondDeploymentHttpPort, secondDeploymentHttpsPort)), fmt.Sprintf("Deployment %s should exclude specified ports", deploymentName))
+						} else if deploymentName == "named-gateway-proxy" {
+							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
+							Expect(ok).To(BeTrue())
+							Expect(excludedPortString).To(Equal(fmt.Sprintf("%d,%d", httpPort, httpsPort)), fmt.Sprintf("Deployment %s should exclude the same specified ports as the default", deploymentName))
 						}
 					})
 				})
