@@ -121,11 +121,10 @@ func (cf *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
 	return &ConsulInstance{
-		consulPath:         cf.consulPath,
-		tmpdir:             tmpdir,
-		cfgDir:             cfgDir,
-		cmd:                cmd,
-		registeredServices: map[string]*serviceDef{},
+		consulPath: cf.consulPath,
+		tmpdir:     tmpdir,
+		cfgDir:     cfgDir,
+		cmd:        cmd,
 	}, nil
 }
 
@@ -136,8 +135,6 @@ type ConsulInstance struct {
 	cmd        *exec.Cmd
 
 	session *gexec.Session
-
-	registeredServices map[string]*serviceDef
 }
 
 func (i *ConsulInstance) Silence() {
