@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -310,9 +311,17 @@ var _ = Describe("Consul e2e", func() {
 	It("fires service watch even if catalog service is the only update", func() {
 		svcsChan, errChan := consulWatcher.WatchServices(ctx, []string{"dc1"}, consulplugin.ConsulConsistencyModes_DefaultMode, nil)
 
-		Eventually(func() <-chan []*consul.ServiceMeta {
-			return svcsChan
-		}, "2s", "0.2s").Should(Receive())
+		// use select instead of eventually for easier debugging.
+		select {
+		case err := <-errChan:
+			Expect(err).NotTo(HaveOccurred())
+			Fail("err chan closed prematurely")
+		case svcsReceived := <-svcsChan:
+			// the default consul svc in dc1 does not show up in our watch
+			Expect(svcsReceived).To(HaveLen(0))
+		case <-time.After(5 * time.Second):
+			Fail("timeout waiting for services")
+		}
 
 		Consistently(func() <-chan []*consul.ServiceMeta {
 			return svcsChan
@@ -333,9 +342,17 @@ var _ = Describe("Consul e2e", func() {
 		err = consulInstance.RegisterService("my-svc", "my-svc-1", "127.0.0.1", []string{"svc", "1"}, 80)
 		Expect(err).NotTo(HaveOccurred())
 
-		Eventually(func() <-chan []*consul.ServiceMeta {
-			return svcsChan
-		}, "2s", "0.2s").Should(Receive())
+		// use select instead of eventually for easier debugging.
+		select {
+		case err := <-errChan:
+			Expect(err).NotTo(HaveOccurred())
+			Fail("err chan closed prematurely")
+		case svcsReceived := <-svcsChan:
+			// the default consul svc in dc1 does not show up in our watch
+			Expect(svcsReceived).To(HaveLen(1))
+		case <-time.After(5 * time.Second):
+			Fail("timeout waiting for services")
+		}
 
 		Consistently(func() <-chan []*consul.ServiceMeta {
 			return svcsChan
@@ -364,9 +381,17 @@ var _ = Describe("Consul e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// this is where golang client differs from cli!
-		Eventually(func() <-chan []*consul.ServiceMeta {
-			return svcsChan
-		}, "2s", "0.2s").Should(Receive())
+		// use select instead of eventually for easier debugging.
+		select {
+		case err := <-errChan:
+			Expect(err).NotTo(HaveOccurred())
+			Fail("err chan closed prematurely")
+		case svcsReceived := <-svcsChan:
+			// the default consul svc in dc1 does not show up in our watch
+			Expect(svcsReceived).To(HaveLen(1))
+		case <-time.After(5 * time.Second):
+			Fail("timeout waiting for services")
+		}
 
 		Consistently(func() <-chan []*consul.ServiceMeta {
 			return svcsChan
