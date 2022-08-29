@@ -311,7 +311,7 @@ var _ = Describe("Consul e2e", func() {
 	// This test was written to prove that the consul golang client behaves differently than the consul CLI, and thus
 	// that our `refreshSpecs()` usage in consul eds.go is correct and does not miss updates (which also allows
 	// us to make performance optimizations at scale, since our current implementation has a lot more cache hits).
-	FIt("fires service watch even if catalog service is the only update", func() {
+	It("fires service watch even if catalog service is the only update", func() {
 		svcsChan, errChan := consulWatcher.WatchServices(ctx, []string{"dc1"}, consulplugin.ConsulConsistencyModes_DefaultMode, nil)
 
 		// use select instead of eventually for easier debugging.
