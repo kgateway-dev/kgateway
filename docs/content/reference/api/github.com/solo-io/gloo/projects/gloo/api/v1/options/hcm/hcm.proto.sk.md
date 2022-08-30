@@ -39,12 +39,12 @@ Now contains v3 fields as well
 v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#extensions-filters-network-http-connection-manager-v3-httpconnectionmanager
 
 ```yaml
-"skipXffAppend": bool
-"via": string
-"xffNumTrustedHops": int
+"skipXffAppend": .google.protobuf.BoolValue
+"via": .google.protobuf.StringValue
+"xffNumTrustedHops": .google.protobuf.UInt32Value
 "useRemoteAddress": .google.protobuf.BoolValue
 "generateRequestId": .google.protobuf.BoolValue
-"proxy100Continue": bool
+"proxy100Continue": .google.protobuf.BoolValue
 "streamIdleTimeout": .google.protobuf.Duration
 "idleTimeout": .google.protobuf.Duration
 "maxRequestHeadersKb": .google.protobuf.UInt32Value
@@ -52,18 +52,18 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 "requestHeadersTimeout": .google.protobuf.Duration
 "drainTimeout": .google.protobuf.Duration
 "delayedCloseTimeout": .google.protobuf.Duration
-"serverName": string
-"stripAnyHostPort": bool
-"acceptHttp10": bool
-"defaultHostForHttp10": string
-"allowChunkedLength": bool
-"enableTrailers": bool
-"properCaseHeaderKeyFormat": bool
-"preserveCaseHeaderKeyFormat": bool
+"serverName": .google.protobuf.StringValue
+"stripAnyHostPort": .google.protobuf.BoolValue
+"acceptHttp10": .google.protobuf.BoolValue
+"defaultHostForHttp10": .google.protobuf.StringValue
+"allowChunkedLength": .google.protobuf.BoolValue
+"enableTrailers": .google.protobuf.BoolValue
+"properCaseHeaderKeyFormat": .google.protobuf.BoolValue
+"preserveCaseHeaderKeyFormat": .google.protobuf.BoolValue
 "tracing": .tracing.options.gloo.solo.io.ListenerTracingSettings
 "forwardClientCertDetails": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails
 "setCurrentClientCertDetails": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails
-"preserveExternalRequestId": bool
+"preserveExternalRequestId": .google.protobuf.BoolValue
 "upgrades": []protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
 "maxConnectionDuration": .google.protobuf.Duration
 "maxStreamDuration": .google.protobuf.Duration
@@ -73,7 +73,7 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 "serverHeaderTransformation": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation
 "pathWithEscapedSlashesAction": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction
 "codecType": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType
-"mergeSlashes": bool
+"mergeSlashes": .google.protobuf.BoolValue
 "normalizePath": .google.protobuf.BoolValue
 "uuidRequestIdConfig": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings
 "http2ProtocolOptions": .protocol.options.gloo.solo.io.Http2ProtocolOptions
@@ -82,12 +82,12 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `skipXffAppend` | `bool` |  |
-| `via` | `string` |  |
-| `xffNumTrustedHops` | `int` |  |
+| `skipXffAppend` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
+| `via` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) |  |
+| `xffNumTrustedHops` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) |  |
 | `useRemoteAddress` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
 | `generateRequestId` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
-| `proxy100Continue` | `bool` |  |
+| `proxy100Continue` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
 | `streamIdleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
 | `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
 | `maxRequestHeadersKb` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) |  |
@@ -95,18 +95,18 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 | `requestHeadersTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The amount of time that Envoy will wait for the request headers to be received. The timer is activated when the first byte of the headers is received, and is disarmed when the last byte of the headers has been received. If not specified or set to 0, this timeout is disabled. |
 | `drainTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
 | `delayedCloseTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
-| `serverName` | `string` |  |
-| `stripAnyHostPort` | `bool` |  |
-| `acceptHttp10` | `bool` | For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions. |
-| `defaultHostForHttp10` | `string` |  |
-| `allowChunkedLength` | `bool` | For an explanation of these settings, see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions. |
-| `enableTrailers` | `bool` |  |
-| `properCaseHeaderKeyFormat` | `bool` | Formats the RESPONSE HEADER by proper casing words: the first character and any character following a special character will be capitalized if it's an alpha character. For example, "content-type" becomes "Content-Type", and "foo$b#$are" becomes "Foo$B#$Are". Note that while this results in most headers following conventional casing, certain headers are not covered. For example, the "TE" header will be formatted as "Te". Only one of `properCaseHeaderKeyFormat` or `preserveCaseHeaderKeyFormat` can be set. |
-| `preserveCaseHeaderKeyFormat` | `bool` | Generates configuration for a stateful formatter extension that allows using received headers to affect the output of encoding headers. Specifically: preserving RESPONSE HEADER case during proxying. Only one of `preserveCaseHeaderKeyFormat` or `properCaseHeaderKeyFormat` can be set. |
+| `serverName` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) |  |
+| `stripAnyHostPort` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
+| `acceptHttp10` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions. |
+| `defaultHostForHttp10` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) |  |
+| `allowChunkedLength` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | For an explanation of these settings, see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions. |
+| `enableTrailers` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
+| `properCaseHeaderKeyFormat` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Formats the RESPONSE HEADER by proper casing words: the first character and any character following a special character will be capitalized if it's an alpha character. For example, "content-type" becomes "Content-Type", and "foo$b#$are" becomes "Foo$B#$Are". Note that while this results in most headers following conventional casing, certain headers are not covered. For example, the "TE" header will be formatted as "Te". Only one of `properCaseHeaderKeyFormat` or `preserveCaseHeaderKeyFormat` can be set. |
+| `preserveCaseHeaderKeyFormat` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Generates configuration for a stateful formatter extension that allows using received headers to affect the output of encoding headers. Specifically: preserving RESPONSE HEADER case during proxying. Only one of `preserveCaseHeaderKeyFormat` or `properCaseHeaderKeyFormat` can be set. |
 | `tracing` | [.tracing.options.gloo.solo.io.ListenerTracingSettings](../../tracing/tracing.proto.sk/#listenertracingsettings) |  |
 | `forwardClientCertDetails` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails](../hcm.proto.sk/#forwardclientcertdetails) |  |
 | `setCurrentClientCertDetails` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails](../hcm.proto.sk/#setcurrentclientcertdetails) |  |
-| `preserveExternalRequestId` | `bool` |  |
+| `preserveExternalRequestId` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
 | `upgrades` | [[]protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig](../../protocol_upgrade/protocol_upgrade.proto.sk/#protocolupgradeconfig) | HttpConnectionManager configuration for protocol upgrade requests. Note: WebSocket upgrades are enabled by default on the HTTP Connection Manager and must be explicitly disabled. |
 | `maxConnectionDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |
 | `maxStreamDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |
@@ -116,7 +116,7 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 | `serverHeaderTransformation` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation](../hcm.proto.sk/#serverheadertransformation) | For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation. |
 | `pathWithEscapedSlashesAction` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction](../hcm.proto.sk/#pathwithescapedslashesaction) | Action to take when request URL path contains escaped slash sequences (%2F, %2f, %5C and %5c). The default value can be overridden by the :ref:`http_connection_manager.path_with_escaped_slashes_action<config_http_conn_man_runtime_path_with_escaped_slashes_action>` runtime variable. The :ref:`http_connection_manager.path_with_escaped_slashes_action_sampling<config_http_conn_man_runtime_path_with_escaped_slashes_action_enabled>` runtime variable can be used to apply the action to a portion of all requests. |
 | `codecType` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType](../hcm.proto.sk/#codectype) | Supplies the type of codec that the connection manager should use. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#extensions-filters-network-http-connection-manager-v3-httpconnectionmanager. |
-| `mergeSlashes` | `bool` | Determines if adjacent slashes in the path are merged into one before any processing of requests by HTTP filters or routing. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto. |
+| `mergeSlashes` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Determines if adjacent slashes in the path are merged into one before any processing of requests by HTTP filters or routing. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto. |
 | `normalizePath` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should paths be normalized according to RFC 3986 before any processing of requests by HTTP filters or routing? See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto. |
 | `uuidRequestIdConfig` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings](../hcm.proto.sk/#uuidrequestidconfigsettings) |  |
 | `http2ProtocolOptions` | [.protocol.options.gloo.solo.io.Http2ProtocolOptions](../../protocol/protocol.proto.sk/#http2protocoloptions) | Additional HTTP/2 settings that are passed directly to the HTTP/2 codec. |
@@ -131,20 +131,20 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 
 ```yaml
 "subject": .google.protobuf.BoolValue
-"cert": bool
-"chain": bool
-"dns": bool
-"uri": bool
+"cert": .google.protobuf.BoolValue
+"chain": .google.protobuf.BoolValue
+"dns": .google.protobuf.BoolValue
+"uri": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `subject` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
-| `cert` | `bool` |  |
-| `chain` | `bool` |  |
-| `dns` | `bool` |  |
-| `uri` | `bool` |  |
+| `cert` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
+| `chain` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
+| `dns` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
+| `uri` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
 
 
 

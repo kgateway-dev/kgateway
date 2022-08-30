@@ -38,15 +38,23 @@ func (m *ListenerTracingSettings) Clone() proto.Message {
 	target = &ListenerTracingSettings{}
 
 	if m.GetRequestHeadersForTags() != nil {
-		target.RequestHeadersForTags = make([]string, len(m.GetRequestHeadersForTags()))
+		target.RequestHeadersForTags = make([]*github_com_golang_protobuf_ptypes_wrappers.StringValue, len(m.GetRequestHeadersForTags()))
 		for idx, v := range m.GetRequestHeadersForTags() {
 
-			target.RequestHeadersForTags[idx] = v
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.RequestHeadersForTags[idx] = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+			} else {
+				target.RequestHeadersForTags[idx] = proto.Clone(v).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+			}
 
 		}
 	}
 
-	target.Verbose = m.GetVerbose()
+	if h, ok := interface{}(m.GetVerbose()).(clone.Cloner); ok {
+		target.Verbose = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.Verbose = proto.Clone(m.GetVerbose()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	if h, ok := interface{}(m.GetTracePercentages()).(clone.Cloner); ok {
 		target.TracePercentages = h.Clone().(*TracePercentages)
@@ -173,11 +181,23 @@ func (m *TracingTagEnvironmentVariable) Clone() proto.Message {
 	}
 	target = &TracingTagEnvironmentVariable{}
 
-	target.Tag = m.GetTag()
+	if h, ok := interface{}(m.GetTag()).(clone.Cloner); ok {
+		target.Tag = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.Tag = proto.Clone(m.GetTag()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	}
 
-	target.Name = m.GetName()
+	if h, ok := interface{}(m.GetName()).(clone.Cloner); ok {
+		target.Name = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.Name = proto.Clone(m.GetName()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	}
 
-	target.DefaultValue = m.GetDefaultValue()
+	if h, ok := interface{}(m.GetDefaultValue()).(clone.Cloner); ok {
+		target.DefaultValue = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.DefaultValue = proto.Clone(m.GetDefaultValue()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	}
 
 	return target
 }
@@ -190,9 +210,17 @@ func (m *TracingTagLiteral) Clone() proto.Message {
 	}
 	target = &TracingTagLiteral{}
 
-	target.Tag = m.GetTag()
+	if h, ok := interface{}(m.GetTag()).(clone.Cloner); ok {
+		target.Tag = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.Tag = proto.Clone(m.GetTag()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	}
 
-	target.Value = m.GetValue()
+	if h, ok := interface{}(m.GetValue()).(clone.Cloner); ok {
+		target.Value = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.Value = proto.Clone(m.GetValue()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	}
 
 	return target
 }
