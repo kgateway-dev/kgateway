@@ -65,7 +65,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 
 	customTags := customTags(tracingSettings)
 	trCfg.CustomTags = customTags
-	trCfg.Verbose = tracingSettings.GetVerbose()
+	trCfg.Verbose = tracingSettings.GetVerbose().GetValue()
 
 	tracingProvider, err := processEnvoyTracingProvider(params.Snapshot, tracingSettings)
 	if err != nil {
@@ -94,10 +94,10 @@ func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracin
 
 	for _, requestHeaderTag := range tracingSettings.GetRequestHeadersForTags() {
 		tag := &envoytracing.CustomTag{
-			Tag: requestHeaderTag,
+			Tag: requestHeaderTag.GetValue(),
 			Type: &envoytracing.CustomTag_RequestHeader{
 				RequestHeader: &envoytracing.CustomTag_Header{
-					Name: requestHeaderTag,
+					Name: requestHeaderTag.GetValue(),
 				},
 			},
 		}
@@ -105,11 +105,11 @@ func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracin
 	}
 	for _, envVarTag := range tracingSettings.GetEnvironmentVariablesForTags() {
 		tag := &envoytracing.CustomTag{
-			Tag: envVarTag.GetTag(),
+			Tag: envVarTag.GetTag().GetValue(),
 			Type: &envoytracing.CustomTag_Environment_{
 				Environment: &envoytracing.CustomTag_Environment{
-					Name:         envVarTag.GetName(),
-					DefaultValue: envVarTag.GetDefaultValue(),
+					Name:         envVarTag.GetName().GetValue(),
+					DefaultValue: envVarTag.GetDefaultValue().GetValue(),
 				},
 			},
 		}
@@ -117,10 +117,10 @@ func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracin
 	}
 	for _, literalTag := range tracingSettings.GetLiteralsForTags() {
 		tag := &envoytracing.CustomTag{
-			Tag: literalTag.GetTag(),
+			Tag: literalTag.GetTag().GetValue(),
 			Type: &envoytracing.CustomTag_Literal_{
 				Literal: &envoytracing.CustomTag_Literal{
-					Value: literalTag.GetValue(),
+					Value: literalTag.GetValue().GetValue(),
 				},
 			},
 		}

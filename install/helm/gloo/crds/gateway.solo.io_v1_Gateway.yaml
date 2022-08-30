@@ -505,19 +505,23 @@ spec:
                       httpConnectionManagerSettings:
                         properties:
                           acceptHttp10:
+                            nullable: true
                             type: boolean
                           allowChunkedLength:
+                            nullable: true
                             type: boolean
                           codecType:
                             type: string
                             x-kubernetes-int-or-string: true
                           defaultHostForHttp10:
+                            nullable: true
                             type: string
                           delayedCloseTimeout:
                             type: string
                           drainTimeout:
                             type: string
                           enableTrailers:
+                            nullable: true
                             type: boolean
                           forwardClientCertDetails:
                             type: string
@@ -566,6 +570,7 @@ spec:
                                   type: object
                                 type: array
                               unixSockets:
+                                nullable: true
                                 type: boolean
                             type: object
                           maxConnectionDuration:
@@ -588,6 +593,7 @@ spec:
                           maxStreamDuration:
                             type: string
                           mergeSlashes:
+                            nullable: true
                             type: boolean
                           normalizePath:
                             nullable: true
@@ -596,12 +602,16 @@ spec:
                             type: string
                             x-kubernetes-int-or-string: true
                           preserveCaseHeaderKeyFormat:
+                            nullable: true
                             type: boolean
                           preserveExternalRequestId:
+                            nullable: true
                             type: boolean
                           properCaseHeaderKeyFormat:
+                            nullable: true
                             type: boolean
                           proxy100Continue:
+                            nullable: true
                             type: boolean
                           requestHeadersTimeout:
                             type: string
@@ -611,26 +621,33 @@ spec:
                             type: string
                             x-kubernetes-int-or-string: true
                           serverName:
+                            nullable: true
                             type: string
                           setCurrentClientCertDetails:
                             properties:
                               cert:
+                                nullable: true
                                 type: boolean
                               chain:
+                                nullable: true
                                 type: boolean
                               dns:
+                                nullable: true
                                 type: boolean
                               subject:
                                 nullable: true
                                 type: boolean
                               uri:
+                                nullable: true
                                 type: boolean
                             type: object
                           skipXffAppend:
+                            nullable: true
                             type: boolean
                           streamIdleTimeout:
                             type: string
                           stripAnyHostPort:
+                            nullable: true
                             type: boolean
                           tracing:
                             properties:
@@ -646,16 +663,20 @@ spec:
                                         type: string
                                     type: object
                                   serviceName:
+                                    nullable: true
                                     type: string
                                 type: object
                               environmentVariablesForTags:
                                 items:
                                   properties:
                                     defaultValue:
+                                      nullable: true
                                       type: string
                                     name:
+                                      nullable: true
                                       type: string
                                     tag:
+                                      nullable: true
                                       type: string
                                   type: object
                                 type: array
@@ -663,13 +684,16 @@ spec:
                                 items:
                                   properties:
                                     tag:
+                                      nullable: true
                                       type: string
                                     value:
+                                      nullable: true
                                       type: string
                                   type: object
                                 type: array
                               requestHeadersForTags:
                                 items:
+                                  nullable: true
                                   type: string
                                 type: array
                               tracePercentages:
@@ -685,6 +709,7 @@ spec:
                                     type: number
                                 type: object
                               verbose:
+                                nullable: true
                                 type: boolean
                               zipkinConfig:
                                 properties:
@@ -706,6 +731,7 @@ spec:
                                     nullable: true
                                     type: boolean
                                   traceId128bit:
+                                    nullable: true
                                     type: boolean
                                 type: object
                             type: object
@@ -733,9 +759,12 @@ spec:
                                 type: boolean
                             type: object
                           via:
+                            nullable: true
                             type: string
                           xffNumTrustedHops:
-                            format: int32
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
                             type: integer
                         type: object
                       leftmostXffAddress:
@@ -898,19 +927,23 @@ spec:
                       httpConnectionManagerSettings:
                         properties:
                           acceptHttp10:
+                            nullable: true
                             type: boolean
                           allowChunkedLength:
+                            nullable: true
                             type: boolean
                           codecType:
                             type: string
                             x-kubernetes-int-or-string: true
                           defaultHostForHttp10:
+                            nullable: true
                             type: string
                           delayedCloseTimeout:
                             type: string
                           drainTimeout:
                             type: string
                           enableTrailers:
+                            nullable: true
                             type: boolean
                           forwardClientCertDetails:
                             type: string
@@ -959,6 +992,7 @@ spec:
                                   type: object
                                 type: array
                               unixSockets:
+                                nullable: true
                                 type: boolean
                             type: object
                           maxConnectionDuration:
@@ -981,6 +1015,7 @@ spec:
                           maxStreamDuration:
                             type: string
                           mergeSlashes:
+                            nullable: true
                             type: boolean
                           normalizePath:
                             nullable: true
@@ -989,12 +1024,16 @@ spec:
                             type: string
                             x-kubernetes-int-or-string: true
                           preserveCaseHeaderKeyFormat:
+                            nullable: true
                             type: boolean
                           preserveExternalRequestId:
+                            nullable: true
                             type: boolean
                           properCaseHeaderKeyFormat:
+                            nullable: true
                             type: boolean
                           proxy100Continue:
+                            nullable: true
                             type: boolean
                           requestHeadersTimeout:
                             type: string
@@ -1004,26 +1043,33 @@ spec:
                             type: string
                             x-kubernetes-int-or-string: true
                           serverName:
+                            nullable: true
                             type: string
                           setCurrentClientCertDetails:
                             properties:
                               cert:
+                                nullable: true
                                 type: boolean
                               chain:
+                                nullable: true
                                 type: boolean
                               dns:
+                                nullable: true
                                 type: boolean
                               subject:
                                 nullable: true
                                 type: boolean
                               uri:
+                                nullable: true
                                 type: boolean
                             type: object
                           skipXffAppend:
+                            nullable: true
                             type: boolean
                           streamIdleTimeout:
                             type: string
                           stripAnyHostPort:
+                            nullable: true
                             type: boolean
                           tracing:
                             properties:
@@ -1039,16 +1085,20 @@ spec:
                                         type: string
                                     type: object
                                   serviceName:
+                                    nullable: true
                                     type: string
                                 type: object
                               environmentVariablesForTags:
                                 items:
                                   properties:
                                     defaultValue:
+                                      nullable: true
                                       type: string
                                     name:
+                                      nullable: true
                                       type: string
                                     tag:
+                                      nullable: true
                                       type: string
                                   type: object
                                 type: array
@@ -1056,13 +1106,16 @@ spec:
                                 items:
                                   properties:
                                     tag:
+                                      nullable: true
                                       type: string
                                     value:
+                                      nullable: true
                                       type: string
                                   type: object
                                 type: array
                               requestHeadersForTags:
                                 items:
+                                  nullable: true
                                   type: string
                                 type: array
                               tracePercentages:
@@ -1078,6 +1131,7 @@ spec:
                                     type: number
                                 type: object
                               verbose:
+                                nullable: true
                                 type: boolean
                               zipkinConfig:
                                 properties:
@@ -1099,6 +1153,7 @@ spec:
                                     nullable: true
                                     type: boolean
                                   traceId128bit:
+                                    nullable: true
                                     type: boolean
                                 type: object
                             type: object
@@ -1126,9 +1181,12 @@ spec:
                                 type: boolean
                             type: object
                           via:
+                            nullable: true
                             type: string
                           xffNumTrustedHops:
-                            format: int32
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
                             type: integer
                         type: object
                       preventChildOverrides:
@@ -1723,19 +1781,23 @@ spec:
                                 httpConnectionManagerSettings:
                                   properties:
                                     acceptHttp10:
+                                      nullable: true
                                       type: boolean
                                     allowChunkedLength:
+                                      nullable: true
                                       type: boolean
                                     codecType:
                                       type: string
                                       x-kubernetes-int-or-string: true
                                     defaultHostForHttp10:
+                                      nullable: true
                                       type: string
                                     delayedCloseTimeout:
                                       type: string
                                     drainTimeout:
                                       type: string
                                     enableTrailers:
+                                      nullable: true
                                       type: boolean
                                     forwardClientCertDetails:
                                       type: string
@@ -1784,6 +1846,7 @@ spec:
                                             type: object
                                           type: array
                                         unixSockets:
+                                          nullable: true
                                           type: boolean
                                       type: object
                                     maxConnectionDuration:
@@ -1806,6 +1869,7 @@ spec:
                                     maxStreamDuration:
                                       type: string
                                     mergeSlashes:
+                                      nullable: true
                                       type: boolean
                                     normalizePath:
                                       nullable: true
@@ -1814,12 +1878,16 @@ spec:
                                       type: string
                                       x-kubernetes-int-or-string: true
                                     preserveCaseHeaderKeyFormat:
+                                      nullable: true
                                       type: boolean
                                     preserveExternalRequestId:
+                                      nullable: true
                                       type: boolean
                                     properCaseHeaderKeyFormat:
+                                      nullable: true
                                       type: boolean
                                     proxy100Continue:
+                                      nullable: true
                                       type: boolean
                                     requestHeadersTimeout:
                                       type: string
@@ -1829,26 +1897,33 @@ spec:
                                       type: string
                                       x-kubernetes-int-or-string: true
                                     serverName:
+                                      nullable: true
                                       type: string
                                     setCurrentClientCertDetails:
                                       properties:
                                         cert:
+                                          nullable: true
                                           type: boolean
                                         chain:
+                                          nullable: true
                                           type: boolean
                                         dns:
+                                          nullable: true
                                           type: boolean
                                         subject:
                                           nullable: true
                                           type: boolean
                                         uri:
+                                          nullable: true
                                           type: boolean
                                       type: object
                                     skipXffAppend:
+                                      nullable: true
                                       type: boolean
                                     streamIdleTimeout:
                                       type: string
                                     stripAnyHostPort:
+                                      nullable: true
                                       type: boolean
                                     tracing:
                                       properties:
@@ -1864,16 +1939,20 @@ spec:
                                                   type: string
                                               type: object
                                             serviceName:
+                                              nullable: true
                                               type: string
                                           type: object
                                         environmentVariablesForTags:
                                           items:
                                             properties:
                                               defaultValue:
+                                                nullable: true
                                                 type: string
                                               name:
+                                                nullable: true
                                                 type: string
                                               tag:
+                                                nullable: true
                                                 type: string
                                             type: object
                                           type: array
@@ -1881,13 +1960,16 @@ spec:
                                           items:
                                             properties:
                                               tag:
+                                                nullable: true
                                                 type: string
                                               value:
+                                                nullable: true
                                                 type: string
                                             type: object
                                           type: array
                                         requestHeadersForTags:
                                           items:
+                                            nullable: true
                                             type: string
                                           type: array
                                         tracePercentages:
@@ -1903,6 +1985,7 @@ spec:
                                               type: number
                                           type: object
                                         verbose:
+                                          nullable: true
                                           type: boolean
                                         zipkinConfig:
                                           properties:
@@ -1924,6 +2007,7 @@ spec:
                                               nullable: true
                                               type: boolean
                                             traceId128bit:
+                                              nullable: true
                                               type: boolean
                                           type: object
                                       type: object
@@ -1951,9 +2035,12 @@ spec:
                                           type: boolean
                                       type: object
                                     via:
+                                      nullable: true
                                       type: string
                                     xffNumTrustedHops:
-                                      format: int32
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
                                       type: integer
                                   type: object
                                 leftmostXffAddress:
