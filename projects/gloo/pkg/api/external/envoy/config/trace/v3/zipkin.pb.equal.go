@@ -50,8 +50,14 @@ func (m *ZipkinConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetTraceId_128Bit() != target.GetTraceId_128Bit() {
-		return false
+	if h, ok := interface{}(m.GetTraceId_128Bit()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTraceId_128Bit()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTraceId_128Bit(), target.GetTraceId_128Bit()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetSharedSpanContext()).(equality.Equalizer); ok {

@@ -46,8 +46,14 @@ func (m *DatadogConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetServiceName(), target.GetServiceName()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetServiceName()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetServiceName()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetServiceName(), target.GetServiceName()) {
+			return false
+		}
 	}
 
 	switch m.CollectorCluster.(type) {
