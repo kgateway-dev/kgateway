@@ -1087,6 +1087,31 @@ var _ = Describe("Helm Test", func() {
 						}
 					})
 				})
+				It("The created namespace can be labeled with a revision tag for Istio discovery", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"namespace.create=true",
+							"global.istioIntegration.labelInstallNamespace=true",
+							"global.istioIntegration.istioSidecarRevTag=some-revision"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Namespace"
+					}).ExpectAll(func(namespace *unstructured.Unstructured) {
+						namespaceObject, err := kuberesource.ConvertUnstructured(namespace)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Namespace %+v should be able to convert from unstructured", namespace))
+						structuredNamespace, ok := namespaceObject.(*v1.Namespace)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", namespace))
+
+						// Ensure that the discovery pod has a true annotation, gateway-proxy has a false annotation (default), and nothing else has any annoation.
+						if structuredNamespace.GetName() == "gloo-system" {
+							_, ok := structuredNamespace.ObjectMeta.Labels["istio-injection"]
+							Expect(ok).To(BeFalse(), fmt.Sprintf("Namespace %s should not contain a generic Istio discovery label", structuredNamespace.GetName()))
+							val, ok := structuredNamespace.ObjectMeta.Labels["istio.io/rev"]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Namespace %s should contain a revisioned Istio discovery label", structuredNamespace.GetName()))
+							Expect(val).To(Equal("some-revision"))
+						}
+					})
+				})
 			})
 
 			Context("gateway", func() {
