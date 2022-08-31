@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
+	"github.com/spf13/pflag"
 	"io/ioutil"
 	"log"
 	"os"
@@ -111,16 +112,40 @@ func enterpriseHelmValuesMdFromGithubCmd(opts *options) *cobra.Command {
 // Command for running the actual security scan on the images
 func runSecurityScanCmd(opts *options) *cobra.Command {
 
+	scanOptions := &runSecurityScanOptions{
+		options: opts,
+	}
+
 	app := &cobra.Command{
 		Use:   "run-security-scan",
 		Short: "runs trivy scans on images from repo specified",
 		Long:  "runs trivy vulnerability scans on images from the repo specified. Only reports HIGH and CRITICAL-level vulnerabilities and uploads scan results to google cloud bucket and github security page",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := scanImagesForRepo(opts.ctx, opts.targetRepo)
+			err := scanImagesForRepo(scanOptions.ctx, scanOptions.targetRepo, scanOptions.vulnerabilityAction)
 			return err
 		},
 	}
+
+	scanOptions.addToFlags(app.Flags())
+
 	return app
+}
+
+type runSecurityScanOptions struct {
+	*options
+
+	vulnerabilityAction string
+	githubRepository string
+}
+
+func (r *runSecurityScanOptions) addToFlags(flags *pflag.FlagSet) {
+	flags.StringVarP(&r.githubRepository, "github-repo", "r", "", "image repository to scan")
+
+	flags.StringVarP(&r.vulnerabilityAction, "vulnerability-action", "a", "none", "action to take when a vulnerability is discovered {none, github-issue-all, github-issue-latest}")
+
+	if err := cobra.MarkFlagRequired(flags, "github-repo"); err != nil {
+		panic(err)
+	}
 }
 
 // Fetches releases and serializes them and prints to stdout.
@@ -294,7 +319,7 @@ func generateSecurityScanMd(opts *options) error {
 }
 
 // scanImagesForRepo executes a SecurityScan for the repo provided
-func scanImagesForRepo(ctx context.Context, targetRepo string) error {
+func scanImagesForRepo(ctx context.Context, targetRepo string, vulnerabilityAction string) error {
 	contextutils.SetLogLevel(zapcore.DebugLevel)
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -324,8 +349,8 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 				VersionConstraint:                      versionConstraint,
 				ImageRepo:                              "quay.io/solo-io",
 				UploadCodeScanToGithub:                 false,
-				CreateGithubIssuePerVersion:            false,
-				CreateGithubIssueForLatestPatchVersion: true,
+				CreateGithubIssuePerVersion:            vulnerabilityAction == "github-issue-all",
+				CreateGithubIssueForLatestPatchVersion: vulnerabilityAction == "github-issue-latest",
 			},
 		})
 	}
