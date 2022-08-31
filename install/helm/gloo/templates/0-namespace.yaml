@@ -6,7 +6,11 @@ metadata:
   labels:
     app: gloo
     {{- if .Values.global.istioIntegration.labelInstallNamespace }}
+      {{- if .Values.global.istioIntegration.istioSidecarRevTag }}
+    istio.io/rev: {{ .Values.global.istioIntegration.istioSidecarRevTag }}
+      {{- else }}
     istio-injection: enabled
+      {{- end }}
     {{- end}}
   annotations:
     "helm.sh/hook": pre-install
