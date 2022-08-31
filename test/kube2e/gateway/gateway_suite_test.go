@@ -2,13 +2,14 @@ package gateway_test
 
 import (
 	"context"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/solo-io/k8s-utils/kubeutils"
 
 	"github.com/solo-io/go-utils/testutils/exec"
 
@@ -41,14 +42,13 @@ func TestGateway(t *testing.T) {
 }
 
 var (
-	testHelper *helper.SoloTestHelper
+	testHelper        *helper.SoloTestHelper
 	resourceClientset *kube2e.KubeResourceClientSet // TODO, place in TestHelper
-	snapshotWriter helpers.SnapshotWriter
+	snapshotWriter    helpers.SnapshotWriter
 
 	ctx, cancel = context.WithCancel(context.Background())
-	namespace = defaults.GlooSystem
+	namespace   = defaults.GlooSystem
 )
-
 
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)

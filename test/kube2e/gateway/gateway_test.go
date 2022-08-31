@@ -3,13 +3,14 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
 	"google.golang.org/grpc"
@@ -92,7 +93,6 @@ var _ = Describe("Kube2e: gateway", func() {
 		serviceClient           skkube.ServiceClient
 		statusClient            resources.StatusClient
 
-
 		testRunnerVs *gatewayv1.VirtualService
 
 		resourcesToCreate *gloosnapshot.ApiSnapshot
@@ -100,14 +100,12 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	BeforeEach(func() {
 
-
 		var err error
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
 		kubeClient, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-
 
 		cache = kube.NewKubeCache(ctx)
 		gatewayClientFactory := &factory.KubeResourceClientFactory{
@@ -229,20 +227,20 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		// The set of resources that these tests will generate
 		resourcesToCreate = &gloosnapshot.ApiSnapshot{
-			Gateways:        gatewayv1.GatewayList{},
+			Gateways: gatewayv1.GatewayList{},
 			VirtualServices: gatewayv1.VirtualServiceList{
 				// many tests route to the TestRunner Service so it makes sense to just
 				// always create it
 				testRunnerVs,
 			},
 			Upstreams: gloov1.UpstreamList{},
-			Secrets: gloov1.SecretList{},
+			Secrets:   gloov1.SecretList{},
 		}
 	})
 
 	JustBeforeEach(func() {
 		err := snapshotWriter.WriteSnapshot(resourcesToCreate, clients.WriteOpts{
-			Ctx: ctx,
+			Ctx:               ctx,
 			OverwriteExisting: false,
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -255,7 +253,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	JustAfterEach(func() {
 		err := snapshotWriter.DeleteSnapshot(resourcesToCreate, clients.DeleteOpts{
-			Ctx: ctx,
+			Ctx:            ctx,
 			IgnoreNotExist: true,
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -370,7 +368,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			// We delete the existing Proxy so that a new one can be auto-generated according to the `compressedSpec` definition
 			err := resourceClientset.ProxyClient().Delete(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.DeleteOpts{
-				Ctx: ctx,
+				Ctx:            ctx,
 				IgnoreNotExist: true,
 			})
 			Expect(err).NotTo(HaveOccurred())
