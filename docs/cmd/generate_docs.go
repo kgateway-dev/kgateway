@@ -6,10 +6,11 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
-	"github.com/spf13/pflag"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/spf13/pflag"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap/zapcore"
