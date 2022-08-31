@@ -50,25 +50,25 @@ var _ = Describe("Plugin", func() {
 		cfg := &envoyhttp.HttpConnectionManager{}
 		hcmSettings = &hcm.HttpConnectionManagerSettings{
 			Tracing: &tracing.ListenerTracingSettings{
-				RequestHeadersForTags: []string{"header1", "header2"},
+				RequestHeadersForTags: []*wrappers.StringValue{{Value: "header1"}, {Value: "header2"}},
 				EnvironmentVariablesForTags: []*tracing.TracingTagEnvironmentVariable{
 					{
-						Tag:  "k8s.pod.name",
-						Name: "POD_NAME",
+						Tag:  &wrappers.StringValue{Value: "k8s.pod.name"},
+						Name: &wrappers.StringValue{Value: "POD_NAME"},
 					},
 					{
-						Tag:          "k8s.pod.ip",
-						Name:         "POD_IP",
-						DefaultValue: "NO_POD_IP",
+						Tag:          &wrappers.StringValue{Value: "k8s.pod.ip"},
+						Name:         &wrappers.StringValue{Value: "POD_IP"},
+						DefaultValue: &wrappers.StringValue{Value: "NO_POD_IP"},
 					},
 				},
 				LiteralsForTags: []*tracing.TracingTagLiteral{
 					{
-						Tag:   "foo",
-						Value: "bar",
+						Tag:   &wrappers.StringValue{Value: "foo"},
+						Value: &wrappers.StringValue{Value: "bar"},
 					},
 				},
-				Verbose: true,
+				Verbose: &wrappers.BoolValue{Value: true},
 				TracePercentages: &tracing.TracePercentages{
 					ClientSamplePercentage:  &wrappers.FloatValue{Value: 10},
 					RandomSamplePercentage:  &wrappers.FloatValue{Value: 20},
@@ -219,7 +219,7 @@ var _ = Describe("Plugin", func() {
 								CollectorEndpoint:        "/api/v2/spans",
 								CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 								SharedSpanContext:        nil,
-								TraceId_128Bit:           false,
+								TraceId_128Bit:           &wrappers.BoolValue{Value: false},
 							},
 						},
 					},
@@ -259,7 +259,7 @@ var _ = Describe("Plugin", func() {
 								CollectorEndpoint:        "/api/v2/spans",
 								CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 								SharedSpanContext:        nil,
-								TraceId_128Bit:           false,
+								TraceId_128Bit:           &wrappers.BoolValue{Value: false},
 							},
 						},
 					},
@@ -334,7 +334,7 @@ var _ = Describe("Plugin", func() {
 										Namespace: "default",
 									},
 								},
-								ServiceName: "datadog-gloo",
+								ServiceName: &wrappers.StringValue{Value: "datadog-gloo"},
 							},
 						},
 					},
@@ -368,7 +368,7 @@ var _ = Describe("Plugin", func() {
 								CollectorCluster: &envoytrace_gloo.DatadogConfig_ClusterName{
 									ClusterName: "datadog-cluster-name",
 								},
-								ServiceName: "datadog-gloo",
+								ServiceName: &wrappers.StringValue{Value: "datadog-gloo"},
 							},
 						},
 					},
