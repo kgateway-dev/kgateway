@@ -122,6 +122,9 @@ spec:
                   consistencyMode:
                     type: string
                     x-kubernetes-int-or-string: true
+                  edsBlockingQueries:
+                    nullable: true
+                    type: boolean
                   queryOptions:
                     properties:
                       useCache:

@@ -215,3 +215,40 @@ func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []
 
 	return i.ReloadConfig()
 }
+
+// While it may be tempting to just reload all config using `consul reload` or marshalling new json and
+// sending SIGHUP to the process (per https://www.consul.io/commands/reload), it is preferable to live update
+// using the consul APIs as this is a more realistic flow and doesn't fire our watches too actively (which can
+// both make debugging hard and hide bugs)
+func (i *ConsulInstance) RegisterLiveService(svcName, svcId, address string, tags []string, port uint32) error {
+	svcDef := &serviceDef{
+		Service: &consulService{
+			ID:      svcId,
+			Name:    svcName,
+			Address: address,
+			Tags:    tags,
+			Port:    port,
+		},
+	}
+	content, err := json.Marshal(svcDef.Service)
+	if err != nil {
+		return err
+	}
+	fileName := filepath.Join(i.cfgDir, svcId+".json")
+	err = os.Remove(fileName) // ensure we upsert the config update
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	err = ioutil.WriteFile(fileName, content, 0644)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("curl", "--request", "PUT", "--data", fmt.Sprintf("@%s", fileName), "127.0.0.1:8500/v1/agent/service/register")
+	cmd.Dir = i.tmpdir
+	cmd.Stdout = GinkgoWriter
+	cmd.Stderr = GinkgoWriter
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
+}
