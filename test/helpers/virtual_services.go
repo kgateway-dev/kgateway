@@ -65,16 +65,21 @@ func (b *virtualServiceBuilder) getOrDefaultRoute(routeName string) *v1.Route {
 }
 
 func (b *virtualServiceBuilder) WithRouteActionToUpstream(routeName string, upstream *gloov1.Upstream) *virtualServiceBuilder {
+	upstreamDestination := &gloov1.Destination{
+		DestinationType: &gloov1.Destination_Upstream{
+			Upstream: upstream.GetMetadata().Ref(),
+		},
+	}
+	return b.WithRouteActionToDestination(routeName, upstreamDestination)
+}
+
+func (b *virtualServiceBuilder) WithRouteActionToDestination(routeName string, destination *gloov1.Destination) *virtualServiceBuilder {
 	route := b.getOrDefaultRoute(routeName)
 
 	route.Action = &v1.Route_RouteAction{
 		RouteAction: &gloov1.RouteAction{
 			Destination: &gloov1.RouteAction_Single{
-				Single: &gloov1.Destination{
-					DestinationType: &gloov1.Destination_Upstream{
-						Upstream: upstream.GetMetadata().Ref(),
-					},
-				},
+				Single: destination,
 			},
 		},
 	}

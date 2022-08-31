@@ -2,6 +2,7 @@ package gateway_test
 
 import (
 	"context"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -39,9 +40,15 @@ func TestGateway(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "Gateway Suite", []Reporter{junitReporter})
 }
 
-var testHelper *helper.SoloTestHelper
-var ctx, cancel = context.WithCancel(context.Background())
-var namespace = defaults.GlooSystem
+var (
+	testHelper *helper.SoloTestHelper
+	resourceClientset *kube2e.KubeResourceClientSet // TODO, place in TestHelper
+	snapshotWriter helpers.SnapshotWriter
+
+	ctx, cancel = context.WithCancel(context.Background())
+	namespace = defaults.GlooSystem
+)
+
 
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
@@ -92,6 +99,22 @@ func StartTestHelper() {
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
 	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+
+	cfg, err := kubeutils.GetConfig("", "")
+	Expect(err).NotTo(HaveOccurred())
+
+	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, func(attempt int) bool {
+		if attempt > 3 {
+			// only retry 3 times
+			return false
+		}
+
+		time.Sleep(time.Duration(attempt^2) * time.Second)
+		return true
+	})
 }
 
 func installXdsRelay() error {
@@ -155,6 +178,6 @@ func TearDownTestHelper() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 		Expect(apierrors.IsNotFound(err)).To(BeTrue())
-		cancel()
 	}
+	cancel()
 }

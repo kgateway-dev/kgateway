@@ -2,37 +2,46 @@ package kube2e
 
 import (
 	"context"
-
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 )
 
-// ResourceClientSet is a set of ResourceClients
-type ResourceClientSet struct {
-	GatewayClient           gatewayv1.GatewayClient
-	HttpGatewayClient       gatewayv1.MatchableHttpGatewayClient
-	VirtualServiceClient    gatewayv1.VirtualServiceClient
-	RouteTableClient        gatewayv1.RouteTableClient
-	VirtualHostOptionClient gatewayv1.VirtualHostOptionClient
-	RouteOptionClient       gatewayv1.RouteOptionClient
-	UpstreamGroupClient     gloov1.UpstreamGroupClient
-	UpstreamClient          gloov1.UpstreamClient
-	ProxyClient             gloov1.ProxyClient
-	ServiceClient           skkube.ServiceClient
+var _ helpers.ResourceClientSet = new(KubeResourceClientSet)
+
+// KubeResourceClientSet is a set of ResourceClients
+type KubeResourceClientSet struct {
+	gatewayClient           gatewayv1.GatewayClient
+	httpGatewayClient       gatewayv1.MatchableHttpGatewayClient
+	virtualServiceClient    gatewayv1.VirtualServiceClient
+	routeTableClient        gatewayv1.RouteTableClient
+	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
+	routeOptionClient       gatewayv1.RouteOptionClient
+	upstreamGroupClient     gloov1.UpstreamGroupClient
+	upstreamClient          gloov1.UpstreamClient
+	proxyClient             gloov1.ProxyClient
+	serviceClient           skkube.ServiceClient
+
+	kubeClient *kubernetes.Clientset
 }
 
-func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceClientSet, error) {
-	resourceClientSet := &ResourceClientSet{}
+func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResourceClientSet, error) {
+	resourceClientSet := &KubeResourceClientSet{}
 
 	kubeClient, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	resourceClientSet.kubeClient = kubeClient
+
 	cache := kube.NewKubeCache(ctx)
 	kubeCoreCache, err := kubecache.NewKubeCoreCache(ctx, kubeClient)
 	if err != nil {
@@ -52,7 +61,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 	if err = gatewayClient.Register(); err != nil {
 		return nil, err
 	}
-	resourceClientSet.GatewayClient = gatewayClient
+	resourceClientSet.gatewayClient = gatewayClient
 
 	// HttpGateway
 	httpGatewayClientFactory := &factory.KubeResourceClientFactory{
@@ -67,7 +76,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 	if err = httpGatewayClient.Register(); err != nil {
 		return nil, err
 	}
-	resourceClientSet.HttpGatewayClient = httpGatewayClient
+	resourceClientSet.httpGatewayClient = httpGatewayClient
 
 	// VirtualService
 	virtualServiceClientFactory := &factory.KubeResourceClientFactory{
@@ -82,7 +91,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 	if err = virtualServiceClient.Register(); err != nil {
 		return nil, err
 	}
-	resourceClientSet.VirtualServiceClient = virtualServiceClient
+	resourceClientSet.virtualServiceClient = virtualServiceClient
 
 	// RouteTable
 	routeTableClientFactory := &factory.KubeResourceClientFactory{
@@ -97,7 +106,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 	if err = routeTableClient.Register(); err != nil {
 		return nil, err
 	}
-	resourceClientSet.RouteTableClient = routeTableClient
+	resourceClientSet.routeTableClient = routeTableClient
 
 	// UpstreamGroup
 	upstreamGroupClientFactory := &factory.KubeResourceClientFactory{
@@ -112,7 +121,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 	if err = upstreamGroupClient.Register(); err != nil {
 		return nil, err
 	}
-	resourceClientSet.UpstreamGroupClient = upstreamGroupClient
+	resourceClientSet.upstreamGroupClient = upstreamGroupClient
 
 	// Upstream
 	upstreamClientFactory := &factory.KubeResourceClientFactory{
@@ -127,7 +136,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 	if err = upstreamClient.Register(); err != nil {
 		return nil, err
 	}
-	resourceClientSet.UpstreamClient = upstreamClient
+	resourceClientSet.upstreamClient = upstreamClient
 
 	// Proxy
 	proxyClientFactory := &factory.KubeResourceClientFactory{
@@ -142,7 +151,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 	if err = proxyClient.Register(); err != nil {
 		return nil, err
 	}
-	resourceClientSet.ProxyClient = proxyClient
+	resourceClientSet.proxyClient = proxyClient
 
 	// VirtualHostOption
 	virtualHostOptionClientFactory := &factory.KubeResourceClientFactory{
@@ -157,7 +166,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 	if err = virtualHostOptionClient.Register(); err != nil {
 		return nil, err
 	}
-	resourceClientSet.VirtualHostOptionClient = virtualHostOptionClient
+	resourceClientSet.virtualHostOptionClient = virtualHostOptionClient
 
 	// RouteOption
 	routeOptionClientFactory := &factory.KubeResourceClientFactory{
@@ -172,20 +181,62 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*ResourceC
 	if err = routeOptionClient.Register(); err != nil {
 		return nil, err
 	}
-	resourceClientSet.RouteOptionClient = routeOptionClient
+	resourceClientSet.routeOptionClient = routeOptionClient
 
 	// Kube Service
-	resourceClientSet.ServiceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
+	resourceClientSet.serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 
 	return resourceClientSet, nil
 }
 
-func (r ResourceClientSet) WriteSnapshot(ctx context.Context, snapshot *gloosnapshot.ApiSnapshot) error {
-	// TODO
-	return nil
+func (k KubeResourceClientSet) GatewayClient() gatewayv1.GatewayClient {
+	return k.gatewayClient
 }
 
-func (r ResourceClientSet) DeleteSnapshot(ctx context.Context, snapshot *gloosnapshot.ApiSnapshot) error {
-	// TODO
-	return nil
+func (k KubeResourceClientSet) HttpGatewayClient() gatewayv1.MatchableHttpGatewayClient {
+	return k.httpGatewayClient
+}
+
+func (k KubeResourceClientSet) VirtualServiceClient() gatewayv1.VirtualServiceClient {
+	return k.virtualServiceClient
+}
+
+func (k KubeResourceClientSet) RouteTableClient() gatewayv1.RouteTableClient {
+	return k.routeTableClient
+}
+
+func (k KubeResourceClientSet) VirtualHostOptionClient() gatewayv1.VirtualHostOptionClient {
+	return k.virtualHostOptionClient
+}
+
+func (k KubeResourceClientSet) RouteOptionClient() gatewayv1.RouteOptionClient {
+	return k.routeOptionClient
+}
+
+func (k KubeResourceClientSet) UpstreamGroupClient() gloov1.UpstreamGroupClient {
+	return k.upstreamGroupClient
+}
+
+func (k KubeResourceClientSet) UpstreamClient() gloov1.UpstreamClient {
+	return k.upstreamClient
+}
+
+func (k KubeResourceClientSet) ProxyClient() gloov1.ProxyClient {
+	return k.proxyClient
+}
+
+func (k KubeResourceClientSet) SecretClient() gloov1.SecretClient {
+	panic("unsupported")
+}
+
+func (k KubeResourceClientSet) ArtifactClient() gloov1.ArtifactClient {
+	panic("unsupported")
+}
+
+func (k KubeResourceClientSet) KubeClients() v1.CoreV1Interface {
+	return k.kubeClient.CoreV1()
+}
+
+func (k KubeResourceClientSet) ServiceClient() skkube.ServiceClient {
+	return k.serviceClient
 }
