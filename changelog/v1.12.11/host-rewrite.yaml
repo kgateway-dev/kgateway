@@ -1,5 +1,14 @@
 changelog:
   - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6538
+    resolvesIssue: true
+    description: >
+      Backport fix for when we are running in Istio compatibility mode, add a host rewrite for destinations in the mesh so that Istio recognizes them.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoyproxy
+    dependencyRepo: go-control-plane
+    dependencyTag: v0.10.3
+  - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/6594
     resolvesIssue: false
     description: >
@@ -9,3 +18,4 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/6618
     resolvesIssue: false
     description: Ensure that gateway proxies with custom names get correct annotations for `excludeInboundPorts`.
+
