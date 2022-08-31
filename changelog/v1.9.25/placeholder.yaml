@@ -1,4 +1,4 @@
 changelog:
   - type: NON_USER_FACING
-    description: Placeholder yaml for 1.9.26 release
+    description: Placeholder directory for 1.9.26 release
     issueLink: https://github.com/solo-io/gloo/issues/6998
