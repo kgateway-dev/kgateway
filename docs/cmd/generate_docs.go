@@ -43,12 +43,14 @@ func rootApp(ctx context.Context) *cobra.Command {
 	opts := &options{
 		ctx: ctx,
 	}
+
 	app := &cobra.Command{}
 	app.AddCommand(changelogMdFromGithubCmd(opts))
 	app.AddCommand(securityScanMdFromCmd(opts))
 	app.AddCommand(enterpriseHelmValuesMdFromGithubCmd(opts))
 	app.AddCommand(getReleasesCmd(opts))
 	app.AddCommand(runSecurityScanCmd(opts))
+
 	app.PersistentFlags().StringVarP(&opts.targetRepo, "TargetRepo", "r", glooOpenSourceRepo, "specify one of 'gloo' or 'glooe'")
 	_ = app.MarkFlagRequired("TargetRepo")
 
@@ -112,7 +114,6 @@ func enterpriseHelmValuesMdFromGithubCmd(opts *options) *cobra.Command {
 
 // Command for running the actual security scan on the images
 func runSecurityScanCmd(opts *options) *cobra.Command {
-
 	scanOptions := &runSecurityScanOptions{
 		options: opts,
 	}
@@ -136,17 +137,10 @@ type runSecurityScanOptions struct {
 	*options
 
 	vulnerabilityAction string
-	githubRepository string
 }
 
 func (r *runSecurityScanOptions) addToFlags(flags *pflag.FlagSet) {
-	flags.StringVarP(&r.githubRepository, "github-repo", "r", "", "image repository to scan")
-
 	flags.StringVarP(&r.vulnerabilityAction, "vulnerability-action", "a", "none", "action to take when a vulnerability is discovered {none, github-issue-all, github-issue-latest}")
-
-	if err := cobra.MarkFlagRequired(flags, "github-repo"); err != nil {
-		panic(err)
-	}
 }
 
 // Fetches releases and serializes them and prints to stdout.
@@ -366,13 +360,13 @@ func scanImagesForRepo(ctx context.Context, targetRepo string, vulnerabilityActi
 			Opts: &securityscanutils.SecurityScanOpts{
 				OutputDir: outputDir,
 				ImagesPerVersion: map[string][]string{
-					">=v1.7.x": EnterpriseImages(version.MustParseSemantic(("1.7.0"))),
+					">=v1.7.x": EnterpriseImages(version.MustParseSemantic("1.7.0")),
 				},
 				VersionConstraint:                      versionConstraint,
 				ImageRepo:                              "quay.io/solo-io",
 				UploadCodeScanToGithub:                 false,
-				CreateGithubIssuePerVersion:            false,
-				CreateGithubIssueForLatestPatchVersion: true,
+				CreateGithubIssuePerVersion:            vulnerabilityAction == "github-issue-all",
+				CreateGithubIssueForLatestPatchVersion: vulnerabilityAction == "github-issue-latest",
 			},
 		})
 	}
