@@ -40,6 +40,9 @@ func generatePodsMap(pods []*kubev1.Pod) *podMap {
 	podsIPMap := make(map[string]*kubev1.Pod, len(pods))
 	podsMetaMap := make(map[string]*kubev1.Pod, len(pods))
 	for _, pod := range pods {
+		if pod == nil {
+			continue
+		}
 		podsMetaMap[pod.GetName()+"/"+pod.GetNamespace()] = pod
 		if pod.Status.Phase != kubev1.PodRunning {
 			continue
@@ -56,15 +59,15 @@ func generatePodsMap(pods []*kubev1.Pod) *podMap {
 	return &podMap{podsIPMap, podsMetaMap}
 }
 
-func (pm *podMap) getPodForIp(ip string, podName, podNamespace string) (*kubev1.Pod, error) {
+func (pm *podMap) getPodLabelsForIp(ip string, podName, podNamespace string) (map[string]string, error) {
 	if podName != "" && podNamespace != "" {
 		if p, ok := pm.metaMap[podName+"/"+podNamespace]; ok {
-			return p, nil
+			return p.GetLabels(), nil
 		}
 	}
 	if ip != "" {
 		if p, ok := pm.ipMap[ip]; ok {
-			return p, nil
+			return p.GetLabels(), nil
 		}
 	}
 
@@ -352,13 +355,13 @@ func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.Upstr
 		}
 		if len(spec.GetSelector()) != 0 {
 			// determine whether labels for the owner of this ip (pod) matches the spec
-			pod, err := pods.getPodForIp(addr.IP, podName, podNamespace)
+			podLabels, err := pods.getPodLabelsForIp(addr.IP, podName, podNamespace)
 			if err != nil {
 				// pod not found for IP? what's that about?
 				warnings = append(warnings, fmt.Sprintf("error for upstream %v service %v: %v", usRef.Key(), spec.GetServiceName(), err))
 				continue
 			}
-			if !labels.SelectorFromSet(spec.GetSelector()).Matches(labels.Set(pod.Labels)) {
+			if !labels.SelectorFromSet(spec.GetSelector()).Matches(labels.Set(podLabels)) {
 				continue
 			}
 			// pod hasn't been assigned address yet
@@ -419,11 +422,8 @@ func generateFilteredEndpointList(
 			service, _ := getServiceForHostname(addr.Address, addr.Name, addr.Namespace, services)
 			ep = createEndpoint(writeNamespace, endpointName, refs, service.Spec.ClusterIP, addr.Port, service.GetObjectMeta().GetLabels()) // TODO: labels may be nil
 		} else {
-			if pod, _ := pods.getPodForIp(addr.Address, addr.Name, addr.Namespace); pod == nil {
-				ep = createEndpoint(writeNamespace, endpointName, refs, addr.Address, addr.Port, nil)
-			} else {
-				ep = createEndpoint(writeNamespace, endpointName, refs, addr.Address, addr.Port, pod.GetObjectMeta().GetLabels())
-			}
+			podLabels, _ := pods.getPodLabelsForIp(addr.Address, addr.Name, addr.Namespace)
+			ep = createEndpoint(writeNamespace, endpointName, refs, addr.Address, addr.Port, podLabels)
 		}
 		endpoints = append(endpoints, ep)
 	}
