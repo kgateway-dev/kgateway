@@ -16,6 +16,8 @@ type virtualServiceBuilder struct {
 	domains      []string
 	routesByName map[string]*v1.Route
 	sslConfig    *gloov1.SslConfig
+
+	routeOptions *gloov1.RouteOptions
 }
 
 func NewVirtualServiceBuilder() *virtualServiceBuilder {
@@ -49,6 +51,13 @@ func (b *virtualServiceBuilder) WithDomains(domains []string) *virtualServiceBui
 	return b
 }
 
+func (b *virtualServiceBuilder) WithRouteOptions(routeName string, routeOptions *gloov1.RouteOptions) *virtualServiceBuilder {
+	route := b.getOrDefaultRoute(routeName)
+	route.Options = routeOptions
+
+	return b.WithRoute(routeName, route)
+}
+
 func (b *virtualServiceBuilder) WithRoute(routeName string, route *v1.Route) *virtualServiceBuilder {
 	b.routesByName[routeName] = route
 	return b
@@ -65,9 +74,13 @@ func (b *virtualServiceBuilder) getOrDefaultRoute(routeName string) *v1.Route {
 }
 
 func (b *virtualServiceBuilder) WithRouteActionToUpstream(routeName string, upstream *gloov1.Upstream) *virtualServiceBuilder {
+	return b.WithRouteActionToUpstreamRef(routeName, upstream.GetMetadata().Ref())
+}
+
+func (b *virtualServiceBuilder) WithRouteActionToUpstreamRef(routeName string, upstreamRef *core.ResourceRef) *virtualServiceBuilder {
 	upstreamDestination := &gloov1.Destination{
 		DestinationType: &gloov1.Destination_Upstream{
-			Upstream: upstream.GetMetadata().Ref(),
+			Upstream: upstreamRef,
 		},
 	}
 	return b.WithRouteActionToDestination(routeName, upstreamDestination)
@@ -87,13 +100,18 @@ func (b *virtualServiceBuilder) WithRouteActionToDestination(routeName string, d
 }
 
 func (b *virtualServiceBuilder) WithPrefixMatcher(routeName string, prefixMatch string) *virtualServiceBuilder {
+	return b.WithRouteMatcher(routeName,
+		&matchers.Matcher{
+			PathSpecifier: &matchers.Matcher_Prefix{
+				Prefix: prefixMatch,
+			},
+		})
+}
+
+func (b *virtualServiceBuilder) WithRouteMatcher(routeName string, matcher *matchers.Matcher) *virtualServiceBuilder {
 	route := b.getOrDefaultRoute(routeName)
 
-	route.Matchers = []*matchers.Matcher{{
-		PathSpecifier: &matchers.Matcher_Prefix{
-			Prefix: prefixMatch,
-		},
-	}}
+	route.Matchers = []*matchers.Matcher{matcher}
 	return b.WithRoute(routeName, route)
 }
 

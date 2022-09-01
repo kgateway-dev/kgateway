@@ -12,7 +12,6 @@ import (
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 )
 
@@ -30,6 +29,7 @@ type KubeResourceClientSet struct {
 	upstreamClient          gloov1.UpstreamClient
 	proxyClient             gloov1.ProxyClient
 	serviceClient           skkube.ServiceClient
+	settingsClient          gloov1.SettingsClient
 
 	kubeClient *kubernetes.Clientset
 }
@@ -184,6 +184,21 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 	}
 	resourceClientSet.routeOptionClient = routeOptionClient
 
+	// Settings
+	settingsClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gloov1.SettingsCrd,
+		Cfg:         cfg,
+		SharedCache: kube.NewKubeCache(ctx),
+	}
+	settingsClient, err := gloov1.NewSettingsClient(ctx, settingsClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = settingsClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.settingsClient = settingsClient
+
 	// Kube Service
 	resourceClientSet.serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 
@@ -226,6 +241,10 @@ func (k KubeResourceClientSet) ProxyClient() gloov1.ProxyClient {
 	return k.proxyClient
 }
 
+func (k KubeResourceClientSet) SettingsClient() gloov1.SettingsClient {
+	return k.settingsClient
+}
+
 func (k KubeResourceClientSet) SecretClient() gloov1.SecretClient {
 	panic("unsupported")
 }
@@ -234,8 +253,8 @@ func (k KubeResourceClientSet) ArtifactClient() gloov1.ArtifactClient {
 	panic("unsupported")
 }
 
-func (k KubeResourceClientSet) KubeClients() v1.CoreV1Interface {
-	return k.kubeClient.CoreV1()
+func (k KubeResourceClientSet) KubeClients() *kubernetes.Clientset {
+	return k.kubeClient
 }
 
 func (k KubeResourceClientSet) ServiceClient() skkube.ServiceClient {

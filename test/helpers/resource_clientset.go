@@ -12,6 +12,7 @@ type ResourceClientSet interface {
 	RouteTableClient() gatewayv1.RouteTableClient
 	VirtualHostOptionClient() gatewayv1.VirtualHostOptionClient
 	RouteOptionClient() gatewayv1.RouteOptionClient
+	SettingsClient() gloov1.SettingsClient
 	UpstreamGroupClient() gloov1.UpstreamGroupClient
 	UpstreamClient() gloov1.UpstreamClient
 	ProxyClient() gloov1.ProxyClient
