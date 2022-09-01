@@ -2,6 +2,7 @@ package gateway_test
 
 import (
 	"context"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,7 +14,7 @@ import (
 
 	"github.com/solo-io/go-utils/testutils/exec"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
@@ -41,13 +42,18 @@ func TestGateway(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "Gateway Suite", []Reporter{junitReporter})
 }
 
+const (
+	gatewayProxy = gatewaydefaults.GatewayProxyName
+	gatewayPort  = int(80)
+	namespace    = gloodefaults.GlooSystem
+)
+
 var (
 	testHelper        *helper.SoloTestHelper
-	resourceClientset *kube2e.KubeResourceClientSet // TODO, place in TestHelper
+	resourceClientset *kube2e.KubeResourceClientSet
 	snapshotWriter    helpers.SnapshotWriter
 
 	ctx, cancel = context.WithCancel(context.Background())
-	namespace   = defaults.GlooSystem
 )
 
 var _ = BeforeSuite(StartTestHelper)
