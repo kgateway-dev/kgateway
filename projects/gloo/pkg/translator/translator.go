@@ -38,7 +38,7 @@ type Translator interface {
 }
 
 var (
-	_ Translator = new(translatorFactory)
+	_ Translator = new(translatorInstance)
 )
 
 // translatorInstance is the implementation for a Translator used during Gloo translation
@@ -49,41 +49,20 @@ type translatorInstance struct {
 	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
 }
 
-type translatorFactory struct {
-	pluginRegistryFactory plugins.PluginRegistryFactory
-	settings              *v1.Settings
-	sslConfigTranslator   utils.SslConfigTranslator
-	hasher                func(resources []envoycache.Resource) uint64
-}
-
 func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
-	pluginRegistryFactory plugins.PluginRegistryFactory,
+	pluginRegistry plugins.PluginRegistry,
 	hasher func(resources []envoycache.Resource) uint64,
-) Translator {
-	return &translatorFactory{
-		pluginRegistryFactory: pluginRegistryFactory,
-		settings:              settings,
-		sslConfigTranslator:   sslConfigTranslator,
-		hasher:                hasher,
-	}
-}
-func (t *translatorFactory) Translate(
-	params plugins.Params,
-	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
-	pluginRegistry := t.pluginRegistryFactory(params.Ctx)
-	listenerTranslatorFactory := NewListenerSubsystemTranslatorFactory(pluginRegistry, t.sslConfigTranslator)
-	instance := &translatorInstance{
+) *translatorInstance {
+	return &translatorInstance{
 		pluginRegistry:            pluginRegistry,
-		settings:                  t.settings,
-		hasher:                    t.hasher,
-		listenerTranslatorFactory: listenerTranslatorFactory,
+		settings:                  settings,
+		hasher:                    hasher,
+		listenerTranslatorFactory: NewListenerSubsystemTranslatorFactory(pluginRegistry, sslConfigTranslator),
 	}
-
-	return instance.Translate(params, proxy)
 }
+
 func (t *translatorInstance) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
@@ -92,6 +71,7 @@ func (t *translatorInstance) Translate(
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
 	params.Ctx = contextutils.WithLogger(ctx, "translator")
+
 	// re-initialize plugins on each loop, this is done for 2 reasons:
 	//  1. Each translation run relies on its own context. If a plugin spawns a go-routine
 	//		we need to be able to cancel that go-routine on the next translation

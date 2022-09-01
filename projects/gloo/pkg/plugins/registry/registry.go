@@ -59,6 +59,10 @@ var (
 	_ plugins.PluginRegistry = new(pluginRegistry)
 )
 
+// A PluginRegistryFactory generates a PluginRegistry
+// It is executed each translation loop, ensuring we have up to date configuration of all plugins
+type PluginRegistryFactory func(ctx context.Context, opts bootstrap.Opts) plugins.PluginRegistry
+
 func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	var glooPlugins []plugins.Plugin
 
@@ -124,8 +128,8 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	return glooPlugins
 }
 
-func GetPluginRegistryFactory(opts bootstrap.Opts) plugins.PluginRegistryFactory {
-	return func(ctx context.Context) plugins.PluginRegistry {
+func GetPluginRegistryFactory() PluginRegistryFactory {
+	return func(ctx context.Context, opts bootstrap.Opts) plugins.PluginRegistry {
 		availablePlugins := Plugins(opts)
 
 		// To improve the UX, load a plugin that warns users if they are attempting to use enterprise configuration
