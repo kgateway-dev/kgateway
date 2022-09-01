@@ -151,7 +151,10 @@ global:
 settings:
   singleNamespace: true
   create: true
-  replaceInvalidRoutes: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: true
 gloo:

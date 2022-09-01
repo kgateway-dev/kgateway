@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"log"
+
 	"github.com/golang/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -16,8 +18,20 @@ type virtualServiceBuilder struct {
 	domains      []string
 	routesByName map[string]*v1.Route
 	sslConfig    *gloov1.SslConfig
+}
 
-	routeOptions *gloov1.RouteOptions
+func BuilderFromVirtualService(vs *v1.VirtualService) *virtualServiceBuilder {
+	builder := &virtualServiceBuilder{
+		name:         vs.GetMetadata().GetName(),
+		namespace:    vs.GetMetadata().GetNamespace(),
+		domains:      vs.GetVirtualHost().GetDomains(),
+		sslConfig:    vs.GetSslConfig(),
+		routesByName: make(map[string]*v1.Route, 10),
+	}
+	for _, r := range vs.GetVirtualHost().GetRoutes() {
+		builder.WithRoute(r.GetName(), r)
+	}
+	return builder
 }
 
 func NewVirtualServiceBuilder() *virtualServiceBuilder {
@@ -42,6 +56,9 @@ func (b *virtualServiceBuilder) WithNamespace(namespace string) *virtualServiceB
 }
 
 func (b *virtualServiceBuilder) WithDomain(domain string) *virtualServiceBuilder {
+	if domain == "*" {
+		log.Panic("Attempting to set * as a VirtualService domain. DO NOT DO THIS.")
+	}
 	b.domains = []string{domain}
 	return b
 }
@@ -86,6 +103,33 @@ func (b *virtualServiceBuilder) WithRouteActionToUpstreamRef(routeName string, u
 	return b.WithRouteActionToDestination(routeName, upstreamDestination)
 }
 
+func (b *virtualServiceBuilder) WithRouteDelegateActionRef(routeName string, delegateRef *core.ResourceRef) *virtualServiceBuilder {
+	return b.WithRouteDelegateAction(routeName,
+		&v1.DelegateAction{
+			DelegationType: &v1.DelegateAction_Ref{
+				Ref: delegateRef,
+			},
+		})
+}
+
+func (b *virtualServiceBuilder) WithRouteDelegateActionSelector(routeName string, delegateSelector *v1.RouteTableSelector) *virtualServiceBuilder {
+	return b.WithRouteDelegateAction(routeName,
+		&v1.DelegateAction{
+			DelegationType: &v1.DelegateAction_Selector{
+				Selector: delegateSelector,
+			},
+		})
+}
+
+func (b *virtualServiceBuilder) WithRouteDelegateAction(routeName string, delegateAction *v1.DelegateAction) *virtualServiceBuilder {
+	route := b.getOrDefaultRoute(routeName)
+
+	route.Action = &v1.Route_DelegateAction{
+		DelegateAction: delegateAction,
+	}
+	return b.WithRoute(routeName, route)
+}
+
 func (b *virtualServiceBuilder) WithRouteActionToDestination(routeName string, destination *gloov1.Destination) *virtualServiceBuilder {
 	route := b.getOrDefaultRoute(routeName)
 
@@ -99,7 +143,7 @@ func (b *virtualServiceBuilder) WithRouteActionToDestination(routeName string, d
 	return b.WithRoute(routeName, route)
 }
 
-func (b *virtualServiceBuilder) WithPrefixMatcher(routeName string, prefixMatch string) *virtualServiceBuilder {
+func (b *virtualServiceBuilder) WithRoutePrefixMatcher(routeName string, prefixMatch string) *virtualServiceBuilder {
 	return b.WithRouteMatcher(routeName,
 		&matchers.Matcher{
 			PathSpecifier: &matchers.Matcher_Prefix{

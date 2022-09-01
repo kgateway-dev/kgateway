@@ -2,7 +2,9 @@ package helpers
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 var _ SnapshotWriter = new(snapshotWriterImpl)
@@ -28,12 +30,16 @@ func NewSnapshotWriter(clientSet ResourceClientSet, backoffStrategy func(int) bo
 func (s snapshotWriterImpl) WriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, writeOptions clients.WriteOpts) error {
 	attempt := 1
 
+	logger := contextutils.LoggerFrom(writeOptions.Ctx)
+
 	for {
 		// to account for writing latency, we inject a back-off strategy for retrying the snapshot write
 		mostRecentResult := s.doWriteSnapshot(snapshot, writeOptions)
 		if mostRecentResult == nil {
 			return nil
 		}
+		logger.Warnf("Failed to write snapshot on attempt #%d. Reason: %+v", attempt, mostRecentResult)
+
 		shouldContinue := s.backoffStrategy(attempt)
 		if !shouldContinue {
 			return mostRecentResult
@@ -53,62 +59,72 @@ func (s snapshotWriterImpl) doWriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, 
 	// the parent resource
 
 	for _, secret := range snapshot.Secrets {
-		if _, writeErr := s.SecretClient().Write(secret, writeOptions); writeErr != nil {
+		if _, writeErr := s.SecretClient().Write(secret, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, artifact := range snapshot.Artifacts {
-		if _, writeErr := s.ArtifactClient().Write(artifact, writeOptions); writeErr != nil {
+		if _, writeErr := s.ArtifactClient().Write(artifact, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, us := range snapshot.Upstreams {
-		if _, writeErr := s.UpstreamClient().Write(us, writeOptions); writeErr != nil {
+		if _, writeErr := s.UpstreamClient().Write(us, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, usGroup := range snapshot.UpstreamGroups {
-		if _, writeErr := s.UpstreamGroupClient().Write(usGroup, writeOptions); writeErr != nil {
+		if _, writeErr := s.UpstreamGroupClient().Write(usGroup, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, vhOpt := range snapshot.VirtualHostOptions {
-		if _, writeErr := s.VirtualHostOptionClient().Write(vhOpt, writeOptions); writeErr != nil {
+		if _, writeErr := s.VirtualHostOptionClient().Write(vhOpt, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, rtOpt := range snapshot.RouteOptions {
-		if _, writeErr := s.RouteOptionClient().Write(rtOpt, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, vs := range snapshot.VirtualServices {
-		if _, writeErr := s.VirtualServiceClient().Write(vs, writeOptions); writeErr != nil {
+		if _, writeErr := s.RouteOptionClient().Write(rtOpt, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, rt := range snapshot.RouteTables {
-		if _, writeErr := s.RouteTableClient().Write(rt, writeOptions); writeErr != nil {
+		if _, writeErr := s.RouteTableClient().Write(rt, writeOptions); !s.isContinuableWriteError(writeErr) {
+			return writeErr
+		}
+	}
+	for _, vs := range snapshot.VirtualServices {
+		if _, writeErr := s.VirtualServiceClient().Write(vs, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, hgw := range snapshot.HttpGateways {
-		if _, writeErr := s.HttpGatewayClient().Write(hgw, writeOptions); writeErr != nil {
+		if _, writeErr := s.HttpGatewayClient().Write(hgw, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, gw := range snapshot.Gateways {
-		if _, writeErr := s.GatewayClient().Write(gw, writeOptions); writeErr != nil {
+		if _, writeErr := s.GatewayClient().Write(gw, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, proxy := range snapshot.Proxies {
-		if _, writeErr := s.ProxyClient().Write(proxy, writeOptions); writeErr != nil {
+		if _, writeErr := s.ProxyClient().Write(proxy, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 
 	return nil
+}
+
+func (s snapshotWriterImpl) isContinuableWriteError(writeError error) bool {
+	if writeError == nil {
+		return true
+	}
+
+	// When we apply a Snapshot, parents resources may fail due to child resources still being created
+	// To get around this we retry applying the entire snapshot, but some resources may already exist
+	return errors.IsExist(writeError)
 }
 
 // DeleteSnapshot deletes all resources in the ApiSnapshot from the cache
