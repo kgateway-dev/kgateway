@@ -10,6 +10,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/onsi/gomega/gstruct"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/go-utils/randutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -215,11 +221,9 @@ var _ = Describe("Robustness tests", func() {
 			err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// Robustness Tests work by scaling up/down the Gloo deployment
-			// When this happens a new leader must be elected. Depending on the leaseDuration, this may take
-			// a number of seconds. Gloo may have already processed the new resources.
-			// We used to explicitly check that resources had a warning status here. It is safe to remove this,
-			// because the "real" checks involve querying the endpoints, which we do later on
+			helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
+				return resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			})
 		}
 
 		It("works", func() {
@@ -697,7 +701,6 @@ func endpointIPsForKubeService(kubeClient kubernetes.Interface, svc *corev1.Serv
 
 func scaleDeploymentTo(kubeClient kubernetes.Interface, deploymentToScale *appsv1.Deployment, replicas int32) {
 	// Do this in an Eventually block, as the update sometimes fails due to concurrent modification
-
 	scaleCtx := context.Background()
 	deploymentNamespace := deploymentToScale.Namespace
 	EventuallyWithOffset(1, func() error {
@@ -733,4 +736,54 @@ func scaleDeploymentTo(kubeClient kubernetes.Interface, deploymentToScale *appsv
 		}
 		return eris.Errorf("expected %d pods but found %d", replicas, len(pods.Items))
 	}, 60*time.Second, 1*time.Second).Should(BeNil())
+
+	if deploymentToScale.Name == "gloo" && replicas > 0 {
+		// We are scaling up Gloo
+		// To ensure that a new leader has been elected (which may take a few seconds),
+		// continually modify resources until a new status appears
+		WaitForLeaderElectionToRestart(1, testHelper.InstallNamespace, resourceClientset.UpstreamClient())
+	}
+}
+
+func WaitForLeaderElectionToRestart(offset int, ns string, upstreamClient gloov1.UpstreamClient) {
+	By("Gloo pod scaled up. Updating placeholder CR until leader is established")
+	statusClient := gloostatusutils.GetStatusClientFromEnvOrDefault(ns)
+	placeholderUs := &gloov1.Upstream{
+		Metadata: &core.Metadata{
+			Name:      "placeholder-upstream",
+			Namespace: ns,
+			Labels: map[string]string{
+				"app": "gloo",
+			},
+		},
+		UpstreamType: &gloov1.Upstream_Static{
+			Static: &static_plugin_gloo.UpstreamSpec{
+				Hosts: []*static_plugin_gloo.Host{{
+					Addr: "placeholder",
+					Port: 1234,
+				}},
+			},
+		},
+	}
+	_, err := upstreamClient.Write(placeholderUs, clients.WriteOpts{Ctx: ctx})
+	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
+
+	EventuallyWithOffset(offset+1, func(g Gomega) {
+		us, err := upstreamClient.Read(testHelper.InstallNamespace, "placeholder-upstream", clients.ReadOpts{Ctx: ctx})
+		g.ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
+
+		us.Metadata.Labels["kube2e-test-hash"] = randutils.RandString(5)
+		_, err = upstreamClient.Write(us, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+		g.ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
+
+		status := statusClient.GetStatus(us)
+		g.ExpectWithOffset(offset+1, status).NotTo(BeNil())
+
+		g.ExpectWithOffset(offset+1, *status).Should(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+			"State": Equal(core.Status_Accepted),
+		}))
+	}, 30*time.Second, 1+time.Second).ShouldNot(HaveOccurred())
+
+	err = upstreamClient.Delete(testHelper.InstallNamespace, "placeholder-upstream", clients.DeleteOpts{Ctx: ctx})
+	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
 }
