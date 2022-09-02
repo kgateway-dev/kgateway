@@ -303,19 +303,38 @@ var _ = Describe("Hybrid Translator", func() {
 							Value: true,
 						},
 					}
-					sslFalse *gloov1.SslConfig = &gloov1.SslConfig{
+
+					// sslEmpty *gloov1.SslConfig                  = &gloov1.SslConfig{}
+					hcmTrue *hcm.HttpConnectionManagerSettings = &hcm.HttpConnectionManagerSettings{
+						SkipXffAppend: &wrapperspb.BoolValue{
+							Value: true,
+						},
+					}
+
+					sslNil  *gloov1.SslConfig
+					sslZero = &gloov1.SslConfig{
 						OneWayTls: &wrapperspb.BoolValue{
 							Value: false,
 						},
 					}
-					sslEmpty *gloov1.SslConfig                  = &gloov1.SslConfig{}
-					hcmTrue  *hcm.HttpConnectionManagerSettings = &hcm.HttpConnectionManagerSettings{
-						SkipXffAppend: true,
+					sslEmpty *gloov1.SslConfig = &gloov1.SslConfig{}
+					sslSet   *gloov1.SslConfig = &gloov1.SslConfig{
+						OneWayTls: &wrapperspb.BoolValue{
+							Value: true,
+						},
 					}
-					hcmFalse *hcm.HttpConnectionManagerSettings = &hcm.HttpConnectionManagerSettings{
-						SkipXffAppend: false,
-					}
-					hcmEmpty *hcm.HttpConnectionManagerSettings = &hcm.HttpConnectionManagerSettings{}
+				)
+
+				type DesiredResult int64
+
+				const (
+					False DesiredResult = iota
+					True
+					Nil
+					Error
+					EmptyString
+					StringA
+					StringB
 				)
 
 				BeforeEach(func() {
@@ -366,21 +385,26 @@ var _ = Describe("Hybrid Translator", func() {
 					child = snap.HttpGateways[0]
 				})
 
-				DescribeTable("anscestry override tests", func(childSsl *gloov1.SslConfig, parentSsl *gloov1.SslConfig, childHcm *hcm.HttpConnectionManagerSettings, parentHcm *hcm.HttpConnectionManagerSettings, preventChildOverrides bool) {
+				DescribeTable("SslConfig anscestry override tests", func(childSsl, parentSsl *gloov1.SslConfig, preventChildOverrides bool, desiredResult DesiredResult) {
 					parent.PreventChildOverrides = preventChildOverrides
 					// config setting
 					child.GetMatcher().SslConfig = childSsl
 					parent.SslConfig = parentSsl
-					child.GetHttpGateway().GetOptions().HttpConnectionManagerSettings = childHcm
-					parent.HttpConnectionManagerSettings = parentHcm
 
 					// perform translation
 					params := NewTranslatorParams(ctx, snap, reports)
 					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 
-					// evaluate results
-					Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
-					Expect(listener).NotTo(BeNil())
+					if desiredResult == Error {
+						// evaluate results
+						Expect(reports.ValidateStrict()).To(HaveOccurred())
+						Expect(listener).To(BeNil())
+						return
+					} else {
+						// evaluate results
+						Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+						Expect(listener).NotTo(BeNil())
+					}
 
 					matchedListeners := listener.GetHybridListener().GetMatchedListeners()
 					Expect(matchedListeners).To(HaveLen(1))
@@ -389,23 +413,66 @@ var _ = Describe("Hybrid Translator", func() {
 					Expect(singleMatchedListener).NotTo(BeNil())
 
 					sslAfter := singleMatchedListener.GetMatcher().GetSslConfig()
-					hcmAfter := singleMatchedListener.GetHttpListener().GetOptions().GetHttpConnectionManagerSettings()
 
-					Expect(hcmAfter.GetSkipXffAppend()).To(Equal(true))
-					Expect(sslAfter.GetOneWayTls().GetValue()).To(Equal(true))
+					// assertion ladder is a bit annoying, given that I needed a custom type that could be one of [true, false, nil]
+					if desiredResult == Nil {
+						Expect(sslAfter.GetOneWayTls()).To(BeNil())
+					} else if desiredResult == True {
+						Expect(sslAfter.GetOneWayTls().GetValue()).To(BeTrue())
+					} else if desiredResult == False {
+						Expect(sslAfter.GetOneWayTls().GetValue()).To(BeFalse())
+					}
 				},
-					Entry("PreventChildOverrides, child.subfield != nil && parent.subfield != nil", // should prefer parent.subfield
-						sslFalse, sslTrue, hcmFalse, hcmTrue, true),
-					Entry("PreventChildOverrides, child.subfield != nil && parent.subfield == nil", // should prefer child.subfield
-						sslTrue, sslEmpty, hcmTrue, hcmEmpty, true),
-					Entry("PreventChildOverrides, child.subfield == nil && parent.subfield != nil", // should prefer parent.subfield
-						sslEmpty, sslTrue, hcmEmpty, hcmTrue, true),
-					Entry("!PreventChildOverrides, child.subfield != nil && parent.subfield != nil", // should prefer child.subfield
-						sslTrue, sslFalse, hcmTrue, hcmFalse, false),
-					Entry("!PreventChildOverrides, child.subfield != nil && parent.subfield == nil", // should prefer child.subfield
-						sslTrue, sslEmpty, hcmTrue, hcmEmpty, false),
-					Entry("!PreventChildOverrides, child.subfield == nil && parent.subfield != nil", // should prefer parent.subfield
-						sslEmpty, sslTrue, hcmEmpty, hcmTrue, false),
+					/*┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓
+					I am sitting here, possibly having descended into madness.  In my madness, I have found it necessary/expedient to construct a 36-entry table.
+					So some explanations are in order.  In general, a field can be affected in any 1 of 4 ways:
+						* nil		| an object not existing/instantiated.							|	ssl = nil
+						* zero		| a zero-value being set on a subfield.  ex: (0, "", false)		|	ssl.OneWayTls.Value = false
+						* empty 	| object exists, but has nil subfield.							|	ssl.OneWayTls = nil
+						* set		| object exists and has populated subfield						|	ssl.OneWayTls.Value = true
+					Since our merge operations take in (childSsl, parentSsl, PreventChildOverrides), this leaves 4*4*2 = 36 possible combinations to test.
+
+					When performing all of said combinations on a _nested_ field, such as ssl.OneWayTls.Value, there are 4 possible results:
+						* True		| ssl.OneWayTls.Value is true
+						* False		| ssl.OneWayTls.Value is false
+						* Nil		| ssl or OneWayTls is nil
+						* Error		| translation failed; see "anscestry override tests for mismatched ssl definitions" for exact details
+					(┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓)*/
+					Entry("nil,nil,1", sslNil, sslNil, true, Nil),
+					Entry("nil,nil,0", sslNil, sslNil, false, Nil),
+					Entry("nil,zero,1", sslNil, sslZero, true, Error),
+					Entry("nil,zero,0", sslNil, sslZero, false, Error),
+					Entry("nil,empty,1", sslNil, sslEmpty, true, Error),
+					Entry("nil,empty,0", sslNil, sslEmpty, false, Error),
+					Entry("nil,set,1", sslNil, sslSet, true, Error),
+					Entry("nil,set,0", sslNil, sslSet, false, Error),
+
+					Entry("zero,nil,1", sslZero, sslNil, true, Error),
+					Entry("zero,nil,0", sslZero, sslNil, false, Error),
+					Entry("zero,zero,1", sslZero, sslZero, true, False),
+					Entry("zero,zero,0", sslZero, sslZero, false, False),
+					Entry("zero,empty,1", sslZero, sslEmpty, true, False),
+					Entry("zero,empty,0", sslZero, sslEmpty, false, False),
+					Entry("zero,set,1", sslZero, sslSet, true, True),
+					Entry("zero,set,0", sslZero, sslSet, false, True),
+
+					Entry("empty,nil,1", sslEmpty, sslNil, true, Error),
+					Entry("empty,nil,0", sslEmpty, sslNil, false, Error),
+					Entry("empty,zero,1", sslEmpty, sslZero, true, False),
+					Entry("empty,zero,0", sslEmpty, sslZero, false, False),
+					Entry("empty,empty,1", sslEmpty, sslEmpty, true, Nil),
+					Entry("empty,empty,0", sslEmpty, sslEmpty, false, Nil),
+					Entry("empty,set,1", sslEmpty, sslSet, true, True),
+					Entry("empty,set,0", sslEmpty, sslSet, false, True),
+
+					Entry("set,nil,1", sslSet, sslNil, true, Error),
+					Entry("set,nil,0", sslSet, sslNil, false, Error),
+					Entry("set,zero,1", sslSet, sslZero, true, True),
+					Entry("set,zero,0", sslSet, sslZero, false, True),
+					Entry("set,empty,1", sslSet, sslEmpty, true, True),
+					Entry("set,empty,0", sslSet, sslEmpty, false, True),
+					Entry("set,set,1", sslSet, sslSet, true, True),
+					Entry("set,set,0", sslSet, sslSet, false, True),
 				)
 
 				DescribeTable("anscestry override tests for mismatched ssl definitions", func(childSsl *gloov1.SslConfig, parentSsl *gloov1.SslConfig, childHcm *hcm.HttpConnectionManagerSettings, parentHcm *hcm.HttpConnectionManagerSettings, preventChildOverrides bool) {
@@ -457,7 +524,7 @@ var _ = Describe("Hybrid Translator", func() {
 					Expect(singleMatchedListener).NotTo(BeNil())
 
 					hcmAfter := singleMatchedListener.GetHttpListener().GetOptions().GetHttpConnectionManagerSettings()
-					Expect(hcmAfter.GetSkipXffAppend()).To(Equal(true))
+					Expect(hcmAfter.GetSkipXffAppend().GetValue()).To(Equal(true))
 				})
 
 				It("Should overwrite nested nil child fields", func() {
@@ -472,7 +539,6 @@ var _ = Describe("Hybrid Translator", func() {
 					params := NewTranslatorParams(ctx, snap, reports)
 					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
 
-					// evaluate results
 					// evaluate results
 					Expect(listener).NotTo(BeNil())
 

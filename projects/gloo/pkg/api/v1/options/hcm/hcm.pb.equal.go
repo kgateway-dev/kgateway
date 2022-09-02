@@ -46,16 +46,34 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetSkipXffAppend() != target.GetSkipXffAppend() {
-		return false
+	if h, ok := interface{}(m.GetSkipXffAppend()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSkipXffAppend()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSkipXffAppend(), target.GetSkipXffAppend()) {
+			return false
+		}
 	}
 
-	if strings.Compare(m.GetVia(), target.GetVia()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetVia()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetVia()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetVia(), target.GetVia()) {
+			return false
+		}
 	}
 
-	if m.GetXffNumTrustedHops() != target.GetXffNumTrustedHops() {
-		return false
+	if h, ok := interface{}(m.GetXffNumTrustedHops()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetXffNumTrustedHops()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetXffNumTrustedHops(), target.GetXffNumTrustedHops()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetUseRemoteAddress()).(equality.Equalizer); ok {
@@ -78,8 +96,14 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
-	if m.GetProxy_100Continue() != target.GetProxy_100Continue() {
-		return false
+	if h, ok := interface{}(m.GetProxy_100Continue()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetProxy_100Continue()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetProxy_100Continue(), target.GetProxy_100Continue()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetStreamIdleTimeout()).(equality.Equalizer); ok {
@@ -152,28 +176,64 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetServerName(), target.GetServerName()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetServerName()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetServerName()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetServerName(), target.GetServerName()) {
+			return false
+		}
 	}
 
-	if m.GetStripAnyHostPort() != target.GetStripAnyHostPort() {
-		return false
+	if h, ok := interface{}(m.GetStripAnyHostPort()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetStripAnyHostPort()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetStripAnyHostPort(), target.GetStripAnyHostPort()) {
+			return false
+		}
 	}
 
-	if m.GetAcceptHttp_10() != target.GetAcceptHttp_10() {
-		return false
+	if h, ok := interface{}(m.GetAcceptHttp_10()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAcceptHttp_10()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAcceptHttp_10(), target.GetAcceptHttp_10()) {
+			return false
+		}
 	}
 
-	if strings.Compare(m.GetDefaultHostForHttp_10(), target.GetDefaultHostForHttp_10()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetDefaultHostForHttp_10()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDefaultHostForHttp_10()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDefaultHostForHttp_10(), target.GetDefaultHostForHttp_10()) {
+			return false
+		}
 	}
 
-	if m.GetAllowChunkedLength() != target.GetAllowChunkedLength() {
-		return false
+	if h, ok := interface{}(m.GetAllowChunkedLength()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAllowChunkedLength()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAllowChunkedLength(), target.GetAllowChunkedLength()) {
+			return false
+		}
 	}
 
-	if m.GetEnableTrailers() != target.GetEnableTrailers() {
-		return false
+	if h, ok := interface{}(m.GetEnableTrailers()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnableTrailers()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEnableTrailers(), target.GetEnableTrailers()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetTracing()).(equality.Equalizer); ok {
@@ -200,8 +260,14 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
-	if m.GetPreserveExternalRequestId() != target.GetPreserveExternalRequestId() {
-		return false
+	if h, ok := interface{}(m.GetPreserveExternalRequestId()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPreserveExternalRequestId()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPreserveExternalRequestId(), target.GetPreserveExternalRequestId()) {
+			return false
+		}
 	}
 
 	if len(m.GetUpgrades()) != len(target.GetUpgrades()) {
@@ -277,8 +343,14 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetMergeSlashes() != target.GetMergeSlashes() {
-		return false
+	if h, ok := interface{}(m.GetMergeSlashes()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMergeSlashes()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMergeSlashes(), target.GetMergeSlashes()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetNormalizePath()).(equality.Equalizer); ok {
@@ -311,6 +383,16 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetInternalAddressConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetInternalAddressConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetInternalAddressConfig(), target.GetInternalAddressConfig()) {
+			return false
+		}
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
@@ -318,8 +400,14 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 			return false
 		}
 
-		if m.GetProperCaseHeaderKeyFormat() != target.GetProperCaseHeaderKeyFormat() {
-			return false
+		if h, ok := interface{}(m.GetProperCaseHeaderKeyFormat()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetProperCaseHeaderKeyFormat()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetProperCaseHeaderKeyFormat(), target.GetProperCaseHeaderKeyFormat()) {
+				return false
+			}
 		}
 
 	case *HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat:
@@ -327,8 +415,14 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 			return false
 		}
 
-		if m.GetPreserveCaseHeaderKeyFormat() != target.GetPreserveCaseHeaderKeyFormat() {
-			return false
+		if h, ok := interface{}(m.GetPreserveCaseHeaderKeyFormat()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPreserveCaseHeaderKeyFormat()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetPreserveCaseHeaderKeyFormat(), target.GetPreserveCaseHeaderKeyFormat()) {
+				return false
+			}
 		}
 
 	default:
@@ -372,20 +466,44 @@ func (m *HttpConnectionManagerSettings_SetCurrentClientCertDetails) Equal(that i
 		}
 	}
 
-	if m.GetCert() != target.GetCert() {
-		return false
+	if h, ok := interface{}(m.GetCert()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCert()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCert(), target.GetCert()) {
+			return false
+		}
 	}
 
-	if m.GetChain() != target.GetChain() {
-		return false
+	if h, ok := interface{}(m.GetChain()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetChain()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetChain(), target.GetChain()) {
+			return false
+		}
 	}
 
-	if m.GetDns() != target.GetDns() {
-		return false
+	if h, ok := interface{}(m.GetDns()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDns()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDns(), target.GetDns()) {
+			return false
+		}
 	}
 
-	if m.GetUri() != target.GetUri() {
-		return false
+	if h, ok := interface{}(m.GetUri()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUri()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUri(), target.GetUri()) {
+			return false
+		}
 	}
 
 	return true
@@ -430,6 +548,95 @@ func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) Equal(that i
 		if !proto.Equal(m.GetUseRequestIdForTraceSampling(), target.GetUseRequestIdForTraceSampling()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HttpConnectionManagerSettings_CidrRange) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HttpConnectionManagerSettings_CidrRange)
+	if !ok {
+		that2, ok := that.(HttpConnectionManagerSettings_CidrRange)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetAddressPrefix(), target.GetAddressPrefix()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetPrefixLen()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPrefixLen()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPrefixLen(), target.GetPrefixLen()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HttpConnectionManagerSettings_InternalAddressConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HttpConnectionManagerSettings_InternalAddressConfig)
+	if !ok {
+		that2, ok := that.(HttpConnectionManagerSettings_InternalAddressConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetUnixSockets()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUnixSockets()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUnixSockets(), target.GetUnixSockets()) {
+			return false
+		}
+	}
+
+	if len(m.GetCidrRanges()) != len(target.GetCidrRanges()) {
+		return false
+	}
+	for idx, v := range m.GetCidrRanges() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCidrRanges()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetCidrRanges()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true
