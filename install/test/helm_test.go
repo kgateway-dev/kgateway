@@ -4146,6 +4146,7 @@ metadata:
 						}
 						selector = map[string]string{
 							"gloo": "gloo",
+							"app": "gloo",
 						}
 						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats(), GetValidationEnvVar())
 						glooAnnotations := make(map[string]string)
@@ -4426,6 +4427,7 @@ metadata:
 						}
 						selector = map[string]string{
 							"gloo": "discovery",
+							"app": "gloo",
 						}
 						container := GetQuayContainerSpec("discovery", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
