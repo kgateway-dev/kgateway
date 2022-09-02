@@ -2476,7 +2476,7 @@ spec:
 							"gateway-proxy-id": "gateway-proxy",
 						}
 						podLabels := map[string]string{
-							"app": "gloo",
+							"app":              "gloo",
 							"gloo":             "gateway-proxy",
 							"gateway-proxy":    "live",
 							"gateway-proxy-id": "gateway-proxy",
@@ -4981,7 +4981,7 @@ metadata:
 						"gloo": "gloo",
 					}
 					podLabels := map[string]string{
-						"app": "gloo",
+						"app":  "gloo",
 						"gloo": "gloo",
 					}
 					glooAnnotations := make(map[string]string)
@@ -5088,7 +5088,7 @@ metadata:
 						"gloo": "ingress",
 					}
 					ingressPodLabels := map[string]string{
-						"app": "gloo",
+						"app":  "gloo",
 						"gloo": "ingress",
 					}
 					var ingressDeploymentPostMerge = &appsv1.Deployment{
