@@ -2576,7 +2576,7 @@ spec:
 							daemonSet.Spec.Template.Spec.HostNetwork = true
 						})
 
-						FIt("creates a daemonset", func() {
+						It("creates a daemonset", func() {
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
 									"gatewayProxies.gatewayProxy.kind.deployment=null",
