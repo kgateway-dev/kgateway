@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/4029
+    resolvesIssue: false
+    description: Add app labels to pods in order to support Prometheus scraping of only Goo Edge pods
