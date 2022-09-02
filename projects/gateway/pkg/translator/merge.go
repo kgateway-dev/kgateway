@@ -7,7 +7,10 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // Merges the fields of src into dst.
@@ -105,14 +108,7 @@ func mergeSslConfig(parent, child *v1.SslConfig, preventChildOverrides bool) *v1
 		return childClone
 	}
 
-	if preventChildOverrides {
-		// merge, preferring parent
-		mergo.Merge(childClone, parentClone, mergo.WithOverride)
-	} else {
-		// merge, preferring child
-		mergo.Merge(childClone, parentClone)
-	}
-
+	mergo.Merge(childClone, parentClone, mergo.WithTransformers(wrapperTransformer{preventChildOverrides}))
 	return childClone
 }
 
@@ -130,13 +126,26 @@ func mergeHCMSettings(parent, child *hcm.HttpConnectionManagerSettings, preventC
 		return childClone
 	}
 
-	if preventChildOverrides {
-		// merge, preferring parent
-		mergo.Merge(childClone, parentClone, mergo.WithOverride)
-	} else {
-		// merge, preferring child
-		mergo.Merge(childClone, parentClone)
-	}
-
+	mergo.Merge(childClone, parentClone, mergo.WithTransformers(wrapperTransformer{preventChildOverrides}))
 	return childClone
+}
+
+type wrapperTransformer struct {
+	preventChildOverrides bool
+}
+
+func (t wrapperTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
+	if typ == reflect.TypeOf(wrappers.BoolValue{}) ||
+		typ == reflect.TypeOf(wrappers.StringValue{}) ||
+		typ == reflect.TypeOf(wrappers.UInt32Value{}) ||
+		typ == reflect.TypeOf(duration.Duration{}) ||
+		typ == reflect.TypeOf(core.ResourceRef{}) {
+		return func(dst, src reflect.Value) error {
+			if t.preventChildOverrides {
+				dst.Set(src)
+			}
+			return nil
+		}
+	}
+	return nil
 }
