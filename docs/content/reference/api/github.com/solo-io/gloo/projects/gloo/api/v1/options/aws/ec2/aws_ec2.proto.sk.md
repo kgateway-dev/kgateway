@@ -49,7 +49,7 @@ in a particular region
 | `roleArn` | `string` | Optional, Amazon Resource Number (ARN) referring to IAM Role that should be assumed when the Upstream queries for eligible EC2 instances. If provided, Gloo will create an EC2 API client with the provided role. If not provided, Gloo will not assume a role. |
 | `filters` | [[]aws_ec2.options.gloo.solo.io.TagFilter](../aws_ec2.proto.sk/#tagfilter) | List of tag filters for selecting instances An instance must match all the filters in order to be selected Filter keys are not case-sensitive. |
 | `publicIp` | `bool` | If set, will use the EC2 public IP address. Defaults to the private IP address. |
-| `port` | `int` | If set, will use this port on EC2 instances. Defaults to port 80. |
+| `port` | `int` | If set, will use this port on EC2 instances. Defaults to 0. |
 
 
 
