@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -16,13 +18,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// List of pods in which we could find the Gloo (OS) version
-var glooOSPods = map[string]bool{
-	"gateway":   true,
-	"ingress":   true,
-	"discovery": true,
-}
 
 func envoyConfigFromString(config string) (envoy_config_bootstrap.Bootstrap, error) {
 	var bootstrapConfig envoy_config_bootstrap.Bootstrap
@@ -116,30 +111,23 @@ func getJWTPolicy(pilotContainer corev1.Container) string {
 // getGlooVersion gets the version of gloo currently running
 // in the given namespace, by checking the gloo deployment.
 func getGlooVersion(ctx context.Context, namespace string) (string, error) {
-	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	sv := versioncmd.NewKube(namespace, "")
+	clientServerVersions, err := versioncmd.GetClientServerVersions(ctx, sv)
 	if err != nil {
 		return "", err
 	}
-	deployments, err := client.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
+	openSourceVersions, err := prerun.GetOpenSourceVersions(clientServerVersions.GetServer())
 	if err != nil {
 		return "", err
 	}
-
-	// For each deployment
-	for _, deployment := range deployments.Items {
-		// If it's a Gloo OS pod
-		if _, ok := glooOSPods[deployment.Name]; ok {
-			containers := deployment.Spec.Template.Spec.Containers
-			// Grab the container named the same as deploy (in case of eg istio sidecars)
-			for _, container := range containers {
-				if container.Name == deployment.Name {
-					return getImageVersion(container)
-				}
-			}
-		}
+	if len(openSourceVersions) == 0 {
+		return "", ErrGlooVerUndetermined
 	}
-	return "", ErrGlooVerUndetermined
+	// There shouldn't be multiple gloo versions in a single namespace but it's also probably fine
+	if len(openSourceVersions) > 1 {
+		fmt.Printf("Found multiple gloo versions, picking %s", openSourceVersions[0].String())
+	}
+	return openSourceVersions[0].String(), nil
 }
 
 // unmarshalYAMLConfig converts from an envoy
