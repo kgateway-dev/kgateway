@@ -2474,6 +2474,7 @@ spec:
 						selector = map[string]string{
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
+							"app": "gloo",
 						}
 						podLabels := map[string]string{
 							"app":              "gloo",
@@ -2749,7 +2750,7 @@ spec:
 									PodAffinityTerm: v1.PodAffinityTerm{
 										TopologyKey: "kubernetes.io/hostname",
 										LabelSelector: &metav1.LabelSelector{
-											MatchLabels: map[string]string{"gloo": "gateway-proxy"},
+											MatchLabels: map[string]string{"gloo": "gateway-proxy", "app":"gloo"},
 										},
 									},
 								}},
@@ -3788,6 +3789,7 @@ spec:
   selector:
     matchLabels:
       gloo: gloo
+      app: gloo
   template:
     metadata:
       labels:
@@ -4981,6 +4983,7 @@ metadata:
 					}
 					selectors := map[string]string{
 						"gloo": "gloo",
+						"app": "gloo",
 					}
 					podLabels := map[string]string{
 						"app":  "gloo",
@@ -5088,6 +5091,7 @@ metadata:
 					}
 					ingressSelector := map[string]string{
 						"gloo": "ingress",
+						"app": "gloo",
 					}
 					ingressPodLabels := map[string]string{
 						"app":  "gloo",
