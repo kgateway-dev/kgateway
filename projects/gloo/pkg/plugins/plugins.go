@@ -171,3 +171,7 @@ type PluginRegistry interface {
 	GetRouteActionPlugins() []RouteActionPlugin
 	GetWeightedDestinationPlugins() []WeightedDestinationPlugin
 }
+
+// A PluginRegistryFactory generates a PluginRegistry
+// It is executed each translation loop, ensuring we have up to date configuration of all plugins
+type PluginRegistryFactory func(ctx context.Context) PluginRegistry
