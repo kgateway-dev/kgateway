@@ -2476,6 +2476,7 @@ spec:
 							"gateway-proxy-id": "gateway-proxy",
 						}
 						podLabels := map[string]string{
+							"app": "gloo",
 							"gloo":             "gateway-proxy",
 							"gateway-proxy":    "live",
 							"gateway-proxy-id": "gateway-proxy",
@@ -2575,7 +2576,7 @@ spec:
 							daemonSet.Spec.Template.Spec.HostNetwork = true
 						})
 
-						It("creates a daemonset", func() {
+						FIt("creates a daemonset", func() {
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
 									"gatewayProxies.gatewayProxy.kind.deployment=null",
@@ -3790,6 +3791,7 @@ spec:
   template:
     metadata:
       labels:
+        app: gloo
         gloo: gloo
       annotations:
         prometheus.io/path: /metrics
@@ -4979,6 +4981,7 @@ metadata:
 						"gloo": "gloo",
 					}
 					podLabels := map[string]string{
+						"app": "gloo",
 						"gloo": "gloo",
 					}
 					glooAnnotations := make(map[string]string)
@@ -5085,6 +5088,7 @@ metadata:
 						"gloo": "ingress",
 					}
 					ingressPodLabels := map[string]string{
+						"app": "gloo",
 						"gloo": "ingress",
 					}
 					var ingressDeploymentPostMerge = &appsv1.Deployment{
