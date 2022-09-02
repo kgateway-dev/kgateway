@@ -231,11 +231,6 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			// wait for Proxy to be re-created
-			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				return resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			})
-
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
 				Path:              "/",
