@@ -1,4 +1,4 @@
-package gloo_mtls_test
+package gloomtls_test
 
 import (
 	"context"
