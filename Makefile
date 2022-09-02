@@ -172,13 +172,15 @@ install-test-tools:
 .PHONY: run-tests
 run-tests:
 ifneq ($(RELEASE), "true")
-	RUN_REGRESSION_TESTS=$(RUN_REGRESSION_TESTS) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
+	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests
-run-ci-regression-tests: TEST_PKG=./test/kube2e/...
+run-ci-regression-tests: TEST_PKG=./test/kube2e
 run-ci-regression-tests: RUN_REGRESSION_TESTS=true
-run-ci-regression-tests: install-test-tools run-tests
+run-ci-regression-tests: install-test-tools
+	# We intentionally leave out the `-r` ginkgo flag, since we are specifying the exact package that we want run
+	RUN_REGRESSION_TESTS=$(RUN_REGRESSION_TESTS) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)/$(KUBE2E_TESTS)
 
 .PHONY: check-format
 check-format:
