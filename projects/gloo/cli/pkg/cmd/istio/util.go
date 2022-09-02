@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
+
 	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
-	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 
