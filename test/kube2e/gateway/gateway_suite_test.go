@@ -169,7 +169,7 @@ gloo:
     replicas: 2
     customEnv:
       - name: LEADER_ELECTION_LEASE_DURATION
-        value: 2s
+        value: 4s
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
