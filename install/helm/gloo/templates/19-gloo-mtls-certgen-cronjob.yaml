@@ -23,9 +23,7 @@ spec:
         metadata:
           labels:
             gloo: gloo-mtls-certs
-            {{- if .Values.global.istioIntegration.disableAutoinjection }}
             sidecar.istio.io/inject: "false"
-            {{- end }}
         spec:
           {{- include "gloo.pullSecret" $image | nindent 10 -}}
           serviceAccountName: certgen
