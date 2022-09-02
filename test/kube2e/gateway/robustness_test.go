@@ -3,13 +3,14 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
@@ -18,13 +19,10 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/kube2e"
 
 	testutils "github.com/solo-io/k8s-utils/testutils/kube"
 
@@ -180,8 +178,8 @@ var _ = Describe("Robustness tests", func() {
 
 	Context("Updates Envoy endpoints, even if proxy is invalid", func() {
 
-		forceProxyIntoWarningState := func(virtualService *gatewayv1.VirtualService) {
-			virtualService, err = resourceClientset.VirtualServiceClient().Read(virtualService.GetMetadata().GetNamespace(), virtualService.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+		forceProxyIntoWarningState := func(originalVs *gatewayv1.VirtualService) {
+			virtualService, err := resourceClientset.VirtualServiceClient().Read(originalVs.GetMetadata().GetNamespace(), originalVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			// required to prevent gateway webhook from rejecting
@@ -217,9 +215,11 @@ var _ = Describe("Robustness tests", func() {
 			err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
-				return resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			}, 20*time.Second, 1*time.Second)
+			// Robustness Tests work by scaling up/down the Gloo deployment
+			// When this happens a new leader must be elected. Depending on the leaseDuration, this may take
+			// a number of seconds. Gloo may have already processed the new resources.
+			// We used to explicitly check that resources had a warning status here. It is safe to remove this,
+			// because the "real" checks involve querying the endpoints, which we do later on
 		}
 
 		It("works", func() {

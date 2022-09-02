@@ -94,7 +94,10 @@ gateway:
   persistProxySpec: true
 gloo:
   deployment:
-    replicas: 1
+    replicas: 2
+    customEnv:
+      - name: LEADER_ELECTION_LEASE_DURATION
+        value: 2s
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0

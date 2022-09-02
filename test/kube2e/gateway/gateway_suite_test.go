@@ -2,13 +2,14 @@ package gateway_test
 
 import (
 	"context"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"github.com/solo-io/k8s-utils/kubeutils"
 
@@ -165,7 +166,10 @@ gateway:
   persistProxySpec: true
 gloo:
   deployment:
-    replicas: 1
+    replicas: 2
+    customEnv:
+      - name: LEADER_ELECTION_LEASE_DURATION
+        value: 2s
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
