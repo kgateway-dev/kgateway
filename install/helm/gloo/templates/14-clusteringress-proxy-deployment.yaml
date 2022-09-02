@@ -21,6 +21,7 @@ spec:
   template:
     metadata:
       labels:
+        app: gloo
         gloo: clusteringress-proxy
         {{- if .Values.settings.integrations.knative.proxy.extraClusterIngressProxyLabels }}
         {{- range $key, $value := .Values.settings.integrations.knative.proxy.extraClusterIngressProxyLabels }}

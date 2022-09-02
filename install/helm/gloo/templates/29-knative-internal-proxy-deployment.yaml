@@ -21,6 +21,7 @@ spec:
   template:
     metadata:
       labels:
+        app: gloo
         gloo: knative-internal-proxy
         {{- if .Values.settings.integrations.knative.extraKnativeInternalLabels }}
         {{- range $key, $value := .Values.settings.integrations.knative.extraKnativeInternalLabels }}

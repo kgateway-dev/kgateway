@@ -20,6 +20,7 @@ spec:
   template:
     metadata:
       labels:
+        app: gloo
         gloo: gloo
         {{- if .Values.gloo.deployment.extraGlooLabels }}
         {{- range $key, $value := .Values.gloo.deployment.extraGlooLabels }}

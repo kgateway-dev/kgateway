@@ -51,6 +51,7 @@ spec:
   template:
     metadata:
       labels:
+        app: gloo
         gloo: gateway-proxy
         gateway-proxy-id: {{ $name | kebabcase }}
         {{- if not $isUpgrade }}

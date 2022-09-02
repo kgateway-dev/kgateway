@@ -21,6 +21,7 @@ spec:
   template:
     metadata:
       labels:
+        app: gloo
         gloo: discovery
         {{- if .Values.discovery.deployment.extraDiscoveryLabels }}
         {{- range $key, $value := .Values.discovery.deployment.extraDiscoveryLabels }}

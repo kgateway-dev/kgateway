@@ -20,6 +20,7 @@ spec:
   template:
     metadata:
       labels:
+        app: gloo
         gloo: {{ .Values.ingressProxy.label }}
         {{- if .Values.ingressProxy.deployment.extraIngressProxyLabels }}
         {{- range $key, $value := .Values.ingressProxy.deployment.extraIngressProxyLabels }}
