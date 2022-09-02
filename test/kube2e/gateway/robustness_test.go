@@ -741,11 +741,11 @@ func scaleDeploymentTo(kubeClient kubernetes.Interface, deploymentToScale *appsv
 		// We are scaling up Gloo
 		// To ensure that a new leader has been elected (which may take a few seconds),
 		// continually modify resources until a new status appears
-		WaitForLeaderElectionToRestart(1, testHelper.InstallNamespace, resourceClientset.UpstreamClient())
+		WaitForLeaderElectionToBegin(1, testHelper.InstallNamespace, resourceClientset.UpstreamClient())
 	}
 }
 
-func WaitForLeaderElectionToRestart(offset int, ns string, upstreamClient gloov1.UpstreamClient) {
+func WaitForLeaderElectionToBegin(offset int, ns string, upstreamClient gloov1.UpstreamClient) {
 	By("Gloo pod scaled up. Updating placeholder CR until leader is established")
 	statusClient := gloostatusutils.GetStatusClientFromEnvOrDefault(ns)
 	placeholderUs := &gloov1.Upstream{
