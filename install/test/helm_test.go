@@ -2474,7 +2474,7 @@ spec:
 						selector = map[string]string{
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
-							"app": "gloo",
+							"app":              "gloo",
 						}
 						podLabels := map[string]string{
 							"app":              "gloo",
@@ -2750,7 +2750,7 @@ spec:
 									PodAffinityTerm: v1.PodAffinityTerm{
 										TopologyKey: "kubernetes.io/hostname",
 										LabelSelector: &metav1.LabelSelector{
-											MatchLabels: map[string]string{"gloo": "gateway-proxy", "app":"gloo"},
+											MatchLabels: map[string]string{"gloo": "gateway-proxy", "app": "gloo"},
 										},
 									},
 								}},
@@ -4148,7 +4148,7 @@ metadata:
 						}
 						selector = map[string]string{
 							"gloo": "gloo",
-							"app": "gloo",
+							"app":  "gloo",
 						}
 						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats(), GetValidationEnvVar())
 						glooAnnotations := make(map[string]string)
@@ -4429,7 +4429,7 @@ metadata:
 						}
 						selector = map[string]string{
 							"gloo": "discovery",
-							"app": "gloo",
+							"app":  "gloo",
 						}
 						container := GetQuayContainerSpec("discovery", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
@@ -4830,6 +4830,7 @@ metadata:
 							"gateway-proxy-id": "gateway-proxy",
 						}
 						serviceSelector := map[string]string{
+							"app":              "gloo",
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
 						}
@@ -4983,7 +4984,7 @@ metadata:
 					}
 					selectors := map[string]string{
 						"gloo": "gloo",
-						"app": "gloo",
+						"app":  "gloo",
 					}
 					podLabels := map[string]string{
 						"app":  "gloo",
@@ -5091,7 +5092,7 @@ metadata:
 					}
 					ingressSelector := map[string]string{
 						"gloo": "ingress",
-						"app": "gloo",
+						"app":  "gloo",
 					}
 					ingressPodLabels := map[string]string{
 						"app":  "gloo",
