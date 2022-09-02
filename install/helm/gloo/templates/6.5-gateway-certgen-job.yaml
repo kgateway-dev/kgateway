@@ -22,10 +22,7 @@ spec:
     metadata:
       labels:
         gloo: gateway-certgen
-      {{- if .Values.global.istioIntegration.disableAutoinjection }}
-      annotations:
         sidecar.istio.io/inject: "false"
-      {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: certgen

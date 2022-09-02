@@ -20,6 +20,7 @@ spec:
         metadata:
           labels:
             gloo: gloo-mtls-certs
+            sidecar.istio.io/inject: "false"
         spec:
           {{- include "gloo.pullSecret" $image | nindent 10 -}}
           serviceAccountName: certgen
