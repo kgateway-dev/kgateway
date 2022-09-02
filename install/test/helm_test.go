@@ -3323,6 +3323,7 @@ spec:
   template:
     metadata:
       labels:
+        sidecar.istio.io/inject: "false"
         gloo: gateway-certgen
     spec:
       serviceAccountName: certgen
