@@ -155,7 +155,7 @@ func GetOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versi
 		switch podVersion.GetVersionType().(type) {
 		case *versiondiscovery.ServerVersion_Kubernetes:
 			for _, container := range podVersion.GetKubernetes().GetContainers() {
-				if _, ok := ContainerNamesToCheckAnnotation[container.Name]; ok {
+				if _, ok := ContainerNamesToCheckAnnotation[container.GetName()]; ok {
 					containerOssVersion, err := versionutils.ParseVersion("v" + container.GetOssTag())
 					if err != nil {
 						// If the annotation wasn't present or didn't contain a valid version, move on
