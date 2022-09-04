@@ -1,0 +1,19 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6988
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7038
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6932
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6493
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6472
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5149
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5495
+  - type: NON_USER_FACING
+    description: >
+      Update the Kube2e tests to use a snapshot model, where resources are written once at the
+      beginning of a test, and cleaned up at the end, to avoid test pollution.
