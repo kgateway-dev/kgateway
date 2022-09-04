@@ -1,18 +1,27 @@
 changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/6988
+    description: Fix kube2e test "should process proxy with deprecated label"
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/7038
+    description: Ensure robustness tests clean up resources properly
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/6932
+    description: Fix kube2e test "linkerd enabled updates routes"
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/6493
+    description: Fix kube2e test "gateway tests with virtual service with a mix of valid and invalid virtual services"
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/6472
+    description: Ensure tests create VirtualServices without wildcard domains
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/5149
+    description: Fix kube2e test "can modify upstreams repeatedly, and endpoints don't lag via EDS"
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/5495
+    description: >
+      Ensure tests write resources in an order the prevents the validation webhook from
+      rejecting requests.
   - type: NON_USER_FACING
     description: >
       Update the Kube2e tests to use a snapshot model, where resources are written once at the
