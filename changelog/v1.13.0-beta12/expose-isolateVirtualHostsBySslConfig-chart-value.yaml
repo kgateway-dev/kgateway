@@ -1,5 +1,5 @@
 changelog:
   - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/6476
+    issueLink: https://github.com/solo-io/gloo/issues/6677
     resolvesIssue: false
-    description: Enable HCM options to support 0-value overrides for `Duration` and `ResourceRef` object types
+    description: Enable to set isolateVirtualHostsBySslConfig parameter in the setting.yaml template by exposing it in the chart.yaml file  
