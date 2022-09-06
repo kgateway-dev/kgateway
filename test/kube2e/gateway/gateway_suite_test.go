@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/avast/retry-go"
+
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"github.com/solo-io/k8s-utils/kubeutils"
@@ -113,14 +115,8 @@ func StartTestHelper() {
 	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
 	Expect(err).NotTo(HaveOccurred())
 
-	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, func(attempt int) bool {
-		if attempt > 3 {
-			// only retry 3 times
-			return false
-		}
-
-		time.Sleep(time.Duration(attempt^2) * time.Second)
-		return true
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{
+		retry.Attempts(3),
 	})
 }
 

@@ -1,10 +1,11 @@
 package helpers
 
 import (
+	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"time"
 )
 
 var _ SnapshotWriter = new(snapshotWriterImpl)
@@ -16,41 +17,37 @@ type SnapshotWriter interface {
 
 type snapshotWriterImpl struct {
 	ResourceClientSet
+	retryOptions    []retry.Option
 	backoffStrategy func(int) bool
 }
 
-func NewSnapshotWriter(clientSet ResourceClientSet, backoffStrategy func(int) bool) *snapshotWriterImpl {
+func NewSnapshotWriter(clientSet ResourceClientSet, retryOptions []retry.Option) *snapshotWriterImpl {
+	defaultRetryOptions := []retry.Option{
+		retry.Attempts(10),
+		retry.RetryIf(func(err error) bool {
+			return err != nil
+		}),
+		retry.LastErrorOnly(true),
+		retry.Delay(time.Second),
+		retry.DelayType(retry.BackOffDelay),
+	}
+
 	return &snapshotWriterImpl{
 		ResourceClientSet: clientSet,
-		backoffStrategy:   backoffStrategy,
+		retryOptions:      append(defaultRetryOptions, retryOptions...),
 	}
 }
 
 // WriteSnapshot writes all resources in the ApiSnapshot to the cache
 func (s snapshotWriterImpl) WriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, writeOptions clients.WriteOpts) error {
-	attempt := 1
-
-	logger := contextutils.LoggerFrom(writeOptions.Ctx)
-
-	for {
-		// to account for writing latency, we inject a back-off strategy for retrying the snapshot write
-		mostRecentResult := s.doWriteSnapshot(snapshot, writeOptions)
-		if mostRecentResult == nil {
-			return nil
+	return retry.Do(func() error {
+		if writeOptions.Ctx.Err() != nil {
+			// intentionally return early if context is already done
+			// this is a backoff loop; by the time we get here ctx may be done
+			return writeOptions.Ctx.Err()
 		}
-		logger.Warnf("Failed to write snapshot on attempt #%d. Reason: %+v", attempt, mostRecentResult)
-
-		shouldContinue := s.backoffStrategy(attempt)
-		if !shouldContinue {
-			return mostRecentResult
-		}
-		attempt += 1
-
-		// ensure we don't infinitely loop
-		if attempt > 10 {
-			return mostRecentResult
-		}
-	}
+		return s.doWriteSnapshot(snapshot, writeOptions)
+	}, s.retryOptions...)
 }
 
 // WriteSnapshot writes all resources in the ApiSnapshot to the cache

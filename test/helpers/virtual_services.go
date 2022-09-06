@@ -2,9 +2,9 @@ package helpers
 
 import (
 	"errors"
-	"log"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/onsi/ginkgo"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -185,7 +185,7 @@ func (b *virtualServiceBuilder) Build() *v1.VirtualService {
 		// We error loudly here
 		// These types of errors are intended to prevent developers from creating resources
 		// which are semantically correct, but lead to test flakes/confusion
-		log.Panic(err)
+		ginkgo.Fail(err.Error())
 	}
 
 	var routes []*v1.Route
