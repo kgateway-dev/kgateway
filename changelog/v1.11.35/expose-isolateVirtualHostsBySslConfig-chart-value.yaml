@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6677
+    resolvesIssue: false
+    description: Enable to set isolateVirtualHostsBySslConfig parameter in the setting.yaml template by exposing it in the chart.yaml file  
