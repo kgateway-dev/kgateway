@@ -18,7 +18,6 @@ type SnapshotWriter interface {
 type snapshotWriterImpl struct {
 	ResourceClientSet
 	retryOptions    []retry.Option
-	backoffStrategy func(int) bool
 }
 
 func NewSnapshotWriter(clientSet ResourceClientSet, retryOptions []retry.Option) *snapshotWriterImpl {
