@@ -10,7 +10,7 @@ on:
 jobs:
   scan-images:
     name: Trivy Scan
-    runs-on: "ubuntu-18.04"
+    runs-on: ubuntu-22.04
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
@@ -54,7 +54,7 @@ jobs:
         env:
           SCAN_DIR: _output/scans
           IMAGE_REPO: quay.io/solo-io
-          MIN_SCANNED_VERSION: 'v1.8.0'
+          MIN_SCANNED_VERSION: 'v1.9.0'
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
           mkdir -p $SCAN_DIR

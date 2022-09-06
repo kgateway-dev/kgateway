@@ -2,6 +2,7 @@ package consul
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/avast/retry-go"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/constants"
@@ -22,7 +24,26 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
+
+type epWatchTuple struct {
+	// the last seen endpoints for this svc in this datacenter
+	endpoints []*consulapi.CatalogService
+	// a cancel function we can call when we no longer care about this watch (call before removal from map)
+	cancel context.CancelFunc
+}
+
+// map of service name to endpoints tuple
+type svcEndpointWatches map[string]*epWatchTuple
+
+// map of datacenter to svcEndpointWatches
+type dataCenterEndpointWatches map[string]svcEndpointWatches
+
+type dataCenterServiceEndpointsTuple struct {
+	dataCenter, service string
+	endpoints           []*consulapi.CatalogService
+}
 
 // Starts a watch on the Consul service metadata endpoint for all the services associated with the tracked upstreams.
 // Whenever it detects an update to said services, it fetches the complete specs for the tracked services,
@@ -31,11 +52,10 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 	// Filter out non-consul upstreams
 	trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
-	var previousSpecs []*consulapi.CatalogService
-	var previousHash uint64
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
-			// We generate one upstream for every Consul service name, so this should never happen.
+			// discovery generates one upstream for every Consul service name;
+			// this should only happen if users define duplicate upstreams for a consul service name.
 			trackedServiceToUpstreams[consulUsSpec.GetServiceName()] = append(trackedServiceToUpstreams[consulUsSpec.GetServiceName()], us)
 		}
 	}
@@ -45,8 +65,12 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		return nil, nil, err
 	}
 
-	// based off the comments above from Marco, there should only be one upstream per Consul service name
-	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters, p.consulUpstreamDiscoverySettings.GetConsistencyMode())
+	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(
+		opts.Ctx,
+		dataCenters,
+		p.consulUpstreamDiscoverySettings.GetConsistencyMode(),
+		p.consulUpstreamDiscoverySettings.GetQueryOptions(),
+	)
 
 	errChan := make(chan error)
 	var wg sync.WaitGroup
@@ -56,19 +80,17 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		errutils.AggregateErrs(opts.Ctx, errChan, servicesWatchErrChan, "consul eds")
 	}()
 
-	endpointsChan := make(chan v1.EndpointList)
+	allEndpointsListChan := make(chan v1.EndpointList)
 	wg.Add(1)
 	go func() {
-		defer close(endpointsChan)
+		defer close(allEndpointsListChan)
 		defer wg.Done()
 
-		// Create a new context for each loop, cancel it before each loop
-		var cancel context.CancelFunc = func() {}
-		// Use closure to allow cancel function to be updated as context changes
-		defer func() { cancel() }()
-
-		timer := time.NewTicker(DefaultDnsPollingInterval)
+		timer := time.NewTicker(p.dnsPollingInterval)
 		defer timer.Stop()
+
+		var previousSpecs []*consulapi.CatalogService
+		var previousHash uint64
 
 		publishEndpoints := func(endpoints v1.EndpointList) bool {
 			if opts.Ctx.Err() != nil {
@@ -77,10 +99,31 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 			select {
 			case <-opts.Ctx.Done():
 				return false
-			case endpointsChan <- endpoints:
+			case allEndpointsListChan <- endpoints:
 			}
 			return true
 		}
+
+		dcEndpointWatches := dataCenterEndpointWatches{}
+
+		var (
+			eg               errgroup.Group
+			allEndpointsChan = make(chan *dataCenterServiceEndpointsTuple)
+		)
+
+		wg.Add(1)
+		defer func() {
+			_ = eg.Wait() // will never error
+			close(allEndpointsChan)
+			wg.Done() // delay closing errChan until all goroutines sending to it are done (eg.Wait() above)
+		}()
+
+		edsBlockingQueries := false // defaults to false because caching defaults to true; in testing I only saw cache hits when lastIndex was 0
+		if bq := p.settings.GetConsulDiscovery().GetEdsBlockingQueries(); bq != nil {
+			edsBlockingQueries = bq.GetValue()
+		}
+
+		logger := contextutils.LoggerFrom(opts.Ctx)
 
 		for {
 			select {
@@ -89,37 +132,168 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					return
 				}
 
-				// Cancel any running requests from previous iteration and set new context/cancel
-				cancel()
-				ctx, newCancel := context.WithCancel(opts.Ctx)
-				cancel = newCancel
+				// non-blocking; more cache hits but more network calls if caching disabled (or cache misses per consul install settings)
+				if !edsBlockingQueries {
+					// the correctness of this implementation depending on updates on `serviceMetaChan` whenever a single catalog
+					// service is updated is tested in "fires service watch even if catalog service is the only update"
+					//
+					// i.e., even an update to a single catalog service will cause a full refresh of all services
+					specs := refreshSpecs(opts.Ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
+					previousSpecs = specs
 
-				// Here is where the specs are produced; each resulting spec is a grouping of serviceInstances (aka endpoints)
-				// associated with a single consul service on one datacenter.
-				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan, trackedServiceToUpstreams)
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
-
-				previousHash = hashutils.MustHash(endpoints)
-				previousSpecs = specs
-
-				if !publishEndpoints(endpoints) {
-					return
+					// Build new endpoints from specs and publish if ctx is not cancelled
+					endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
+					currentHash := hashutils.MustHash(endpoints)
+					if previousHash == currentHash {
+						continue
+					}
+					previousHash = currentHash
+					if !publishEndpoints(endpoints) {
+						return
+					}
+					continue
 				}
 
-			case <-timer.C:
-				// Poll to ensure any DNS updates get picked up in endpoints for EDS
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
+				// blocking; fewer network calls but fewer cache hits
+				// in testing, I only saw cache hits here if last index was zero (first call during blocking)
 
+				// construct a set of the present services by datacenter
+				dcToCurrentSvcs := map[string]sets.String{}
+				for _, meta := range serviceMeta {
+					for _, dc := range meta.DataCenters {
+						// add to set of datacenter/svc pairs present
+						if _, ok := dcToCurrentSvcs[dc]; !ok {
+							dcToCurrentSvcs[dc] = sets.NewString()
+						}
+						dcToCurrentSvcs[dc].Insert(meta.Name)
+
+						// additionally, if not already a watch for this, create a watch
+						if _, ok := dcEndpointWatches[dc]; !ok {
+							dcEndpointWatches[dc] = svcEndpointWatches{}
+						}
+						if _, ok := dcEndpointWatches[dc][meta.Name]; ok {
+							// watch already exists, don't recreate
+							continue
+						}
+						// watch does not exist, create it
+						ctx, newCancel := context.WithCancel(opts.Ctx)
+						dcEndpointWatches[dc][meta.Name] = &epWatchTuple{
+							endpoints: nil, // intentionally nil until we get the first update
+							cancel:    newCancel,
+						}
+
+						// Copy before passing to goroutines!
+						dcName := dc
+						svcName := meta.Name
+
+						endpointsChan, epErrChan := p.watchEndpointsInDataCenter(ctx, dcName, svcName, p.consulUpstreamDiscoverySettings.GetConsistencyMode(), p.consulUpstreamDiscoverySettings.GetQueryOptions())
+
+						// Collect endpoints
+						eg.Go(func() error {
+							aggregateEndpoints(ctx, allEndpointsChan, endpointsChan)
+							return nil
+						})
+
+						// Collect errors
+						eg.Go(func() error {
+							errutils.AggregateErrs(ctx, errChan, epErrChan, fmt.Sprintf("data center: %s, service: %s", dcName, svcName))
+							return nil
+						})
+					}
+				}
+
+				// create a set of the dc / svc combos we will delete (do not delete from the map that we iterate over)
+				dcToSvcsToCancel := map[string]sets.String{}
+				for dc, svcWatchesMap := range dcEndpointWatches {
+					for svcName := range svcWatchesMap {
+						if _, ok := dcToSvcsToCancel[dc]; !ok {
+							dcToSvcsToCancel[dc] = sets.NewString()
+						}
+						// if dc/svc combo is present in our watch map, but not in parsed current state of the world, cancel the watch
+						if _, ok := dcToCurrentSvcs[dc]; !ok {
+							// dc not current, we should delete the watch
+							dcToSvcsToCancel[dc].Insert(svcName)
+						} else if _, ok := dcToCurrentSvcs[dc][svcName]; !ok {
+							// svc not current, we should delete
+							dcToSvcsToCancel[dc].Insert(svcName)
+						}
+					}
+				}
+
+				// cancel the watches we need to cancel
+				for dc, svcsMap := range dcToSvcsToCancel {
+					for svc, _ := range svcsMap {
+						if _, ok := dcEndpointWatches[dc]; !ok {
+							// developer logic error, skip to prevent panic
+							logger.DPanicf("tried to cancel watch for endpoints in unknown data center: %s", dc)
+							continue
+						}
+						if _, ok := dcEndpointWatches[dc][svc]; !ok {
+							// developer logic error, skip to prevent panic
+							logger.DPanicf("tried to cancel watch for endpoints for unknown service: %s", svc)
+							continue
+						}
+						dcEndpointWatches[dc][svc].cancel()
+						delete(dcEndpointWatches[dc], svc)
+					}
+				}
+
+			case eps, ok := <-allEndpointsChan:
+				if !ok {
+					return
+				}
+				if _, ok := dcEndpointWatches[eps.dataCenter]; !ok {
+					// developer logic error, skip to prevent panic
+					logger.DPanicf("received endpoints in unknown data center: %s", eps.dataCenter)
+					continue
+				}
+				if _, ok := dcEndpointWatches[eps.dataCenter][eps.service]; !ok {
+					// developer logic error, skip to prevent panic
+					logger.DPanicf("received endpoints for unknown service: %s", eps.dataCenter)
+					continue
+				}
+				dcEndpointWatches[eps.dataCenter][eps.service].endpoints = eps.endpoints
+				collector := newSpecCollector()
+				for _, svcTuple := range dcEndpointWatches {
+					for _, svc := range svcTuple {
+						if svc.endpoints == nil {
+							// no update received yet, skip
+							continue
+						}
+						collector.Add(svc.endpoints)
+					}
+				}
+				specs := collector.Get()
+				previousSpecs = specs
+
+				// Build new endpoints from specs and publish if ctx is not cancelled
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 				currentHash := hashutils.MustHash(endpoints)
 				if previousHash == currentHash {
 					continue
 				}
-
 				previousHash = currentHash
 				if !publishEndpoints(endpoints) {
 					return
 				}
 
+			case <-timer.C:
+				// ensure we have at least one spec to check against; otherwise we risk marking EDS as ready
+				// (by sending endpoints, even an empty list) too early
+				if len(previousSpecs) == 0 {
+					continue
+				}
+
+				// Poll to ensure any DNS updates get picked up in endpoints for EDS
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
+				currentHash := hashutils.MustHash(endpoints)
+				if previousHash == currentHash {
+					continue
+				}
+				previousHash = currentHash
+				if !publishEndpoints(endpoints) {
+					return
+				}
 			case <-opts.Ctx.Done():
 				return
 			}
@@ -130,27 +304,149 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		wg.Wait()
 		close(errChan)
 	}()
-	return endpointsChan, errChan, nil
+	return allEndpointsListChan, errChan, nil
+}
+
+// Honors the contract of Watch functions to open with an initial read.
+func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svcName string, cm glooConsul.ConsulConsistencyModes, queryOpts *glooConsul.QueryOptions) (<-chan *dataCenterServiceEndpointsTuple, <-chan error) {
+	endpointsChan := make(chan *dataCenterServiceEndpointsTuple)
+	errsChan := make(chan error)
+
+	go func(dataCenter string) {
+		defer close(endpointsChan)
+		defer close(errsChan)
+
+		lastIndex := uint64(0)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+
+				var (
+					endpoints []*consulapi.CatalogService
+					queryMeta *consulapi.QueryMeta
+				)
+
+				// This is a blocking query (see [here](https://www.consul.io/api/features/blocking.html) for more info)
+				// The first invocation (with lastIndex equal to zero) will return immediately
+				queryOpts := consul.NewConsulCatalogServiceQueryOptions(dataCenter, cm, queryOpts)
+				queryOpts.WaitIndex = lastIndex
+
+				ctxDead := false
+
+				// Use a back-off retry strategy to avoid flooding the error channel
+				err := retry.Do(
+					func() error {
+						var err error
+						if ctx.Err() != nil {
+							// intentionally return early if context is already done
+							// this is a backoff loop; by the time we get here ctx may be done
+							ctxDead = true
+							return nil
+						}
+						endpoints, queryMeta, err = p.client.Service(svcName, "", queryOpts.WithContext(ctx))
+						return err
+					},
+					retry.Attempts(6),
+					//  Last delay is 2^6 * 100ms = 3.2s
+					retry.Delay(100*time.Millisecond),
+					retry.DelayType(retry.BackOffDelay),
+				)
+
+				if ctxDead {
+					return
+				}
+
+				if err != nil {
+					errsChan <- err
+					continue
+				}
+
+				// If index is the same, there have been no changes since last query
+				if queryMeta.LastIndex == lastIndex {
+					continue
+				}
+
+				tuple := &dataCenterServiceEndpointsTuple{
+					dataCenter: dataCenter,
+					service:    svcName,
+					endpoints:  endpoints,
+				}
+
+				// Update the last index
+				if queryMeta.LastIndex < lastIndex {
+					// update if index goes backwards per consul blocking query docs
+					// this can happen e.g. KV list operations where item with highest index is deleted
+					// for more, see https://www.consul.io/api-docs/features/blocking#implementation-details
+					lastIndex = 0
+				} else {
+					lastIndex = queryMeta.LastIndex
+				}
+				endpointsChan <- tuple
+			}
+		}
+	}(dataCenter)
+
+	return endpointsChan, errsChan
+}
+
+func aggregateEndpoints(ctx context.Context, dest chan *dataCenterServiceEndpointsTuple, src <-chan *dataCenterServiceEndpointsTuple) {
+	for {
+		select {
+		case services, ok := <-src:
+			if !ok {
+				return
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case dest <- services:
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // For each service AND data center combination, return a CatalogService that contains a list of all service instances
 // belonging to that service within that datacenter.
 func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta []*consul.ServiceMeta, errChan chan error, serviceToUpstream map[string][]*v1.Upstream) []*consulapi.CatalogService {
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "consul_eds"))
-
-	specs := newSpecCollector()
+	specs := newThreadSafeSpecCollector()
 
 	// Get complete service information for every dataCenter:service tuple in separate goroutines
 	var eg errgroup.Group
 	for _, service := range serviceMeta {
-		// the default consistency mode
-		cm := glooConsul.UpstreamSpec_ConsistentMode
-		// Based on Marco's comments in WatchEndpoints, there's only be one upstream per Consul service name, so we use its ConsistencyMode
-		if arrayOfConsulUpstreams := serviceToUpstream[service.Name]; len(arrayOfConsulUpstreams) > 0 {
-			consulUpstream := arrayOfConsulUpstreams[0]
-			cm = consulUpstream.GetConsul().GetConsistencyMode()
+		var cm glooConsul.ConsulConsistencyModes
+		var queryOptions *glooConsul.QueryOptions
+		if upstreams, ok := serviceToUpstream[service.Name]; len(upstreams) > 0 && ok {
+			cm = upstreams[0].GetConsul().GetConsistencyMode()
+			queryOptions = upstreams[0].GetConsul().GetQueryOptions()
 		}
-
+		// we take the most consistent mode found on any upstream for a service for correctness
+		for _, consulUpstream := range serviceToUpstream[service.Name] {
+			// prefer earlier more restrictive query type (i.e. consistent > default > stale)
+			switch consulUpstream.GetConsul().GetConsistencyMode() {
+			case glooConsul.ConsulConsistencyModes_ConsistentMode:
+				cm = glooConsul.ConsulConsistencyModes_ConsistentMode
+			case glooConsul.ConsulConsistencyModes_DefaultMode:
+				if cm != glooConsul.ConsulConsistencyModes_ConsistentMode {
+					cm = glooConsul.ConsulConsistencyModes_DefaultMode
+				}
+			case glooConsul.ConsulConsistencyModes_StaleMode:
+				if cm != glooConsul.ConsulConsistencyModes_ConsistentMode && cm != glooConsul.ConsulConsistencyModes_DefaultMode {
+					cm = glooConsul.ConsulConsistencyModes_StaleMode
+				}
+			}
+			if queryOptions := consulUpstream.GetConsul().GetQueryOptions(); queryOptions != nil {
+				// if any upstream can't use cache, disable for all
+				if useCache := queryOptions.GetUseCache(); useCache != nil && !useCache.GetValue() {
+					queryOptions.UseCache = useCache
+				}
+			}
+		}
 		for _, dataCenter := range service.DataCenters {
 			// Copy iterator variables before passing them to goroutines!
 			svc := service
@@ -158,13 +454,16 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 
 			// Get complete spec for each service in parallel
 			eg.Go(func() error {
-				queryOpts := NewConsulQueryOptions(dcName, cm)
-
+				queryOpts := consul.NewConsulCatalogServiceQueryOptions(dcName, cm, queryOptions)
+				if ctx.Err() != nil {
+					// intentionally return early if context is already done
+					// we create a lot of requests; by the time we get here ctx may be done
+					return ctx.Err()
+				}
 				services, _, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
 				if err != nil {
 					return err
 				}
-
 				specs.Add(services)
 
 				return nil
@@ -184,15 +483,6 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 		}
 	}
 	return specs.Get()
-}
-
-// NewConsulQueryOptions returns a QueryOptions configuration that's used for Consul queries.
-func NewConsulQueryOptions(dataCenter string, cm glooConsul.UpstreamSpec_ConsulConsistencyModes) *consulapi.QueryOptions {
-	// it can either be requireConsistent or allowStale or neither
-	// choosing the Default Mode will clear both fields
-	requireConsistent := cm == glooConsul.UpstreamSpec_ConsistentMode
-	allowStale := cm == glooConsul.UpstreamSpec_StaleMode
-	return &consulapi.QueryOptions{Datacenter: dataCenter, AllowStale: allowStale, RequireConsistent: requireConsistent}
 }
 
 // build gloo endpoints out of consul catalog services and gloo upstreams
@@ -454,28 +744,44 @@ func getUniqueUpstreamDataCenters(upstreams []*v1.Upstream) (dataCenters []strin
 	return
 }
 
-func newSpecCollector() specCollector {
-	return &collector{}
-}
-
 type specCollector interface {
 	Add([]*consulapi.CatalogService)
 	Get() []*consulapi.CatalogService
 }
 
-type collector struct {
+func newThreadSafeSpecCollector() specCollector {
+	return &threadSafeCollector{}
+}
+
+type threadSafeCollector struct {
 	mutex sync.RWMutex
 	specs []*consulapi.CatalogService
 }
 
-func (c *collector) Add(specs []*consulapi.CatalogService) {
+func (c *threadSafeCollector) Add(specs []*consulapi.CatalogService) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.specs = append(c.specs, specs...)
 }
 
-func (c *collector) Get() []*consulapi.CatalogService {
+func (c *threadSafeCollector) Get() []*consulapi.CatalogService {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
+	return c.specs
+}
+
+func newSpecCollector() specCollector {
+	return &collector{}
+}
+
+type collector struct {
+	specs []*consulapi.CatalogService
+}
+
+func (c *collector) Add(specs []*consulapi.CatalogService) {
+	c.specs = append(c.specs, specs...)
+}
+
+func (c *collector) Get() []*consulapi.CatalogService {
 	return c.specs
 }

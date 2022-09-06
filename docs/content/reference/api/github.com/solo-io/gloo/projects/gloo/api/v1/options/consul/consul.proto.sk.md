@@ -12,7 +12,6 @@ weight: 5
 
 
 - [UpstreamSpec](#upstreamspec)
-- [ConsulConsistencyModes](#consulconsistencymodes)
   
 
 
@@ -40,7 +39,8 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 "instanceTags": []string
 "instanceBlacklistTags": []string
 "serviceSpec": .options.gloo.solo.io.ServiceSpec
-"consistencyMode": .consul.options.gloo.solo.io.UpstreamSpec.ConsulConsistencyModes
+"consistencyMode": .consul.options.gloo.solo.io.ConsulConsistencyModes
+"queryOptions": .consul.options.gloo.solo.io.QueryOptions
 "connectEnabled": bool
 "dataCenters": []string
 
@@ -54,25 +54,10 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 | `instanceTags` | `[]string` | The list of service tags Gloo should search for on a service instance before deciding whether or not to include the instance as part of this upstream. Empty list means that all service instances with the same service name will be included. When not empty, only service instances that match all of the tags (subset match) will be selected for this upstream. |
 | `instanceBlacklistTags` | `[]string` | The opposite of instanceTags, this is a list of service tags that gloo should ensure are not in a service instance before including it in an upstream. |
 | `serviceSpec` | [.options.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk/#servicespec) | An optional Service Spec describing the service listening at this address. |
-| `consistencyMode` | [.consul.options.gloo.solo.io.UpstreamSpec.ConsulConsistencyModes](../consul.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is the ConsistentMode. |
+| `consistencyMode` | [.consul.options.gloo.solo.io.ConsulConsistencyModes](../query_options.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is DefaultMode. Note: Gloo handles staleness well (as it runs update loops ~ once/second) but makes many requests to get consul endpoints so users may want to opt into stale reads once the implications are understood. |
+| `queryOptions` | [.consul.options.gloo.solo.io.QueryOptions](../query_options.proto.sk/#queryoptions) | QueryOptions are the query options to use for all Consul queries. |
 | `connectEnabled` | `bool` | Is this consul service connect enabled. |
 | `dataCenters` | `[]string` | The data centers in which the service instance represented by this upstream is registered. |
-
-
-
-
----
-### ConsulConsistencyModes
-
- 
-These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
-For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
-
-| Name | Description |
-| ----- | ----------- | 
-| `ConsistentMode` | This is strongly consistent. Sets the RequireConsistent in the consul api to true. |
-| `DefaultMode` | This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false. |
-| `StaleMode` | Allows stale reads when set. This will set the AllowStale in the consul api. |
 
 
 

@@ -11,8 +11,10 @@
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- $ports := list }}
+{{- if not (empty $spec.podTemplate) }}
+  {{- $ports = (list $spec.podTemplate.httpPort $spec.podTemplate.httpsPort $spec.podTemplate.extraPorts) }}
+{{- end }}
 {{- if not (empty $gatewaySpec.podTemplate) }}
-  {{- $ports = (list $gatewaySpec.podTemplate.httpPort $gatewaySpec.podTemplate.httpsPort $gatewaySpec.podTemplate.extraPorts) }}
   {{- if not (empty $gatewaySpec.podTemplate.nodeSelector) }}
     {{- $_ := set $spec.podTemplate "nodeSelector" $gatewaySpec.podTemplate.nodeSelector }}
   {{- end }}
@@ -62,7 +64,11 @@ spec:
         {{- if $global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false" # this deployment has custom logic related to istio sidecars, and shouldn't be blanket-injected ever
         {{- else if $global.istioIntegration.enableIstioSidecarOnGateway }}
+          {{- if $global.istioIntegration.istioSidecarRevTag }}
+        istio.io/rev: {{ $global.istioIntegration.istioSidecarRevTag }}
+          {{- else }}
         sidecar.istio.io/inject: "true"
+          {{- end }}
         {{- end }}
 {{ $annotationExist := false}}
 {{- if or ($spec.podTemplate.extraAnnotations) (.Values.global.glooStats.setDatadogAnnotations) }}

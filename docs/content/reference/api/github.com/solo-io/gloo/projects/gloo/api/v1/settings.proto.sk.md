@@ -25,7 +25,6 @@ weight: 5
 - [ConsulConfiguration](#consulconfiguration)
 - [ServiceDiscoveryOptions](#servicediscoveryoptions)
 - [ConsulUpstreamDiscoveryConfiguration](#consulupstreamdiscoveryconfiguration)
-- [ConsulConsistencyModes](#consulconsistencymodes)
 - [KubernetesConfiguration](#kubernetesconfiguration)
 - [RateLimits](#ratelimits)
 - [ObservabilityOptions](#observabilityoptions)
@@ -415,7 +414,10 @@ upstreams to connect to those services and their instances.
 "tlsTagName": string
 "rootCa": .core.solo.io.ResourceRef
 "splitTlsServices": bool
-"consistencyMode": .gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.ConsulConsistencyModes
+"consistencyMode": .consul.options.gloo.solo.io.ConsulConsistencyModes
+"queryOptions": .consul.options.gloo.solo.io.QueryOptions
+"serviceTagsAllowlist": []string
+"edsBlockingQueries": .google.protobuf.BoolValue
 
 ```
 
@@ -425,23 +427,10 @@ upstreams to connect to those services and their instances.
 | `tlsTagName` | `string` | The tag that gloo should use to make TLS upstreams from consul services, and to partition consul serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'. |
 | `rootCa` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The reference for the root CA resource to be used by discovered consul TLS upstreams. |
 | `splitTlsServices` | `bool` | If true, then create two upstreams when the tlsTagName is found on a consul service, one with tls and one without. This requires a consul service's serviceInstances be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those without the tlsTagName tag are sorted into the non-TLS upstream. |
-| `consistencyMode` | [.gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.ConsulConsistencyModes](../settings.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is the ConsistentMode. |
-
-
-
-
----
-### ConsulConsistencyModes
-
- 
-These are the same consistency modes offered by Consul. For more information please review https://www.consul.io/api-docs/features/consistency.
-For more information please review https://pkg.go.dev/github.com/hashicorp/consul/api#QueryOptions.
-
-| Name | Description |
-| ----- | ----------- | 
-| `ConsistentMode` | This is strongly consistent. Sets the RequireConsistent in the consul api to true. |
-| `DefaultMode` | This will set (clears) both the AllowStale and the RequireConsistent in the consul api to false. |
-| `StaleMode` | Allows stale reads when set. This will set the AllowStale in the consul api. |
+| `consistencyMode` | [.consul.options.gloo.solo.io.ConsulConsistencyModes](../options/consul/query_options.proto.sk/#consulconsistencymodes) | Sets the consistency mode. The default is DefaultMode. Note: Gloo handles staleness well (as it runs update loops ~ once/second) but makes many requests to get consul endpoints so users may want to opt into stale reads once the implications are understood. |
+| `queryOptions` | [.consul.options.gloo.solo.io.QueryOptions](../options/consul/query_options.proto.sk/#queryoptions) | QueryOptions are the query options to use for all Consul queries. |
+| `serviceTagsAllowlist` | `[]string` | All Services with tags in the allowlisted values will have endpoints and upstreams discovered. Default is all services - if values specified this will limit discovery to only services with specified tags. |
+| `edsBlockingQueries` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enables blocking queries for Gloo's requests to the Consul Catalog API for each service (`/catalog/service/:servicename`) to get endpoints for EDS. For more on blocking queries, see https://www.consul.io/api-docs/features/blocking Enabling this feature will likely result in fewer network calls to Consul, but may also result in fewer local consul agent cache hits for Gloo's requests to the Consul Catalog API. (see `query_options` above to configure caching; caching is enabled by default). Defaults to false. |
 
 
 

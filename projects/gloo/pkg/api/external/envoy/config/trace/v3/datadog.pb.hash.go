@@ -38,8 +38,24 @@ func (m *DatadogConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetServiceName())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetServiceName()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ServiceName")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetServiceName(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ServiceName")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	switch m.CollectorCluster.(type) {

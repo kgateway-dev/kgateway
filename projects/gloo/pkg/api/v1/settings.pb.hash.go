@@ -12,6 +12,8 @@ import (
 
 	"github.com/mitchellh/hashstructure"
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
+
+	consul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 )
 
 // ensure the imports are used
@@ -23,6 +25,8 @@ var (
 	_ = fnv.New64
 	_ = hashstructure.Hash
 	_ = new(safe_hasher.SafeHasher)
+
+	_ = consul.ConsulConsistencyModes(0)
 )
 
 // Hash function
@@ -1670,6 +1674,54 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Hash(hasher hash.Hash64)
 	err = binary.Write(hasher, binary.LittleEndian, m.GetConsistencyMode())
 	if err != nil {
 		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetQueryOptions()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("QueryOptions")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetQueryOptions(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("QueryOptions")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	for _, v := range m.GetServiceTagsAllowlist() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetEdsBlockingQueries()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("EdsBlockingQueries")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetEdsBlockingQueries(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("EdsBlockingQueries")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil

@@ -14,6 +14,7 @@ weight: 5
 - [Upstream](#upstream) **Top-Level Resource**
 - [ClusterProtocolSelection](#clusterprotocolselection)
 - [DiscoveryMetadata](#discoverymetadata)
+- [HeaderValue](#headervalue)
   
 
 
@@ -59,6 +60,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "overrideStreamErrorOnInvalidHttpMessage": .google.protobuf.BoolValue
 "httpProxyHostname": .google.protobuf.StringValue
 "httpConnectSslConfig": .gloo.solo.io.UpstreamSslConfig
+"httpConnectHeaders": []gloo.solo.io.HeaderValue
 "ignoreHealthOnHostRemoval": .google.protobuf.BoolValue
 
 ```
@@ -90,6 +92,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `overrideStreamErrorOnInvalidHttpMessage` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Allows invalid HTTP messaging and headers. When this option is disabled (default), then the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame. However, when this option is enabled, only the offending stream is terminated. This overrides any HCM :ref:`stream_error_on_invalid_http_messaging <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.stream_error_on_invalid_http_message>` See `RFC7540, sec. 8.1 <https://tools.ietf.org/html/rfc7540#section-8.1>`_ for details. |
 | `httpProxyHostname` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect. This configuration sets the hostname used as part of the HTTP Connect request. For example, setting to: host.com:443 and making a request routed to the upstream such as `curl <envoy>:<port>/v1` would result in the following request: CONNECT host.com:443 HTTP/1.1 host: host.com:443 GET /v1 HTTP/1.1 host: <envoy>:<port> user-agent: curl/7.64.1 accept: */* Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route. |
 | `httpConnectSslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk/#upstreamsslconfig) | HttpConnectSslConfig contains the options necessary to configure envoy to originate TLS to an HTTP Connect proxy. If you also want to ensure the bytes proxied by the HTTP Connect proxy are encrypted, you should also specify `ssl_config`. |
+| `httpConnectHeaders` | [[]gloo.solo.io.HeaderValue](../upstream.proto.sk/#headervalue) | HttpConnectHeaders specifies the headers sent with the initial HTTP Connect request. |
 | `ignoreHealthOnHostRemoval` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery. This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it. |
 
 
@@ -122,6 +125,26 @@ created by discovery services
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `labels` | `map<string, string>` | Labels inherited from the original upstream (e.g. Kubernetes labels). |
+
+
+
+
+---
+### HeaderValue
+
+ 
+Header name/value pair.
+
+```yaml
+"key": string
+"value": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | Header name. |
+| `value` | `string` | Header value. |
 
 
 

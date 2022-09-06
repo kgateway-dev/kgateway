@@ -29,6 +29,15 @@ ifneq ($(TEST_ASSET_ID),)
 	CREATE_TEST_ASSETS := "true"
 endif
 
+# ensure we have a valid version from a forked repo, so community users can submit PRs
+ORIGIN_URL ?= $(shell git remote get-url origin)
+UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
+UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
+ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)"),)
+	VERSION := 0.0.0-fork
+	CREATE_TEST_ASSETS := "false"
+endif
+
 # If TAGGED_VERSION does not exist, this is not a release in CI
 ifeq ($(TAGGED_VERSION),)
 	# If we want to create test assets, set version to be PR-unique rather than commit-unique for charts and images
@@ -56,7 +65,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.23.0-patch1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.23.0-patch3
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -724,41 +733,14 @@ build-test-chart:
 
 TRIVY_VERSION ?= $(shell curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
-
-ifeq ($(shell uname), Darwin)
-	machine ?= macOS
-else
-	machine ?= Linux
-endif
-TRIVY_ARCH:=64bit
-ifeq ($(GOARCH), arm64)
-	TRIVY_ARCH:=ARM64
-endif
-
-# Local run for trivy security checks
-.PHONY: security-checks
-security-checks:
-	mkdir -p $(SCAN_DIR)/$(VERSION)
-
-	curl -Ls "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_${machine}-${TRIVY_ARCH}.tar.gz" | tar zx '*trivy' || { echo "Download/extract failed for trivy."; exit 1; };
-
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/ingress_cve_report.docgen $(IMAGE_REPO)/ingress:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/discovery_cve_report.docgen $(IMAGE_REPO)/discovery:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/gloo_cve_report.docgen $(IMAGE_REPO)/gloo:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/gloo-envoy-wrapper_cve_report.docgen $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/certgen_cve_report.docgen $(IMAGE_REPO)/certgen:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/kubectl_cve_report.docgen $(IMAGE_REPO)/kubectl:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/sds_cve_report.docgen $(IMAGE_REPO)/sds:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/access-logger_cve_report.docgen $(IMAGE_REPO)/access-logger:$(VERSION)
-
 SCAN_BUCKET ?= solo-gloo-security-scans
 
 .PHONY: run-security-scans
 run-security-scan:
 	# Run security scan on gloo and solo-projects
 	# Generates scan files to _output/scans directory
-	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo
-	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe
+	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo -a github-issue-latest
+	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe -a github-issue-latest
 
 .PHONY: publish-security-scan
 publish-security-scan:

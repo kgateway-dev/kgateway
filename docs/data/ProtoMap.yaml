@@ -47,6 +47,9 @@ apis:
   caching.options.gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto.sk/#Settings
     package: caching.options.gloo.solo.io
+  consul.options.gloo.solo.io.QueryOptions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/query_options.proto.sk/#QueryOptions
+    package: consul.options.gloo.solo.io
   consul.options.gloo.solo.io.UpstreamSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/consul.proto.sk/#UpstreamSpec
     package: consul.options.gloo.solo.io
@@ -661,6 +664,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.HeaderSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#HeaderSecret
+    package: gloo.solo.io
+  gloo.solo.io.HeaderValue:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/#HeaderValue
     package: gloo.solo.io
   gloo.solo.io.HealthCheckConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/endpoint.proto.sk/#HealthCheckConfig

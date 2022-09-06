@@ -122,6 +122,15 @@ spec:
                   consistencyMode:
                     type: string
                     x-kubernetes-int-or-string: true
+                  edsBlockingQueries:
+                    nullable: true
+                    type: boolean
+                  queryOptions:
+                    properties:
+                      useCache:
+                        nullable: true
+                        type: boolean
+                    type: object
                   rootCa:
                     properties:
                       name:
@@ -129,6 +138,10 @@ spec:
                       namespace:
                         type: string
                     type: object
+                  serviceTagsAllowlist:
+                    items:
+                      type: string
+                    type: array
                   splitTlsServices:
                     type: boolean
                   tlsTagName:
