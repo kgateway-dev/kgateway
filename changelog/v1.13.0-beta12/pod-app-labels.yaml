@@ -3,3 +3,7 @@ changelog:
     issueLink: https://github.com/solo-io/solo-projects/issues/4029
     resolvesIssue: false
     description: Add app labels to pods in order to support Prometheus scraping of only Goo Edge pods
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7063
+    resolvesIssue: true
+    description: Fix bug that caused Helm tests not to work locally
