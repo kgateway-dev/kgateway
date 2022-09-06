@@ -3787,8 +3787,8 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      gloo: gloo
       app: gloo
+      gloo: gloo
   template:
     metadata:
       labels:
@@ -4142,12 +4142,12 @@ metadata:
 					BeforeEach(func() {
 						format.MaxLength = 0
 						labels = map[string]string{
-							"gloo": "gloo",
 							"app":  "gloo",
+							"gloo": "gloo",
 						}
 						selector = map[string]string{
-							"gloo": "gloo",
 							"app":  "gloo",
+							"gloo": "gloo",
 						}
 						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats(), GetValidationEnvVar())
 						glooAnnotations := make(map[string]string)
@@ -4423,12 +4423,12 @@ metadata:
 					)
 					BeforeEach(func() {
 						labels = map[string]string{
-							"gloo": "discovery",
 							"app":  "gloo",
+							"gloo": "discovery",
 						}
 						selector = map[string]string{
-							"gloo": "discovery",
 							"app":  "gloo",
+							"gloo": "discovery",
 						}
 						container := GetQuayContainerSpec("discovery", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
@@ -4978,11 +4978,12 @@ metadata:
 
 				It("merges the config correctly, allow override of ingress without altering gloo", func() {
 					deploymentLabels := map[string]string{
-						"app": "gloo", "gloo": "gloo",
+						"app": "gloo",
+						"gloo": "gloo",
 					}
 					selectors := map[string]string{
-						"gloo": "gloo",
 						"app":  "gloo",
+						"gloo": "gloo",
 					}
 					podLabels := map[string]string{
 						"app":  "gloo",
@@ -5086,11 +5087,12 @@ metadata:
 						},
 					}
 					ingressDeploymentLabels := map[string]string{
-						"app": "gloo", "gloo": "ingress",
+						"app": "gloo",
+						"gloo": "ingress",
 					}
 					ingressSelector := map[string]string{
-						"gloo": "ingress",
 						"app":  "gloo",
+						"gloo": "ingress",
 					}
 					ingressPodLabels := map[string]string{
 						"app":  "gloo",

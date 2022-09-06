@@ -16,8 +16,8 @@ spec:
   replicas: {{ .Values.ingress.deployment.replicas }}
   selector:
     matchLabels:
-      gloo: ingress
       app: gloo
+      gloo: ingress
   template:
     metadata:
       labels:

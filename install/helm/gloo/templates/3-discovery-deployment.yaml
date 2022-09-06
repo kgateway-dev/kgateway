@@ -17,8 +17,8 @@ spec:
   replicas: {{ .Values.discovery.deployment.replicas }}
   selector:
     matchLabels:
-      gloo: discovery
       app: gloo
+      gloo: discovery
   template:
     metadata:
       labels:
