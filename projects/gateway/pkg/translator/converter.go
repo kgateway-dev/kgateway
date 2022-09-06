@@ -200,7 +200,7 @@ func (rv *routeVisitor) visit(
 			routeOpts, err := reporterHelper.snapshot.RouteOptions.Find(optionRef.GetNamespace(), optionRef.GetName())
 			if err != nil {
 				// missing refs should only result in a warning
-				// this allows resources to be applied asynchronously
+				// this allows resources to be applied asynchronously if the validation webhook is configured to allow warnings
 				reporterHelper.addWarning(resource.InputResource(), err)
 				continue
 			}
