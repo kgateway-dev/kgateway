@@ -113,11 +113,11 @@ func getJWTPolicy(pilotContainer corev1.Container) string {
 // in the given namespace, by checking the gloo deployment.
 func getGlooVersion(ctx context.Context, namespace string) (string, error) {
 	sv := versioncmd.NewKube(namespace, "")
-	clientServerVersions, err := versioncmd.GetClientServerVersions(ctx, sv)
+	server, err := sv.Get(ctx)
 	if err != nil {
 		return "", err
 	}
-	openSourceVersions, err := prerun.GetOpenSourceVersions(clientServerVersions.GetServer())
+	openSourceVersions, err := prerun.GetOpenSourceVersions(server)
 	if err != nil {
 		return "", err
 	}
