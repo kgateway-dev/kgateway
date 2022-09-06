@@ -46,6 +46,7 @@ spec:
   {{- end}}
   selector:
     matchLabels:
+      app: gloo
       gloo: gateway-proxy
       gateway-proxy-id: {{ $name | kebabcase }}
   template:
