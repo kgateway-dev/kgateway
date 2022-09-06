@@ -44,7 +44,7 @@ func (s snapshotWriterImpl) WriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, wr
 		if writeOptions.Ctx.Err() != nil {
 			// intentionally return early if context is already done
 			// this is a backoff loop; by the time we get here ctx may be done
-			return writeOptions.Ctx.Err()
+			return nil
 		}
 		return s.doWriteSnapshot(snapshot, writeOptions)
 	}, s.retryOptions...)
