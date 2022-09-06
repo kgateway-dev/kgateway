@@ -26,3 +26,9 @@ changelog:
     description: >
       Update the Kube2e tests to use a snapshot model, where resources are written once at the
       beginning of a test, and cleaned up at the end, to avoid test pollution.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/2484
+    description: >
+      When a reference to a VirtualHostOption or RouteOption CR is not found, apply a warning on the
+      parent resource, where we previously applied an error. This follows the delegation
+      pattern established by RouteTables, and ensures that resources can be applied asynchronously.

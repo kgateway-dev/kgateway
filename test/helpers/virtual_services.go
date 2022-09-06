@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"errors"
 	"log"
 
 	"github.com/golang/protobuf/proto"
@@ -56,23 +57,14 @@ func (b *virtualServiceBuilder) WithNamespace(namespace string) *virtualServiceB
 }
 
 func (b *virtualServiceBuilder) WithDomain(domain string) *virtualServiceBuilder {
-	if domain == "*" {
-		log.Panic("Attempting to set * as a VirtualService domain. DO NOT DO THIS.")
-	}
 	b.domains = []string{domain}
 	return b
 }
 
-func (b *virtualServiceBuilder) WithDomains(domains []string) *virtualServiceBuilder {
-	b.domains = domains
-	return b
-}
-
 func (b *virtualServiceBuilder) WithRouteOptions(routeName string, routeOptions *gloov1.RouteOptions) *virtualServiceBuilder {
-	route := b.getOrDefaultRoute(routeName)
-	route.Options = routeOptions
-
-	return b.WithRoute(routeName, route)
+	return b.WithRouteMutation(routeName, func(route *v1.Route) {
+		route.Options = routeOptions
+	})
 }
 
 func (b *virtualServiceBuilder) WithRoute(routeName string, route *v1.Route) *virtualServiceBuilder {
@@ -95,12 +87,19 @@ func (b *virtualServiceBuilder) WithRouteActionToUpstream(routeName string, upst
 }
 
 func (b *virtualServiceBuilder) WithRouteActionToUpstreamRef(routeName string, upstreamRef *core.ResourceRef) *virtualServiceBuilder {
-	upstreamDestination := &gloov1.Destination{
-		DestinationType: &gloov1.Destination_Upstream{
-			Upstream: upstreamRef,
-		},
-	}
-	return b.WithRouteActionToDestination(routeName, upstreamDestination)
+	return b.WithRouteMutation(routeName, func(route *v1.Route) {
+		route.Action = &v1.Route_RouteAction{
+			RouteAction: &gloov1.RouteAction{
+				Destination: &gloov1.RouteAction_Single{
+					Single: &gloov1.Destination{
+						DestinationType: &gloov1.Destination_Upstream{
+							Upstream: upstreamRef,
+						},
+					},
+				},
+			},
+		}
+	})
 }
 
 func (b *virtualServiceBuilder) WithRouteDelegateActionRef(routeName string, delegateRef *core.ResourceRef) *virtualServiceBuilder {
@@ -113,53 +112,82 @@ func (b *virtualServiceBuilder) WithRouteDelegateActionRef(routeName string, del
 }
 
 func (b *virtualServiceBuilder) WithRouteDelegateActionSelector(routeName string, delegateSelector *v1.RouteTableSelector) *virtualServiceBuilder {
-	return b.WithRouteDelegateAction(routeName,
-		&v1.DelegateAction{
-			DelegationType: &v1.DelegateAction_Selector{
-				Selector: delegateSelector,
+	return b.WithRouteMutation(routeName, func(route *v1.Route) {
+		route.Action = &v1.Route_DelegateAction{
+			DelegateAction: &v1.DelegateAction{
+				DelegationType: &v1.DelegateAction_Selector{
+					Selector: delegateSelector,
+				},
 			},
-		})
+		}
+	})
 }
 
 func (b *virtualServiceBuilder) WithRouteDelegateAction(routeName string, delegateAction *v1.DelegateAction) *virtualServiceBuilder {
-	route := b.getOrDefaultRoute(routeName)
-
-	route.Action = &v1.Route_DelegateAction{
-		DelegateAction: delegateAction,
-	}
-	return b.WithRoute(routeName, route)
+	return b.WithRouteMutation(routeName, func(route *v1.Route) {
+		route.Action = &v1.Route_DelegateAction{
+			DelegateAction: delegateAction,
+		}
+	})
 }
 
 func (b *virtualServiceBuilder) WithRouteActionToDestination(routeName string, destination *gloov1.Destination) *virtualServiceBuilder {
-	route := b.getOrDefaultRoute(routeName)
-
-	route.Action = &v1.Route_RouteAction{
-		RouteAction: &gloov1.RouteAction{
-			Destination: &gloov1.RouteAction_Single{
-				Single: destination,
+	return b.WithRouteMutation(routeName, func(route *v1.Route) {
+		route.Action = &v1.Route_RouteAction{
+			RouteAction: &gloov1.RouteAction{
+				Destination: &gloov1.RouteAction_Single{
+					Single: destination,
+				},
 			},
-		},
-	}
-	return b.WithRoute(routeName, route)
+		}
+	})
 }
 
 func (b *virtualServiceBuilder) WithRoutePrefixMatcher(routeName string, prefixMatch string) *virtualServiceBuilder {
-	return b.WithRouteMatcher(routeName,
-		&matchers.Matcher{
+	return b.WithRouteMutation(routeName, func(route *v1.Route) {
+		route.Matchers = []*matchers.Matcher{{
 			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: prefixMatch,
 			},
-		})
+		}}
+	})
 }
 
 func (b *virtualServiceBuilder) WithRouteMatcher(routeName string, matcher *matchers.Matcher) *virtualServiceBuilder {
-	route := b.getOrDefaultRoute(routeName)
+	return b.WithRouteMutation(routeName, func(route *v1.Route) {
+		route.Matchers = []*matchers.Matcher{matcher}
+	})
+}
 
-	route.Matchers = []*matchers.Matcher{matcher}
+func (b *virtualServiceBuilder) WithRouteMutation(routeName string, mutation func(route *v1.Route)) *virtualServiceBuilder {
+	route := b.getOrDefaultRoute(routeName)
+	mutation(route)
 	return b.WithRoute(routeName, route)
 }
 
+func (b *virtualServiceBuilder) errorIfInvalid() error {
+	if len(b.domains) == 0 {
+		// Unset domains will behave like a wildcard "*", which contributes to test flakes
+		return errors.New("attempting to not set a VirtualService domain")
+
+	}
+	for _, domain := range b.domains {
+		if domain == "*" {
+			// Wildcard domains contribute to test flakes
+			return errors.New("attempting to set * as a VirtualService domain")
+		}
+	}
+	return nil
+}
+
 func (b *virtualServiceBuilder) Build() *v1.VirtualService {
+	if err := b.errorIfInvalid(); err != nil {
+		// We error loudly here
+		// These types of errors are intended to prevent developers from creating resources
+		// which are semantically correct, but lead to test flakes/confusion
+		log.Panic(err)
+	}
+
 	var routes []*v1.Route
 	for _, route := range b.routesByName {
 		routes = append(routes, route)
