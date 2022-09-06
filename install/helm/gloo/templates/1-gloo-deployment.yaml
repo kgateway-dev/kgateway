@@ -17,6 +17,7 @@ spec:
   selector:
     matchLabels:
       gloo: gloo
+      app: gloo
   template:
     metadata:
       labels:

@@ -17,6 +17,7 @@ spec:
   selector:
     matchLabels:
       gloo: ingress
+      app: gloo
   template:
     metadata:
       labels:

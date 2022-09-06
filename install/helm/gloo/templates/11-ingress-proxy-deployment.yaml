@@ -16,6 +16,7 @@ spec:
   replicas: {{ .Values.ingressProxy.deployment.replicas }}
   selector:
     matchLabels:
+      app: gloo
       gloo: ingress-proxy
   template:
     metadata:

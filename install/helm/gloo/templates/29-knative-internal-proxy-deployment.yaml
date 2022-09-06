@@ -17,6 +17,7 @@ spec:
   replicas: {{ .Values.settings.integrations.knative.proxy.replicas }}
   selector:
     matchLabels:
+      app: gloo
       gloo: knative-internal-proxy
   template:
     metadata:

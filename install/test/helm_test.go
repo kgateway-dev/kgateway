@@ -98,7 +98,7 @@ var _ = Describe("Helm Test", func() {
 		)
 
 		BeforeEach(func() {
-			// Ensure that tests do not shares manifests by accident
+			// Ensure that tests do not share manifests by accident
 			testManifest = nil
 		})
 
@@ -2474,7 +2474,7 @@ spec:
 						selector = map[string]string{
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
-							"app":              "gloo",
+							//"app":              "gloo",
 						}
 						podLabels := map[string]string{
 							"app":              "gloo",
@@ -2750,7 +2750,7 @@ spec:
 									PodAffinityTerm: v1.PodAffinityTerm{
 										TopologyKey: "kubernetes.io/hostname",
 										LabelSelector: &metav1.LabelSelector{
-											MatchLabels: map[string]string{"gloo": "gateway-proxy", "app": "gloo"},
+											MatchLabels: map[string]string{"gloo": "gateway-proxy"},
 										},
 									},
 								}},
@@ -4450,7 +4450,7 @@ metadata:
 						discoveryDeployment = deploy
 					})
 
-					It("has a creates a deployment", func() {
+					It("creates a deployment", func() {
 						prepareMakefile(namespace, helmValues{})
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
@@ -4830,7 +4830,6 @@ metadata:
 							"gateway-proxy-id": "gateway-proxy",
 						}
 						serviceSelector := map[string]string{
-							"app":              "gloo",
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
 						}
