@@ -3635,6 +3635,7 @@ spec:
   gateway:
     readGatewaysFromAllNamespaces: false
     enableGatewayController: true
+    isolateVirtualHostsBySslConfig: false
     validation:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
