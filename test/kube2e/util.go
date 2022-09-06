@@ -86,12 +86,18 @@ global:
 settings:
   singleNamespace: true
   create: true
-  replaceInvalidRoutes: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: true
 gloo:
   deployment:
-    replicas: 1
+    replicas: 2
+    customEnv:
+      - name: LEADER_ELECTION_LEASE_DURATION
+        value: 4s
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
