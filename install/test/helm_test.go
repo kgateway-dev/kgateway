@@ -3593,6 +3593,16 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
+					It("can enable isolateVirtualHostsBySslConfig", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/isolate_virtual_hosts_by_ssl_config.yaml", namespace)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.isolateVirtualHostsBySslConfig=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
 
 					It("allows setting extauth", func() {
 						expectedYaml := makeUnstructured(`
@@ -3625,6 +3635,7 @@ spec:
   gateway:
     readGatewaysFromAllNamespaces: false
     enableGatewayController: true
+    isolateVirtualHostsBySslConfig: false
     validation:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
