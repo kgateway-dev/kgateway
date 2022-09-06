@@ -3593,7 +3593,7 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
-					FIt("can enable isolateVirtualHostsBySslConfig", func() {
+					It("can enable isolateVirtualHostsBySslConfig", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/isolate_virtual_hosts_by_ssl_config.yaml", namespace)
 
 						prepareMakefile(namespace, helmValues{
