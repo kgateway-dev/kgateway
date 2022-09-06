@@ -1,11 +1,12 @@
 package helpers
 
 import (
+	"time"
+
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"time"
 )
 
 var _ SnapshotWriter = new(snapshotWriterImpl)
@@ -17,7 +18,7 @@ type SnapshotWriter interface {
 
 type snapshotWriterImpl struct {
 	ResourceClientSet
-	retryOptions    []retry.Option
+	retryOptions []retry.Option
 }
 
 func NewSnapshotWriter(clientSet ResourceClientSet, retryOptions []retry.Option) *snapshotWriterImpl {
