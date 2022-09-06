@@ -2474,7 +2474,6 @@ spec:
 						selector = map[string]string{
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
-							//"app":              "gloo",
 						}
 						podLabels := map[string]string{
 							"app":              "gloo",
