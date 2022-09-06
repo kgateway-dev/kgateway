@@ -49,7 +49,7 @@ func (t *HybridTranslator) ComputeListener(params Params, proxyName string, gate
 		hybridListener = t.computeHybridListenerFromDelegatedGateway(params, proxyName, gateway, delegatedGateways)
 		if len(hybridListener.GetMatchedListeners()) == 0 {
 			// missing refs should only result in a warning
-			// this allows resources to be applied asynchronously
+			// this allows resources to be applied asynchronously if the validation webhook is configured to allow warnings
 			params.reports.AddWarning(gateway, EmptyHybridGatewayMessage)
 			return nil
 		}
