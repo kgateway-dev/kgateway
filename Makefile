@@ -34,7 +34,7 @@ ORIGIN_URL ?= $(shell git remote get-url origin)
 UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
 ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)"),)
-	VERSION := 0.0.0-fork
+	VERSION := 0.0.1-fork
 	CREATE_TEST_ASSETS := "false"
 endif
 
