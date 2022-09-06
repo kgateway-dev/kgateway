@@ -4979,7 +4979,7 @@ metadata:
 
 				It("merges the config correctly, allow override of ingress without altering gloo", func() {
 					deploymentLabels := map[string]string{
-						"app": "gloo",
+						"app":  "gloo",
 						"gloo": "gloo",
 					}
 					selectors := map[string]string{
@@ -5088,7 +5088,7 @@ metadata:
 						},
 					}
 					ingressDeploymentLabels := map[string]string{
-						"app": "gloo",
+						"app":  "gloo",
 						"gloo": "ingress",
 					}
 					ingressSelector := map[string]string{
