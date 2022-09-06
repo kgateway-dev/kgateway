@@ -2472,6 +2472,7 @@ spec:
 
 					BeforeEach(func() {
 						selector = map[string]string{
+							"app":              "gloo",
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
 						}
