@@ -844,6 +844,8 @@ func (m *PlainOAuth2) Clone() proto.Message {
 
 	target.UseServerConfig = m.GetUseServerConfig()
 
+	target.CustomAuthCookie = m.GetCustomAuthCookie()
+
 	return target
 }
 
@@ -2077,6 +2079,8 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 	}
 
 	target.UseServerConfig = m.GetUseServerConfig()
+
+	target.CustomAuthCookie = m.GetCustomAuthCookie()
 
 	return target
 }

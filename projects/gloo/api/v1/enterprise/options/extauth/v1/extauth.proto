@@ -732,6 +732,9 @@ message PlainOAuth2 {
     // If set, we will look for the configuration at issuerUrl+".well-known/openid-configuration"
     // disabled by default, as oauth2 doesn't have a set discovery in specs.
     bool use_server_config = 20;
+
+    // If set, during authentication we will also look for the auth token in the custom_auth_cookie set.
+    string custom_auth_cookie = 21;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -1367,8 +1370,6 @@ message ExtAuthConfig {
         }
     }
 
-    // todo (fabian) better name
-    // todo simplify this to only what is needed
     message PlainOAuth2Config {
 
         // your client id as registered with the issuer
@@ -1477,6 +1478,9 @@ message ExtAuthConfig {
         // If set, we will look for the configuration at issuerUrl+".well-known/openid-configuration"
         // disabled by default, as oauth2 doesn't have a set discovery in specs.
         bool use_server_config = 20;
+
+        // If set, during authentication we will also look for the auth token in the custom_auth_cookie set.
+        string custom_auth_cookie = 21;
     }
 
     message OAuth2Config {

@@ -847,6 +847,7 @@ The Method used to make the request.
 "autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 "useServerConfig": bool
+"customAuthCookie": string
 
 ```
 
@@ -872,6 +873,7 @@ The Method used to make the request.
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 | `useServerConfig` | `bool` | If set, we will look for the configuration at issuerUrl+".well-known/openid-configuration" disabled by default, as oauth2 doesn't have a set discovery in specs. |
+| `customAuthCookie` | `string` | If set, during authentication we will also look for the auth token in the custom_auth_cookie set. |
 
 
 
@@ -1591,9 +1593,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 ---
 ### PlainOAuth2Config
 
- 
-todo (fabian) better name
-todo simplify this to only what is needed
+
 
 ```yaml
 "clientId": string
@@ -1616,6 +1616,7 @@ todo simplify this to only what is needed
 "autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 "useServerConfig": bool
+"customAuthCookie": string
 
 ```
 
@@ -1641,6 +1642,7 @@ todo simplify this to only what is needed
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 | `useServerConfig` | `bool` | If set, we will look for the configuration at issuerUrl+".well-known/openid-configuration" disabled by default, as oauth2 doesn't have a set discovery in specs. |
+| `customAuthCookie` | `string` | If set, during authentication we will also look for the auth token in the custom_auth_cookie set. |
 
 
 

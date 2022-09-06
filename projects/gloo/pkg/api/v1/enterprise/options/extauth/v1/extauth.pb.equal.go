@@ -1414,6 +1414,10 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetCustomAuthCookie(), target.GetCustomAuthCookie()) != 0 {
+		return false
+	}
+
 	return true
 }
 
@@ -3495,6 +3499,10 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 	}
 
 	if m.GetUseServerConfig() != target.GetUseServerConfig() {
+		return false
+	}
+
+	if strings.Compare(m.GetCustomAuthCookie(), target.GetCustomAuthCookie()) != 0 {
 		return false
 	}
 

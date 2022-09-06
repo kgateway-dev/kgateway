@@ -388,6 +388,8 @@ spec:
                                 namespace:
                                   type: string
                               type: object
+                            customAuthCookie:
+                              type: string
                             discoveryOverride:
                               properties:
                                 authEndpoint:
