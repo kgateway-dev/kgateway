@@ -1535,6 +1535,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			upstreamName string
 		)
+
 		BeforeEach(func() {
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1927,6 +1928,9 @@ spec:
 				JustBeforeEach(func() {
 					// Validation of Gloo resources requires that a Proxy resource exist
 					// Therefore, before the tests start, we must create valid resources that produce a Proxy
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return resourceClientset.VirtualServiceClient().Read(testRunnerVs.GetMetadata().GetNamespace(), testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+					})
 					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 						return resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 					})
