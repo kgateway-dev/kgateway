@@ -36,11 +36,6 @@ const (
 	unAllowedOrigin = "doNot.allowThisOne.solo.io"
 )
 
-var (
-	invalidOriginResponseMatcher = Equal("Invalid origin")
-	validOriginResponseMatcher   = BeEmpty()
-)
-
 var _ = Describe("CSRF", func() {
 
 	var (
@@ -96,49 +91,6 @@ var _ = Describe("CSRF", func() {
 		cancel()
 	})
 
-	// A safe http method is one that doesn't alter the state of the server (ie read only)
-	// A CSRF attack targets state changing requests, so the filter only acts on unsafe methods (ones that change state)
-	// This is used to spoof requests from various origins
-	buildRequestFromOrigin := func(origin string) func() (string, error) {
-		return func() (string, error) {
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
-			if err != nil {
-				return "", err
-			}
-			req.Header.Set("Origin", origin)
-
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return "", err
-			}
-			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
-			return string(body), err
-		}
-	}
-
-	getEnvoyStats := func() string {
-		By("Get stats")
-		envoyStats := ""
-		EventuallyWithOffset(1, func() error {
-			statsUrl := fmt.Sprintf("http://%s:%d/stats",
-				envoyInstance.LocalAddr(),
-				envoyInstance.AdminPort)
-			r, err := http.Get(statsUrl)
-			if err != nil {
-				return err
-			}
-			p := new(bytes.Buffer)
-			if _, err := io.Copy(p, r.Body); err != nil {
-				return err
-			}
-			defer r.Body.Close()
-			envoyStats = p.String()
-			return nil
-		}, "10s", ".1s").Should(BeNil())
-		return envoyStats
-	}
-
 	checkProxy := func() {
 		// ensure the proxy and virtual service are created
 		Eventually(func() (*gloov1.Proxy, error) {
@@ -166,13 +118,11 @@ var _ = Describe("CSRF", func() {
 		})
 
 		It("should succeed with allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
+			EventuallyAllowedOriginResponse(envoyInstance, false)
 		})
 
 		It("should succeed with un-allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
+			EventuallyInvalidOriginResponse(envoyInstance, false)
 		})
 
 	})
@@ -207,21 +157,11 @@ var _ = Describe("CSRF", func() {
 			})
 
 			It("should succeed with allowed origin", func() {
-				spoofedRequest := buildRequestFromOrigin(allowedOrigin)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-
-				statistics := getEnvoyStats()
-				Expect(statistics).To(matchInvalidRequestEqualTo(0))
-				Expect(statistics).To(matchValidRequestEqualTo(1))
+				EventuallyAllowedOriginResponse(envoyInstance, true)
 			})
 
 			It("should fail with un-allowed origin", func() {
-				spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
-
-				statistics := getEnvoyStats()
-				Expect(statistics).To(matchInvalidRequestEqualTo(1))
-				Expect(statistics).To(matchValidRequestEqualTo(0))
+				EventuallyInvalidOriginResponse(envoyInstance, true)
 			})
 		})
 
@@ -253,19 +193,11 @@ var _ = Describe("CSRF", func() {
 			})
 
 			It("should succeed with allowed origin, unsafe request", func() {
-				spoofedRequest := buildRequestFromOrigin(allowedOrigin)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-				statistics := getEnvoyStats()
-				Expect(statistics).To(matchInvalidRequestEqualTo(0))
-				Expect(statistics).To(matchValidRequestEqualTo(1))
+				EventuallyAllowedOriginResponse(envoyInstance, true)
 			})
 
 			It("should succeed with un-allowed origin and update invalid count", func() {
-				spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-				statistics := getEnvoyStats()
-				Expect(statistics).To(matchInvalidRequestEqualTo(1))
-				Expect(statistics).To(matchValidRequestEqualTo(0))
+				EventuallyInvalidOriginResponse(envoyInstance, true)
 			})
 		})
 
@@ -296,20 +228,11 @@ var _ = Describe("CSRF", func() {
 			})
 
 			It("should succeed with allowed origin, unsafe request", func() {
-				spoofedRequest := buildRequestFromOrigin(allowedOrigin)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-				statistics := getEnvoyStats()
-				Expect(statistics).To(matchInvalidRequestEqualTo(0))
-				Expect(statistics).To(matchValidRequestEqualTo(1))
+				EventuallyAllowedOriginResponse(envoyInstance, true)
 			})
 
 			It("should fail with un-allowed origin and update invalid count", func() {
-				// shadow mode is ignored when filter is enabled
-				spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
-				statistics := getEnvoyStats()
-				Expect(statistics).To(matchInvalidRequestEqualTo(1))
-				Expect(statistics).To(matchValidRequestEqualTo(0))
+				EventuallyInvalidOriginResponse(envoyInstance, true)
 			})
 		})
 
@@ -338,19 +261,11 @@ var _ = Describe("CSRF", func() {
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-			statistics := getEnvoyStats()
-			Expect(statistics).To(matchInvalidRequestEqualTo(0))
-			Expect(statistics).To(matchValidRequestEqualTo(1))
+			EventuallyAllowedOriginResponse(envoyInstance, true)
 		})
 
 		It("should fail with un-allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
-			statistics := getEnvoyStats()
-			Expect(statistics).To(matchInvalidRequestEqualTo(1))
-			Expect(statistics).To(matchValidRequestEqualTo(0))
+			EventuallyInvalidOriginResponse(envoyInstance, true)
 		})
 
 	})
@@ -376,19 +291,11 @@ var _ = Describe("CSRF", func() {
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-			statistics := getEnvoyStats()
-			Expect(statistics).To(matchInvalidRequestEqualTo(0))
-			Expect(statistics).To(matchValidRequestEqualTo(1))
+			EventuallyAllowedOriginResponse(envoyInstance, true)
 		})
 
 		It("should fail with un-allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
-			statistics := getEnvoyStats()
-			Expect(statistics).To(matchInvalidRequestEqualTo(1))
-			Expect(statistics).To(matchValidRequestEqualTo(0))
+			EventuallyInvalidOriginResponse(envoyInstance, true)
 		})
 
 	})
@@ -419,19 +326,11 @@ var _ = Describe("CSRF", func() {
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-			statistics := getEnvoyStats()
-			Expect(statistics).To(matchInvalidRequestEqualTo(0))
-			Expect(statistics).To(matchValidRequestEqualTo(1))
+			EventuallyAllowedOriginResponse(envoyInstance, true)
 		})
 
 		It("should fail with un-allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
-			statistics := getEnvoyStats()
-			Expect(statistics).To(matchInvalidRequestEqualTo(1))
-			Expect(statistics).To(matchValidRequestEqualTo(0))
+			EventuallyInvalidOriginResponse(envoyInstance, true)
 		})
 
 	})
@@ -465,24 +364,86 @@ var _ = Describe("CSRF", func() {
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-			statistics := getEnvoyStats()
-			Expect(statistics).To(matchInvalidRequestEqualTo(0))
-			Expect(statistics).To(matchValidRequestEqualTo(1))
+			EventuallyAllowedOriginResponse(envoyInstance, true)
 		})
 
 		It("should fail with un-allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
-			statistics := getEnvoyStats()
-			Expect(statistics).To(matchInvalidRequestEqualTo(1))
-			Expect(statistics).To(matchValidRequestEqualTo(0))
+			EventuallyInvalidOriginResponse(envoyInstance, true)
 		})
 
 	})
 
 })
+
+// A safe http method is one that doesn't alter the state of the server (ie read only)
+// A CSRF attack targets state changing requests, so the filter only acts on unsafe methods (ones that change state)
+// This is used to spoof requests from various origins
+func buildRequestFromOrigin(origin string) func() (string, error) {
+	return func() (string, error) {
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
+		if err != nil {
+			return "", err
+		}
+		req.Header.Set("Origin", origin)
+
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return "", err
+		}
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		return string(body), err
+	}
+}
+
+func getEnvoyStats(envoyInstance *services.EnvoyInstance) string {
+	By("Get stats")
+	envoyStats := ""
+	EventuallyWithOffset(1, func() error {
+		statsUrl := fmt.Sprintf("http://%s:%d/stats",
+			envoyInstance.LocalAddr(),
+			envoyInstance.AdminPort)
+		r, err := http.Get(statsUrl)
+		if err != nil {
+			return err
+		}
+		p := new(bytes.Buffer)
+		if _, err := io.Copy(p, r.Body); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+		envoyStats = p.String()
+		return nil
+	}, "10s", ".1s").Should(BeNil())
+	return envoyStats
+}
+
+func EventuallyAllowedOriginResponse(envoyInstance *services.EnvoyInstance, validateStatistics bool) {
+	request := buildRequestFromOrigin(allowedOrigin)
+
+	EventuallyWithOffset(1, func(g Gomega) {
+		g.Expect(request).Should(BeEmpty())
+		if validateStatistics {
+			statistics := getEnvoyStats(envoyInstance)
+			g.Expect(statistics).To(matchInvalidRequestEqualTo(0))
+			g.Expect(statistics).To(matchValidRequestEqualTo(1))
+		}
+	}, time.Second*30)
+}
+
+func EventuallyInvalidOriginResponse(envoyInstance *services.EnvoyInstance, validateStatistics bool) {
+	request := buildRequestFromOrigin(unAllowedOrigin)
+
+	EventuallyWithOffset(1, func(g Gomega) {
+		g.Expect(request).Should(Equal("Invalid origin"))
+
+		if validateStatistics {
+			statistics := getEnvoyStats(envoyInstance)
+			g.Expect(statistics).To(matchInvalidRequestEqualTo(1))
+			g.Expect(statistics).To(matchValidRequestEqualTo(0))
+		}
+	}, time.Second*30)
+}
 
 func matchValidRequestEqualTo(count int) types.GomegaMatcher {
 	return MatchRegexp("http.http.csrf.request_valid: %d", count)
