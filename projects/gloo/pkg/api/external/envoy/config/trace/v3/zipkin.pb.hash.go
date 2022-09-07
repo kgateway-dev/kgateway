@@ -42,9 +42,24 @@ func (m *ZipkinConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetTraceId_128Bit())
-	if err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetTraceId_128Bit()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("TraceId_128Bit")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetTraceId_128Bit(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("TraceId_128Bit")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	if h, ok := interface{}(m.GetSharedSpanContext()).(safe_hasher.SafeHasher); ok {

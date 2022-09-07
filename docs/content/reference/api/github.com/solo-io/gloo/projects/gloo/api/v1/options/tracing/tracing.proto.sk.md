@@ -35,8 +35,8 @@ See [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/obser
 See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
 
 ```yaml
-"requestHeadersForTags": []string
-"verbose": bool
+"requestHeadersForTags": []google.protobuf.StringValue
+"verbose": .google.protobuf.BoolValue
 "tracePercentages": .tracing.options.gloo.solo.io.TracePercentages
 "zipkinConfig": .solo.io.envoy.config.trace.v3.ZipkinConfig
 "datadogConfig": .solo.io.envoy.config.trace.v3.DatadogConfig
@@ -47,8 +47,8 @@ See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) 
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `requestHeadersForTags` | `[]string` | Optional. If specified, Envoy will include the headers and header values for any matching request headers. |
-| `verbose` | `bool` | Optional. If true, Envoy will include logs for streaming events. Default: false. |
+| `requestHeadersForTags` | [[]google.protobuf.StringValue](../../../../../../../../protoc-gen-ext/external/google/protobuf/wrappers.proto.sk/#stringvalue) | Optional. If specified, Envoy will include the headers and header values for any matching request headers. |
+| `verbose` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Optional. If true, Envoy will include logs for streaming events. Default: false. |
 | `tracePercentages` | [.tracing.options.gloo.solo.io.TracePercentages](../tracing.proto.sk/#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |
 | `zipkinConfig` | [.solo.io.envoy.config.trace.v3.ZipkinConfig](../../../../external/envoy/config/trace/v3/zipkin.proto.sk/#zipkinconfig) |  Only one of `zipkinConfig` or `datadogConfig` can be set. |
 | `datadogConfig` | [.solo.io.envoy.config.trace.v3.DatadogConfig](../../../../external/envoy/config/trace/v3/datadog.proto.sk/#datadogconfig) |  Only one of `datadogConfig` or `zipkinConfig` can be set. |
@@ -114,17 +114,17 @@ Requests can produce traces with custom tags.
 TracingTagEnvironmentVariable defines an environment variable which gets added as custom tag.
 
 ```yaml
-"tag": string
-"name": string
-"defaultValue": string
+"tag": .google.protobuf.StringValue
+"name": .google.protobuf.StringValue
+"defaultValue": .google.protobuf.StringValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `tag` | `string` | Used to populate the tag name. |
-| `name` | `string` | Environment variable name to obtain the value to populate the tag value. |
-| `defaultValue` | `string` | When the environment variable is not found, the tag value will be populated with this default value if specified, otherwise no tag will be populated. |
+| `tag` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Used to populate the tag name. |
+| `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Environment variable name to obtain the value to populate the tag value. |
+| `defaultValue` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | When the environment variable is not found, the tag value will be populated with this default value if specified, otherwise no tag will be populated. |
 
 
 
@@ -137,15 +137,15 @@ Requests can produce traces with custom tags.
 TracingTagLiteral defines a literal which gets added as custom tag.
 
 ```yaml
-"tag": string
-"value": string
+"tag": .google.protobuf.StringValue
+"value": .google.protobuf.StringValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `tag` | `string` | Used to populate the tag name. |
-| `value` | `string` | Static literal value to populate the tag value. |
+| `tag` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Used to populate the tag name. |
+| `value` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Static literal value to populate the tag value. |
 
 
 

@@ -9,10 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
-
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
-
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"

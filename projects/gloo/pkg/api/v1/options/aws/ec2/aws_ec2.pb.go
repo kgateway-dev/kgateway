@@ -59,7 +59,7 @@ type UpstreamSpec struct {
 	Filters []*TagFilter `protobuf:"bytes,3,rep,name=filters,proto3" json:"filters,omitempty"`
 	// If set, will use the EC2 public IP address. Defaults to the private IP address.
 	PublicIp bool `protobuf:"varint,4,opt,name=public_ip,json=publicIp,proto3" json:"public_ip,omitempty"`
-	// If set, will use this port on EC2 instances. Defaults to port 80.
+	// If set, will use this port on EC2 instances. Defaults to 0.
 	Port uint32 `protobuf:"varint,5,opt,name=port,proto3" json:"port,omitempty"`
 }
 
