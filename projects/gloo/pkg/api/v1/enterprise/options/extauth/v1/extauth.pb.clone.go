@@ -820,12 +820,6 @@ func (m *PlainOAuth2) Clone() proto.Message {
 		target.DiscoveryPollInterval = proto.Clone(m.GetDiscoveryPollInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
-	if h, ok := interface{}(m.GetJwksCacheRefreshPolicy()).(clone.Cloner); ok {
-		target.JwksCacheRefreshPolicy = h.Clone().(*JwksOnDemandCacheRefreshPolicy)
-	} else {
-		target.JwksCacheRefreshPolicy = proto.Clone(m.GetJwksCacheRefreshPolicy()).(*JwksOnDemandCacheRefreshPolicy)
-	}
-
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
 
 	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
@@ -842,9 +836,9 @@ func (m *PlainOAuth2) Clone() proto.Message {
 		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
 	}
 
-	target.UseServerConfig = m.GetUseServerConfig()
+	target.CustomAuthTokenIdentifier = m.GetCustomAuthTokenIdentifier()
 
-	target.CustomAuthCookie = m.GetCustomAuthCookie()
+	target.CustomRefreshTokenIdentifier = m.GetCustomRefreshTokenIdentifier()
 
 	return target
 }
@@ -2056,12 +2050,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 		target.DiscoveryPollInterval = proto.Clone(m.GetDiscoveryPollInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
-	if h, ok := interface{}(m.GetJwksCacheRefreshPolicy()).(clone.Cloner); ok {
-		target.JwksCacheRefreshPolicy = h.Clone().(*JwksOnDemandCacheRefreshPolicy)
-	} else {
-		target.JwksCacheRefreshPolicy = proto.Clone(m.GetJwksCacheRefreshPolicy()).(*JwksOnDemandCacheRefreshPolicy)
-	}
-
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
 
 	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
@@ -2078,9 +2066,9 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
 	}
 
-	target.UseServerConfig = m.GetUseServerConfig()
+	target.CustomAuthTokenIdentifier = m.GetCustomAuthTokenIdentifier()
 
-	target.CustomAuthCookie = m.GetCustomAuthCookie()
+	target.CustomRefreshTokenIdentifier = m.GetCustomRefreshTokenIdentifier()
 
 	return target
 }

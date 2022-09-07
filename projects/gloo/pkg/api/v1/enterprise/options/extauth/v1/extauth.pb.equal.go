@@ -1372,16 +1372,6 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetJwksCacheRefreshPolicy()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetJwksCacheRefreshPolicy()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetJwksCacheRefreshPolicy(), target.GetJwksCacheRefreshPolicy()) {
-			return false
-		}
-	}
-
 	if strings.Compare(m.GetSessionIdHeaderName(), target.GetSessionIdHeaderName()) != 0 {
 		return false
 	}
@@ -1410,11 +1400,11 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 		}
 	}
 
-	if m.GetUseServerConfig() != target.GetUseServerConfig() {
+	if strings.Compare(m.GetCustomAuthTokenIdentifier(), target.GetCustomAuthTokenIdentifier()) != 0 {
 		return false
 	}
 
-	if strings.Compare(m.GetCustomAuthCookie(), target.GetCustomAuthCookie()) != 0 {
+	if strings.Compare(m.GetCustomRefreshTokenIdentifier(), target.GetCustomRefreshTokenIdentifier()) != 0 {
 		return false
 	}
 
@@ -3460,16 +3450,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetJwksCacheRefreshPolicy()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetJwksCacheRefreshPolicy()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetJwksCacheRefreshPolicy(), target.GetJwksCacheRefreshPolicy()) {
-			return false
-		}
-	}
-
 	if strings.Compare(m.GetSessionIdHeaderName(), target.GetSessionIdHeaderName()) != 0 {
 		return false
 	}
@@ -3498,11 +3478,11 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 		}
 	}
 
-	if m.GetUseServerConfig() != target.GetUseServerConfig() {
+	if strings.Compare(m.GetCustomAuthTokenIdentifier(), target.GetCustomAuthTokenIdentifier()) != 0 {
 		return false
 	}
 
-	if strings.Compare(m.GetCustomAuthCookie(), target.GetCustomAuthCookie()) != 0 {
+	if strings.Compare(m.GetCustomRefreshTokenIdentifier(), target.GetCustomRefreshTokenIdentifier()) != 0 {
 		return false
 	}
 

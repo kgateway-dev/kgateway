@@ -388,7 +388,9 @@ spec:
                                 namespace:
                                   type: string
                               type: object
-                            customAuthCookie:
+                            customAuthTokenIdentifier:
+                              type: string
+                            customRefreshTokenIdentifier:
                               type: string
                             discoveryOverride:
                               properties:
@@ -447,18 +449,6 @@ spec:
                               type: object
                             issuerUrl:
                               type: string
-                            jwksCacheRefreshPolicy:
-                              properties:
-                                always:
-                                  maxProperties: 0
-                                  type: object
-                                maxIdpReqPerPollingInterval:
-                                  format: int32
-                                  type: integer
-                                never:
-                                  maxProperties: 0
-                                  type: object
-                              type: object
                             logoutPath:
                               type: string
                             parseCallbackPathAsRegex:
@@ -539,8 +529,6 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
-                            useServerConfig:
-                              type: boolean
                           type: object
                       type: object
                     opaAuth:
