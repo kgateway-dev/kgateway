@@ -115,9 +115,7 @@ func StartTestHelper() {
 	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
 	Expect(err).NotTo(HaveOccurred())
 
-	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{
-		retry.Attempts(3),
-	})
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
 }
 
 func installXdsRelay() error {

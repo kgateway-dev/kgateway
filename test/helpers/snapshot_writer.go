@@ -23,7 +23,7 @@ type snapshotWriterImpl struct {
 
 func NewSnapshotWriter(clientSet ResourceClientSet, retryOptions []retry.Option) *snapshotWriterImpl {
 	defaultRetryOptions := []retry.Option{
-		retry.Attempts(10),
+		retry.Attempts(3),
 		retry.RetryIf(func(err error) bool {
 			return err != nil
 		}),
