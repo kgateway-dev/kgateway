@@ -76,12 +76,9 @@ var _ = Describe("Validation Server", func() {
 	})
 
 	JustBeforeEach(func() {
+		pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 
-		pluginRegistryFactory := func(ctx context.Context) plugins.PluginRegistry {
-			return registry.NewPluginRegistry(registeredPlugins)
-		}
-
-		translator = NewTranslatorWithHasher(utils.NewSslConfigTranslator(), settings, pluginRegistryFactory, MustEnvoyCacheResourcesListToFnvHash)
+		translator = NewTranslatorWithHasher(utils.NewSslConfigTranslator(), settings, pluginRegistry, MustEnvoyCacheResourcesListToFnvHash)
 	})
 
 	Context("proxy validation", func() {
