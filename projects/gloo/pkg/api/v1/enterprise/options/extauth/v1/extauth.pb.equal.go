@@ -1279,10 +1279,6 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetIssuerUrl(), target.GetIssuerUrl()) != 0 {
-		return false
-	}
-
 	if len(m.GetAuthEndpointQueryParams()) != len(target.GetAuthEndpointQueryParams()) {
 		return false
 	}
@@ -3334,10 +3330,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetClientSecret(), target.GetClientSecret()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetIssuerUrl(), target.GetIssuerUrl()) != 0 {
 		return false
 	}
 

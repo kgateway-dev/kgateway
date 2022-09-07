@@ -1412,10 +1412,6 @@ func (m *PlainOAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if _, err = hasher.Write([]byte(m.GetIssuerUrl())); err != nil {
-		return 0, err
-	}
-
 	{
 		var result uint64
 		innerHash := fnv.New64()
@@ -3777,10 +3773,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Hash(hasher hash.Hash64) (uint64, erro
 	}
 
 	if _, err = hasher.Write([]byte(m.GetClientSecret())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetIssuerUrl())); err != nil {
 		return 0, err
 	}
 

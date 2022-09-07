@@ -759,8 +759,6 @@ func (m *PlainOAuth2) Clone() proto.Message {
 		target.ClientSecretRef = proto.Clone(m.GetClientSecretRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 	}
 
-	target.IssuerUrl = m.GetIssuerUrl()
-
 	if m.GetAuthEndpointQueryParams() != nil {
 		target.AuthEndpointQueryParams = make(map[string]string, len(m.GetAuthEndpointQueryParams()))
 		for k, v := range m.GetAuthEndpointQueryParams() {
@@ -1976,8 +1974,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 	target.ClientId = m.GetClientId()
 
 	target.ClientSecret = m.GetClientSecret()
-
-	target.IssuerUrl = m.GetIssuerUrl()
 
 	if m.GetAuthEndpointQueryParams() != nil {
 		target.AuthEndpointQueryParams = make(map[string]string, len(m.GetAuthEndpointQueryParams()))

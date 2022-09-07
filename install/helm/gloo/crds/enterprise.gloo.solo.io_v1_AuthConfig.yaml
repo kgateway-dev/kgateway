@@ -435,8 +435,6 @@ spec:
                                   type: string
                                   x-kubernetes-int-or-string: true
                               type: object
-                            issuerUrl:
-                              type: string
                             logoutPath:
                               type: string
                             parseCallbackPathAsRegex:

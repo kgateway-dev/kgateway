@@ -827,7 +827,6 @@ The Method used to make the request.
 ```yaml
 "clientId": string
 "clientSecretRef": .core.solo.io.ResourceRef
-"issuerUrl": string
 "authEndpointQueryParams": map<string, string>
 "appUrl": string
 "callbackPath": string
@@ -850,7 +849,6 @@ The Method used to make the request.
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | your client id as registered with the issuer. |
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |
-| `issuerUrl` | `string` | The url of the issuer. |
 | `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
 | `appUrl` | `string` | where to redirect after successful auth, if we can't determine the original url. this should be your publicly available app url. |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OAuth2 callbacks. should not be used by the application. |
@@ -1590,7 +1588,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 ```yaml
 "clientId": string
 "clientSecret": string
-"issuerUrl": string
 "authEndpointQueryParams": map<string, string>
 "appUrl": string
 "callbackPath": string
@@ -1613,7 +1610,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | your client id as registered with the issuer. |
 | `clientSecret` | `string` | your client secret as registered with the issuer. |
-| `issuerUrl` | `string` | The url of the issuer. |
 | `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OAuth2 callbacks. needs to not be used by the application. |
