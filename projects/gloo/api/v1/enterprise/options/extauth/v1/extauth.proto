@@ -718,8 +718,13 @@ message PlainOAuth2 {
     // in the OIDC documentation.
     EndSessionProperties end_session_properties = 19;
 
-    // If set, during authentication we will also look for the auth token in the custom_auth_cookie set.
-    string custom_auth_cookie = 21;
+    // If set, we will use custom_auth_token_identifier for authentication.
+    // Defaults to "access_token".
+    string custom_auth_token_identifier = 21;
+
+    // If set, we will use custom_auth_token_identifier for refreshing.
+    // Defaults to "refresh_token".
+    string custom_refresh_token_identifier = 22;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -1449,8 +1454,13 @@ message ExtAuthConfig {
         // in the OIDC documentation.
         EndSessionProperties end_session_properties = 19;
 
-        // If set, during authentication we will also look for the auth token in the custom_auth_cookie set.
-        string custom_auth_cookie = 21;
+        // If set, we will use custom_auth_token_identifier for authentication.
+        // Defaults to "access_token".
+        string custom_auth_token_identifier = 21;
+
+        // If set, we will use custom_auth_token_identifier for refreshing.
+        // Defaults to "refresh_token".
+        string custom_refresh_token_identifier = 22;
     }
 
     message OAuth2Config {
