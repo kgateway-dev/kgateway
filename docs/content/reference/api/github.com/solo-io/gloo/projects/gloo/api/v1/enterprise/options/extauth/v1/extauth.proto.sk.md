@@ -470,7 +470,7 @@ Deprecated: Prefer OAuth2
 | ----- | ---- | ----------- | 
 | `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.OidcAuthorizationCode](../extauth.proto.sk/#oidcauthorizationcode) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode`, `accessTokenValidation`, or `plainOauth2` can be set. |
 | `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidation`, `oidcAuthorizationCode`, or `plainOauth2` can be set. |
-| `plainOauth2` | [.enterprise.gloo.solo.io.PlainOAuth2](../extauth.proto.sk/#plainoauth2) | todo (fabian) description Prefer to use OIDC for better security. Only one of `plainOauth2`, `oidcAuthorizationCode`, or `accessTokenValidation` can be set. |
+| `plainOauth2` | [.enterprise.gloo.solo.io.PlainOAuth2](../extauth.proto.sk/#plainoauth2) | Prefer to use OIDC for better security. Only one of `plainOauth2`, `oidcAuthorizationCode`, or `accessTokenValidation` can be set. |
 
 
 
@@ -1645,7 +1645,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | ----- | ---- | ----------- | 
 | `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig](../extauth.proto.sk/#oidcauthorizationcodeconfig) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode`, `accessTokenValidationConfig`, or `plainOauth2Config` can be set. |
 | `accessTokenValidationConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig](../extauth.proto.sk/#accesstokenvalidationconfig) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidationConfig`, `oidcAuthorizationCode`, or `plainOauth2Config` can be set. |
-| `plainOauth2Config` | [.enterprise.gloo.solo.io.ExtAuthConfig.PlainOAuth2Config](../extauth.proto.sk/#plainoauth2config) | todo (fabian) description Prefer to use OIDC for better security. Only one of `plainOauth2Config`, `oidcAuthorizationCode`, or `accessTokenValidationConfig` can be set. |
+| `plainOauth2Config` | [.enterprise.gloo.solo.io.ExtAuthConfig.PlainOAuth2Config](../extauth.proto.sk/#plainoauth2config) | Prefer to use OIDC for better security. Only one of `plainOauth2Config`, `oidcAuthorizationCode`, or `accessTokenValidationConfig` can be set. |
 
 
 

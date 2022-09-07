@@ -1218,10 +1218,6 @@ type OAuth2_AccessTokenValidation struct {
 }
 
 type OAuth2_PlainOauth2 struct {
-	// todo (fabian) description
-	//
-	//
-	//
 	// Prefer to use OIDC for better security.
 	PlainOauth2 *PlainOAuth2 `protobuf:"bytes,4,opt,name=plain_oauth2,json=plainOauth2,proto3,oneof"`
 }
@@ -5499,10 +5495,6 @@ type ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig struct {
 }
 
 type ExtAuthConfig_OAuth2Config_PlainOauth2Config struct {
-	// todo (fabian) description
-	//
-	//
-	//
 	// Prefer to use OIDC for better security.
 	PlainOauth2Config *ExtAuthConfig_PlainOAuth2Config `protobuf:"bytes,4,opt,name=plain_oauth2_config,json=plainOauth2Config,proto3,oneof"`
 }

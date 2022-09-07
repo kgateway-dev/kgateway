@@ -307,10 +307,6 @@ message OAuth2 {
         // - and (preferably) secure cookies
         AccessTokenValidation access_token_validation = 2;
 
-        // todo (fabian) description
-        //
-        //
-        //
         // Prefer to use OIDC for better security.
         PlainOAuth2 plain_oauth2 = 4;
     }
@@ -1448,10 +1444,6 @@ message ExtAuthConfig {
             // - and (preferably) secure cookies
             AccessTokenValidationConfig access_token_validation_config = 3;
 
-            // todo (fabian) description
-            //
-            //
-            //
             // Prefer to use OIDC for better security.
             PlainOAuth2Config plain_oauth2_config = 4;
         }
