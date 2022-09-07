@@ -702,16 +702,6 @@ message PlainOAuth2 {
     // If not specified, the default value is 30 minutes.
     google.protobuf.Duration discovery_poll_interval = 12;
 
-    // If a user executes a request with a key that is not found in the JWKS, it could be
-    // that the keys have rotated on the remote source, and not yet in the local cache.
-    // This policy lets you define the behavior for how to refresh the local cache during a request
-    // where an invalid key is provided
-    JwksOnDemandCacheRefreshPolicy jwks_cache_refresh_policy = 13;
-
-    // in the future we may implement this:
-    // add optional configuration for validation of the access token received during the OIDC flow
-    // AccessTokenValidation access_token_validation = 8;
-
     // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
     // The session id is used as the key for sessions in Redis
     string session_id_header_name = 16;
@@ -1448,16 +1438,6 @@ message ExtAuthConfig {
         // If not specified, the default value is 30 minutes.
         google.protobuf.Duration discovery_poll_interval = 12;
 
-        // If a user executes a request with a key that is not found in the JWKS, it could be
-        // that the keys have rotated on the remote source, and not yet in the local cache.
-        // This policy lets you define the behavior for how to refresh the local cache during a request
-        // where an invalid key is provided
-        JwksOnDemandCacheRefreshPolicy jwks_cache_refresh_policy = 13;
-
-        // in the future we may implement this:
-        // add optional configuration for validation of the access token received during the OIDC flow
-        // AccessTokenValidation access_token_validation = 8;
-
         // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
         // The session id is used as the key for sessions in Redis
         string session_id_header_name = 16;
@@ -1484,7 +1464,6 @@ message ExtAuthConfig {
     }
 
     message OAuth2Config {
-        // todo (fabian) ask why is 2 reserved?
         reserved 2;
 
         oneof oauth_type {
