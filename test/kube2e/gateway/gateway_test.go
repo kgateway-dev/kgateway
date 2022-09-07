@@ -1909,12 +1909,6 @@ spec:
 			Context("gloo", func() {
 
 				BeforeEach(func() {
-					// Validation of Gloo resources requires that a Proxy resource exist
-					// Therefore, before the tests start, we must create valid resources that produce a Proxy
-					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-						return resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-					})
-
 					// Set the validation settings to be as strict as possible so that we can trigger
 					// rejections by just producing a warning on the resource
 					kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
@@ -1928,6 +1922,14 @@ spec:
 						Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 						settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
 					}, testHelper.InstallNamespace)
+				})
+
+				JustBeforeEach(func() {
+					// Validation of Gloo resources requires that a Proxy resource exist
+					// Therefore, before the tests start, we must create valid resources that produce a Proxy
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+					})
 				})
 
 				It("rejects bad resources", func() {
