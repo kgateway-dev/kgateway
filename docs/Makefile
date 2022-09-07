@@ -18,7 +18,6 @@ SOLO_HUGO_THEME_REVISION := $(shell curl --silent "https://api.github.com/repos/
 
 # The minimum version to maintain in our public docs
 SECURITY_SCAN_MIN_VERSION ?= v1.9.0
-SKIP_SECURITY_SCAN ?= false
 
 #----------------------------------------------------------------------------------
 # Docs
@@ -35,8 +34,8 @@ site-common: clean gloo-enterprise-version
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md -r glooe > content/static/content/glooe-changelog.docgen
 
 	# generate split security scans for gloo versions which HAVE received new split-templating updates
-	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on SKIP_SECURITY_SCAN=$(SKIP_SECURITY_SCAN) go run cmd/generate_docs.go gen-security-scan-md -r gloo > content/static/content/gloo-security-scan.docgen
-	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on SKIP_SECURITY_SCAN=$(SKIP_SECURITY_SCAN) go run cmd/generate_docs.go gen-security-scan-md -r glooe > content/static/content/glooe-security-scan.docgen
+	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r gloo > content/static/content/gloo-security-scan.docgen
+	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r glooe > content/static/content/glooe-security-scan.docgen
 	cat content/static/content/gloo-security-scan.docgen
 	./split-file-by-delimiter.sh content/static/content/gloo-security-scan.docgen \\\*\\\*\\\*
 	./split-file-by-delimiter.sh content/static/content/glooe-security-scan.docgen \\\*\\\*\\\*
