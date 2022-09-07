@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6819
+    description: Fix kube2e test "Should be able to rotate a secret referenced on a sslConfig on a kube upstream"
