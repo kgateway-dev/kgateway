@@ -174,7 +174,7 @@ TEST_PKG ?= ./...
 .PHONY: run-tests
 run-tests:
 ifneq ($(RELEASE), "true")
-	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage='kube2e' $(TEST_PKG)
+	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -failOnPending -noColor -skipPackage='kube2e' $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests

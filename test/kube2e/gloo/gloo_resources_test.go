@@ -149,7 +149,6 @@ var _ = Describe("GlooResourcesTest", func() {
 
 			timeInBetweenRotation := secondsForCurling + timeForCurling + offset
 			Consistently(func(g Gomega) {
-				print("Iteration...")
 				By("Generate new CaCrt and PrivateKey")
 				crt, crtKey := helpers.GetCerts(helpers.Params{
 					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
