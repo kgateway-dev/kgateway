@@ -429,23 +429,11 @@ spec:
                                 tokenEndpoint:
                                   type: string
                               type: object
-                            discoveryPollInterval:
-                              type: string
                             endSessionProperties:
                               properties:
                                 methodType:
                                   type: string
                                   x-kubernetes-int-or-string: true
-                              type: object
-                            headers:
-                              properties:
-                                accessTokenHeader:
-                                  type: string
-                                idTokenHeader:
-                                  type: string
-                                useBearerSchemaForAuthorization:
-                                  nullable: true
-                                  type: boolean
                               type: object
                             issuerUrl:
                               type: string

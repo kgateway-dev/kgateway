@@ -1439,42 +1439,11 @@ func (m *PlainOAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	{
-		var result uint64
-		innerHash := fnv.New64()
-		for k, v := range m.GetTokenEndpointQueryParams() {
-			innerHash.Reset()
-
-			if _, err = innerHash.Write([]byte(v)); err != nil {
-				return 0, err
-			}
-
-			if _, err = innerHash.Write([]byte(k)); err != nil {
-				return 0, err
-			}
-
-			result = result ^ innerHash.Sum64()
-		}
-		err = binary.Write(hasher, binary.LittleEndian, result)
-		if err != nil {
-			return 0, err
-		}
-
-	}
-
 	if _, err = hasher.Write([]byte(m.GetAppUrl())); err != nil {
 		return 0, err
 	}
 
 	if _, err = hasher.Write([]byte(m.GetCallbackPath())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetLogoutPath())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetAfterLogoutUrl())); err != nil {
 		return 0, err
 	}
 
@@ -1506,24 +1475,8 @@ func (m *PlainOAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetHeaders()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Headers")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetHeaders(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("Headers")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
+	if _, err = hasher.Write([]byte(m.GetLogoutPath())); err != nil {
+		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetDiscoveryOverride()).(safe_hasher.SafeHasher); ok {
@@ -1546,24 +1499,31 @@ func (m *PlainOAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetDiscoveryPollInterval()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("DiscoveryPollInterval")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetDiscoveryPollInterval(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("DiscoveryPollInterval")); err != nil {
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetTokenEndpointQueryParams() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
 				return 0, err
 			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
 				return 0, err
 			}
+
+			result = result ^ innerHash.Sum64()
 		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAfterLogoutUrl())); err != nil {
+		return 0, err
 	}
 
 	if _, err = hasher.Write([]byte(m.GetSessionIdHeaderName())); err != nil {
@@ -3847,42 +3807,11 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Hash(hasher hash.Hash64) (uint64, erro
 
 	}
 
-	{
-		var result uint64
-		innerHash := fnv.New64()
-		for k, v := range m.GetTokenEndpointQueryParams() {
-			innerHash.Reset()
-
-			if _, err = innerHash.Write([]byte(v)); err != nil {
-				return 0, err
-			}
-
-			if _, err = innerHash.Write([]byte(k)); err != nil {
-				return 0, err
-			}
-
-			result = result ^ innerHash.Sum64()
-		}
-		err = binary.Write(hasher, binary.LittleEndian, result)
-		if err != nil {
-			return 0, err
-		}
-
-	}
-
 	if _, err = hasher.Write([]byte(m.GetAppUrl())); err != nil {
 		return 0, err
 	}
 
 	if _, err = hasher.Write([]byte(m.GetCallbackPath())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetLogoutPath())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetAfterLogoutUrl())); err != nil {
 		return 0, err
 	}
 
@@ -3914,24 +3843,8 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Hash(hasher hash.Hash64) (uint64, erro
 		}
 	}
 
-	if h, ok := interface{}(m.GetHeaders()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Headers")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetHeaders(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("Headers")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
+	if _, err = hasher.Write([]byte(m.GetLogoutPath())); err != nil {
+		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetDiscoveryOverride()).(safe_hasher.SafeHasher); ok {
@@ -3954,24 +3867,31 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Hash(hasher hash.Hash64) (uint64, erro
 		}
 	}
 
-	if h, ok := interface{}(m.GetDiscoveryPollInterval()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("DiscoveryPollInterval")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetDiscoveryPollInterval(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("DiscoveryPollInterval")); err != nil {
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetTokenEndpointQueryParams() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
 				return 0, err
 			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
 				return 0, err
 			}
+
+			result = result ^ innerHash.Sum64()
 		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAfterLogoutUrl())); err != nil {
+		return 0, err
 	}
 
 	if _, err = hasher.Write([]byte(m.GetSessionIdHeaderName())); err != nil {

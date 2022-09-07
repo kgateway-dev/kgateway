@@ -1294,30 +1294,11 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 
 	}
 
-	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
-		return false
-	}
-	for k, v := range m.GetTokenEndpointQueryParams() {
-
-		if strings.Compare(v, target.GetTokenEndpointQueryParams()[k]) != 0 {
-			return false
-		}
-
-	}
-
 	if strings.Compare(m.GetAppUrl(), target.GetAppUrl()) != 0 {
 		return false
 	}
 
 	if strings.Compare(m.GetCallbackPath(), target.GetCallbackPath()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetLogoutPath(), target.GetLogoutPath()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetAfterLogoutUrl(), target.GetAfterLogoutUrl()) != 0 {
 		return false
 	}
 
@@ -1342,14 +1323,8 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetHeaders()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetHeaders()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetHeaders(), target.GetHeaders()) {
-			return false
-		}
+	if strings.Compare(m.GetLogoutPath(), target.GetLogoutPath()) != 0 {
+		return false
 	}
 
 	if h, ok := interface{}(m.GetDiscoveryOverride()).(equality.Equalizer); ok {
@@ -1362,14 +1337,19 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetDiscoveryPollInterval()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetDiscoveryPollInterval()) {
+	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetTokenEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetTokenEndpointQueryParams()[k]) != 0 {
 			return false
 		}
-	} else {
-		if !proto.Equal(m.GetDiscoveryPollInterval(), target.GetDiscoveryPollInterval()) {
-			return false
-		}
+
+	}
+
+	if strings.Compare(m.GetAfterLogoutUrl(), target.GetAfterLogoutUrl()) != 0 {
+		return false
 	}
 
 	if strings.Compare(m.GetSessionIdHeaderName(), target.GetSessionIdHeaderName()) != 0 {
@@ -3372,30 +3352,11 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 
 	}
 
-	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
-		return false
-	}
-	for k, v := range m.GetTokenEndpointQueryParams() {
-
-		if strings.Compare(v, target.GetTokenEndpointQueryParams()[k]) != 0 {
-			return false
-		}
-
-	}
-
 	if strings.Compare(m.GetAppUrl(), target.GetAppUrl()) != 0 {
 		return false
 	}
 
 	if strings.Compare(m.GetCallbackPath(), target.GetCallbackPath()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetLogoutPath(), target.GetLogoutPath()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetAfterLogoutUrl(), target.GetAfterLogoutUrl()) != 0 {
 		return false
 	}
 
@@ -3420,14 +3381,8 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetHeaders()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetHeaders()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetHeaders(), target.GetHeaders()) {
-			return false
-		}
+	if strings.Compare(m.GetLogoutPath(), target.GetLogoutPath()) != 0 {
+		return false
 	}
 
 	if h, ok := interface{}(m.GetDiscoveryOverride()).(equality.Equalizer); ok {
@@ -3440,14 +3395,19 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetDiscoveryPollInterval()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetDiscoveryPollInterval()) {
+	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetTokenEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetTokenEndpointQueryParams()[k]) != 0 {
 			return false
 		}
-	} else {
-		if !proto.Equal(m.GetDiscoveryPollInterval(), target.GetDiscoveryPollInterval()) {
-			return false
-		}
+
+	}
+
+	if strings.Compare(m.GetAfterLogoutUrl(), target.GetAfterLogoutUrl()) != 0 {
+		return false
 	}
 
 	if strings.Compare(m.GetSessionIdHeaderName(), target.GetSessionIdHeaderName()) != 0 {

@@ -770,22 +770,9 @@ func (m *PlainOAuth2) Clone() proto.Message {
 		}
 	}
 
-	if m.GetTokenEndpointQueryParams() != nil {
-		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
-		for k, v := range m.GetTokenEndpointQueryParams() {
-
-			target.TokenEndpointQueryParams[k] = v
-
-		}
-	}
-
 	target.AppUrl = m.GetAppUrl()
 
 	target.CallbackPath = m.GetCallbackPath()
-
-	target.LogoutPath = m.GetLogoutPath()
-
-	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
 
 	if m.GetScopes() != nil {
 		target.Scopes = make([]string, len(m.GetScopes()))
@@ -802,11 +789,7 @@ func (m *PlainOAuth2) Clone() proto.Message {
 		target.Session = proto.Clone(m.GetSession()).(*UserSession)
 	}
 
-	if h, ok := interface{}(m.GetHeaders()).(clone.Cloner); ok {
-		target.Headers = h.Clone().(*HeaderConfiguration)
-	} else {
-		target.Headers = proto.Clone(m.GetHeaders()).(*HeaderConfiguration)
-	}
+	target.LogoutPath = m.GetLogoutPath()
 
 	if h, ok := interface{}(m.GetDiscoveryOverride()).(clone.Cloner); ok {
 		target.DiscoveryOverride = h.Clone().(*DiscoveryOverride)
@@ -814,11 +797,16 @@ func (m *PlainOAuth2) Clone() proto.Message {
 		target.DiscoveryOverride = proto.Clone(m.GetDiscoveryOverride()).(*DiscoveryOverride)
 	}
 
-	if h, ok := interface{}(m.GetDiscoveryPollInterval()).(clone.Cloner); ok {
-		target.DiscoveryPollInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
-	} else {
-		target.DiscoveryPollInterval = proto.Clone(m.GetDiscoveryPollInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	if m.GetTokenEndpointQueryParams() != nil {
+		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
+		for k, v := range m.GetTokenEndpointQueryParams() {
+
+			target.TokenEndpointQueryParams[k] = v
+
+		}
 	}
+
+	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
 
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
 
@@ -2000,22 +1988,9 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 		}
 	}
 
-	if m.GetTokenEndpointQueryParams() != nil {
-		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
-		for k, v := range m.GetTokenEndpointQueryParams() {
-
-			target.TokenEndpointQueryParams[k] = v
-
-		}
-	}
-
 	target.AppUrl = m.GetAppUrl()
 
 	target.CallbackPath = m.GetCallbackPath()
-
-	target.LogoutPath = m.GetLogoutPath()
-
-	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
 
 	if m.GetScopes() != nil {
 		target.Scopes = make([]string, len(m.GetScopes()))
@@ -2032,11 +2007,7 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 		target.Session = proto.Clone(m.GetSession()).(*UserSession)
 	}
 
-	if h, ok := interface{}(m.GetHeaders()).(clone.Cloner); ok {
-		target.Headers = h.Clone().(*HeaderConfiguration)
-	} else {
-		target.Headers = proto.Clone(m.GetHeaders()).(*HeaderConfiguration)
-	}
+	target.LogoutPath = m.GetLogoutPath()
 
 	if h, ok := interface{}(m.GetDiscoveryOverride()).(clone.Cloner); ok {
 		target.DiscoveryOverride = h.Clone().(*DiscoveryOverride)
@@ -2044,11 +2015,16 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 		target.DiscoveryOverride = proto.Clone(m.GetDiscoveryOverride()).(*DiscoveryOverride)
 	}
 
-	if h, ok := interface{}(m.GetDiscoveryPollInterval()).(clone.Cloner); ok {
-		target.DiscoveryPollInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
-	} else {
-		target.DiscoveryPollInterval = proto.Clone(m.GetDiscoveryPollInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	if m.GetTokenEndpointQueryParams() != nil {
+		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
+		for k, v := range m.GetTokenEndpointQueryParams() {
+
+			target.TokenEndpointQueryParams[k] = v
+
+		}
 	}
+
+	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
 
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
 
