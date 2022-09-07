@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	matchers2 "github.com/solo-io/solo-kit/test/matchers"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -2054,8 +2056,9 @@ spec:
 				Expect(err).NotTo(HaveOccurred())
 
 				vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
-				_, err = resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				updatedVs, err := resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
+				Expect(updatedVs.GetVirtualHost().GetOptions().GetTransformations()).To(matchers2.MatchProto(invalidTransform))
 			})
 		})
 	})
