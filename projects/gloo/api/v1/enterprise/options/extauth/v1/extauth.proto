@@ -435,8 +435,6 @@ message HeaderConfiguration {
 // OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
 // The discovery override defines any properties that should override this discovery configuration
 // https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
-// todo (fabian) maybe create this without jwks_uri, since <company> doesn't have one.
-// todo (fabian) look into oauth2, to see if it's part of plain oauth2 spec.
 message DiscoveryOverride {
     // url of the provider authorization endpoint
     string auth_endpoint = 1;
@@ -670,8 +668,7 @@ message PlainOAuth2 {
     // Configures headers added to requests.
     HeaderConfiguration headers = 10;
 
-    // OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
-    // The discovery override defines any properties that should override this discovery configuration
+    // The discovery override defines any properties that should defined for OAuth2 configuration
     // For example, the following AuthConfig CRD could be defined as:
     //    ```yaml
     //    apiVersion: enterprise.gloo.solo.io/v1
@@ -1406,8 +1403,7 @@ message ExtAuthConfig {
         // Configures headers added to requests.
         HeaderConfiguration headers = 10;
 
-        // OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
-        // The configuration override defines any properties that should override this discovery configuration
+        // The discovery override defines any properties that should defined for OAuth2 configuration
         // For example, the following AuthConfig CRD could be defined as:
         //    ```yaml
         //    apiVersion: enterprise.gloo.solo.io/v1
