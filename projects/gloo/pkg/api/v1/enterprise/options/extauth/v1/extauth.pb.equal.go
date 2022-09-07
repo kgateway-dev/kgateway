@@ -1352,30 +1352,6 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetParseCallbackPathAsRegex() != target.GetParseCallbackPathAsRegex() {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetAutoMapFromMetadata()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetAutoMapFromMetadata()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetAutoMapFromMetadata(), target.GetAutoMapFromMetadata()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetEndSessionProperties()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetEndSessionProperties()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetEndSessionProperties(), target.GetEndSessionProperties()) {
-			return false
-		}
-	}
-
 	if strings.Compare(m.GetCustomAuthTokenIdentifier(), target.GetCustomAuthTokenIdentifier()) != 0 {
 		return false
 	}
@@ -3404,30 +3380,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetSessionIdHeaderName(), target.GetSessionIdHeaderName()) != 0 {
 		return false
-	}
-
-	if m.GetParseCallbackPathAsRegex() != target.GetParseCallbackPathAsRegex() {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetAutoMapFromMetadata()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetAutoMapFromMetadata()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetAutoMapFromMetadata(), target.GetAutoMapFromMetadata()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetEndSessionProperties()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetEndSessionProperties()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetEndSessionProperties(), target.GetEndSessionProperties()) {
-			return false
-		}
 	}
 
 	if strings.Compare(m.GetCustomAuthTokenIdentifier(), target.GetCustomAuthTokenIdentifier()) != 0 {

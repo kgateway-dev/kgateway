@@ -372,11 +372,6 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
-                            autoMapFromMetadata:
-                              properties:
-                                namespace:
-                                  type: string
-                              type: object
                             callbackPath:
                               type: string
                             clientId:
@@ -429,16 +424,8 @@ spec:
                                 tokenEndpoint:
                                   type: string
                               type: object
-                            endSessionProperties:
-                              properties:
-                                methodType:
-                                  type: string
-                                  x-kubernetes-int-or-string: true
-                              type: object
                             logoutPath:
                               type: string
-                            parseCallbackPathAsRegex:
-                              type: boolean
                             scopes:
                               items:
                                 type: string

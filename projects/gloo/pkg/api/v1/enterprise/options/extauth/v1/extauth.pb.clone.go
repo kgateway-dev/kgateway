@@ -808,20 +808,6 @@ func (m *PlainOAuth2) Clone() proto.Message {
 
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
 
-	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
-
-	if h, ok := interface{}(m.GetAutoMapFromMetadata()).(clone.Cloner); ok {
-		target.AutoMapFromMetadata = h.Clone().(*AutoMapFromMetadata)
-	} else {
-		target.AutoMapFromMetadata = proto.Clone(m.GetAutoMapFromMetadata()).(*AutoMapFromMetadata)
-	}
-
-	if h, ok := interface{}(m.GetEndSessionProperties()).(clone.Cloner); ok {
-		target.EndSessionProperties = h.Clone().(*EndSessionProperties)
-	} else {
-		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
-	}
-
 	target.CustomAuthTokenIdentifier = m.GetCustomAuthTokenIdentifier()
 
 	target.CustomRefreshTokenIdentifier = m.GetCustomRefreshTokenIdentifier()
@@ -2023,20 +2009,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
 
 	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
-
-	target.ParseCallbackPathAsRegex = m.GetParseCallbackPathAsRegex()
-
-	if h, ok := interface{}(m.GetAutoMapFromMetadata()).(clone.Cloner); ok {
-		target.AutoMapFromMetadata = h.Clone().(*AutoMapFromMetadata)
-	} else {
-		target.AutoMapFromMetadata = proto.Clone(m.GetAutoMapFromMetadata()).(*AutoMapFromMetadata)
-	}
-
-	if h, ok := interface{}(m.GetEndSessionProperties()).(clone.Cloner); ok {
-		target.EndSessionProperties = h.Clone().(*EndSessionProperties)
-	} else {
-		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
-	}
 
 	target.CustomAuthTokenIdentifier = m.GetCustomAuthTokenIdentifier()
 
