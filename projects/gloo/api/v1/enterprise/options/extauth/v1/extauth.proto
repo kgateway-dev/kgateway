@@ -646,11 +646,11 @@ message PlainOAuth2 {
     // this should be your publicly available app url.
     string app_url = 5;
 
-    // a callback path relative to app url that will be used for OIDC callbacks.
+    // a callback path relative to app url that will be used for OAuth2 callbacks.
     // should not be used by the application.
     string callback_path = 6;
 
-    // a path relative to app url that will be used for logging out from an OIDC session.
+    // a path relative to app url that will be used for logging out from an OAuth2 session.
     // should not be used by the application.
     // If not provided, logout functionality will be disabled.
     string logout_path = 9;
@@ -1382,11 +1382,11 @@ message ExtAuthConfig {
         // url this should be your publicly available app url.
         string app_url = 5;
 
-        // a callback path relative to app url that will be used for OIDC callbacks.
+        // a callback path relative to app url that will be used for OAuth2 callbacks.
         // needs to not be used by the application
         string callback_path = 6;
 
-        // a path relative to app url that will be used for logging out from an OIDC session.
+        // a path relative to app url that will be used for logging out from an OAuth2 session.
         // should not be used by the application.
         // If not provided, logout functionality will be disabled.
         string logout_path = 9;
