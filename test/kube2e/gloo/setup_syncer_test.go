@@ -212,9 +212,6 @@ var _ = Describe("SetupSyncer", func() {
 			}
 
 			BeforeEach(func() {
-				if os.Getenv("RUN_KUBE_TESTS") != "1" {
-					Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
-				}
 				settings = &v1.Settings{
 					RefreshRate: prototime.DurationToProto(time.Hour),
 					Gloo: &v1.GlooOptions{
