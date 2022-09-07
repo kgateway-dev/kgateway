@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
@@ -1927,13 +1929,42 @@ spec:
 
 				JustBeforeEach(func() {
 					// Validation of Gloo resources requires that a Proxy resource exist
-					// Therefore, before the tests start, we must create valid resources that produce a Proxy
-					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-						return resourceClientset.VirtualServiceClient().Read(testRunnerVs.GetMetadata().GetNamespace(), testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
-					})
-					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-						return resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-					})
+					// Therefore, before the tests start, we must attempt updates that should be rejected
+					// They will only be rejected once a Proxy exists in the ApiSnapshot
+
+					placeholderUs := &gloov1.Upstream{
+						Metadata: &core.Metadata{
+							Name:      "",
+							Namespace: testHelper.InstallNamespace,
+						},
+						UpstreamType: &gloov1.Upstream_Static{
+							Static: &static.UpstreamSpec{
+								Hosts: []*static.Host{{
+									Addr: "~",
+								}},
+							},
+						},
+					}
+					attempt := 0
+					Eventually(func(g Gomega) bool {
+						placeholderUs.Metadata.Name = fmt.Sprintf("invalid-placeholder-us-%d", attempt)
+
+						_, err := resourceClientset.UpstreamClient().Write(placeholderUs, clients.WriteOpts{Ctx: ctx})
+						if err != nil {
+							// We have successfully rejected an invalid upstream
+							// This means that the webhook is fully warmed, and contains a Snapshot with a Proxy
+							return true
+						}
+
+						err = resourceClientset.UpstreamClient().Delete(
+							placeholderUs.GetMetadata().GetNamespace(),
+							placeholderUs.GetMetadata().GetName(),
+							clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
+						g.Expect(err).NotTo(HaveOccurred())
+
+						attempt += 1
+						return false
+					}, time.Second*15, time.Second*1).Should(BeTrue())
 				})
 
 				It("rejects bad resources", func() {

@@ -186,6 +186,14 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 		// if no proxy was passed in, call translate for all proxies in snapshot
 		proxiesToValidate = snapCopy.Proxies
 	}
+
+	if len(proxiesToValidate) == 0 {
+		// This can occur when a Gloo resource (Upstream), is modified before the ApiSnapshot
+		// contains any Proxies. Orphaned resources are never invalid, but they may be accepted
+		// even if they are invalid. This log line is attempting to identify these situations
+		logger.Warnf("found no proxies to validate, accepting update without translating Gloo resources")
+	}
+
 	params := plugins.Params{
 		Ctx:      ctx,
 		Snapshot: &snapCopy,
