@@ -70,6 +70,8 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 		// shut down the server
 		cancel()
 
+		time.Sleep(100 * time.Millisecond) // wait for the server to shut down
+
 		resp, err = client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).To(HaveOccurred())
 		Expect(status.Code(err)).To(Equal(codes.Unavailable))
