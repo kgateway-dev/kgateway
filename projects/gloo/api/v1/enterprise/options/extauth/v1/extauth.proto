@@ -685,26 +685,23 @@ message PlainOAuth2 {
     // The session id is used as the key for sessions in Redis
     string session_id_header_name = 12;
 
-    // If set, CallbackPath will be evaluated as a regular expression
-    bool parse_callback_path_as_regex = 13;
-
     // If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values.
     // By default parameters will be extracted from the solo_authconfig_oidc namespace
     // this behavior can be overridden by explicitly specifying a namespace
-    AutoMapFromMetadata auto_map_from_metadata = 14;
+    AutoMapFromMetadata auto_map_from_metadata = 13;
 
     // If specified, these are properties defined for the end session endpoint
     // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
     // in the OIDC documentation.
-    EndSessionProperties end_session_properties = 15;
+    EndSessionProperties end_session_properties = 14;
 
     // If set, we will use custom_auth_token_identifier for authentication.
     // Defaults to "access_token".
-    string custom_auth_token_identifier = 16;
+    string custom_auth_token_identifier = 15;
 
     // If set, we will use custom_auth_token_identifier for refreshing.
     // Defaults to "refresh_token".
-    string custom_refresh_token_identifier = 17;
+    string custom_refresh_token_identifier = 16;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -1405,26 +1402,23 @@ message ExtAuthConfig {
         // The session id is used as the key for sessions in Redis
         string session_id_header_name = 12;
 
-        // If set, CallbackPath will be evaluated as a regular expression
-        bool parse_callback_path_as_regex = 13;
-
         // If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values.
         // By default parameters will be extracted from the solo_authconfig_oidc namespace
         // this behavior can be overridden by explicitly specifying a namespace
-        AutoMapFromMetadata auto_map_from_metadata = 14;
+        AutoMapFromMetadata auto_map_from_metadata = 13;
 
         // If specified, these are properties defined for the end session endpoint
         // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
         // in the OIDC documentation.
-        EndSessionProperties end_session_properties = 15;
+        EndSessionProperties end_session_properties = 14;
 
         // If set, we will use custom_auth_token_identifier for authentication.
         // Defaults to "access_token".
-        string custom_auth_token_identifier = 16;
+        string custom_auth_token_identifier = 15;
 
         // If set, we will use custom_auth_token_identifier for refreshing.
         // Defaults to "refresh_token".
-        string custom_refresh_token_identifier = 17;
+        string custom_refresh_token_identifier = 16;
     }
 
     message OAuth2Config {
@@ -1444,7 +1438,6 @@ message ExtAuthConfig {
             // - and (preferably) secure cookies
             AccessTokenValidationConfig access_token_validation_config = 3;
 
-            // Prefer to use OIDC for better security.
             PlainOAuth2Config plain_oauth2_config = 4;
         }
     }
