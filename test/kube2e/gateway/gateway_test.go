@@ -1951,25 +1951,29 @@ spec:
 
 		It("rejects invalid inja template in transformation", func() {
 			injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %}`
-			t := &glootransformation.Transformations{
+			invalidInjaTransform := strings.TrimSuffix(injaTransform, "}")
+
+			invalidTransform := &glootransformation.Transformations{
 				ClearRouteCache: true,
 				ResponseTransformation: &glootransformation.Transformation{
 					TransformationType: &glootransformation.Transformation_TransformationTemplate{
 						TransformationTemplate: &transformation.TransformationTemplate{
 							Headers: map[string]*transformation.InjaTemplate{
-								":status": {Text: injaTransform},
+								":status": {Text: invalidInjaTransform},
 							},
 						},
 					},
 				},
 			}
 
-			testRunnerVs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: t}
+			vs, err := resourceClientset.VirtualServiceClient().Read(
+				testRunnerVs.GetMetadata().GetNamespace(),
+				testRunnerVs.GetMetadata().GetName(),
+				clients.ReadOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
 
-			// trim trailing "}", which should invalidate our inja template
-			t.ResponseTransformation.GetTransformationTemplate().Headers[":status"].Text = strings.TrimSuffix(injaTransform, "}")
-
-			_, err := resourceClientset.VirtualServiceClient().Write(testRunnerVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
+			_, err = resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			Expect(err).To(MatchError(ContainSubstring("Failed to parse response template: Failed to parse " +
 				"header template ':status': [inja.exception.parser_error] expected statement close, got '%'")))
 		})
@@ -1986,23 +1990,28 @@ spec:
 
 			It("will not reject invalid transformation", func() {
 				// this inja template is invalid since it is missing a trailing "}",
-				injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %`
-				t := &glootransformation.Transformations{
+				invalidInjaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %`
+				invalidTransform := &glootransformation.Transformations{
 					ClearRouteCache: true,
 					ResponseTransformation: &glootransformation.Transformation{
 						TransformationType: &glootransformation.Transformation_TransformationTemplate{
 							TransformationTemplate: &transformation.TransformationTemplate{
 								Headers: map[string]*transformation.InjaTemplate{
-									":status": {Text: injaTransform},
+									":status": {Text: invalidInjaTransform},
 								},
 							},
 						},
 					},
 				}
 
-				testRunnerVs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: t}
+				vs, err := resourceClientset.VirtualServiceClient().Read(
+					testRunnerVs.GetMetadata().GetNamespace(),
+					testRunnerVs.GetMetadata().GetName(),
+					clients.ReadOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
 
-				_, err := resourceClientset.VirtualServiceClient().Write(testRunnerVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
+				_, err = resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
