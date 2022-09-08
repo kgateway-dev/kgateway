@@ -10,7 +10,7 @@ require (
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/envoyproxy/go-control-plane v0.10.3
 	github.com/envoyproxy/protoc-gen-validate v0.6.7
-	github.com/fgrosse/zaptest v1.1.0
+	github.com/fgrosse/zaptest v1.1.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
