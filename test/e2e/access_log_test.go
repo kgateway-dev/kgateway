@@ -2,21 +2,16 @@ package e2e_test
 
 import (
 	"context"
-	"io/ioutil"
-	"os"
-	"strings"
 	"sync/atomic"
 	"time"
 
 	envoy_data_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
-	"github.com/fgrosse/zaptest"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -29,18 +24,18 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("Access Log", func() {
+var _ = FDescribe("Access Log", func() {
 
 	var (
-		gw             *gatewayv1.Gateway
 		ctx            context.Context
 		cancel         context.CancelFunc
 		testClients    services.TestClients
 		writeNamespace string
+		envoyInstance  *services.EnvoyInstance
+		tu             *v1helpers.TestUpstream
 
 		baseAccessLogPort = uint32(27000)
 	)
@@ -48,11 +43,13 @@ var _ = Describe("Access Log", func() {
 	Describe("in memory", func() {
 
 		BeforeEach(func() {
+			var err error
+
 			ctx, cancel = context.WithCancel(context.Background())
 			defaults.HttpPort = services.NextBindPort()
 			defaults.HttpsPort = services.NextBindPort()
 
-			writeNamespace = "gloo-system"
+			writeNamespace = defaults.GlooSystem
 			ro := &services.RunOptions{
 				NsToWrite: writeNamespace,
 				NsToWatch: []string{"default", writeNamespace},
@@ -62,238 +59,150 @@ var _ = Describe("Access Log", func() {
 					DisableUds:     true,
 				},
 			}
-
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
-			err := helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+			envoyInstance, err = envoyFactory.NewEnvoyInstance()
+			Expect(err).NotTo(HaveOccurred())
+
+			tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+
+			_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred(), "Should be abel to write test upstream")
+
+			vs := getTrivialVirtualServiceForUpstream(writeNamespace, tu.Upstream.Metadata.Ref())
+			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred(), "Should be abel to write virtual service to test upstream")
+
+			err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 
 			// wait for the two gateways to be created.
 			Eventually(func() (gatewayv1.GatewayList, error) {
-				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
+				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{Ctx: ctx})
 			}, "10s", "0.1s").Should(HaveLen(2))
 		})
 
 		AfterEach(func() {
+			envoyInstance.Clean()
 			cancel()
 		})
 
-		Context("Access Logs", func() {
+		TestUpstreamReachable := func() {
+			v1helpers.TestUpstreamReachable(defaults.HttpPort, tu, nil)
+		}
+
+		Context("Grpc", func() {
 
 			var (
-				envoyInstance *services.EnvoyInstance
-				tu            *v1helpers.TestUpstream
+				msgChan <-chan *envoy_data_accesslog_v3.HTTPAccessLogEntry
 			)
 
-			TestUpstreamReachable := func() {
-				v1helpers.TestUpstreamReachable(defaults.HttpPort, tu, nil)
-			}
-
 			BeforeEach(func() {
-				ctx, cancel = context.WithCancel(context.Background())
-				var err error
-				envoyInstance, err = envoyFactory.NewEnvoyInstance()
+				accessLogPort := atomic.AddUint32(&baseAccessLogPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
+
+				envoyInstance.AccessLogPort = accessLogPort
+				err := envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
-				tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+				msgChan = runAccessLog(ctx, accessLogPort)
+			})
 
-				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
+			It("can stream access logs", func() {
+				gw, err := testClients.GatewayClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
-			})
 
-			AfterEach(func() {
-				envoyInstance.Clean()
-			})
-
-			Context("Grpc", func() {
-
-				var (
-					msgChan <-chan *envoy_data_accesslog_v3.HTTPAccessLogEntry
-				)
-
-				BeforeEach(func() {
-					accessLogPort := atomic.AddUint32(&baseAccessLogPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
-
-					logger := zaptest.LoggerWriter(GinkgoWriter)
-					contextutils.SetFallbackLogger(logger.Sugar())
-
-					envoyInstance.AccessLogPort = accessLogPort
-					err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
-					Expect(err).NotTo(HaveOccurred())
-
-					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
-					Expect(err).NotTo(HaveOccurred())
-
-					msgChan = runAccessLog(ctx, accessLogPort)
-				})
-
-				AfterEach(func() {
-					gatewaycli := testClients.GatewayClient
-					var err error
-					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
-					Expect(err).NotTo(HaveOccurred())
-					gw.Options = nil
-					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
-					Expect(err).NotTo(HaveOccurred())
-
-				})
-
-				It("can stream access logs", func() {
-					logName := "test-log"
-					gw.Options = &gloov1.ListenerOptions{
-						AccessLoggingService: &als.AccessLoggingService{
-							AccessLog: []*als.AccessLog{
-								{
-									OutputDestination: &als.AccessLog_GrpcService{
-										GrpcService: &als.GrpcService{
-											LogName: logName,
-											ServiceRef: &als.GrpcService_StaticClusterName{
-												StaticClusterName: alsplugin.ClusterName,
-											},
+				By("Update default gateway to use grpc access log service")
+				gw.Options = &gloov1.ListenerOptions{
+					AccessLoggingService: &als.AccessLoggingService{
+						AccessLog: []*als.AccessLog{
+							{
+								OutputDestination: &als.AccessLog_GrpcService{
+									GrpcService: &als.GrpcService{
+										LogName: "test-log",
+										ServiceRef: &als.GrpcService_StaticClusterName{
+											StaticClusterName: alsplugin.ClusterName,
 										},
 									},
 								},
 							},
 						},
-					}
-
-					gatewaycli := testClients.GatewayClient
-					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
-					Expect(err).NotTo(HaveOccurred())
-
-					vs := getTrivialVirtualServiceForUpstream("gloo-system", tu.Upstream.Metadata.Ref())
-					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
-					Expect(err).NotTo(HaveOccurred())
-
-					Eventually(func() bool {
-						TestUpstreamReachable()
-
-						var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
-						Eventually(msgChan, 5*time.Second).Should(Receive(&entry))
-						return entry.CommonProperties.UpstreamCluster == translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())
-
-					}, time.Second*21, time.Second*7).ShouldNot(BeFalse())
-
-				})
-			})
-
-			Context("File", func() {
-				var (
-					path string
-				)
-
-				var checkLogs = func(ei *services.EnvoyInstance, logsPresent func(logs string) bool) error {
-					var (
-						logs string
-						err  error
-					)
-
-					if ei.UseDocker {
-						logs, err = ei.Logs()
-						if err != nil {
-							return err
-						}
-					} else {
-						file, err := os.OpenFile(ei.AccessLogs, os.O_RDONLY, 0777)
-						if err != nil {
-							return err
-						}
-						var byt []byte
-						byt, err = ioutil.ReadAll(file)
-						if err != nil {
-							return err
-						}
-						logs = string(byt)
-					}
-
-					if logs == "" {
-						return errors.Errorf("logs should not be empty")
-					}
-					if !logsPresent(logs) {
-						return errors.Errorf("no access logs present")
-					}
-					return nil
+					},
 				}
+				_, err = testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
 
-				BeforeEach(func() {
-					err := envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
-					Expect(err).NotTo(HaveOccurred())
-
-					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
-					Expect(err).NotTo(HaveOccurred())
-					path = "/dev/stdout"
-					if !envoyInstance.UseDocker {
-						tmpfile, err := ioutil.TempFile("", "")
-						Expect(err).NotTo(HaveOccurred())
-						path = tmpfile.Name()
-						envoyInstance.AccessLogs = path
-					}
-				})
-				AfterEach(func() {
-					gatewaycli := testClients.GatewayClient
-					var err error
-					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
-					Expect(err).NotTo(HaveOccurred())
-					gw.Options = nil
-					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
-					Expect(err).NotTo(HaveOccurred())
-				})
-				It("can create string access logs", func() {
-					gw.Options = &gloov1.ListenerOptions{
-						AccessLoggingService: &als.AccessLoggingService{
-							AccessLog: []*als.AccessLog{
-								{
-									OutputDestination: &als.AccessLog_FileSink{
-										FileSink: &als.FileSink{
-											Path: path,
-											OutputFormat: &als.FileSink_StringFormat{
-												StringFormat: "",
-											},
-										},
-									},
-								},
-							},
-						},
-					}
-
-					gatewaycli := testClients.GatewayClient
-					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
-					Expect(err).NotTo(HaveOccurred())
-					up := tu.Upstream
-					vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
-					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
-					Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
 					TestUpstreamReachable()
 
-					Eventually(func() error {
-						var logsPresent = func(logs string) bool {
-							return strings.Contains(logs, `"POST /1 HTTP/1.1" 200`)
-						}
-						return checkLogs(envoyInstance, logsPresent)
-					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
-				})
-				It("can create json access logs", func() {
-					gw.Options = &gloov1.ListenerOptions{
-						AccessLoggingService: &als.AccessLoggingService{
-							AccessLog: []*als.AccessLog{
-								{
-									OutputDestination: &als.AccessLog_FileSink{
-										FileSink: &als.FileSink{
-											Path: path,
-											OutputFormat: &als.FileSink_JsonFormat{
-												JsonFormat: &structpb.Struct{
-													Fields: map[string]*structpb.Value{
-														"protocol": {
-															Kind: &structpb.Value_StringValue{
-																StringValue: "%PROTOCOL%",
-															},
+					var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
+					g.Eventually(msgChan, 2*time.Second).Should(Receive(&entry))
+					g.Expect(entry.CommonProperties.UpstreamCluster).To(Equal(translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())))
+				}, time.Second*21, time.Second*2)
+
+			})
+		})
+
+		Context("File", func() {
+
+			BeforeEach(func() {
+				err := envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("can create string access logs", func() {
+				gw, err := testClients.GatewayClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+
+				gw.Options = &gloov1.ListenerOptions{
+					AccessLoggingService: &als.AccessLoggingService{
+						AccessLog: []*als.AccessLog{
+							{
+								OutputDestination: &als.AccessLog_FileSink{
+									FileSink: &als.FileSink{
+										Path: "/dev/stdout",
+										OutputFormat: &als.FileSink_StringFormat{
+											StringFormat: "",
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				_, err = testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func(g Gomega) {
+					TestUpstreamReachable()
+
+					logs, err := envoyInstance.Logs()
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(logs).To(ContainSubstring(`"POST /1 HTTP/1.1" 200`))
+				}, time.Second*30, time.Second/2)
+			})
+
+			It("can create json access logs", func() {
+				gw, err := testClients.GatewayClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+
+				gw.Options = &gloov1.ListenerOptions{
+					AccessLoggingService: &als.AccessLoggingService{
+						AccessLog: []*als.AccessLog{
+							{
+								OutputDestination: &als.AccessLog_FileSink{
+									FileSink: &als.FileSink{
+										Path: "/dev/stdout",
+										OutputFormat: &als.FileSink_JsonFormat{
+											JsonFormat: &structpb.Struct{
+												Fields: map[string]*structpb.Value{
+													"protocol": {
+														Kind: &structpb.Value_StringValue{
+															StringValue: "%PROTOCOL%",
 														},
-														"method": {
-															Kind: &structpb.Value_StringValue{
-																StringValue: "%REQ(:METHOD)%",
-															},
+													},
+													"method": {
+														Kind: &structpb.Value_StringValue{
+															StringValue: "%REQ(:METHOD)%",
 														},
 													},
 												},
@@ -303,24 +212,20 @@ var _ = Describe("Access Log", func() {
 								},
 							},
 						},
-					}
-					gatewaycli := testClients.GatewayClient
-					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
-					Expect(err).NotTo(HaveOccurred())
-					up := tu.Upstream
-					vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
-					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
-					Expect(err).NotTo(HaveOccurred())
+					},
+				}
 
+				_, err = testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func(g Gomega) {
 					TestUpstreamReachable()
-					Eventually(func() error {
-						var logsPresent = func(logs string) bool {
-							return strings.Contains(logs, `{"method":"POST","protocol":"HTTP/1.1"}`) ||
-								strings.Contains(logs, `{"protocol":"HTTP/1.1","method":"POST"}`)
-						}
-						return checkLogs(envoyInstance, logsPresent)
-					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
-				})
+
+					logs, err := envoyInstance.Logs()
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(logs).To(ContainSubstring(`"method":"POST"`))
+					g.Expect(logs).To(ContainSubstring(`"protocol":"HTTP/1.1"`))
+				}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
 			})
 		})
 	})
