@@ -7,7 +7,7 @@ package mock_utils
 import (
 	reflect "reflect"
 
-	envoy_extensions_transport_sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	utils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -37,10 +37,10 @@ func (m *MockSslConfigTranslator) EXPECT() *MockSslConfigTranslatorMockRecorder 
 }
 
 // ResolveCommonSslConfig mocks base method.
-func (m *MockSslConfigTranslator) ResolveCommonSslConfig(arg0 utils.CertSource, arg1 v1.SecretList, arg2 bool) (*envoy_extensions_transport_sockets_tls_v3.CommonTlsContext, error) {
+func (m *MockSslConfigTranslator) ResolveCommonSslConfig(arg0 utils.CertSource, arg1 v1.SecretList, arg2 bool) (*tlsv3.CommonTlsContext, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResolveCommonSslConfig", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*envoy_extensions_transport_sockets_tls_v3.CommonTlsContext)
+	ret0, _ := ret[0].(*tlsv3.CommonTlsContext)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -52,10 +52,10 @@ func (mr *MockSslConfigTranslatorMockRecorder) ResolveCommonSslConfig(arg0, arg1
 }
 
 // ResolveDownstreamSslConfig mocks base method.
-func (m *MockSslConfigTranslator) ResolveDownstreamSslConfig(arg0 v1.SecretList, arg1 *v1.SslConfig) (*envoy_extensions_transport_sockets_tls_v3.DownstreamTlsContext, error) {
+func (m *MockSslConfigTranslator) ResolveDownstreamSslConfig(arg0 v1.SecretList, arg1 *v1.SslConfig) (*tlsv3.DownstreamTlsContext, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResolveDownstreamSslConfig", arg0, arg1)
-	ret0, _ := ret[0].(*envoy_extensions_transport_sockets_tls_v3.DownstreamTlsContext)
+	ret0, _ := ret[0].(*tlsv3.DownstreamTlsContext)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -67,10 +67,10 @@ func (mr *MockSslConfigTranslatorMockRecorder) ResolveDownstreamSslConfig(arg0, 
 }
 
 // ResolveSslParamsConfig mocks base method.
-func (m *MockSslConfigTranslator) ResolveSslParamsConfig(arg0 *v1.SslParameters) (*envoy_extensions_transport_sockets_tls_v3.TlsParameters, error) {
+func (m *MockSslConfigTranslator) ResolveSslParamsConfig(arg0 *v1.SslParameters) (*tlsv3.TlsParameters, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResolveSslParamsConfig", arg0)
-	ret0, _ := ret[0].(*envoy_extensions_transport_sockets_tls_v3.TlsParameters)
+	ret0, _ := ret[0].(*tlsv3.TlsParameters)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -82,10 +82,10 @@ func (mr *MockSslConfigTranslatorMockRecorder) ResolveSslParamsConfig(arg0 inter
 }
 
 // ResolveUpstreamSslConfig mocks base method.
-func (m *MockSslConfigTranslator) ResolveUpstreamSslConfig(arg0 v1.SecretList, arg1 *v1.UpstreamSslConfig) (*envoy_extensions_transport_sockets_tls_v3.UpstreamTlsContext, error) {
+func (m *MockSslConfigTranslator) ResolveUpstreamSslConfig(arg0 v1.SecretList, arg1 *v1.UpstreamSslConfig) (*tlsv3.UpstreamTlsContext, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResolveUpstreamSslConfig", arg0, arg1)
-	ret0, _ := ret[0].(*envoy_extensions_transport_sockets_tls_v3.UpstreamTlsContext)
+	ret0, _ := ret[0].(*tlsv3.UpstreamTlsContext)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

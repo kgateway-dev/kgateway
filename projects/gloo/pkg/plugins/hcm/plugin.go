@@ -1,6 +1,9 @@
 package hcm
 
 import (
+	"fmt"
+	"net"
+
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_extensions_http_header_formatters_preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
@@ -43,29 +46,29 @@ func (p *plugin) Init(_ plugins.InitParams) {
 func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
 	out.UseRemoteAddress = in.GetUseRemoteAddress()
-	out.XffNumTrustedHops = in.GetXffNumTrustedHops()
-	out.SkipXffAppend = in.GetSkipXffAppend()
-	out.Via = in.GetVia()
+	out.XffNumTrustedHops = in.GetXffNumTrustedHops().GetValue()
+	out.SkipXffAppend = in.GetSkipXffAppend().GetValue()
+	out.Via = in.GetVia().GetValue()
 	out.GenerateRequestId = in.GetGenerateRequestId()
-	out.Proxy_100Continue = in.GetProxy_100Continue()
+	out.Proxy_100Continue = in.GetProxy_100Continue().GetValue()
 	out.StreamIdleTimeout = in.GetStreamIdleTimeout()
 	out.MaxRequestHeadersKb = in.GetMaxRequestHeadersKb()
 	out.RequestTimeout = in.GetRequestTimeout()
 	out.RequestHeadersTimeout = in.GetRequestHeadersTimeout()
 	out.DrainTimeout = in.GetDrainTimeout()
 	out.DelayedCloseTimeout = in.GetDelayedCloseTimeout()
-	out.ServerName = in.GetServerName()
-	out.PreserveExternalRequestId = in.GetPreserveExternalRequestId()
+	out.ServerName = in.GetServerName().GetValue()
+	out.PreserveExternalRequestId = in.GetPreserveExternalRequestId().GetValue()
 	out.ServerHeaderTransformation = envoyhttp.HttpConnectionManager_ServerHeaderTransformation(in.GetServerHeaderTransformation())
 	out.PathWithEscapedSlashesAction = envoyhttp.HttpConnectionManager_PathWithEscapedSlashesAction(in.GetPathWithEscapedSlashesAction())
 	out.CodecType = envoyhttp.HttpConnectionManager_CodecType(in.GetCodecType())
-	out.MergeSlashes = in.GetMergeSlashes()
+	out.MergeSlashes = in.GetMergeSlashes().GetValue()
 	out.NormalizePath = in.GetNormalizePath()
 
-	if in.GetAcceptHttp_10() {
+	if in.GetAcceptHttp_10().GetValue() {
 		out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{
 			AcceptHttp_10:         true,
-			DefaultHostForHttp_10: in.GetDefaultHostForHttp_10(),
+			DefaultHostForHttp_10: in.GetDefaultHostForHttp_10().GetValue(),
 		}
 	}
 
@@ -73,13 +76,13 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 	if in.GetHeaderFormat() != nil && out.GetHttpProtocolOptions() == nil {
 		out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
 	}
-	if in.GetProperCaseHeaderKeyFormat() {
+	if in.GetProperCaseHeaderKeyFormat().GetValue() {
 		out.GetHttpProtocolOptions().HeaderKeyFormat = &envoycore.Http1ProtocolOptions_HeaderKeyFormat{
 			HeaderFormat: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{
 				ProperCaseWords: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords{},
 			},
 		}
-	} else if in.GetPreserveCaseHeaderKeyFormat() {
+	} else if in.GetPreserveCaseHeaderKeyFormat().GetValue() {
 		out.GetHttpProtocolOptions().HeaderKeyFormat = &envoycore.Http1ProtocolOptions_HeaderKeyFormat{
 			HeaderFormat: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
 				StatefulFormatter: &envoycore.TypedExtensionConfig{
@@ -90,19 +93,36 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		}
 	}
 
-	if in.GetAllowChunkedLength() {
-		if out.GetHttpProtocolOptions() == nil {
-			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
+	if in.GetInternalAddressConfig() != nil {
+		if out.GetInternalAddressConfig() == nil {
+			out.InternalAddressConfig = &envoyhttp.HttpConnectionManager_InternalAddressConfig{}
 		}
-		out.GetHttpProtocolOptions().AllowChunkedLength = in.GetAllowChunkedLength()
+		out.GetInternalAddressConfig().UnixSockets = in.GetInternalAddressConfig().GetUnixSockets().GetValue()
+		for _, cidrRange := range in.GetInternalAddressConfig().GetCidrRanges() {
+			_, _, err := net.ParseCIDR(fmt.Sprintf("%s/%d", cidrRange.GetAddressPrefix(), cidrRange.GetPrefixLen().GetValue()))
+			if err != nil {
+				return err
+			}
+			out.GetInternalAddressConfig().CidrRanges = append(out.GetInternalAddressConfig().GetCidrRanges(), &envoycore.CidrRange{
+				AddressPrefix: cidrRange.GetAddressPrefix(),
+				PrefixLen:     cidrRange.GetPrefixLen(),
+			})
+		}
 	}
 
-	if in.GetEnableTrailers() {
+	if in.GetAllowChunkedLength().GetValue() {
+		if out.GetHttpProtocolOptions() == nil {
+			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
+		}
+		out.GetHttpProtocolOptions().AllowChunkedLength = in.GetAllowChunkedLength().GetValue()
+	}
+
+	if in.GetEnableTrailers().GetValue() {
 		if out.GetHttpProtocolOptions() == nil {
 			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
 		}
 
-		out.GetHttpProtocolOptions().EnableTrailers = in.GetEnableTrailers()
+		out.GetHttpProtocolOptions().EnableTrailers = in.GetEnableTrailers().GetValue()
 	}
 
 	if in.GetIdleTimeout() != nil {
@@ -147,7 +167,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		out.GetCommonHttpProtocolOptions().HeadersWithUnderscoresAction = envoycore.HttpProtocolOptions_HeadersWithUnderscoresAction(in.GetHeadersWithUnderscoresAction())
 	}
 
-	if in.GetStripAnyHostPort() {
+	if in.GetStripAnyHostPort().GetValue() {
 		if out.GetStripPortMode() == nil {
 			out.StripPortMode = &envoyhttp.HttpConnectionManager_StripAnyHostPort{
 				StripAnyHostPort: true,
@@ -256,10 +276,10 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 	if shouldConfigureClientCertDetails {
 		out.SetCurrentClientCertDetails = &envoyhttp.HttpConnectionManager_SetCurrentClientCertDetails{
 			Subject: in.GetSetCurrentClientCertDetails().GetSubject(),
-			Cert:    in.GetSetCurrentClientCertDetails().GetCert(),
-			Chain:   in.GetSetCurrentClientCertDetails().GetChain(),
-			Dns:     in.GetSetCurrentClientCertDetails().GetDns(),
-			Uri:     in.GetSetCurrentClientCertDetails().GetUri(),
+			Cert:    in.GetSetCurrentClientCertDetails().GetCert().GetValue(),
+			Chain:   in.GetSetCurrentClientCertDetails().GetChain().GetValue(),
+			Dns:     in.GetSetCurrentClientCertDetails().GetDns().GetValue(),
+			Uri:     in.GetSetCurrentClientCertDetails().GetUri().GetValue(),
 		}
 	}
 

@@ -20,19 +20,19 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("ConsulClient", func() {
+var _ = Describe("ClientWrapper", func() {
 
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
 		ctrl   *gomock.Controller
-		client *MockConsulClient
+		client *MockClientWrapper
 	)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		ctrl = gomock.NewController(T)
-		client = NewMockConsulClient(ctrl)
+		client = NewMockClientWrapper(ctrl)
 	})
 
 	AfterEach(func() {
@@ -336,7 +336,7 @@ type dataCenterServicesTuple struct {
 	Services   map[string][]string
 }
 
-func setupDatacenterServices(ctx context.Context, client *MockConsulClient, queryOptions *consulapi.QueryOptions, returns *[]dataCenterServicesTuple) {
+func setupDatacenterServices(ctx context.Context, client *MockClientWrapper, queryOptions *consulapi.QueryOptions, returns *[]dataCenterServicesTuple) {
 	for _, r := range *returns {
 		client.EXPECT().Services((&consulapi.QueryOptions{
 			Datacenter:        r.DataCenter,

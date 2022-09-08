@@ -750,6 +750,21 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Clone() proto.Message {
 		target.QueryOptions = proto.Clone(m.GetQueryOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul.QueryOptions)
 	}
 
+	if m.GetServiceTagsAllowlist() != nil {
+		target.ServiceTagsAllowlist = make([]string, len(m.GetServiceTagsAllowlist()))
+		for idx, v := range m.GetServiceTagsAllowlist() {
+
+			target.ServiceTagsAllowlist[idx] = v
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetEdsBlockingQueries()).(clone.Cloner); ok {
+		target.EdsBlockingQueries = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.EdsBlockingQueries = proto.Clone(m.GetEdsBlockingQueries()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

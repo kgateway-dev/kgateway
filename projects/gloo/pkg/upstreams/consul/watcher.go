@@ -21,26 +21,27 @@ type ServiceMeta struct {
 }
 
 type ConsulWatcher interface {
-	ConsulClient
+	ClientWrapper
 	WatchServices(ctx context.Context, dataCenters []string, cm glooconsul.ConsulConsistencyModes, queryOpts *glooconsul.QueryOptions) (<-chan []*ServiceMeta, <-chan error)
 }
 
-func NewConsulWatcher(client *consulapi.Client, dataCenters []string) (ConsulWatcher, error) {
-	clientWrapper, err := NewConsulClient(client, dataCenters)
+func NewConsulWatcher(client *consulapi.Client, dataCenters []string, serviceTagsAllowlist []string) (ConsulWatcher, error) {
+
+	clientWrapper, err := NewFilteredConsulClient(NewConsulClientWrapper(client), dataCenters, serviceTagsAllowlist)
 	if err != nil {
 		return nil, err
 	}
 	return NewConsulWatcherFromClient(clientWrapper), nil
 }
 
-func NewConsulWatcherFromClient(client ConsulClient) ConsulWatcher {
+func NewConsulWatcherFromClient(client ClientWrapper) ConsulWatcher {
 	return &consulWatcher{client}
 }
 
 var _ ConsulWatcher = &consulWatcher{}
 
 type consulWatcher struct {
-	ConsulClient
+	ClientWrapper
 }
 
 // Maps a data center name to the services (including tags) registered in it
@@ -173,6 +174,8 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 				}
 
 				// If index is the same, there have been no changes since last query
+				// since this follows the raft index, this can also change even if the services / tags do not;
+				// in fact, we depend on this (which is tested in "fires service watch even if catalog service is the only update")
 				if queryMeta.LastIndex == lastIndex {
 					continue
 				}

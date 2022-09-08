@@ -315,6 +315,21 @@ message Settings {
 
         // QueryOptions are the query options to use for all Consul queries.
         .consul.options.gloo.solo.io.QueryOptions query_options = 21;
+
+        // All Services with tags in the allowlisted values will have endpoints and upstreams discovered.
+        // Default is all services - if values specified this will limit discovery to only services with specified tags
+        repeated string service_tags_allowlist = 22;
+
+        // Enables blocking queries for Gloo's requests to the Consul Catalog API for each service
+        // (`/catalog/service/:servicename`) to get endpoints for EDS. For more on blocking queries, see
+        // https://www.consul.io/api-docs/features/blocking
+        //
+        // Enabling this feature will likely result in fewer network calls to Consul, but may also result in
+        // fewer local consul agent cache hits for Gloo's requests to the Consul Catalog API. (see
+        // `query_options` above to configure caching; caching is enabled by default).
+        //
+        // Defaults to false.
+        google.protobuf.BoolValue eds_blocking_queries = 23;
     }
 
     ConsulUpstreamDiscoveryConfiguration consulDiscovery = 30;

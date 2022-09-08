@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/gloo/issues/7031
+    description: |
+      Change debug logs in validating webhook to not reference the Proxy
+      It might be slightly less readable but will cause less memory overhead

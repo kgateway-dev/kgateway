@@ -377,15 +377,11 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if len(opts.Consul.DnsServer) == 0 {
 		opts.Consul.DnsServer = consulplugin.DefaultDnsAddress
 	}
-	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
-		dnsPollingInterval := prototime.DurationFromProto(pollingInterval)
-		opts.Consul.DnsPollingInterval = &dnsPollingInterval
-	}
+	opts.Consul.DnsPollingInterval = settings.GetConsul().GetDnsPollingInterval()
 
 	// if vault service discovery specified, initialize consul watcher
 	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {
-		// Set up Consul client
-		consulClientWrapper, err := consul.NewConsulWatcher(consulClient, consulServiceDiscovery.GetDataCenters())
+		consulClientWrapper, err := consul.NewConsulWatcher(consulClient, consulServiceDiscovery.GetDataCenters(), settings.GetConsulDiscovery().GetServiceTagsAllowlist())
 		if err != nil {
 			return err
 		}
@@ -453,7 +449,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.Settings.GetGloo().GetDisableKubernetesDestinations() {
 		kubeServiceClient = nil
 	}
-	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, kubeServiceClient, opts.Consul.ConsulWatcher)
+	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, kubeServiceClient, opts.Consul.ConsulWatcher, opts.Settings)
 	if err != nil {
 		return err
 	}
@@ -565,11 +561,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
-	discoveryPluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx)
+	pluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx)
 	var discoveryPlugins []discovery.DiscoveryPlugin
-	for _, plug := range discoveryPluginRegistry.GetPlugins() {
+	for _, plug := range pluginRegistry.GetPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
+			disc.Init(plugins.InitParams{Ctx: watchOpts.Ctx, Settings: opts.Settings})
 			discoveryPlugins = append(discoveryPlugins, disc)
 		}
 	}
@@ -739,8 +736,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	resourceHasher := translator.MustEnvoyCacheResourcesListToFnvHash
 
-	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory, resourceHasher)
-
+	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
+	validationTranslator := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
 		return err
@@ -750,7 +747,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		sanitizer.NewUpstreamRemovingSanitizer(),
 		routeReplacingSanitizer,
 	}
-	validator := validation.NewValidator(watchOpts.Ctx, t, xdsSanitizer)
+	validator := validation.NewValidator(watchOpts.Ctx, validationTranslator, xdsSanitizer)
 	if opts.ValidationServer.Server != nil {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}

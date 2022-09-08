@@ -6,7 +6,7 @@ weight: 50
 
 Gloo Edge Enterprise requires a time-limited license key in order to fully operate. You initially provide this license at installation time, as described [here]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}).
 
-The license key is stored as a Kubernetes secret in the cluster. When the key expires, the pods that mount the secret might crash. To update the license key, patch the secret and restart the Gloo Edge deployments.
+The license key is stored as a Kubernetes secret in the cluster. When the key expires, the pods that mount the secret might crash. To update the license key, patch the secret and restart the Gloo Edge deployments. During the upgrade, the data plane continues to run, but you might not be able to modify the configurations for Gloo custom resources through the management plane.
 
 {{% notice tip %}}
 When you first install Gloo Edge in your cluster, confirm the license key expiration date with your Account Representative, such as in **30 days**. Then, set a reminder for before the license key expires, and complete these steps, such as on Day 30, so that your Gloo Edge pods do not crash.
@@ -68,14 +68,21 @@ If you're a new user whose trial license has expired, contact your Solo.io Accou
 
 The Gloo Edge Enterprise license is installed by default into a Kubernetes `Secret` named `license` in the `gloo-system` namespace. If that is the case for your installation, then you can use a simple bash script to replace the expired key by patching the `license` secret:
 
-```bash
-GLOO_KEY=your-new-enterprise-key-string
-echo $GLOO_KEY | base64 | read output;kubectl patch secret license -n gloo-system -p="{\"data\":{\"license-key\": \"$output\"}}" -v=1
-```
+1. Save the new license key in an environment variable.
+   ```bash
+   export GLOO_KEY=<your-new-enterprise-key-string>
+   ```
 
-{{% notice note %}}
-Make sure that the base64 encoding does not add new lines. If new lines are added, trim the new lines by running the command again with the `-w 0` option.
-{{% /notice %}}
+2. Encode the license key in base64.
+   ```sh
+   export GLOO_KEY_BASE64=$(echo $GLOO_KEY | base64 -w 0)
+   echo $GLOO_KEY_BASE64
+   ```
+
+3. Patch the `license` secret with the base64-encoded key.
+   ```sh
+   kubectl patch secret license -n gloo-system -p="{\"data\":{\"license-key\": \"$GLOO_KEY_BASE64\"}}" -v=1
+   ```
 
 If successful, this script should respond with: `secret/license patched`.
 

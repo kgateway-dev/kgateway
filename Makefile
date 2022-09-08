@@ -34,7 +34,7 @@ ORIGIN_URL ?= $(shell git remote get-url origin)
 UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
 ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)"),)
-	VERSION := 0.0.0-fork
+	VERSION := 0.0.1-fork
 	CREATE_TEST_ASSETS := "false"
 endif
 
@@ -148,7 +148,7 @@ DEPSGOBIN=$(shell pwd)/_output/.bin
 
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 .PHONY: install-go-tools
-install-go-tools: mod-download
+install-go-tools: mod-download install-test-tools
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
@@ -159,8 +159,12 @@ install-go-tools: mod-download
 	GOBIN=$(DEPSGOBIN) go install github.com/cratonica/2goarray
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 	GOBIN=$(DEPSGOBIN) go install github.com/saiskee/gettercheck
+
+.PHONY: install-test-tools
+install-test-tools:
+	mkdir -p $(DEPSGOBIN)
+	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
 # command to run regression tests with guaranteed access to $(DEPSGOBIN)/ginkgo
 # requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
@@ -168,13 +172,13 @@ install-go-tools: mod-download
 .PHONY: run-tests
 run-tests:
 ifneq ($(RELEASE), "true")
-	RUN_REGRESSION_TESTS=$(RUN_REGRESSION_TESTS) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
+	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests
-run-ci-regression-tests: TEST_PKG=./test/kube2e/...
-run-ci-regression-tests: RUN_REGRESSION_TESTS=true
-run-ci-regression-tests: install-go-tools run-tests
+run-ci-regression-tests: install-test-tools
+	# We intentionally leave out the `-r` ginkgo flag, since we are specifying the exact package that we want run
+	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
 
 .PHONY: check-format
 check-format:
@@ -730,41 +734,14 @@ build-test-chart:
 
 TRIVY_VERSION ?= $(shell curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
-
-ifeq ($(shell uname), Darwin)
-	machine ?= macOS
-else
-	machine ?= Linux
-endif
-TRIVY_ARCH:=64bit
-ifeq ($(GOARCH), arm64)
-	TRIVY_ARCH:=ARM64
-endif
-
-# Local run for trivy security checks
-.PHONY: security-checks
-security-checks:
-	mkdir -p $(SCAN_DIR)/$(VERSION)
-
-	curl -Ls "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_${machine}-${TRIVY_ARCH}.tar.gz" | tar zx '*trivy' || { echo "Download/extract failed for trivy."; exit 1; };
-
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/ingress_cve_report.docgen $(IMAGE_REPO)/ingress:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/discovery_cve_report.docgen $(IMAGE_REPO)/discovery:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/gloo_cve_report.docgen $(IMAGE_REPO)/gloo:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/gloo-envoy-wrapper_cve_report.docgen $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/certgen_cve_report.docgen $(IMAGE_REPO)/certgen:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/kubectl_cve_report.docgen $(IMAGE_REPO)/kubectl:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/sds_cve_report.docgen $(IMAGE_REPO)/sds:$(VERSION) && \
-	./trivy image --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/$(VERSION)/access-logger_cve_report.docgen $(IMAGE_REPO)/access-logger:$(VERSION)
-
 SCAN_BUCKET ?= solo-gloo-security-scans
 
 .PHONY: run-security-scans
 run-security-scan:
 	# Run security scan on gloo and solo-projects
 	# Generates scan files to _output/scans directory
-	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo
-	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe
+	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo -a github-issue-latest
+	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe -a github-issue-latest
 
 .PHONY: publish-security-scan
 publish-security-scan:

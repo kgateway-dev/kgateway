@@ -51,14 +51,26 @@ func (m *ListenerTracingSettings) Equal(that interface{}) bool {
 	}
 	for idx, v := range m.GetRequestHeadersForTags() {
 
-		if strings.Compare(v, target.GetRequestHeadersForTags()[idx]) != 0 {
-			return false
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRequestHeadersForTags()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetRequestHeadersForTags()[idx]) {
+				return false
+			}
 		}
 
 	}
 
-	if m.GetVerbose() != target.GetVerbose() {
-		return false
+	if h, ok := interface{}(m.GetVerbose()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetVerbose()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetVerbose(), target.GetVerbose()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetTracePercentages()).(equality.Equalizer); ok {
@@ -270,16 +282,34 @@ func (m *TracingTagEnvironmentVariable) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetTag(), target.GetTag()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetTag()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTag()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTag(), target.GetTag()) {
+			return false
+		}
 	}
 
-	if strings.Compare(m.GetName(), target.GetName()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetName()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetName()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetName(), target.GetName()) {
+			return false
+		}
 	}
 
-	if strings.Compare(m.GetDefaultValue(), target.GetDefaultValue()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetDefaultValue()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDefaultValue()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDefaultValue(), target.GetDefaultValue()) {
+			return false
+		}
 	}
 
 	return true
@@ -306,12 +336,24 @@ func (m *TracingTagLiteral) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetTag(), target.GetTag()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetTag()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTag()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTag(), target.GetTag()) {
+			return false
+		}
 	}
 
-	if strings.Compare(m.GetValue(), target.GetValue()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetValue()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetValue()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetValue(), target.GetValue()) {
+			return false
+		}
 	}
 
 	return true
