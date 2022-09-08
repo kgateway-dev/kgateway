@@ -1323,16 +1323,6 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetDiscoveryOverride()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetDiscoveryOverride()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetDiscoveryOverride(), target.GetDiscoveryOverride()) {
-			return false
-		}
-	}
-
 	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
 		return false
 	}
@@ -1357,6 +1347,18 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetCustomRefreshTokenIdentifier(), target.GetCustomRefreshTokenIdentifier()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetAuthEndpoint(), target.GetAuthEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTokenEndpoint(), target.GetTokenEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRevocationEndpoint(), target.GetRevocationEndpoint()) != 0 {
 		return false
 	}
 
@@ -3353,16 +3355,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetDiscoveryOverride()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetDiscoveryOverride()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetDiscoveryOverride(), target.GetDiscoveryOverride()) {
-			return false
-		}
-	}
-
 	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
 		return false
 	}
@@ -3387,6 +3379,18 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetCustomRefreshTokenIdentifier(), target.GetCustomRefreshTokenIdentifier()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetAuthEndpoint(), target.GetAuthEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTokenEndpoint(), target.GetTokenEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRevocationEndpoint(), target.GetRevocationEndpoint()) != 0 {
 		return false
 	}
 

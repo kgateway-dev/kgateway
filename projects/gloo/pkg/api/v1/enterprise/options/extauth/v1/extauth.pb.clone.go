@@ -789,12 +789,6 @@ func (m *PlainOAuth2) Clone() proto.Message {
 
 	target.LogoutPath = m.GetLogoutPath()
 
-	if h, ok := interface{}(m.GetDiscoveryOverride()).(clone.Cloner); ok {
-		target.DiscoveryOverride = h.Clone().(*DiscoveryOverride)
-	} else {
-		target.DiscoveryOverride = proto.Clone(m.GetDiscoveryOverride()).(*DiscoveryOverride)
-	}
-
 	if m.GetTokenEndpointQueryParams() != nil {
 		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
 		for k, v := range m.GetTokenEndpointQueryParams() {
@@ -811,6 +805,12 @@ func (m *PlainOAuth2) Clone() proto.Message {
 	target.CustomAuthTokenIdentifier = m.GetCustomAuthTokenIdentifier()
 
 	target.CustomRefreshTokenIdentifier = m.GetCustomRefreshTokenIdentifier()
+
+	target.AuthEndpoint = m.GetAuthEndpoint()
+
+	target.TokenEndpoint = m.GetTokenEndpoint()
+
+	target.RevocationEndpoint = m.GetRevocationEndpoint()
 
 	return target
 }
@@ -1991,12 +1991,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 
 	target.LogoutPath = m.GetLogoutPath()
 
-	if h, ok := interface{}(m.GetDiscoveryOverride()).(clone.Cloner); ok {
-		target.DiscoveryOverride = h.Clone().(*DiscoveryOverride)
-	} else {
-		target.DiscoveryOverride = proto.Clone(m.GetDiscoveryOverride()).(*DiscoveryOverride)
-	}
-
 	if m.GetTokenEndpointQueryParams() != nil {
 		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
 		for k, v := range m.GetTokenEndpointQueryParams() {
@@ -2013,6 +2007,12 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 	target.CustomAuthTokenIdentifier = m.GetCustomAuthTokenIdentifier()
 
 	target.CustomRefreshTokenIdentifier = m.GetCustomRefreshTokenIdentifier()
+
+	target.AuthEndpoint = m.GetAuthEndpoint()
+
+	target.TokenEndpoint = m.GetTokenEndpoint()
+
+	target.RevocationEndpoint = m.GetRevocationEndpoint()
 
 	return target
 }

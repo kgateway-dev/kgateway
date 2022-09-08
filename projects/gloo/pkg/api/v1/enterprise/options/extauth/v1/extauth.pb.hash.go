@@ -1475,26 +1475,6 @@ func (m *PlainOAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetDiscoveryOverride()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("DiscoveryOverride")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetDiscoveryOverride(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("DiscoveryOverride")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	{
 		var result uint64
 		innerHash := fnv.New64()
@@ -1531,6 +1511,18 @@ func (m *PlainOAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if _, err = hasher.Write([]byte(m.GetCustomRefreshTokenIdentifier())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAuthEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetTokenEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRevocationEndpoint())); err != nil {
 		return 0, err
 	}
 
@@ -3794,26 +3786,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Hash(hasher hash.Hash64) (uint64, erro
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetDiscoveryOverride()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("DiscoveryOverride")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetDiscoveryOverride(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("DiscoveryOverride")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	{
 		var result uint64
 		innerHash := fnv.New64()
@@ -3850,6 +3822,18 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Hash(hasher hash.Hash64) (uint64, erro
 	}
 
 	if _, err = hasher.Write([]byte(m.GetCustomRefreshTokenIdentifier())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAuthEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetTokenEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRevocationEndpoint())); err != nil {
 		return 0, err
 	}
 

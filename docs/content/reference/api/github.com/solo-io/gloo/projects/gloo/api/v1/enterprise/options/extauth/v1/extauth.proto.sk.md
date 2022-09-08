@@ -833,12 +833,14 @@ The Method used to make the request.
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
 "logoutPath": string
-"discoveryOverride": .enterprise.gloo.solo.io.DiscoveryOverride
 "tokenEndpointQueryParams": map<string, string>
 "afterLogoutUrl": string
 "sessionIdHeaderName": string
 "customAuthTokenIdentifier": string
 "customRefreshTokenIdentifier": string
+"authEndpoint": string
+"tokenEndpoint": string
+"revocationEndpoint": string
 
 ```
 
@@ -852,12 +854,14 @@ The Method used to make the request.
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |
 | `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OAuth2 session. should not be used by the application. If not provided, logout functionality will be disabled. |
-| `discoveryOverride` | [.enterprise.gloo.solo.io.DiscoveryOverride](../extauth.proto.sk/#discoveryoverride) | The discovery override defines any properties that should defined for OAuth2 configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system discovery_override: token_endpoint: "https://token.url/gettoken" ```. |
 | `tokenEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's token request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
 | `afterLogoutUrl` | `string` | url to redirect to after logout. This should be a publicly available URL. If not provided, will default to the `app_url`. |
 | `sessionIdHeaderName` | `string` | If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
 | `customAuthTokenIdentifier` | `string` | If set, we will use custom_auth_token_identifier for authentication. Defaults to "access_token". |
 | `customRefreshTokenIdentifier` | `string` | If set, we will use custom_auth_token_identifier for refreshing. Defaults to "refresh_token". |
+| `authEndpoint` | `string` | url of the provider authorization endpoint. |
+| `tokenEndpoint` | `string` | url of the provider token endpoint. |
+| `revocationEndpoint` | `string` | url of the provider token revocation endpoint. |
 
 
 
@@ -1588,12 +1592,14 @@ These values will be encoded in a basic auth header in order to authenticate the
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
 "logoutPath": string
-"discoveryOverride": .enterprise.gloo.solo.io.DiscoveryOverride
 "tokenEndpointQueryParams": map<string, string>
 "afterLogoutUrl": string
 "sessionIdHeaderName": string
 "customAuthTokenIdentifier": string
 "customRefreshTokenIdentifier": string
+"authEndpoint": string
+"tokenEndpoint": string
+"revocationEndpoint": string
 
 ```
 
@@ -1607,12 +1613,14 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `scopes` | `[]string` | scopes to request. |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |
 | `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OAuth2 session. should not be used by the application. If not provided, logout functionality will be disabled. |
-| `discoveryOverride` | [.enterprise.gloo.solo.io.DiscoveryOverride](../extauth.proto.sk/#discoveryoverride) | The discovery override defines any properties that should defined for OAuth2 configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system discovery_override: token_endpoint: "https://token.url/gettoken" ```. |
 | `tokenEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's token request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
 | `afterLogoutUrl` | `string` | url to redirect to after logout. This should be a publicly available URL. If not provided, will default to the `app_url`. |
 | `sessionIdHeaderName` | `string` | If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
 | `customAuthTokenIdentifier` | `string` | If set, we will use custom_auth_token_identifier for authentication. Defaults to "access_token". |
 | `customRefreshTokenIdentifier` | `string` | If set, we will use custom_auth_token_identifier for refreshing. Defaults to "refresh_token". |
+| `authEndpoint` | `string` | url of the provider authorization endpoint. |
+| `tokenEndpoint` | `string` | url of the provider token endpoint. |
+| `revocationEndpoint` | `string` | url of the provider token revocation endpoint. |
 
 
 

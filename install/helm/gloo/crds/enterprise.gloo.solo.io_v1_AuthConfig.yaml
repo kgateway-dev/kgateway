@@ -368,6 +368,8 @@ spec:
                               type: string
                             appUrl:
                               type: string
+                            authEndpoint:
+                              type: string
                             authEndpointQueryParams:
                               additionalProperties:
                                 type: string
@@ -387,44 +389,9 @@ spec:
                               type: string
                             customRefreshTokenIdentifier:
                               type: string
-                            discoveryOverride:
-                              properties:
-                                authEndpoint:
-                                  type: string
-                                authMethods:
-                                  items:
-                                    type: string
-                                  type: array
-                                claims:
-                                  items:
-                                    type: string
-                                  type: array
-                                endSessionEndpoint:
-                                  type: string
-                                idTokenAlgs:
-                                  items:
-                                    type: string
-                                  type: array
-                                jwksUri:
-                                  type: string
-                                responseTypes:
-                                  items:
-                                    type: string
-                                  type: array
-                                revocationEndpoint:
-                                  type: string
-                                scopes:
-                                  items:
-                                    type: string
-                                  type: array
-                                subjects:
-                                  items:
-                                    type: string
-                                  type: array
-                                tokenEndpoint:
-                                  type: string
-                              type: object
                             logoutPath:
+                              type: string
+                            revocationEndpoint:
                               type: string
                             scopes:
                               items:
@@ -497,6 +464,8 @@ spec:
                                   type: object
                               type: object
                             sessionIdHeaderName:
+                              type: string
+                            tokenEndpoint:
                               type: string
                             tokenEndpointQueryParams:
                               additionalProperties:
