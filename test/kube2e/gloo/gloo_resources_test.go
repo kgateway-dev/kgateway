@@ -1,13 +1,15 @@
 package gloo_test
 
 import (
-	"os"
+	"encoding/json"
+	"fmt"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/solo-kit/test/setup"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	matchers2 "github.com/solo-io/solo-kit/test/matchers"
 
 	"time"
 
@@ -96,20 +98,56 @@ var _ = Describe("GlooResourcesTest", func() {
 			_, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// Modify the VirtualService to include the necessary SslConfig
-			testRunnerVs.SslConfig = &gloov1.SslConfig{
-				SslSecrets: &gloov1.SslConfig_SecretRef{
+			upstreamSslConfig := &gloov1.UpstreamSslConfig{
+				SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      tlsSecret.GetName(),
 						Namespace: tlsSecret.GetNamespace(),
 					},
 				},
 			}
+			upstreamSslConfigString, err := json.Marshal(upstreamSslConfig)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Annotate the kube service, so that discovery applies the ssl configuration to the generated upstream")
+			Eventually(func(g Gomega) {
+				testRunnerService, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, helper.TestrunnerName, metav1.GetOptions{})
+				g.Expect(err).NotTo(HaveOccurred())
+
+				testRunnerService.Annotations[serviceconverter.DeepMergeAnnotationPrefix] = "true"
+				testRunnerService.Annotations[serviceconverter.GlooAnnotationPrefix] = fmt.Sprintf("{sslConfig: %s}", upstreamSslConfigString)
+
+				_, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Update(ctx, testRunnerService, metav1.UpdateOptions{})
+				g.Expect(err).NotTo(HaveOccurred())
+			})
+
+			By("Except the kube upstream to eventually contain annotated the ssl configuration")
+			Eventually(func(g Gomega) {
+				usName := kubernetes.UpstreamName(testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort)
+				testRunnerUs, err := resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, usName, clients.ReadOpts{Ctx: ctx})
+				g.Expect(err).NotTo(HaveOccurred())
+
+				g.Expect(testRunnerUs.GetSslConfig()).To(matchers2.MatchProto(upstreamSslConfig))
+			})
+
 		})
 
 		AfterEach(func() {
 			err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, tlsSecret.GetName(), metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
+
+			By("remove the ssl config annotation from the test runner service")
+			Eventually(func(g Gomega) {
+				testRunnerService, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, helper.TestrunnerName, metav1.GetOptions{})
+				g.Expect(err).NotTo(HaveOccurred())
+
+				delete(testRunnerService.Annotations, serviceconverter.DeepMergeAnnotationPrefix)
+				delete(testRunnerService.Annotations, serviceconverter.GlooAnnotationPrefix)
+
+				_, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Update(ctx, testRunnerService, metav1.UpdateOptions{})
+				g.Expect(err).NotTo(HaveOccurred())
+			})
+
 		})
 
 		It("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
@@ -126,22 +164,13 @@ var _ = Describe("GlooResourcesTest", func() {
 			// eventually the `no healthy upstream` will occur
 			timesToPerform := time.Duration(10)
 
-			eventuallyCurlWithCaCert := func(cert string) {
-				caFile := kube2e.ToFile(cert)
-				//noinspection GoUnhandledErrorResult
-				defer os.Remove(caFile)
-
-				err := setup.Kubectl("cp", caFile, testHelper.InstallNamespace+"/testrunner:/tmp/ca.crt")
-				Expect(err).NotTo(HaveOccurred())
-
+			eventuallyCurl := func() {
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-					Protocol:          "https",
+					Protocol:          "http",
 					Path:              "/",
 					Method:            "GET",
 					Host:              helper.TestrunnerName,
 					Service:           defaults.GatewayProxyName,
-					Port:              443,
-					CaFile:            "/tmp/ca.crt",
 					ConnectionTimeout: 1,
 					WithoutStats:      true,
 				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
@@ -164,7 +193,7 @@ var _ = Describe("GlooResourcesTest", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Eventually can curl the endpoint")
-				eventuallyCurlWithCaCert(crt)
+				eventuallyCurl()
 
 			}, timeInBetweenRotation*timesToPerform, timeInBetweenRotation)
 		})

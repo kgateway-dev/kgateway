@@ -97,7 +97,6 @@ var _ = Describe("Kube2e: helm", func() {
 	})
 
 	Context("upgrades", func() {
-
 		BeforeEach(func() {
 			fromRelease = earliestVersionWithV1CRDs
 		})
