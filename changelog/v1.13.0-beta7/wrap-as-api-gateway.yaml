@@ -1,6 +1,6 @@
 changelog:
   - type: NEW_FEATURE
-    issuelink: 
+    issuelink: https://github.com/solo-io/gloo/issues/6162
     resolvesIssue: false
     description: |
       API Updates which allow a request transformer to be configured in the AWS lambda filter.
