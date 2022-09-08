@@ -708,7 +708,6 @@ func (ei *EnvoyInstance) Logs() (string, error) {
 	return ei.logs.String(), nil
 }
 
-
 // SafeBuffer is a goroutine safe bytes.Buffer
 type SafeBuffer struct {
 	buffer *bytes.Buffer

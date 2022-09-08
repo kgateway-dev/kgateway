@@ -27,7 +27,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = FDescribe("Access Log", func() {
+var _ = Describe("Access Log", func() {
 
 	var (
 		ctx            context.Context

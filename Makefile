@@ -22,7 +22,7 @@ z := $(shell mkdir -p $(OUTPUT_DIR))
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 RELEASE := "false"
 CREATE_TEST_ASSETS := "false"
-CREATE_ASSETS := "false" # TODO (sam-heilbron)
+CREATE_ASSETS := "true"
 RUN_REGRESSION_TESTS=false
 
 ifneq ($(TEST_ASSET_ID),)

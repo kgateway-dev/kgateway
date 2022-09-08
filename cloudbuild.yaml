@@ -99,7 +99,6 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'TAGGED_VERSION=$TAG_NAME'
-  - 'TEST_PKG=./test/e2e'
   dir: *dir
   args: ['run-tests']
   waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials', 'install-go-tools']
