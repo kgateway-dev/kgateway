@@ -39,6 +39,7 @@ message AWSLambdaPerRoute {
   // body is used if the body empty, and an empty body will be sent upstream.
   google.protobuf.StringValue empty_body_override = 4;
 
+  // Deprecated. Use transformer_config to specify an AWS Lambda response transformer instead.
   // Unwrap responses as AWS ALB does.
   // Expects json lambda responses to construct response.
   // Intended to ease migration when previously using alb to invoke Lambdas.
@@ -46,7 +47,7 @@ message AWSLambdaPerRoute {
   // For further information see below link for the expected format when true.
   // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
   // Defaults to false.
-  bool unwrap_as_alb = 5;
+  bool unwrap_as_alb = 5 [deprecated = true];
 
   // transformer configuration used to process response data
   // cannot be configured simultaneously with unwrap_as_alb
