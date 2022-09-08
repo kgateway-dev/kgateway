@@ -365,8 +365,6 @@ type EnvoyInstance struct {
 	Port          uint32
 	RestXdsPort   uint32
 	AdminPort     uint32
-	// Path to access logs for binary run
-	AccessLogs string
 
 	// Envoy API Version to use, default to V3
 	ApiVersion string
