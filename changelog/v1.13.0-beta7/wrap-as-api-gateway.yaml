@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issuelink: 
+    resolvesIssue: false
+    description: |
+      API Updates which allow a request transformer to be configured in the AWS lambda filter.
