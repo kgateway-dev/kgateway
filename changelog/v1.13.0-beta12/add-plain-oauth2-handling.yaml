@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/6985
-    resolvesIssue: false
-    description: >
-      Add plain OAuth2 support for extauth.
