@@ -365,7 +365,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.WriteNamespace = writeNamespace
 	opts.StatusReporterNamespace = gloostatusutils.GetStatusReporterNamespaceOrDefault(writeNamespace)
 	opts.WatchNamespaces = watchNamespaces
-	opts.WatchNamespaceLabelSelectors = namespaceLabelSelectors
 
 	opts.WatchOpts = clients.WatchOpts{
 		Ctx:         ctx,
@@ -436,7 +435,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()
-	watchOpts.ExpressionSelector = opts.WatchNamespaceLabelSelectors
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "setup")

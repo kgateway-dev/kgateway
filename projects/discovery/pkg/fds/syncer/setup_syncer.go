@@ -53,7 +53,6 @@ func RunFDSWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()
-	watchOpts.ExpressionSelector = opts.WatchNamespaceLabelSelectors
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "fds")
 
 	upstreamClient, err := v1.NewUpstreamClient(watchOpts.Ctx, opts.Upstreams)

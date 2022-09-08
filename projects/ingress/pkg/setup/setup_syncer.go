@@ -146,9 +146,8 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		Upstreams:                   upstreamFactory,
 		Secrets:                     secretFactory,
 		WatchOpts: clients.WatchOpts{
-			Ctx:                ctx,
-			RefreshRate:        refreshRate,
-			ExpressionSelector: watchSelectors,
+			Ctx:         ctx,
+			RefreshRate: refreshRate,
 		},
 		EnableKnative:       enableKnative,
 		KnativeVersion:      knativeVersion,
@@ -163,7 +162,6 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 func RunIngress(opts Opts) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
-	opts.WatchOpts.ExpressionSelector = opts.WatchSelectors
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "ingress")
 
 	if opts.DisableKubeIngress && !opts.EnableKnative {
