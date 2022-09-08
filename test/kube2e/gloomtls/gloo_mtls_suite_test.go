@@ -2,13 +2,15 @@ package gloomtls_test
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/avast/retry-go"
+	"github.com/solo-io/k8s-utils/kubeutils"
 
 	"github.com/solo-io/gloo/test/kube2e"
 
@@ -21,16 +23,21 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
-	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
+const (
+	namespace   = defaults.GlooSystem
+	gatewayPort = int(80)
+)
+
 var (
-	testHelper       *helper.SoloTestHelper
-	installNamespace = defaults.GlooSystem
-	ctx              context.Context
-	cancel           context.CancelFunc
+	testHelper        *helper.SoloTestHelper
+	resourceClientset *kube2e.KubeResourceClientSet
+	snapshotWriter    helpers.SnapshotWriter
+
+	ctx, cancel = context.WithCancel(context.Background())
 )
 
 func TestGlooMtls(t *testing.T) {
@@ -42,7 +49,6 @@ func TestGlooMtls(t *testing.T) {
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	_ = os.Remove(cliutil.GetLogsPath())
-	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, installNamespace))
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, "Gloo mTLS Suite", []Reporter{junitReporter})
 }
@@ -55,7 +61,7 @@ var _ = BeforeSuite(func() {
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = installNamespace
+		defaults.InstallNamespace = namespace
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -70,13 +76,17 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "2m")
 
-	// Print out the versions of CLI and server components
-	glooctlVersionCommand := []string{
-		filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName),
-		"version", "-n", testHelper.InstallNamespace}
-	output, err := exec.RunCommandOutput(testHelper.RootDir, true, glooctlVersionCommand...)
+	// Ensure gloo reaches valid state and doesn't continually resync
+	// we can consider doing the same for leaking go-routines after resyncs
+	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+
+	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
-	fmt.Println(output)
+
+	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
 })
 
 var _ = AfterSuite(func() {

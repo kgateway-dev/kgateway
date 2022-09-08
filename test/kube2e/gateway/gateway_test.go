@@ -3,11 +3,14 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	matchers2 "github.com/solo-io/solo-kit/test/matchers"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -276,7 +279,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			It("works with ssl", func() {
-				caFile := ToFile(helpers.Certificate())
+				caFile := kube2e.ToFile(helpers.Certificate())
 				//noinspection GoUnhandledErrorResult
 				defer os.Remove(caFile)
 
@@ -1536,6 +1539,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			upstreamName string
 		)
+
 		BeforeEach(func() {
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1909,31 +1913,7 @@ spec:
 
 			Context("gloo", func() {
 
-				var (
-					// Validation of Gloo resources requires that a Proxy resource exist
-					// Therefore, before the tests start, we must create valid resources that produce a Proxy
-					placeholderVs *gatewayv1.VirtualService
-				)
-
 				BeforeEach(func() {
-					dest := &gloov1.Destination{
-						DestinationType: &gloov1.Destination_Upstream{
-							Upstream: &core.ResourceRef{
-								Namespace: testHelper.InstallNamespace,
-								Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
-							},
-						},
-					}
-
-					placeholderVs = getVirtualService(dest, nil)
-
-					_, err := resourceClientset.VirtualServiceClient().Write(placeholderVs, clients.WriteOpts{})
-					Expect(err).NotTo(HaveOccurred())
-
-					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-						return resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-					})
-
 					// Set the validation settings to be as strict as possible so that we can trigger
 					// rejections by just producing a warning on the resource
 					kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
@@ -1947,9 +1927,46 @@ spec:
 						Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 						settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
 					}, testHelper.InstallNamespace)
+				})
 
-					err := resourceClientset.VirtualServiceClient().Delete(placeholderVs.GetMetadata().GetNamespace(), placeholderVs.GetMetadata().GetName(), clients.DeleteOpts{})
-					Expect(err).NotTo(HaveOccurred())
+				JustBeforeEach(func() {
+					// Validation of Gloo resources requires that a Proxy resource exist
+					// Therefore, before the tests start, we must attempt updates that should be rejected
+					// They will only be rejected once a Proxy exists in the ApiSnapshot
+
+					placeholderUs := &gloov1.Upstream{
+						Metadata: &core.Metadata{
+							Name:      "",
+							Namespace: testHelper.InstallNamespace,
+						},
+						UpstreamType: &gloov1.Upstream_Static{
+							Static: &static.UpstreamSpec{
+								Hosts: []*static.Host{{
+									Addr: "~",
+								}},
+							},
+						},
+					}
+					attempt := 0
+					Eventually(func(g Gomega) bool {
+						placeholderUs.Metadata.Name = fmt.Sprintf("invalid-placeholder-us-%d", attempt)
+
+						_, err := resourceClientset.UpstreamClient().Write(placeholderUs, clients.WriteOpts{Ctx: ctx})
+						if err != nil {
+							// We have successfully rejected an invalid upstream
+							// This means that the webhook is fully warmed, and contains a Snapshot with a Proxy
+							return true
+						}
+
+						err = resourceClientset.UpstreamClient().Delete(
+							placeholderUs.GetMetadata().GetNamespace(),
+							placeholderUs.GetMetadata().GetName(),
+							clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
+						g.Expect(err).NotTo(HaveOccurred())
+
+						attempt += 1
+						return false
+					}, time.Second*15, time.Second*1).Should(BeTrue())
 				})
 
 				It("rejects bad resources", func() {
@@ -1979,41 +1996,29 @@ spec:
 
 		It("rejects invalid inja template in transformation", func() {
 			injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %}`
-			t := &glootransformation.Transformations{
+			invalidInjaTransform := strings.TrimSuffix(injaTransform, "}")
+
+			invalidTransform := &glootransformation.Transformations{
 				ClearRouteCache: true,
 				ResponseTransformation: &glootransformation.Transformation{
 					TransformationType: &glootransformation.Transformation_TransformationTemplate{
 						TransformationTemplate: &transformation.TransformationTemplate{
 							Headers: map[string]*transformation.InjaTemplate{
-								":status": {Text: injaTransform},
+								":status": {Text: invalidInjaTransform},
 							},
 						},
 					},
 				},
 			}
 
-			dest := &gloov1.Destination{
-				DestinationType: &gloov1.Destination_Upstream{
-					Upstream: &core.ResourceRef{
-						Namespace: testHelper.InstallNamespace,
-						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
-					},
-				},
-			}
+			vs, err := resourceClientset.VirtualServiceClient().Read(
+				testRunnerVs.GetMetadata().GetNamespace(),
+				testRunnerVs.GetMetadata().GetName(),
+				clients.ReadOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
 
-			vs := getVirtualService(dest, nil)
-			vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: t}
-
-			_, err := resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx})
-			Expect(err).ToNot(HaveOccurred())
-
-			err = resourceClientset.VirtualServiceClient().Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
-			Expect(err).ToNot(HaveOccurred())
-
-			// trim trailing "}", which should invalidate our inja template
-			t.ResponseTransformation.GetTransformationTemplate().Headers[":status"].Text = strings.TrimSuffix(injaTransform, "}")
-
-			_, err = resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx})
+			vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
+			_, err = resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			Expect(err).To(MatchError(ContainSubstring("Failed to parse response template: Failed to parse " +
 				"header template ':status': [inja.exception.parser_error] expected statement close, got '%'")))
 		})
@@ -2030,43 +2035,30 @@ spec:
 
 			It("will not reject invalid transformation", func() {
 				// this inja template is invalid since it is missing a trailing "}",
-				injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %`
-				t := &glootransformation.Transformations{
+				invalidInjaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %`
+				invalidTransform := &glootransformation.Transformations{
 					ClearRouteCache: true,
 					ResponseTransformation: &glootransformation.Transformation{
 						TransformationType: &glootransformation.Transformation_TransformationTemplate{
 							TransformationTemplate: &transformation.TransformationTemplate{
 								Headers: map[string]*transformation.InjaTemplate{
-									":status": {Text: injaTransform},
+									":status": {Text: invalidInjaTransform},
 								},
 							},
 						},
 					},
 				}
 
-				dest := &gloov1.Destination{
-					DestinationType: &gloov1.Destination_Upstream{
-						Upstream: &core.ResourceRef{
-							Namespace: testHelper.InstallNamespace,
-							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
-						},
-					},
-				}
+				vs, err := resourceClientset.VirtualServiceClient().Read(
+					testRunnerVs.GetMetadata().GetNamespace(),
+					testRunnerVs.GetMetadata().GetName(),
+					clients.ReadOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
 
-				vs := getVirtualService(dest, nil)
-				vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: t}
-
-				// give settings a chance to propagate
-				Eventually(func() error {
-					_, err := resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx})
-					return err
-				}, "5s", "0.1s").ShouldNot(HaveOccurred())
-				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-					return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, vs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
-				})
-
-				err := resourceClientset.VirtualServiceClient().Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
-				Expect(err).ToNot(HaveOccurred())
+				vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
+				updatedVs, err := resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(updatedVs.GetVirtualHost().GetOptions().GetTransformations()).To(matchers2.MatchProto(invalidTransform))
 			})
 		})
 	})
@@ -2174,50 +2166,6 @@ spec:
 
 })
 
-func ToFile(content string) string {
-	f, err := ioutil.TempFile("", "")
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	n, err := f.WriteString(content)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, n).To(Equal(len(content)))
-	_ = f.Close()
-	return f.Name()
-}
-
-func withName(name string, vs *gatewayv1.VirtualService) *gatewayv1.VirtualService {
-	vs.Metadata.Name = name
-	return vs
-}
-
-func withDomains(domains []string, vs *gatewayv1.VirtualService) *gatewayv1.VirtualService {
-	vs.VirtualHost.Domains = domains
-	return vs
-}
-
-func withRoute(route *gatewayv1.Route, vs *gatewayv1.VirtualService) *gatewayv1.VirtualService {
-	vs.VirtualHost.Routes = append([]*gatewayv1.Route{route}, vs.VirtualHost.Routes...)
-	return vs
-}
-
-func getVirtualService(dest *gloov1.Destination, sslConfig *gloov1.SslConfig) *gatewayv1.VirtualService {
-	return getVirtualServiceWithRoute(getRouteWithDest(dest, "/"), sslConfig)
-}
-
-func getVirtualServiceWithRoute(route *gatewayv1.Route, sslConfig *gloov1.SslConfig) *gatewayv1.VirtualService {
-	return &gatewayv1.VirtualService{
-		Metadata: &core.Metadata{
-			Name:      "vs",
-			Namespace: testHelper.InstallNamespace,
-		},
-		SslConfig: sslConfig,
-		VirtualHost: &gatewayv1.VirtualHost{
-			Domains: []string{"*"},
-
-			Routes: []*gatewayv1.Route{route},
-		},
-	}
-}
-
 func getRouteTable(name string, labels map[string]string, route *gatewayv1.Route) *gatewayv1.RouteTable {
 	return &gatewayv1.RouteTable{
 		Metadata: &core.Metadata{
@@ -2280,31 +2228,6 @@ func getRouteWithDelegateRef(delegate string, path string) *gatewayv1.Route {
 			},
 		},
 	}
-}
-
-func getRouteWithDelegateSelector(labels map[string]string, path string) *gatewayv1.Route {
-	return &gatewayv1.Route{
-		Matchers: []*matchers.Matcher{{
-			PathSpecifier: &matchers.Matcher_Prefix{
-				Prefix: path,
-			},
-		}},
-		Action: &gatewayv1.Route_DelegateAction{
-			DelegateAction: &gatewayv1.DelegateAction{
-				DelegationType: &gatewayv1.DelegateAction_Selector{
-					Selector: &gatewayv1.RouteTableSelector{
-						Namespaces: []string{testHelper.InstallNamespace},
-						Labels:     labels,
-					},
-				},
-			},
-		},
-	}
-}
-
-func addPrefixRewrite(route *gatewayv1.Route, rewrite string) *gatewayv1.Route {
-	route.Options = &gloov1.RouteOptions{PrefixRewrite: &wrappers.StringValue{Value: rewrite}}
-	return route
 }
 
 func petstore(namespace string) (*v1.Deployment, *corev1.Service) {
