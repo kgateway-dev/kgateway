@@ -23,8 +23,14 @@ import (
 const (
 	// If the gateway pod is present use the image tag on that to get the gloo server version
 	// Otherwise, look for the annotation on the gloo pod
-	ContainerNameToCheckAnnotation = "gloo"
-	ContainerNameToCheckTag        = "gateway"
+	ContainerNameToCheckTag = "gateway"
+)
+
+var (
+	ContainerNamesToCheckAnnotation = map[string]bool{
+		"gloo":    true,
+		"gloo-ee": true,
+	}
 )
 
 func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
@@ -82,7 +88,7 @@ func WarnOnMismatch(ctx context.Context, binaryName string, sv versioncmd.Server
 		return nil
 	}
 
-	openSourceVersions, err := getOpenSourceVersions(clientServerVersions.GetServer())
+	openSourceVersions, err := GetOpenSourceVersions(clientServerVersions.GetServer())
 	if err != nil {
 		warnOnError(err, logger)
 		return nil
@@ -144,12 +150,12 @@ type ContainerVersion struct {
 
 // return an array of open source gloo versions found in the cluster
 // this is determined by looking at either the version of gateway (if the pod is present) or the annotation in the gloo pod.
-func getOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versions []*versionutils.Version, err error) {
+func GetOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versions []*versionutils.Version, err error) {
 	for _, podVersion := range podVersions {
 		switch podVersion.GetVersionType().(type) {
 		case *versiondiscovery.ServerVersion_Kubernetes:
 			for _, container := range podVersion.GetKubernetes().GetContainers() {
-				if container.GetName() == ContainerNameToCheckAnnotation {
+				if _, ok := ContainerNamesToCheckAnnotation[container.GetName()]; ok {
 					containerOssVersion, err := versionutils.ParseVersion("v" + container.GetOssTag())
 					if err != nil {
 						// If the annotation wasn't present or didn't contain a valid version, move on
@@ -168,6 +174,5 @@ func getOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versi
 			return nil, eris.Errorf("Unhandled server version type: %v", podVersion.GetVersionType())
 		}
 	}
-
 	return versions, nil
 }

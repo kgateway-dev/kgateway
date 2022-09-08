@@ -1,0 +1,12 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6623
+    resolvesIssue: true
+    description: >
+      Fix for inferring the OSS version from an enterprise install when injecting an SDS sidecar.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7076
+    resolvesIssue: false
+    description: >
+      Return lists of resources even when some have errors in glooctl check to avoid 
+      incorrect "missing ref" warnings.
