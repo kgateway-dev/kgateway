@@ -649,49 +649,35 @@ message PlainOAuth2 {
     // If not provided, logout functionality will be disabled.
     string logout_path = 8;
 
-    // The discovery override defines any properties that should defined for OAuth2 configuration
-    // For example, the following AuthConfig CRD could be defined as:
-    //    ```yaml
-    //    apiVersion: enterprise.gloo.solo.io/v1
-    //    kind: AuthConfig
-    //    metadata:
-    //      name: google-oidc
-    //      namespace: gloo-system
-    //    spec:
-    //      configs:
-    //      - oauth:
-    //          app_url: http://localhost:8080
-    //          callback_path: /callback
-    //          client_id: $CLIENT_ID
-    //          client_secret_ref:
-    //            name: google
-    //            namespace: gloo-system
-    //          discovery_override:
-    //            token_endpoint: "https://token.url/gettoken"
-    //    ```
-    //
-    DiscoveryOverride discovery_override = 9;
-
     // extra query parameters to apply to the Ext-Auth service's token request to the identity provider.
     // this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
     // to set the `code_verifier`.
-    map<string, string> token_endpoint_query_params = 10;
+    map<string, string> token_endpoint_query_params = 9;
 
     // url to redirect to after logout.
     // This should be a publicly available URL. If not provided, will default to the `app_url`.
-    string after_logout_url = 11;
+    string after_logout_url = 10;
 
     // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
     // The session id is used as the key for sessions in Redis
-    string session_id_header_name = 12;
+    string session_id_header_name = 11;
 
     // If set, we will use custom_auth_token_identifier for authentication.
     // Defaults to "access_token".
-    string custom_auth_token_identifier = 13;
+    string custom_auth_token_identifier = 12;
 
     // If set, we will use custom_auth_token_identifier for refreshing.
     // Defaults to "refresh_token".
-    string custom_refresh_token_identifier = 14;
+    string custom_refresh_token_identifier = 13;
+
+    // url of the provider authorization endpoint
+    string auth_endpoint = 14;
+
+    // url of the provider token endpoint
+    string token_endpoint = 15;
+
+    // url of the provider token revocation endpoint
+    string revocation_endpoint = 16;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -1357,48 +1343,35 @@ message ExtAuthConfig {
         // If not provided, logout functionality will be disabled.
         string logout_path = 8;
 
-        // The discovery override defines any properties that should defined for OAuth2 configuration
-        // For example, the following AuthConfig CRD could be defined as:
-        //    ```yaml
-        //    apiVersion: enterprise.gloo.solo.io/v1
-        //    kind: AuthConfig
-        //    metadata:
-        //      name: google-oidc
-        //      namespace: gloo-system
-        //    spec:
-        //      configs:
-        //      - oauth:
-        //          app_url: http://localhost:8080
-        //          callback_path: /callback
-        //          client_id: $CLIENT_ID
-        //          client_secret_ref:
-        //            name: google
-        //            namespace: gloo-system
-        //          discovery_override:
-        //            token_endpoint: "https://token.url/gettoken"
-        //    ```
-        DiscoveryOverride discovery_override = 9;
-
         // extra query parameters to apply to the Ext-Auth service's token request to the identity provider.
         // this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
         // to set the `code_verifier`.
-        map<string, string> token_endpoint_query_params = 10;
+        map<string, string> token_endpoint_query_params = 9;
 
         // url to redirect to after logout.
         // This should be a publicly available URL. If not provided, will default to the `app_url`.
-        string after_logout_url = 11;
+        string after_logout_url = 10;
 
         // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
         // The session id is used as the key for sessions in Redis
-        string session_id_header_name = 12;
+        string session_id_header_name = 11;
 
         // If set, we will use custom_auth_token_identifier for authentication.
         // Defaults to "access_token".
-        string custom_auth_token_identifier = 14;
+        string custom_auth_token_identifier = 12;
 
         // If set, we will use custom_auth_token_identifier for refreshing.
         // Defaults to "refresh_token".
-        string custom_refresh_token_identifier = 15;
+        string custom_refresh_token_identifier = 13;
+
+        // url of the provider authorization endpoint
+        string auth_endpoint = 14;
+
+        // url of the provider token endpoint
+        string token_endpoint = 15;
+
+        // url of the provider token revocation endpoint
+        string revocation_endpoint = 16;
     }
 
     message OAuth2Config {
