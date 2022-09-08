@@ -65,12 +65,14 @@ rules:
   - gloo.solo.io
   resources:
   - upstreams
+  - upstreams/status
   verbs:
   - get
   - list
   - watch
   - create
   - update
+  - patch
   - delete
 ---
 kind: {{ include "gloo.roleKind" . }}
@@ -88,6 +90,7 @@ rules:
   - gloo.solo.io
   resources:
   - upstreams
+  - upstreams/status
   - upstreamgroups
   - proxies
   verbs:
@@ -95,6 +98,7 @@ rules:
   - list
   - watch
   - update # needed for status updates
+  - patch
 - apiGroups:
   - enterprise.gloo.solo.io
   resources:
@@ -104,6 +108,7 @@ rules:
   - list
   - watch
   - update # needed for status updates
+  - patch
 - apiGroups:
   - ratelimit.solo.io
   resources:
@@ -114,6 +119,7 @@ rules:
   - list
   - watch
   - update # needed for status updates
+  - patch
 - apiGroups:
   - graphql.gloo.solo.io
   resources:
@@ -124,6 +130,7 @@ rules:
   - list
   - watch
   - update # needed for status updates
+  - patch
 - apiGroups:
   - ""
   resources:
@@ -131,6 +138,7 @@ rules:
   verbs:
   - get
   - update
+  - patch
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -165,6 +173,27 @@ metadata:
       gloo: rbac
 rules:
 - apiGroups:
+  - gateway.solo.io
+  resources:
+  - gateways
+  - gateways/status
+  - httpgateways
+  - httpgateways/status
+  - virtualservices
+  - virtualservices/status
+  - routetables
+  - routetables/status
+  - virtualhostoptions
+  - virtualhostoptions/status
+  - routeoptions
+  - routeoptions/status
+  verbs:
+  - get
+  - list
+  - watch
+  - update # needed for status updates
+  - patch
+- apiGroups:
   - gloo.solo.io
   resources:
   - proxies
@@ -174,6 +203,7 @@ rules:
   - watch
   - create
   - update
+  - patch
   - delete
 ---
 kind: {{ include "gloo.roleKind" . }}
@@ -201,6 +231,7 @@ rules:
   - list
   - watch
   - update # needed for status updates
+  - patch
 - apiGroups:
   - gateway.solo.io
   resources:
@@ -229,6 +260,7 @@ rules:
   - list
   - watch
   - update
+  - patch
   - create
 {{- end -}}
 {{- end -}}

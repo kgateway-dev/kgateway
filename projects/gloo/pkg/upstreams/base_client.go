@@ -45,6 +45,13 @@ func (c *readOnlyUpstreamBaseClient) Write(resource resources.Resource, opts cli
 	return resources.Clone(resource), nil
 }
 
+func (c *readOnlyUpstreamBaseClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	if isRealUpstream(name) {
+		return c.rc.Patch(namespace, name, opts, inputResource)
+	}
+	return nil, eris.New(notImplementedErrMsg)
+}
+
 func (c *readOnlyUpstreamBaseClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	panic(notImplementedErrMsg)
 }

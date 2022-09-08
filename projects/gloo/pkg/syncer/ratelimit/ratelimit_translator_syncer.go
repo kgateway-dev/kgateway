@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -57,63 +55,58 @@ func (s *translatorSyncerExtension) Sync(
 
 	reports.Accept(snap.Proxies.AsInputResources()...)
 
-	for _, proxy := range snap.Proxies {
-		for _, listener := range proxy.GetListeners() {
-			virtualHosts := utils.GetVirtualHostsForListener(listener)
+	for _, vs := range snap.VirtualServices {
+		virtualHost := vs.GetVirtualHost()
 
-			for _, virtualHost := range virtualHosts {
+		// RateLimitConfigs is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/crds/
+		if virtualHost.GetOptions().GetRateLimitConfigs() != nil {
+			reports.AddError(vs, enterpriseOnlyError("RateLimitConfig"))
+		}
 
-				// RateLimitConfigs is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/crds/
-				if virtualHost.GetOptions().GetRateLimitConfigs() != nil {
-					reports.AddError(proxy, enterpriseOnlyError("RateLimitConfig"))
+		// ratelimitBasic is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/simple/
+		if virtualHost.GetOptions().GetRatelimitBasic() != nil {
+			reports.AddError(vs, enterpriseOnlyError("ratelimitBasic"))
+		}
+
+		// check setActions on vhost
+		rlactionsVhost := virtualHost.GetOptions().GetRatelimit().GetRateLimits()
+		for _, rlaction := range rlactionsVhost {
+			if rlaction.GetSetActions() != nil {
+				reports.AddError(vs, enterpriseOnlyError("setActions"))
+			}
+		}
+
+		// Staged RateLimiting is an enterprise feature
+		if virtualHost.GetOptions().GetRateLimitEarlyConfigType() != nil {
+			reports.AddError(vs, enterpriseOnlyError("RateLimitEarly"))
+		}
+		if virtualHost.GetOptions().GetRateLimitRegularConfigType() != nil {
+			reports.AddError(vs, enterpriseOnlyError("RateLimitRegular"))
+		}
+
+		for _, route := range virtualHost.GetRoutes() {
+			if route.GetOptions().GetRateLimitConfigs() != nil {
+				reports.AddError(vs, enterpriseOnlyError("RateLimitConfig"))
+			}
+
+			if route.GetOptions().GetRatelimitBasic() != nil {
+				reports.AddError(vs, enterpriseOnlyError("ratelimitBasic"))
+			}
+
+			// check setActions on route
+			rlactionsRoute := route.GetOptions().GetRatelimit().GetRateLimits()
+			for _, rlaction := range rlactionsRoute {
+				if rlaction.GetSetActions() != nil {
+					reports.AddError(vs, enterpriseOnlyError("setActions"))
 				}
+			}
 
-				// ratelimitBasic is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/simple/
-				if virtualHost.GetOptions().GetRatelimitBasic() != nil {
-					reports.AddError(proxy, enterpriseOnlyError("ratelimitBasic"))
-				}
-
-				// check setActions on vhost
-				rlactionsVhost := virtualHost.GetOptions().GetRatelimit().GetRateLimits()
-				for _, rlaction := range rlactionsVhost {
-					if rlaction.GetSetActions() != nil {
-						reports.AddError(proxy, enterpriseOnlyError("setActions"))
-					}
-				}
-
-				// Staged RateLimiting is an enterprise feature
-				if virtualHost.GetOptions().GetRateLimitEarlyConfigType() != nil {
-					reports.AddError(proxy, enterpriseOnlyError("RateLimitEarly"))
-				}
-				if virtualHost.GetOptions().GetRateLimitRegularConfigType() != nil {
-					reports.AddError(proxy, enterpriseOnlyError("RateLimitRegular"))
-				}
-
-				for _, route := range virtualHost.GetRoutes() {
-					if route.GetOptions().GetRateLimitConfigs() != nil {
-						reports.AddError(proxy, enterpriseOnlyError("RateLimitConfig"))
-					}
-
-					if route.GetOptions().GetRatelimitBasic() != nil {
-						reports.AddError(proxy, enterpriseOnlyError("ratelimitBasic"))
-					}
-
-					// check setActions on route
-					rlactionsRoute := route.GetOptions().GetRatelimit().GetRateLimits()
-					for _, rlaction := range rlactionsRoute {
-						if rlaction.GetSetActions() != nil {
-							reports.AddError(proxy, enterpriseOnlyError("setActions"))
-						}
-					}
-
-					// Staged RateLimiting is an enterprise feature
-					if route.GetOptions().GetRateLimitEarlyConfigType() != nil {
-						reports.AddError(proxy, enterpriseOnlyError("RateLimitEarly"))
-					}
-					if route.GetOptions().GetRateLimitRegularConfigType() != nil {
-						reports.AddError(proxy, enterpriseOnlyError("RateLimitRegular"))
-					}
-				}
+			// Staged RateLimiting is an enterprise feature
+			if route.GetOptions().GetRateLimitEarlyConfigType() != nil {
+				reports.AddError(vs, enterpriseOnlyError("RateLimitEarly"))
+			}
+			if route.GetOptions().GetRateLimitRegularConfigType() != nil {
+				reports.AddError(vs, enterpriseOnlyError("RateLimitRegular"))
 			}
 		}
 	}

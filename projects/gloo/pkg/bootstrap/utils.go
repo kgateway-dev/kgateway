@@ -104,6 +104,9 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 				}
 			}
 
+			// c.QPS = 100
+			// c.Burst = 1
+
 			*cfg = c
 		}
 
