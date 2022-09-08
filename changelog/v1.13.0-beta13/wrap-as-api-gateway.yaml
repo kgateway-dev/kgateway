@@ -1,5 +1,5 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: NON_USER_FACING
     issuelink: https://github.com/solo-io/gloo/issues/6162
     resolvesIssue: false
     description: |
