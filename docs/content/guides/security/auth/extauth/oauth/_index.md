@@ -41,7 +41,7 @@ spec:
       oidcAuthorizationCode:
         issuerUrl: theissuer.com
         appUrl: https://myapp.com
-        authEndpoint_query_params:
+        authEndpointQueryParams:
           paramKey: paramValue
         callbackPath: /my/callback/path/
         clientId: myclientid

@@ -86,12 +86,18 @@ global:
 settings:
   singleNamespace: true
   create: true
-  replaceInvalidRoutes: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: true
 gloo:
   deployment:
-    replicas: 1
+    replicas: 2
+    customEnv:
+      - name: LEADER_ELECTION_LEASE_DURATION
+        value: 4s
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
@@ -263,6 +269,16 @@ func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Setting
 	Expect(err).NotTo(HaveOccurred())
 
 	waitForSettingsToPropagate()
+}
+
+func ToFile(content string) string {
+	f, err := ioutil.TempFile("", "")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	n, err := f.WriteString(content)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, n).To(Equal(len(content)))
+	_ = f.Close()
+	return f.Name()
 }
 
 // https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604

@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6476
+    resolvesIssue: false
+    description: Enable HCM options to support 0-value overrides for `Duration` and `ResourceRef` object types
