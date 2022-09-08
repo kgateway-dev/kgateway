@@ -251,7 +251,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		writeNamespace = defaults.GlooSystem
 	}
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
-	namespaceLabelSelectors, err := utils.ConvertExpressionSelectorToString(settings.GetWatchNamespacesLabelSelectors())
+	// namespaceLabelSelectors, err := utils.ConvertExpressionSelectorToString(settings.GetWatchNamespacesLabelSelectors())
 	if err != nil {
 		return errors.Wrapf(err, "parsing watch namespace label selectors")
 	}
