@@ -51,17 +51,11 @@ var _ = Describe("Setup Syncer", func() {
 	}
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-
 		cfg, err := kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
 		resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
 		Expect(err).NotTo(HaveOccurred())
-	})
-
-	AfterEach(func() {
-		cancel()
 	})
 
 	Context("Kube Tests", func() {
