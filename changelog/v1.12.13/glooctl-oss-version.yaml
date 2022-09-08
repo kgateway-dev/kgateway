@@ -1,6 +1,6 @@
 changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/6623
-    resolvesIssue: false
+    resolvesIssue: true
     description: >
       Fix for inferring the OSS version from an enterprise install when injecting an SDS sidecar.
