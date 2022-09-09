@@ -382,7 +382,6 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	allReports, inputResourceBySubresourceStatuses, localInputResourceLastStatus := s.extractCurrentReports()
 
 	var errs error
-	nowOrig := time.Now()
 	for inputResource, subresourceStatuses := range allReports {
 		// write reports may update the status, so clone the object
 		clonedInputResource := resources.Clone(inputResource).(resources.InputResource)
@@ -397,11 +396,6 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 
 		if s.identity.IsLeader() {
-			now := time.Now()
-			fmt.Printf("KDOROSH WriteReports for currentStatuses for input resource %v\n", inputResource.GetMetadata().Ref())
-			// for key, status := range currentStatuses {
-			// 	fmt.Printf("WriteReports for currentStatus %v %v\n", key, status)
-			// }
 			if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 				errs = multierror.Append(errs, err)
 			} else {
@@ -409,7 +403,6 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 				status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
 				localInputResourceLastStatus[inputResource] = status
 			}
-			fmt.Printf("KDOROSH how long WriteReports took for input resource %v: %v ms\n", inputResource.GetMetadata().Ref(), time.Now().Sub(now).Milliseconds())
 		} else {
 			contextutils.LoggerFrom(ctx).Debug("Not a leader, skipping reports writing")
 		}
@@ -417,6 +410,5 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
 		s.statusMetrics.SetResourceStatus(ctx, inputResource, status)
 	}
-	fmt.Printf("KDOROSH how long WriteReports took for ALL resources: %v ms\n", time.Now().Sub(nowOrig).Milliseconds())
 	return errs
 }
