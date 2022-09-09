@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"text/template"
 	"time"
@@ -357,15 +358,13 @@ type EnvoyInstance struct {
 	Role          string
 	envoypath     string
 	envoycfg      string
-	logs          *bytes.Buffer
+	logs          *SafeBuffer
 	cmd           *exec.Cmd
 	UseDocker     bool
 	GlooAddr      string // address for gloo and services
 	Port          uint32
 	RestXdsPort   uint32
 	AdminPort     uint32
-	// Path to access logs for binary run
-	AccessLogs string
 
 	// Envoy API Version to use, default to V3
 	ApiVersion string
@@ -519,9 +518,11 @@ func (ei *EnvoyInstance) runWithAll(eic EnvoyInstanceConfig, bootstrapBuilder En
 	// run directly
 	cmd := exec.CommandContext(eic.Context(), ei.envoypath, args...)
 
-	buf := &bytes.Buffer{}
-	ei.logs = buf
-	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)
+	safeBuffer := &SafeBuffer{
+		buffer: &bytes.Buffer{},
+	}
+	ei.logs = safeBuffer
+	w := io.MultiWriter(ginkgo.GinkgoWriter, safeBuffer)
 	cmd.Stdout = w
 	cmd.Stderr = w
 
@@ -703,4 +704,26 @@ func (ei *EnvoyInstance) Logs() (string, error) {
 	}
 
 	return ei.logs.String(), nil
+}
+
+// SafeBuffer is a goroutine safe bytes.Buffer
+type SafeBuffer struct {
+	buffer *bytes.Buffer
+	mutex  sync.Mutex
+}
+
+// Write appends the contents of p to the buffer, growing the buffer as needed. It returns
+// the number of bytes written.
+func (s *SafeBuffer) Write(p []byte) (n int, err error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.buffer.Write(p)
+}
+
+// String returns the contents of the unread portion of the buffer
+// as a string.  If the Buffer is a nil pointer, it returns "<nil>".
+func (s *SafeBuffer) String() string {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.buffer.String()
 }
