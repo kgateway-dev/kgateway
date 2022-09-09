@@ -295,7 +295,7 @@ func PatchResource(ctx context.Context, resourceRef *core.ResourceRef, mutator f
 	EventuallyWithOffset(1, func(g Gomega) {
 		resource, err := client.Read(resourceRef.GetNamespace(), resourceRef.GetName(), clients.ReadOpts{Ctx: ctx})
 		g.Expect(err).NotTo(HaveOccurred())
-		resourceVersion := resource.GetMetadata().ResourceVersion
+		resourceVersion := resource.GetMetadata().GetResourceVersion()
 
 		mutator(resource)
 		resource.GetMetadata().ResourceVersion = resourceVersion
