@@ -16,7 +16,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -49,14 +48,6 @@ var _ = Describe("Setup Syncer", func() {
 
 		return setup.Run
 	}
-
-	BeforeEach(func() {
-		cfg, err := kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
-
-		resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
-		Expect(err).NotTo(HaveOccurred())
-	})
 
 	Context("Kube Tests", func() {
 
