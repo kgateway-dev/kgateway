@@ -33,7 +33,7 @@ You must provide the license key during the installation process.
 2. Decide how you want to provide your license keys during installation.
    * **Provide license key directly**: When you install Gloo Edge, you can provide the license key string directly as the value for the `license_key` field in your Helm values file, or provide the `--license-key` flag in your `glooctl install` command. A Kubernetes secret is created for you to store the license key.
    * **Provide license key in a secret**: You can specify your license key by creating a secret before you install Gloo Edge.
-     1. Create a secret with your license key in the `gloo-system` namespace of your management cluster.
+     1. Create a secret with your license key in the `gloo-system` namespace of your cluster.
         ```yaml
         cat << EOF | kubectl apply -n gloo-system -f -
         apiVersion: v1
