@@ -185,20 +185,34 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			// modify the proxy to use the deprecated label
 			// this will simulate proxies that were persisted before the label change
-			proxy, err := resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			proxy.Metadata.Labels = map[string]string{
-				"created_by": "gateway",
-			}
-			_, err = resourceClientset.ProxyClient().Write(proxy, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			err := kube2e.PatchResource(
+				ctx,
+				&core.ResourceRef{
+					Namespace: testHelper.InstallNamespace,
+					Name:      defaults.GatewayProxyName,
+				},
+				func(resource resources.Resource) {
+					proxy := resource.(*gloov1.Proxy)
+					proxy.Metadata.Labels = map[string]string{
+						"created_by": "gateway",
+					}
+				},
+				resourceClientset.ProxyClient().BaseClient())
 			Expect(err).NotTo(HaveOccurred())
 
 			// modify the virtual service to trigger gateway reconciliation
 			// any modification will work, for simplicity we duplicate a route on the virtual host
-			vs, err := resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, helper.TestrunnerName, clients.ReadOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, vs.VirtualHost.Routes[0])
-			_, err = resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			err = kube2e.PatchResource(
+				ctx,
+				&core.ResourceRef{
+					Namespace: testHelper.InstallNamespace,
+					Name:      helper.TestrunnerName,
+				},
+				func(resource resources.Resource) {
+					vs := resource.(*gatewayv1.VirtualService)
+					vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, vs.VirtualHost.Routes[0])
+				},
+				resourceClientset.VirtualServiceClient().BaseClient())
 			Expect(err).NotTo(HaveOccurred())
 
 			// ensure that the changes from the virtual service are propagated to the proxy
@@ -563,17 +577,19 @@ var _ = Describe("Kube2e: gateway", func() {
 				})
 
 				It("when updating an upstream makes them valid", func() {
-					// wrapped in eventually to get around resource version errors
-					Eventually(func() error {
-						petstoreUs, err := resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, petstoreUpstreamName, clients.ReadOpts{Ctx: ctx})
-						Expect(err).NotTo(HaveOccurred())
-
-						Expect(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()).To(BeEmpty())
-						petstoreUs.Metadata.Labels[syncer.FdsLabelKey] = "enabled"
-
-						_, err = resourceClientset.UpstreamClient().Write(petstoreUs, clients.WriteOpts{OverwriteExisting: true})
-						return err
-					}, "5s", "0.5s").ShouldNot(HaveOccurred())
+					err = kube2e.PatchResource(
+						ctx,
+						&core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      petstoreUpstreamName,
+						},
+						func(resource resources.Resource) {
+							us := resource.(*gloov1.Upstream)
+							us.Metadata.Labels[syncer.FdsLabelKey] = "enabled"
+						},
+						resourceClientset.UpstreamClient().BaseClient(),
+					)
+					Expect(err).NotTo(HaveOccurred())
 
 					// FDS should update the upstream with discovered rest spec
 					// it can take a long time for this to happen, perhaps petstore wasn't healthy yet?
@@ -726,15 +742,23 @@ var _ = Describe("Kube2e: gateway", func() {
 					Expect(res).To(ContainSubstring("404 Not Found"))
 
 					// update the response of the good RT
-					goodRt, err := resourceClientset.RouteTableClient().Read(testHelper.InstallNamespace, "good-rt", clients.ReadOpts{Ctx: ctx})
-					Expect(err).NotTo(HaveOccurred())
-					goodRt.Routes[0].Action = &gatewayv1.Route_DirectResponseAction{
-						DirectResponseAction: &gloov1.DirectResponseAction{
-							Status: 200,
-							Body:   "Updated good response",
+					err = kube2e.PatchResource(
+						ctx,
+						&core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      "good-rt",
 						},
-					}
-					_, err = resourceClientset.RouteTableClient().Write(goodRt, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+						func(resource resources.Resource) {
+							rt := resource.(*gatewayv1.RouteTable)
+							rt.Routes[0].Action = &gatewayv1.Route_DirectResponseAction{
+								DirectResponseAction: &gloov1.DirectResponseAction{
+									Status: 200,
+									Body:   "Updated good response",
+								},
+							}
+						},
+						resourceClientset.RouteTableClient().BaseClient(),
+					)
 					Expect(err).NotTo(HaveOccurred())
 
 					// make sure it returns the new response
@@ -804,15 +828,23 @@ var _ = Describe("Kube2e: gateway", func() {
 					}, "Good response", 1, 60*time.Second, 1*time.Second)
 
 					By("the RT should be updated to return a direct response")
-					goodRt, err := resourceClientset.RouteTableClient().Read(testHelper.InstallNamespace, "good-rt", clients.ReadOpts{Ctx: ctx})
-					Expect(err).NotTo(HaveOccurred())
-					goodRt.Routes[0].Action = &gatewayv1.Route_DirectResponseAction{
-						DirectResponseAction: &gloov1.DirectResponseAction{
-							Status: 200,
-							Body:   "Updated good response",
+					err := kube2e.PatchResource(
+						ctx,
+						&core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      "good-rt",
 						},
-					}
-					_, err = resourceClientset.RouteTableClient().Write(goodRt, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+						func(resource resources.Resource) {
+							rt := resource.(*gatewayv1.RouteTable)
+							rt.Routes[0].Action = &gatewayv1.Route_DirectResponseAction{
+								DirectResponseAction: &gloov1.DirectResponseAction{
+									Status: 200,
+									Body:   "Updated good response",
+								},
+							}
+						},
+						resourceClientset.RouteTableClient().BaseClient(),
+					)
 					Expect(err).NotTo(HaveOccurred())
 
 					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -1292,21 +1324,27 @@ var _ = Describe("Kube2e: gateway", func() {
 			createServicesForPod(helper.TestrunnerName, helper.TestRunnerPort)
 
 			for _, svc := range createdServices {
-				Eventually(func() (*gloov1.Upstream, error) { return getUpstream(svc) }, "15s", "0.5s").ShouldNot(BeNil())
+				Eventually(func() (*gloov1.Upstream, error) {
+					return getUpstream(svc)
+				}, "15s", "0.5s").ShouldNot(BeNil())
+
 				// now set subset config on an upstream:
-				Eventually(func() error {
-					upstream, err := getUpstream(svc)
-					if err != nil {
-						return err
-					}
-					upstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.ServiceSpec = &gloov1plugins.ServiceSpec{
-						PluginType: &gloov1plugins.ServiceSpec_Grpc{
-							Grpc: &grpcv1.ServiceSpec{},
-						},
-					}
-					_, err = resourceClientset.UpstreamClient().Write(upstream, clients.WriteOpts{OverwriteExisting: true})
-					return err
-				}, "10s", "0.5s").ShouldNot(HaveOccurred())
+				err := kube2e.PatchResource(
+					ctx,
+					&core.ResourceRef{
+						Namespace: testHelper.InstallNamespace,
+						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svc, helper.TestRunnerPort),
+					},
+					func(resource resources.Resource) {
+						upstream := resource.(*gloov1.Upstream)
+						upstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.ServiceSpec = &gloov1plugins.ServiceSpec{
+							PluginType: &gloov1plugins.ServiceSpec_Grpc{
+								Grpc: &grpcv1.ServiceSpec{},
+							},
+						}
+					},
+					resourceClientset.UpstreamClient().BaseClient())
+				Expect(err).NotTo(HaveOccurred())
 			}
 
 			// chill for a few letting discovery reconcile
@@ -1725,21 +1763,23 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 
 		It("routes to subsets and upstream groups", func() {
-			// upstream write might error on a conflict so try it a few times
-			// I use eventually so it will wait a bit between retries.
-			Eventually(func(g Gomega) error {
-				us, err := resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{Ctx: ctx})
-				g.Expect(err).NotTo(HaveOccurred())
-
-				us.UpstreamType.(*gloov1.Upstream_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
-					Selectors: []*gloov1plugins.Selector{{
-						Keys: []string{"text"},
-					}},
-				}
-
-				_, err = resourceClientset.UpstreamClient().Write(us, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				return err
-			}, "5s", "0.1s").ShouldNot(HaveOccurred())
+			err := kube2e.PatchResource(
+				ctx,
+				&core.ResourceRef{
+					Namespace: testHelper.InstallNamespace,
+					Name:      upstreamName,
+				},
+				func(resource resources.Resource) {
+					us := resource.(*gloov1.Upstream)
+					us.UpstreamType.(*gloov1.Upstream_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
+						Selectors: []*gloov1plugins.Selector{{
+							Keys: []string{"text"},
+						}},
+					}
+				},
+				resourceClientset.UpstreamClient().BaseClient(),
+			)
+			Expect(err).NotTo(HaveOccurred())
 
 			// make sure we get all three upstreams:
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -2011,14 +2051,19 @@ spec:
 				},
 			}
 
-			vs, err := resourceClientset.VirtualServiceClient().Read(
-				testRunnerVs.GetMetadata().GetNamespace(),
-				testRunnerVs.GetMetadata().GetName(),
-				clients.ReadOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-
-			vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
-			_, err = resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			// update the test runner vs
+			err := kube2e.PatchResource(
+				ctx,
+				&core.ResourceRef{
+					Namespace: testRunnerVs.GetMetadata().GetNamespace(),
+					Name:      testRunnerVs.GetMetadata().GetName(),
+				},
+				func(resource resources.Resource) {
+					vs := resource.(*gatewayv1.VirtualService)
+					vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
+				},
+				resourceClientset.VirtualServiceClient().BaseClient(),
+			)
 			Expect(err).To(MatchError(ContainSubstring("Failed to parse response template: Failed to parse " +
 				"header template ':status': [inja.exception.parser_error] expected statement close, got '%'")))
 		})
@@ -2049,16 +2094,28 @@ spec:
 					},
 				}
 
-				vs, err := resourceClientset.VirtualServiceClient().Read(
-					testRunnerVs.GetMetadata().GetNamespace(),
-					testRunnerVs.GetMetadata().GetName(),
-					clients.ReadOpts{Ctx: ctx})
+				err := kube2e.PatchResource(
+					ctx,
+					&core.ResourceRef{
+						Namespace: testRunnerVs.GetMetadata().GetNamespace(),
+						Name:      testRunnerVs.GetMetadata().GetName(),
+					},
+					func(resource resources.Resource) {
+						vs := resource.(*gatewayv1.VirtualService)
+						vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
+					},
+					resourceClientset.VirtualServiceClient().BaseClient(),
+				)
 				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					vs, err := resourceClientset.VirtualServiceClient().Read(
+						testRunnerVs.GetMetadata().GetNamespace(),
+						testRunnerVs.GetMetadata().GetName(),
+						clients.ReadOpts{Ctx: ctx})
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(vs.GetVirtualHost().GetOptions().GetTransformations()).To(matchers2.MatchProto(invalidTransform))
+				})
 
-				vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
-				updatedVs, err := resourceClientset.VirtualServiceClient().Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedVs.GetVirtualHost().GetOptions().GetTransformations()).To(matchers2.MatchProto(invalidTransform))
 			})
 		})
 	})
