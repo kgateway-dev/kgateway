@@ -31,7 +31,7 @@ You must provide the license key during the installation process. When you insta
 
 1. [Contact an account representative to get a Gloo Edge license key](https://www.solo.io/company/talk-to-an-expert/). {{% notice tip %}}You can also request a [trial license key](https://www.solo.io/products/gloo/#enterprise-trial) instead. Note that each trial license key is typically valid for **30 days**. When the license key expires, you can request a new license key by contacting your account representative or filling out [this form](https://lp.solo.io/request-trial). For more information, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).{{% /notice %}}
 2. Decide how you want to provide your license keys during installation.
-   * **Provide license key directly**: When you install Gloo Edge in your cluster, you can provide the license key string directly as the value for the `license_key` field in your Helm values file, or provide the `--license-key` flag in your `glooctl install` command.
+   * **Provide license key directly**: When you install Gloo Edge, you can provide the license key string directly as the value for the `license_key` field in your Helm values file, or provide the `--license-key` flag in your `glooctl install` command.
    * **Provide license key in a secret**: You can specify your license key by creating a secret before you install Gloo Edge.
      1. Create a secret with your license keys in the `gloo-system` namespace of your management cluster.
         ```yaml
@@ -46,7 +46,7 @@ You must provide the license key during the installation process. When you insta
           license-key: ""
         EOF
         ```
-     2. When you install the Gloo management components in your cluster, specify the secret name and disable default secret generation in your Helm values file or the `glooctl install` command.
+     2. When you install Gloo Edge, specify the secret name and disable default secret generation in your Helm values file or the `glooctl install` command.
         * **Helm**: In your Helm values file, provide the secret name as the value for the `gloo.license_secret_name` field, and set `create_license_secret` to `false`.
         * **glooctl**: In your `glooctl install` command, include the `--set gloo.license_secret_name=<license>` and `--set create_license_secret=false` flags.
 
