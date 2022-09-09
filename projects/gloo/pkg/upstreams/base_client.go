@@ -45,9 +45,9 @@ func (c *readOnlyUpstreamBaseClient) Write(resource resources.Resource, opts cli
 	return resources.Clone(resource), nil
 }
 
-func (c *readOnlyUpstreamBaseClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+func (c *readOnlyUpstreamBaseClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
 	if isRealUpstream(name) {
-		return c.rc.Patch(namespace, name, opts, inputResource)
+		return c.rc.ApplyStatus(namespace, name, opts, inputResource)
 	}
 	return nil, eris.New(notImplementedErrMsg)
 }

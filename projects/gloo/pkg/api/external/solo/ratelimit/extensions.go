@@ -73,8 +73,8 @@ func (c *kubeReporterClient) Read(namespace, name string, opts clients.ReadOpts)
 	return c.skClient.Read(namespace, name, opts)
 }
 
-func (c *kubeReporterClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
-	return c.skClient.Patch(namespace, name, opts, inputResource)
+func (c *kubeReporterClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	return c.skClient.ApplyStatus(namespace, name, opts, inputResource)
 }
 
 func (c *kubeReporterClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {

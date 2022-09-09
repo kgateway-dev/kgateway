@@ -81,7 +81,7 @@ func (c *hybridUpstreamClient) Delete(namespace, name string, opts clients.Delet
 	panic(notImplementedErrMsg)
 }
 
-func (rc *hybridUpstreamClient) Patch(namespace, name string, opts clients.PatchOpts) (*v1.Upstream, error) {
+func (rc *hybridUpstreamClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts) (*v1.Upstream, error) {
 	panic(notImplementedErrMsg)
 }
 
