@@ -65,6 +65,8 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(params plugins.InitParams) {
+	p.recordedUpstreams = make(map[string]*v1.Upstream)
+	p.upstreamServices = nil
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {

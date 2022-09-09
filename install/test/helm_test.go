@@ -733,8 +733,8 @@ var _ = Describe("Helm Test", func() {
 				var (
 					IstioInjectionLabel          = "sidecar.istio.io/inject"
 					istioExcludedPortsAnnotation = "traffic.sidecar.istio.io/excludeInboundPorts"
-
-					istioCertsVolume = v1.Volume{
+					IstioRevisionLabel           = "istio.io/rev"
+					istioCertsVolume             = v1.Volume{
 						Name: "istio-certs",
 						VolumeSource: v1.VolumeSource{
 							EmptyDir: &v1.EmptyDirVolumeSource{
@@ -921,6 +921,8 @@ var _ = Describe("Helm Test", func() {
 							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
 							Expect(val).To(Equal("true"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'true'", deployment.GetName()))
+							_, ok = structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioRevisionLabel]
+							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should not contain an istio revision annotation", deployment.GetName()))
 						} else {
 							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
 							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should not contain an istio injection label", deployment.GetName()))
@@ -938,6 +940,8 @@ var _ = Describe("Helm Test", func() {
 							"global.istioIntegration.enableIstioSidecarOnGateway=true",
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
+							//shortcut to get a proxy with a name and mostly default values but avoid hiding any bugs around needing to set disabled=false
+							fmt.Sprintf("gatewayProxies.namedGatewayProxy.logLevel=debug"),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpPort=%d", secondDeploymentHttpPort),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpsPort=%d", secondDeploymentHttpsPort),
 						},
@@ -969,14 +973,82 @@ var _ = Describe("Helm Test", func() {
 							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
 							Expect(ok).To(BeTrue())
 							Expect(excludedPortString).To(Equal(fmt.Sprintf("%d,%d", secondDeploymentHttpPort, secondDeploymentHttpsPort)), fmt.Sprintf("Deployment %s should exclude specified ports", deploymentName))
+						} else if deploymentName == "named-gateway-proxy" {
+							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
+							Expect(ok).To(BeTrue())
+							Expect(excludedPortString).To(Equal(fmt.Sprintf("%d,%d", httpPort, httpsPort)), fmt.Sprintf("Deployment %s should exclude the same specified ports as the default", deploymentName))
 						}
 					})
 				})
 
-				It("should be able to disable istio injection on all job pod templates", func() {
+				It("should add an Istio revision label for pods that can be configured for it", func() {
+					httpPort := 8080
+					httpsPort := 8443
+					secondDeploymentHttpPort := 1337
+					secondDeploymentHttpsPort := 1338
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.istioIntegration.whitelistDiscovery=true",
+							"global.istioIntegration.enableIstioSidecarOnGateway=true",
+							"global.istioIntegration.istioSidecarRevTag=some-revision",
+							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
+							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
+							//shortcut to get a proxy with a name and mostly default values but avoid hiding any bugs around needing to set disabled=false
+							fmt.Sprintf("gatewayProxies.namedGatewayProxy.logLevel=debug"),
+							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpPort=%d", secondDeploymentHttpPort),
+							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpsPort=%d", secondDeploymentHttpsPort),
+						},
+					})
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						// Ensure that the discovery pod has a true annotation, gateway-proxy has a false annotation (default), and nothing else has any annoation.
+						// todo if we ever decide to add more pods to the list of 'allow istio injection' pods, then change this to a whitelist check
+						deploymentName := structuredDeployment.GetName()
+						if deploymentName == "discovery" {
+							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
+							val, ok = structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioRevisionLabel]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio revision annotation", deployment.GetName()))
+							Expect(val).To(Equal("some-revision"), fmt.Sprintf("Deployment %s should have a label for the istio revision tag", deployment.GetName()))
+						} else if deploymentName == "gateway-proxy" {
+							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should not contain a default istio injection annotation", deploymentName))
+							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioRevisionLabel]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio revision annotation", deployment.GetName()))
+							Expect(val).To(Equal("some-revision"), fmt.Sprintf("Deployment %s should have a label for the istio revision tag", deployment.GetName()))
+							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
+							Expect(ok).To(BeTrue())
+							Expect(excludedPortString).To(Equal(fmt.Sprintf("%d,%d", httpPort, httpsPort)), fmt.Sprintf("Deployment %s should exclude specified ports", deploymentName))
+						} else if deploymentName == "second-gateway-proxy" {
+							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should not contain an istio injection annotation", deploymentName))
+							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioRevisionLabel]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio revision annotation", deployment.GetName()))
+							Expect(val).To(Equal("some-revision"), fmt.Sprintf("Deployment %s should have a label for the istio revision tag", deployment.GetName()))
+							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
+							Expect(ok).To(BeTrue())
+							Expect(excludedPortString).To(Equal(fmt.Sprintf("%d,%d", secondDeploymentHttpPort, secondDeploymentHttpsPort)), fmt.Sprintf("Deployment %s should exclude specified ports", deploymentName))
+						} else if deploymentName == "named-gateway-proxy" {
+							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioInjectionLabel]
+							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should not contain an istio injection annotation", deploymentName))
+							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Labels[IstioRevisionLabel]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio revision annotation", deployment.GetName()))
+							Expect(val).To(Equal("some-revision"), fmt.Sprintf("Deployment %s should have a label for the istio revision tag", deployment.GetName()))
+							excludedPortString, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioExcludedPortsAnnotation]
+							Expect(ok).To(BeTrue())
+							Expect(excludedPortString).To(Equal(fmt.Sprintf("%d,%d", httpPort, httpsPort)), fmt.Sprintf("Deployment %s should exclude the same specified ports as the default", deploymentName))
+						}
+					})
+				})
+				It("istio injection should always be disabled in job pod templates", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
-							"global.istioIntegration.disableAutoinjection=true",
+							"global.istioIntegration.disableAutoinjection=false",
 							"global.glooMtls.enabled=true",
 						},
 					})
@@ -1014,6 +1086,31 @@ var _ = Describe("Helm Test", func() {
 							val, ok := structuredNamespace.ObjectMeta.Labels["istio-injection"]
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Namespace %s should contain an Istio discovery label", structuredNamespace.GetName()))
 							Expect(val).To(Equal("enabled"), fmt.Sprintf("Namespace %s should have an Istio discovery label with value of 'enabled'", structuredNamespace.GetName()))
+						}
+					})
+				})
+				It("The created namespace can be labeled with a revision tag for Istio discovery", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"namespace.create=true",
+							"global.istioIntegration.labelInstallNamespace=true",
+							"global.istioIntegration.istioSidecarRevTag=some-revision"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Namespace"
+					}).ExpectAll(func(namespace *unstructured.Unstructured) {
+						namespaceObject, err := kuberesource.ConvertUnstructured(namespace)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Namespace %+v should be able to convert from unstructured", namespace))
+						structuredNamespace, ok := namespaceObject.(*v1.Namespace)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", namespace))
+
+						// Ensure that the discovery pod has a true annotation, gateway-proxy has a false annotation (default), and nothing else has any annoation.
+						if structuredNamespace.GetName() == "gloo-system" {
+							_, ok := structuredNamespace.ObjectMeta.Labels["istio-injection"]
+							Expect(ok).To(BeFalse(), fmt.Sprintf("Namespace %s should not contain a generic Istio discovery label", structuredNamespace.GetName()))
+							val, ok := structuredNamespace.ObjectMeta.Labels["istio.io/rev"]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Namespace %s should contain a revisioned Istio discovery label", structuredNamespace.GetName()))
+							Expect(val).To(Equal("some-revision"))
 						}
 					})
 				})
@@ -3877,6 +3974,7 @@ spec:
   template:
     metadata:
       labels:
+        sidecar.istio.io/inject: "false"
         gloo: gateway-certgen
     spec:
       serviceAccountName: certgen

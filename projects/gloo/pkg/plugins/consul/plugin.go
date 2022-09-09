@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
@@ -49,10 +51,10 @@ type plugin struct {
 	settings                        *v1.Settings
 }
 
-func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInterval *time.Duration) *plugin {
+func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInterval *durationpb.Duration) *plugin {
 	pollingInterval := DefaultDnsPollingInterval
 	if dnsPollingInterval != nil {
-		pollingInterval = *dnsPollingInterval
+		pollingInterval = prototime.DurationFromProto(dnsPollingInterval)
 	}
 	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval}
 }

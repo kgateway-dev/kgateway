@@ -54,6 +54,7 @@ func (p *plugin) Init(params plugins.InitParams) {
 	p.settings = params.Settings
 	p.ctx = params.Ctx
 	p.recordedUpstreams = make(map[string]*azure.UpstreamSpec)
+	p.apiKeys = make(map[string]string)
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {

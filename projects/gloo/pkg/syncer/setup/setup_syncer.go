@@ -377,10 +377,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if len(opts.Consul.DnsServer) == 0 {
 		opts.Consul.DnsServer = consulplugin.DefaultDnsAddress
 	}
-	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
-		dnsPollingInterval := prototime.DurationFromProto(pollingInterval)
-		opts.Consul.DnsPollingInterval = &dnsPollingInterval
-	}
+	opts.Consul.DnsPollingInterval = settings.GetConsul().GetDnsPollingInterval()
 
 	// if vault service discovery specified, initialize consul watcher
 	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {

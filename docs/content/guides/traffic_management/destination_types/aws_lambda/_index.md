@@ -46,8 +46,8 @@ Create a Kubernetes secret that contains your AWS access key and secret key. Glo
    glooctl create secret aws \
        --name 'aws-creds' \
        --namespace gloo-system \
-       --access-key '$ACCESS_KEY' \
-       --secret-key '$SECRET_KEY'
+       --access-key $ACCESS_KEY \
+       --secret-key $SECRET_KEY
    ```
 
 ### Step 3: Create an upstream and virtual service

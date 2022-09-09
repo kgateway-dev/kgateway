@@ -64,11 +64,11 @@ var _ = Describe("Plugin", func() {
 	It("copy all settings to hcm filter", func() {
 		settings = &hcm.HttpConnectionManagerSettings{
 			UseRemoteAddress:      &wrappers.BoolValue{Value: false},
-			XffNumTrustedHops:     5,
-			SkipXffAppend:         true,
-			Via:                   "Via",
+			XffNumTrustedHops:     &wrappers.UInt32Value{Value: 5},
+			SkipXffAppend:         &wrappers.BoolValue{Value: true},
+			Via:                   &wrappers.StringValue{Value: "Via"},
 			GenerateRequestId:     &wrappers.BoolValue{Value: false},
-			Proxy_100Continue:     true,
+			Proxy_100Continue:     &wrappers.BoolValue{Value: true},
 			StreamIdleTimeout:     prototime.DurationToProto(time.Hour),
 			IdleTimeout:           prototime.DurationToProto(time.Hour),
 			MaxRequestHeadersKb:   &wrappers.UInt32Value{Value: 5},
@@ -76,13 +76,13 @@ var _ = Describe("Plugin", func() {
 			RequestHeadersTimeout: prototime.DurationToProto(time.Hour),
 			DrainTimeout:          prototime.DurationToProto(time.Hour),
 			DelayedCloseTimeout:   prototime.DurationToProto(time.Hour),
-			ServerName:            "ServerName",
+			ServerName:            &wrappers.StringValue{Value: "ServerName"},
 
-			AcceptHttp_10: true,
+			AcceptHttp_10: &wrappers.BoolValue{Value: true},
 			HeaderFormat: &hcm.HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat{
-				ProperCaseHeaderKeyFormat: true,
+				ProperCaseHeaderKeyFormat: &wrappers.BoolValue{Value: true},
 			},
-			DefaultHostForHttp_10: "DefaultHostForHttp_10",
+			DefaultHostForHttp_10: &wrappers.StringValue{Value: "DefaultHostForHttp_10"},
 
 			// We intentionally do not test tracing as this plugin is not responsible for setting
 			// tracing configuration
@@ -90,12 +90,12 @@ var _ = Describe("Plugin", func() {
 			ForwardClientCertDetails: hcm.HttpConnectionManagerSettings_APPEND_FORWARD,
 			SetCurrentClientCertDetails: &hcm.HttpConnectionManagerSettings_SetCurrentClientCertDetails{
 				Subject: &wrappers.BoolValue{Value: true},
-				Cert:    true,
-				Chain:   true,
-				Dns:     true,
-				Uri:     true,
+				Cert:    &wrappers.BoolValue{Value: true},
+				Chain:   &wrappers.BoolValue{Value: true},
+				Dns:     &wrappers.BoolValue{Value: true},
+				Uri:     &wrappers.BoolValue{Value: true},
 			},
-			PreserveExternalRequestId: true,
+			PreserveExternalRequestId: &wrappers.BoolValue{Value: true},
 
 			Upgrades: []*protocol_upgrade.ProtocolUpgradeConfig{
 				{
@@ -114,9 +114,9 @@ var _ = Describe("Plugin", func() {
 			CodecType:                    1,
 			ServerHeaderTransformation:   hcm.HttpConnectionManagerSettings_OVERWRITE,
 			PathWithEscapedSlashesAction: hcm.HttpConnectionManagerSettings_REJECT_REQUEST,
-			AllowChunkedLength:           true,
-			EnableTrailers:               true,
-			StripAnyHostPort:             true,
+			AllowChunkedLength:           &wrappers.BoolValue{Value: true},
+			EnableTrailers:               &wrappers.BoolValue{Value: true},
+			StripAnyHostPort:             &wrappers.BoolValue{Value: true},
 			UuidRequestIdConfig: &hcm.HttpConnectionManagerSettings_UuidRequestIdConfigSettings{
 				UseRequestIdForTraceSampling: &wrappers.BoolValue{Value: true},
 				PackTraceReason:              &wrappers.BoolValue{Value: true},
@@ -127,6 +127,19 @@ var _ = Describe("Plugin", func() {
 				InitialConnectionWindowSize:             &wrappers.UInt32Value{Value: 65535},
 				OverrideStreamErrorOnInvalidHttpMessage: &wrappers.BoolValue{Value: true},
 			},
+			InternalAddressConfig: &hcm.HttpConnectionManagerSettings_InternalAddressConfig{
+				UnixSockets: &wrappers.BoolValue{Value: true},
+				CidrRanges: []*hcm.HttpConnectionManagerSettings_CidrRange{
+					&hcm.HttpConnectionManagerSettings_CidrRange{
+						AddressPrefix: "123.45.0.0",
+						PrefixLen:     &wrappers.UInt32Value{Value: 16},
+					},
+					&hcm.HttpConnectionManagerSettings_CidrRange{
+						AddressPrefix: "abcd:1234::",
+						PrefixLen:     &wrappers.UInt32Value{Value: 32},
+					},
+				},
+			},
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
@@ -134,25 +147,25 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.UseRemoteAddress).To(Equal(settings.UseRemoteAddress))
-		Expect(cfg.XffNumTrustedHops).To(Equal(settings.XffNumTrustedHops))
-		Expect(cfg.SkipXffAppend).To(Equal(settings.SkipXffAppend))
-		Expect(cfg.Via).To(Equal(settings.Via))
+		Expect(cfg.XffNumTrustedHops).To(Equal(settings.XffNumTrustedHops.GetValue()))
+		Expect(cfg.SkipXffAppend).To(Equal(settings.SkipXffAppend.GetValue()))
+		Expect(cfg.Via).To(Equal(settings.Via.GetValue()))
 		Expect(cfg.GenerateRequestId).To(Equal(settings.GenerateRequestId))
-		Expect(cfg.Proxy_100Continue).To(Equal(settings.Proxy_100Continue))
+		Expect(cfg.Proxy_100Continue).To(Equal(settings.Proxy_100Continue.GetValue()))
 		Expect(cfg.StreamIdleTimeout).To(MatchProto(settings.StreamIdleTimeout))
 		Expect(cfg.MaxRequestHeadersKb).To(MatchProto(settings.MaxRequestHeadersKb))
 		Expect(cfg.RequestTimeout).To(MatchProto(settings.RequestTimeout))
 		Expect(cfg.DrainTimeout).To(MatchProto(settings.DrainTimeout))
 		Expect(cfg.DelayedCloseTimeout).To(MatchProto(settings.DelayedCloseTimeout))
-		Expect(cfg.ServerName).To(Equal(settings.ServerName))
-		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(settings.AcceptHttp_10))
+		Expect(cfg.ServerName).To(Equal(settings.ServerName.GetValue()))
+		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(settings.AcceptHttp_10.GetValue()))
 		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetProperCaseWords()).ToNot(BeNil()) // expect proper case words is set
 		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetStatefulFormatter()).To(BeNil())  // ...which makes stateful formatter nil
 		Expect(cfg.HttpProtocolOptions.GetAllowChunkedLength()).To(BeTrue())                     // ...which makes stateful formatter nil
 		Expect(cfg.HttpProtocolOptions.GetEnableTrailers()).To(BeTrue())
-		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(settings.DefaultHostForHttp_10))
-		Expect(cfg.PreserveExternalRequestId).To(Equal(settings.PreserveExternalRequestId))
-		Expect(cfg.GetStripAnyHostPort()).To(Equal(settings.StripAnyHostPort))
+		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(settings.DefaultHostForHttp_10.GetValue()))
+		Expect(cfg.PreserveExternalRequestId).To(Equal(settings.PreserveExternalRequestId.GetValue()))
+		Expect(cfg.GetStripAnyHostPort()).To(Equal(settings.StripAnyHostPort.GetValue()))
 		Expect(cfg.CommonHttpProtocolOptions).NotTo(BeNil())
 		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(MatchProto(settings.IdleTimeout))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxConnectionDuration()).To(MatchProto(settings.MaxConnectionDuration))
@@ -164,7 +177,7 @@ var _ = Describe("Plugin", func() {
 
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_OVERWRITE))
 		Expect(cfg.GetPathWithEscapedSlashesAction()).To(Equal(envoyhttp.HttpConnectionManager_REJECT_REQUEST))
-		Expect(cfg.MergeSlashes).To(Equal(settings.MergeSlashes))
+		Expect(cfg.MergeSlashes).To(Equal(settings.MergeSlashes.GetValue()))
 		Expect(cfg.NormalizePath).To(Equal(settings.NormalizePath))
 
 		// Confirm that MockTracingPlugin return the proper value
@@ -193,12 +206,39 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.Http2ProtocolOptions.InitialStreamWindowSize).To(Equal(&wrappers.UInt32Value{Value: 268435457}))
 		Expect(cfg.Http2ProtocolOptions.InitialConnectionWindowSize).To(Equal(&wrappers.UInt32Value{Value: 65535}))
 		Expect(cfg.Http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage).To(Equal(&wrappers.BoolValue{Value: true}))
+
+		Expect(cfg.GetInternalAddressConfig().UnixSockets).To(Equal(settings.GetInternalAddressConfig().UnixSockets.GetValue()))
+		// CidrRanges has a different type in the two objects so they must be compared manually
+		for i, cidrIn := range settings.GetInternalAddressConfig().CidrRanges {
+			cidrOut := cfg.GetInternalAddressConfig().CidrRanges[i]
+			Expect(cidrIn.AddressPrefix).To(Equal(cidrOut.AddressPrefix))
+			Expect(cidrIn.PrefixLen).To(Equal(cidrOut.PrefixLen))
+		}
+	})
+
+	It("should reject invalid values for CidrRanges", func() {
+		settings = &hcm.HttpConnectionManagerSettings{
+			InternalAddressConfig: &hcm.HttpConnectionManagerSettings_InternalAddressConfig{
+				UnixSockets: &wrappers.BoolValue{Value: true},
+				CidrRanges: []*hcm.HttpConnectionManagerSettings_CidrRange{
+					&hcm.HttpConnectionManagerSettings_CidrRange{
+						AddressPrefix: "invalid_prefix",
+						PrefixLen:     &wrappers.UInt32Value{Value: 32},
+					},
+				},
+			},
+		}
+
+		settings.InternalAddressConfig.CidrRanges[0].AddressPrefix = "invalid_prefix"
+		cfg := &envoyhttp.HttpConnectionManager{}
+		err := processHcmNetworkFilter(cfg)
+		Expect(err).To(MatchError(ContainSubstring("invalid CIDR address")))
 	})
 
 	It("should copy stateful_formatter setting to hcm filter", func() {
 		settings = &hcm.HttpConnectionManagerSettings{
 			HeaderFormat: &hcm.HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat{
-				PreserveCaseHeaderKeyFormat: true,
+				PreserveCaseHeaderKeyFormat: &wrappers.BoolValue{Value: true},
 			},
 		}
 

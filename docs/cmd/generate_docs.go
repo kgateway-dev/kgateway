@@ -10,8 +10,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/spf13/pflag"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap/zapcore"
+	"k8s.io/apimachinery/pkg/util/version"
 
 	"github.com/solo-io/go-utils/securityscanutils"
 
@@ -41,12 +44,14 @@ func rootApp(ctx context.Context) *cobra.Command {
 	opts := &options{
 		ctx: ctx,
 	}
+
 	app := &cobra.Command{}
 	app.AddCommand(changelogMdFromGithubCmd(opts))
 	app.AddCommand(securityScanMdFromCmd(opts))
 	app.AddCommand(enterpriseHelmValuesMdFromGithubCmd(opts))
 	app.AddCommand(getReleasesCmd(opts))
 	app.AddCommand(runSecurityScanCmd(opts))
+
 	app.PersistentFlags().StringVarP(&opts.targetRepo, "TargetRepo", "r", glooOpenSourceRepo, "specify one of 'gloo' or 'glooe'")
 	_ = app.MarkFlagRequired("TargetRepo")
 
@@ -110,17 +115,33 @@ func enterpriseHelmValuesMdFromGithubCmd(opts *options) *cobra.Command {
 
 // Command for running the actual security scan on the images
 func runSecurityScanCmd(opts *options) *cobra.Command {
+	scanOptions := &runSecurityScanOptions{
+		options: opts,
+	}
 
 	app := &cobra.Command{
 		Use:   "run-security-scan",
 		Short: "runs trivy scans on images from repo specified",
 		Long:  "runs trivy vulnerability scans on images from the repo specified. Only reports HIGH and CRITICAL-level vulnerabilities and uploads scan results to google cloud bucket and github security page",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := scanImagesForRepo(opts.ctx, opts.targetRepo)
+			err := scanImagesForRepo(scanOptions.ctx, scanOptions.targetRepo, scanOptions.vulnerabilityAction)
 			return err
 		},
 	}
+
+	scanOptions.addToFlags(app.Flags())
+
 	return app
+}
+
+type runSecurityScanOptions struct {
+	*options
+
+	vulnerabilityAction string
+}
+
+func (r *runSecurityScanOptions) addToFlags(flags *pflag.FlagSet) {
+	flags.StringVarP(&r.vulnerabilityAction, "vulnerability-action", "a", "none", "action to take when a vulnerability is discovered {none, github-issue-all, github-issue-latest}")
 }
 
 // Fetches releases and serializes them and prints to stdout.
@@ -294,7 +315,7 @@ func generateSecurityScanMd(opts *options) error {
 }
 
 // scanImagesForRepo executes a SecurityScan for the repo provided
-func scanImagesForRepo(ctx context.Context, targetRepo string) error {
+func scanImagesForRepo(ctx context.Context, targetRepo string, vulnerabilityAction string) error {
 	contextutils.SetLogLevel(zapcore.DebugLevel)
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -319,13 +340,16 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 			Opts: &securityscanutils.SecurityScanOpts{
 				OutputDir: outputDir,
 				ImagesPerVersion: map[string][]string{
-					">=v1.6.0": OpenSourceImages(),
+					">=v1.12.3":            OpenSourceImages(version.MustParseSemantic("1.12.3")),  //extra images: [kubectl]
+					"<v1.12.3, >=v1.12.0":  OpenSourceImages(version.MustParseSemantic("1.12.0")),  //extra images: []
+					"<v1.12.0, >=v1.11.28": OpenSourceImages(version.MustParseSemantic("1.11.28")), //extra images: [gateway, kubectl]
+					"<v1.11.28, >=v1.9.0":  OpenSourceImages(version.MustParseSemantic("1.9.0")),   //extra images: [gateway]
 				},
 				VersionConstraint:                      versionConstraint,
 				ImageRepo:                              "quay.io/solo-io",
 				UploadCodeScanToGithub:                 false,
-				CreateGithubIssuePerVersion:            false,
-				CreateGithubIssueForLatestPatchVersion: true,
+				CreateGithubIssuePerVersion:            vulnerabilityAction == "github-issue-all",
+				CreateGithubIssueForLatestPatchVersion: vulnerabilityAction == "github-issue-latest",
 			},
 		})
 	}
@@ -337,13 +361,13 @@ func scanImagesForRepo(ctx context.Context, targetRepo string) error {
 			Opts: &securityscanutils.SecurityScanOpts{
 				OutputDir: outputDir,
 				ImagesPerVersion: map[string][]string{
-					">=v1.7.x": EnterpriseImages(false),
+					">=v1.7.x": EnterpriseImages(version.MustParseSemantic("1.7.0")),
 				},
 				VersionConstraint:                      versionConstraint,
 				ImageRepo:                              "quay.io/solo-io",
 				UploadCodeScanToGithub:                 false,
-				CreateGithubIssuePerVersion:            false,
-				CreateGithubIssueForLatestPatchVersion: true,
+				CreateGithubIssuePerVersion:            vulnerabilityAction == "github-issue-all",
+				CreateGithubIssueForLatestPatchVersion: vulnerabilityAction == "github-issue-latest",
 			},
 		})
 	}
