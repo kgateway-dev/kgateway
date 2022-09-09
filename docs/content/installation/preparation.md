@@ -46,7 +46,7 @@ You must provide the license key during the installation process. When you insta
           license-key: ""
         EOF
         ```
-     2. When you install the Gloo management components in your cluster, specify the secret name and disable default secrte generation in your Helm values file or the `glooctl install` command.
+     2. When you install the Gloo management components in your cluster, specify the secret name and disable default secret generation in your Helm values file or the `glooctl install` command.
         * **Helm**: In your Helm values file, provide the secret name as the value for the `gloo.license_secret_name` field, and set `create_license_secret` to `false`.
         * **glooctl**: In your `glooctl install` command, include the `--set gloo.license_secret_name=<license>` and `--set create_license_secret=false` flags.
 
