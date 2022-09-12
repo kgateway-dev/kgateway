@@ -153,7 +153,6 @@ rules:
   - get
   - list
   - watch
-  - create
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
