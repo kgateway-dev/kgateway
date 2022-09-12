@@ -45,9 +45,10 @@ func (c *readOnlyUpstreamBaseClient) Write(resource resources.Resource, opts cli
 	return resources.Clone(resource), nil
 }
 
-func (c *readOnlyUpstreamBaseClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
+func (c *readOnlyUpstreamBaseClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	name := inputResource.GetMetadata().GetName()
 	if isRealUpstream(name) {
-		return c.rc.ApplyStatus(namespace, name, opts, inputResource)
+		return c.rc.ApplyStatus(statusClient, inputResource, opts)
 	}
 	// not a real upstream, so we don't need to apply status
 	return nil, nil

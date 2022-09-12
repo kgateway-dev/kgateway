@@ -16,6 +16,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 )
 
@@ -81,7 +82,7 @@ func (c *hybridUpstreamClient) Delete(namespace, name string, opts clients.Delet
 	panic(notImplementedErrMsg)
 }
 
-func (rc *hybridUpstreamClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts) (*v1.Upstream, error) {
+func (rc *hybridUpstreamClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (*v1.Upstream, error) {
 	panic(notImplementedErrMsg)
 }
 
