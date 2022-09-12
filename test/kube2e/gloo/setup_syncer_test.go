@@ -9,14 +9,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -31,9 +31,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-var synchronizedSetupLock = new(sync.RWMutex)
-
 var _ = Describe("Setup Syncer", func() {
+
+	var (
+		setupLock sync.RWMutex
+	)
 
 	// SetupFunc is used to configure Gloo with appropriate configuration
 	// It is assumed to run once at construction time, and therefore it executes directives that
@@ -42,21 +44,20 @@ var _ = Describe("Setup Syncer", func() {
 	// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
 	// we ensure that only 1 SetupFunc is ever called at a time
 	newSynchronizedSetupFunc := func() setuputils.SetupFunc {
-		setup := &SynchronizedSetupFunc{
-			SetupFunc: setup.NewSetupFunc(),
-			SetupLock: synchronizedSetupLock,
+		setupFunc := setup.NewSetupFunc()
+
+		var synchronizedSetupFunc setuputils.SetupFunc
+		synchronizedSetupFunc = func(setupCtx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
+			setupLock.Lock()
+			defer setupLock.Unlock()
+			// This is normally performed within the SetupSyncer and is required by Gloo components
+			setupCtx = settingsutil.WithSettings(setupCtx, settings)
+
+			return setupFunc(setupCtx, kubeCache, inMemoryCache, settings, identity)
 		}
 
-		return setup.Run
+		return synchronizedSetupFunc
 	}
-
-	BeforeEach(func() {
-		cfg, err := kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
-
-		resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
-		Expect(err).NotTo(HaveOccurred())
-	})
 
 	Context("Kube Tests", func() {
 
@@ -169,19 +170,4 @@ func getRandomAddr() string {
 	err = listener.Close()
 	Expect(err).NotTo(HaveOccurred())
 	return addr
-}
-
-type SynchronizedSetupFunc struct {
-	SetupFunc setuputils.SetupFunc
-	SetupLock *sync.RWMutex
-}
-
-func (s *SynchronizedSetupFunc) Run(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
-	s.SetupLock.Lock()
-	defer s.SetupLock.Unlock()
-
-	// This is normally performed within the SetupSyncer and is required by Gloo components
-	ctx = settingsutil.WithSettings(ctx, settings)
-
-	return s.SetupFunc(ctx, kubeCache, inMemoryCache, settings, identity)
 }
