@@ -173,27 +173,6 @@ metadata:
       gloo: rbac
 rules:
 - apiGroups:
-  - gateway.solo.io
-  resources:
-  - gateways
-  - gateways/status
-  - httpgateways
-  - httpgateways/status
-  - virtualservices
-  - virtualservices/status
-  - routetables
-  - routetables/status
-  - virtualhostoptions
-  - virtualhostoptions/status
-  - routeoptions
-  - routeoptions/status
-  verbs:
-  - get
-  - list
-  - watch
-  - update # needed for status updates
-  - patch
-- apiGroups:
   - gloo.solo.io
   resources:
   - proxies
