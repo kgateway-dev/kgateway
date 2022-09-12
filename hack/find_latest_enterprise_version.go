@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -11,14 +12,33 @@ import (
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/go-utils/vfsutils"
+	"gopkg.in/yaml.v2"
 )
+
+type changelogConfig struct {
+	ActiveVersionSubdirectory string `yaml:"activeVersionSubdirectory"`
+}
+
+func (c *changelogConfig) GetChangelogDirPath() string {
+	yamlFile, err := ioutil.ReadFile("changelog/validation.yaml")
+	if err != nil {
+		log.Printf("yamlFile.Get err   #%v ", err)
+	}
+	err = yaml.Unmarshal(yamlFile, c)
+	if err != nil {
+		log.Fatalf("Unmarshal: %v", err)
+	}
+
+	return "changelog/" + c.ActiveVersionSubdirectory
+}
 
 func main() {
 	ctx := context.Background()
+	var c changelogConfig
+	changelogDirPath := c.GetChangelogDirPath()
 	repoRootPath := "."
 	owner := "solo-io"
 	repo := "gloo"
-	changelogDirPath := changelogutils.ChangelogDirectory
 
 	localVersion, err := getLargestLocalChangelogVersion(ctx, repoRootPath, owner, repo, changelogDirPath)
 	if err != nil {
