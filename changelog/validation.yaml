@@ -2,3 +2,8 @@ allowedLabels:
   - rc
   - beta
 activeSubdirectory: "v1.13.x"
+
+# changelog-bot doesn't need or care about this field.  It is here to appease `hack/find_latest_enterprise_version.go`.
+# This should be 1 less version than `activeSubdirectory`.  Moved here to reduce the number of places in our repository where
+# we hardcode things.  (doesn't have a 'v' prefix)
+activeVersionSubdirectory: "1.12.x"
