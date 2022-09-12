@@ -82,7 +82,10 @@ func (c *hybridUpstreamClient) Delete(namespace, name string, opts clients.Delet
 }
 
 func (rc *hybridUpstreamClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	// not supported for now, should investigate further. in-memory client uses and fails here
+	// this was called before and always failed in reporter, but we swallowed the error erroneously. now explicitly silencing it
+	// for feature parity until we remove the calls to this (hybrid upstream client should not be used for status updates)
+	return nil, nil
 }
 
 func (c *hybridUpstreamClient) List(namespace string, opts clients.ListOpts) (v1.UpstreamList, error) {
