@@ -65,7 +65,6 @@ rules:
   - gloo.solo.io
   resources:
   - upstreams
-  - upstreams/status
   verbs:
   - get
   - list
@@ -90,15 +89,13 @@ rules:
   - gloo.solo.io
   resources:
   - upstreams
-  - upstreams/status
   - upstreamgroups
   - proxies
   verbs:
   - get
   - list
   - watch
-  - update # needed for status updates
-  - patch
+  - patch # needed for status updates
 - apiGroups:
   - enterprise.gloo.solo.io
   resources:
@@ -107,8 +104,7 @@ rules:
   - get
   - list
   - watch
-  - update # needed for status updates
-  - patch
+  - patch # needed for status updates
 - apiGroups:
   - ratelimit.solo.io
   resources:
@@ -118,8 +114,7 @@ rules:
   - get
   - list
   - watch
-  - update # needed for status updates
-  - patch
+  - patch # needed for status updates
 - apiGroups:
   - graphql.gloo.solo.io
   resources:
@@ -129,8 +124,7 @@ rules:
   - get
   - list
   - watch
-  - update # needed for status updates
-  - patch
+  - patch # needed for status updates
 - apiGroups:
   - ""
   resources:
