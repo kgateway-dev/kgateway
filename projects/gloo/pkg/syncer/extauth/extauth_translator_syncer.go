@@ -3,6 +3,8 @@ package extauth
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	"github.com/rotisserie/eris"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -60,37 +62,40 @@ func (s *translatorSyncerExtension) Sync(
 
 	reports.Accept(snap.Proxies.AsInputResources()...)
 
-	for _, vs := range snap.VirtualServices {
+	for _, proxy := range snap.Proxies {
+		for _, listener := range proxy.GetListeners() {
+			virtualHosts := utils.GetVirtualHostsForListener(listener)
 
-		virtualHost := vs.GetVirtualHost()
-
-		if virtualHost.GetOptions().GetExtauth().GetConfigRef() != nil {
-			reports.AddError(vs, getEnterpriseOnlyErr())
-		}
-
-		if virtualHost.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
-			reports.AddError(vs, getEnterpriseOnlyErr())
-		}
-
-		for _, route := range virtualHost.GetRoutes() {
-			if route.GetOptions().GetExtauth().GetConfigRef() != nil {
-				reports.AddError(vs, getEnterpriseOnlyErr())
-			}
-
-			if route.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
-				reports.AddError(vs, getEnterpriseOnlyErr())
-			}
-
-			for _, weightedDestination := range route.GetRouteAction().GetMulti().GetDestinations() {
-				if weightedDestination.GetOptions().GetExtauth().GetConfigRef() != nil {
-					reports.AddError(vs, getEnterpriseOnlyErr())
+			for _, virtualHost := range virtualHosts {
+				if virtualHost.GetOptions().GetExtauth().GetConfigRef() != nil {
+					reports.AddError(proxy, getEnterpriseOnlyErr())
 				}
 
-				if weightedDestination.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
-					reports.AddError(vs, getEnterpriseOnlyErr())
+				if virtualHost.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
+					reports.AddError(proxy, getEnterpriseOnlyErr())
 				}
+
+				for _, route := range virtualHost.GetRoutes() {
+					if route.GetOptions().GetExtauth().GetConfigRef() != nil {
+						reports.AddError(proxy, getEnterpriseOnlyErr())
+					}
+
+					if route.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
+						reports.AddError(proxy, getEnterpriseOnlyErr())
+					}
+
+					for _, weightedDestination := range route.GetRouteAction().GetMulti().GetDestinations() {
+						if weightedDestination.GetOptions().GetExtauth().GetConfigRef() != nil {
+							reports.AddError(proxy, getEnterpriseOnlyErr())
+						}
+
+						if weightedDestination.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
+							reports.AddError(proxy, getEnterpriseOnlyErr())
+						}
+					}
+				}
+
 			}
 		}
-
 	}
 }
