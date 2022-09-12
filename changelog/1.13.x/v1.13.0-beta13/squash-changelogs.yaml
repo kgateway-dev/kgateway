@@ -1,0 +1,5 @@
+changelog:
+    - type: NON_USER_FACING
+      issueLink: https://github.com/solo-io/gloo/issues/6819
+      resolvesIssue: false
+      description: update changelog directory to use a nested structure
