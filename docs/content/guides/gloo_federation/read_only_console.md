@@ -1,7 +1,7 @@
 ---
 title: Read-only Console
 description: Accessing the Gloo Edge Federation read-only console
-weight: 50
+weight: 60
 ---
 
 The installation of Gloo Edge Federation includes a read-only console, providing a wealth of information about the Gloo Edge instances being managed by Gloo Edge Federation available at a glance. This guide will take you through the process of accessing the console and show you some of the features of the interface.

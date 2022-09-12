@@ -1,10 +1,12 @@
 ---
 title: Service Failover
 description: Creating a failover service in Gloo Edge Federation
-weight: 30
+weight: 40
 ---
 
 When an Upstream fails or becomes unhealthy, Gloo Edge Federation can automatically fail traffic over to a different Gloo Edge instance and Upstream. In this guide we will demonstrate that functionality by registering two clusters with Gloo Edge Federation. Then we will create a Kubernetes service on each cluster and verify it is available as an Upstream. We will create a FailoverScheme in Gloo Edge Federation with one Upstream as the primary and the second as a backup. Finally, we will simulate a failure of the primary Upstream and verify that the service fails over to the secondary.
+
+![]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-failover.png" %}})
 
 ## Prerequisites
 
@@ -35,8 +37,6 @@ gloo:
     gatewayProxy:
       failover:
         enabled: true
-      service:
-        type: NodePort
 ```
 
 An example helm command to upgrade Gloo Edge is:
@@ -46,11 +46,18 @@ helm upgrade gloo glooe/gloo-ee --namespace gloo-system --values enable-failover
 
 ## Configure Gloo Edge for Failover
 
-The first step to enabling failover is security. As failover allows communication between multiple clusters, it is crucial that the traffic be encrypted. Therefore certificates need to be provisioned and placed in the clusters to allow for mTLS between the Gloo Edge instances running on separate clusters. 
+The first step to enabling failover is security. As failover allows communication between multiple clusters, it is crucial that the traffic be encrypted. Therefore certificates need to be provisioned and placed in the clusters to allow for mTLS between the Gloo Edge instances running on separate clusters.
+
 
 ### Create the certificates and secrets for mTLS
 
-The following two commands will generate all of the certs necessary.
+To enable mTLS, you need to create two distinct Kubernetes secrets containing x509 certificates:
+- on the client side (the `gloo-fed` cluster below), the Upstream CR will automatically use a client certificate, named `failover-upstream`
+- on th server side, (the `gloo-fed-2` cluster below), the Failover Gateway will expose a server certificate and also validate the client certificate with a CA cert (a truststore)
+
+![]({{% versioned_link_path fromRoot="/img/gloo-fed-failover-secrets.png" %}})
+
+The following two commands will generate all the necessary certificates.
 
 ```
 # Generate downstream cert and key

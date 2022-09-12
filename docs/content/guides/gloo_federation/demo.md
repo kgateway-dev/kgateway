@@ -1,6 +1,6 @@
 ---
-title: Getting Started
-description: Getting started with Gloo Edge Federation
+title: Quick demo
+description: Run a quick demo of Gloo Federation in a local environment
 weight: 10
 ---
 
@@ -17,24 +17,6 @@ Make sure that you have the following tools installed.
 * **Glooctl** - Sets up the demonstration environment.
 * **Gloo Edge Enterprise license** - You need a license key to deploy the demonstration environment. To request a license, [contact Sales](https://www.solo.io/company/contact/).
 
-## Upgrading Gloo Edge to use failover
-
-Failover can be enabled by setting following Helm value: `gatewayProxies.NAME.failover.enabled=true`.
-
-An example Helm override file for installing Gloo Edge with failover is:
-```yaml
-gatewayProxies:
-  gatewayProxy:
-    failover:
-      enabled: true
-    service:
-      type: NodePort
-```
-
-An example helm command to upgrade Gloo Edge is:
-```
-helm upgrade gloo gloo/gloo --namespace gloo-system --values enable-failover.yaml
-```
 
 ## Deploy the demonstration environment
 
