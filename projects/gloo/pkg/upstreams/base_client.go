@@ -49,7 +49,8 @@ func (c *readOnlyUpstreamBaseClient) ApplyStatus(namespace, name string, opts cl
 	if isRealUpstream(name) {
 		return c.rc.ApplyStatus(namespace, name, opts, inputResource)
 	}
-	return nil, eris.New(notImplementedErrMsg)
+	// not a real upstream, so we don't need to apply status
+	return nil, nil
 }
 
 func (c *readOnlyUpstreamBaseClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
