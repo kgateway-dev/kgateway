@@ -211,12 +211,6 @@ rules:
   - watch
   - update # needed for status updates
   - patch
-- apiGroups:
-  - gateway.solo.io
-  resources:
-  - gateways
-  verbs:
-  - create # needed for creating the default gateways
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
