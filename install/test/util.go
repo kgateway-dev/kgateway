@@ -15,6 +15,13 @@ func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAc
 	permissions.AddExpectedPermission(
 		"gloo-system.gloo",
 		namespace,
+		[]string{""},
+		[]string{"configmaps"},
+		[]string{"*"},
+	)
+	permissions.AddExpectedPermission(
+		"gloo-system.gloo",
+		namespace,
 		[]string{"coordination.k8s.io"},
 		[]string{"leases"},
 		[]string{"*"},
