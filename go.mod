@@ -307,6 +307,7 @@ require (
 )
 
 replace (
+github.com/solo-io/solo-kit => /var/home/kdorosh/git/solo-kit
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/apache/thrift => github.com/apache/thrift v0.14.0
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect
