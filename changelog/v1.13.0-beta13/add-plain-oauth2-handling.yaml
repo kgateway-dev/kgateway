@@ -1,6 +1,6 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/gloo/issues/6985
     resolvesIssue: false
     description: >
-      Add plain OAuth2 support for extauth.
+      Introduce Enterprise-Only API for Oauth2 (non-OIDC) support in Gloo Auth Configs.
