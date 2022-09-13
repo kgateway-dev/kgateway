@@ -774,6 +774,8 @@ message ApiKeyAuth {
         AerospikeApiKeyStorage aerospike_apikey_storage = 6;
     }
 
+    // For the K8s secret backend, this data is stored as key-value data in the secret itself.
+    // For the Aerospike backend, this data is stored as bins on the key's record
     message MetadataEntry {
         // (Required) The key of the API key metadata entry to inspect.
         string name = 1;
@@ -794,13 +796,19 @@ message K8sSecretApiKeyStorage {
 }
 
 message AerospikeApiKeyStorage {
+    // The hostname or IP address of one of the cluster members
+    // The client will discover other members of the cluster once a connection has been established.
 	string hostname = 1;
+    // The Aerospike namespace to use for storage. Defaults to "solo-namespace"
 	string namespace = 2;
+    // The Aerospike set to use for storage of apikeys. Defaults to "apikeys"
 	string set = 3;
+    // The port on which to connect to the Aerospike server. Defaults to 3000
 	int32 port = 4;
 	int32 batch_size = 5;
 
 	// Write settings for the desired consistency guarantee when committing a transaction on the aerospike server
+    // Defaults to commit_all
     oneof commit_level {
         // commit_all indicates the server should wait until successfully committing master and all replicas.
         uint32 commit_all = 6;
@@ -808,9 +816,10 @@ message AerospikeApiKeyStorage {
         uint32 commit_master = 7;
     }
 
+    // Read settings for strong consistency (SC)
+    // Defaults to read_mode_sc_session
     readModeSc read_mode_sc = 8;
     message readModeSc {
-        // Read settings for strong consistency (SC)
         oneof read_mode_sc {
             // session ensures this client will only see an increasing sequence of record versions.
             // Server only reads from master.  This is the default.
@@ -829,9 +838,10 @@ message AerospikeApiKeyStorage {
         }
     }
 
+    // Read settings for availability (AP)
+    // Defaults to read_mode_ap_one
     readModeAp read_mode_ap = 9;
     message readModeAp {
-        // Read settings for availability (AP)
         oneof read_mode_ap {
             // one indicates that a single node should be involved in the read operation.
             uint32 read_mode_ap_one = 1;
