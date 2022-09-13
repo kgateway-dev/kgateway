@@ -33,6 +33,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_plugins_cloudmap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/cloudmap"
+
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -268,6 +270,18 @@ func (m *Upstream) Clone() proto.Message {
 		} else {
 			target.UpstreamType = &Upstream_AwsEc2{
 				AwsEc2: proto.Clone(m.GetAwsEc2()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws_ec2.UpstreamSpec),
+			}
+		}
+
+	case *Upstream_Cloudmap:
+
+		if h, ok := interface{}(m.GetCloudmap()).(clone.Cloner); ok {
+			target.UpstreamType = &Upstream_Cloudmap{
+				Cloudmap: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_plugins_cloudmap.UpstreamSpec),
+			}
+		} else {
+			target.UpstreamType = &Upstream_Cloudmap{
+				Cloudmap: proto.Clone(m.GetCloudmap()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_plugins_cloudmap.UpstreamSpec),
 			}
 		}
 

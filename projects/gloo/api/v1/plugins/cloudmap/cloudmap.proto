@@ -1,0 +1,21 @@
+syntax = "proto3";
+package cloudmap.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/cloudmap";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+
+// Upstream Spec for AWS CloudMap Upstreams
+message UpstreamSpec {
+
+    string service_name = 1;
+
+    string aws_account_id = 2;
+
+    string cloudmap_namespace_name = 3;
+
+    uint32 port = 4;
+
+    string assume_role_name = 5;
+}

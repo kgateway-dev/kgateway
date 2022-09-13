@@ -4,6 +4,11 @@ Name|Version|License
 [Netflix/go-expect](https://github.com/Netflix/go-expect)|v0.0.0-20180928190340-9d1f4485533b|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
+[aws/aws-sdk-go-v2](https://github.com/aws/aws-sdk-go-v2)|v1.16.14|Apache License 2.0
+[aws-sdk-go-v2/config](https://github.com/aws/aws-sdk-go-v2)|v1.17.5|Apache License 2.0
+[aws-sdk-go-v2/credentials](https://github.com/aws/aws-sdk-go-v2)|v1.12.18|Apache License 2.0
+[service/servicediscovery](https://github.com/aws/aws-sdk-go-v2)|v1.17.16|Apache License 2.0
+[service/sts](https://github.com/aws/aws-sdk-go-v2)|v1.16.17|Apache License 2.0
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.10.3|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.6.7|Apache License 2.0
@@ -32,6 +37,7 @@ Name|Version|License
 [onsi/ginkgo](https://github.com/onsi/ginkgo)|v1.16.5|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.16.0|MIT License
 [pkg/browser](https://github.com/pkg/browser)|v0.0.0-20180916011732-0a3d74bf9ce4|BSD 2-clause "Simplified" License
+[pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.11.1|Apache License 2.0
 [prometheus/prometheus](https://github.com/prometheus/prometheus)|v2.5.0+incompatible|Apache License 2.0
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.4.0|MIT License

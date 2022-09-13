@@ -130,6 +130,20 @@ spec:
                     nullable: true
                     type: integer
                 type: object
+              cloudmap:
+                properties:
+                  assumeRoleName:
+                    type: string
+                  awsAccountId:
+                    type: string
+                  cloudmapNamespaceName:
+                    type: string
+                  port:
+                    format: int32
+                    type: integer
+                  serviceName:
+                    type: string
+                type: object
               connectionConfig:
                 properties:
                   commonHttpProtocolOptions:

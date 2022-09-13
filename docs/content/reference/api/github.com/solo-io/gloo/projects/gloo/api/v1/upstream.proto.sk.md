@@ -50,6 +50,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "azure": .azure.options.gloo.solo.io.UpstreamSpec
 "consul": .consul.options.gloo.solo.io.UpstreamSpec
 "awsEc2": .aws_ec2.options.gloo.solo.io.UpstreamSpec
+"cloudmap": .cloudmap.options.gloo.solo.io.UpstreamSpec
 "failover": .gloo.solo.io.Failover
 "connectionConfig": .gloo.solo.io.ConnectionConfig
 "protocolSelection": .gloo.solo.io.Upstream.ClusterProtocolSelection
@@ -75,13 +76,14 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `loadBalancerConfig` | [.gloo.solo.io.LoadBalancerConfig](../load_balancer.proto.sk/#loadbalancerconfig) |  |
 | `healthChecks` | [[]solo.io.envoy.api.v2.core.HealthCheck](../../external/envoy/api/v2/core/health_check.proto.sk/#healthcheck) |  |
 | `outlierDetection` | [.solo.io.envoy.api.v2.cluster.OutlierDetection](../../external/envoy/api/v2/cluster/outlier_detection.proto.sk/#outlierdetection) |  |
-| `kube` | [.kubernetes.options.gloo.solo.io.UpstreamSpec](../options/kubernetes/kubernetes.proto.sk/#upstreamspec) |  Only one of `kube`, `static`, `pipe`, `aws`, `azure`, `consul`, or `awsEc2` can be set. |
-| `static` | [.static.options.gloo.solo.io.UpstreamSpec](../options/static/static.proto.sk/#upstreamspec) |  Only one of `static`, `kube`, `pipe`, `aws`, `azure`, `consul`, or `awsEc2` can be set. |
-| `pipe` | [.pipe.options.gloo.solo.io.UpstreamSpec](../options/pipe/pipe.proto.sk/#upstreamspec) |  Only one of `pipe`, `kube`, `static`, `aws`, `azure`, `consul`, or `awsEc2` can be set. |
-| `aws` | [.aws.options.gloo.solo.io.UpstreamSpec](../options/aws/aws.proto.sk/#upstreamspec) |  Only one of `aws`, `kube`, `static`, `pipe`, `azure`, `consul`, or `awsEc2` can be set. |
-| `azure` | [.azure.options.gloo.solo.io.UpstreamSpec](../options/azure/azure.proto.sk/#upstreamspec) |  Only one of `azure`, `kube`, `static`, `pipe`, `aws`, `consul`, or `awsEc2` can be set. |
-| `consul` | [.consul.options.gloo.solo.io.UpstreamSpec](../options/consul/consul.proto.sk/#upstreamspec) |  Only one of `consul`, `kube`, `static`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |
-| `awsEc2` | [.aws_ec2.options.gloo.solo.io.UpstreamSpec](../options/aws/ec2/aws_ec2.proto.sk/#upstreamspec) |  Only one of `awsEc2`, `kube`, `static`, `pipe`, `aws`, `azure`, or `consul` can be set. |
+| `kube` | [.kubernetes.options.gloo.solo.io.UpstreamSpec](../options/kubernetes/kubernetes.proto.sk/#upstreamspec) |  Only one of `kube`, `static`, `pipe`, `aws`, `azure`, `consul`, `awsEc2`, or `cloudmap` can be set. |
+| `static` | [.static.options.gloo.solo.io.UpstreamSpec](../options/static/static.proto.sk/#upstreamspec) |  Only one of `static`, `kube`, `pipe`, `aws`, `azure`, `consul`, `awsEc2`, or `cloudmap` can be set. |
+| `pipe` | [.pipe.options.gloo.solo.io.UpstreamSpec](../options/pipe/pipe.proto.sk/#upstreamspec) |  Only one of `pipe`, `kube`, `static`, `aws`, `azure`, `consul`, `awsEc2`, or `cloudmap` can be set. |
+| `aws` | [.aws.options.gloo.solo.io.UpstreamSpec](../options/aws/aws.proto.sk/#upstreamspec) |  Only one of `aws`, `kube`, `static`, `pipe`, `azure`, `consul`, `awsEc2`, or `cloudmap` can be set. |
+| `azure` | [.azure.options.gloo.solo.io.UpstreamSpec](../options/azure/azure.proto.sk/#upstreamspec) |  Only one of `azure`, `kube`, `static`, `pipe`, `aws`, `consul`, `awsEc2`, or `cloudmap` can be set. |
+| `consul` | [.consul.options.gloo.solo.io.UpstreamSpec](../options/consul/consul.proto.sk/#upstreamspec) |  Only one of `consul`, `kube`, `static`, `pipe`, `aws`, `azure`, `awsEc2`, or `cloudmap` can be set. |
+| `awsEc2` | [.aws_ec2.options.gloo.solo.io.UpstreamSpec](../options/aws/ec2/aws_ec2.proto.sk/#upstreamspec) |  Only one of `awsEc2`, `kube`, `static`, `pipe`, `aws`, `azure`, `consul`, or `cloudmap` can be set. |
+| `cloudmap` | [.cloudmap.options.gloo.solo.io.UpstreamSpec](../plugins/cloudmap/cloudmap.proto.sk/#upstreamspec) |  Only one of `cloudmap`, `kube`, `static`, `pipe`, `aws`, `azure`, `consul`, or `awsEc2` can be set. |
 | `failover` | [.gloo.solo.io.Failover](../failover.proto.sk/#failover) | Failover endpoints for this upstream. If omitted (the default) no failovers will be applied. |
 | `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk/#connectionconfig) | HTTP/1 connection configurations. |
 | `protocolSelection` | [.gloo.solo.io.Upstream.ClusterProtocolSelection](../upstream.proto.sk/#clusterprotocolselection) | Determines how Envoy selects the protocol used to speak to upstream hosts. |

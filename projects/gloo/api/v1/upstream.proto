@@ -27,6 +27,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/ec2/aws_ec2.pro
 import "github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto";
 import "google/protobuf/wrappers.proto";
 
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/cloudmap/cloudmap.proto";
 
 /*
  * Upstreams represent destination for routing HTTP requests. Upstreams can be compared to
@@ -75,6 +76,7 @@ message Upstream {
         azure.options.gloo.solo.io.UpstreamSpec azure = 15;
         consul.options.gloo.solo.io.UpstreamSpec consul = 16;
         aws_ec2.options.gloo.solo.io.UpstreamSpec aws_ec2 = 17;
+        cloudmap.options.gloo.solo.io.UpstreamSpec cloudmap = 30;
     }
 
     // Failover endpoints for this upstream. If omitted (the default) no failovers will be applied.

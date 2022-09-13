@@ -8,6 +8,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cloudmap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -105,6 +106,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		metadata.NewPlugin(),
 		tunneling.NewPlugin(),
 		dynamic_forward_proxy.NewPlugin(),
+		cloudmap.NewPlugin(),
 	)
 
 	if opts.KubeClient != nil {

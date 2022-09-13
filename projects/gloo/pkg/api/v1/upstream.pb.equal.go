@@ -361,6 +361,21 @@ func (m *Upstream) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Upstream_Cloudmap:
+		if _, ok := target.UpstreamType.(*Upstream_Cloudmap); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetCloudmap()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCloudmap()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetCloudmap(), target.GetCloudmap()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.UpstreamType != target.UpstreamType {
