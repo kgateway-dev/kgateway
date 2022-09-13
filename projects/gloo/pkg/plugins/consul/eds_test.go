@@ -89,7 +89,6 @@ var _ = Describe("Consul EDS", func() {
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
-			ctrl = gomock.NewController(T)
 
 			serviceMetaProducer = make(chan []*consul.ServiceMeta)
 			errorProducer = make(chan error)
@@ -245,6 +244,14 @@ var _ = Describe("Consul EDS", func() {
 				BeforeEach(func() {
 					testSvcCp := *testService
 					testSvcCpPtr := &testSvcCp // copy so no data races with test pollution (goroutines still reading this value as the next test writes it)
+
+					// We have noticed that Service calls to svc2 sometimes linger, causing tests to flake
+					// This ensures that the consulWatcher can handle these calls, even though they are not relevant to the test
+					consulWatcherMock.EXPECT().Service(svc2, gomock.Any(), gomock.Any()).DoAndReturn(
+						func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+							return []*consulapi.CatalogService{}, &consulapi.QueryMeta{LastIndex: 1}, nil
+						}).AnyTimes()
+
 					consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 						func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 							if q.Datacenter == dc2 {
@@ -407,7 +414,6 @@ var _ = Describe("Consul EDS", func() {
 		var (
 			ctx               context.Context
 			cancel            context.CancelFunc
-			ctrl              *gomock.Controller
 			consulWatcherMock *mock_consul.MockConsulWatcher
 
 			// Data center names
@@ -438,7 +444,6 @@ var _ = Describe("Consul EDS", func() {
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
-			ctrl = gomock.NewController(T)
 
 			serviceMetaProducer = make(chan []*consul.ServiceMeta)
 			errorProducer = make(chan error)
@@ -613,8 +618,6 @@ var _ = Describe("Consul EDS", func() {
 		})
 
 		AfterEach(func() {
-			ctrl.Finish()
-
 			if cancel != nil {
 				cancel()
 			}
