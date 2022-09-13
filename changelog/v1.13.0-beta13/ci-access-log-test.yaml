@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6307
+    description: Fix e2e test "Access Log in memory Access Logs Grpc [It] can stream access logs"
