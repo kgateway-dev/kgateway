@@ -649,17 +649,17 @@ func (m *OAuth2) Equal(that interface{}) bool {
 			}
 		}
 
-	case *OAuth2_PlainOauth2:
-		if _, ok := target.OauthType.(*OAuth2_PlainOauth2); !ok {
+	case *OAuth2_Oauth2:
+		if _, ok := target.OauthType.(*OAuth2_Oauth2); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetPlainOauth2()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetPlainOauth2()) {
+		if h, ok := interface{}(m.GetOauth2()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOauth2()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetPlainOauth2(), target.GetPlainOauth2()) {
+			if !proto.Equal(m.GetOauth2(), target.GetOauth2()) {
 				return false
 			}
 		}
@@ -3450,17 +3450,17 @@ func (m *ExtAuthConfig_OAuth2Config) Equal(that interface{}) bool {
 			}
 		}
 
-	case *ExtAuthConfig_OAuth2Config_PlainOauth2Config:
-		if _, ok := target.OauthType.(*ExtAuthConfig_OAuth2Config_PlainOauth2Config); !ok {
+	case *ExtAuthConfig_OAuth2Config_Oauth2Config:
+		if _, ok := target.OauthType.(*ExtAuthConfig_OAuth2Config_Oauth2Config); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetPlainOauth2Config()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetPlainOauth2Config()) {
+		if h, ok := interface{}(m.GetOauth2Config()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOauth2Config()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetPlainOauth2Config(), target.GetPlainOauth2Config()) {
+			if !proto.Equal(m.GetOauth2Config(), target.GetOauth2Config()) {
 				return false
 			}
 		}

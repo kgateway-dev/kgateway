@@ -389,15 +389,15 @@ func (m *OAuth2) Clone() proto.Message {
 			}
 		}
 
-	case *OAuth2_PlainOauth2:
+	case *OAuth2_Oauth2:
 
-		if h, ok := interface{}(m.GetPlainOauth2()).(clone.Cloner); ok {
-			target.OauthType = &OAuth2_PlainOauth2{
-				PlainOauth2: h.Clone().(*PlainOAuth2),
+		if h, ok := interface{}(m.GetOauth2()).(clone.Cloner); ok {
+			target.OauthType = &OAuth2_Oauth2{
+				Oauth2: h.Clone().(*PlainOAuth2),
 			}
 		} else {
-			target.OauthType = &OAuth2_PlainOauth2{
-				PlainOauth2: proto.Clone(m.GetPlainOauth2()).(*PlainOAuth2),
+			target.OauthType = &OAuth2_Oauth2{
+				Oauth2: proto.Clone(m.GetOauth2()).(*PlainOAuth2),
 			}
 		}
 
@@ -2051,15 +2051,15 @@ func (m *ExtAuthConfig_OAuth2Config) Clone() proto.Message {
 			}
 		}
 
-	case *ExtAuthConfig_OAuth2Config_PlainOauth2Config:
+	case *ExtAuthConfig_OAuth2Config_Oauth2Config:
 
-		if h, ok := interface{}(m.GetPlainOauth2Config()).(clone.Cloner); ok {
-			target.OauthType = &ExtAuthConfig_OAuth2Config_PlainOauth2Config{
-				PlainOauth2Config: h.Clone().(*ExtAuthConfig_PlainOAuth2Config),
+		if h, ok := interface{}(m.GetOauth2Config()).(clone.Cloner); ok {
+			target.OauthType = &ExtAuthConfig_OAuth2Config_Oauth2Config{
+				Oauth2Config: h.Clone().(*ExtAuthConfig_PlainOAuth2Config),
 			}
 		} else {
-			target.OauthType = &ExtAuthConfig_OAuth2Config_PlainOauth2Config{
-				PlainOauth2Config: proto.Clone(m.GetPlainOauth2Config()).(*ExtAuthConfig_PlainOAuth2Config),
+			target.OauthType = &ExtAuthConfig_OAuth2Config_Oauth2Config{
+				Oauth2Config: proto.Clone(m.GetOauth2Config()).(*ExtAuthConfig_PlainOAuth2Config),
 			}
 		}
 

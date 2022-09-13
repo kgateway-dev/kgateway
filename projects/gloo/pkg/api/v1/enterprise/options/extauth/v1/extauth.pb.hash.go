@@ -717,20 +717,20 @@ func (m *OAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *OAuth2_PlainOauth2:
+	case *OAuth2_Oauth2:
 
-		if h, ok := interface{}(m.GetPlainOauth2()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("PlainOauth2")); err != nil {
+		if h, ok := interface{}(m.GetOauth2()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Oauth2")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetPlainOauth2(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetOauth2(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("PlainOauth2")); err != nil {
+				if _, err = hasher.Write([]byte("Oauth2")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -3899,20 +3899,20 @@ func (m *ExtAuthConfig_OAuth2Config) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *ExtAuthConfig_OAuth2Config_PlainOauth2Config:
+	case *ExtAuthConfig_OAuth2Config_Oauth2Config:
 
-		if h, ok := interface{}(m.GetPlainOauth2Config()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("PlainOauth2Config")); err != nil {
+		if h, ok := interface{}(m.GetOauth2Config()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Oauth2Config")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetPlainOauth2Config(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetOauth2Config(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("PlainOauth2Config")); err != nil {
+				if _, err = hasher.Write([]byte("Oauth2Config")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
