@@ -104,6 +104,9 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 
 	if s.identity.IsLeader() {
 		// Only leaders will write reports
+		//
+		// while tempting to write statuses in parallel to increase performance, we should actually consider recommending the user tunes k8s qps/burst:
+		// https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/gloo/api/v1/settings.proto#L337-L350
 		if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
 			logger.Debugf("Failed writing report for proxies: %v", err)
 			multiErr = multierror.Append(multiErr, eris.Wrapf(err, "writing reports"))

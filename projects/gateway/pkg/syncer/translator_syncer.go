@@ -396,6 +396,10 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 
 		if s.identity.IsLeader() {
+			// Only leaders will write reports
+			//
+			// while tempting to write statuses in parallel to increase performance, we should actually consider recommending the user tunes k8s qps/burst:
+			// https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/gloo/api/v1/settings.proto#L337-L350
 			if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 				errs = multierror.Append(errs, err)
 			} else {
