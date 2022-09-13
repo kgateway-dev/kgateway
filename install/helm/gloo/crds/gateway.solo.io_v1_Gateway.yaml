@@ -2368,6 +2368,8 @@ spec:
                                                               type: boolean
                                                             unwrapAsApiGateway:
                                                               type: boolean
+                                                            wrapAsApiGateway:
+                                                              type: boolean
                                                           type: object
                                                         azure:
                                                           properties:
@@ -3552,6 +3554,8 @@ spec:
                                                     type: boolean
                                                   unwrapAsApiGateway:
                                                     type: boolean
+                                                  wrapAsApiGateway:
+                                                    type: boolean
                                                 type: object
                                               azure:
                                                 properties:
@@ -3984,6 +3988,8 @@ spec:
                                                   unwrapAsAlb:
                                                     type: boolean
                                                   unwrapAsApiGateway:
+                                                    type: boolean
+                                                  wrapAsApiGateway:
                                                     type: boolean
                                                 type: object
                                               azure:
@@ -5168,6 +5174,8 @@ spec:
                                         unwrapAsAlb:
                                           type: boolean
                                         unwrapAsApiGateway:
+                                          type: boolean
+                                        wrapAsApiGateway:
                                           type: boolean
                                       type: object
                                     azure:

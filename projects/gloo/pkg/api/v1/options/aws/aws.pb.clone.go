@@ -102,5 +102,7 @@ func (m *DestinationSpec) Clone() proto.Message {
 
 	target.UnwrapAsApiGateway = m.GetUnwrapAsApiGateway()
 
+	target.WrapAsApiGateway = m.GetWrapAsApiGateway()
+
 	return target
 }
