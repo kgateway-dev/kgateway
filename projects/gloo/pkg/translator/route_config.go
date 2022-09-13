@@ -11,7 +11,6 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
@@ -99,8 +98,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 
 	sanitizedName := utils.SanitizeForEnvoy(params.Ctx, virtualHost.GetName(), "virtual host")
 	if sanitizedName != virtualHost.GetName() {
-		// Make copy to avoid modifying the snapshot
-		virtualHost = proto.Clone(virtualHost).(*v1.VirtualHost)
+		virtualHost = virtualHost.Clone().(*v1.VirtualHost)
 		virtualHost.Name = sanitizedName
 	}
 	var envoyRoutes []*envoy_config_route_v3.Route

@@ -322,9 +322,9 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration, 
 		}
 		if cloneRouteConfigs {
 			routeCfg = proto.Clone(routeCfg).(*envoy_config_route_v3.RouteConfiguration)
-		} else {
-			routesProto = append(routesProto, resource.NewEnvoyResource(routeCfg))
 		}
+		routesProto = append(routesProto, resource.NewEnvoyResource(routeCfg))
+
 	}
 
 	routesVersion := MustEnvoyCacheResourcesListToFnvHash(routesProto)

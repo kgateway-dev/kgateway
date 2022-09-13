@@ -267,7 +267,6 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 	// replace any routes which do not point to a valid destination cluster
 	for _, cfg := range routeConfigs {
 		var replaced int64
-		//sanitizedRouteConfig := proto.Clone(cfg).(*envoy_config_route_v3.RouteConfiguration)
 
 		for i, vh := range cfg.GetVirtualHosts() {
 			for j, route := range vh.GetRoutes() {
