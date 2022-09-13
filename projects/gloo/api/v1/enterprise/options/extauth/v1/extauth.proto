@@ -307,8 +307,11 @@ message OAuth2 {
         // - and (preferably) secure cookies
         AccessTokenValidation access_token_validation = 2;
 
+        // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
+        // provide issuer location and let Gloo handle Oauth2 flow for you.
+        // requests authorized by validating the contents of access token.
         // Prefer to use OIDC for better security.
-        PlainOAuth2 plain_oauth2 = 4;
+        PlainOAuth2 oauth2 = 3;
     }
 }
 
@@ -1391,7 +1394,11 @@ message ExtAuthConfig {
             // - and (preferably) secure cookies
             AccessTokenValidationConfig access_token_validation_config = 3;
 
-            PlainOAuth2Config plain_oauth2_config = 4;
+            // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
+            // provide issuer location and let Gloo handle Oauth2 flow for you.
+            // requests authorized by validating the contents of access token.
+            // Prefer to use OIDC for better security.
+            PlainOAuth2Config oauth2_config = 4;
         }
     }
 
