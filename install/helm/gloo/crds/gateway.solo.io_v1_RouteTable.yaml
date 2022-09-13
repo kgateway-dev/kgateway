@@ -350,6 +350,8 @@ spec:
                                   type: number
                               type: object
                           type: object
+                        grpcTimeoutHeaderMax:
+                          type: string
                         headerManipulation:
                           properties:
                             requestHeadersToAdd:

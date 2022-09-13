@@ -677,6 +677,12 @@ func (m *RouteOptions) Clone() proto.Message {
 		target.RegexRewrite = proto.Clone(m.GetRegexRewrite()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
 	}
 
+	if h, ok := interface{}(m.GetGrpcTimeoutHeaderMax()).(clone.Cloner); ok {
+		target.GrpcTimeoutHeaderMax = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.GrpcTimeoutHeaderMax = proto.Clone(m.GetGrpcTimeoutHeaderMax()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:

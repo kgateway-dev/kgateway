@@ -973,6 +973,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetGrpcTimeoutHeaderMax()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGrpcTimeoutHeaderMax()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGrpcTimeoutHeaderMax(), target.GetGrpcTimeoutHeaderMax()) {
+			return false
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
