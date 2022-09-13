@@ -1,5 +1,7 @@
 changelog:
   - type: FIX
     resolvesIssue: false
-    description: Use kubectl patch rather than read then write pattern to update status on custom resources, which should improve gloo client rate limiting to the k8s apiserver.
+    description: >-
+      Use kubectl patch rather than read then write pattern to update status on custom resources, which
+      makes gloo a less noisy client to the k8s apiserver.
     issueLink: https://github.com/solo-io/gloo/issues/7076
