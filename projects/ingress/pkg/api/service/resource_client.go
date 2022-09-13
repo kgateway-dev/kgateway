@@ -1,17 +1,15 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"sort"
 	"time"
 
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/any"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -182,19 +180,11 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 	}
 	opts = opts.WithDefaults()
 
-	buf := &bytes.Buffer{}
-	var marshaller jsonpb.Marshaler
-	marshaller.EmitDefaults = true // important so merge patch doesn't keep old fields around!
-	err := marshaller.Marshal(buf, inputResource.GetNamespacedStatuses())
+	data, err := shared.GetJsonPatchData(inputResource)
 	if err != nil {
-		return nil, errors.Wrapf(err, "marshalling input resource")
+		return nil, errors.Wrapf(err, "error getting status json patch data")
 	}
-	bytes := buf.Bytes()
-	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
-	data := []byte(patch)
-	popts := metav1.PatchOptions{}
-	// merge patch type is important so multi-namespace status reporting is honored
-	serviceObj, err := rc.kube.CoreV1().Services(namespace).Patch(opts.Ctx, name, types.MergePatchType, data, popts)
+	serviceObj, err := rc.kube.CoreV1().Services(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, metav1.PatchOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
