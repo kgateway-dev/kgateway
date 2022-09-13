@@ -274,7 +274,7 @@ func (t *translatorInstance) generateXDSSnapshot(
 	return xds.NewSnapshotFromResources(
 		envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto),
 		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
-		MakeRdsResources(routeConfigs),
+		MakeRdsResources(routeConfigs, true),
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
 }
 
@@ -312,7 +312,7 @@ func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
 	return hash
 }
 
-func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {
+func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration, cloneRouteConfigs bool) envoycache.Resources {
 	var routesProto []envoycache.Resource
 
 	for _, routeCfg := range routeConfigs {
@@ -320,7 +320,11 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 		if len(routeCfg.GetVirtualHosts()) < 1 {
 			continue
 		}
-		routesProto = append(routesProto, resource.NewEnvoyResource(proto.Clone(routeCfg)))
+		if cloneRouteConfigs {
+			routeCfg = proto.Clone(routeCfg).(*envoy_config_route_v3.RouteConfiguration)
+		} else {
+			routesProto = append(routesProto, resource.NewEnvoyResource(routeCfg))
+		}
 	}
 
 	routesVersion := MustEnvoyCacheResourcesListToFnvHash(routesProto)

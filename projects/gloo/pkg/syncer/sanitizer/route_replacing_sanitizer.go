@@ -14,7 +14,6 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/hashicorp/go-multierror"
@@ -205,7 +204,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 	newXdsSnapshot := xds.NewSnapshotFromResources(
 		xdsSnapshot.GetResources(types.EndpointTypeV3),
 		clusters,
-		translator.MakeRdsResources(replacedRouteConfigs),
+		translator.MakeRdsResources(replacedRouteConfigs, true),
 		listeners,
 	)
 
@@ -268,9 +267,9 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 	// replace any routes which do not point to a valid destination cluster
 	for _, cfg := range routeConfigs {
 		var replaced int64
-		sanitizedRouteConfig := proto.Clone(cfg).(*envoy_config_route_v3.RouteConfiguration)
+		//sanitizedRouteConfig := proto.Clone(cfg).(*envoy_config_route_v3.RouteConfiguration)
 
-		for i, vh := range sanitizedRouteConfig.GetVirtualHosts() {
+		for i, vh := range cfg.GetVirtualHosts() {
 			for j, route := range vh.GetRoutes() {
 				routeAction := route.GetRoute()
 				if routeAction == nil {
@@ -301,11 +300,11 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 				}
 				vh.GetRoutes()[j] = route
 			}
-			sanitizedRouteConfig.GetVirtualHosts()[i] = vh
+			cfg.GetVirtualHosts()[i] = vh
 		}
 
-		utils.Measure(ctx, mRoutesReplaced, replaced, tag.Insert(routeConfigKey, sanitizedRouteConfig.GetName()))
-		sanitizedRouteConfigs = append(sanitizedRouteConfigs, sanitizedRouteConfig)
+		utils.Measure(ctx, mRoutesReplaced, replaced, tag.Insert(routeConfigKey, cfg.GetName()))
+		sanitizedRouteConfigs = append(sanitizedRouteConfigs, cfg)
 	}
 
 	return sanitizedRouteConfigs, anyRoutesReplaced

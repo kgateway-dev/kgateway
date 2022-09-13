@@ -97,10 +97,12 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	vhostReport *validationapi.VirtualHostReport,
 ) *envoy_config_route_v3.VirtualHost {
 
-	// Make copy to avoid modifying the snapshot
-	virtualHost = proto.Clone(virtualHost).(*v1.VirtualHost)
-	virtualHost.Name = utils.SanitizeForEnvoy(params.Ctx, virtualHost.GetName(), "virtual host")
-
+	sanitizedName := utils.SanitizeForEnvoy(params.Ctx, virtualHost.GetName(), "virtual host")
+	if sanitizedName != virtualHost.GetName() {
+		// Make copy to avoid modifying the snapshot
+		virtualHost = proto.Clone(virtualHost).(*v1.VirtualHost)
+		virtualHost.Name = sanitizedName
+	}
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.GetRoutes() {
 		routeParams := plugins.RouteParams{
