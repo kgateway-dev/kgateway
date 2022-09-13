@@ -5558,11 +5558,11 @@ spec:
                 type: object
             type: object
           status:
-            default: {"statuses":{}}
+            default: {}
             properties:
               statuses:
-                type: object
                 default: {}
+                type: object
                 x-kubernetes-preserve-unknown-fields: true
             type: object
             x-kubernetes-preserve-unknown-fields: true
