@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Refresh and complete the doc for Gloo Federation
-    issueLink: https://github.com/solo-io/gloo/issues/7131
