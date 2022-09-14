@@ -90,4 +90,9 @@ message DestinationSpec {
     // Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided.
     // If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway
     bool unwrap_as_api_gateway = 8;
+    
+    // Enterprise-Only
+    // Wrap the request into AWS API Gateway event format.
+    // Intended to ease migration when previously using API Gateway to invoke Lambdas.
+    bool wrap_as_api_gateway = 9;
 }
