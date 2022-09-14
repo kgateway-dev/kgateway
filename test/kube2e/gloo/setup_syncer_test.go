@@ -67,7 +67,7 @@ var _ = Describe("Setup Syncer", func() {
 
 			settings *v1.Settings
 
-			setupCtx context.Context
+			setupCtx    context.Context
 			setupCancel context.CancelFunc
 		)
 
