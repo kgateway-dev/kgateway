@@ -65,7 +65,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if err := applyTimeout(in, out); err != nil {
 		return err
 	}
-	if err := applyMaxGrpcTimeout(in, out); err != nil {
+	if err := applyMaxStreamDuration(in, out); err != nil {
 		return err
 	}
 	if err := applyRetries(in, out); err != nil {
