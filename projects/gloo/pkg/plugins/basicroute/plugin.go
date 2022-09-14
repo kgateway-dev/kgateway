@@ -135,7 +135,7 @@ func applyTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
 }
 
 func applyMaxGrpcTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
-	if in.GetOptions().GetTimeout() == nil {
+	if in.GetOptions().GetGrpcTimeoutHeaderMax() == nil {
 		return nil
 	}
 	routeAction, ok := out.GetAction().(*envoy_config_route_v3.Route_Route)
@@ -147,7 +147,7 @@ func applyMaxGrpcTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
 			"had nil route", in.GetAction())
 	}
 
-	routeAction.Route.Timeout = in.GetOptions().GetTimeout()
+	routeAction.Route.MaxStreamDuration.GrpcTimeoutHeaderMax = in.GetOptions().GetGrpcTimeoutHeaderMax()
 	return nil
 }
 
