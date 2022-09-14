@@ -148,9 +148,9 @@ func applyMaxStreamDuration(in *v1.Route, out *envoy_config_route_v3.Route) erro
 	}
 	inMaxStreamDuration := routeAction.Route.GetMaxStreamDuration()
 	routeAction.Route.MaxStreamDuration = &envoy_config_route_v3.RouteAction_MaxStreamDuration{
-		MaxStreamDuration:       inMaxStreamDuration.MaxStreamDuration,
-		GrpcTimeoutHeaderMax:    inMaxStreamDuration.GrpcTimeoutHeaderMax,
-		GrpcTimeoutHeaderOffset: inMaxStreamDuration.GrpcTimeoutHeaderOffset,
+		MaxStreamDuration:       inMaxStreamDuration.GetMaxStreamDuration(),
+		GrpcTimeoutHeaderMax:    inMaxStreamDuration.GetGrpcTimeoutHeaderMax(),
+		GrpcTimeoutHeaderOffset: inMaxStreamDuration.GetGrpcTimeoutHeaderOffset(),
 	}
 	return nil
 }
