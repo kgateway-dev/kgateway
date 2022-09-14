@@ -2,4 +2,4 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/7139
     resolvesIssue: false
-    description: Remove and/or gate places where resources are cloned to speed up translation.
+    description: Based on profiling, remove and/or gate places where resources are cloned to speed up translation.
