@@ -6,6 +6,12 @@ import (
 	"go.uber.org/goleak"
 )
 
+// DeferredGoroutineLeakDetector returns a function that can be used in tests to identify goroutine leaks
+// Example usage:
+// 	leakDetector := DeferredGoroutineLeakDetector(t)
+//  defer leakDetector()
+//  ...
+// NOTE TO DEVS: We would like to extend the usage of this across more test suites: https://github.com/solo-io/gloo/issues/7147
 func DeferredGoroutineLeakDetector(t *testing.T) func() {
 	leakOptions := []goleak.Option{
 		goleak.IgnoreCurrent(),
