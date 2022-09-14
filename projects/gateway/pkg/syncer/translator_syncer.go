@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/errors"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/hashicorp/go-multierror"
@@ -396,15 +397,25 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 
 		if s.identity.IsLeader() {
+			// Only leaders will write reports
+			//
+			// while tempting to write statuses in parallel to increase performance, we should actually first consider recommending the user tunes k8s qps/burst:
+			// https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/gloo/api/v1/settings.proto#L337-L350
 			if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
-				errs = multierror.Append(errs, err)
+				// add TEMPORARY wrap to our WriteReports error that we should remove in Gloo Edge ~v1.16.0+.
+				// to get the status performance improvements, we need to make the assumption that the user has the latest CRDs installed.
+				// if a user forgets the error message is very confusing (invalid request during kubectl patch);
+				// this should help them understand what's going on in case they did not read the changelog.
+				wrappedErr := errors.Wrapf(err, "failed to write reports for %v;"+
+					"did you make sure your CRDs have been updated since v1.13.0-beta14? (i.e. `status` and `status.statuses` fields exist on your CR)", inputResource.GetMetadata().Ref().Key())
+				errs = multierror.Append(errs, wrappedErr)
 			} else {
 				// The inputResource's status was successfully written, update the cache and metric with that status
 				status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
 				localInputResourceLastStatus[inputResource] = status
 			}
 		} else {
-			contextutils.LoggerFrom(ctx).Debugf("Not a leader, skipping reports writing")
+			contextutils.LoggerFrom(ctx).Debug("Not a leader, skipping reports writing")
 		}
 
 		status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
