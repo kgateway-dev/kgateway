@@ -4,17 +4,39 @@ package v1
 
 import (
 	"context"
-
-	"go.opencensus.io/trace"
+	"fmt"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
+	"go.opencensus.io/trace"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/eventloop"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
 )
+
+var (
+	mDiscoverySnapshotTimeSec     = stats.Float64("discovery.gloo.solo.io/sync/time_sec", "The time taken for a given sync", "1")
+	mDiscoverySnapshotTimeSecView = &view.View{
+		Name:        "discovery.gloo.solo.io/sync/time_sec",
+		Description: "The time taken for a given sync",
+		TagKeys:     []tag.Key{tag.MustNewKey("syncer_name")},
+		Measure:     mDiscoverySnapshotTimeSec,
+		Aggregation: view.Distribution(0.01, 0.05, 0.1, 0.25, 0.5, 1, 5, 10, 60),
+	}
+)
+
+func init() {
+	view.Register(
+		mDiscoverySnapshotTimeSecView,
+	)
+}
 
 type DiscoverySyncer interface {
 	Sync(context.Context, *DiscoverySnapshot) error
@@ -78,10 +100,18 @@ func (el *discoveryEventLoop) Run(namespaces []string, opts clients.WatchOpts) (
 				// cancel any open watches from previous loop
 				cancel()
 
+				startTime := time.Now()
 				ctx, span := trace.StartSpan(opts.Ctx, "discovery.gloo.solo.io.EventLoopSync")
 				ctx, canc := context.WithCancel(ctx)
 				cancel = canc
 				err := el.syncer.Sync(ctx, snapshot)
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{
+						tag.Insert(skstats.SyncerNameKey, fmt.Sprintf("%T", el.syncer)),
+					},
+					mDiscoverySnapshotTimeSec.M(time.Now().Sub(startTime).Seconds()),
+				)
 				span.End()
 
 				if err != nil {

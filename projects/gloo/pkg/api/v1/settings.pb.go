@@ -2220,10 +2220,10 @@ type Settings_KubernetesConfiguration_RateLimits struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The maximum queries-per-second Gloo can make to the Kubernetes API Server.
+	// The maximum queries-per-second Gloo can make to the Kubernetes API Server. Defaults to 50.
 	QPS float32 `protobuf:"fixed32,1,opt,name=QPS,proto3" json:"QPS,omitempty"`
 	// Maximum burst for throttle. When a steady state of QPS requests per second,
-	// this is an additional number of allowed, to allow for short bursts.
+	// this is an additional number of allowed, to allow for short bursts. Defaults to 100.
 	Burst uint32 `protobuf:"varint,2,opt,name=burst,proto3" json:"burst,omitempty"`
 }
 
