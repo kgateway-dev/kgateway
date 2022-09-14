@@ -263,6 +263,28 @@ var _ = Describe("timeout", func() {
 	})
 })
 
+var _ = Describe("MaxGrpcTimeout", func() {
+	It("works", func() {
+		t := prototime.DurationToProto(time.Minute)
+		p := NewPlugin()
+		routeAction := &envoy_config_route_v3.RouteAction{}
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: routeAction,
+			},
+		}
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				GrpcTimeoutHeaderMax: t,
+			},
+			Action: &v1.Route_RouteAction{},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.MaxStreamDuration.GrpcTimeoutHeaderMax).NotTo(BeNil())
+		Expect(routeAction.MaxStreamDuration.GrpcTimeoutHeaderMax).To(Equal(t))
+	})
+})
+
 var _ = Describe("retries", func() {
 
 	var (
