@@ -193,7 +193,12 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 				} else {
 					lastIndex = queryMeta.LastIndex
 				}
-				servicesChan <- tuple
+				select {
+				case <-ctx.Done():
+					return
+				case servicesChan <- tuple:
+				}
+
 			}
 		}
 	}(dataCenter)
