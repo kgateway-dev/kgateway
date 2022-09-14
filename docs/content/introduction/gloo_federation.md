@@ -27,10 +27,10 @@ Gloo Edge Federation is composed of Kubernetes Custom Resource Definitions (CRDs
 
 {{< tabs >}}
 {{% tab name="Dedicated Admin cluster" %}}
-![]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-admin-cluster.png" %}})
+![Figure of Gloo Fed architecture in a dedicated admin cluster]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-admin-cluster.png" %}})
 {{% /tab %}}
 {{% tab name="Shared cluster" %}}
-![]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-shared-cluster.png" %}})
+![Figure of Gloo Fed architecture in a shared admin cluster]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-shared-cluster.png" %}})
 {{% /tab %}}
 {{< /tabs >}}
 
@@ -38,7 +38,7 @@ Gloo Edge Federation is composed of Kubernetes Custom Resource Definitions (CRDs
 
 Gloo Edge Federation is capable of discovering Gloo Edge instances on any clusters that have been registered with the service. Local and remote instances of Gloo Edge are managed by adding the cluster housing Gloo Edge to Gloo Edge Federation. When a cluster is added, Gloo Edge Federation creates a service account, cluster role, and cluster role binding on the cluster. The service account is granted access to discover and configure the instances of Gloo Edge. The `kubeconfig` data for the service account is stored in a Kubernetes secret on the administrative cluster.
 
-![]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-cluster-reg.png" %}})
+![Figure of Gloo Fed registration]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-cluster-reg.png" %}})
 
 ### Federated Components
 
@@ -57,14 +57,14 @@ The federated configuration data is stored in the following Custom Resource type
 
 Each of these CRDs closely corresponds to the local version of Gloo Edge resources like Gateways, Upstreams, and Virtual Services.
 
-![]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-fed-res.png" %}})
+![Figure of Gloo Fed resources]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-fed-res.png" %}})
 
 
 ### Cross-cluster failover
 
 Gloo Edge Federation helps platform operators to apply a localized fail-over strategy when a local service is not available. 
 
-![]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-failover.png" %}})
+![Figure of Gloo Fed failover scenario]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-failover.png" %}})
 
 ### Global RBAC
 
