@@ -134,22 +134,24 @@ func applyTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
 	return nil
 }
 
-func applyMaxGrpcTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
-	if in.GetOptions().GetGrpcTimeoutHeaderMax() == nil {
+func applyMaxStreamDuration(in *v1.Route, out *envoy_config_route_v3.Route) error {
+	if in.GetOptions().GetMaxStreamDuration() == nil {
 		return nil
 	}
 	routeAction, ok := out.GetAction().(*envoy_config_route_v3.Route_Route)
 	if !ok {
-		return errors.Errorf("Max GRPC Timeout is only available for Route Actions")
+		return errors.Errorf("Max Stream Duration is only available for Route Actions")
 	}
 	if routeAction.Route == nil {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
 			"had nil route", in.GetAction())
 	}
-	if routeAction.Route.GetMaxStreamDuration() == nil {
-		routeAction.Route.MaxStreamDuration = &envoy_config_route_v3.RouteAction_MaxStreamDuration{}
+	inMaxStreamDuration := routeAction.Route.GetMaxStreamDuration()
+	routeAction.Route.MaxStreamDuration = &envoy_config_route_v3.RouteAction_MaxStreamDuration{
+		MaxStreamDuration:       inMaxStreamDuration.MaxStreamDuration,
+		GrpcTimeoutHeaderMax:    inMaxStreamDuration.GrpcTimeoutHeaderMax,
+		GrpcTimeoutHeaderOffset: inMaxStreamDuration.GrpcTimeoutHeaderOffset,
 	}
-	routeAction.Route.GetMaxStreamDuration().GrpcTimeoutHeaderMax = in.GetOptions().GetGrpcTimeoutHeaderMax()
 	return nil
 }
 

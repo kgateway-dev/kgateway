@@ -350,8 +350,6 @@ spec:
                                   type: number
                               type: object
                           type: object
-                        grpcTimeoutHeaderMax:
-                          type: string
                         headerManipulation:
                           properties:
                             requestHeadersToAdd:
@@ -442,6 +440,15 @@ spec:
                                     type: boolean
                                 type: object
                               type: array
+                          type: object
+                        maxStreamDuration:
+                          properties:
+                            grpcTimeoutHeaderMax:
+                              type: string
+                            grpcTimeoutHeaderOffset:
+                              type: string
+                            maxStreamDuration:
+                              type: string
                           type: object
                         prefixRewrite:
                           nullable: true

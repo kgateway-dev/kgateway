@@ -17,6 +17,7 @@ weight: 5
 - [TcpListenerOptions](#tcplisteneroptions)
 - [VirtualHostOptions](#virtualhostoptions)
 - [RouteOptions](#routeoptions)
+- [MaxStreamDuration](#maxstreamduration)
 - [DestinationSpec](#destinationspec)
 - [WeightedDestinationOptions](#weighteddestinationoptions)
   
@@ -254,7 +255,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "stagedTransformations": .transformation.options.gloo.solo.io.TransformationStages
 "envoyMetadata": map<string, .google.protobuf.Struct>
 "regexRewrite": .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
-"grpcTimeoutHeaderMax": .google.protobuf.Duration
+"maxStreamDuration": .gloo.solo.io.RouteOptions.MaxStreamDuration
 
 ```
 
@@ -292,7 +293,29 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. If the `regular` field is set in here, the `transformations` field is ignored. |
 | `envoyMetadata` | `map<string, .google.protobuf.Struct>` | This field can be used to provide additional information about the route. This metadata can be consumed by the Envoy filters that process requests that match the route. For more info about metadata, see [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata). The value of this field will be propagated to the `metadata` attribute of the corresponding Envoy route. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#config-route-v3-route) for more details about the `metadata` attribute. |
 | `regexRewrite` | [.solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute](../../external/envoy/type/matcher/v3/regex.proto.sk/#regexmatchandsubstitute) | For requests matched on this route, rewrite the HTTP request path according to the provided regex pattern before forwarding upstream Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-regex-rewrite) for more details about the `regex_rewrite` attribute. |
-| `grpcTimeoutHeaderMax` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Default value is infinity, Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-maxstreamduration-grpc-timeout-header-max). |
+| `maxStreamDuration` | [.gloo.solo.io.RouteOptions.MaxStreamDuration](../options.proto.sk/#maxstreamduration) | Default value is infinity and setting to 0 will disable timeout, Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-maxstreamduration-grpc-timeout-header-max). |
+
+
+
+
+---
+### MaxStreamDuration
+
+ 
+This is a 1:1 translation to the [Envoy API described here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration)
+
+```yaml
+"maxStreamDuration": .google.protobuf.Duration
+"grpcTimeoutHeaderMax": .google.protobuf.Duration
+"grpcTimeoutHeaderOffset": .google.protobuf.Duration
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `maxStreamDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the maximum duration allowed for streams on the route. If not specified, the value from the :ref:`max_stream_duration <envoy_v3_api_field_config.core.v3.HttpProtocolOptions.max_stream_duration>` field in :ref:`HttpConnectionManager.common_http_protocol_options <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.common_http_protocol_options>` is used. If this field is set explicitly to zero, any HttpConnectionManager max_stream_duration timeout will be disabled for this route. |
+| `grpcTimeoutHeaderMax` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | If present, and the request contains a `grpc-timeout header <https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md>`_, use that value as the ``max_stream_duration``, but limit the applied timeout to the maximum value specified here. If set to 0, the ``grpc-timeout`` header is used without modification. |
+| `grpcTimeoutHeaderOffset` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | If present, Envoy will adjust the timeout provided by the ``grpc-timeout`` header by subtracting the provided duration from the header. This is useful for allowing Envoy to set its global timeout to be less than that of the deadline imposed by the calling client, which makes it more likely that Envoy will handle the timeout instead of having the call canceled by the client. If, after applying the offset, the resulting timeout is zero or negative, the stream will timeout immediately. |
 
 
 

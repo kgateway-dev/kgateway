@@ -242,7 +242,7 @@ var _ = Describe("regex rewrite", func() {
 })
 
 var _ = Describe("timeout", func() {
-	FIt("works", func() {
+	It("works", func() {
 		t := prototime.DurationToProto(time.Minute)
 		p := NewPlugin()
 		routeAction := &envoy_config_route_v3.RouteAction{}
@@ -280,7 +280,6 @@ var _ = FDescribe("MaxGrpcTimeout", func() {
 			Action: &v1.Route_RouteAction{},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routeAction.MaxStreamDuration.GrpcTimeoutHeaderMax).NotTo(BeNil())
 		Expect(routeAction.MaxStreamDuration.GrpcTimeoutHeaderMax).To(Equal(t))
 	})
 })
