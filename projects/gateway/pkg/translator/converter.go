@@ -188,6 +188,7 @@ func (rv *routeVisitor) visit(
 
 		// Clone route to be safe, since we might mutate it
 		routeClone := proto.Clone(gatewayRoute).(*gatewayv1.Route)
+
 		// Determine route name
 		name, routeHasName := routeName(resource.InputResource(), gateway, proxyName, routeClone, parentRoute, idx)
 		routeClone.Name = name
