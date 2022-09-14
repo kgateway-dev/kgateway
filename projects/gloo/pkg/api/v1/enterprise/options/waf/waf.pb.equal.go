@@ -143,6 +143,21 @@ func (m *CoreRuleSet) Equal(that interface{}) bool {
 			return false
 		}
 
+	case *CoreRuleSet_CustomConfigMapSettings:
+		if _, ok := target.CustomSettingsType.(*CoreRuleSet_CustomConfigMapSettings); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetCustomConfigMapSettings()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCustomConfigMapSettings()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetCustomConfigMapSettings(), target.GetCustomConfigMapSettings()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.CustomSettingsType != target.CustomSettingsType {

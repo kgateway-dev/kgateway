@@ -1900,6 +1900,13 @@ spec:
                         type: object
                       coreRuleSet:
                         properties:
+                          customConfigMapSettings:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
                           customSettingsFile:
                             type: string
                           customSettingsString:

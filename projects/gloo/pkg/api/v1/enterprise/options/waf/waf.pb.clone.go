@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf"
+
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // ensure the imports are used
@@ -91,6 +93,18 @@ func (m *CoreRuleSet) Clone() proto.Message {
 
 		target.CustomSettingsType = &CoreRuleSet_CustomSettingsFile{
 			CustomSettingsFile: m.GetCustomSettingsFile(),
+		}
+
+	case *CoreRuleSet_CustomConfigMapSettings:
+
+		if h, ok := interface{}(m.GetCustomConfigMapSettings()).(clone.Cloner); ok {
+			target.CustomSettingsType = &CoreRuleSet_CustomConfigMapSettings{
+				CustomConfigMapSettings: h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef),
+			}
+		} else {
+			target.CustomSettingsType = &CoreRuleSet_CustomConfigMapSettings{
+				CustomConfigMapSettings: proto.Clone(m.GetCustomConfigMapSettings()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef),
+			}
 		}
 
 	}
