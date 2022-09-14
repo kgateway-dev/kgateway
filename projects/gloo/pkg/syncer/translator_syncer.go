@@ -115,7 +115,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 		if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
 			logger.Debugf("Failed writing report for proxies: %v", err)
 			wrappedErr := eris.Wrapf(err, "failed to write reports"+
-				"did you make sure your CRDs have been updated since v1.13.0-beta14 of open-source? (i.e. `status` and `status.statuses` fields exist on your CR)")
+				"did you make sure your CRDs have been updated since v1.12.17 of open-source? (i.e. `status` and `status.statuses` fields exist on your CR)")
 			multiErr = multierror.Append(multiErr, eris.Wrapf(wrappedErr, "writing reports"))
 		}
 	} else {
