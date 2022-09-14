@@ -75,6 +75,10 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 	panic("this client does not support delete operations")
 }
 
+func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	panic("this client does not support apply status operations")
+}
+
 func (rc *ResourceClient) List(_ string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
