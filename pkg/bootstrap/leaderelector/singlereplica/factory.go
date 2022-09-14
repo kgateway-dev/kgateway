@@ -27,5 +27,5 @@ func (f *singleReplicaElectionFactory) StartElection(ctx context.Context, _ *lea
 // Identity returns the Identity used in single replica elections
 // Since there is only 1 replica, the identity is always considered the "leader"
 func Identity() leaderelector.Identity {
-	return leaderelector.NewIdentity(atomic.NewBool(true))
+	return leaderelector.NewIdentity(atomic.NewBool(true), nil)
 }

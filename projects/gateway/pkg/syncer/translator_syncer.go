@@ -77,6 +77,7 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 		t.proxyStatusMaxSize = pxStatusSizeEnv
 	}
 	go t.statusSyncer.syncStatusOnEmit(ctx)
+	go t.statusSyncer.syncStatusOnElectionChange(ctx)
 	return t
 }
 
@@ -174,7 +175,8 @@ type statusSyncer struct {
 	syncNeeded              chan struct{}
 	previousProxyStatusHash uint64
 
-	identity leaderelector.Identity
+	identity        leaderelector.Identity
+	onElectedAction func() error
 }
 
 func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, reporter reporter.StatusReporter, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics, identity leaderelector.Identity) statusSyncer {
@@ -188,6 +190,7 @@ func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, repo
 		statusMetrics:           statusMetrics,
 		syncNeeded:              make(chan struct{}, 1),
 		identity:                identity,
+		onElectedAction:         nil,
 	}
 }
 
@@ -325,6 +328,34 @@ func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 	}
 }
 
+func (s *statusSyncer) syncStatusOnElectionChange(ctx context.Context) error {
+	var retryChan <-chan time.Time
+
+	doPerformOnElectedAction := func() {
+		if s.onElectedAction == nil {
+			return
+		}
+		err := s.onElectedAction()
+		if err != nil {
+			contextutils.LoggerFrom(ctx).Debugw("failed to perform election action; will try again shortly.", "error", err)
+			retryChan = time.After(time.Second)
+		} else {
+			retryChan = nil
+		}
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-retryChan:
+			doPerformOnElectedAction()
+		case <-s.identity.ElectedChannel():
+			doPerformOnElectedAction()
+		}
+	}
+}
+
 // extractCurrentReports massages several asynchronously set `statusSyncer` variables into formats consumable by `syncStatus`
 func (s *statusSyncer) extractCurrentReports() (reporter.ResourceReports, map[resources.InputResource]map[string]*core.Status, map[resources.InputResource]*core.Status) {
 	var nilProxy *gloov1.Proxy
@@ -416,6 +447,13 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 			}
 		} else {
 			contextutils.LoggerFrom(ctx).Debug("Not a leader, skipping reports writing")
+			s.onElectedAction = func() error {
+				// Store the closure in the onElectedAction so that it is invoked if this component becomes the new leader
+				// That way we can be sure that statuses are updated even if no changes occur after election completes
+				// https://github.com/solo-io/gloo/issues/7148
+				return s.reporter.WriteReports(ctx, reports, currentStatuses)
+			}
+
 		}
 
 		status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
