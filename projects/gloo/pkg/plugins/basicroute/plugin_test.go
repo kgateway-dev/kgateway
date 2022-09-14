@@ -242,7 +242,7 @@ var _ = Describe("regex rewrite", func() {
 })
 
 var _ = Describe("timeout", func() {
-	It("works", func() {
+	FIt("works", func() {
 		t := prototime.DurationToProto(time.Minute)
 		p := NewPlugin()
 		routeAction := &envoy_config_route_v3.RouteAction{}
@@ -263,7 +263,7 @@ var _ = Describe("timeout", func() {
 	})
 })
 
-var _ = Describe("MaxGrpcTimeout", func() {
+var _ = FDescribe("MaxGrpcTimeout", func() {
 	It("works", func() {
 		t := prototime.DurationToProto(time.Minute)
 		p := NewPlugin()

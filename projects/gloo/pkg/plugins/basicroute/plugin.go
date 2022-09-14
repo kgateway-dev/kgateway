@@ -146,7 +146,9 @@ func applyMaxGrpcTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
 			"had nil route", in.GetAction())
 	}
-
+	if routeAction.Route.MaxStreamDuration == nil {
+		routeAction.Route.MaxStreamDuration = &envoy_config_route_v3.RouteAction_MaxStreamDuration{}
+	}
 	routeAction.Route.MaxStreamDuration.GrpcTimeoutHeaderMax = in.GetOptions().GetGrpcTimeoutHeaderMax()
 	return nil
 }
