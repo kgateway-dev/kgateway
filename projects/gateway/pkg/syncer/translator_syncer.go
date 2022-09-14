@@ -342,6 +342,7 @@ func (s *statusSyncer) syncStatusOnElectionChange(ctx context.Context) error {
 		} else {
 			retryChan = nil
 		}
+		s.onElectedAction = nil
 	}
 
 	for {
