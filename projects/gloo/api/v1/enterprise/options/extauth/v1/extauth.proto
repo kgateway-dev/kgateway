@@ -374,6 +374,10 @@ message UserSession {
         // If the target domain is provided will prevent requests that do not match the target domain according to
         // the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
         string target_domain = 6;
+
+        // If set, the name of the header that will include the randomly generated session id
+        // This would be used as part of the code exchange with the Oauth2 token endpoint
+        string header_name = 7;
     }
 
     // should we fail auth flow when failing to get a session from redis, or allow it to continue,
@@ -603,9 +607,10 @@ message OidcAuthorizationCode {
     // add optional configuration for validation of the access token received during the OIDC flow
     // AccessTokenValidation access_token_validation = 8;
 
+    // DEPRECATED: Prefer the RedisSession.HeaderName field
     // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
     // The session id is used as the key for sessions in Redis
-    string session_id_header_name = 16;
+    string session_id_header_name = 16 [deprecated = true];
 
     // If set, CallbackPath will be evaluated as a regular expression
     bool parse_callback_path_as_regex = 17;
@@ -661,26 +666,23 @@ message PlainOAuth2 {
     // This should be a publicly available URL. If not provided, will default to the `app_url`.
     string after_logout_url = 10;
 
-    // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
-    // The session id is used as the key for sessions in Redis
-    string session_id_header_name = 11;
-
-    // If set, we will use custom_auth_token_identifier for authentication.
+    // If set, we will use auth_token_name for authentication.
     // Defaults to "access_token".
-    string custom_auth_token_identifier = 12;
+    string auth_token_name = 11;
 
-    // If set, we will use custom_auth_token_identifier for refreshing.
+    // If set, we will use refresh_token_name for refreshing.
     // Defaults to "refresh_token".
-    string custom_refresh_token_identifier = 13;
+    string refresh_token_name = 12;
 
     // url of the provider authorization endpoint
-    string auth_endpoint = 14;
+    string auth_endpoint = 13;
 
     // url of the provider token endpoint
-    string token_endpoint = 15;
+    string token_endpoint = 14;
 
     // url of the provider token revocation endpoint
-    string revocation_endpoint = 16;
+    // https://www.rfc-editor.org/rfc/rfc7009
+    string revocation_endpoint = 15;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.

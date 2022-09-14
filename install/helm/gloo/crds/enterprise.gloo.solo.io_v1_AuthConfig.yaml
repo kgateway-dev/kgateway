@@ -198,6 +198,8 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
+                            authTokenName:
+                              type: string
                             callbackPath:
                               type: string
                             clientId:
@@ -209,11 +211,9 @@ spec:
                                 namespace:
                                   type: string
                               type: object
-                            customAuthTokenIdentifier:
-                              type: string
-                            customRefreshTokenIdentifier:
-                              type: string
                             logoutPath:
+                              type: string
+                            refreshTokenName:
                               type: string
                             revocationEndpoint:
                               type: string
@@ -263,6 +263,8 @@ spec:
                                       type: boolean
                                     cookieName:
                                       type: string
+                                    headerName:
+                                      type: string
                                     keyPrefix:
                                       type: string
                                     options:
@@ -287,8 +289,6 @@ spec:
                                       type: string
                                   type: object
                               type: object
-                            sessionIdHeaderName:
-                              type: string
                             tokenEndpoint:
                               type: string
                             tokenEndpointQueryParams:
@@ -440,6 +440,8 @@ spec:
                                       nullable: true
                                       type: boolean
                                     cookieName:
+                                      type: string
+                                    headerName:
                                       type: string
                                     keyPrefix:
                                       type: string

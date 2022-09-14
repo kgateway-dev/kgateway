@@ -1502,15 +1502,11 @@ func (m *PlainOAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetSessionIdHeaderName())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetAuthTokenName())); err != nil {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetCustomAuthTokenIdentifier())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetCustomRefreshTokenIdentifier())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetRefreshTokenName())); err != nil {
 		return 0, err
 	}
 
@@ -2908,6 +2904,10 @@ func (m *UserSession_RedisSession) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if _, err = hasher.Write([]byte(m.GetTargetDomain())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetHeaderName())); err != nil {
 		return 0, err
 	}
 

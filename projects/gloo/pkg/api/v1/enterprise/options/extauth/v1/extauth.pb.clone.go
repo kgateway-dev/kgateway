@@ -800,11 +800,9 @@ func (m *PlainOAuth2) Clone() proto.Message {
 
 	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
 
-	target.SessionIdHeaderName = m.GetSessionIdHeaderName()
+	target.AuthTokenName = m.GetAuthTokenName()
 
-	target.CustomAuthTokenIdentifier = m.GetCustomAuthTokenIdentifier()
-
-	target.CustomRefreshTokenIdentifier = m.GetCustomRefreshTokenIdentifier()
+	target.RefreshTokenName = m.GetRefreshTokenName()
 
 	target.AuthEndpoint = m.GetAuthEndpoint()
 
@@ -1548,6 +1546,8 @@ func (m *UserSession_RedisSession) Clone() proto.Message {
 	}
 
 	target.TargetDomain = m.GetTargetDomain()
+
+	target.HeaderName = m.GetHeaderName()
 
 	return target
 }
