@@ -384,7 +384,12 @@ func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svc
 				} else {
 					lastIndex = queryMeta.LastIndex
 				}
-				endpointsChan <- tuple
+
+				select {
+				case <-ctx.Done():
+					return
+				case endpointsChan <- tuple:
+				}
 			}
 		}
 	}(dataCenter)
