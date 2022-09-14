@@ -2490,13 +2490,15 @@ type ApiKeyAuth struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend.
+	// DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here
+	// will be overwritten if values are specified in the storage backend.
 	// Identify all valid API key secrets that match the provided label selector.
 	// API key secrets must be in one of the watch namespaces for gloo to locate them.
 	//
 	// Deprecated: Do not use.
 	LabelSelector map[string]string `protobuf:"bytes,1,rep,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend.
+	// DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here
+	// will be overwritten if values are specified in the storage backend.
 	// A way to directly reference API key secrets. This configuration can be useful for testing,
 	// but in general the more flexible label selector should be preferred.
 	//
@@ -2680,19 +2682,29 @@ type AerospikeApiKeyStorage struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Hostname  string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	// The hostname or IP address of one of the cluster members
+	// The client will discover other members of the cluster once a connection has been established.
+	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	// The Aerospike namespace to use for storage. Defaults to "solo-namespace"
 	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Set       string `protobuf:"bytes,3,opt,name=set,proto3" json:"set,omitempty"`
-	Port      int32  `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`
-	BatchSize int32  `protobuf:"varint,5,opt,name=batch_size,json=batchSize,proto3" json:"batch_size,omitempty"`
+	// The Aerospike set to use for storage of apikeys. Defaults to "apikeys"
+	Set string `protobuf:"bytes,3,opt,name=set,proto3" json:"set,omitempty"`
+	// The port on which to connect to the Aerospike server. Defaults to 3000
+	Port      int32 `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`
+	BatchSize int32 `protobuf:"varint,5,opt,name=batch_size,json=batchSize,proto3" json:"batch_size,omitempty"`
 	// Write settings for the desired consistency guarantee when committing a transaction on the aerospike server
+	// Defaults to commit_all
 	//
 	// Types that are assignable to CommitLevel:
 	//	*AerospikeApiKeyStorage_CommitAll
 	//	*AerospikeApiKeyStorage_CommitMaster
 	CommitLevel isAerospikeApiKeyStorage_CommitLevel `protobuf_oneof:"commit_level"`
-	ReadModeSc  *AerospikeApiKeyStorageReadModeSc    `protobuf:"bytes,8,opt,name=read_mode_sc,json=readModeSc,proto3" json:"read_mode_sc,omitempty"`
-	ReadModeAp  *AerospikeApiKeyStorageReadModeAp    `protobuf:"bytes,9,opt,name=read_mode_ap,json=readModeAp,proto3" json:"read_mode_ap,omitempty"`
+	// Read settings for strong consistency (SC)
+	// Defaults to read_mode_sc_session
+	ReadModeSc *AerospikeApiKeyStorageReadModeSc `protobuf:"bytes,8,opt,name=read_mode_sc,json=readModeSc,proto3" json:"read_mode_sc,omitempty"`
+	// Read settings for availability (AP)
+	// Defaults to read_mode_ap_one
+	ReadModeAp *AerospikeApiKeyStorageReadModeAp `protobuf:"bytes,9,opt,name=read_mode_ap,json=readModeAp,proto3" json:"read_mode_ap,omitempty"`
 	// TLS Settings, mtls is enabled on the server side
 	NodeTlsName string `protobuf:"bytes,10,opt,name=node_tls_name,json=nodeTlsName,proto3" json:"node_tls_name,omitempty"`
 	CertPath    string `protobuf:"bytes,11,opt,name=cert_path,json=certPath,proto3" json:"cert_path,omitempty"`
@@ -4768,6 +4780,8 @@ func (x *AccessTokenValidation_ScopeList) GetScope() []string {
 	return nil
 }
 
+// For the K8s secret backend, this data is stored as key-value data in the secret itself.
+// For the Aerospike backend, this data is stored as bins on the key's record
 type ApiKeyAuth_MetadataEntry struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4832,8 +4846,6 @@ type AerospikeApiKeyStorageReadModeSc struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Read settings for strong consistency (SC)
-	//
 	// Types that are assignable to ReadModeSc:
 	//	*AerospikeApiKeyStorageReadModeSc_ReadModeScSession
 	//	*AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize
@@ -4954,8 +4966,6 @@ type AerospikeApiKeyStorageReadModeAp struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Read settings for availability (AP)
-	//
 	// Types that are assignable to ReadModeAp:
 	//	*AerospikeApiKeyStorageReadModeAp_ReadModeApOne
 	//	*AerospikeApiKeyStorageReadModeAp_ReadModeApAll

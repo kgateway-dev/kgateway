@@ -1012,8 +1012,8 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `labelSelector` | `map<string, string>` | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Identify all valid API key secrets that match the provided label selector. API key secrets must be in one of the watch namespaces for gloo to locate them. |
-| `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred. |
+| `labelSelector` | `map<string, string>` | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here will be overwritten if values are specified in the storage backend. Identify all valid API key secrets that match the provided label selector. API key secrets must be in one of the watch namespaces for gloo to locate them. |
+| `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here will be overwritten if values are specified in the storage backend. A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred. |
 | `headerName` | `string` | When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
 | `headersFromMetadata` | `map<string, map<string, bool>>` | API key structures might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra fields included in the API key metadata structure. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the API key metadata structure that will be inspected to determine the value for the header. |
 | `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage` or `aerospikeApikeyStorage` can be set. |
@@ -1025,7 +1025,9 @@ These values will be encoded in a basic auth header in order to authenticate the
 ---
 ### MetadataEntry
 
-
+ 
+For the K8s secret backend, this data is stored as key-value data in the secret itself.
+For the Aerospike backend, this data is stored as bins on the key's record
 
 ```yaml
 "name": string
@@ -1087,15 +1089,15 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `hostname` | `string` |  |
-| `namespace` | `string` |  |
-| `set` | `string` |  |
-| `port` | `int` |  |
+| `hostname` | `string` | The hostname or IP address of one of the cluster members The client will discover other members of the cluster once a connection has been established. |
+| `namespace` | `string` | The Aerospike namespace to use for storage. Defaults to "solo-namespace". |
+| `set` | `string` | The Aerospike set to use for storage of apikeys. Defaults to "apikeys". |
+| `port` | `int` | The port on which to connect to the Aerospike server. Defaults to 3000. |
 | `batchSize` | `int` |  |
 | `commitAll` | `int` | commit_all indicates the server should wait until successfully committing master and all replicas. Only one of `commitAll` or `commitMaster` can be set. |
 | `commitMaster` | `int` | commit_master indicates the server should wait until successfully committing master only. Only one of `commitMaster` or `commitAll` can be set. |
-| `readModeSc` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeSc](../extauth.proto.sk/#readmodesc) |  |
-| `readModeAp` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeAp](../extauth.proto.sk/#readmodeap) |  |
+| `readModeSc` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeSc](../extauth.proto.sk/#readmodesc) | Read settings for strong consistency (SC) Defaults to read_mode_sc_session. |
+| `readModeAp` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeAp](../extauth.proto.sk/#readmodeap) | Read settings for availability (AP) Defaults to read_mode_ap_one. |
 | `nodeTlsName` | `string` | TLS Settings, mtls is enabled on the server side. |
 | `certPath` | `string` |  |
 | `keyPath` | `string` |  |
