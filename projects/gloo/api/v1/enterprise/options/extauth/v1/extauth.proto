@@ -748,12 +748,14 @@ message OauthSecret {
 }
 
 message ApiKeyAuth {
-    // DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend.
+    // DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here
+    // will be overwritten if values are specified in the storage backend.
     // Identify all valid API key secrets that match the provided label selector.
     // API key secrets must be in one of the watch namespaces for gloo to locate them.
     map<string, string> label_selector = 1 [deprecated = true];
 
-    // DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend.
+    // DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here
+    // will be overwritten if values are specified in the storage backend.
     // A way to directly reference API key secrets. This configuration can be useful for testing,
     // but in general the more flexible label selector should be preferred.
     repeated core.solo.io.ResourceRef api_key_secret_refs = 2 [deprecated = true];
