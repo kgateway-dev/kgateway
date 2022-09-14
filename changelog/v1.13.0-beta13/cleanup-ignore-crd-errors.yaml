@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7109
+    resolvesIssue: false
+    description: Exit early from the `gloo-resource-cleanup` job (instead of erroring) if the Gloo Edge CRDs have already been deleted.

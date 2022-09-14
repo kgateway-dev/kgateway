@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add info about license_secret_name
+    issueLink: https://github.com/solo-io/gloo/issues/5071
