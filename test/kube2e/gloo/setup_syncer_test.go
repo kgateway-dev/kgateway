@@ -51,9 +51,9 @@ var _ = Describe("Setup Syncer", func() {
 			setupLock.Lock()
 			defer setupLock.Unlock()
 			// This is normally performed within the SetupSyncer and is required by Gloo components
-			ctxWithSettings := settingsutil.WithSettings(setupCtx, settings)
+			setupCtx = settingsutil.WithSettings(setupCtx, settings)
 
-			return setupFunc(ctxWithSettings, kubeCache, inMemoryCache, settings, identity)
+			return setupFunc(setupCtx, kubeCache, inMemoryCache, settings, identity)
 		}
 
 		return synchronizedSetupFunc
@@ -66,14 +66,9 @@ var _ = Describe("Setup Syncer", func() {
 			memCache      memory.InMemoryResourceCache
 
 			settings *v1.Settings
-
-			setupCtx    context.Context
-			setupCancel context.CancelFunc
 		)
 
 		BeforeEach(func() {
-			setupCtx, setupCancel = context.WithCancel(context.Background())
-
 			var err error
 			settings, err = resourceClientset.SettingsClient().Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -85,24 +80,20 @@ var _ = Describe("Setup Syncer", func() {
 				ProxyDebugBindAddr: getRandomAddr(),
 			}
 
-			kubeCoreCache = kube.NewKubeCache(setupCtx)
+			kubeCoreCache = kube.NewKubeCache(ctx)
 			memCache = memory.NewInMemoryResourceCache()
-		})
-
-		AfterEach(func() {
-			setupCancel()
 		})
 
 		It("can be called with core cache", func() {
 			setup := newSynchronizedSetupFunc()
-			err := setup(setupCtx, kubeCoreCache, memCache, settings, singlereplica.Identity())
+			err := setup(ctx, kubeCoreCache, memCache, settings, singlereplica.Identity())
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("can be called with core cache warming endpoints", func() {
 			settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(time.Minute)
 			setup := newSynchronizedSetupFunc()
-			err := setup(setupCtx, kubeCoreCache, memCache, settings, singlereplica.Identity())
+			err := setup(ctx, kubeCoreCache, memCache, settings, singlereplica.Identity())
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -110,7 +101,7 @@ var _ = Describe("Setup Syncer", func() {
 			settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(1 * time.Nanosecond)
 			setup := newSynchronizedSetupFunc()
 			Expect(func() {
-				_ = setup(setupCtx, kubeCoreCache, memCache, settings, singlereplica.Identity())
+				_ = setup(ctx, kubeCoreCache, memCache, settings, singlereplica.Identity())
 			}).To(Panic())
 		})
 
@@ -118,7 +109,7 @@ var _ = Describe("Setup Syncer", func() {
 			settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(0)
 			setup := newSynchronizedSetupFunc()
 			Expect(func() {
-				_ = setup(setupCtx, kubeCoreCache, memCache, settings, singlereplica.Identity())
+				_ = setup(ctx, kubeCoreCache, memCache, settings, singlereplica.Identity())
 			}).NotTo(Panic())
 		})
 
