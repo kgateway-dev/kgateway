@@ -21,6 +21,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
+type ExtendedApiSyncer interface {
+	v1snap.ApiSyncer
+	StartAsynchronousSync(ctx context.Context)
+}
+
 type translatorSyncer struct {
 	translator translator.Translator
 	sanitizer  sanitizer.XdsSanitizer
@@ -54,7 +59,7 @@ func NewTranslatorSyncer(
 	proxyClient v1.ProxyClient,
 	writeNamespace string,
 	identity leaderelector.Identity,
-) v1snap.ApiSyncer {
+) ExtendedApiSyncer {
 	s := &translatorSyncer{
 		translator:       translator,
 		xdsCache:         xdsCache,
@@ -158,7 +163,7 @@ func (s *translatorSyncer) translateProxies(ctx context.Context, snap *v1snap.Ap
 	return multiErr.ErrorOrNil()
 }
 
-func (s *translatorSyncer) syncStatusOnElectionChange(ctx context.Context) error {
+func (s *translatorSyncer) StartAsynchronousSync(ctx context.Context) {
 	var retryChan <-chan time.Time
 
 	doPerformOnElectedAction := func() {
@@ -178,7 +183,7 @@ func (s *translatorSyncer) syncStatusOnElectionChange(ctx context.Context) error
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return
 		case <-retryChan:
 			doPerformOnElectedAction()
 		case <-s.identity.ElectedChannel():
