@@ -204,7 +204,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 	newXdsSnapshot := xds.NewSnapshotFromResources(
 		xdsSnapshot.GetResources(types.EndpointTypeV3),
 		clusters,
-		translator.MakeRdsResources(replacedRouteConfigs, true),
+		translator.MakeRdsResources(replacedRouteConfigs, false),
 		listeners,
 	)
 
