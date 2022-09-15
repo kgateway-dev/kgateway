@@ -87,7 +87,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 	}(ctx)
 
 	// Start the leader elector process in a goroutine
-	contextutils.LoggerFrom(ctx).Debugf("Starting Kube Leader Election")
+	contextutils.LoggerFrom(ctx).Debug("Starting Kube Leader Election")
 	go l.Run(ctx)
 
 	return identity, nil

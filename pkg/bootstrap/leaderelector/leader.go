@@ -58,7 +58,11 @@ func (a *LeaderStartupAction) WatchElectionResults(ctx context.Context) {
 				return
 			case <-retryChan:
 				doPerformStartupAction()
-			case <-a.identity.ElectedChannel():
+			case _, ok := <-a.identity.ElectedChannel():
+				if !ok {
+					// channel has been closed
+					return
+				}
 				doPerformStartupAction()
 			default:
 				// receiving from other channels would block
