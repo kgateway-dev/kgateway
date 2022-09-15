@@ -2,7 +2,6 @@ package syncer
 
 import (
 	"context"
-	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
@@ -39,8 +38,8 @@ type translatorSyncer struct {
 	proxyClient      v1.ProxyClient
 	writeNamespace   string
 
-	identity        leaderelector.Identity
-	onElectedAction func() error
+	identity            leaderelector.Identity
+	leaderStartupAction *leaderelector.LeaderStartupAction
 
 	// used for debugging purposes only
 	latestSnap *v1snap.ApiSnapshot
@@ -61,18 +60,18 @@ func NewTranslatorSyncer(
 	identity leaderelector.Identity,
 ) ExtendedApiSyncer {
 	s := &translatorSyncer{
-		translator:       translator,
-		xdsCache:         xdsCache,
-		reporter:         reporter,
-		syncerExtensions: extensions,
-		sanitizer:        sanitizer,
-		settings:         settings,
-		statusMetrics:    statusMetrics,
-		gatewaySyncer:    gatewaySyncer,
-		proxyClient:      proxyClient,
-		writeNamespace:   writeNamespace,
-		identity:         identity,
-		onElectedAction:  nil,
+		translator:          translator,
+		xdsCache:            xdsCache,
+		reporter:            reporter,
+		syncerExtensions:    extensions,
+		sanitizer:           sanitizer,
+		settings:            settings,
+		statusMetrics:       statusMetrics,
+		gatewaySyncer:       gatewaySyncer,
+		proxyClient:         proxyClient,
+		writeNamespace:      writeNamespace,
+		identity:            identity,
+		leaderStartupAction: leaderelector.NewLeaderStartupAction(identity),
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
@@ -128,12 +127,13 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 		}
 	} else {
 		logger.Debugf("Not a leader, skipping reports writing")
-		s.onElectedAction = func() error {
+		s.leaderStartupAction.SetStartupAction(func() error {
 			// Store the closure in the onElectedAction so that it is invoked if this component becomes the new leader
 			// That way we can be sure that statuses are updated even if no changes occur after election completes
 			// https://github.com/solo-io/gloo/issues/7148
 			return s.reporter.WriteReports(ctx, reports, nil)
-		}
+		})
+
 	}
 
 	// Update resource status metrics
@@ -164,30 +164,5 @@ func (s *translatorSyncer) translateProxies(ctx context.Context, snap *v1snap.Ap
 }
 
 func (s *translatorSyncer) StartAsynchronousSync(ctx context.Context) {
-	var retryChan <-chan time.Time
-
-	doPerformOnElectedAction := func() {
-		if s.onElectedAction == nil {
-			return
-		}
-		err := s.onElectedAction()
-		if err != nil {
-			contextutils.LoggerFrom(ctx).Debugw("failed to perform election action; will try again shortly.", "error", err)
-			retryChan = time.After(time.Second)
-		} else {
-			retryChan = nil
-		}
-		s.onElectedAction = nil
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-retryChan:
-			doPerformOnElectedAction()
-		case <-s.identity.ElectedChannel():
-			doPerformOnElectedAction()
-		}
-	}
+	s.leaderStartupAction.WatchElectionResults(ctx)
 }

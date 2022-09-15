@@ -58,7 +58,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 			RetryPeriod:   2 * time.Second,
 			Callbacks: k8sleaderelection.LeaderCallbacks{
 				OnStartedLeading: func(callbackCtx context.Context) {
-					contextutils.LoggerFrom(callbackCtx).Debugf("Started Leading")
+					contextutils.LoggerFrom(callbackCtx).Debug("Started Leading")
 					leader.Store(true)
 					elected <- struct{}{}
 					config.OnStartedLeading(callbackCtx)
@@ -80,15 +80,16 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 		return identity, err
 	}
 
-	// Start the leader elector process in a goroutine
-	contextutils.LoggerFrom(ctx).Debugf("Starting Kube Leader Election")
-	go l.Run(ctx)
-
 	// Wait for the context to be cancelled to close the elected channel
 	go func(ctx context.Context) {
 		defer close(elected)
 		<-ctx.Done()
 	}(ctx)
+
+	// Start the leader elector process in a goroutine
+	contextutils.LoggerFrom(ctx).Debugf("Starting Kube Leader Election")
+	go l.Run(ctx)
+
 	return identity, nil
 }
 

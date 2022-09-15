@@ -807,7 +807,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		proxyClient,
 		opts.WriteNamespace,
 		opts.Identity)
-	go translationSync.StartAsynchronousSync(watchOpts.Ctx)
+	translationSync.StartAsynchronousSync(watchOpts.Ctx)
 
 	syncers := v1snap.ApiSyncers{
 		validator,
