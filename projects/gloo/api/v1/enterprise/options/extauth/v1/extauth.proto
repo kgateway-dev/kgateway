@@ -810,6 +810,46 @@ message OauthSecret {
 }
 
 message ApiKeyAuth {
+    // DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here
+    // will be overwritten if values are specified in the storage backend.
+    // Identify all valid API key secrets that match the provided label selector.
+    // API key secrets must be in one of the watch namespaces for gloo to locate them.
+    map<string, string> label_selector = 1 [deprecated = true];
+
+    // DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here
+    // will be overwritten if values are specified in the storage backend.
+    // A way to directly reference API key secrets. This configuration can be useful for testing,
+    // but in general the more flexible label selector should be preferred.
+    repeated core.solo.io.ResourceRef api_key_secret_refs = 2 [deprecated = true];
+
+    // When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header
+    // with this name. This field is optional; if not provided it defaults to `api-key`.
+    string header_name = 3;
+
+    // API key structures might contain additional data (e.g. the ID of the user that the API key belongs to)
+    // in the form of extra fields included in the API key metadata structure.
+    // This configuration can be used to add this data to the headers of successfully authenticated requests.
+    // Each key in the map represents the name of header to be added; the corresponding value determines the key
+    // in the API key metadata structure that will be inspected to determine the value for the header.
+    map<string, MetadataEntry> headers_from_metadata = 4;
+
+    oneof storage_backend {
+        K8sSecretApiKeyStorage k8s_secret_apikey_storage = 5;
+        AerospikeApiKeyStorage aerospike_apikey_storage = 6;
+    }
+
+    // For the K8s secret backend, this data is stored as key-value data in the secret itself.
+    // For the Aerospike backend, this data is stored as bins on the key's record
+    message MetadataEntry {
+        // (Required) The key of the API key metadata entry to inspect.
+        string name = 1;
+        // If this field is set to `true`, Gloo will reject an API key structure that does not contain data for the given key.
+        // Defaults to `false`. In this case, if an API key structure does not contain the requested data, no header will be added
+        // to the request.
+        bool required = 2;
+    }
+}
+message K8sSecretApiKeyStorage {
     // Identify all valid API key secrets that match the provided label selector.<br/>
     // API key secrets must be in one of the watch namespaces for gloo to locate them.
     map<string, string> label_selector = 1;
@@ -817,39 +857,94 @@ message ApiKeyAuth {
     // A way to directly reference API key secrets. This configuration can be useful for testing,
     // but in general the more flexible label selector should be preferred.
     repeated core.solo.io.ResourceRef api_key_secret_refs = 2;
+}
 
-    // When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header
-    // with this name. This field is optional; if not provided it defaults to `api-key`.
-    string header_name = 3;
+message AerospikeApiKeyStorage {
+    // The hostname or IP address of one of the cluster members
+    // The client will discover other members of the cluster once a connection has been established.
+	string hostname = 1;
+    // The Aerospike namespace to use for storage. Defaults to "solo-namespace"
+	string namespace = 2;
+    // The Aerospike set to use for storage of apikeys. Defaults to "apikeys"
+	string set = 3;
+    // The port on which to connect to the Aerospike server. Defaults to 3000
+	int32 port = 4;
+	int32 batch_size = 5;
 
-    // API key secrets might contain additional data (e.g. the ID of the user that the API key belongs to)
-    // in the form of extra keys included in the secret's `data` field.
-    // This configuration can be used to add this data to the headers of successfully authenticated requests.
-    // Each key in the map represents the name of header to be added; the corresponding value determines the key
-    // in the secret data that will be inspected to determine the value for the header.
-    map<string, SecretKey> headers_from_metadata = 4;
+	// Write settings for the desired consistency guarantee when committing a transaction on the aerospike server
+    // Defaults to commit_all
+    oneof commit_level {
+        // commit_all indicates the server should wait until successfully committing master and all replicas.
+        uint32 commit_all = 6;
+        // commit_master indicates the server should wait until successfully committing master only.
+        uint32 commit_master = 7;
+    }
 
-    message SecretKey {
-        // (Required) The key of the secret data entry to inspect.
-        string name = 1;
-        // If this field is set to `true`, Gloo will reject an API key secret that does not contain the given key.
-        // Defaults to `false`. In this case, if a secret does not contain the requested data, no header will be added
-        // to the request.
-        bool required = 2;
+    // Read settings for strong consistency (SC)
+    // Defaults to read_mode_sc_session
+    readModeSc read_mode_sc = 8;
+    message readModeSc {
+        oneof read_mode_sc {
+            // session ensures this client will only see an increasing sequence of record versions.
+            // Server only reads from master.  This is the default.
+            uint32 read_mode_sc_session = 1;
+            // linearize ensures ALL clients will only see an increasing sequence of record versions.
+            // Server only reads from master.
+            uint32 read_mode_sc_linearize = 2;
+
+            // replica indicates that the server may read from master or any full (non-migrating) replica.
+            // Increasing sequence of record versions is not guaranteed.
+            uint32 read_mode_sc_replica = 3;
+
+            // allow_unavailable indicates that the server may read from master or any full (non-migrating) replica or from unavailable
+            // partitions.  Increasing sequence of record versions is not guaranteed.
+            uint32 read_mode_sc_allow_unavailable = 4;
+        }
+    }
+
+    // Read settings for availability (AP)
+    // Defaults to read_mode_ap_one
+    readModeAp read_mode_ap = 9;
+    message readModeAp {
+        oneof read_mode_ap {
+            // one indicates that a single node should be involved in the read operation.
+            uint32 read_mode_ap_one = 1;
+
+            // all indicates that all duplicates should be consulted in
+            // the read operation.
+            uint32 read_mode_ap_all = 2;
+        }
+    }
+
+	// TLS Settings, mtls is enabled on the server side
+	string node_tls_name = 10;
+	string cert_path = 11;
+	string key_path = 12;
+	// skip the client verifying the server's certificate chain and host name
+	bool allow_insecure = 13;
+	// If the RootCA is not set, add the system certs bt default
+	string root_ca_path = 14;
+	// TLS version, defaults to 1.3
+	string tls_version = 15;
+	// TLS identifiers for the elliptic curves used
+    repeated tlsCurveID tls_curve_groups = 16;
+    message tlsCurveID {
+        oneof curve_id {
+            uint32 curve_p256 = 1;
+            uint32 curve_p384 = 2;
+            uint32 curve_p521 = 3;
+            uint32 x_25519 = 4;
+        }
     }
 }
 
-message ApiKeySecret {
-    // If true, generate an API key.
-    // This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API.
-    bool generate_api_key = 1 [deprecated = true];
-    // The value of the API key.
+message ApiKey {
+    // The string value of the API key.
     string api_key = 2;
-    // A list of labels (key=value) for the apikey secret.<br/>
-    // These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret.
-    // This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API.
-    repeated string labels = 3 [deprecated = true];
-    // If the secret data contains entries in addition to the API key one, they will be copied to this field.
+    // A list of labels (key=value) for the apikey secret.
+    // These labels are used by the storage driver to facilitate lookups by label
+    repeated string labels = 3;
+    // additional data the client needs associated with this API key
     map<string, string> metadata = 4;
 }
 
@@ -1390,14 +1485,14 @@ message ExtAuthConfig {
     message ApiKeyAuthConfig {
 
         message KeyMetadata {
-            // The user is mapped as the name of `Secret` which contains the `ApiKeySecret`
+            // The user is mapped as the name of `Secret` which contains the `ApiKey`
             string username = 1;
-            // The metadata present on the `ApiKeySecret`.
+            // The metadata present on the `ApiKey`.
             map<string, string> metadata = 2;
         }
 
         // A mapping of valid API keys to their associated metadata.
-        // This map is automatically populated with the information from the relevant `ApiKeySecret`s.
+        // This map is automatically populated with the information from the relevant `ApiKey`s.
         map<string, KeyMetadata> valid_api_keys = 1 [(extproto.sensitive) = true];
 
         // (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key
@@ -1408,6 +1503,12 @@ message ExtAuthConfig {
         // Each entry represents a header to add: the key is the name of the header, and the
         // value is the key that will be used to look up the data entry in the key metadata.
         map<string, string> headers_from_key_metadata = 3;
+
+        oneof storage_backend {
+            K8sSecretApiKeyStorage k8s_secret_apikey_storage = 4;
+            AerospikeApiKeyStorage aerospike_apikey_storage = 5;
+        }
+
     }
 
     message OpaAuthConfig {
@@ -1485,4 +1586,38 @@ service ExtAuthDiscoveryService {
       body : "*"
     };
     }
+}
+
+message ApiKeyCreateRequest {
+    repeated ApiKey api_keys = 1;
+    repeated string raw_api_keys = 2;
+}
+message ApiKeyCreateResponse {
+    repeated ApiKey api_keys = 1;
+}
+message ApiKeyReadRequest {
+    repeated string raw_api_keys = 1;
+    repeated string labels = 2;
+}
+message ApiKeyReadResponse {
+    repeated ApiKey api_keys = 1;
+}
+message ApiKeyUpdateRequest {
+    bool upsert = 1;
+    repeated ApiKey api_keys = 2;
+    repeated string raw_api_keys = 3;
+}
+message ApiKeyUpdateResponse {
+    repeated ApiKey api_keys = 1;
+}
+message ApiKeyDeleteRequest {
+    repeated string raw_api_keys = 1;
+    repeated string labels = 2;
+}
+message ApiKeyDeleteResponse {}
+service ApiKeyService {
+    rpc Create (ApiKeyCreateRequest) returns (ApiKeyCreateResponse) {}
+    rpc Read (ApiKeyReadRequest) returns (ApiKeyReadResponse) {}
+    rpc Update (ApiKeyUpdateRequest) returns (ApiKeyUpdateResponse) {}
+    rpc Delete (ApiKeyDeleteRequest) returns (ApiKeyDeleteResponse) {}
 }
