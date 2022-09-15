@@ -204,7 +204,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 	newXdsSnapshot := xds.NewSnapshotFromResources(
 		xdsSnapshot.GetResources(types.EndpointTypeV3),
 		clusters,
-		translator.MakeRdsResources(replacedRouteConfigs, false),
+		translator.MakeRdsResources(replacedRouteConfigs),
 		listeners,
 	)
 
@@ -297,9 +297,7 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 				default:
 					continue
 				}
-				vh.GetRoutes()[j] = route
 			}
-			cfg.GetVirtualHosts()[i] = vh
 		}
 
 		utils.Measure(ctx, mRoutesReplaced, replaced, tag.Insert(routeConfigKey, cfg.GetName()))

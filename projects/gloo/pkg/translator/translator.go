@@ -251,17 +251,17 @@ func (t *translatorInstance) generateXDSSnapshot(
 	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
 
 	for _, ep := range endpoints {
-		endpointsProto = append(endpointsProto, resource.NewEnvoyResource(proto.Clone(ep)))
+		endpointsProto = append(endpointsProto, resource.NewEnvoyResource(ep))
 	}
 	for _, cluster := range clusters {
-		clustersProto = append(clustersProto, resource.NewEnvoyResource(proto.Clone(cluster)))
+		clustersProto = append(clustersProto, resource.NewEnvoyResource(cluster))
 	}
 	for _, listener := range listeners {
 		// don't add empty listeners, envoy will complain
 		if len(listener.GetFilterChains()) < 1 {
 			continue
 		}
-		listenersProto = append(listenersProto, resource.NewEnvoyResource(proto.Clone(listener)))
+		listenersProto = append(listenersProto, resource.NewEnvoyResource(listener))
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
@@ -274,7 +274,7 @@ func (t *translatorInstance) generateXDSSnapshot(
 	return xds.NewSnapshotFromResources(
 		envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto),
 		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
-		MakeRdsResources(routeConfigs, true),
+		MakeRdsResources(routeConfigs),
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
 }
 
@@ -312,16 +312,13 @@ func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
 	return hash
 }
 
-func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration, cloneRouteConfigs bool) envoycache.Resources {
+func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {
 	var routesProto []envoycache.Resource
 
 	for _, routeCfg := range routeConfigs {
 		// don't add empty route configs, envoy will complain
 		if len(routeCfg.GetVirtualHosts()) < 1 {
 			continue
-		}
-		if cloneRouteConfigs {
-			routeCfg = proto.Clone(routeCfg).(*envoy_config_route_v3.RouteConfiguration)
 		}
 		routesProto = append(routesProto, resource.NewEnvoyResource(routeCfg))
 
