@@ -3370,15 +3370,11 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetSessionIdHeaderName(), target.GetSessionIdHeaderName()) != 0 {
+	if strings.Compare(m.GetAuthTokenName(), target.GetAuthTokenName()) != 0 {
 		return false
 	}
 
-	if strings.Compare(m.GetCustomAuthTokenIdentifier(), target.GetCustomAuthTokenIdentifier()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetCustomRefreshTokenIdentifier(), target.GetCustomRefreshTokenIdentifier()) != 0 {
+	if strings.Compare(m.GetRefreshTokenName(), target.GetRefreshTokenName()) != 0 {
 		return false
 	}
 

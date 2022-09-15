@@ -470,7 +470,7 @@ Deprecated: Prefer OAuth2
 | ----- | ---- | ----------- | 
 | `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.OidcAuthorizationCode](../extauth.proto.sk/#oidcauthorizationcode) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode`, `accessTokenValidation`, or `oauth2` can be set. |
 | `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidation`, `oidcAuthorizationCode`, or `oauth2` can be set. |
-| `oauth2` | [.enterprise.gloo.solo.io.PlainOAuth2](../extauth.proto.sk/#plainoauth2) | Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change. Provide the issuer location so that Gloo handles the OAuth2 flow for you. Requests are authorized by validating the contents of access token. For more security, you can use OIDC instead. Only one of `oauth2`, `oidcAuthorizationCode`, or `accessTokenValidation` can be set. |
+| `oauth2` | [.enterprise.gloo.solo.io.PlainOAuth2](../extauth.proto.sk/#plainoauth2) | Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change. provide issuer location and let Gloo handle Oauth2 flow for you. requests authorized by validating the contents of access token. Prefer to use OIDC for better security. Only one of `oauth2`, `oidcAuthorizationCode`, or `accessTokenValidation` can be set. |
 
 
 
@@ -582,7 +582,7 @@ redis socket types
 | `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set, refresh expired id-tokens using the refresh-token. Defaults to true. Explicitly set to false to disable refreshing. |
 | `preExpiryBuffer` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies a time buffer in which an id-token will be refreshed prior to its actual expiration. Defaults to 2 seconds. A duration of 0 will only refresh tokens after they have already expired. To refresh tokens, you must also set 'allowRefreshing' to 'true'; otherwise, this field is ignored. |
 | `targetDomain` | `string` | Domain used to validate against requests in order to ensure that request host name matches target domain. If the target domain is provided will prevent requests that do not match the target domain according to the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3. |
-| `headerName` | `string` | If set, the name of the header that will include the randomly generated session ID. This header is used as part of the code exchange with the OAuth2 token endpoint. |
+| `headerName` | `string` | If set, the name of the header that will include the randomly generated session id This would be used as part of the code exchange with the Oauth2 token endpoint. |
 
 
 
@@ -813,7 +813,7 @@ The Method used to make the request.
 | `discoveryOverride` | [.enterprise.gloo.solo.io.DiscoveryOverride](../extauth.proto.sk/#discoveryoverride) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The discovery override defines any properties that should override this discovery configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system issuer_url: https://accounts.google.com discovery_override: token_endpoint: "https://token.url/gettoken" ``` And this will ensure that regardless of what value is discovered at <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint. |
 | `discoveryPollInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes. |
 | `jwksCacheRefreshPolicy` | [.enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy](../extauth.proto.sk/#jwksondemandcacherefreshpolicy) | If a user executes a request with a key that is not found in the JWKS, it could be that the keys have rotated on the remote source, and not yet in the local cache. This policy lets you define the behavior for how to refresh the local cache during a request where an invalid key is provided. |
-| `sessionIdHeaderName` | `string` | DEPRECATED: Prefer the `RedisSession.HeaderName` field. If set, the randomly generated session ID is sent to the token endpoint as part of the code exchange. The session ID is used as the key for sessions in Redis. |
+| `sessionIdHeaderName` | `string` | DEPRECATED: Prefer the RedisSession.HeaderName field If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
 | `parseCallbackPathAsRegex` | `bool` | If set, CallbackPath will be evaluated as a regular expression. |
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
@@ -847,21 +847,21 @@ The Method used to make the request.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clientId` | `string` | your client id as registered with the issuer. |
-| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |
-| `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
-| `appUrl` | `string` | where to redirect after successful auth, if we can't determine the original url. this should be your publicly available app url. |
-| `callbackPath` | `string` | a callback path relative to app url that will be used for OAuth2 callbacks. should not be used by the application. |
-| `scopes` | `[]string` | Scopes to request in addition to openid scope. |
+| `clientId` | `string` | Your client ID as registered with the issuer. |
+| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. |
+| `authEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
+| `appUrl` | `string` | Where to redirect after successful auth, if Gloo can't determine the original URL. Set this field to your publicly available app URL. |
+| `callbackPath` | `string` | A callback path relative to the app URL to be used for OAuth2 callbacks. Do not use this path in the application itself. |
+| `scopes` | `[]string` | Scopes to request for. |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |
-| `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OAuth2 session. should not be used by the application. If not provided, logout functionality will be disabled. |
-| `tokenEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's token request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
-| `afterLogoutUrl` | `string` | url to redirect to after logout. This should be a publicly available URL. If not provided, will default to the `app_url`. |
-| `authTokenName` | `string` | If set, we will use auth_token_name for authentication. Defaults to "access_token". |
-| `refreshTokenName` | `string` | If set, we will use refresh_token_name for refreshing. Defaults to "refresh_token". |
-| `authEndpoint` | `string` | url of the provider authorization endpoint. |
-| `tokenEndpoint` | `string` | url of the provider token endpoint. |
-| `revocationEndpoint` | `string` | url of the provider token revocation endpoint https://www.rfc-editor.org/rfc/rfc7009. |
+| `logoutPath` | `string` | A path relative to the app URL to use for logging out from an OAuth2 session. Do not use this path in the application itself. If not provided, logout functionality is disabled. |
+| `tokenEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's token request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
+| `afterLogoutUrl` | `string` | URL to redirect to after logout. Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value. |
+| `authTokenName` | `string` | If set, Gloo uses the `auth_token_name` for authentication. Defaults to `"access_token"`. |
+| `refreshTokenName` | `string` | If set, Gloo uses the `refresh_token_name` for refreshing. Defaults to `"refresh_token"`. |
+| `authEndpoint` | `string` | The URL of the provider authorization endpoint. |
+| `tokenEndpoint` | `string` | The URL of the provider token endpoint. |
+| `revocationEndpoint` | `string` | The URL of the provider token revocation endpoint. For more information, refer to https://www.rfc-editor.org/rfc/rfc7009. |
 
 
 
@@ -1594,9 +1594,8 @@ These values will be encoded in a basic auth header in order to authenticate the
 "logoutPath": string
 "tokenEndpointQueryParams": map<string, string>
 "afterLogoutUrl": string
-"sessionIdHeaderName": string
-"customAuthTokenIdentifier": string
-"customRefreshTokenIdentifier": string
+"authTokenName": string
+"refreshTokenName": string
 "authEndpoint": string
 "tokenEndpoint": string
 "revocationEndpoint": string
@@ -1605,22 +1604,21 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clientId` | `string` | your client id as registered with the issuer. |
-| `clientSecret` | `string` | your client secret as registered with the issuer. |
-| `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
-| `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |
-| `callbackPath` | `string` | a callback path relative to app url that will be used for OAuth2 callbacks. needs to not be used by the application. |
-| `scopes` | `[]string` | scopes to request. |
-| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |
-| `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OAuth2 session. should not be used by the application. If not provided, logout functionality will be disabled. |
-| `tokenEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's token request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
-| `afterLogoutUrl` | `string` | url to redirect to after logout. This should be a publicly available URL. If not provided, will default to the `app_url`. |
-| `sessionIdHeaderName` | `string` | If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
-| `customAuthTokenIdentifier` | `string` | If set, we will use custom_auth_token_identifier for authentication. Defaults to "access_token". |
-| `customRefreshTokenIdentifier` | `string` | If set, we will use custom_auth_token_identifier for refreshing. Defaults to "refresh_token". |
-| `authEndpoint` | `string` | url of the provider authorization endpoint. |
-| `tokenEndpoint` | `string` | url of the provider token endpoint. |
-| `revocationEndpoint` | `string` | url of the provider token revocation endpoint. |
+| `clientId` | `string` | Your client ID as registered with the issuer. |
+| `clientSecret` | `string` | Your client secret as registered with the issuer. |
+| `authEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
+| `appUrl` | `string` | Where to redirect after successful auth, if Gloo can't determine the original URL. Set this field to your publicly available app URL. |
+| `callbackPath` | `string` | A callback path relative to the app URL to be used for OAuth2 callbacks. Do not use this path in the application itself. |
+| `scopes` | `[]string` | Scopes to request for. |
+| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |
+| `logoutPath` | `string` | A path relative to the app URL to use for logging out from an OAuth2 session. Do not use this path in the application itself. If not provided, logout functionality is disabled. |
+| `tokenEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's token request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
+| `afterLogoutUrl` | `string` | URL to redirect to after logout. Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value. |
+| `authTokenName` | `string` | If set, Gloo uses the `auth_token_name` for authentication. Defaults to the `"access_token"`. |
+| `refreshTokenName` | `string` | If set, Gloo uses the `refresh_token_name` for refreshing. Defaults to `"refresh_token"`. |
+| `authEndpoint` | `string` | The URL of the provider authorization endpoint. |
+| `tokenEndpoint` | `string` | The URL of the provider token endpoint. |
+| `revocationEndpoint` | `string` | The URL of the provider token revocation endpoint. For more information, refer to https://www.rfc-editor.org/rfc/rfc7009. |
 
 
 

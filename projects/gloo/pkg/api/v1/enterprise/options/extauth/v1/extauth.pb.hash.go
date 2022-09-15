@@ -3813,15 +3813,11 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Hash(hasher hash.Hash64) (uint64, erro
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetSessionIdHeaderName())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetAuthTokenName())); err != nil {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetCustomAuthTokenIdentifier())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetCustomRefreshTokenIdentifier())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetRefreshTokenName())); err != nil {
 		return 0, err
 	}
 
