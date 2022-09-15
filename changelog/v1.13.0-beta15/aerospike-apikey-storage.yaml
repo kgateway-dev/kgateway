@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: generalize API for extauth API key auth services such that pluggable storage backends may be used; initially support Kubernetes secrets and Aerospike
+    issueLink: https://github.com/solo-io/gloo/issues/3944

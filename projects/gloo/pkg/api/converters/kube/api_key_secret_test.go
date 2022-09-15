@@ -36,7 +36,7 @@ var _ = Describe("API Key Secret Converter", func() {
 				OwnerReferences: []*core.Metadata_OwnerReference{},
 			},
 			Kind: &v1.Secret_ApiKey{
-				ApiKey: &v12.ApiKeySecret{
+				ApiKey: &v12.ApiKey{
 					ApiKey: "apikey",
 					Metadata: map[string]string{
 						"some-data": "some-val",
