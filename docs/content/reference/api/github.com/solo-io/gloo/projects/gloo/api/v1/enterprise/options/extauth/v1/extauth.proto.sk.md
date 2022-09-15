@@ -582,7 +582,7 @@ redis socket types
 | `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set, refresh expired id-tokens using the refresh-token. Defaults to true. Explicitly set to false to disable refreshing. |
 | `preExpiryBuffer` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies a time buffer in which an id-token will be refreshed prior to its actual expiration. Defaults to 2 seconds. A duration of 0 will only refresh tokens after they have already expired. To refresh tokens, you must also set 'allowRefreshing' to 'true'; otherwise, this field is ignored. |
 | `targetDomain` | `string` | Domain used to validate against requests in order to ensure that request host name matches target domain. If the target domain is provided will prevent requests that do not match the target domain according to the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3. |
-| `headerName` | `string` | If set, the name of the header that will include the randomly generated session id This would be used as part of the code exchange with the Oauth2 token endpoint. |
+| `headerName` | `string` | If set, the name of the header that will include the randomly generated session ID. This header is used as part of the code exchange with the OAuth2 token endpoint. |
 
 
 
