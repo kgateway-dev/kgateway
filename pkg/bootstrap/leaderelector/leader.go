@@ -22,7 +22,6 @@ func NewLeaderStartupAction(identity Identity) *LeaderStartupAction {
 }
 
 func (a *LeaderStartupAction) SetStartupAction(action func() error) {
-	contextutils.LoggerFrom(context.Background()).Error("SET STARTUP ACTION")
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.startupAction = action
