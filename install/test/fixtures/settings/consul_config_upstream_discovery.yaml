@@ -12,6 +12,7 @@ spec:
  gateway:
    enableGatewayController: true
    readGatewaysFromAllNamespaces: false
+   isolateVirtualHostsBySslConfig: false
    validation:
      alwaysAccept: true
      allowWarnings: true

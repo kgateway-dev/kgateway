@@ -13,6 +13,7 @@ spec:
     readGatewaysFromAllNamespaces: false
     enableGatewayController: false
     persistProxySpec: true
+    isolateVirtualHostsBySslConfig: false
     validation:
       alwaysAccept: true
       allowWarnings: true

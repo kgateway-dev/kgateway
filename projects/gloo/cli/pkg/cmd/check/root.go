@@ -403,7 +403,7 @@ func checkUpstreams(opts *options.Options, namespaces []string) ([]string, error
 	}
 	if multiErr != nil {
 		printer.AppendStatus("upstreams", fmt.Sprintf("%v Errors!", multiErr.Len()))
-		return nil, multiErr
+		return knownUpstreams, multiErr
 	}
 	printer.AppendStatus("upstreams", "OK")
 	return knownUpstreams, nil
@@ -488,7 +488,7 @@ func checkAuthConfigs(opts *options.Options, namespaces []string) ([]string, err
 	}
 	if multiErr != nil {
 		printer.AppendStatus("auth configs", fmt.Sprintf("%v Errors!", multiErr.Len()))
-		return nil, multiErr
+		return knownAuthConfigs, multiErr
 	}
 	printer.AppendStatus("auth configs", "OK")
 	return knownAuthConfigs, nil
@@ -527,7 +527,7 @@ func checkRateLimitConfigs(opts *options.Options, namespaces []string) ([]string
 
 	if multiErr != nil {
 		printer.AppendStatus("rate limit configs", fmt.Sprintf("%v Errors!", multiErr.Len()))
-		return nil, multiErr
+		return knownConfigs, multiErr
 	}
 
 	printer.AppendStatus("rate limit configs", "OK")
@@ -573,7 +573,7 @@ func checkVirtualHostOptions(opts *options.Options, namespaces []string) ([]stri
 	}
 	if multiErr != nil {
 		printer.AppendStatus("VirtualHostOptions", fmt.Sprintf("%v Errors!", multiErr.Len()))
-		return nil, multiErr
+		return knownVhOpts, multiErr
 	}
 	printer.AppendStatus("VirtualHostOptions", "OK")
 	return knownVhOpts, nil
@@ -581,7 +581,7 @@ func checkVirtualHostOptions(opts *options.Options, namespaces []string) ([]stri
 
 func checkRouteOptions(opts *options.Options, namespaces []string) ([]string, error) {
 	printer.AppendCheck("Checking RouteOptions... ")
-	var knownVhOpts []string
+	var knownRouteOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
 		routeOptionClient, err := helpers.RouteOptionClient(opts.Top.Ctx, []string{ns})
@@ -593,11 +593,11 @@ func checkRouteOptions(opts *options.Options, namespaces []string) ([]string, er
 			}
 			return nil, err
 		}
-		vhOpts, err := routeOptionClient.List(ns, clients.ListOpts{})
+		routeOptions, err := routeOptionClient.List(ns, clients.ListOpts{})
 		if err != nil {
 			return nil, err
 		}
-		for _, routeOpt := range vhOpts {
+		for _, routeOpt := range routeOptions {
 			if routeOpt.GetNamespacedStatuses() != nil {
 				namespacedStatuses := routeOpt.GetNamespacedStatuses()
 				for reporter, status := range namespacedStatuses.GetStatuses() {
@@ -612,16 +612,16 @@ func checkRouteOptions(opts *options.Options, namespaces []string) ([]string, er
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
-				knownVhOpts = append(knownVhOpts, renderMetadata(routeOpt.GetMetadata()))
+				knownRouteOpts = append(knownRouteOpts, renderMetadata(routeOpt.GetMetadata()))
 			}
 		}
 	}
 	if multiErr != nil {
 		printer.AppendStatus("RouteOptions", fmt.Sprintf("%v Errors!", multiErr.Len()))
-		return nil, multiErr
+		return knownRouteOpts, multiErr
 	}
 	printer.AppendStatus("RouteOptions", "OK")
-	return knownVhOpts, nil
+	return knownRouteOpts, nil
 }
 
 func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions []string) error {

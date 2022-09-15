@@ -2129,6 +2129,8 @@ spec:
                                                 type: boolean
                                               unwrapAsApiGateway:
                                                 type: boolean
+                                              wrapAsApiGateway:
+                                                type: boolean
                                             type: object
                                           azure:
                                             properties:
@@ -3313,6 +3315,8 @@ spec:
                                       type: boolean
                                     unwrapAsApiGateway:
                                       type: boolean
+                                    wrapAsApiGateway:
+                                      type: boolean
                                   type: object
                                 azure:
                                   properties:
@@ -3470,6 +3474,12 @@ spec:
                 type: integer
             type: object
           status:
+            default: {}
+            properties:
+              statuses:
+                default: {}
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
             type: object
             x-kubernetes-preserve-unknown-fields: true
         type: object
