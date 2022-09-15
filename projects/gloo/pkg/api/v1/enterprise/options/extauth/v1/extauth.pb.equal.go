@@ -1550,18 +1550,57 @@ func (m *ApiKeyAuth) Equal(that interface{}) bool {
 
 	}
 
+	switch m.StorageBackend.(type) {
+
+	case *ApiKeyAuth_K8SSecretApikeyStorage:
+		if _, ok := target.StorageBackend.(*ApiKeyAuth_K8SSecretApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetK8SSecretApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetK8SSecretApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetK8SSecretApikeyStorage(), target.GetK8SSecretApikeyStorage()) {
+				return false
+			}
+		}
+
+	case *ApiKeyAuth_AerospikeApikeyStorage:
+		if _, ok := target.StorageBackend.(*ApiKeyAuth_AerospikeApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAerospikeApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAerospikeApikeyStorage(), target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.StorageBackend != target.StorageBackend {
+			return false
+		}
+	}
+
 	return true
 }
 
 // Equal function
-func (m *ApiKeySecret) Equal(that interface{}) bool {
+func (m *K8SSecretApiKeyStorage) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ApiKeySecret)
+	target, ok := that.(*K8SSecretApiKeyStorage)
 	if !ok {
-		that2, ok := that.(ApiKeySecret)
+		that2, ok := that.(K8SSecretApiKeyStorage)
 		if ok {
 			target = &that2
 		} else {
@@ -1574,7 +1613,187 @@ func (m *ApiKeySecret) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetGenerateApiKey() != target.GetGenerateApiKey() {
+	if len(m.GetLabelSelector()) != len(target.GetLabelSelector()) {
+		return false
+	}
+	for k, v := range m.GetLabelSelector() {
+
+		if strings.Compare(v, target.GetLabelSelector()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetApiKeySecretRefs()) != len(target.GetApiKeySecretRefs()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeySecretRefs() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeySecretRefs()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeySecretRefs()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AerospikeApiKeyStorage) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AerospikeApiKeyStorage)
+	if !ok {
+		that2, ok := that.(AerospikeApiKeyStorage)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetHostname(), target.GetHostname()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetNamespace(), target.GetNamespace()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetSet(), target.GetSet()) != 0 {
+		return false
+	}
+
+	if m.GetPort() != target.GetPort() {
+		return false
+	}
+
+	if m.GetBatchSize() != target.GetBatchSize() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetReadModeSc()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReadModeSc()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetReadModeSc(), target.GetReadModeSc()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetReadModeAp()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReadModeAp()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetReadModeAp(), target.GetReadModeAp()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetNodeTlsName(), target.GetNodeTlsName()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCertPath(), target.GetCertPath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetKeyPath(), target.GetKeyPath()) != 0 {
+		return false
+	}
+
+	if m.GetAllowInsecure() != target.GetAllowInsecure() {
+		return false
+	}
+
+	if strings.Compare(m.GetRootCaPath(), target.GetRootCaPath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTlsVersion(), target.GetTlsVersion()) != 0 {
+		return false
+	}
+
+	if len(m.GetTlsCurveGroups()) != len(target.GetTlsCurveGroups()) {
+		return false
+	}
+	for idx, v := range m.GetTlsCurveGroups() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTlsCurveGroups()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetTlsCurveGroups()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	switch m.CommitLevel.(type) {
+
+	case *AerospikeApiKeyStorage_CommitAll:
+		if _, ok := target.CommitLevel.(*AerospikeApiKeyStorage_CommitAll); !ok {
+			return false
+		}
+
+		if m.GetCommitAll() != target.GetCommitAll() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorage_CommitMaster:
+		if _, ok := target.CommitLevel.(*AerospikeApiKeyStorage_CommitMaster); !ok {
+			return false
+		}
+
+		if m.GetCommitMaster() != target.GetCommitMaster() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.CommitLevel != target.CommitLevel {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKey) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKey)
+	if !ok {
+		that2, ok := that.(ApiKey)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
 		return false
 	}
 
@@ -1977,6 +2196,353 @@ func (m *ExtAuthConfig) Equal(that interface{}) bool {
 	}
 
 	if m.GetFailOnRedirect() != target.GetFailOnRedirect() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyCreateRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyCreateRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyCreateRequest)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyCreateResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyCreateResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyCreateResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyReadRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyReadRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyReadRequest)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetLabels()) != len(target.GetLabels()) {
+		return false
+	}
+	for idx, v := range m.GetLabels() {
+
+		if strings.Compare(v, target.GetLabels()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyReadResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyReadResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyReadResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyUpdateRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyUpdateRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyUpdateRequest)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetUpsert() != target.GetUpsert() {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyUpdateResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyUpdateResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyUpdateResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyDeleteRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyDeleteRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyDeleteRequest)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetLabels()) != len(target.GetLabels()) {
+		return false
+	}
+	for idx, v := range m.GetLabels() {
+
+		if strings.Compare(v, target.GetLabels()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyDeleteResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyDeleteResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyDeleteResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
 		return false
 	}
 
@@ -2624,14 +3190,14 @@ func (m *AccessTokenValidation_ScopeList) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *ApiKeyAuth_SecretKey) Equal(that interface{}) bool {
+func (m *ApiKeyAuth_MetadataEntry) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ApiKeyAuth_SecretKey)
+	target, ok := that.(*ApiKeyAuth_MetadataEntry)
 	if !ok {
-		that2, ok := that.(ApiKeyAuth_SecretKey)
+		that2, ok := that.(ApiKeyAuth_MetadataEntry)
 		if ok {
 			target = &that2
 		} else {
@@ -2650,6 +3216,195 @@ func (m *ApiKeyAuth_SecretKey) Equal(that interface{}) bool {
 
 	if m.GetRequired() != target.GetRequired() {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AerospikeApiKeyStorageReadModeSc) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AerospikeApiKeyStorageReadModeSc)
+	if !ok {
+		that2, ok := that.(AerospikeApiKeyStorageReadModeSc)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.ReadModeSc.(type) {
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScSession:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScSession); !ok {
+			return false
+		}
+
+		if m.GetReadModeScSession() != target.GetReadModeScSession() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize); !ok {
+			return false
+		}
+
+		if m.GetReadModeScLinearize() != target.GetReadModeScLinearize() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScReplica:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScReplica); !ok {
+			return false
+		}
+
+		if m.GetReadModeScReplica() != target.GetReadModeScReplica() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable); !ok {
+			return false
+		}
+
+		if m.GetReadModeScAllowUnavailable() != target.GetReadModeScAllowUnavailable() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ReadModeSc != target.ReadModeSc {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AerospikeApiKeyStorageReadModeAp) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AerospikeApiKeyStorageReadModeAp)
+	if !ok {
+		that2, ok := that.(AerospikeApiKeyStorageReadModeAp)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.ReadModeAp.(type) {
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApOne:
+		if _, ok := target.ReadModeAp.(*AerospikeApiKeyStorageReadModeAp_ReadModeApOne); !ok {
+			return false
+		}
+
+		if m.GetReadModeApOne() != target.GetReadModeApOne() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApAll:
+		if _, ok := target.ReadModeAp.(*AerospikeApiKeyStorageReadModeAp_ReadModeApAll); !ok {
+			return false
+		}
+
+		if m.GetReadModeApAll() != target.GetReadModeApAll() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ReadModeAp != target.ReadModeAp {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AerospikeApiKeyStorageTlsCurveID) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AerospikeApiKeyStorageTlsCurveID)
+	if !ok {
+		that2, ok := that.(AerospikeApiKeyStorageTlsCurveID)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.CurveId.(type) {
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP256:
+		if _, ok := target.CurveId.(*AerospikeApiKeyStorageTlsCurveID_CurveP256); !ok {
+			return false
+		}
+
+		if m.GetCurveP256() != target.GetCurveP256() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP384:
+		if _, ok := target.CurveId.(*AerospikeApiKeyStorageTlsCurveID_CurveP384); !ok {
+			return false
+		}
+
+		if m.GetCurveP384() != target.GetCurveP384() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP521:
+		if _, ok := target.CurveId.(*AerospikeApiKeyStorageTlsCurveID_CurveP521); !ok {
+			return false
+		}
+
+		if m.GetCurveP521() != target.GetCurveP521() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_X_25519:
+		if _, ok := target.CurveId.(*AerospikeApiKeyStorageTlsCurveID_X_25519); !ok {
+			return false
+		}
+
+		if m.GetX_25519() != target.GetX_25519() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.CurveId != target.CurveId {
+			return false
+		}
 	}
 
 	return true
@@ -3260,6 +4015,45 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	switch m.StorageBackend.(type) {
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage:
+		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetK8SSecretApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetK8SSecretApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetK8SSecretApikeyStorage(), target.GetK8SSecretApikeyStorage()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage:
+		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAerospikeApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAerospikeApikeyStorage(), target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.StorageBackend != target.StorageBackend {
+			return false
+		}
 	}
 
 	return true
