@@ -276,13 +276,17 @@ var _ = FDescribe("MaxGrpcTimeout", func() {
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
 				MaxStreamDuration: &v1.RouteOptions_MaxStreamDuration{
-					GrpcTimeoutHeaderMax: t,
+					MaxStreamDuration:       t,
+					GrpcTimeoutHeaderMax:    t,
+					GrpcTimeoutHeaderOffset: t,
 				},
 			},
 			Action: &v1.Route_RouteAction{},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.MaxStreamDuration.MaxStreamDuration).To(Equal(t))
 		Expect(routeAction.MaxStreamDuration.GrpcTimeoutHeaderMax).To(Equal(t))
+		Expect(routeAction.MaxStreamDuration.GrpcTimeoutHeaderOffset).To(Equal(t))
 	})
 })
 

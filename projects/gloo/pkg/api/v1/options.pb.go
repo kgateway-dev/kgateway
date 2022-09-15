@@ -1006,7 +1006,7 @@ type RouteOptions struct {
 	// Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-regex-rewrite)
 	// for more details about the `regex_rewrite` attribute
 	RegexRewrite *v32.RegexMatchAndSubstitute `protobuf:"bytes,27,opt,name=regex_rewrite,json=regexRewrite,proto3" json:"regex_rewrite,omitempty"`
-	// Default value is infinity and setting to 0 will disable timeout, Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-maxstreamduration-grpc-timeout-header-max)
+	// Settings for maximum durations and timeouts for streams on the route, Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-maxstreamduration-grpc-timeout-header-max)
 	MaxStreamDuration *RouteOptions_MaxStreamDuration `protobuf:"bytes,28,opt,name=max_stream_duration,json=maxStreamDuration,proto3" json:"max_stream_duration,omitempty"`
 }
 
