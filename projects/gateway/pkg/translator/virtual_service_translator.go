@@ -310,7 +310,9 @@ func (v *VirtualServiceTranslator) mergeDelegatedVirtualHostOptions(vs *v1.Virtu
 	for _, optionRef := range optionRefs {
 		vhOption, err := options.Find(optionRef.GetNamespace(), optionRef.GetName())
 		if err != nil {
-			reports.AddError(vs, err)
+			// missing refs should only result in a warning
+			// this allows resources to be applied asynchronously if the validation webhook is configured to allow warnings
+			reports.AddWarning(vs, err.Error())
 			continue
 		}
 		if vs.GetVirtualHost().GetOptions() == nil {

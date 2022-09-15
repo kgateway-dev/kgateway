@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Instantiates plugins once for the validation webhook and once for the translation loop. This allows for plugins
+      to share state between runs so that caches can be useful.
+    issueLink: https://github.com/solo-io/gloo/issues/6920
+    resolvesIssue: false

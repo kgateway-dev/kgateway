@@ -38,7 +38,7 @@ type Translator interface {
 }
 
 var (
-	_ Translator = new(translatorFactory)
+	_ Translator = new(translatorInstance)
 )
 
 // translatorInstance is the implementation for a Translator used during Gloo translation
@@ -49,41 +49,20 @@ type translatorInstance struct {
 	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
 }
 
-type translatorFactory struct {
-	pluginRegistryFactory plugins.PluginRegistryFactory
-	settings              *v1.Settings
-	sslConfigTranslator   utils.SslConfigTranslator
-	hasher                func(resources []envoycache.Resource) uint64
-}
-
 func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
-	pluginRegistryFactory plugins.PluginRegistryFactory,
+	pluginRegistry plugins.PluginRegistry,
 	hasher func(resources []envoycache.Resource) uint64,
-) Translator {
-	return &translatorFactory{
-		pluginRegistryFactory: pluginRegistryFactory,
-		settings:              settings,
-		sslConfigTranslator:   sslConfigTranslator,
-		hasher:                hasher,
-	}
-}
-func (t *translatorFactory) Translate(
-	params plugins.Params,
-	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
-	pluginRegistry := t.pluginRegistryFactory(params.Ctx)
-	listenerTranslatorFactory := NewListenerSubsystemTranslatorFactory(pluginRegistry, t.sslConfigTranslator)
-	instance := &translatorInstance{
+) *translatorInstance {
+	return &translatorInstance{
 		pluginRegistry:            pluginRegistry,
-		settings:                  t.settings,
-		hasher:                    t.hasher,
-		listenerTranslatorFactory: listenerTranslatorFactory,
+		settings:                  settings,
+		hasher:                    hasher,
+		listenerTranslatorFactory: NewListenerSubsystemTranslatorFactory(pluginRegistry, sslConfigTranslator),
 	}
-
-	return instance.Translate(params, proxy)
 }
+
 func (t *translatorInstance) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
@@ -92,11 +71,13 @@ func (t *translatorInstance) Translate(
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
 	params.Ctx = contextutils.WithLogger(ctx, "translator")
+
 	// re-initialize plugins on each loop, this is done for 2 reasons:
 	//  1. Each translation run relies on its own context. If a plugin spawns a go-routine
 	//		we need to be able to cancel that go-routine on the next translation
-	//	2. Plugins are built with the assumption that they will be short lived, only for the
-	//		duration of a single translation loop
+	//	2. Plugins are long lived and will live for the lifetime of the process. This means
+	//     that they must be re-initialized on each translation loop to ensure that they are
+	//     reset.
 	for _, p := range t.pluginRegistry.GetPlugins() {
 		p.Init(plugins.InitParams{Ctx: params.Ctx, Settings: t.settings})
 	}
@@ -155,6 +136,24 @@ func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.
 
 	endpoints := t.computeClusterEndpoints(params, upstreamRefKeyToEndpoints, reports)
 
+	upstreamMap := make(map[string]struct{}, len(params.Snapshot.Upstreams))
+	// make sure to call EndpointPlugin with empty endpoint
+	for _, upstream := range params.Snapshot.Upstreams {
+		key := UpstreamToClusterName(&core.ResourceRef{
+			Name:      upstream.GetMetadata().GetName(),
+			Namespace: upstream.GetMetadata().GetNamespace(),
+		})
+		upstreamMap[key] = struct{}{}
+	}
+	endpointMap := make(map[string][]*envoy_config_endpoint_v3.ClusterLoadAssignment, len(endpoints))
+	for _, ep := range endpoints {
+		if _, ok := endpointMap[ep.GetClusterName()]; !ok {
+			endpointMap[ep.GetClusterName()] = []*envoy_config_endpoint_v3.ClusterLoadAssignment{ep}
+		} else {
+			// TODO: should check why has duplicated upstream
+			endpointMap[ep.GetClusterName()] = append(endpointMap[ep.GetClusterName()], ep)
+		}
+	}
 	// Find all the EDS clusters without endpoints (can happen with kube service that have no endpoints), and create a zero sized load assignment
 	// this is important as otherwise envoy will wait for them forever wondering their fate and not doing much else.
 ClusterLoop:
@@ -171,31 +170,29 @@ ClusterLoop:
 		// Workaround for envoy bug: https://github.com/envoyproxy/envoy/issues/13009
 		// Change the cluster eds config, forcing envoy to re-request latest EDS config
 		c.GetEdsClusterConfig().ServiceName = endpointClusterName
-		for _, ep := range endpoints {
-			if ep.GetClusterName() == c.GetName() {
-
+		if eList, ok := endpointMap[c.GetName()]; ok {
+			for _, ep := range eList {
 				// the endpoint ClusterName needs to match the cluster's EdsClusterConfig ServiceName
 				ep.ClusterName = endpointClusterName
-				continue ClusterLoop
 			}
+			continue ClusterLoop
 		}
 		emptyEndpointList := &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: endpointClusterName,
 		}
 		// make sure to call EndpointPlugin with empty endpoint
-		for _, upstream := range params.Snapshot.Upstreams {
-			if UpstreamToClusterName(&core.ResourceRef{
-				Name:      upstream.GetMetadata().GetName(),
-				Namespace: upstream.GetMetadata().GetNamespace(),
-			}) == c.GetName() {
-				for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
-					if err := plugin.ProcessEndpoints(params, upstream, emptyEndpointList); err != nil {
-						reports.AddError(upstream, err)
-					}
+		if _, ok := upstreamMap[c.GetName()]; ok {
+			for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
+				if err := plugin.ProcessEndpoints(params, upstream, emptyEndpointList); err != nil {
+					reports.AddError(upstream, err)
 				}
 			}
 		}
-
+		if _, ok := endpointMap[emptyEndpointList.GetClusterName()]; !ok {
+			endpointMap[emptyEndpointList.GetClusterName()] = []*envoy_config_endpoint_v3.ClusterLoadAssignment{emptyEndpointList}
+		} else {
+			endpointMap[emptyEndpointList.GetClusterName()] = append(endpointMap[emptyEndpointList.GetClusterName()], emptyEndpointList)
+		}
 		endpoints = append(endpoints, emptyEndpointList)
 	}
 
@@ -254,17 +251,17 @@ func (t *translatorInstance) generateXDSSnapshot(
 	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
 
 	for _, ep := range endpoints {
-		endpointsProto = append(endpointsProto, resource.NewEnvoyResource(proto.Clone(ep)))
+		endpointsProto = append(endpointsProto, resource.NewEnvoyResource(ep))
 	}
 	for _, cluster := range clusters {
-		clustersProto = append(clustersProto, resource.NewEnvoyResource(proto.Clone(cluster)))
+		clustersProto = append(clustersProto, resource.NewEnvoyResource(cluster))
 	}
 	for _, listener := range listeners {
 		// don't add empty listeners, envoy will complain
 		if len(listener.GetFilterChains()) < 1 {
 			continue
 		}
-		listenersProto = append(listenersProto, resource.NewEnvoyResource(proto.Clone(listener)))
+		listenersProto = append(listenersProto, resource.NewEnvoyResource(listener))
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
@@ -323,7 +320,8 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 		if len(routeCfg.GetVirtualHosts()) < 1 {
 			continue
 		}
-		routesProto = append(routesProto, resource.NewEnvoyResource(proto.Clone(routeCfg)))
+		routesProto = append(routesProto, resource.NewEnvoyResource(routeCfg))
+
 	}
 
 	routesVersion := MustEnvoyCacheResourcesListToFnvHash(routesProto)
