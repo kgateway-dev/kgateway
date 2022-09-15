@@ -1,7 +1,7 @@
 ---
 title: Multicluster RBAC
 description: Applying role-based access control to multiple Gloo Edge instances
-weight: 40
+weight: 50
 ---
 
 Gloo Edge Federation allows you to administer multiple instances of Gloo Edge across multiple Kubernetes clusters. One Gloo Edge Federation object might modify configuration across many instances of Gloo Edge across many Kubernetes clusters. Multicluster role-based access control is a feature of Gloo Edge Federation that controls access and actions on Gloo Edge Federation APIs that might reconfigure many Gloo Edge instances. The feature ensures that users are only allowed to modify Gloo Edge Federation resources that configure Gloo Edge resources in clusters and namespaces that they have explicitly been granted access to in order to facilitate multitenancy in the Gloo Edge Federation control plane.
