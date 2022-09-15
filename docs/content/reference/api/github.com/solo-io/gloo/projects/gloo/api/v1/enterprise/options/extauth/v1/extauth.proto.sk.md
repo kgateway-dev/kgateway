@@ -837,8 +837,6 @@ The Method used to make the request.
 "logoutPath": string
 "tokenEndpointQueryParams": map<string, string>
 "afterLogoutUrl": string
-"authTokenName": string
-"refreshTokenName": string
 "authEndpoint": string
 "tokenEndpoint": string
 "revocationEndpoint": string
@@ -857,8 +855,6 @@ The Method used to make the request.
 | `logoutPath` | `string` | A path relative to the app URL to use for logging out from an OAuth2 session. Do not use this path in the application itself. If not provided, logout functionality is disabled. |
 | `tokenEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's token request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
 | `afterLogoutUrl` | `string` | URL to redirect to after logout. Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value. |
-| `authTokenName` | `string` | If set, Gloo uses the `auth_token_name` for authentication. Defaults to `"access_token"`. |
-| `refreshTokenName` | `string` | If set, Gloo uses the `refresh_token_name` for refreshing. Defaults to `"refresh_token"`. |
 | `authEndpoint` | `string` | The URL of the provider authorization endpoint. |
 | `tokenEndpoint` | `string` | The URL of the provider token endpoint. |
 | `revocationEndpoint` | `string` | The URL of the provider token revocation endpoint. For more information, refer to https://www.rfc-editor.org/rfc/rfc7009. |
@@ -1594,8 +1590,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 "logoutPath": string
 "tokenEndpointQueryParams": map<string, string>
 "afterLogoutUrl": string
-"authTokenName": string
-"refreshTokenName": string
 "authEndpoint": string
 "tokenEndpoint": string
 "revocationEndpoint": string
@@ -1614,8 +1608,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `logoutPath` | `string` | A path relative to the app URL to use for logging out from an OAuth2 session. Do not use this path in the application itself. If not provided, logout functionality is disabled. |
 | `tokenEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's token request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
 | `afterLogoutUrl` | `string` | URL to redirect to after logout. Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value. |
-| `authTokenName` | `string` | If set, Gloo uses the `auth_token_name` for authentication. Defaults to the `"access_token"`. |
-| `refreshTokenName` | `string` | If set, Gloo uses the `refresh_token_name` for refreshing. Defaults to `"refresh_token"`. |
 | `authEndpoint` | `string` | The URL of the provider authorization endpoint. |
 | `tokenEndpoint` | `string` | The URL of the provider token endpoint. |
 | `revocationEndpoint` | `string` | The URL of the provider token revocation endpoint. For more information, refer to https://www.rfc-editor.org/rfc/rfc7009. |

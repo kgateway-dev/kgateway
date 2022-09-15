@@ -666,23 +666,15 @@ message PlainOAuth2 {
     // Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value.
     string after_logout_url = 10;
 
-    // If set, Gloo uses the `auth_token_name` for authentication.
-    // Defaults to `"access_token"`.
-    string auth_token_name = 11;
-
-    // If set, Gloo uses the `refresh_token_name` for refreshing.
-    // Defaults to `"refresh_token"`.
-    string refresh_token_name = 12;
-
     // The URL of the provider authorization endpoint.
-    string auth_endpoint = 13;
+    string auth_endpoint = 11;
 
     // The URL of the provider token endpoint.
-    string token_endpoint = 14;
+    string token_endpoint = 12;
 
     // The URL of the provider token revocation endpoint.
     // For more information, refer to https://www.rfc-editor.org/rfc/rfc7009.
-    string revocation_endpoint = 15;
+    string revocation_endpoint = 13;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -1358,23 +1350,15 @@ message ExtAuthConfig {
         // Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value.
         string after_logout_url = 10;
 
-        // If set, Gloo uses the `auth_token_name` for authentication.
-        // Defaults to the `"access_token"`.
-        string auth_token_name = 11;
-
-        // If set, Gloo uses the `refresh_token_name` for refreshing.
-        // Defaults to `"refresh_token"`.
-        string refresh_token_name = 12;
-
         // The URL of the provider authorization endpoint.
-        string auth_endpoint = 13;
+        string auth_endpoint = 11;
 
         // The URL of the provider token endpoint.
-        string token_endpoint = 14;
+        string token_endpoint = 12;
 
         // The URL of the provider token revocation endpoint.
         // For more information, refer to https://www.rfc-editor.org/rfc/rfc7009.
-        string revocation_endpoint = 15;
+        string revocation_endpoint = 13;
     }
 
     message OAuth2Config {

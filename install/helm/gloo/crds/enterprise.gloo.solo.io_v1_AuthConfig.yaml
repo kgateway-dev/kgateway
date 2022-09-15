@@ -198,8 +198,6 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
-                            authTokenName:
-                              type: string
                             callbackPath:
                               type: string
                             clientId:
@@ -212,8 +210,6 @@ spec:
                                   type: string
                               type: object
                             logoutPath:
-                              type: string
-                            refreshTokenName:
                               type: string
                             revocationEndpoint:
                               type: string

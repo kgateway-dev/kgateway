@@ -1502,14 +1502,6 @@ func (m *PlainOAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetAuthTokenName())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetRefreshTokenName())); err != nil {
-		return 0, err
-	}
-
 	if _, err = hasher.Write([]byte(m.GetAuthEndpoint())); err != nil {
 		return 0, err
 	}
@@ -3810,14 +3802,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Hash(hasher hash.Hash64) (uint64, erro
 	}
 
 	if _, err = hasher.Write([]byte(m.GetAfterLogoutUrl())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetAuthTokenName())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetRefreshTokenName())); err != nil {
 		return 0, err
 	}
 

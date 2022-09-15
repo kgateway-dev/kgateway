@@ -800,10 +800,6 @@ func (m *PlainOAuth2) Clone() proto.Message {
 
 	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
 
-	target.AuthTokenName = m.GetAuthTokenName()
-
-	target.RefreshTokenName = m.GetRefreshTokenName()
-
 	target.AuthEndpoint = m.GetAuthEndpoint()
 
 	target.TokenEndpoint = m.GetTokenEndpoint()
@@ -2001,10 +1997,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 	}
 
 	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
-
-	target.AuthTokenName = m.GetAuthTokenName()
-
-	target.RefreshTokenName = m.GetRefreshTokenName()
 
 	target.AuthEndpoint = m.GetAuthEndpoint()
 
