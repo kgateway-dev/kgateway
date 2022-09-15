@@ -263,7 +263,7 @@ var _ = Describe("timeout", func() {
 	})
 })
 
-var _ = FDescribe("MaxGrpcTimeout", func() {
+var _ = Describe("MaxGrpcTimeout", func() {
 	It("works", func() {
 		t := prototime.DurationToProto(time.Minute)
 		p := NewPlugin()
