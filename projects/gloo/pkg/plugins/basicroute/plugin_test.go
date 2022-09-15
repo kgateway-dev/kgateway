@@ -275,7 +275,9 @@ var _ = FDescribe("MaxGrpcTimeout", func() {
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
-				GrpcTimeoutHeaderMax: t,
+				MaxStreamDuration: &v1.RouteOptions_MaxStreamDuration{
+					GrpcTimeoutHeaderMax: t,
+				},
 			},
 			Action: &v1.Route_RouteAction{},
 		}, out)
