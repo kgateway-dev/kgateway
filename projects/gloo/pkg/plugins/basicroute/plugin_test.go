@@ -263,7 +263,7 @@ var _ = Describe("timeout", func() {
 	})
 })
 
-var _ = Describe("MaxGrpcTimeout", func() {
+var _ = Describe("max stream duration", func() {
 	It("works", func() {
 		t := prototime.DurationToProto(time.Minute)
 		p := NewPlugin()
