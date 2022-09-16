@@ -1006,7 +1006,8 @@ type RouteOptions struct {
 	// Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-regex-rewrite)
 	// for more details about the `regex_rewrite` attribute
 	RegexRewrite *v32.RegexMatchAndSubstitute `protobuf:"bytes,27,opt,name=regex_rewrite,json=regexRewrite,proto3" json:"regex_rewrite,omitempty"`
-	// Settings for maximum durations and timeouts for streams on the route, Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-maxstreamduration-grpc-timeout-header-max)
+	// Settings for maximum durations and timeouts for streams on the route.
+	// Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration)
 	MaxStreamDuration *RouteOptions_MaxStreamDuration `protobuf:"bytes,28,opt,name=max_stream_duration,json=maxStreamDuration,proto3" json:"max_stream_duration,omitempty"`
 }
 
@@ -1673,20 +1674,15 @@ type RouteOptions_MaxStreamDuration struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Specifies the maximum duration allowed for streams on the route. If not specified, the value
-	// from the :ref:`max_stream_duration
-	// <envoy_v3_api_field_config.core.v3.HttpProtocolOptions.max_stream_duration>` field in
-	// :ref:`HttpConnectionManager.common_http_protocol_options
-	// <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.common_http_protocol_options>`
-	// is used. If this field is set explicitly to zero, any
-	// HttpConnectionManager max_stream_duration timeout will be disabled for
-	// this route.
+	// from the [max_stream_duration](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-stream-duration)
+	// field in [HttpConnectionManager.common_http_protocol_options](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-common-http-protocol-options)
+	// is used. If this field is set explicitly to zero, any HttpConnectionManager max_stream_duration timeout will be disabled for this route.
 	MaxStreamDuration *duration.Duration `protobuf:"bytes,1,opt,name=max_stream_duration,json=maxStreamDuration,proto3" json:"max_stream_duration,omitempty"`
-	// If present, and the request contains a `grpc-timeout header
-	// <https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md>`_, use that value as the
-	// ``max_stream_duration``, but limit the applied timeout to the maximum value specified here.
-	// If set to 0, the ``grpc-timeout`` header is used without modification.
+	// If present, and the request contains a [grpc-timeout header](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md), use that value as the
+	// `max_stream_duration`, but limit the applied timeout to the maximum value specified here.
+	// If set to 0, the `grpc-timeout` header is used without modification.
 	GrpcTimeoutHeaderMax *duration.Duration `protobuf:"bytes,2,opt,name=grpc_timeout_header_max,json=grpcTimeoutHeaderMax,proto3" json:"grpc_timeout_header_max,omitempty"`
-	// If present, Envoy will adjust the timeout provided by the ``grpc-timeout`` header by
+	// If present, Envoy will adjust the timeout provided by the `grpc-timeout` header by
 	// subtracting the provided duration from the header. This is useful for allowing Envoy to set
 	// its global timeout to be less than that of the deadline imposed by the calling client, which
 	// makes it more likely that Envoy will handle the timeout instead of having the call canceled
