@@ -306,6 +306,12 @@ message OAuth2 {
         // - URI query parameter e.g. access_token=mytoken123
         // - and (preferably) secure cookies
         AccessTokenValidation access_token_validation = 2;
+
+        // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
+        // provide issuer location and let Gloo handle Oauth2 flow for you.
+        // requests authorized by validating the contents of access token.
+        // Prefer to use OIDC for better security.
+        PlainOAuth2 oauth2 = 3;
     }
 }
 
@@ -368,6 +374,10 @@ message UserSession {
         // If the target domain is provided will prevent requests that do not match the target domain according to
         // the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
         string target_domain = 6;
+
+        // If set, the name of the header that will include the randomly generated session id
+        // This would be used as part of the code exchange with the Oauth2 token endpoint
+        string header_name = 7;
     }
 
     // should we fail auth flow when failing to get a session from redis, or allow it to continue,
@@ -597,9 +607,10 @@ message OidcAuthorizationCode {
     // add optional configuration for validation of the access token received during the OIDC flow
     // AccessTokenValidation access_token_validation = 8;
 
+    // DEPRECATED: Prefer the RedisSession.HeaderName field
     // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
     // The session id is used as the key for sessions in Redis
-    string session_id_header_name = 16;
+    string session_id_header_name = 16 [deprecated = true];
 
     // If set, CallbackPath will be evaluated as a regular expression
     bool parse_callback_path_as_regex = 17;
@@ -613,6 +624,57 @@ message OidcAuthorizationCode {
     // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
     // in the OIDC documentation.
     EndSessionProperties end_session_properties = 19;
+}
+
+message PlainOAuth2 {
+    // Your client ID as registered with the issuer
+    string client_id = 1;
+
+    // Your client secret as registered with the issuer
+    core.solo.io.ResourceRef client_secret_ref = 2;
+
+    // Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
+    // These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+    // to set the `code_challenge` and `code_challenge_method`.
+    map<string, string> auth_endpoint_query_params = 3;
+
+    // Where to redirect after successful auth, if Gloo can't determine the original URL.
+    // Set this field to your publicly available app URL.
+    string app_url = 4;
+
+    // A callback path relative to the app URL to be used for OAuth2 callbacks.
+    // Do not use this path in the application itself.
+    string callback_path = 5;
+
+    // Scopes to request for.
+    repeated string scopes = 6;
+
+    // Configuration related to the user session.
+    UserSession session = 7;
+
+    // A path relative to the app URL to use for logging out from an OAuth2 session.
+    // Do not use this path in the application itself.
+    // If not provided, logout functionality is disabled.
+    string logout_path = 8;
+
+    // Extra query parameters to apply to the Ext-Auth service's token request to the identity provider.
+    // These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+    // to set the `code_verifier`.
+    map<string, string> token_endpoint_query_params = 9;
+
+    // URL to redirect to after logout.
+    // Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value.
+    string after_logout_url = 10;
+
+    // The URL of the provider authorization endpoint.
+    string auth_endpoint = 11;
+
+    // The URL of the provider token endpoint.
+    string token_endpoint = 12;
+
+    // The URL of the provider token revocation endpoint.
+    // For more information, refer to https://www.rfc-editor.org/rfc/rfc7009.
+    string revocation_endpoint = 13;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -1343,6 +1405,57 @@ message ExtAuthConfig {
         }
     }
 
+    message PlainOAuth2Config {
+        // Your client ID as registered with the issuer
+        string client_id = 1;
+
+        // Your client secret as registered with the issuer
+        string client_secret = 2 [(extproto.sensitive) = true];
+
+        // Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
+        // These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+        // to set the `code_challenge` and `code_challenge_method`.
+        map<string, string> auth_endpoint_query_params = 3;
+
+        // Where to redirect after successful auth, if Gloo can't determine the original URL.
+        // Set this field to your publicly available app URL.
+        string app_url = 4;
+
+        // A callback path relative to the app URL to be used for OAuth2 callbacks.
+        // Do not use this path in the application itself.
+        string callback_path = 5;
+
+        // Scopes to request for.
+        repeated string scopes = 6;
+
+        // Configuration related to the user session.
+        UserSession session = 7;
+
+        // A path relative to the app URL to use for logging out from an OAuth2 session.
+        // Do not use this path in the application itself.
+        // If not provided, logout functionality is disabled.
+        string logout_path = 8;
+
+        // Extra query parameters to apply to the Ext-Auth service's token request to the identity provider.
+        // These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+        // to set the `code_verifier`.
+        map<string, string> token_endpoint_query_params = 9;
+
+        // URL to redirect to after logout.
+        // Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value.
+        string after_logout_url = 10;
+
+        // The URL of the provider authorization endpoint.
+        string auth_endpoint = 11;
+
+        // The URL of the provider token endpoint.
+        string token_endpoint = 12;
+
+        // The URL of the provider token revocation endpoint.
+        // For more information, refer to https://www.rfc-editor.org/rfc/rfc7009.
+        string revocation_endpoint = 13;
+    }
+
     message OAuth2Config {
         reserved 2;
 
@@ -1359,6 +1472,12 @@ message ExtAuthConfig {
             // - URI query parameter e.g. access_token=mytoken123
             // - and (preferably) secure cookies
             AccessTokenValidationConfig access_token_validation_config = 3;
+
+            // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
+            // provide issuer location and let Gloo handle Oauth2 flow for you.
+            // requests authorized by validating the contents of access token.
+            // Prefer to use OIDC for better security.
+            PlainOAuth2Config oauth2_config = 4;
         }
     }
 
