@@ -462,10 +462,9 @@ message RouteOptions {
         // this route.
         google.protobuf.Duration max_stream_duration = 1;
 
-        // If present, and the request contains a `grpc-timeout header
-        // <https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md>`_, use that value as the
-        // ``max_stream_duration``, but limit the applied timeout to the maximum value specified here.
-        // If set to 0, the ``grpc-timeout`` header is used without modification.
+        // If present, and the request contains a [grpc-timeout header](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md), use that value as the
+        // `max_stream_duration`, but limit the applied timeout to the maximum value specified here.
+        // If set to 0, the `grpc-timeout` header is used without modification.
         google.protobuf.Duration grpc_timeout_header_max = 2;
 
         // If present, Envoy will adjust the timeout provided by the ``grpc-timeout`` header by
