@@ -649,6 +649,21 @@ func (m *OAuth2) Equal(that interface{}) bool {
 			}
 		}
 
+	case *OAuth2_Oauth2:
+		if _, ok := target.OauthType.(*OAuth2_Oauth2); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOauth2()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOauth2()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOauth2(), target.GetOauth2()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.OauthType != target.OauthType {
@@ -1224,6 +1239,115 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetEndSessionProperties(), target.GetEndSessionProperties()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *PlainOAuth2) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*PlainOAuth2)
+	if !ok {
+		that2, ok := that.(PlainOAuth2)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClientId(), target.GetClientId()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetClientSecretRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClientSecretRef()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClientSecretRef(), target.GetClientSecretRef()) {
+			return false
+		}
+	}
+
+	if len(m.GetAuthEndpointQueryParams()) != len(target.GetAuthEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetAuthEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetAuthEndpointQueryParams()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if strings.Compare(m.GetAppUrl(), target.GetAppUrl()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCallbackPath(), target.GetCallbackPath()) != 0 {
+		return false
+	}
+
+	if len(m.GetScopes()) != len(target.GetScopes()) {
+		return false
+	}
+	for idx, v := range m.GetScopes() {
+
+		if strings.Compare(v, target.GetScopes()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetSession()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSession()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSession(), target.GetSession()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetLogoutPath(), target.GetLogoutPath()) != 0 {
+		return false
+	}
+
+	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetTokenEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetTokenEndpointQueryParams()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if strings.Compare(m.GetAfterLogoutUrl(), target.GetAfterLogoutUrl()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetAuthEndpoint(), target.GetAuthEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTokenEndpoint(), target.GetTokenEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRevocationEndpoint(), target.GetRevocationEndpoint()) != 0 {
+		return false
 	}
 
 	return true
@@ -3019,6 +3143,10 @@ func (m *UserSession_RedisSession) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetHeaderName(), target.GetHeaderName()) != 0 {
+		return false
+	}
+
 	return true
 }
 
@@ -3902,6 +4030,109 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Equal(that interface{}) bool
 }
 
 // Equal function
+func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_PlainOAuth2Config)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_PlainOAuth2Config)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClientId(), target.GetClientId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetClientSecret(), target.GetClientSecret()) != 0 {
+		return false
+	}
+
+	if len(m.GetAuthEndpointQueryParams()) != len(target.GetAuthEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetAuthEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetAuthEndpointQueryParams()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if strings.Compare(m.GetAppUrl(), target.GetAppUrl()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCallbackPath(), target.GetCallbackPath()) != 0 {
+		return false
+	}
+
+	if len(m.GetScopes()) != len(target.GetScopes()) {
+		return false
+	}
+	for idx, v := range m.GetScopes() {
+
+		if strings.Compare(v, target.GetScopes()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetSession()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSession()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSession(), target.GetSession()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetLogoutPath(), target.GetLogoutPath()) != 0 {
+		return false
+	}
+
+	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetTokenEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetTokenEndpointQueryParams()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if strings.Compare(m.GetAfterLogoutUrl(), target.GetAfterLogoutUrl()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetAuthEndpoint(), target.GetAuthEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTokenEndpoint(), target.GetTokenEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRevocationEndpoint(), target.GetRevocationEndpoint()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ExtAuthConfig_OAuth2Config) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -3950,6 +4181,21 @@ func (m *ExtAuthConfig_OAuth2Config) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetAccessTokenValidationConfig(), target.GetAccessTokenValidationConfig()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_OAuth2Config_Oauth2Config:
+		if _, ok := target.OauthType.(*ExtAuthConfig_OAuth2Config_Oauth2Config); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOauth2Config()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOauth2Config()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOauth2Config(), target.GetOauth2Config()) {
 				return false
 			}
 		}
