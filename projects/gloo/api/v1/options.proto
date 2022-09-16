@@ -453,22 +453,17 @@ message RouteOptions {
     // This is a 1:1 translation to the [Envoy API described here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration)
     message MaxStreamDuration {
         // Specifies the maximum duration allowed for streams on the route. If not specified, the value
-        // from the :ref:`max_stream_duration
-        // <envoy_v3_api_field_config.core.v3.HttpProtocolOptions.max_stream_duration>` field in
-        // :ref:`HttpConnectionManager.common_http_protocol_options
-        // <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.common_http_protocol_options>`
-        // is used. If this field is set explicitly to zero, any
-        // HttpConnectionManager max_stream_duration timeout will be disabled for
-        // this route.
+        // from the [max_stream_duration](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-stream-duration)
+        // field in [HttpConnectionManager.common_http_protocol_options](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-common-http-protocol-options)
+        // is used. If this field is set explicitly to zero, any HttpConnectionManager max_stream_duration timeout will be disabled for this route.
         google.protobuf.Duration max_stream_duration = 1;
 
-        // If present, and the request contains a `grpc-timeout header
-        // <https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md>`_, use that value as the
-        // ``max_stream_duration``, but limit the applied timeout to the maximum value specified here.
-        // If set to 0, the ``grpc-timeout`` header is used without modification.
+        // If present, and the request contains a [grpc-timeout header](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md), use that value as the
+        // `max_stream_duration`, but limit the applied timeout to the maximum value specified here.
+        // If set to 0, the `grpc-timeout` header is used without modification.
         google.protobuf.Duration grpc_timeout_header_max = 2;
 
-        // If present, Envoy will adjust the timeout provided by the ``grpc-timeout`` header by
+        // If present, Envoy will adjust the timeout provided by the `grpc-timeout` header by
         // subtracting the provided duration from the header. This is useful for allowing Envoy to set
         // its global timeout to be less than that of the deadline imposed by the calling client, which
         // makes it more likely that Envoy will handle the timeout instead of having the call canceled
@@ -477,7 +472,8 @@ message RouteOptions {
         google.protobuf.Duration grpc_timeout_header_offset = 3;
     }
 
-    // Settings for maximum durations and timeouts for streams on the route, Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-maxstreamduration-grpc-timeout-header-max)
+    // Settings for maximum durations and timeouts for streams on the route.
+    // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration)
     MaxStreamDuration max_stream_duration = 28;
 }
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination

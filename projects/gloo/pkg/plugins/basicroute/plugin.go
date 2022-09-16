@@ -143,7 +143,7 @@ func applyMaxStreamDuration(in *v1.Route, out *envoy_config_route_v3.Route) erro
 		return errors.Errorf("Max Stream Duration is only available for Route Actions")
 	}
 	if routeAction.Route == nil {
-		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
+		return errors.Errorf("internal error: route %v specified a max stream duration, but output Envoy object "+
 			"had nil route", in.GetAction())
 	}
 	inMaxStreamDuration := in.GetOptions().GetMaxStreamDuration()
