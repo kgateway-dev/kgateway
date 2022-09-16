@@ -1,3 +1,4 @@
 changelog:
-- type: NON_USER_FACING
-  description: "Small change to make sure that plugins are using the Init method in the plugin interface correctly and resetting fields."
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7165
+  description: Fixes issue where gRPC plugin is not reset correctly on every run of the translation loop, causing a slow down in gloo performance and envoy memory spikes.
