@@ -389,6 +389,18 @@ func (m *OAuth2) Clone() proto.Message {
 			}
 		}
 
+	case *OAuth2_Oauth2:
+
+		if h, ok := interface{}(m.GetOauth2()).(clone.Cloner); ok {
+			target.OauthType = &OAuth2_Oauth2{
+				Oauth2: h.Clone().(*PlainOAuth2),
+			}
+		} else {
+			target.OauthType = &OAuth2_Oauth2{
+				Oauth2: proto.Clone(m.GetOauth2()).(*PlainOAuth2),
+			}
+		}
+
 	}
 
 	return target
@@ -727,6 +739,72 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 	} else {
 		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
 	}
+
+	return target
+}
+
+// Clone function
+func (m *PlainOAuth2) Clone() proto.Message {
+	var target *PlainOAuth2
+	if m == nil {
+		return target
+	}
+	target = &PlainOAuth2{}
+
+	target.ClientId = m.GetClientId()
+
+	if h, ok := interface{}(m.GetClientSecretRef()).(clone.Cloner); ok {
+		target.ClientSecretRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.ClientSecretRef = proto.Clone(m.GetClientSecretRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	if m.GetAuthEndpointQueryParams() != nil {
+		target.AuthEndpointQueryParams = make(map[string]string, len(m.GetAuthEndpointQueryParams()))
+		for k, v := range m.GetAuthEndpointQueryParams() {
+
+			target.AuthEndpointQueryParams[k] = v
+
+		}
+	}
+
+	target.AppUrl = m.GetAppUrl()
+
+	target.CallbackPath = m.GetCallbackPath()
+
+	if m.GetScopes() != nil {
+		target.Scopes = make([]string, len(m.GetScopes()))
+		for idx, v := range m.GetScopes() {
+
+			target.Scopes[idx] = v
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetSession()).(clone.Cloner); ok {
+		target.Session = h.Clone().(*UserSession)
+	} else {
+		target.Session = proto.Clone(m.GetSession()).(*UserSession)
+	}
+
+	target.LogoutPath = m.GetLogoutPath()
+
+	if m.GetTokenEndpointQueryParams() != nil {
+		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
+		for k, v := range m.GetTokenEndpointQueryParams() {
+
+			target.TokenEndpointQueryParams[k] = v
+
+		}
+	}
+
+	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
+
+	target.AuthEndpoint = m.GetAuthEndpoint()
+
+	target.TokenEndpoint = m.GetTokenEndpoint()
+
+	target.RevocationEndpoint = m.GetRevocationEndpoint()
 
 	return target
 }
@@ -1807,6 +1885,8 @@ func (m *UserSession_RedisSession) Clone() proto.Message {
 
 	target.TargetDomain = m.GetTargetDomain()
 
+	target.HeaderName = m.GetHeaderName()
+
 	return target
 }
 
@@ -2313,6 +2393,68 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
+	var target *ExtAuthConfig_PlainOAuth2Config
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_PlainOAuth2Config{}
+
+	target.ClientId = m.GetClientId()
+
+	target.ClientSecret = m.GetClientSecret()
+
+	if m.GetAuthEndpointQueryParams() != nil {
+		target.AuthEndpointQueryParams = make(map[string]string, len(m.GetAuthEndpointQueryParams()))
+		for k, v := range m.GetAuthEndpointQueryParams() {
+
+			target.AuthEndpointQueryParams[k] = v
+
+		}
+	}
+
+	target.AppUrl = m.GetAppUrl()
+
+	target.CallbackPath = m.GetCallbackPath()
+
+	if m.GetScopes() != nil {
+		target.Scopes = make([]string, len(m.GetScopes()))
+		for idx, v := range m.GetScopes() {
+
+			target.Scopes[idx] = v
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetSession()).(clone.Cloner); ok {
+		target.Session = h.Clone().(*UserSession)
+	} else {
+		target.Session = proto.Clone(m.GetSession()).(*UserSession)
+	}
+
+	target.LogoutPath = m.GetLogoutPath()
+
+	if m.GetTokenEndpointQueryParams() != nil {
+		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
+		for k, v := range m.GetTokenEndpointQueryParams() {
+
+			target.TokenEndpointQueryParams[k] = v
+
+		}
+	}
+
+	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
+
+	target.AuthEndpoint = m.GetAuthEndpoint()
+
+	target.TokenEndpoint = m.GetTokenEndpoint()
+
+	target.RevocationEndpoint = m.GetRevocationEndpoint()
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_OAuth2Config) Clone() proto.Message {
 	var target *ExtAuthConfig_OAuth2Config
 	if m == nil {
@@ -2343,6 +2485,18 @@ func (m *ExtAuthConfig_OAuth2Config) Clone() proto.Message {
 		} else {
 			target.OauthType = &ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig{
 				AccessTokenValidationConfig: proto.Clone(m.GetAccessTokenValidationConfig()).(*ExtAuthConfig_AccessTokenValidationConfig),
+			}
+		}
+
+	case *ExtAuthConfig_OAuth2Config_Oauth2Config:
+
+		if h, ok := interface{}(m.GetOauth2Config()).(clone.Cloner); ok {
+			target.OauthType = &ExtAuthConfig_OAuth2Config_Oauth2Config{
+				Oauth2Config: h.Clone().(*ExtAuthConfig_PlainOAuth2Config),
+			}
+		} else {
+			target.OauthType = &ExtAuthConfig_OAuth2Config_Oauth2Config{
+				Oauth2Config: proto.Clone(m.GetOauth2Config()).(*ExtAuthConfig_PlainOAuth2Config),
 			}
 		}
 

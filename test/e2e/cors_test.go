@@ -3,9 +3,14 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"strings"
+
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	gloohelpers "github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,232 +22,189 @@ import (
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-type perCorsTestData struct {
-	up            *gloov1.Upstream
-	envoyInstance *services.EnvoyInstance
-	envoyPort     uint32
-}
-type corsTestData struct {
-	testClients services.TestClients
-	ctx         context.Context
-	cancel      context.CancelFunc
-	per         perCorsTestData
-}
-
 const (
-	requestACHMethods = "Access-Control-Allow-Methods"
-	requestACHOrigin  = "Access-Control-Allow-Origin"
+	requestACHMethods      = "Access-Control-Allow-Methods"
+	requestACHOrigin       = "Access-Control-Allow-Origin"
+	corsFilterString       = `"name": "` + wellknown.CORS + `"`
+	corsActiveConfigString = `"cors":`
 )
 
 var _ = Describe("CORS", func() {
 
-	var td corsTestData
+	var (
+		err           error
+		ctx           context.Context
+		cancel        context.CancelFunc
+		testClients   services.TestClients
+		envoyInstance *services.EnvoyInstance
+		testUpstream  *v1helpers.TestUpstream
 
-	const (
-		corsFilterString       = `"name": "` + wellknown.CORS + `"`
-		corsActiveConfigString = `"cors":`
+		resourcesToCreate *gloosnapshot.ApiSnapshot
+
+		writeNamespace = defaults.GlooSystem
 	)
 
 	BeforeEach(func() {
-		td.ctx, td.cancel = context.WithCancel(context.Background())
-		td.testClients = services.RunGateway(td.ctx, true)
-		td.per = perCorsTestData{}
+		ctx, cancel = context.WithCancel(context.Background())
+		defaults.HttpPort = services.NextBindPort()
+
+		// run gloo
+		writeNamespace = defaults.GlooSystem
+		ro := &services.RunOptions{
+			NsToWrite: writeNamespace,
+			NsToWatch: []string{"default", writeNamespace},
+			WhatToRun: services.What{
+				DisableFds: true,
+				DisableUds: true,
+			},
+		}
+		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+
+		// run envoy
+		envoyInstance, err = envoyFactory.NewEnvoyInstance()
+		Expect(err).NotTo(HaveOccurred())
+		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		// this is the upstream that will handle requests
+		testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+
+		// The set of resources that these tests will generate
+		resourcesToCreate = &gloosnapshot.ApiSnapshot{
+			Gateways: gatewayv1.GatewayList{
+				gatewaydefaults.DefaultGateway(writeNamespace),
+			},
+			Upstreams: gloov1.UpstreamList{
+				testUpstream.Upstream,
+			},
+		}
 	})
 
 	AfterEach(func() {
-		td.cancel()
+		envoyInstance.Clean()
+		cancel()
 	})
 
-	Context("with envoy", func() {
+	JustBeforeEach(func() {
+		// Create Resources
+		err = testClients.WriteSnapshot(ctx, resourcesToCreate)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Wait for a proxy to be accepted
+		gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		})
+	})
+
+	Context("With CORS", func() {
+
+		var (
+			allowedOrigins = []string{allowedOrigin}
+			allowedMethods = []string{"GET", "POST"}
+		)
 
 		BeforeEach(func() {
-			var err error
-			td.per.envoyInstance, err = envoyFactory.NewEnvoyInstance()
-			Expect(err).NotTo(HaveOccurred())
+			vsWithCors := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace).
+				WithName("vs-cors").
+				WithDomain(allowedOrigin).
+				WithRouteActionToUpstream("route", testUpstream.Upstream).
+				WithRoutePrefixMatcher("route", "/cors").
+				WithRouteOptions("route", &gloov1.RouteOptions{
+					Cors: &cors.CorsPolicy{
+						AllowOrigin:      allowedOrigins,
+						AllowOriginRegex: allowedOrigins,
+						AllowMethods:     allowedMethods,
+					}}).
+				Build()
 
-			err = td.per.envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, td.testClients.GlooPort, td.testClients.RestXdsPort)
-			Expect(err).NotTo(HaveOccurred())
+			resourcesToCreate.VirtualServices = gatewayv1.VirtualServiceList{
+				vsWithCors,
+			}
 
-			td.per.up = td.setupUpstream()
-		})
-
-		AfterEach(func() {
-			td.per.envoyInstance.Clean()
 		})
 
 		It("should run with cors", func() {
 
-			allowedOrigins := []string{"allowThisOne.solo.io"}
-			// allowedOrigin := "*"
-			allowedMethods := []string{"GET", "POST"}
-			cors := &cors.CorsPolicy{
-				AllowOrigin:      allowedOrigins,
-				AllowOriginRegex: allowedOrigins,
-				AllowMethods:     allowedMethods,
-			}
+			By("Envoy config contains CORS filer")
+			Eventually(func(g Gomega) {
+				cfg, err := envoyInstance.EnvoyConfigDump()
+				g.Expect(err).NotTo(HaveOccurred())
 
-			td.setupInitialProxy(cors)
-			envoyConfig := td.per.getEnvoyConfig()
+				g.Expect(cfg).To(MatchRegexp(corsFilterString))
+				g.Expect(cfg).To(MatchRegexp(corsActiveConfigString))
+				g.Expect(cfg).To(MatchRegexp(allowedOrigin))
+			}, "10s", ".1s").ShouldNot(HaveOccurred())
 
-			By("Check config")
-			Expect(envoyConfig).To(MatchRegexp(corsFilterString))
-			Expect(envoyConfig).To(MatchRegexp(corsActiveConfigString))
-			Expect(envoyConfig).To(MatchRegexp(allowedOrigins[0]))
+			preFlightRequest, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", envoyInstance.LocalAddr(), defaults.HttpPort), nil)
+			Expect(err).NotTo(HaveOccurred())
+			preFlightRequest.Host = allowedOrigin
 
 			By("Request with allowed origin")
-			mockOrigin := allowedOrigins[0]
-			h := td.per.getOptions(mockOrigin, "GET")
-			v, ok := h[requestACHMethods]
-			Expect(ok).To(BeTrue())
-			Expect(strings.Split(v[0], ",")).Should(ConsistOf(allowedMethods))
-			v, ok = h[requestACHOrigin]
-			Expect(ok).To(BeTrue())
-			Expect(len(v)).To(Equal(1))
-			Expect(v[0]).To(Equal(mockOrigin))
+			Eventually(func(g Gomega) {
+				headers := executeRequestWithAccessControlHeaders(preFlightRequest, allowedOrigins[0], "GET")
+				v, ok := headers[requestACHMethods]
+				g.Expect(ok).To(BeTrue())
+				g.Expect(strings.Split(v[0], ",")).Should(ConsistOf(allowedMethods))
+
+				v, ok = headers[requestACHOrigin]
+				g.Expect(ok).To(BeTrue())
+				g.Expect(len(v)).To(Equal(1))
+				g.Expect(v[0]).To(Equal(allowedOrigins[0]))
+			}).ShouldNot(HaveOccurred())
 
 			By("Request with disallowed origin")
-			mockOrigin = "http://example.com"
-			h = td.per.getOptions(mockOrigin, "GET")
-			v, ok = h[requestACHMethods]
-			Expect(ok).To(BeFalse())
-
+			Eventually(func(g Gomega) {
+				headers := executeRequestWithAccessControlHeaders(preFlightRequest, unAllowedOrigin, "GET")
+				_, ok := headers[requestACHMethods]
+				g.Expect(ok).To(BeFalse())
+			}).ShouldNot(HaveOccurred())
 		})
-		It("should run without cors", func() {
-			td.setupInitialProxy(nil)
-			envoyConfig := td.per.getEnvoyConfig()
 
-			Expect(envoyConfig).To(MatchRegexp(corsFilterString))
-			Expect(envoyConfig).NotTo(MatchRegexp(corsActiveConfigString))
+	})
+
+	Context("Without CORS", func() {
+
+		BeforeEach(func() {
+			vsWithoutCors := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace).
+				WithName("vs-cors").
+				WithDomain("cors.com").
+				WithRouteActionToUpstream("route", testUpstream.Upstream).
+				WithRoutePrefixMatcher("route", "/cors").
+				Build()
+
+			resourcesToCreate.VirtualServices = gatewayv1.VirtualServiceList{
+				vsWithoutCors,
+			}
+		})
+
+		It("should run without cors", func() {
+			By("Envoy config does not contain CORS filer")
+			Eventually(func(g Gomega) {
+				cfg, err := envoyInstance.EnvoyConfigDump()
+				g.Expect(err).NotTo(HaveOccurred())
+
+				g.Expect(cfg).To(MatchRegexp(corsFilterString))
+				g.Expect(cfg).NotTo(MatchRegexp(corsActiveConfigString))
+			}).ShouldNot(HaveOccurred())
 		})
 	})
+
 })
 
-func (td *corsTestData) getGlooCorsProxy(cors *cors.CorsPolicy) (*gloov1.Proxy, error) {
-	readProxy, err := td.testClients.ProxyClient.Read("default", "proxy", clients.ReadOpts{})
-	if err != nil {
-		return nil, err
-	}
-	return td.per.getGlooCorsProxyWithVersion(readProxy.Metadata.ResourceVersion, cors), nil
-}
-
-func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, cors *cors.CorsPolicy) *gloov1.Proxy {
-	return &gloov1.Proxy{
-		Metadata: &core.Metadata{
-			Name:            "proxy",
-			Namespace:       "default",
-			ResourceVersion: resourceVersion,
-		},
-		Listeners: []*gloov1.Listener{{
-			Name:        "listener",
-			BindAddress: net.IPv4zero.String(),
-			BindPort:    ptd.envoyPort,
-			ListenerType: &gloov1.Listener_HttpListener{
-				HttpListener: &gloov1.HttpListener{
-					VirtualHosts: []*gloov1.VirtualHost{{
-						Name:    "virt1",
-						Domains: []string{"*"},
-						Routes: []*gloov1.Route{{
-							Action: &gloov1.Route_RouteAction{
-								RouteAction: &gloov1.RouteAction{
-									Destination: &gloov1.RouteAction_Single{
-										Single: &gloov1.Destination{
-											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: ptd.up.Metadata.Ref(),
-											},
-										},
-									},
-								},
-							},
-						}},
-						Options: &gloov1.VirtualHostOptions{
-							Cors: cors,
-						},
-					}},
-				},
-			},
-		}},
-	}
-}
-
-func (td *corsTestData) setupProxy(proxy *gloov1.Proxy) error {
-	proxyCli := td.testClients.ProxyClient
-	_, err := proxyCli.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
-	return err
-}
-
-func (td *corsTestData) setupInitialProxy(cors *cors.CorsPolicy) {
-	By("Setup proxy")
-	td.per.envoyPort = defaults.HttpPort
-	proxy := td.per.getGlooCorsProxyWithVersion("", cors)
-	err := td.setupProxy(proxy)
-	// Call with retries to ensure proxy is available
-	Eventually(func() error {
-		proxy, err := td.getGlooCorsProxy(cors)
-		if err != nil {
-			return err
-		}
-		return td.setupProxy(proxy)
-	}, "10s", ".1s").Should(BeNil())
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(func() error {
-		_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", td.per.envoyPort))
-		if err != nil {
-			return err
-		}
-		return nil
-	}, "10s", ".1s").Should(BeNil())
-}
-
-func (td *corsTestData) setupUpstream() *gloov1.Upstream {
-	tu := v1helpers.NewTestHttpUpstream(td.ctx, td.per.envoyInstance.LocalAddr())
-	// drain channel as we don't care about it
-	go func() {
-		for range tu.C {
-		}
-	}()
-	up := tu.Upstream
-	_, err := td.testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
-	Expect(err).NotTo(HaveOccurred())
-	return up
-}
-
-// To test this with curl:
-// curl -H "Origin: http://example.com" \
-//   -H "Access-Control-Request-Method: POST" \
-//   -H "Access-Control-Request-Headers: X-Requested-With" \
-//   -X OPTIONS --verbose localhost:11082
-func (ptd *perCorsTestData) getOptions(origin, method string) http.Header {
+func executeRequestWithAccessControlHeaders(req *http.Request, origin, method string) http.Header {
 	h := http.Header{}
-	Eventually(func() error {
-		req, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://localhost:%v", ptd.envoyPort), nil)
-		if err != nil {
-			return err
-		}
+	Eventually(func(g Gomega) {
 		req.Header.Set("Origin", origin)
 		req.Header.Set("Access-Control-Request-Method", method)
 		req.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
 
 		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
+		g.Expect(err).NotTo(HaveOccurred())
+
 		defer resp.Body.Close()
 		h = resp.Header
-		return nil
-	}, "10s", ".1s").Should(BeNil())
+	}).ShouldNot(HaveOccurred())
 	return h
-}
-
-func (ptd *perCorsTestData) getEnvoyConfig() string {
-	By("Get config")
-	envoyConfig := ""
-	Eventually(func() error {
-		cfg, err := ptd.envoyInstance.EnvoyConfigDump()
-		envoyConfig = cfg
-		return err
-	}, "10s", ".1s").Should(BeNil())
-	return envoyConfig
 }

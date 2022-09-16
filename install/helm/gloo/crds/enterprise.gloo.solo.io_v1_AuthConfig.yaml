@@ -276,6 +276,112 @@ spec:
                             userinfoUrl:
                               type: string
                           type: object
+                        oauth2:
+                          properties:
+                            afterLogoutUrl:
+                              type: string
+                            appUrl:
+                              type: string
+                            authEndpoint:
+                              type: string
+                            authEndpointQueryParams:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            callbackPath:
+                              type: string
+                            clientId:
+                              type: string
+                            clientSecretRef:
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                            logoutPath:
+                              type: string
+                            revocationEndpoint:
+                              type: string
+                            scopes:
+                              items:
+                                type: string
+                              type: array
+                            session:
+                              properties:
+                                cookie:
+                                  properties:
+                                    allowRefreshing:
+                                      nullable: true
+                                      type: boolean
+                                    keyPrefix:
+                                      type: string
+                                    targetDomain:
+                                      type: string
+                                  type: object
+                                cookieOptions:
+                                  properties:
+                                    domain:
+                                      type: string
+                                    httpOnly:
+                                      nullable: true
+                                      type: boolean
+                                    maxAge:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
+                                      type: integer
+                                    notSecure:
+                                      type: boolean
+                                    path:
+                                      nullable: true
+                                      type: string
+                                    sameSite:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                  type: object
+                                failOnFetchFailure:
+                                  type: boolean
+                                redis:
+                                  properties:
+                                    allowRefreshing:
+                                      nullable: true
+                                      type: boolean
+                                    cookieName:
+                                      type: string
+                                    headerName:
+                                      type: string
+                                    keyPrefix:
+                                      type: string
+                                    options:
+                                      properties:
+                                        db:
+                                          format: int32
+                                          type: integer
+                                        host:
+                                          type: string
+                                        poolSize:
+                                          format: int32
+                                          type: integer
+                                        socketType:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        tlsCertMountPath:
+                                          type: string
+                                      type: object
+                                    preExpiryBuffer:
+                                      type: string
+                                    targetDomain:
+                                      type: string
+                                  type: object
+                              type: object
+                            tokenEndpoint:
+                              type: string
+                            tokenEndpointQueryParams:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
                         oidcAuthorizationCode:
                           properties:
                             afterLogoutUrl:
@@ -420,6 +526,8 @@ spec:
                                       nullable: true
                                       type: boolean
                                     cookieName:
+                                      type: string
+                                    headerName:
                                       type: string
                                     keyPrefix:
                                       type: string
