@@ -463,7 +463,7 @@ message RouteOptions {
         // If set to 0, the `grpc-timeout` header is used without modification.
         google.protobuf.Duration grpc_timeout_header_max = 2;
 
-        // If present, Envoy will adjust the timeout provided by the ``grpc-timeout`` header by
+        // If present, Envoy will adjust the timeout provided by the `grpc-timeout` header by
         // subtracting the provided duration from the header. This is useful for allowing Envoy to set
         // its global timeout to be less than that of the deadline imposed by the calling client, which
         // makes it more likely that Envoy will handle the timeout instead of having the call canceled
