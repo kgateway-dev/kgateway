@@ -265,7 +265,9 @@ var _ = Describe("timeout", func() {
 
 var _ = Describe("MaxGrpcTimeout", func() {
 	It("works", func() {
-		t := prototime.DurationToProto(time.Minute)
+		a := prototime.DurationToProto(time.Second)
+		b := prototime.DurationToProto(time.Minute)
+		c := prototime.DurationToProto(time.Hour)
 		p := NewPlugin()
 		routeAction := &envoy_config_route_v3.RouteAction{}
 		out := &envoy_config_route_v3.Route{
@@ -276,17 +278,17 @@ var _ = Describe("MaxGrpcTimeout", func() {
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
 				MaxStreamDuration: &v1.RouteOptions_MaxStreamDuration{
-					MaxStreamDuration:       t,
-					GrpcTimeoutHeaderMax:    t,
-					GrpcTimeoutHeaderOffset: t,
+					MaxStreamDuration:       a,
+					GrpcTimeoutHeaderMax:    b,
+					GrpcTimeoutHeaderOffset: c,
 				},
 			},
 			Action: &v1.Route_RouteAction{},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routeAction.MaxStreamDuration.MaxStreamDuration).To(Equal(t))
-		Expect(routeAction.MaxStreamDuration.GrpcTimeoutHeaderMax).To(Equal(t))
-		Expect(routeAction.MaxStreamDuration.GrpcTimeoutHeaderOffset).To(Equal(t))
+		Expect(routeAction.MaxStreamDuration.MaxStreamDuration).To(Equal(a))
+		Expect(routeAction.MaxStreamDuration.GrpcTimeoutHeaderMax).To(Equal(b))
+		Expect(routeAction.MaxStreamDuration.GrpcTimeoutHeaderOffset).To(Equal(c))
 	})
 })
 
