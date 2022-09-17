@@ -70,11 +70,14 @@ func (r *RateLimitConfig) SetStatus(status *core.Status) {
 }
 
 func (r *RateLimitConfig) GetNamespacedStatuses() *core.NamespacedStatuses {
-	panic("implement me")
+	// TODO: Add namespaced statuses to rate limiting.
+	// Since we only check if rate limit is in a rejected state
+	return &core.NamespacedStatuses{}
 }
 
 func (r *RateLimitConfig) SetNamespacedStatuses(status *core.NamespacedStatuses) {
-	panic("implement me")
+	// TODO: Add namespaced statuses to rate limiting.
+	// Since we only check if rate limit is in a rejected state
 }
 
 func (r *RateLimitConfig) convertSoloKitStatusToRateLimitConfigStatus(status *core.Status) *v1alpha1.RateLimitConfigStatus {
