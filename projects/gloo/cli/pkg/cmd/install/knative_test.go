@@ -3,9 +3,10 @@ package install
 import (
 	"context"
 	"encoding/json"
-	"github.com/solo-io/go-utils/contextutils"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

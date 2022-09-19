@@ -3,10 +3,11 @@ package testgrpcservice
 import (
 	"context"
 	"errors"
-	"github.com/solo-io/go-utils/contextutils"
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/go-utils/healthchecker"

@@ -2,11 +2,12 @@ package services
 
 import (
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	ps "github.com/keybase/go-ps"
 )

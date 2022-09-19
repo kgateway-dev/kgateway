@@ -3,8 +3,9 @@ package knative
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"sort"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"

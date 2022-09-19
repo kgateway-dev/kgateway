@@ -1,8 +1,9 @@
 package ratelimit
 
 import (
-	"github.com/solo-io/go-utils/contextutils"
 	"reflect"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 
@@ -71,23 +72,14 @@ func (r *RateLimitConfig) SetStatus(status *core.Status) {
 }
 
 func (r *RateLimitConfig) GetNamespacedStatuses() *core.NamespacedStatuses {
-<<<<<<< Updated upstream
 	// TODO: Add namespaced statuses to rate limiting.
 	// Since we only check if rate limit is in a rejected state
 	return &core.NamespacedStatuses{}
 }
 
 func (r *RateLimitConfig) SetNamespacedStatuses(status *core.NamespacedStatuses) {
-	// TODO: Add namespaced statuses to rate limiting.
-	// Since we only check if rate limit is in a rejected state
-=======
 	contextutils.LoggerFrom(nil).DPanic("implement me")
-	return nil
-}
 
-func (r *RateLimitConfig) SetNamespacedStatuses(status *core.NamespacedStatuses) {
-	contextutils.LoggerFrom(nil).DPanic("implement me")
->>>>>>> Stashed changes
 }
 
 func (r *RateLimitConfig) convertSoloKitStatusToRateLimitConfigStatus(status *core.Status) *v1alpha1.RateLimitConfigStatus {

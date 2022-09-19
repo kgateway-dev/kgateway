@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"io"
 	"io/ioutil"
 	"net"
@@ -19,6 +18,8 @@ import (
 	"sync/atomic"
 	"text/template"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 

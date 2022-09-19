@@ -3,8 +3,9 @@ package translator
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 

@@ -3,9 +3,10 @@ package validation
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"net"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/rotisserie/eris"
 

@@ -6,13 +6,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 

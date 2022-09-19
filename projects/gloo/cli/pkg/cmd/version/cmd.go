@@ -3,10 +3,11 @@ package version
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"

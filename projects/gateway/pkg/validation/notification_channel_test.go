@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"sync"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

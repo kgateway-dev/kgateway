@@ -2,9 +2,10 @@ package kubernetes
 
 import (
 	"context"
-	"github.com/solo-io/go-utils/contextutils"
 	"sync"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	errors "github.com/rotisserie/eris"
 	"k8s.io/client-go/tools/cache"

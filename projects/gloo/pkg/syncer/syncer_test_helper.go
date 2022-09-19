@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"

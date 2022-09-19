@@ -2,10 +2,11 @@ package runner
 
 import (
 	"bytes"
-	"github.com/solo-io/go-utils/contextutils"
 	"log"
 	"os"
 	"syscall"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/envoyinit/pkg/downward"
 )
