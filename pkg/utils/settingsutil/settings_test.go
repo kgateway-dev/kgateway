@@ -24,7 +24,7 @@ var _ = Describe("Settings", func() {
 	It("should return nil when no settings", func() {
 		ctx := context.Background()
 
-		Expect(func() { FromContext(ctx) }).To(BeNil())
+		Expect(FromContext(ctx)).To(BeNil())
 	})
 
 	It("should not when no settings with MaybeFromContext", func() {
