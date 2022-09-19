@@ -57,6 +57,10 @@ func (s *translatorSyncerExtension) Sync(
 
 	reports.Accept(snap.Proxies.AsInputResources()...)
 
+	for _, rlc := range snap.Ratelimitconfigs {
+		reports.AddError(rlc, enterpriseOnlyError("RateLimitConfig"))
+	}
+
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {
 			virtualHosts := utils.GetVirtualHostsForListener(listener)
@@ -65,13 +69,6 @@ func (s *translatorSyncerExtension) Sync(
 
 				// RateLimitConfigs is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/crds/
 				if virtualHost.GetOptions().GetRateLimitConfigs() != nil {
-					for _, rateLimitConfig := range virtualHost.GetOptions().GetRateLimitConfigs().GetRefs() {
-						rlc, err := snap.Ratelimitconfigs.Find(rateLimitConfig.GetNamespace(), rateLimitConfig.GetName())
-						if err != nil {
-							continue
-						}
-						reports.AddError(rlc, enterpriseOnlyError("RateLimitConfig"))
-					}
 					reports.AddError(proxy, enterpriseOnlyError("RateLimitConfig"))
 				}
 
