@@ -23,9 +23,7 @@ spec:
     metadata:
       labels:
         gloo: resource-rollout
-        {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
-        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-rollout

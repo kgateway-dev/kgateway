@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7081
+    resolvesIssue: false
+    description: Disable istio sidecar injection for Jobs and CronJobs (regardless of `global.istioIntegration.disableAutoinjection` value) as it causes jobs to hang.
