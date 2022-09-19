@@ -16,7 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-var _ = FDescribe("Aggregate translator", func() {
+var _ = Describe("Aggregate translator", func() {
 	var (
 		ctx = context.TODO()
 
