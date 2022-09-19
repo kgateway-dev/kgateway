@@ -921,10 +921,10 @@ var _ = Describe("Helm Test", func() {
 					})
 				})
 
-				It("should be able to disable istio injection on all job pod templates", func() {
+				It("istio injection should always be disabled in job pod templates", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
-							"global.istioIntegration.disableAutoinjection=true",
+							"global.istioIntegration.disableAutoinjection=false",
 							"global.glooMtls.enabled=true",
 						},
 					})
@@ -3412,6 +3412,16 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
+					It("can enable isolateVirtualHostsBySslConfig", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/isolate_virtual_hosts_by_ssl_config.yaml", namespace)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.isolateVirtualHostsBySslConfig=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
 
 					It("allows setting extauth", func() {
 						expectedYaml := makeUnstructured(`
@@ -3442,6 +3452,7 @@ spec:
 
   gateway:
     readGatewaysFromAllNamespaces: false
+    isolateVirtualHostsBySslConfig: false
     validation:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
@@ -3763,6 +3774,7 @@ spec:
   template:
     metadata:
       labels:
+        sidecar.istio.io/inject: "false"
         gloo: gateway-certgen
     spec:
       serviceAccountName: certgen

@@ -9,12 +9,9 @@ metadata:
 spec:
   discovery:
     fdsMode: WHITELIST
-    udsOptions:
-      watchLabels:
-        A: B
   gateway:
     readGatewaysFromAllNamespaces: false
-    isolateVirtualHostsBySslConfig: false
+    isolateVirtualHostsBySslConfig: true
     validation:
       alwaysAccept: true
       allowWarnings: true
@@ -29,9 +26,9 @@ spec:
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
     invalidConfigPolicy:
-      replaceInvalidRoutes: false
       invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.
       invalidRouteResponseCode: 404
+      replaceInvalidRoutes: false
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}

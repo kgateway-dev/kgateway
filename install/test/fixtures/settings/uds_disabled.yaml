@@ -13,6 +13,7 @@ spec:
       enabled: false
   gateway:
     readGatewaysFromAllNamespaces: false
+    isolateVirtualHostsBySslConfig: false
     validation:
       alwaysAccept: true
       allowWarnings: true
