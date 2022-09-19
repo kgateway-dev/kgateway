@@ -21,10 +21,10 @@ var _ = Describe("Settings", func() {
 		Expect(FromContext(ctx)).To(Equal(settings))
 	})
 
-	It("should panic when no settings", func() {
+	It("should return nil when no settings", func() {
 		ctx := context.Background()
 
-		Expect(func() { FromContext(ctx) }).Should(Panic())
+		Expect(func() { FromContext(ctx) }).To(BeNil())
 	})
 
 	It("should not when no settings with MaybeFromContext", func() {
