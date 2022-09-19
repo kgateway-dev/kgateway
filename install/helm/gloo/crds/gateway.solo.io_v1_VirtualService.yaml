@@ -2540,6 +2540,15 @@ spec:
                                     type: object
                                   type: array
                               type: object
+                            maxStreamDuration:
+                              properties:
+                                grpcTimeoutHeaderMax:
+                                  type: string
+                                grpcTimeoutHeaderOffset:
+                                  type: string
+                                maxStreamDuration:
+                                  type: string
+                              type: object
                             prefixRewrite:
                               nullable: true
                               type: string

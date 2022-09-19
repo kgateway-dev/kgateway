@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6943
+    resolvesIssue: false
+    description: > 
+      Adds the new MaxStreamDuration field to RouteOptions to 
+      correspond to envoys config.route.v3.RouteAction.MaxStreamDuration
