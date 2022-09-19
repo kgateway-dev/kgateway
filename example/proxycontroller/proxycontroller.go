@@ -210,6 +210,6 @@ func makeDesiredProxy(upstreams v1.UpstreamList) *v1.Proxy {
 // make our lives easy
 func must(err error) {
 	if err != nil {
-		contextutils.LoggerFrom(params.Ctx).DPanic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 }
