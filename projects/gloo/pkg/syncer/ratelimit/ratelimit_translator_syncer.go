@@ -65,6 +65,13 @@ func (s *translatorSyncerExtension) Sync(
 
 				// RateLimitConfigs is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/crds/
 				if virtualHost.GetOptions().GetRateLimitConfigs() != nil {
+					for _, rateLimitConfig := range virtualHost.GetOptions().GetRateLimitConfigs().GetRefs() {
+						rlc, err := snap.Ratelimitconfigs.Find(rateLimitConfig.GetNamespace(), rateLimitConfig.GetName())
+						if err != nil {
+							continue
+						}
+						reports.AddError(rlc, enterpriseOnlyError("RateLimitConfig"))
+					}
 					reports.AddError(proxy, enterpriseOnlyError("RateLimitConfig"))
 				}
 
