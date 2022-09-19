@@ -1253,9 +1253,11 @@ var _ = Describe("Kube2e: gateway", func() {
 	})
 
 	Context("tests with RateLimitConfigs", func() {
-		It("correctly sets a status to a RateLimitConfig", func() {
 
-			rateLimitConfig := &v1alpha1skv1.RateLimitConfig{
+		var rateLimitConfig *v1alpha1skv1.RateLimitConfig
+
+		BeforeEach(func() {
+			rateLimitConfig = &v1alpha1skv1.RateLimitConfig{
 				RateLimitConfig: ratelimit2.RateLimitConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "testrlc",
@@ -1286,9 +1288,10 @@ var _ = Describe("Kube2e: gateway", func() {
 					},
 				},
 			}
-			_, err := resourceClientset.RateLimitConfigClient().Write(rateLimitConfig, clients.WriteOpts{OverwriteExisting: false})
-			Expect(err).NotTo(HaveOccurred())
+			glooResources.Ratelimitconfigs = v1alpha1skv1.RateLimitConfigList{rateLimitConfig}
+		})
 
+		It("correctly sets a status to a RateLimitConfig", func() {
 			// demand that a created ratelimit config _has_ a rejected status.
 			Eventually(func() error {
 				rlc, err := resourceClientset.RateLimitConfigClient().Read(rateLimitConfig.GetMetadata().GetNamespace(), rateLimitConfig.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
