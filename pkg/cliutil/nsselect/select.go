@@ -2,6 +2,7 @@ package nsselect
 
 import (
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -115,7 +116,7 @@ func validateResourceRefForStaticMode(typeName string, menuDescription string, r
 				return fmt.Errorf("Please specify a valid %v name. %v not found in namespace %v.", resRef.GetName(), menuDescription, resRef.GetNamespace())
 			}
 		default:
-			panic(fmt.Errorf("typename %v not recognized", typeName))
+			contextutils.LoggerFrom(nil).DPanic(fmt.Errorf("typename %v not recognized", typeName))
 		}
 	}
 	return nil

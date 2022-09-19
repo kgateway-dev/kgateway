@@ -3,6 +3,8 @@ package validation_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 	"sync"
 
 	. "github.com/onsi/ginkgo"
@@ -74,29 +76,36 @@ func (m *mockValidationClient) Recv() (*validation.NotifyOnResyncResponse, error
 }
 
 func (m *mockValidationClient) Header() (metadata.MD, error) {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
+	return nil, fmt.Errorf("implement me")
 }
 
 func (m *mockValidationClient) Trailer() metadata.MD {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
+	return nil
 }
 
 func (m *mockValidationClient) CloseSend() error {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
+	return fmt.Errorf("implement me")
 }
 
 func (m *mockValidationClient) Context() context.Context {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
+	return nil
 }
 
 func (m *mockValidationClient) SendMsg(v interface{}) error {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
+	return fmt.Errorf("implement me")
 }
 
 func (m *mockValidationClient) RecvMsg(v interface{}) error {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
+	return fmt.Errorf("implement me")
 }
 
 func (m *mockValidationClient) Validate(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
+	return nil, fmt.Errorf("implement me")
 }

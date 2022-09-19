@@ -2,6 +2,7 @@ package upstreams
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -71,19 +72,23 @@ func (c *hybridUpstreamClient) Register() error {
 }
 
 func (c *hybridUpstreamClient) Read(namespace, name string, opts clients.ReadOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) Write(resource *v1.Upstream, opts clients.WriteOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	return fmt.Errorf(notImplementedErrMsg)
 }
 
 func (rc *hybridUpstreamClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) List(namespace string, opts clients.ListOpts) (v1.UpstreamList, error) {

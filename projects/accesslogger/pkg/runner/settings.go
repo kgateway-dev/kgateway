@@ -2,6 +2,7 @@ package runner
 
 import (
 	"github.com/kelseyhightower/envconfig"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 type Settings struct {
@@ -15,7 +16,7 @@ func NewSettings() Settings {
 
 	err := envconfig.Process("", &s)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 
 	return s

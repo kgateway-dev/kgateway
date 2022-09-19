@@ -2,6 +2,7 @@ package runner
 
 import (
 	"bytes"
+	"github.com/solo-io/go-utils/contextutils"
 	"log"
 	"os"
 	"syscall"
@@ -42,7 +43,7 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 		args = append(args, os.Args[1:]...)
 	}
 	if err = syscall.Exec(args[0], args, os.Environ()); err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 }
 

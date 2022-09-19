@@ -3,6 +3,7 @@ package version
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 	"io"
 	"os"
 	"strings"
@@ -159,7 +160,7 @@ func getDistributionName(name string, enterprise bool) string {
 func GetJson(pb proto.Message) []byte {
 	data, err := protoutils.MarshalBytes(pb)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 	return data
 }
@@ -168,7 +169,7 @@ func GetYaml(pb proto.Message) []byte {
 	jsn := GetJson(pb)
 	data, err := yaml.JSONToYAML(jsn)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 	return data
 }

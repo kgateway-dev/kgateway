@@ -67,7 +67,7 @@ func (s *validator) shouldNotify(snap *v1snap.ApiSnapshot) bool {
 
 		hash, err := hashutils.HashAllSafe(nil, toHash...)
 		if err != nil {
-			panic("this error should never happen, as this is safe hasher")
+			contextutils.LoggerFrom(nil).DPanic("this error should never happen, as this is safe hasher")
 		}
 		return hash
 	}

@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -167,18 +168,18 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(ctx).DPanic(err)
 	}
 
 	addr := listener.Addr().String()
 	_, portStr, err := net.SplitHostPort(addr)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(ctx).DPanic(err)
 	}
 
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(ctx).DPanic(err)
 	}
 
 	mux := http.NewServeMux()
@@ -204,7 +205,7 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 			defer GinkgoRecover()
 			if err := h.Serve(listener); err != nil {
 				if err != http.ErrServerClosed {
-					panic(err)
+					contextutils.LoggerFrom(ctx).DPanic(err)
 				}
 			}
 		}()

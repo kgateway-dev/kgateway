@@ -3,6 +3,7 @@ package install
 import (
 	"context"
 	"encoding/json"
+	"github.com/solo-io/go-utils/contextutils"
 	"io/ioutil"
 	"path/filepath"
 
@@ -92,12 +93,12 @@ var _ = Describe("Knative", func() {
 var expected0100Manifests = func() string {
 	currentFile, err := testutils.GetCurrentFile()
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 	knativeTestYaml := filepath.Join(filepath.Dir(currentFile), "knative_test_yaml.yaml")
 	b, err := ioutil.ReadFile(knativeTestYaml)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 	return string(b)
 

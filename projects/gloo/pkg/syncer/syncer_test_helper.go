@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
@@ -27,15 +28,18 @@ type MockXdsCache struct {
 }
 
 func (*MockXdsCache) CreateWatch(envoycache.Request) (value chan envoycache.Response, cancel func()) {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
+	return nil, nil
 }
 
 func (*MockXdsCache) Fetch(context.Context, envoycache.Request) (*envoycache.Response, error) {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
+	return nil, fmt.Errorf("implement me")
 }
 
 func (*MockXdsCache) GetStatusInfo(string) envoycache.StatusInfo {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
+	return nil
 }
 
 func (c *MockXdsCache) GetStatusKeys() []string {
@@ -55,7 +59,7 @@ func (c *MockXdsCache) GetSnapshot(node string) (envoycache.Snapshot, error) {
 }
 
 func (*MockXdsCache) ClearSnapshot(node string) {
-	panic("implement me")
+	contextutils.LoggerFrom(nil).DPanic("implement me")
 }
 
 type MockXdsSanitizer struct {

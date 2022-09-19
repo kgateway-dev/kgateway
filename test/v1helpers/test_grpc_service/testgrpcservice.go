@@ -3,6 +3,7 @@ package testgrpcservice
 import (
 	"context"
 	"errors"
+	"github.com/solo-io/go-utils/contextutils"
 	"net"
 	"strconv"
 	"time"
@@ -33,7 +34,7 @@ import (
 func RunServer(ctx context.Context) *TestGRPCServer {
 	lis, err := net.Listen("tcp", ":0")
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(ctx).DPanic(err)
 	}
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
@@ -47,12 +48,12 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	addr := lis.Addr().String()
 	_, portstr, err := net.SplitHostPort(addr)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(ctx).DPanic(err)
 	}
 
 	port, err := strconv.Atoi(portstr)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(ctx).DPanic(err)
 	}
 
 	srv.Port = uint32(port)

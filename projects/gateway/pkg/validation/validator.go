@@ -202,7 +202,7 @@ func (v *validator) gatewayUpdate(snap *gloov1snap.ApiSnapshot) bool {
 		toHash = append(toHash, snap.VirtualHostOptions.AsInterfaces()...)
 		hash, err := hashutils.HashAllSafe(nil, toHash...)
 		if err != nil {
-			panic("this error should never happen, as this is safe hasher")
+			contextutils.LoggerFrom(nil).DPanic("this error should never happen, as this is safe hasher")
 		}
 		return hash
 	}

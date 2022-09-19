@@ -457,7 +457,7 @@ func newServiceClient(ctx context.Context, memFactory *factory.MemoryResourceCli
 	if kube := runOpts.KubeClient; kube != nil {
 		kubeCache, err := cache.NewKubeCoreCache(ctx, kube)
 		if err != nil {
-			panic(err)
+			contextutils.LoggerFrom(ctx).DPanic(err)
 		}
 		return service.NewServiceClient(kube, kubeCache)
 	}
@@ -465,7 +465,7 @@ func newServiceClient(ctx context.Context, memFactory *factory.MemoryResourceCli
 	// Else return in-memory client
 	client, err := skkube.NewServiceClient(ctx, memFactory)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(ctx).DPanic(err)
 	}
 	return client
 }

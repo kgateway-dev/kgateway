@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 	"os"
 	"os/exec"
 	"strings"
@@ -19,7 +20,7 @@ func (r *Runner) waitForExternalProcess() error {
 	for {
 		procs, err := ps.Processes()
 		if err != nil {
-			panic(err)
+			contextutils.LoggerFrom(nil).DPanic(err)
 		}
 		for _, proc := range procs {
 			str, err := proc.Path()

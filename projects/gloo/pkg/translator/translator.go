@@ -293,11 +293,11 @@ func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint6
 		// another path to further improve performance here.
 		out, err := mo.MarshalAppend(buf, proto.MessageV2(r.ResourceProto()))
 		if err != nil {
-			panic(errors.Wrap(err, "marshalling envoy snapshot components"))
+			contextutils.LoggerFrom(nil).DPanic(errors.Wrap(err, "marshalling envoy snapshot components"))
 		}
 		_, err = hasher.Write(out)
 		if err != nil {
-			panic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
+			contextutils.LoggerFrom(nil).DPanic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
 		}
 	}
 	return hasher.Sum64()
@@ -307,7 +307,7 @@ func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint6
 func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
 	hash, err := hashstructure.Hash(resources, nil)
 	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
+		contextutils.LoggerFrom(nil).DPanic("constructing version hash for endpoints envoy snapshot components")
 	}
 	return hash
 }

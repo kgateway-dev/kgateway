@@ -3,6 +3,7 @@ package grpc
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 //go:generate sh -c "2goarray annotationsDescriptorBytes grpc < google/api/annotations.proto.descriptor  | sed 's@// date.*@@g' > annotations.google.descriptor.go"
@@ -14,15 +15,15 @@ var annotationsDescriptor, httpDescriptor, descriptorsDescriptor descriptor.File
 func init() {
 	err := proto.Unmarshal(annotationsDescriptorBytes, &annotationsDescriptor)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 	err = proto.Unmarshal(httpDescriptorBytes, &httpDescriptor)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 	err = proto.Unmarshal(descriptorsDescriptorBytes, &descriptorsDescriptor)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 }
 

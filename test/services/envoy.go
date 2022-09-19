@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 	"io"
 	"io/ioutil"
 	"net"
@@ -56,7 +57,7 @@ type templateBootstrapBuilder struct {
 func (tbb *templateBootstrapBuilder) Build(ei *EnvoyInstance) string {
 	var b bytes.Buffer
 	if err := tbb.template.Execute(&b, ei); err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 	return b.String()
 }
@@ -68,14 +69,14 @@ type fileBootstrapBuilder struct {
 func (fbb *fileBootstrapBuilder) Build(ei *EnvoyInstance) string {
 	templateBytes, err := ioutil.ReadFile(fbb.file)
 	if err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 
 	parsedTemplate := template.Must(template.New(fbb.file).Parse(string(templateBytes)))
 
 	var b bytes.Buffer
 	if err := parsedTemplate.Execute(&b, ei); err != nil {
-		panic(err)
+		contextutils.LoggerFrom(nil).DPanic(err)
 	}
 	return b.String()
 }
@@ -275,7 +276,7 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 
 		envoyImageTag := getEnvoyImageTag()
 		if envoyImageTag == "" {
-			panic("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
+			contextutils.LoggerFrom(nil).DPanic("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
 		}
 		log.Printf("Using envoy docker image tag: %s", envoyImageTag)
 

@@ -2,6 +2,7 @@ package settingsutil
 
 import (
 	"context"
+	"github.com/solo-io/go-utils/contextutils"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
@@ -23,7 +24,8 @@ func FromContext(ctx context.Context) *v1.Settings {
 		return settings
 	}
 	// we should always have settings when this method is called.
-	panic("no settings on context")
+	contextutils.LoggerFrom(nil).DPanic("no settings on context")
+	return nil
 }
 
 func MaybeFromContext(ctx context.Context) *v1.Settings {

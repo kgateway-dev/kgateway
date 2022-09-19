@@ -330,7 +330,7 @@ func removeIstioResources(manifest string) (string, error) {
 				outputObjectsYaml = append(outputObjectsYaml, string(rawYaml))
 			}
 		default:
-			panic(fmt.Sprintf("unknown object type %T parsed from yaml: \n%v ", object.obj, object.yaml))
+			contextutils.LoggerFrom(nil).DPanic(fmt.Sprintf("unknown object type %T parsed from yaml: \n%v ", object.obj, object.yaml))
 		}
 	}
 

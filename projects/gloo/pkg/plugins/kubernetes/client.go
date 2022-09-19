@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"github.com/solo-io/go-utils/contextutils"
 	"sync"
 	"time"
 
@@ -41,7 +42,7 @@ func getInformerFactory(ctx context.Context, client kubernetes.Interface, watchN
 	}
 	kubePluginSharedFactory := startInformerFactory(ctx, client, watchNamespaces)
 	if kubePluginSharedFactory.initError != nil {
-		panic(kubePluginSharedFactory.initError)
+		contextutils.LoggerFrom(nil).DPanic(kubePluginSharedFactory.initError)
 	}
 	return kubePluginSharedFactory
 }
