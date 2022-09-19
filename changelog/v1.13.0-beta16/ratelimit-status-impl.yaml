@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4069
+    resolvesIssue: false
+    description: >-
+      Update the ratelimit config status implementation with the correct permissions to write statuses.
+      This will only affect enterprise code, so this change is marked as non user facing.
