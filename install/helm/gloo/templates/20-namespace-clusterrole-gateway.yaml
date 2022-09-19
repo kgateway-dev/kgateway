@@ -105,7 +105,6 @@ rules:
   - list
   - watch
   - patch # needed for status updates for skv1
-  - update # needed for status updates for skv2
 - apiGroups:
   - ratelimit.solo.io
   resources:
@@ -116,6 +115,7 @@ rules:
   - list
   - watch
   - patch # needed for status updates for skv1
+  - update # needed for status updates for skv2
 - apiGroups:
   - graphql.gloo.solo.io
   resources:
