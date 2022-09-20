@@ -4,6 +4,7 @@ import (
 	"context"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	externalrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
@@ -28,6 +29,7 @@ type KubeResourceClientSet struct {
 	upstreamGroupClient     gloov1.UpstreamGroupClient
 	upstreamClient          gloov1.UpstreamClient
 	proxyClient             gloov1.ProxyClient
+	rateLimitConfigClient   externalrl.RateLimitConfigClient
 	serviceClient           skkube.ServiceClient
 	settingsClient          gloov1.SettingsClient
 
@@ -154,6 +156,21 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 	}
 	resourceClientSet.proxyClient = proxyClient
 
+	// RateLimitConfig
+	rateLimitConfigClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         externalrl.RateLimitConfigCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	}
+	rateLimitConfigClient, err := externalrl.NewRateLimitConfigClient(ctx, rateLimitConfigClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = rateLimitConfigClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.rateLimitConfigClient = rateLimitConfigClient
+
 	// VirtualHostOption
 	virtualHostOptionClientFactory := &factory.KubeResourceClientFactory{
 		Crd:         gatewayv1.VirtualHostOptionCrd,
@@ -239,6 +256,10 @@ func (k KubeResourceClientSet) UpstreamClient() gloov1.UpstreamClient {
 
 func (k KubeResourceClientSet) ProxyClient() gloov1.ProxyClient {
 	return k.proxyClient
+}
+
+func (k KubeResourceClientSet) RateLimitConfigClient() externalrl.RateLimitConfigClient {
+	return k.rateLimitConfigClient
 }
 
 func (k KubeResourceClientSet) SettingsClient() gloov1.SettingsClient {

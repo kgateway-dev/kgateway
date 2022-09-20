@@ -85,6 +85,11 @@ func (s snapshotWriterImpl) doWriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, 
 			return writeErr
 		}
 	}
+	for _, rlc := range snapshot.Ratelimitconfigs {
+		if _, writeErr := s.RateLimitConfigClient().Write(rlc, writeOptions); !s.isContinuableWriteError(writeErr) {
+			return writeErr
+		}
+	}
 	for _, rt := range snapshot.RouteTables {
 		if _, writeErr := s.RouteTableClient().Write(rt, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
@@ -150,6 +155,12 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 	for _, rt := range snapshot.RouteTables {
 		rtNamespace, rtName := rt.GetMetadata().Ref().Strings()
 		if deleteErr := s.RouteTableClient().Delete(rtNamespace, rtName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, rlc := range snapshot.Ratelimitconfigs {
+		rlcNamespace, rlcName := rlc.GetMetadata().Ref().Strings()
+		if deleteErr := s.RateLimitConfigClient().Delete(rlcNamespace, rlcName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
