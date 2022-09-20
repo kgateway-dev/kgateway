@@ -2,6 +2,7 @@ package helpers
 
 import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	externalrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -16,6 +17,7 @@ type ResourceClientSet interface {
 	UpstreamGroupClient() gloov1.UpstreamGroupClient
 	UpstreamClient() gloov1.UpstreamClient
 	ProxyClient() gloov1.ProxyClient
+	RateLimitConfigClient() externalrl.RateLimitConfigClient
 	SecretClient() gloov1.SecretClient
 	ArtifactClient() gloov1.ArtifactClient
 }
