@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7155
+    resolvesIssue: false
+    description: Update Gateway logic for multiple filter chains due to multiple SSL configurations
