@@ -97,11 +97,12 @@ spec:
           failureThreshold: 3
 {{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
-          tcpSocket:
-            port: {{ .Values.gloo.deployment.xdsPort }}
+          httpGet:
+            path: /healthz
+            port: 8765
           initialDelaySeconds: 3
           periodSeconds: 10
-          failureThreshold: 10
+          failureThreshold: 3
 {{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
@@ -242,8 +243,9 @@ spec:
           failureThreshold: 3
 {{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
-          tcpSocket:
-            port: {{ .Values.gloo.deployment.xdsPort }}
+          httpGet:
+            path: /healthz
+            port: 8765
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
