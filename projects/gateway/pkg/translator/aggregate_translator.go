@@ -70,12 +70,13 @@ func (a *AggregateTranslator) computeAggregateListenerForHttpGateway(params Para
 	builder := newBuilder()
 	if gateway.GetSsl() {
 		// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-		virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-		for sslConfig, virtualServiceList := range virtualServicesBySslConfig {
+		orderedSslConfigs, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+		for _, vsSslConfig := range orderedSslConfigs {
+			virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 			virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServiceList, proxyName)
 			httpOptions := httpGateway.GetOptions()
 			matcher := &gloov1.Matcher{
-				SslConfig:          sslConfig,
+				SslConfig:          vsSslConfig,
 				SourcePrefixRanges: nil, // not supported for HttpListener
 			}
 
@@ -147,8 +148,9 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 
 			if gatewaySsl != nil {
 				// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-				virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-				for vsSslConfig, virtualServiceList := range virtualServicesBySslConfig {
+				orderedSslConfigs, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+				for _, vsSslConfig := range orderedSslConfigs {
+					virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 					// SslConfig is evaluated by having the VS definition merged into the Gateway, and overriding
 					// any shared fields. The Gateway is purely used to define default values.
 					reconciledSslConfig := mergeSslConfig(gatewaySsl, vsSslConfig, false)
@@ -228,8 +230,9 @@ func (a *AggregateTranslator) processMatchableGateway(
 
 	if sslGateway {
 		// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-		virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-		for vsSslConfig, virtualServiceList := range virtualServicesBySslConfig {
+		orderedSslConfigs, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+		for _, vsSslConfig := range orderedSslConfigs {
+			virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 			// SslConfig is evaluated by having the VS definition merged into the Gateway, and overriding
 			// any shared fields. The Gateway is purely used to define default values.
 			reconciledSslConfig := mergeSslConfig(sslConfig, vsSslConfig, false)
