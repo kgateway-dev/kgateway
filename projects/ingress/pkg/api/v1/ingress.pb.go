@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	any1 "github.com/golang/protobuf/ptypes/any"
+	any "github.com/golang/protobuf/ptypes/any"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -32,9 +32,9 @@ type Ingress struct {
 	unknownFields protoimpl.UnknownFields
 
 	// a raw byte representation of the kubernetes ingress this resource wraps
-	KubeIngressSpec *any1.Any `protobuf:"bytes,1,opt,name=kube_ingress_spec,json=kubeIngressSpec,proto3" json:"kube_ingress_spec,omitempty"`
+	KubeIngressSpec *any.Any `protobuf:"bytes,1,opt,name=kube_ingress_spec,json=kubeIngressSpec,proto3" json:"kube_ingress_spec,omitempty"`
 	// a raw byte representation of the ingress status of the kubernetes ingress object
-	KubeIngressStatus *any1.Any `protobuf:"bytes,2,opt,name=kube_ingress_status,json=kubeIngressStatus,proto3" json:"kube_ingress_status,omitempty"`
+	KubeIngressStatus *any.Any `protobuf:"bytes,2,opt,name=kube_ingress_status,json=kubeIngressStatus,proto3" json:"kube_ingress_status,omitempty"`
 	// Metadata contains the object metadata for this resource
 	Metadata *core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
 }
@@ -71,14 +71,14 @@ func (*Ingress) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_ingress_api_v1_ingress_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Ingress) GetKubeIngressSpec() *any1.Any {
+func (x *Ingress) GetKubeIngressSpec() *any.Any {
 	if x != nil {
 		return x.KubeIngressSpec
 	}
 	return nil
 }
 
-func (x *Ingress) GetKubeIngressStatus() *any1.Any {
+func (x *Ingress) GetKubeIngressStatus() *any.Any {
 	if x != nil {
 		return x.KubeIngressStatus
 	}
@@ -146,7 +146,7 @@ func file_github_com_solo_io_gloo_projects_ingress_api_v1_ingress_proto_rawDescG
 var file_github_com_solo_io_gloo_projects_ingress_api_v1_ingress_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_github_com_solo_io_gloo_projects_ingress_api_v1_ingress_proto_goTypes = []interface{}{
 	(*Ingress)(nil),       // 0: ingress.solo.io.Ingress
-	(*any1.Any)(nil),      // 1: google.protobuf.Any
+	(*any.Any)(nil),       // 1: google.protobuf.Any
 	(*core.Metadata)(nil), // 2: core.solo.io.Metadata
 }
 var file_github_com_solo_io_gloo_projects_ingress_api_v1_ingress_proto_depIdxs = []int32{
