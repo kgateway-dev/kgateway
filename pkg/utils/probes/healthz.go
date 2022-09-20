@@ -23,9 +23,9 @@ func StartLivenessProbeServer(ctx context.Context) {
 		contextutils.LoggerFrom(ctx).Infof("healthz server starting at %s", server.Addr)
 		err := server.ListenAndServe()
 		if err == http.ErrServerClosed {
-			contextutils.LoggerFrom(ctx).Info("Stats server closed")
+			contextutils.LoggerFrom(ctx).Info("healthz server closed")
 		} else {
-			contextutils.LoggerFrom(ctx).Warnf("Stats server closed with unexpected error: %v", err)
+			contextutils.LoggerFrom(ctx).Warnf("healthz server closed with unexpected error: %v", err)
 		}
 	}()
 
@@ -36,7 +36,7 @@ func StartLivenessProbeServer(ctx context.Context) {
 			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer shutdownCancel()
 			if err := server.Shutdown(shutdownCtx); err != nil {
-				contextutils.LoggerFrom(shutdownCtx).Warnf("Stats server shutdown returned error: %v", err)
+				contextutils.LoggerFrom(shutdownCtx).Warnf("healthz server shutdown returned error: %v", err)
 			}
 		}
 	}()
