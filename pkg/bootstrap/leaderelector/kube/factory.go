@@ -49,7 +49,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 			Lock: resourceLock,
 			// Define the following values according to the defaults:
 			// https://github.com/kubernetes/client-go/blob/master/tools/leaderelection/leaderelection.go
-			LeaseDuration: leaseDurFromEnv(),
+			LeaseDuration: getLeaseDuration(),
 			RenewDeadline: 10 * time.Second,
 			RetryPeriod:   2 * time.Second,
 			Callbacks: k8sleaderelection.LeaderCallbacks{
@@ -81,10 +81,16 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 	return identity, nil
 }
 
-func leaseDurFromEnv() time.Duration {
-	leaseDur := time.Duration(15 * time.Second)
-	if leaseDurStr := os.Getenv("LEADER_ELECTION_LEASE_DURATION"); leaseDurStr != "" {
-		leaseDur, _ = time.ParseDuration(leaseDurStr)
+func getLeaseDuration() time.Duration {
+	// https://github.com/kubernetes/client-go/blob/master/tools/leaderelection/leaderelection.go
+	leaseDuration := 15 * time.Second
+
+	leaseDurationStr := os.Getenv("LEADER_ELECTION_LEASE_DURATION")
+	if leaseDurationStr != "" {
+		if dur, err := time.ParseDuration(leaseDurationStr); err != nil {
+			leaseDuration = dur
+		}
 	}
-	return leaseDur
+
+	return leaseDuration
 }
