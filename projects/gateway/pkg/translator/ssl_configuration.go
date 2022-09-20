@@ -2,14 +2,16 @@ package translator
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/golang/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) map[*gloov1.SslConfig][]*v1.VirtualService {
-	result := map[*gloov1.SslConfig][]*v1.VirtualService{}
+// groupVirtualServicesBySslConfig returning a stable order of sslConfigs
+// and a map of sslconfigs to their associated Virtual service lists to use on.
+func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) ([]*gloov1.SslConfig, map[*gloov1.SslConfig][]*v1.VirtualService) {
 	mergedSslConfig := map[string]*gloov1.SslConfig{}
 	groupedVirtualServices := map[string][]*v1.VirtualService{}
 
@@ -35,10 +37,23 @@ func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) map[*
 		}
 	}
 
-	for sslHash, sslConfig := range mergedSslConfig {
+	// get an order of the strings as they are easier to compute once
+	// rather than adding as the sort criterion for sslconfigs after the fact
+	orderedHashes := make([]string, 0, len(mergedSslConfig))
+	for sslHash := range mergedSslConfig {
+		orderedHashes = append(orderedHashes, sslHash)
+	}
+	sort.Strings(orderedHashes)
+
+	result := map[*gloov1.SslConfig][]*v1.VirtualService{}
+	orderedResultKeys := make([]*gloov1.SslConfig, 0, len(mergedSslConfig))
+
+	for _, sslHash := range orderedHashes {
+		sslConfig := mergedSslConfig[sslHash]
+		orderedResultKeys = append(orderedResultKeys, sslConfig)
 		result[sslConfig] = groupedVirtualServices[sslHash]
 	}
-	return result
+	return orderedResultKeys, result
 }
 
 func hashSslConfig(sslConfig *gloov1.SslConfig) string {
