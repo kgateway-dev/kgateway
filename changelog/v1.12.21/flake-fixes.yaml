@@ -32,3 +32,16 @@ changelog:
       When a reference to a VirtualHostOption or RouteOption CR is not found, apply a warning on the
       parent resource, where we previously applied an error. This follows the delegation
       pattern established by RouteTables, and ensures that resources can be applied asynchronously.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7044
+    resolvesIssue: false
+    description: Retry patch updates on resource version errors to protect against test flakes
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6819
+    description: Fix kube2e test "Should be able to rotate a secret referenced on a sslConfig on a kube upstream"
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6820
+    description: Fix e2e test "CSRF defined on listener only on listener [It] should succeed with allowed origin"
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6307
+    description: Fix e2e test "Access Log in memory Access Logs Grpc [It] can stream access logs"
