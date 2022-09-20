@@ -199,7 +199,9 @@ func (rv *routeVisitor) visit(
 		for _, optionRef := range optionRefs {
 			routeOpts, err := reporterHelper.snapshot.RouteOptions.Find(optionRef.GetNamespace(), optionRef.GetName())
 			if err != nil {
-				reporterHelper.addError(resource.InputResource(), err)
+				// missing refs should only result in a warning
+				// this allows resources to be applied asynchronously if the validation webhook is configured to allow warnings
+				reporterHelper.addWarning(resource.InputResource(), err)
 				continue
 			}
 			if routeClone.GetOptions() == nil {

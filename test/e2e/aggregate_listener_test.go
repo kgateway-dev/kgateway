@@ -149,14 +149,14 @@ var _ = Describe("Aggregate Listener", func() {
 				WithName("vs-east").
 				WithDomain("east.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/east").
+				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				Build()
 
 			vsWest := vsBuilder.
 				WithName("vs-west").
 				WithDomain("west.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/west").
+				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				Build()
 
 			resourcesToCreate.Gateways = v1.GatewayList{
@@ -270,7 +270,7 @@ var _ = Describe("Aggregate Listener", func() {
 				WithName("vs-east").
 				WithDomain("east.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/east").
+				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				WithSslConfig(&gloov1.SslConfig{
 					SslSecrets: &gloov1.SslConfig_SecretRef{
 						SecretRef: eastTLSSecret.GetMetadata().Ref(),
@@ -282,7 +282,7 @@ var _ = Describe("Aggregate Listener", func() {
 				WithName("vs-west").
 				WithDomain("west.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/west").
+				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				WithSslConfig(&gloov1.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
 						Value: false,
@@ -384,14 +384,14 @@ var _ = Describe("Aggregate Listener", func() {
 				WithName("vs-east").
 				WithDomain("east.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/east").
+				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				Build()
 
 			vsWest := vsBuilder.
 				WithName("vs-west").
 				WithDomain("west.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/west").
+				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				Build()
 
 			resourcesToCreate.Gateways = v1.GatewayList{
@@ -505,7 +505,7 @@ var _ = Describe("Aggregate Listener", func() {
 				WithName("vs-east").
 				WithDomain("east.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/east").
+				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				WithSslConfig(&gloov1.SslConfig{
 					SslSecrets: &gloov1.SslConfig_SecretRef{
 						SecretRef: eastTLSSecret.GetMetadata().Ref(),
@@ -517,7 +517,7 @@ var _ = Describe("Aggregate Listener", func() {
 				WithName("vs-west").
 				WithDomain("west.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/west").
+				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				WithSslConfig(&gloov1.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
 						Value: false,
@@ -619,14 +619,14 @@ var _ = Describe("Aggregate Listener", func() {
 				WithName("vs-east").
 				WithDomain("east.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/east").
+				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				Build()
 
 			vsWest := vsBuilder.
 				WithName("vs-west").
 				WithDomain("west.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/west").
+				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				Build()
 
 			resourcesToCreate.Gateways = v1.GatewayList{
@@ -743,7 +743,7 @@ var _ = Describe("Aggregate Listener", func() {
 				WithName("vs-east").
 				WithDomain("east.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/east").
+				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				WithSslConfig(&gloov1.SslConfig{
 					SslSecrets: &gloov1.SslConfig_SecretRef{
 						SecretRef: eastTLSSecret.GetMetadata().Ref(),
@@ -755,7 +755,7 @@ var _ = Describe("Aggregate Listener", func() {
 				WithName("vs-west").
 				WithDomain("west.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
-				WithPrefixMatcher(simpleRouteName, "/west").
+				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				WithSslConfig(&gloov1.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
 						Value: false,
