@@ -6,8 +6,6 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/solo-io/gloo/projects/envoyinit/pkg/downward"
 )
 
@@ -44,7 +42,7 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 		args = append(args, os.Args[1:]...)
 	}
 	if err = syscall.Exec(args[0], args, os.Environ()); err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		panic(err)
 	}
 }
 

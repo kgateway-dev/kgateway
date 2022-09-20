@@ -176,7 +176,7 @@ func Run() {
 	if err != nil {
 		if ctx.Err() == nil {
 			// not a context error - panic
-			contextutils.LoggerFrom(ctx).DPanic(err)
+			panic(err)
 		}
 	}
 }
