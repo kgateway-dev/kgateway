@@ -10,7 +10,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -20,7 +19,7 @@ var _ = Describe("Aggregate translator", func() {
 	var (
 		ctx = context.TODO()
 
-		snap    *gloov1snap.ApiSnapshot
+		snap    *v1.ApiSnapshot
 		proxy   *gloov1.Proxy
 		reports reporter.ResourceReports
 		ns      = "namespace"
@@ -39,7 +38,7 @@ var _ = Describe("Aggregate translator", func() {
 	}
 
 	BeforeEach(func() {
-		snap = samples.SimpleGlooSnapshot(ns)
+		snap = samples.SimpleGatewaySnapshot(&core.ResourceRef{Name: "fake-upstream", Namespace: ns}, ns)
 	})
 
 	It("Computes listener idempotently when provided different ssl configs", func() {
