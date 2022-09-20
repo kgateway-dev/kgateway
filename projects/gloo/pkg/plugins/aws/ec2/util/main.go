@@ -5,8 +5,6 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -30,7 +28,7 @@ func main() {
 		WithCredentials(credentials.NewStaticCredentials(*accessKey, *secretKey, "")))
 
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		panic(err)
 	}
 	ec2api := awsec2.New(sess)
 
@@ -39,7 +37,7 @@ func main() {
 	instances, err := e.ListWithClient(context.Background(), ec2api)
 
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		panic(err)
 	}
 
 	fmt.Println("found ", len(instances))

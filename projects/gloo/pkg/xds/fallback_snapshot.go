@@ -10,7 +10,6 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 )
@@ -93,7 +92,7 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 	}
 	pbst, err := utils.MessageToAny(manager)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		panic(err)
 	}
 
 	listener := &envoy_config_listener_v3.Listener{

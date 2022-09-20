@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	ps "github.com/keybase/go-ps"
 )
 
@@ -21,7 +19,7 @@ func (r *Runner) waitForExternalProcess() error {
 	for {
 		procs, err := ps.Processes()
 		if err != nil {
-			contextutils.LoggerFrom(nil).DPanic(err)
+			panic(err)
 		}
 		for _, proc := range procs {
 			str, err := proc.Path()
