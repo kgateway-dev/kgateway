@@ -117,7 +117,7 @@ func (a *AggregateTranslator) computeAggregateListenerForHybridGateway(params Pa
 		aggregateListener = a.computeListenerFromDelegatedGateway(params, proxyName, gateway, delegatedGateways)
 		if len(aggregateListener.GetHttpFilterChains()) == 0 {
 			// missing refs should only result in a warning
-			// this allows resources to be applied asynchronously
+			// this allows resources to be applied asynchronously if the validation webhook is configured to allow warnings
 			params.reports.AddWarning(gateway, EmptyHybridGatewayMessage)
 			return nil
 		}
