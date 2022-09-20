@@ -16,7 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-var _ = FDescribe("Aggregate translator", func() {
+var _ = Describe("Aggregate translator", func() {
 	var (
 		ctx = context.TODO()
 
@@ -139,6 +139,7 @@ var _ = FDescribe("Aggregate translator", func() {
 		for i := 0; i < 100; i++ {
 			l := aggregateTranslator.ComputeListener(NewTranslatorParams(ctx, snap, reports), proxyName, snap.Gateways[0])
 			Expect(l).NotTo(BeNil())
+			Expect(l.GetAggregateListener())
 			// since we sort on hashes, this is the ordered output of this config
 			Expect(l.GetAggregateListener().HttpFilterChains[0].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-1"))
 			Expect(l.GetAggregateListener().HttpFilterChains[1].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-4"))
