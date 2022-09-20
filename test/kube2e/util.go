@@ -101,6 +101,7 @@ gloo:
     customEnv:
       - name: LEADER_ELECTION_LEASE_DURATION
         value: 4s
+    livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
