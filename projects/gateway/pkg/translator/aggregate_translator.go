@@ -70,8 +70,8 @@ func (a *AggregateTranslator) computeAggregateListenerForHttpGateway(params Para
 	builder := newBuilder()
 	if gateway.GetSsl() {
 		// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-		vsOrdering, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-		for _, vsSslConfig := range vsOrdering {
+		orderedSslConfigs, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+		for _, vsSslConfig := range orderedSslConfigs {
 			virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 			virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServiceList, proxyName)
 			httpOptions := httpGateway.GetOptions()
@@ -148,8 +148,8 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 
 			if gatewaySsl != nil {
 				// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-				vsOrdering, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-				for _, vsSslConfig := range vsOrdering {
+				orderedSslConfigs, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+				for _, vsSslConfig := range orderedSslConfigs {
 					virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 					// SslConfig is evaluated by having the VS definition merged into the Gateway, and overriding
 					// any shared fields. The Gateway is purely used to define default values.
@@ -230,8 +230,8 @@ func (a *AggregateTranslator) processMatchableGateway(
 
 	if sslGateway {
 		// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-		vsOrdering, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-		for _, vsSslConfig := range vsOrdering {
+		orderedSslConfigs, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+		for _, vsSslConfig := range orderedSslConfigs {
 			virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 			// SslConfig is evaluated by having the VS definition merged into the Gateway, and overriding
 			// any shared fields. The Gateway is purely used to define default values.

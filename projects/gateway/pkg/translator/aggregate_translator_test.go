@@ -16,7 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-var _ = Describe("Aggregate translator", func() {
+var _ = FDescribe("Aggregate translator", func() {
 	var (
 		ctx = context.TODO()
 
@@ -48,10 +48,19 @@ var _ = Describe("Aggregate translator", func() {
 		gw.VirtualServiceExpressions = nil
 		gw.VirtualServiceSelector = nil
 		gw.VirtualServices = append(gw.VirtualServices, &core.ResourceRef{
-			Name:      "ssl-vs",
+			Name:      "ssl-vs-0",
 			Namespace: ns,
 		}, &core.ResourceRef{
-			Name:      "different-ssl-vs",
+			Name:      "ssl-vs-1",
+			Namespace: ns,
+		}, &core.ResourceRef{
+			Name:      "ssl-vs-2",
+			Namespace: ns,
+		}, &core.ResourceRef{
+			Name:      "ssl-vs-3",
+			Namespace: ns,
+		}, &core.ResourceRef{
+			Name:      "ssl-vs-4",
 			Namespace: ns,
 		})
 		snap.Gateways = v1.GatewayList{gw1}
@@ -59,24 +68,66 @@ var _ = Describe("Aggregate translator", func() {
 		snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
 			VirtualHost: &v1.VirtualHost{},
 			SslConfig: &gloov1.SslConfig{
-				SniDomains: []string{"sni"},
+				SniDomains: []string{"sni-0"},
 				// We have to add some other config since we merge configs where the only
 				// difference is the SniDomains
-				TransportSocketConnectTimeout: &durationpb.Duration{Seconds: 1},
+				TransportSocketConnectTimeout: &durationpb.Duration{Seconds: 0},
 			},
-			DisplayName: "ssl-vs",
+			DisplayName: "ssl-vs-0",
 			Metadata: &core.Metadata{
-				Name:      "ssl-vs",
+				Name:      "ssl-vs-0",
 				Namespace: ns,
 			},
 		}, &v1.VirtualService{
 			VirtualHost: &v1.VirtualHost{},
 			SslConfig: &gloov1.SslConfig{
-				SniDomains: []string{"different-sni"},
+				SniDomains: []string{"sni-1"},
+				// We have to add some other config since we merge configs where the only
+				// difference is the SniDomains
+				TransportSocketConnectTimeout: &durationpb.Duration{Seconds: 1},
 			},
-			DisplayName: "different-ssl-vs",
+			DisplayName: "ssl-vs-1",
 			Metadata: &core.Metadata{
-				Name:      "different-ssl-vs",
+				Name:      "ssl-vs-1",
+				Namespace: ns,
+			},
+		}, &v1.VirtualService{
+			VirtualHost: &v1.VirtualHost{},
+			SslConfig: &gloov1.SslConfig{
+				SniDomains: []string{"sni-2"},
+				// We have to add some other config since we merge configs where the only
+				// difference is the SniDomains
+				TransportSocketConnectTimeout: &durationpb.Duration{Seconds: 2},
+			},
+			DisplayName: "ssl-vs-2",
+			Metadata: &core.Metadata{
+				Name:      "ssl-vs-2",
+				Namespace: ns,
+			},
+		}, &v1.VirtualService{
+			VirtualHost: &v1.VirtualHost{},
+			SslConfig: &gloov1.SslConfig{
+				SniDomains: []string{"sni-3"},
+				// We have to add some other config since we merge configs where the only
+				// difference is the SniDomains
+				TransportSocketConnectTimeout: &durationpb.Duration{Seconds: 3},
+			},
+			DisplayName: "ssl-vs-3",
+			Metadata: &core.Metadata{
+				Name:      "ssl-vs-3",
+				Namespace: ns,
+			},
+		}, &v1.VirtualService{
+			VirtualHost: &v1.VirtualHost{},
+			SslConfig: &gloov1.SslConfig{
+				SniDomains: []string{"sni-4"},
+				// We have to add some other config since we merge configs where the only
+				// difference is the SniDomains
+				TransportSocketConnectTimeout: &durationpb.Duration{Seconds: 4},
+			},
+			DisplayName: "ssl-vs-4",
+			Metadata: &core.Metadata{
+				Name:      "ssl-vs-4",
 				Namespace: ns,
 			},
 		})
@@ -88,7 +139,12 @@ var _ = Describe("Aggregate translator", func() {
 		for i := 0; i < 100; i++ {
 			l := aggregateTranslator.ComputeListener(NewTranslatorParams(ctx, snap, reports), proxyName, snap.Gateways[0])
 			Expect(l).NotTo(BeNil())
-			Expect(l.GetAggregateListener().HttpFilterChains[0].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni"))
+			// since we sort on hashes, this is the ordered output of this config
+			Expect(l.GetAggregateListener().HttpFilterChains[0].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-1"))
+			Expect(l.GetAggregateListener().HttpFilterChains[1].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-4"))
+			Expect(l.GetAggregateListener().HttpFilterChains[2].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-3"))
+			Expect(l.GetAggregateListener().HttpFilterChains[3].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-0"))
+			Expect(l.GetAggregateListener().HttpFilterChains[4].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-2"))
 		}
 	})
 })
