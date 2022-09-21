@@ -40,7 +40,5 @@ message CoreRuleSet {
         string custom_settings_string = 2;
         // String representing a file location with core rule set custom config options
         string custom_settings_file = 3;
-        //resource reference to config maps containing modules to assist in the resolution of `query`.
-        core.solo.io.ResourceRef custom_config_map_settings = 4;
     }
 }

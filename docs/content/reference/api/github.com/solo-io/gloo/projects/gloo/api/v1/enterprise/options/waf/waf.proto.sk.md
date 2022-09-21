@@ -60,15 +60,13 @@ weight: 5
 ```yaml
 "customSettingsString": string
 "customSettingsFile": string
-"customConfigMapSettings": .core.solo.io.ResourceRef
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `customSettingsString` | `string` | String representing the core rule set custom config options. Only one of `customSettingsString`, `customSettingsFile`, or `customConfigMapSettings` can be set. |
-| `customSettingsFile` | `string` | String representing a file location with core rule set custom config options. Only one of `customSettingsFile`, `customSettingsString`, or `customConfigMapSettings` can be set. |
-| `customConfigMapSettings` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | resource reference to config maps containing modules to assist in the resolution of `query`. Only one of `customConfigMapSettings`, `customSettingsString`, or `customSettingsFile` can be set. |
+| `customSettingsString` | `string` | String representing the core rule set custom config options. Only one of `customSettingsString` or `customSettingsFile` can be set. |
+| `customSettingsFile` | `string` | String representing a file location with core rule set custom config options. Only one of `customSettingsFile` or `customSettingsString` can be set. |
 
 
 
