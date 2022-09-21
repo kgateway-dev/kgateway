@@ -4,4 +4,5 @@ CHANGELOG:
   fixesIssue: true
   description: |
     Revert breaking changes introduced into Extauth API; old deprecated fields added back for
-  compatibility, but are currently unimplemented.
+    compatibility, but are currently unimplemented.
+
