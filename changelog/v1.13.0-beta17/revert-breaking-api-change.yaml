@@ -1,8 +1,6 @@
-CHANGELOG:
+changelog:
 - type: FIX
   issueLink: https://github.com/solo-io/gloo/issues/7206
   fixesIssue: true
   description: |
-    Revert breaking changes introduced into Extauth API; old deprecated fields added back for
-    compatibility, but are currently unimplemented.
-
+    Revert breaking changes introduced into Extauth API
