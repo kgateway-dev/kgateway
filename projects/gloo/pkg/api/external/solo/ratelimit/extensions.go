@@ -5,13 +5,13 @@ import (
 
 	"github.com/rotisserie/eris"
 	skratelimit "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/clientset/versioned/scheme"
 	rlv1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -44,6 +44,13 @@ type kubeReporterClient struct {
 	skv2Client rlv1alpha1.RateLimitConfigClient
 }
 
+func init() {
+	scheme := scheme.Scheme
+	if err := rlv1alpha1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+}
+
 func NewRateLimitClients(ctx context.Context, rcFactory factory.ResourceClientFactory) (RateLimitConfigClient, reporter.ReporterResourceClient, error) {
 	rlClient, err := NewRateLimitConfigClient(ctx, rcFactory)
 	if err != nil {
@@ -54,7 +61,7 @@ func NewRateLimitClients(ctx context.Context, rcFactory factory.ResourceClientFa
 	switch typedFactory := rcFactory.(type) {
 	case *factory.KubeResourceClientFactory:
 		cli, err := client.New(typedFactory.Cfg, client.Options{
-			Scheme: runtime.NewScheme(),
+			Scheme: scheme.Scheme,
 		})
 		rlClientSet := rlv1alpha1.NewClientset(cli)
 		if err != nil {
