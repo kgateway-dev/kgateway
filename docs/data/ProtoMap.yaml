@@ -170,6 +170,9 @@ apis:
   enterprise.gloo.solo.io.ApiKeyReadResponse:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyReadResponse
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKeySecret:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeySecret
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.ApiKeyUpdateRequest:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyUpdateRequest
     package: enterprise.gloo.solo.io
