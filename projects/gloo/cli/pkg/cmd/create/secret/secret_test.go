@@ -296,16 +296,16 @@ func mustWriteTestFile(contents string) (string, error) {
 	tmpFile, err := ioutil.TempFile("", "test-")
 
 	if err != nil {
-		return "", eris.Wrapf(err, "Failed to create test file: %v")
+		return "", eris.Wrapf(err, "Failed to create test file")
 	}
 
 	text := []byte(contents)
 	if _, err = tmpFile.Write(text); err != nil {
-		return "", eris.Wrapf(err, "Failed to write to test file: %v")
+		return "", eris.Wrapf(err, "Failed to write to test file")
 	}
 
 	if err := tmpFile.Close(); err != nil {
-		return "", eris.Wrapf(err, "Failed to write to test file: %v")
+		return "", eris.Wrapf(err, "Failed to write to test file")
 	}
 
 	return tmpFile.Name(), nil
