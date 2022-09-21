@@ -125,6 +125,15 @@ spec:
                                 type: boolean
                             type: object
                           type: object
+                        headersFromMetadataEntry:
+                          additionalProperties:
+                            properties:
+                              name:
+                                type: string
+                              required:
+                                type: boolean
+                            type: object
+                          type: object
                         k8sSecretApikeyStorage:
                           properties:
                             apiKeySecretRefs:

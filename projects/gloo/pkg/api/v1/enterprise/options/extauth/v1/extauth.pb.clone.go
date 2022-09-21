@@ -988,13 +988,26 @@ func (m *ApiKeyAuth) Clone() proto.Message {
 	target.HeaderName = m.GetHeaderName()
 
 	if m.GetHeadersFromMetadata() != nil {
-		target.HeadersFromMetadata = make(map[string]*ApiKeyAuth_MetadataEntry, len(m.GetHeadersFromMetadata()))
+		target.HeadersFromMetadata = make(map[string]*ApiKeyAuth_SecretKey, len(m.GetHeadersFromMetadata()))
 		for k, v := range m.GetHeadersFromMetadata() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.HeadersFromMetadata[k] = h.Clone().(*ApiKeyAuth_MetadataEntry)
+				target.HeadersFromMetadata[k] = h.Clone().(*ApiKeyAuth_SecretKey)
 			} else {
-				target.HeadersFromMetadata[k] = proto.Clone(v).(*ApiKeyAuth_MetadataEntry)
+				target.HeadersFromMetadata[k] = proto.Clone(v).(*ApiKeyAuth_SecretKey)
+			}
+
+		}
+	}
+
+	if m.GetHeadersFromMetadataEntry() != nil {
+		target.HeadersFromMetadataEntry = make(map[string]*ApiKeyAuth_MetadataEntry, len(m.GetHeadersFromMetadataEntry()))
+		for k, v := range m.GetHeadersFromMetadataEntry() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HeadersFromMetadataEntry[k] = h.Clone().(*ApiKeyAuth_MetadataEntry)
+			} else {
+				target.HeadersFromMetadataEntry[k] = proto.Clone(v).(*ApiKeyAuth_MetadataEntry)
 			}
 
 		}
@@ -1145,6 +1158,37 @@ func (m *ApiKey) Clone() proto.Message {
 		return target
 	}
 	target = &ApiKey{}
+
+	target.ApiKey = m.GetApiKey()
+
+	if m.GetLabels() != nil {
+		target.Labels = make([]string, len(m.GetLabels()))
+		for idx, v := range m.GetLabels() {
+
+			target.Labels[idx] = v
+
+		}
+	}
+
+	if m.GetMetadata() != nil {
+		target.Metadata = make(map[string]string, len(m.GetMetadata()))
+		for k, v := range m.GetMetadata() {
+
+			target.Metadata[k] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeySecret) Clone() proto.Message {
+	var target *ApiKeySecret
+	if m == nil {
+		return target
+	}
+	target = &ApiKeySecret{}
 
 	target.ApiKey = m.GetApiKey()
 
@@ -1973,6 +2017,21 @@ func (m *AccessTokenValidation_ScopeList) Clone() proto.Message {
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyAuth_SecretKey) Clone() proto.Message {
+	var target *ApiKeyAuth_SecretKey
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyAuth_SecretKey{}
+
+	target.Name = m.GetName()
+
+	target.Required = m.GetRequired()
 
 	return target
 }
