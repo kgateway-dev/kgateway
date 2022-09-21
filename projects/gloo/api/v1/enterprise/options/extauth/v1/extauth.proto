@@ -963,7 +963,7 @@ message ApiKey {
     map<string, string> metadata = 4;
 }
 
-DEPRECATED: use ApiKey
+// DEPRECATED: use ApiKey
 message ApiKeySecret {
     // The string value of the API key.
     string api_key = 2;
