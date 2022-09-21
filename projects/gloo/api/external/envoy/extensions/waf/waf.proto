@@ -8,6 +8,7 @@ option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 message AuditLogging {
   enum AuditLogAction {
@@ -60,11 +61,15 @@ message RuleSet {
   // String of rules which are added directly
   string rule_str = 1;
   // Array of files to include
+  // The file option will not dynamically load changes to its contents - in order to update rules from files the filename must be versioned to indicate there has been a change to its contents
+  // If you want dynamically loaded rules, use the custom config map settings
   repeated string files = 3;
-
   // A directory to include. all *.conf files in this directory will be
   // included. sub directories will NOT be checked.
   string directory = 4;
+  //resource reference to config maps containing modules to assist in the resolution of `query`.
+  //Rules from configmaped .conf files will be treated the same as if they were entered as a rulestr
+  repeated core.solo.io.ResourceRef custom_config_map_settings = 5;
 }
 
 message ModSecurityPerRoute {

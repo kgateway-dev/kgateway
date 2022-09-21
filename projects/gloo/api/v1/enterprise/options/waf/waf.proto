@@ -25,10 +25,8 @@ message Settings {
     repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 4;
     // Audit Log settings
     envoy.config.filter.http.modsecurity.v2.AuditLogging audit_logging = 5;
-
     // Only process request headers, not buffering the request body
     bool request_headers_only = 6;
-    
     // Only process response headers, not buffering the response body
     bool response_headers_only = 7;
 }

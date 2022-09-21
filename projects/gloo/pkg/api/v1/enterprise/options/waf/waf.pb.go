@@ -137,8 +137,6 @@ type CoreRuleSet struct {
 	// Optional custom settings for the OWASP core rule set.
 	// For an example on the configuration options see: https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.2/dev/crs-setup.conf.example
 	// The same rules apply to these options as do to the `RuleSet`s. The file option is better if possible.
-	// The file option will not dynamically load changes to its contents - in order to update rules from files the filename must be versioned to indicate there has been a change to its contents
-	// If you want dynamically loaded rules, use the custom config map settings
 	//
 	// Types that are assignable to CustomSettingsType:
 	//	*CoreRuleSet_CustomSettingsString
