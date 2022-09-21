@@ -21,8 +21,11 @@ message Settings {
     // Add OWASP core rule set
     // if nil will not be added
     CoreRuleSet core_rule_set = 3;
-    // Custom rule sets rules to add
+    // Custom rule sets rules to add - File option will not dynamically load changes - name must be versioned
     repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 4;
+    //Rule stored in kubernetes configmap are dynamically loaded
+    //Rules from configmaped .conf files will be treated the same as if they were entered as a rulestr under a RuleSet
+    repeated core.solo.io.ResourceRef custom_config_map_rule_sets = 8;
     // Audit Log settings
     envoy.config.filter.http.modsecurity.v2.AuditLogging audit_logging = 5;
     // Only process request headers, not buffering the request body

@@ -2003,6 +2003,15 @@ spec:
                           customSettingsString:
                             type: string
                         type: object
+                      customConfigMapRuleSets:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                          type: object
+                        type: array
                       customInterventionMessage:
                         type: string
                       disabled:

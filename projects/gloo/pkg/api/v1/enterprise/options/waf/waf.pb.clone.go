@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf"
+
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // ensure the imports are used
@@ -53,6 +55,19 @@ func (m *Settings) Clone() proto.Message {
 				target.RuleSets[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf.RuleSet)
 			} else {
 				target.RuleSets[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf.RuleSet)
+			}
+
+		}
+	}
+
+	if m.GetCustomConfigMapRuleSets() != nil {
+		target.CustomConfigMapRuleSets = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetCustomConfigMapRuleSets()))
+		for idx, v := range m.GetCustomConfigMapRuleSets() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.CustomConfigMapRuleSets[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			} else {
+				target.CustomConfigMapRuleSets[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 			}
 
 		}

@@ -33,6 +33,7 @@ weight: 5
 "customInterventionMessage": string
 "coreRuleSet": .waf.options.gloo.solo.io.CoreRuleSet
 "ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
+"customConfigMapRuleSets": []core.solo.io.ResourceRef
 "auditLogging": .envoy.config.filter.http.modsecurity.v2.AuditLogging
 "requestHeadersOnly": bool
 "responseHeadersOnly": bool
@@ -44,7 +45,8 @@ weight: 5
 | `disabled` | `bool` | Disable waf on this resource (if omitted defaults to false). If a route/virtual host is configured with WAF, you must explicitly disable its WAF, i.e., it will not inherit the disabled status of its parent. |
 | `customInterventionMessage` | `string` | Custom massage to display if an intervention occurs. |
 | `coreRuleSet` | [.waf.options.gloo.solo.io.CoreRuleSet](../waf.proto.sk/#coreruleset) | Add OWASP core rule set if nil will not be added. |
-| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets rules to add. |
+| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets rules to add - File option will not dynamically load changes - name must be versioned. |
+| `customConfigMapRuleSets` | [[]core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Rule stored in kubernetes configmap are dynamically loaded Rules from configmaped .conf files will be treated the same as if they were entered as a rulestr under a RuleSet. |
 | `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../../../../../external/envoy/extensions/waf/waf.proto.sk/#auditlogging) | Audit Log settings. |
 | `requestHeadersOnly` | `bool` | Only process request headers, not buffering the request body. |
 | `responseHeadersOnly` | `bool` | Only process response headers, not buffering the response body. |

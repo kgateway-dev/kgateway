@@ -81,6 +81,23 @@ func (m *Settings) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetCustomConfigMapRuleSets()) != len(target.GetCustomConfigMapRuleSets()) {
+		return false
+	}
+	for idx, v := range m.GetCustomConfigMapRuleSets() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCustomConfigMapRuleSets()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetCustomConfigMapRuleSets()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	if h, ok := interface{}(m.GetAuditLogging()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetAuditLogging()) {
 			return false
