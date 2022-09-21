@@ -11,6 +11,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -51,7 +53,10 @@ func NewRateLimitClients(ctx context.Context, rcFactory factory.ResourceClientFa
 	var reporterClient reporter.ReporterResourceClient
 	switch typedFactory := rcFactory.(type) {
 	case *factory.KubeResourceClientFactory:
-		rlClientSet, err := rlv1alpha1.NewClientsetFromConfig(typedFactory.Cfg)
+		cli, err := client.New(typedFactory.Cfg, client.Options{
+			Scheme: runtime.NewScheme(),
+		})
+		rlClientSet := rlv1alpha1.NewClientset(cli)
 		if err != nil {
 			return nil, nil, err
 		}
