@@ -20,7 +20,7 @@ import (
 
 // Translator converts a set of Gateways into a Proxy, with the provided proxyName
 type Translator interface {
-	Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
+	Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports, error)
 }
 
 // IsolateVirtualHostsAnnotation is the annotation that can be applied to a Gateway resource to determine

@@ -34,7 +34,7 @@ type Translator interface {
 	Translate(
 		params plugins.Params,
 		proxy *v1.Proxy,
-	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport)
+	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
 }
 
 var (
@@ -66,7 +66,7 @@ func NewTranslatorWithHasher(
 func (t *translatorInstance) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 	// setup tracing, logging
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
@@ -89,8 +89,10 @@ func (t *translatorInstance) Translate(
 	// execute translation of listener and cluster subsystems
 	// during these translations, params.messages is side effected for the reports to use later in this loop
 	clusters, endpoints := t.translateClusterSubsystemComponents(params, proxy, reports)
-	routeConfigs, listeners := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
-
+	routeConfigs, listeners, err := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	// run Resource Generator Plugins
 	for _, plugin := range t.pluginRegistry.GetResourceGeneratorPlugins() {
 		generatedClusters, generatedEndpoints, generatedRouteConfigs, generatedListeners, err := plugin.GeneratedResources(params, clusters, endpoints, routeConfigs, listeners)
@@ -115,7 +117,7 @@ func (t *translatorInstance) Translate(
 		}
 	}
 
-	return xdsSnapshot, reports, proxyReport
+	return xdsSnapshot, reports, proxyReport, nil
 }
 
 func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.Params, proxy *v1.Proxy, reports reporter.ResourceReports) (
@@ -202,6 +204,7 @@ ClusterLoop:
 func (t *translatorInstance) translateListenerSubsystemComponents(params plugins.Params, proxy *v1.Proxy, proxyReport *validationapi.ProxyReport) (
 	[]*envoy_config_route_v3.RouteConfiguration,
 	[]*envoy_config_listener_v3.Listener,
+	error,
 ) {
 	var (
 		routeConfigs []*envoy_config_route_v3.RouteConfiguration
@@ -228,7 +231,10 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		// 2. Compute Listener
 		// This way we evaluate HttpFilters second, which allows us to avoid appending an HttpFilter
 		// that is not used by any Route / VirtualHost
-		envoyListener := listenerTranslator.ComputeListener(params)
+		envoyListener, err := listenerTranslator.ComputeListener(params)
+		if err != nil {
+			return nil, nil, err
+		}
 
 		if envoyListener != nil {
 			listeners = append(listeners, envoyListener)
@@ -238,7 +244,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		}
 	}
 
-	return routeConfigs, listeners
+	return routeConfigs, listeners, nil
 }
 
 func (t *translatorInstance) generateXDSSnapshot(
