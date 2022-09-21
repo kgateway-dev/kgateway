@@ -44,7 +44,7 @@ var (
 
 // translatorInstance is the implementation for a Translator used during Gloo translation
 type translatorInstance struct {
-	lock                      sync.RWMutex
+	lock                      sync.Mutex
 	pluginRegistry            plugins.PluginRegistry
 	settings                  *v1.Settings
 	hasher                    func(resources []envoycache.Resource) uint64
@@ -58,7 +58,7 @@ func NewTranslatorWithHasher(
 	hasher func(resources []envoycache.Resource) uint64,
 ) *translatorInstance {
 	return &translatorInstance{
-		lock:                      sync.RWMutex{},
+		lock:                      sync.Mutex{},
 		pluginRegistry:            pluginRegistry,
 		settings:                  settings,
 		hasher:                    hasher,
