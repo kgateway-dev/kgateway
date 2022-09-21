@@ -837,8 +837,8 @@ message ApiKeyAuth {
     map<string, MetadataEntry> headers_from_metadata_entry = 5;
 
     oneof storage_backend {
-        K8sSecretApiKeyStorage k8s_secret_apikey_storage = 5;
-        AerospikeApiKeyStorage aerospike_apikey_storage = 6;
+        K8sSecretApiKeyStorage k8s_secret_apikey_storage = 6;
+        AerospikeApiKeyStorage aerospike_apikey_storage = 7;
     }
 
     // DEPRECATED: use generalized MetadataEntry
@@ -963,6 +963,7 @@ message ApiKey {
     map<string, string> metadata = 4;
 }
 
+DEPRECATED: use ApiKey
 message ApiKeySecret {
     // The string value of the API key.
     string api_key = 2;
