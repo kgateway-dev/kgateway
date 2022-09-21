@@ -4,7 +4,6 @@ import (
 	"context"
 	"regexp"
 	"sort"
-	"sync"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
@@ -52,7 +51,6 @@ var (
 type RouteReplacingSanitizer struct {
 	// note to devs: this can be called in parallel by the validation webhook and main translation loops at the same time
 	// any stateful fields should be protected by a mutex
-	lock             sync.RWMutex
 	enabled          bool
 	fallbackListener *envoy_config_listener_v3.Listener
 	fallbackCluster  *envoy_config_cluster_v3.Cluster
@@ -69,7 +67,6 @@ func NewRouteReplacingSanitizer(cfg *v1.GlooOptions_InvalidConfigPolicy) (*Route
 	}
 
 	return &RouteReplacingSanitizer{
-		lock:             sync.RWMutex{},
 		enabled:          cfg.GetReplaceInvalidRoutes(),
 		fallbackListener: listener,
 		fallbackCluster:  cluster,
@@ -176,8 +173,6 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 	xdsSnapshot envoycache.Snapshot,
 	reports reporter.ResourceReports,
 ) envoycache.Snapshot {
-	s.lock.Lock()
-	defer s.lock.Unlock()
 	if !s.enabled {
 		return xdsSnapshot
 	}
