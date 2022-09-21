@@ -113,14 +113,16 @@ weight: 5
 "ruleStr": string
 "files": []string
 "directory": string
+"customConfigMapSettings": []core.solo.io.ResourceRef
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `ruleStr` | `string` | String of rules which are added directly. |
-| `files` | `[]string` | Array of files to include. |
+| `files` | `[]string` | Array of files to include The file option will not dynamically load changes to its contents - in order to update rules from files the filename must be versioned to indicate there has been a change to its contents If you want dynamically loaded rules, use the custom config map settings. |
 | `directory` | `string` | A directory to include. all *.conf files in this directory will be included. sub directories will NOT be checked. |
+| `customConfigMapSettings` | [[]core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | resource reference to config maps containing modules to assist in the resolution of `query`. Rules from configmaped .conf files will be treated the same as if they were entered as a rulestr. |
 
 
 

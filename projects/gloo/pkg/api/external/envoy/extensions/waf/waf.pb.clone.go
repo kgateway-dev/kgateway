@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation_ee"
+
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // ensure the imports are used
@@ -108,6 +110,19 @@ func (m *RuleSet) Clone() proto.Message {
 	}
 
 	target.Directory = m.GetDirectory()
+
+	if m.GetCustomConfigMapSettings() != nil {
+		target.CustomConfigMapSettings = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetCustomConfigMapSettings()))
+		for idx, v := range m.GetCustomConfigMapSettings() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.CustomConfigMapSettings[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			} else {
+				target.CustomConfigMapSettings[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			}
+
+		}
+	}
 
 	return target
 }

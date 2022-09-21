@@ -1932,6 +1932,15 @@ spec:
                       ruleSets:
                         items:
                           properties:
+                            customConfigMapSettings:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              type: array
                             directory:
                               type: string
                             files:

@@ -178,6 +178,23 @@ func (m *RuleSet) Equal(that interface{}) bool {
 		return false
 	}
 
+	if len(m.GetCustomConfigMapSettings()) != len(target.GetCustomConfigMapSettings()) {
+		return false
+	}
+	for idx, v := range m.GetCustomConfigMapSettings() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCustomConfigMapSettings()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetCustomConfigMapSettings()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }
 
