@@ -3,6 +3,7 @@ package secret_test
 import (
 	"context"
 	"fmt"
+	"github.com/rotisserie/eris"
 	"os"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
@@ -16,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -189,8 +189,9 @@ metadata:
 
 		It("should work as with just root ca", func() {
 
-			rootca := mustWriteTestFile("foo")
-			err := testutils.Glooctl("create secret tls valid --namespace gloo-system --rootca " + rootca)
+			rootca, err := mustWriteTestFile("foo")
+			Expect(err).ToNot(HaveOccurred())
+			err = testutils.Glooctl("create secret tls valid --namespace gloo-system --rootca " + rootca)
 			Expect(err).NotTo(HaveOccurred())
 			tls := v1.TlsSecret{
 				RootCa: "foo",
@@ -216,11 +217,14 @@ metadata:
 			for i, kp := range keyPairTestTable {
 				func() {
 					By(fmt.Sprintf("KeyPair test table, row %v", i))
-					rootca := mustWriteTestFile("foo")
+					rootca, err := mustWriteTestFile("foo")
+					Expect(err).ToNot(HaveOccurred())
 					defer os.Remove(rootca)
-					privatekey := mustWriteTestFile(kp.key)
+					privatekey, err := mustWriteTestFile(kp.key)
+					Expect(err).ToNot(HaveOccurred())
 					defer os.Remove(privatekey)
-					certchain := mustWriteTestFile(kp.cert)
+					certchain, err := mustWriteTestFile(kp.cert)
+					Expect(err).ToNot(HaveOccurred())
 					defer os.Remove(certchain)
 					args := fmt.Sprintf(
 						"create secret tls %s --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
@@ -254,11 +258,14 @@ metadata:
 			}
 		})
 		It("can print the kube yaml", func() {
-			rootca := mustWriteTestFile("foo")
+			rootca, err := mustWriteTestFile("foo")
+			Expect(err).ToNot(HaveOccurred())
 			defer os.Remove(rootca)
-			privatekey := mustWriteTestFile(privateKey1)
+			privatekey, err := mustWriteTestFile(privateKey1)
+			Expect(err).ToNot(HaveOccurred())
 			defer os.Remove(privatekey)
-			certchain := mustWriteTestFile(privateKey1Cert)
+			certchain, err := mustWriteTestFile(privateKey1Cert)
+			Expect(err).ToNot(HaveOccurred())
 			defer os.Remove(certchain)
 			args := fmt.Sprintf(
 				"create secret tls test --dry-run --name test --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
@@ -284,23 +291,23 @@ type: kubernetes.io/tls
 	})
 })
 
-func mustWriteTestFile(contents string) string {
+func mustWriteTestFile(contents string) (string, error) {
 	tmpFile, err := ioutil.TempFile("", "test-")
 
 	if err != nil {
-		log.Fatalf("Failed to create test file: %v", err)
+		return "", eris.Wrapf(err, "Failed to create test file: %v")
 	}
 
 	text := []byte(contents)
 	if _, err = tmpFile.Write(text); err != nil {
-		log.Fatalf("Failed to write to test file: %v", err)
+		return "", eris.Wrapf(err, "Failed to write to test file: %v")
 	}
 
 	if err := tmpFile.Close(); err != nil {
-		log.Fatalf("Failed to write to test file: %v", err)
+		return "", eris.Wrapf(err, "Failed to write to test file: %v")
 	}
 
-	return tmpFile.Name()
+	return tmpFile.Name(), nil
 }
 
 // each of these two key pairs were generated as follows:

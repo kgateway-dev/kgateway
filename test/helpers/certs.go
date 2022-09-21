@@ -12,6 +12,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"github.com/rotisserie/eris"
 	"log"
 	"math/big"
 	"net"
@@ -65,7 +66,7 @@ type Params struct {
 	EcdsaCurve string         // ECDSA curve to use to generate a key. Valid values are P224, P256 (recommended), P384, P521
 }
 
-func GetCerts(params Params) (string, string) {
+func GetCerts(params Params) (string, string, error) {
 
 	if len(params.Hosts) == 0 {
 		Fail("Missing required --host parameter")
@@ -109,7 +110,8 @@ func GetCerts(params Params) (string, string) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		log.Fatalf("failed to generate serial number: %s", err)
+		log.Println("failed to generate serial number: %s", err)
+		return "", "", eris.Wrapf(err, "failed to generate serial number: %s")
 	}
 
 	template := x509.Certificate{
@@ -141,7 +143,8 @@ func GetCerts(params Params) (string, string) {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
 	if err != nil {
-		log.Fatalf("Failed to create certificate: %s", err)
+		log.Println("Failed to create certificate: %s", err)
+		return "", "", eris.Wrapf(err, "Failed to create certificate: %s")
 	}
 
 	var certOut bytes.Buffer
@@ -153,7 +156,7 @@ func GetCerts(params Params) (string, string) {
 	err = pem.Encode(&keyOut, pemBlockForKey(priv))
 	Expect(err).NotTo(HaveOccurred())
 
-	return certOut.String(), keyOut.String()
+	return certOut.String(), keyOut.String(), nil
 }
 
 var (
@@ -164,7 +167,7 @@ var (
 
 func gencerts() {
 
-	cert, privKey = GetCerts(Params{
+	cert, privKey, _ = GetCerts(Params{
 		Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 		IsCA:  true,
 	})

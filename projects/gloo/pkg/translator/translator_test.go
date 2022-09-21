@@ -2809,14 +2809,16 @@ var _ = Describe("Translator", func() {
 			})
 
 			It("should not merge 2 ssl config if they are different", func() {
-				cert1, privateKey1 := gloohelpers.GetCerts(gloohelpers.Params{
+				cert1, privateKey1, err := gloohelpers.GetCerts(gloohelpers.Params{
 					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 					IsCA:  true,
 				})
-				cert2, privateKey2 := gloohelpers.GetCerts(gloohelpers.Params{
+				Expect(err).ToNot(HaveOccurred())
+				cert2, privateKey2, err := gloohelpers.GetCerts(gloohelpers.Params{
 					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 					IsCA:  true,
 				})
+				Expect(err).ToNot(HaveOccurred())
 
 				prep([]*v1.SslConfig{
 					{
@@ -3000,18 +3002,21 @@ var _ = Describe("Translator", func() {
 			})
 			It("should not combine when not matching", func() {
 
-				cert1, privateKey1 := gloohelpers.GetCerts(gloohelpers.Params{
+				cert1, privateKey1, err := gloohelpers.GetCerts(gloohelpers.Params{
 					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 					IsCA:  true,
 				})
-				cert2, privateKey2 := gloohelpers.GetCerts(gloohelpers.Params{
+				Expect(err).ToNot(HaveOccurred())
+				cert2, privateKey2, err := gloohelpers.GetCerts(gloohelpers.Params{
 					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 					IsCA:  true,
 				})
-				cert3, privateKey3 := gloohelpers.GetCerts(gloohelpers.Params{
+				Expect(err).ToNot(HaveOccurred())
+				cert3, privateKey3, err := gloohelpers.GetCerts(gloohelpers.Params{
 					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 					IsCA:  true,
 				})
+				Expect(err).ToNot(HaveOccurred())
 
 				params.Snapshot.Secrets = append(params.Snapshot.Secrets, &v1.Secret{
 					Metadata: &core.Metadata{

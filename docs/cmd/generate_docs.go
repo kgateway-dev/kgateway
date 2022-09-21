@@ -321,11 +321,13 @@ func scanImagesForRepo(ctx context.Context, targetRepo string, vulnerabilityActi
 
 	versionConstraint, err := getScannerVersionConstraint()
 	if err != nil {
-		logger.Fatalf("Invalid constraint version: %v", err)
+		logger.DPanic("Invalid constraint version: %v", err)
+		return eris.Wrapf(err, "Invalid constraint version: %v")
 	}
 	if versionConstraint == nil {
 		// to be extra-safe, we should require devs to configure a constraint
-		logger.Fatalf("No version constraint defined")
+		logger.DPanic("No version constraint defined")
+		return eris.Errorf("No version constraint defined")
 	}
 
 	outputDir := getScannerOutputDir()
@@ -373,7 +375,8 @@ func scanImagesForRepo(ctx context.Context, targetRepo string, vulnerabilityActi
 	}
 
 	if securityScanRepos == nil {
-		logger.Fatalf("No repositories were targeted to be scanned")
+		logger.DPanic("No repositories were targeted to be scanned")
+		return eris.Errorf("No repositories were targeted to be scanned")
 	}
 
 	scanner := &securityscanutils.SecurityScanner{
@@ -419,7 +422,10 @@ func generateSecurityScanGloo(ctx context.Context) error {
 		}
 	}
 	githubutils.SortReleasesBySemver(allReleases)
-	versionsToScan := getVersionsToScan(allReleases)
+	versionsToScan, err := getVersionsToScan(allReleases)
+	if err != nil {
+		return err
+	}
 	return BuildSecurityScanReportGloo(versionsToScan)
 }
 
@@ -440,7 +446,10 @@ func generateSecurityScanGlooE(ctx context.Context) error {
 	}
 
 	githubutils.SortReleasesBySemver(allReleases)
-	versionsToScan := getVersionsToScan(allReleases)
+	versionsToScan, err := getVersionsToScan(allReleases)
+	if err != nil {
+		return err
+	}
 	return BuildSecurityScanReportGlooE(versionsToScan)
 }
 
@@ -480,7 +489,7 @@ func fetchEnterpriseHelmValues(args []string) error {
 	return nil
 }
 
-func getVersionsToScan(releases []*github.RepositoryRelease) []string {
+func getVersionsToScan(releases []*github.RepositoryRelease) ([]string, error) {
 	var (
 		versions             []string
 		stableOnlyConstraint *semver.Constraints
@@ -492,7 +501,8 @@ func getVersionsToScan(releases []*github.RepositoryRelease) []string {
 	} else {
 		stableOnlyConstraint, err = semver.NewConstraint(fmt.Sprintf(">= %s", minVersionToScan))
 		if err != nil {
-			log.Fatalf("Invalid constraint version: %s", minVersionToScan)
+			log.Println("Invalid constraint version: %s", minVersionToScan)
+			return nil, eris.Wrapf(err, "Invalid constraint version: %s")
 		}
 	}
 
@@ -506,5 +516,5 @@ func getVersionsToScan(releases []*github.RepositoryRelease) []string {
 			versions = append(versions, test.String())
 		}
 	}
-	return versions
+	return versions, nil
 }
