@@ -3,8 +3,9 @@ package secret_test
 import (
 	"context"
 	"fmt"
-	"github.com/rotisserie/eris"
 	"os"
+
+	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
 
