@@ -17,14 +17,17 @@ var _ = Describe("Settings", func() {
 		ctx := context.Background()
 
 		ctx = WithSettings(ctx, settings)
-
-		Expect(FromContext(ctx)).To(Equal(settings))
+		expectedSettings, err := FromContext(ctx)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(expectedSettings).To(Equal(settings))
 	})
 
 	It("should return nil when no settings", func() {
 		ctx := context.Background()
 
-		Expect(FromContext(ctx)).To(BeNil())
+		expectedSettings, err := FromContext(ctx)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(expectedSettings).To(BeNil())
 	})
 
 	It("should not when no settings with MaybeFromContext", func() {

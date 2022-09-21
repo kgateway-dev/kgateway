@@ -26,7 +26,11 @@ func (p *plugin) WatchEndpoints(writeNamespace string, unfilteredUpstreams v1.Up
 			ec2Upstreams = append(ec2Upstreams, upstream)
 		}
 	}
-	return newEndpointsWatcher(opts.Ctx, writeNamespace, ec2Upstreams, p.secretClient, opts.RefreshRate).poll()
+	epWatcher, err := newEndpointsWatcher(opts.Ctx, writeNamespace, ec2Upstreams, p.secretClient, opts.RefreshRate)
+	if err != nil {
+		return nil, nil, err
+	}
+	return epWatcher.poll()
 }
 
 type edsWatcher struct {
@@ -39,11 +43,14 @@ type edsWatcher struct {
 	secretNamespaces  []string
 }
 
-func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
+func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) (*edsWatcher, error) {
 	var namespaces []string
 
 	// We either watch all namespaces, or create individual watchers for each namespace we watch
-	settings := settingsutil.FromContext(watchCtx)
+	settings, err := settingsutil.FromContext(watchCtx)
+	if err != nil {
+		return nil, err
+	}
 	if settingsutil.IsAllNamespacesFromSettings(settings) {
 		namespaces = []string{metav1.NamespaceAll}
 	} else {
@@ -68,7 +75,7 @@ func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstre
 		writeNamespace:    writeNamespace,
 		ec2InstanceLister: NewEc2InstanceLister(),
 		secretNamespaces:  namespaces,
-	}
+	}, nil
 }
 
 // TODO[eds enhancement] - since EDS is restarted each time an upstream changes, this will be ignored during periods of

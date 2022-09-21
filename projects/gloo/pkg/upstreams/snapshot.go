@@ -45,7 +45,7 @@ func (s *hybridUpstreamSnapshot) hash() uint64 {
 	hash, err := hashutils.HashAllSafe(nil, allUpstreams.AsInterfaces()...)
 	if err != nil {
 		contextutils.LoggerFrom(nil).DPanic("this error should never happen, as it is in a safe hasher")
-
+		return 0
 	}
 
 	return hash

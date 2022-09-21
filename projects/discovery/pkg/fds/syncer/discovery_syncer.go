@@ -2,7 +2,7 @@ package syncer
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
@@ -39,7 +39,10 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 	if contextutils.GetLogLevel() == zapcore.DebugLevel {
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
-	upstreamsToDetect := selectUpstreamsForDiscovery(s.fdsMode, snap.Upstreams, snap.Kubenamespaces)
+	upstreamsToDetect, err := selectUpstreamsForDiscovery(s.fdsMode, snap.Upstreams, snap.Kubenamespaces)
+	if err != nil {
+		return err
+	}
 
 	return s.fd.Update(upstreamsToDetect, snap.Secrets)
 }
@@ -50,7 +53,7 @@ const (
 	disabledLabelValue = "disabled"
 )
 
-func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
+func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) (v1.UpstreamList, error) {
 	whitelistNamespaces := sets.NewString()
 	blacklistNamespaces := sets.NewString()
 	for _, namespace := range namespaces {
@@ -64,12 +67,12 @@ func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, u
 
 	switch fdsMode {
 	case v1.Settings_DiscoveryOptions_BLACKLIST:
-		return selectUpstreamsBlacklist(upstreams, blacklistNamespaces)
+		return selectUpstreamsBlacklist(upstreams, blacklistNamespaces), nil
 	case v1.Settings_DiscoveryOptions_WHITELIST:
-		return selectUpstreamsWhitelist(upstreams, whitelistNamespaces, blacklistNamespaces)
+		return selectUpstreamsWhitelist(upstreams, whitelistNamespaces, blacklistNamespaces), nil
 	}
 	contextutils.LoggerFrom(nil).DPanic("invalid fds mode: " + fdsMode.String())
-	return nil
+	return nil, fmt.Errorf("invalid fds mode: %d", fdsMode.String())
 }
 
 func isBlacklistedUpstream(us *v1.Upstream) bool {

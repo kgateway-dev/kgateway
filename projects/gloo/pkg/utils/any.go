@@ -32,6 +32,7 @@ func MustMessageToAny(msg proto.Message) *pany.Any {
 	anymsg, err := MessageToAny(msg)
 	if err != nil {
 		contextutils.LoggerFrom(nil).DPanic(err)
+		return nil
 	}
 	return anymsg
 }

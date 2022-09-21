@@ -16,7 +16,7 @@ import (
 type ListenerTranslator interface {
 	// A single Gloo Listener produces a single Envoy listener
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/listeners/listeners#arch-overview-listeners
-	ComputeListener(params plugins.Params) *envoy_config_listener_v3.Listener
+	ComputeListener(params plugins.Params) (*envoy_config_listener_v3.Listener, error)
 }
 
 var _ ListenerTranslator = new(emptyListenerTranslator)
@@ -25,8 +25,8 @@ var _ ListenerTranslator = new(listenerTranslatorInstance)
 type emptyListenerTranslator struct {
 }
 
-func (e *emptyListenerTranslator) ComputeListener(params plugins.Params) *envoy_config_listener_v3.Listener {
-	return nil
+func (e *emptyListenerTranslator) ComputeListener(params plugins.Params) (*envoy_config_listener_v3.Listener, error) {
+	return nil, nil
 }
 
 type listenerTranslatorInstance struct {
@@ -36,11 +36,13 @@ type listenerTranslatorInstance struct {
 	filterChainTranslator FilterChainTranslator
 }
 
-func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) *envoy_config_listener_v3.Listener {
+func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) (*envoy_config_listener_v3.Listener, error) {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+l.listener.GetName())
 
-	filterChains := l.filterChainTranslator.ComputeFilterChains(params)
-
+	filterChains, err := l.filterChainTranslator.ComputeFilterChains(params)
+	if err != nil {
+		return nil, err
+	}
 	CheckForDuplicateFilterChainMatches(filterChains, l.report)
 
 	out := &envoy_config_listener_v3.Listener{
@@ -58,7 +60,7 @@ func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) *env
 		}
 	}
 
-	return out
+	return out, nil
 }
 
 // computeListenerAddress returns the Address that this listener will listen for traffic

@@ -12,6 +12,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 	"log"
 	"math/big"
 	"net"
@@ -164,14 +165,17 @@ var (
 	getCerts sync.Once
 	cert     string
 	privKey  string
+	err      error
 )
 
 func gencerts() {
-
-	cert, privKey, _ = GetCerts(Params{
+	cert, privKey, err = GetCerts(Params{
 		Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 		IsCA:  true,
 	})
+	if err != nil {
+		contextutils.LoggerFrom(nil).DPanic(fmt.Errorf("Error in gencerts: %v", err))
+	}
 }
 
 func Certificate() string {

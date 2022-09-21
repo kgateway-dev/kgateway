@@ -21,7 +21,7 @@ import (
 )
 
 type FilterChainTranslator interface {
-	ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain
+	ComputeFilterChains(params plugins.Params) ([]*envoy_config_listener_v3.FilterChain, error)
 }
 
 var _ FilterChainTranslator = new(tcpFilterChainTranslator)
@@ -41,7 +41,7 @@ type tcpFilterChainTranslator struct {
 	sourcePrefixRanges []*v3.CidrRange
 }
 
-func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
+func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) ([]*envoy_config_listener_v3.FilterChain, error) {
 	var filterChains []*envoy_config_listener_v3.FilterChain
 
 	// 1. Run the tcp filter chain plugins
@@ -64,7 +64,7 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 		}
 	}
 
-	return filterChains
+	return filterChains, nil
 }
 
 // An httpFilterChainTranslator configures a single set of NetworkFilters
@@ -80,11 +80,14 @@ type httpFilterChainTranslator struct {
 	sourcePrefixRanges []*v3.CidrRange
 }
 
-func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
+func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) ([]*envoy_config_listener_v3.FilterChain, error) {
 	// 1. Generate all the network filters (including the HttpConnectionManager)
-	networkFilters := h.networkFilterTranslator.ComputeNetworkFilters(params)
+	networkFilters, err := h.networkFilterTranslator.ComputeNetworkFilters(params)
+	if err != nil {
+		return nil, err
+	}
 	if len(networkFilters) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// 2. Determine which, if any, SslConfigs are defined for this Listener
@@ -100,7 +103,7 @@ func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) [
 		}
 	}
 
-	return filterChains
+	return filterChains, nil
 }
 
 func (h *httpFilterChainTranslator) getSslConfigurationWithDefaults() []*v1.SslConfig {
@@ -213,12 +216,16 @@ type multiFilterChainTranslator struct {
 	translators []FilterChainTranslator
 }
 
-func (m *multiFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
+func (m *multiFilterChainTranslator) ComputeFilterChains(params plugins.Params) ([]*envoy_config_listener_v3.FilterChain, error) {
 	var outFilterChains []*envoy_config_listener_v3.FilterChain
 
 	for _, translator := range m.translators {
-		outFilterChains = append(outFilterChains, translator.ComputeFilterChains(params)...)
+		newFilterChains, err := translator.ComputeFilterChains(params)
+		if err != nil {
+			return nil, err
+		}
+		outFilterChains = append(outFilterChains, newFilterChains...)
 	}
 
-	return outFilterChains
+	return outFilterChains, nil
 }

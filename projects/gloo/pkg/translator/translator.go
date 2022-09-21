@@ -294,10 +294,12 @@ func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint6
 		out, err := mo.MarshalAppend(buf, proto.MessageV2(r.ResourceProto()))
 		if err != nil {
 			contextutils.LoggerFrom(nil).DPanic(errors.Wrap(err, "marshalling envoy snapshot components"))
+			return 0
 		}
 		_, err = hasher.Write(out)
 		if err != nil {
 			contextutils.LoggerFrom(nil).DPanic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
+			return 0
 		}
 	}
 	return hasher.Sum64()
