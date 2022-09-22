@@ -12,7 +12,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"log"
 	"math/big"
 	"net"
@@ -20,6 +19,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/rotisserie/eris"
 
