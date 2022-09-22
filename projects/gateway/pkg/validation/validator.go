@@ -161,9 +161,6 @@ func (v *validator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) erro
 		}
 	}
 
-	v.lock.Lock()
-	defer v.lock.Unlock()
-
 	// When the pod is first starting (aka the first snapshot is received),
 	// set the value of mValidConfig with respect to the translation loop above.
 	// Without this, mValidConfig will not be exported on /metrics until a new
