@@ -465,7 +465,7 @@ func newServiceClient(ctx context.Context, memFactory *factory.MemoryResourceCli
 	// Else return in-memory client
 	client, err := skkube.NewServiceClient(ctx, memFactory)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).DPanic(err)
+		panic(err)
 	}
 	return client
 }

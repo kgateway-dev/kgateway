@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/go-utils/healthchecker"
 	"google.golang.org/grpc"
@@ -49,12 +47,12 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	addr := lis.Addr().String()
 	_, portstr, err := net.SplitHostPort(addr)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).DPanic(err)
+		panic(err)
 	}
 
 	port, err := strconv.Atoi(portstr)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).DPanic(err)
+		panic(err)
 	}
 
 	srv.Port = uint32(port)

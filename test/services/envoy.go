@@ -19,8 +19,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/onsi/ginkgo"
@@ -58,7 +56,7 @@ type templateBootstrapBuilder struct {
 func (tbb *templateBootstrapBuilder) Build(ei *EnvoyInstance) string {
 	var b bytes.Buffer
 	if err := tbb.template.Execute(&b, ei); err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		panic(err)
 	}
 	return b.String()
 }
@@ -70,14 +68,14 @@ type fileBootstrapBuilder struct {
 func (fbb *fileBootstrapBuilder) Build(ei *EnvoyInstance) string {
 	templateBytes, err := ioutil.ReadFile(fbb.file)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		panic(err)
 	}
 
 	parsedTemplate := template.Must(template.New(fbb.file).Parse(string(templateBytes)))
 
 	var b bytes.Buffer
 	if err := parsedTemplate.Execute(&b, ei); err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		panic(err)
 	}
 	return b.String()
 }
