@@ -117,10 +117,7 @@ func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *gl
 	desiredProxies := make(reconciler.GeneratedProxies)
 	invalidProxies := make(reconciler.InvalidProxies)
 	for proxyName, gatewayList := range gatewaysByProxyName {
-		proxy, reports, err := s.translator.Translate(ctx, proxyName, snap, gatewayList)
-		if err != nil {
-			return nil, nil, err
-		}
+		proxy, reports := s.translator.Translate(ctx, proxyName, snap, gatewayList)
 		if proxy != nil {
 
 			if s.shouldCompresss(ctx) {

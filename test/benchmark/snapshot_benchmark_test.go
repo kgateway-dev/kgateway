@@ -281,15 +281,13 @@ var _ = Describe("SnapshotBenchmark", func() {
 			proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{PerConnectionBufferLimitBytes: &wrappers.UInt32Value{Value: 4096}}
 
 			b.Time(fmt.Sprintf("runtime of fnv hash translate"), func() {
-				snap, errs, report, err := fnvTranslator.Translate(params, proxyClone)
-				Expect(err).ToNot(HaveOccurred())
+				snap, errs, report := fnvTranslator.Translate(params, proxyClone)
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 				Expect(snap).NotTo(BeNil())
 				Expect(report).To(matchers2.BeEquivalentToDiff(validationutils.MakeReport(proxy)))
 			})
 			b.Time(fmt.Sprintf("runtime of hashstructure translate"), func() {
-				snap, errs, report, err := hashstructureTranslator.Translate(params, proxyClone)
-				Expect(err).ToNot(HaveOccurred())
+				snap, errs, report := hashstructureTranslator.Translate(params, proxyClone)
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 				Expect(snap).NotTo(BeNil())
 				Expect(report).To(matchers2.BeEquivalentToDiff(validationutils.MakeReport(proxy)))

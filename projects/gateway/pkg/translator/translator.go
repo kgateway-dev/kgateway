@@ -20,7 +20,7 @@ import (
 
 // Translator converts a set of Gateways into a Proxy, with the provided proxyName
 type Translator interface {
-	Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports, error)
+	Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
 }
 
 // IsolateVirtualHostsAnnotation is the annotation that can be applied to a Gateway resource to determine
@@ -87,7 +87,7 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 }
 
 // Translate converts a set of Gateways into a Proxy, with the provided proxyName
-func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, gateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports, error) {
+func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, gateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
 	reports := make(reporter.ResourceReports)
@@ -102,7 +102,7 @@ func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gl
 	if len(filteredGateways) == 0 {
 		snapHash := hashutils.MustHash(snap)
 		logger.Infof("Snapshot %v had no gateways for proxyName=%v", snapHash, proxyName)
-		return nil, reports, nil
+		return nil, reports
 	}
 
 	params := NewTranslatorParams(ctx, snap, reports)
@@ -118,7 +118,7 @@ func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gl
 	}
 
 	if len(listeners) == 0 {
-		return nil, reports, nil
+		return nil, reports
 	}
 
 	return &gloov1.Proxy{
@@ -127,7 +127,7 @@ func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gl
 			Namespace: t.writeNamespace,
 		},
 		Listeners: listeners,
-	}, reports, nil
+	}, reports
 }
 
 // getListenerTranslatorForGateway returns the translator responsible for converting the Gloo Gateway

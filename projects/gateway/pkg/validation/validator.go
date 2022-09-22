@@ -149,10 +149,7 @@ func (v *validator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) erro
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 	var errs error
 	for proxyName, gatewayList := range gatewaysByProxy {
-		_, reports, err := v.translator.Translate(ctx, proxyName, snap, gatewayList)
-		if err != nil {
-			return err
-		}
+		_, reports := v.translator.Translate(ctx, proxyName, snap, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
 			validate = reports.Validate
@@ -289,10 +286,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	)
 	for _, proxyName := range proxyNames {
 		gatewayList := gatewaysByProxy[proxyName]
-		proxy, reports, err := v.translator.Translate(ctx, proxyName, &snapshotClone, gatewayList)
-		if err != nil {
-			return nil, err
-		}
+		proxy, reports := v.translator.Translate(ctx, proxyName, &snapshotClone, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
 			validate = reports.Validate

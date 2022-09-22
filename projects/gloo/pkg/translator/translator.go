@@ -34,7 +34,7 @@ type Translator interface {
 	Translate(
 		params plugins.Params,
 		proxy *v1.Proxy,
-	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
+	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport)
 }
 
 var (
@@ -66,7 +66,7 @@ func NewTranslatorWithHasher(
 func (t *translatorInstance) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
 	// setup tracing, logging
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
@@ -91,7 +91,7 @@ func (t *translatorInstance) Translate(
 	clusters, endpoints := t.translateClusterSubsystemComponents(params, proxy, reports)
 	routeConfigs, listeners, err := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil
 	}
 	// run Resource Generator Plugins
 	for _, plugin := range t.pluginRegistry.GetResourceGeneratorPlugins() {
@@ -117,7 +117,7 @@ func (t *translatorInstance) Translate(
 		}
 	}
 
-	return xdsSnapshot, reports, proxyReport, nil
+	return xdsSnapshot, reports, proxyReport
 }
 
 func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.Params, proxy *v1.Proxy, reports reporter.ResourceReports) (
@@ -231,10 +231,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		// 2. Compute Listener
 		// This way we evaluate HttpFilters second, which allows us to avoid appending an HttpFilter
 		// that is not used by any Route / VirtualHost
-		envoyListener, err := listenerTranslator.ComputeListener(params)
-		if err != nil {
-			return nil, nil, err
-		}
+		envoyListener := listenerTranslator.ComputeListener(params)
 
 		if envoyListener != nil {
 			listeners = append(listeners, envoyListener)

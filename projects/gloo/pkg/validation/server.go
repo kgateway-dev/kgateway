@@ -201,11 +201,7 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 		Snapshot: &snapCopy,
 	}
 	for _, proxy := range proxiesToValidate {
-		xdsSnapshot, resourceReports, proxyReport, err := s.translator.Translate(params, proxy)
-		if err != nil {
-			return nil, err
-		}
-
+		xdsSnapshot, resourceReports, proxyReport := s.translator.Translate(params, proxy)
 		// Sanitize routes before sending report to gateway
 		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
 		routeErrorToWarnings(resourceReports, proxyReport)
