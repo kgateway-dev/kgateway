@@ -87,7 +87,7 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 }
 
 // Translate converts a set of Gateways into a Proxy, with the provided proxyName
-func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, gateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
+func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, gateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports, error) {
 	logger := contextutils.LoggerFrom(ctx)
 
 	reports := make(reporter.ResourceReports)
@@ -102,7 +102,7 @@ func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gl
 	if len(filteredGateways) == 0 {
 		snapHash := hashutils.MustHash(snap)
 		logger.Infof("Snapshot %v had no gateways for proxyName=%v", snapHash, proxyName)
-		return nil, reports
+		return nil, reports, nil
 	}
 
 	params := NewTranslatorParams(ctx, snap, reports)
@@ -118,7 +118,7 @@ func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gl
 	}
 
 	if len(listeners) == 0 {
-		return nil, reports
+		return nil, reports, nil
 	}
 
 	return &gloov1.Proxy{
@@ -127,7 +127,7 @@ func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gl
 			Namespace: t.writeNamespace,
 		},
 		Listeners: listeners,
-	}, reports
+	}, reports, nil
 }
 
 // getListenerTranslatorForGateway returns the translator responsible for converting the Gloo Gateway
