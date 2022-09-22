@@ -113,8 +113,7 @@ var _ = Describe("Listener Subsystem", func() {
 					Secrets: v1.SecretList{createTLSSecret()},
 				},
 			}
-			envoyListener, err := listenerTranslator.ComputeListener(params)
-			Expect(err).ToNot(HaveOccurred())
+			envoyListener := listenerTranslator.ComputeListener(params)
 			envoyRouteConfigs := routeConfigurationTranslator.ComputeRouteConfiguration(params)
 
 			// Validate that no Errors were encountered during translation
@@ -340,7 +339,7 @@ var _ = Describe("Listener Subsystem", func() {
 				Ctx:      ctx,
 				Snapshot: &gloov1snap.ApiSnapshot{},
 			}
-			_, _ = listenerTranslator.ComputeListener(params)
+			_ = listenerTranslator.ComputeListener(params)
 			_ = routeConfigurationTranslator.ComputeRouteConfiguration(params)
 
 			// Validate the ReportAssertionHandler defined by each test

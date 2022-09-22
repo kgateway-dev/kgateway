@@ -169,7 +169,7 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
-		contextutils.LoggerFrom(ctx).DPanic(err)
+		panic(err)
 	}
 
 	addr := listener.Addr().String()

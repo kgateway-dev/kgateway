@@ -35,7 +35,7 @@ import (
 func RunServer(ctx context.Context) *TestGRPCServer {
 	lis, err := net.Listen("tcp", ":0")
 	if err != nil {
-		contextutils.LoggerFrom(ctx).DPanic(err)
+		panic(err)
 	}
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)

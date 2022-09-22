@@ -48,6 +48,7 @@ func MustAnyToMessage(a *pany.Any) proto.Message {
 	err := ptypes.UnmarshalAny(a, &x)
 	if err != nil {
 		contextutils.LoggerFrom(nil).DPanic(err)
+		return proto.MessageV1("")
 	}
 	return x.Message
 }

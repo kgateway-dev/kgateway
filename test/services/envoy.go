@@ -277,7 +277,7 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 
 		envoyImageTag := getEnvoyImageTag()
 		if envoyImageTag == "" {
-			contextutils.LoggerFrom(nil).DPanic("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
+			panic("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
 		}
 		log.Printf("Using envoy docker image tag: %s", envoyImageTag)
 
