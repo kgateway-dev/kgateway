@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/golang/protobuf/proto"
@@ -175,12 +173,12 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 	addr := listener.Addr().String()
 	_, portStr, err := net.SplitHostPort(addr)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).DPanic(err)
+		panic(err)
 	}
 
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).DPanic(err)
+		panic(err)
 	}
 
 	mux := http.NewServeMux()
@@ -206,7 +204,7 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 			defer GinkgoRecover()
 			if err := h.Serve(listener); err != nil {
 				if err != http.ErrServerClosed {
-					contextutils.LoggerFrom(ctx).DPanic(err)
+					panic(err)
 				}
 			}
 		}()
