@@ -1,8 +1,9 @@
 package consul
 
 import (
-	"github.com/solo-io/gloo/test/helpers"
 	"testing"
+
+	"github.com/solo-io/gloo/test/helpers"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
