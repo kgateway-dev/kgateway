@@ -26,7 +26,7 @@ var _ = Describe("Settings", func() {
 		ctx := context.Background()
 
 		expectedSettings, err := FromContext(ctx)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(HaveOccurred())
 		Expect(expectedSettings).To(BeNil())
 	})
 
