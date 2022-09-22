@@ -89,10 +89,7 @@ func (t *translatorInstance) Translate(
 	// execute translation of listener and cluster subsystems
 	// during these translations, params.messages is side effected for the reports to use later in this loop
 	clusters, endpoints := t.translateClusterSubsystemComponents(params, proxy, reports)
-	routeConfigs, listeners, err := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
-	if err != nil {
-		return nil, nil, nil
-	}
+	routeConfigs, listeners := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
 	// run Resource Generator Plugins
 	for _, plugin := range t.pluginRegistry.GetResourceGeneratorPlugins() {
 		generatedClusters, generatedEndpoints, generatedRouteConfigs, generatedListeners, err := plugin.GeneratedResources(params, clusters, endpoints, routeConfigs, listeners)
@@ -204,7 +201,6 @@ ClusterLoop:
 func (t *translatorInstance) translateListenerSubsystemComponents(params plugins.Params, proxy *v1.Proxy, proxyReport *validationapi.ProxyReport) (
 	[]*envoy_config_route_v3.RouteConfiguration,
 	[]*envoy_config_listener_v3.Listener,
-	error,
 ) {
 	var (
 		routeConfigs []*envoy_config_route_v3.RouteConfiguration
@@ -241,7 +237,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		}
 	}
 
-	return routeConfigs, listeners, nil
+	return routeConfigs, listeners
 }
 
 func (t *translatorInstance) generateXDSSnapshot(
