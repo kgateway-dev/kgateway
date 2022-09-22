@@ -142,6 +142,8 @@ func (v *validator) ready() bool {
 }
 
 func (v *validator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) error {
+	v.lock.Lock() // hashing and cloning resources may mutate the object, so we need to lock
+	defer v.lock.Unlock()
 	if !v.gatewayUpdate(snap) {
 		return nil
 	}
