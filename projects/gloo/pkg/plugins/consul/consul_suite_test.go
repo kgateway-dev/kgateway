@@ -1,6 +1,7 @@
 package consul
 
 import (
+	"github.com/solo-io/gloo/test/helpers"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -11,6 +12,8 @@ import (
 var T *testing.T
 
 func TestConsul(t *testing.T) {
+	leakDetector := helpers.DeferredGoroutineLeakDetector(t)
+	defer leakDetector()
 	RegisterFailHandler(Fail)
 	T = t
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
