@@ -1028,11 +1028,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_hcm_hcm_proto_rawD
 	0x31, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63,
 	0x6f, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x1a, 0x12, 0x65, 0x78, 0x74, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x65, 0x78, 0x74, 0x2e,
-<<<<<<< HEAD
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xcf, 0x22, 0x0a, 0x1d, 0x48, 0x74, 0x74, 0x70, 0x43, 0x6f,
-=======
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xe9, 0x21, 0x0a, 0x1d, 0x48, 0x74, 0x74, 0x70, 0x43, 0x6f,
->>>>>>> c8d021be7 (Un-revert change to expose hcm internal address config (#7053))
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xe9, 0x25, 0x0a, 0x1d, 0x48, 0x74, 0x74, 0x70, 0x43, 0x6f,
 	0x6e, 0x6e, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x53,
 	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x42, 0x0a, 0x0f, 0x73, 0x6b, 0x69, 0x70, 0x5f,
 	0x78, 0x66, 0x66, 0x5f, 0x61, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
@@ -1246,36 +1242,6 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_hcm_hcm_proto_rawD
 	0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c,
 	0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x48, 0x74, 0x74, 0x70, 0x32, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x63,
 	0x6f, 0x6c, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x14, 0x68, 0x74, 0x74, 0x70, 0x32,
-<<<<<<< HEAD
-	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x1a,
-	0x91, 0x02, 0x0a, 0x1b, 0x53, 0x65, 0x74, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x43, 0x6c,
-	0x69, 0x65, 0x6e, 0x74, 0x43, 0x65, 0x72, 0x74, 0x44, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x73, 0x12,
-	0x34, 0x0a, 0x07, 0x73, 0x75, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62,
-	0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x07, 0x73, 0x75,
-	0x62, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x2e, 0x0a, 0x04, 0x63, 0x65, 0x72, 0x74, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52,
-	0x04, 0x63, 0x65, 0x72, 0x74, 0x12, 0x30, 0x0a, 0x05, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x18, 0x03,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65,
-	0x52, 0x05, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x12, 0x2c, 0x0a, 0x03, 0x64, 0x6e, 0x73, 0x18, 0x04,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65,
-	0x52, 0x03, 0x64, 0x6e, 0x73, 0x12, 0x2c, 0x0a, 0x03, 0x75, 0x72, 0x69, 0x18, 0x05, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x03,
-	0x75, 0x72, 0x69, 0x1a, 0xca, 0x01, 0x0a, 0x1b, 0x55, 0x75, 0x69, 0x64, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x49, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x53, 0x65, 0x74, 0x74, 0x69,
-	0x6e, 0x67, 0x73, 0x12, 0x46, 0x0a, 0x11, 0x70, 0x61, 0x63, 0x6b, 0x5f, 0x74, 0x72, 0x61, 0x63,
-	0x65, 0x5f, 0x72, 0x65, 0x61, 0x73, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a,
-	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
-	0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x0f, 0x70, 0x61, 0x63, 0x6b,
-	0x54, 0x72, 0x61, 0x63, 0x65, 0x52, 0x65, 0x61, 0x73, 0x6f, 0x6e, 0x12, 0x63, 0x0a, 0x21, 0x75,
-	0x73, 0x65, 0x5f, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x5f, 0x69, 0x64, 0x5f, 0x66, 0x6f,
-	0x72, 0x5f, 0x74, 0x72, 0x61, 0x63, 0x65, 0x5f, 0x73, 0x61, 0x6d, 0x70, 0x6c, 0x69, 0x6e, 0x67,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
-=======
 	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12,
 	0x85, 0x01, 0x0a, 0x17, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x5f, 0x61, 0x64, 0x64,
 	0x72, 0x65, 0x73, 0x73, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x26, 0x20, 0x01, 0x28,
@@ -1285,22 +1251,28 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_hcm_hcm_proto_rawD
 	0x65, 0x72, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x2e, 0x49, 0x6e, 0x74, 0x65, 0x72,
 	0x6e, 0x61, 0x6c, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
 	0x52, 0x15, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73,
-	0x73, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x1a, 0xa1, 0x01, 0x0a, 0x1b, 0x53, 0x65, 0x74, 0x43,
+	0x73, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x1a, 0x91, 0x02, 0x0a, 0x1b, 0x53, 0x65, 0x74, 0x43,
 	0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x43, 0x65, 0x72, 0x74,
 	0x44, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x73, 0x12, 0x34, 0x0a, 0x07, 0x73, 0x75, 0x62, 0x6a, 0x65,
 	0x63, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
 	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56,
-	0x61, 0x6c, 0x75, 0x65, 0x52, 0x07, 0x73, 0x75, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x12, 0x0a,
-	0x04, 0x63, 0x65, 0x72, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x04, 0x63, 0x65, 0x72,
-	0x74, 0x12, 0x14, 0x0a, 0x05, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08,
-	0x52, 0x05, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x12, 0x10, 0x0a, 0x03, 0x64, 0x6e, 0x73, 0x18, 0x04,
-	0x20, 0x01, 0x28, 0x08, 0x52, 0x03, 0x64, 0x6e, 0x73, 0x12, 0x10, 0x0a, 0x03, 0x75, 0x72, 0x69,
-	0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x03, 0x75, 0x72, 0x69, 0x1a, 0xca, 0x01, 0x0a, 0x1b,
+	0x61, 0x6c, 0x75, 0x65, 0x52, 0x07, 0x73, 0x75, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x2e, 0x0a,
+	0x04, 0x63, 0x65, 0x72, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f,
+	0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x04, 0x63, 0x65, 0x72, 0x74, 0x12, 0x30, 0x0a,
+	0x05, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
+	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42,
+	0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x05, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x12,
+	0x2c, 0x0a, 0x03, 0x64, 0x6e, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
+	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42,
+	0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x03, 0x64, 0x6e, 0x73, 0x12, 0x2c, 0x0a,
+	0x03, 0x75, 0x72, 0x69, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f,
+	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f,
+	0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x03, 0x75, 0x72, 0x69, 0x1a, 0xca, 0x01, 0x0a, 0x1b,
 	0x55, 0x75, 0x69, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x49, 0x64, 0x43, 0x6f, 0x6e,
 	0x66, 0x69, 0x67, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x46, 0x0a, 0x11, 0x70,
 	0x61, 0x63, 0x6b, 0x5f, 0x74, 0x72, 0x61, 0x63, 0x65, 0x5f, 0x72, 0x65, 0x61, 0x73, 0x6f, 0x6e,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
->>>>>>> c8d021be7 (Un-revert change to expose hcm internal address config (#7053))
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c,
 	0x75, 0x65, 0x52, 0x0f, 0x70, 0x61, 0x63, 0x6b, 0x54, 0x72, 0x61, 0x63, 0x65, 0x52, 0x65, 0x61,
 	0x73, 0x6f, 0x6e, 0x12, 0x63, 0x0a, 0x21, 0x75, 0x73, 0x65, 0x5f, 0x72, 0x65, 0x71, 0x75, 0x65,
@@ -1390,113 +1362,70 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_hcm_hcm_proto_goTy
 	(*HttpConnectionManagerSettings)(nil),                             // 5: hcm.options.gloo.solo.io.HttpConnectionManagerSettings
 	(*HttpConnectionManagerSettings_SetCurrentClientCertDetails)(nil), // 6: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails
 	(*HttpConnectionManagerSettings_UuidRequestIdConfigSettings)(nil), // 7: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings
-<<<<<<< HEAD
-	(*wrappers.BoolValue)(nil),                                        // 8: google.protobuf.BoolValue
-	(*wrappers.StringValue)(nil),                                      // 9: google.protobuf.StringValue
-	(*wrappers.UInt32Value)(nil),                                      // 10: google.protobuf.UInt32Value
-	(*duration.Duration)(nil),                                         // 11: google.protobuf.Duration
-	(*tracing.ListenerTracingSettings)(nil),                           // 12: tracing.options.gloo.solo.io.ListenerTracingSettings
-	(*protocol_upgrade.ProtocolUpgradeConfig)(nil),                    // 13: protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
-	(*protocol.Http2ProtocolOptions)(nil),                             // 14: protocol.options.gloo.solo.io.Http2ProtocolOptions
-}
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_hcm_hcm_proto_depIdxs = []int32{
-	8,  // 0: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.skip_xff_append:type_name -> google.protobuf.BoolValue
-	9,  // 1: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.via:type_name -> google.protobuf.StringValue
-	10, // 2: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.xff_num_trusted_hops:type_name -> google.protobuf.UInt32Value
-	8,  // 3: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.use_remote_address:type_name -> google.protobuf.BoolValue
-	8,  // 4: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.generate_request_id:type_name -> google.protobuf.BoolValue
-	8,  // 5: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.proxy_100_continue:type_name -> google.protobuf.BoolValue
-	11, // 6: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.stream_idle_timeout:type_name -> google.protobuf.Duration
-	11, // 7: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.idle_timeout:type_name -> google.protobuf.Duration
-	10, // 8: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_request_headers_kb:type_name -> google.protobuf.UInt32Value
-	11, // 9: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.request_timeout:type_name -> google.protobuf.Duration
-	11, // 10: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.request_headers_timeout:type_name -> google.protobuf.Duration
-	11, // 11: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.drain_timeout:type_name -> google.protobuf.Duration
-	11, // 12: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.delayed_close_timeout:type_name -> google.protobuf.Duration
-	9,  // 13: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.server_name:type_name -> google.protobuf.StringValue
-	8,  // 14: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.strip_any_host_port:type_name -> google.protobuf.BoolValue
-	8,  // 15: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.accept_http_10:type_name -> google.protobuf.BoolValue
-	9,  // 16: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.default_host_for_http_10:type_name -> google.protobuf.StringValue
-	8,  // 17: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.allow_chunked_length:type_name -> google.protobuf.BoolValue
-	8,  // 18: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.enable_trailers:type_name -> google.protobuf.BoolValue
-	8,  // 19: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.proper_case_header_key_format:type_name -> google.protobuf.BoolValue
-	8,  // 20: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.preserve_case_header_key_format:type_name -> google.protobuf.BoolValue
-	12, // 21: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.tracing:type_name -> tracing.options.gloo.solo.io.ListenerTracingSettings
-	0,  // 22: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.forward_client_cert_details:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails
-	6,  // 23: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.set_current_client_cert_details:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails
-	8,  // 24: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.preserve_external_request_id:type_name -> google.protobuf.BoolValue
-	13, // 25: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.upgrades:type_name -> protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
-	11, // 26: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_connection_duration:type_name -> google.protobuf.Duration
-	11, // 27: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_stream_duration:type_name -> google.protobuf.Duration
-	10, // 28: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_headers_count:type_name -> google.protobuf.UInt32Value
-	2,  // 29: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.headers_with_underscores_action:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.HeadersWithUnderscoreAction
-	10, // 30: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_requests_per_connection:type_name -> google.protobuf.UInt32Value
-	1,  // 31: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.server_header_transformation:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation
-	3,  // 32: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.path_with_escaped_slashes_action:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction
-	4,  // 33: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.codec_type:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType
-	8,  // 34: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.merge_slashes:type_name -> google.protobuf.BoolValue
-	8,  // 35: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.normalize_path:type_name -> google.protobuf.BoolValue
-	7,  // 36: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.uuid_request_id_config:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings
-	14, // 37: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.http2_protocol_options:type_name -> protocol.options.gloo.solo.io.Http2ProtocolOptions
-	8,  // 38: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.subject:type_name -> google.protobuf.BoolValue
-	8,  // 39: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.cert:type_name -> google.protobuf.BoolValue
-	8,  // 40: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.chain:type_name -> google.protobuf.BoolValue
-	8,  // 41: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.dns:type_name -> google.protobuf.BoolValue
-	8,  // 42: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.uri:type_name -> google.protobuf.BoolValue
-	8,  // 43: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings.pack_trace_reason:type_name -> google.protobuf.BoolValue
-	8,  // 44: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings.use_request_id_for_trace_sampling:type_name -> google.protobuf.BoolValue
-	45, // [45:45] is the sub-list for method output_type
-	45, // [45:45] is the sub-list for method input_type
-	45, // [45:45] is the sub-list for extension type_name
-	45, // [45:45] is the sub-list for extension extendee
-	0,  // [0:45] is the sub-list for field type_name
-=======
 	(*HttpConnectionManagerSettings_CidrRange)(nil),                   // 8: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CidrRange
 	(*HttpConnectionManagerSettings_InternalAddressConfig)(nil),       // 9: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.InternalAddressConfig
 	(*wrappers.BoolValue)(nil),                                        // 10: google.protobuf.BoolValue
-	(*duration.Duration)(nil),                                         // 11: google.protobuf.Duration
+	(*wrappers.StringValue)(nil),                                      // 11: google.protobuf.StringValue
 	(*wrappers.UInt32Value)(nil),                                      // 12: google.protobuf.UInt32Value
-	(*tracing.ListenerTracingSettings)(nil),                           // 13: tracing.options.gloo.solo.io.ListenerTracingSettings
-	(*protocol_upgrade.ProtocolUpgradeConfig)(nil),                    // 14: protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
-	(*protocol.Http2ProtocolOptions)(nil),                             // 15: protocol.options.gloo.solo.io.Http2ProtocolOptions
+	(*duration.Duration)(nil),                                         // 13: google.protobuf.Duration
+	(*tracing.ListenerTracingSettings)(nil),                           // 14: tracing.options.gloo.solo.io.ListenerTracingSettings
+	(*protocol_upgrade.ProtocolUpgradeConfig)(nil),                    // 15: protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
+	(*protocol.Http2ProtocolOptions)(nil),                             // 16: protocol.options.gloo.solo.io.Http2ProtocolOptions
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_hcm_hcm_proto_depIdxs = []int32{
-	10, // 0: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.use_remote_address:type_name -> google.protobuf.BoolValue
-	10, // 1: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.generate_request_id:type_name -> google.protobuf.BoolValue
-	11, // 2: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.stream_idle_timeout:type_name -> google.protobuf.Duration
-	11, // 3: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.idle_timeout:type_name -> google.protobuf.Duration
-	12, // 4: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_request_headers_kb:type_name -> google.protobuf.UInt32Value
-	11, // 5: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.request_timeout:type_name -> google.protobuf.Duration
-	11, // 6: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.request_headers_timeout:type_name -> google.protobuf.Duration
-	11, // 7: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.drain_timeout:type_name -> google.protobuf.Duration
-	11, // 8: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.delayed_close_timeout:type_name -> google.protobuf.Duration
-	13, // 9: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.tracing:type_name -> tracing.options.gloo.solo.io.ListenerTracingSettings
-	0,  // 10: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.forward_client_cert_details:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails
-	6,  // 11: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.set_current_client_cert_details:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails
-	14, // 12: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.upgrades:type_name -> protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
-	11, // 13: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_connection_duration:type_name -> google.protobuf.Duration
-	11, // 14: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_stream_duration:type_name -> google.protobuf.Duration
-	12, // 15: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_headers_count:type_name -> google.protobuf.UInt32Value
-	2,  // 16: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.headers_with_underscores_action:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.HeadersWithUnderscoreAction
-	12, // 17: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_requests_per_connection:type_name -> google.protobuf.UInt32Value
-	1,  // 18: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.server_header_transformation:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation
-	3,  // 19: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.path_with_escaped_slashes_action:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction
-	4,  // 20: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.codec_type:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType
-	10, // 21: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.normalize_path:type_name -> google.protobuf.BoolValue
-	7,  // 22: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.uuid_request_id_config:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings
-	15, // 23: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.http2_protocol_options:type_name -> protocol.options.gloo.solo.io.Http2ProtocolOptions
-	9,  // 24: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.internal_address_config:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.InternalAddressConfig
-	10, // 25: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.subject:type_name -> google.protobuf.BoolValue
-	10, // 26: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings.pack_trace_reason:type_name -> google.protobuf.BoolValue
-	10, // 27: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings.use_request_id_for_trace_sampling:type_name -> google.protobuf.BoolValue
-	12, // 28: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CidrRange.prefix_len:type_name -> google.protobuf.UInt32Value
-	8,  // 29: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.InternalAddressConfig.cidr_ranges:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CidrRange
-	30, // [30:30] is the sub-list for method output_type
-	30, // [30:30] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
->>>>>>> c8d021be7 (Un-revert change to expose hcm internal address config (#7053))
+	10, // 0: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.skip_xff_append:type_name -> google.protobuf.BoolValue
+	11, // 1: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.via:type_name -> google.protobuf.StringValue
+	12, // 2: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.xff_num_trusted_hops:type_name -> google.protobuf.UInt32Value
+	10, // 3: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.use_remote_address:type_name -> google.protobuf.BoolValue
+	10, // 4: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.generate_request_id:type_name -> google.protobuf.BoolValue
+	10, // 5: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.proxy_100_continue:type_name -> google.protobuf.BoolValue
+	13, // 6: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.stream_idle_timeout:type_name -> google.protobuf.Duration
+	13, // 7: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.idle_timeout:type_name -> google.protobuf.Duration
+	12, // 8: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_request_headers_kb:type_name -> google.protobuf.UInt32Value
+	13, // 9: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.request_timeout:type_name -> google.protobuf.Duration
+	13, // 10: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.request_headers_timeout:type_name -> google.protobuf.Duration
+	13, // 11: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.drain_timeout:type_name -> google.protobuf.Duration
+	13, // 12: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.delayed_close_timeout:type_name -> google.protobuf.Duration
+	11, // 13: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.server_name:type_name -> google.protobuf.StringValue
+	10, // 14: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.strip_any_host_port:type_name -> google.protobuf.BoolValue
+	10, // 15: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.accept_http_10:type_name -> google.protobuf.BoolValue
+	11, // 16: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.default_host_for_http_10:type_name -> google.protobuf.StringValue
+	10, // 17: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.allow_chunked_length:type_name -> google.protobuf.BoolValue
+	10, // 18: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.enable_trailers:type_name -> google.protobuf.BoolValue
+	10, // 19: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.proper_case_header_key_format:type_name -> google.protobuf.BoolValue
+	10, // 20: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.preserve_case_header_key_format:type_name -> google.protobuf.BoolValue
+	14, // 21: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.tracing:type_name -> tracing.options.gloo.solo.io.ListenerTracingSettings
+	0,  // 22: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.forward_client_cert_details:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails
+	6,  // 23: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.set_current_client_cert_details:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails
+	10, // 24: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.preserve_external_request_id:type_name -> google.protobuf.BoolValue
+	15, // 25: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.upgrades:type_name -> protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
+	13, // 26: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_connection_duration:type_name -> google.protobuf.Duration
+	13, // 27: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_stream_duration:type_name -> google.protobuf.Duration
+	12, // 28: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_headers_count:type_name -> google.protobuf.UInt32Value
+	2,  // 29: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.headers_with_underscores_action:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.HeadersWithUnderscoreAction
+	12, // 30: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.max_requests_per_connection:type_name -> google.protobuf.UInt32Value
+	1,  // 31: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.server_header_transformation:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation
+	3,  // 32: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.path_with_escaped_slashes_action:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction
+	4,  // 33: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.codec_type:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType
+	10, // 34: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.merge_slashes:type_name -> google.protobuf.BoolValue
+	10, // 35: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.normalize_path:type_name -> google.protobuf.BoolValue
+	7,  // 36: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.uuid_request_id_config:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings
+	16, // 37: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.http2_protocol_options:type_name -> protocol.options.gloo.solo.io.Http2ProtocolOptions
+	9,  // 38: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.internal_address_config:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.InternalAddressConfig
+	10, // 39: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.subject:type_name -> google.protobuf.BoolValue
+	10, // 40: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.cert:type_name -> google.protobuf.BoolValue
+	10, // 41: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.chain:type_name -> google.protobuf.BoolValue
+	10, // 42: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.dns:type_name -> google.protobuf.BoolValue
+	10, // 43: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails.uri:type_name -> google.protobuf.BoolValue
+	10, // 44: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings.pack_trace_reason:type_name -> google.protobuf.BoolValue
+	10, // 45: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings.use_request_id_for_trace_sampling:type_name -> google.protobuf.BoolValue
+	12, // 46: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CidrRange.prefix_len:type_name -> google.protobuf.UInt32Value
+	8,  // 47: hcm.options.gloo.solo.io.HttpConnectionManagerSettings.InternalAddressConfig.cidr_ranges:type_name -> hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CidrRange
+	48, // [48:48] is the sub-list for method output_type
+	48, // [48:48] is the sub-list for method input_type
+	48, // [48:48] is the sub-list for extension type_name
+	48, // [48:48] is the sub-list for extension extendee
+	0,  // [0:48] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_gloo_projects_gloo_api_v1_options_hcm_hcm_proto_init() }
