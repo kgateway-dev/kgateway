@@ -490,11 +490,11 @@ func (v *validator) validateVirtualServiceInternal(
 }
 
 func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef *core.ResourceRef, dryRun bool) error {
+	v.lock.Lock()
+	defer v.lock.Unlock()
 	if !v.ready() {
 		return errors.Errorf("Gateway validation is yet not available. Waiting for first snapshot")
 	}
-	v.lock.Lock()
-	defer v.lock.Unlock()
 	snap := v.latestSnapshot.Clone()
 
 	vs, err := snap.VirtualServices.Find(vsRef.Strings())
@@ -578,11 +578,11 @@ func (v *validator) validateRouteTableInternal(
 }
 
 func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef *core.ResourceRef, dryRun bool) error {
+	v.lock.Lock()
+	defer v.lock.Unlock()
 	if !v.ready() {
 		return errors.Errorf("Gateway validation is yet not available. Waiting for first snapshot")
 	}
-	v.lock.Lock()
-	defer v.lock.Unlock()
 	snap := v.latestSnapshot.Clone()
 
 	rt, err := snap.RouteTables.Find(rtRef.Strings())
@@ -665,6 +665,8 @@ func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway,
 }
 
 func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error) {
+	v.lock.Lock()
+	defer v.lock.Unlock()
 	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
 		// Sending a nil proxy causes the upstream to be translated with all proxies in gloo's snapshot
 		Proxy: nil,
@@ -689,6 +691,8 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 }
 
 func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *core.ResourceRef, dryRun bool) error {
+	v.lock.Lock()
+	defer v.lock.Unlock()
 	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
 		// Sending a nil proxy causes the remaining upstreams to be translated with all proxies in gloo's snapshot
 		Proxy: nil,
@@ -716,6 +720,8 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *cor
 }
 
 func (v *validator) ValidateDeleteSecret(ctx context.Context, secretRef *core.ResourceRef, dryRun bool) error {
+	v.lock.Lock()
+	defer v.lock.Unlock()
 	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
 		// Sending a nil proxy causes the remaining secrets to be translated with all proxies in gloo's snapshot
 		Proxy: nil,
