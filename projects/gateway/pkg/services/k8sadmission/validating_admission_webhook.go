@@ -159,12 +159,13 @@ func (l *debugLogger) Write(p []byte) (n int, err error) {
 }
 
 type gatewayValidationWebhook struct {
+	// everything living here MUST be synchronized to avoid data races
 	ctx                           context.Context
-	validator                     validation.Validator
-	watchNamespaces               []string
-	alwaysAccept                  bool
-	readGatewaysFromAllNamespaces bool
-	webhookNamespace              string
+	validator                     validation.Validator // the function calls are synchronized
+	watchNamespaces               []string             // we make a deep copy when we read this; original is read only so no races
+	alwaysAccept                  bool                 // read only so no races
+	readGatewaysFromAllNamespaces bool                 // read only so no races
+	webhookNamespace              string               // read only so no races
 }
 
 type AdmissionReviewWithProxies struct {
@@ -296,7 +297,8 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	// check gateway requests for the same namespace as this webhook, regardless of the
 	// contents of watchNamespaces. It's assumed that if it's non-empty, watchNamespaces
 	// contains the webhook's own namespace, since this was checked during setup in setup_syncer.go
-	watchNamespaces := wh.watchNamespaces
+	watchNamespaces := make([]string, len(wh.watchNamespaces))
+	copy(watchNamespaces, wh.watchNamespaces) // important we make a deep copy
 	if gvk == gwv1.GatewayGVK && !wh.readGatewaysFromAllNamespaces && !utils.AllNamespaces(wh.watchNamespaces) {
 		watchNamespaces = []string{wh.webhookNamespace}
 	}
