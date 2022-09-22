@@ -594,6 +594,8 @@ spec:
                         config:
                           type: object
                           x-kubernetes-preserve-unknown-fields: true
+                        failureModeAllow:
+                          type: boolean
                         grpc:
                           properties:
                             address:
