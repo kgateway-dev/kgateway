@@ -1,0 +1,9 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7202
+  fixesIssue: true
+  description: >-
+    Update validation webhook server and core gloo translation to use the same shared
+    translator with proper synchronization, which resolves some rare race conditions
+    when applying a bunch of resources at once (with validation enabled).
+
