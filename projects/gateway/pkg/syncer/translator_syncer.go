@@ -158,7 +158,7 @@ func (s *TranslatorSyncer) reconcile(ctx context.Context, desiredProxies reconci
 
 type reportsAndStatus struct {
 	Status  *core.Status
-	Reports reporter.ResourceReports
+	Reports resourceReportHelperMap
 }
 type statusSyncer struct {
 	proxyToLastStatus       map[string]reportsAndStatus
@@ -191,6 +191,14 @@ func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, repo
 	}
 }
 
+// key input resource only exists for map comparisons! use the cloned value in goroutine for status reporting
+type resourceReportHelperMap map[resources.InputResource]resourceReportHelper
+
+type resourceReportHelper struct {
+	ClonedInputResource resources.InputResource // a clone for use by goroutine
+	reporter.Report
+}
+
 func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProxies, invalidProxies reconciler.InvalidProxies) {
 	s.mapLock.Lock()
 	defer s.mapLock.Unlock()
@@ -220,10 +228,19 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 			s.proxyToLastStatus[refKey] = reportsAndStatus{}
 		}
 		current := s.proxyToLastStatus[refKey]
+		helper := resourceReportHelperMap{}
 		// These reports are for gateway resources: VirtualServices, RouteTables and Gateways
-		current.Reports = reports
+		for inputResource, report := range reports {
+			clonedInputResource := resources.Clone(inputResource).(resources.InputResource)
+			helper[inputResource] = resourceReportHelper{
+				ClonedInputResource: clonedInputResource, // important to clone the report, as we use this to pass ownership of the input resource to the status reporting goroutine
+				Report:              report,              // in theory we should copy the report here too.. TODO(kdorosh)
+			}
+		}
+		current.Reports = helper
 		s.proxyToLastStatus[refKey] = current
-		s.currentGeneratedProxies = append(s.currentGeneratedProxies, proxyRef)
+		proxyRefClone := proxyRef.Clone().(*core.ResourceRef) // important to clone as we pass ownership to the status reporting goroutine
+		s.currentGeneratedProxies = append(s.currentGeneratedProxies, proxyRefClone)
 	}
 
 	// To ensure that reports are generated in the same order, we sort the proxies.
@@ -282,12 +299,13 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 		ref := proxy.GetMetadata().Ref()
 		refKey := gloo_translator.UpstreamToClusterName(ref)
 		status := s.statusClient.GetStatus(proxy)
+		statusClone := status.Clone().(*core.Status) // important to clone as we pass ownership to the status reporting goroutine
 		if current, ok := s.proxyToLastStatus[refKey]; ok {
-			current.Status = status
+			current.Status = statusClone
 			s.proxyToLastStatus[refKey] = current
 		} else {
 			s.proxyToLastStatus[refKey] = reportsAndStatus{
-				Status: status,
+				Status: statusClone,
 			}
 		}
 	}
@@ -326,9 +344,9 @@ func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 }
 
 // extractCurrentReports massages several asynchronously set `statusSyncer` variables into formats consumable by `syncStatus`
-func (s *statusSyncer) extractCurrentReports() (reporter.ResourceReports, map[resources.InputResource]map[string]*core.Status, map[resources.InputResource]*core.Status) {
+func (s *statusSyncer) extractCurrentReports() (resourceReportHelperMap, map[resources.InputResource]map[string]*core.Status, map[resources.InputResource]*core.Status) {
 	var nilProxy *gloov1.Proxy
-	allReports := reporter.ResourceReports{}
+	allReports := resourceReportHelperMap{}
 	inputResourceBySubresourceStatuses := map[resources.InputResource]map[string]*core.Status{}
 	var localInputResourceLastStatus map[resources.InputResource]*core.Status
 
@@ -383,16 +401,15 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	allReports, inputResourceBySubresourceStatuses, localInputResourceLastStatus := s.extractCurrentReports()
 
 	var errs error
-	for inputResource, subresourceStatuses := range allReports {
-		// write reports may update the status, so clone the object
-		clonedInputResource := resources.Clone(inputResource).(resources.InputResource)
+	for inputResource, report := range allReports {
+		clonedInputResource := report.ClonedInputResource
+		subresourceStatuses := report.Report
 		// set the last known status on the input resource.
 		// this may be different than the status on the snapshot, as the snapshot doesn't get updated
 		// on status changes.
 		if status, ok := localInputResourceLastStatus[inputResource]; ok {
 			s.statusClient.SetStatus(clonedInputResource, status)
 		}
-
 		reports := reporter.ResourceReports{clonedInputResource: subresourceStatuses}
 		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 
@@ -406,7 +423,7 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 				// to get the status performance improvements, we need to make the assumption that the user has the latest CRDs installed.
 				// if a user forgets the error message is very confusing (invalid request during kubectl patch);
 				// this should help them understand what's going on in case they did not read the changelog.
-				wrappedErr := errors.Wrapf(err, "failed to write reports for %v;"+
+				wrappedErr := errors.Wrapf(err, "failed to write reports for %v; "+
 					"did you make sure your CRDs have been updated since v1.13.0-beta14? (i.e. `status` and `status.statuses` fields exist on your CR)", inputResource.GetMetadata().Ref().Key())
 				errs = multierror.Append(errs, wrappedErr)
 			} else {
