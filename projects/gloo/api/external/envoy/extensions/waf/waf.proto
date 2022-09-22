@@ -67,9 +67,6 @@ message RuleSet {
   // A directory to include. all *.conf files in this directory will be
   // included. sub directories will NOT be checked.
   string directory = 4;
-  //resource reference to config maps containing modules to assist in the resolution of `query`.
-  //Rules from configmaped .conf files will be treated the same as if they were entered as a rulestr
-  repeated core.solo.io.ResourceRef custom_config_map_settings = 5;
 }
 
 message ModSecurityPerRoute {
