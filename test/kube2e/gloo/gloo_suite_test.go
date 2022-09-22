@@ -2,12 +2,15 @@ package gloo_test
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/avast/retry-go"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/k8s-utils/kubeutils"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
@@ -19,7 +22,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -36,11 +38,16 @@ func TestGloo(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "Gloo Suite", []Reporter{junitReporter})
 }
 
+const (
+	namespace = defaults.GlooSystem
+)
+
 var (
-	testHelper *helper.SoloTestHelper
-	ctx        context.Context
-	cancel     context.CancelFunc
-	namespace  string
+	testHelper        *helper.SoloTestHelper
+	resourceClientset *kube2e.KubeResourceClientSet
+	snapshotWriter    helpers.SnapshotWriter
+
+	ctx, cancel = context.WithCancel(context.Background())
 )
 
 var _ = BeforeSuite(func() {
@@ -48,23 +55,16 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	ctx, cancel = context.WithCancel(context.Background())
 
-	randomNumber := time.Now().Unix() % 10000
-	namespace = "gloo-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
-
-	// necessary for non-default namespace
-	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
-	Expect(err).NotTo(HaveOccurred())
-
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
 		defaults.InstallNamespace = namespace
+		defaults.Verbose = true
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())
 
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
-	testHelper.Verbose = true
 
 	// Define helm overrides
 	valuesOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
@@ -75,6 +75,14 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+
+	cfg, err := kubeutils.GetConfig("", "")
+	Expect(err).NotTo(HaveOccurred())
+
+	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
 })
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {

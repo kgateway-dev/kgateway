@@ -117,6 +117,11 @@ var _ = Describe("AuthConfig", func() {
 			"--apikey-label-selector k1=v1",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: map[string]string{"k1": "v1"},
+				StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
+					K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
+						LabelSelector: map[string]string{"k1": "v1"},
+					},
+				},
 			}),
 
 		Entry("with apikey config -- secret refs", ctx, "create ac --name ac1 --enable-apikey-auth "+
@@ -129,6 +134,17 @@ var _ = Describe("AuthConfig", func() {
 						Name:      "s1",
 					},
 				},
+				StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
+					K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
+						LabelSelector: nil,
+						ApiKeySecretRefs: []*core.ResourceRef{
+							{
+								Namespace: "ns1",
+								Name:      "s1",
+							},
+						},
+					},
+				},
 			}),
 		Entry("with apikey config -- both groups & secret refs", ctx, "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-label-selector k1=v1 --apikey-secret-namespace ns1 --apikey-secret-name s1 ",
@@ -138,6 +154,17 @@ var _ = Describe("AuthConfig", func() {
 					{
 						Namespace: "ns1",
 						Name:      "s1",
+					},
+				},
+				StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
+					K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
+						LabelSelector: map[string]string{"k1": "v1"},
+						ApiKeySecretRefs: []*core.ResourceRef{
+							{
+								Namespace: "ns1",
+								Name:      "s1",
+							},
+						},
 					},
 				},
 			}),
@@ -328,6 +355,17 @@ var _ = Describe("AuthConfig", func() {
 						{
 							Namespace: "ns1",
 							Name:      "s1",
+						},
+					},
+					StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
+						K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
+							LabelSelector: map[string]string{"k1": "v1"},
+							ApiKeySecretRefs: []*core.ResourceRef{
+								{
+									Namespace: "ns1",
+									Name:      "s1",
+								},
+							},
 						},
 					},
 				}

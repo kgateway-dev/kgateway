@@ -38,7 +38,7 @@ var _ = Describe("ExtauthApiKey", func() {
 		secret, err := helpers.MustSecretClient(ctx).Read("gloo-system", "user", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(secret.GetApiKey()).To(Equal(&extauthpb.ApiKeySecret{
+		Expect(secret.GetApiKey()).To(Equal(&extauthpb.ApiKey{
 			ApiKey: "secretApiKey",
 		}))
 	})
@@ -50,7 +50,7 @@ var _ = Describe("ExtauthApiKey", func() {
 		secret, err := helpers.MustSecretClient(ctx).Read("gloo-system", "user", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(secret.GetApiKey()).To(Equal(&extauthpb.ApiKeySecret{
+		Expect(secret.GetApiKey()).To(Equal(&extauthpb.ApiKey{
 			ApiKey: "secretApiKey",
 		}))
 		Expect(secret.Metadata.Labels).To(Equal(

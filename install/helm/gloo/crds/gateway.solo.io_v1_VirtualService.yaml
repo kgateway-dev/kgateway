@@ -2533,6 +2533,15 @@ spec:
                                     type: object
                                   type: array
                               type: object
+                            maxStreamDuration:
+                              properties:
+                                grpcTimeoutHeaderMax:
+                                  type: string
+                                grpcTimeoutHeaderOffset:
+                                  type: string
+                                maxStreamDuration:
+                                  type: string
+                              type: object
                             prefixRewrite:
                               nullable: true
                               type: string
@@ -4221,6 +4230,8 @@ spec:
                                                     type: boolean
                                                   unwrapAsApiGateway:
                                                     type: boolean
+                                                  wrapAsApiGateway:
+                                                    type: boolean
                                                 type: object
                                               azure:
                                                 properties:
@@ -5405,6 +5416,8 @@ spec:
                                           type: boolean
                                         unwrapAsApiGateway:
                                           type: boolean
+                                        wrapAsApiGateway:
+                                          type: boolean
                                       type: object
                                     azure:
                                       properties:
@@ -5558,6 +5571,12 @@ spec:
                 type: object
             type: object
           status:
+            default: {}
+            properties:
+              statuses:
+                default: {}
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
             type: object
             x-kubernetes-preserve-unknown-fields: true
         type: object

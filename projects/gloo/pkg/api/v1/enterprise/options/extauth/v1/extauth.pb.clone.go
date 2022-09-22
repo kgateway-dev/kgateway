@@ -389,6 +389,18 @@ func (m *OAuth2) Clone() proto.Message {
 			}
 		}
 
+	case *OAuth2_Oauth2:
+
+		if h, ok := interface{}(m.GetOauth2()).(clone.Cloner); ok {
+			target.OauthType = &OAuth2_Oauth2{
+				Oauth2: h.Clone().(*PlainOAuth2),
+			}
+		} else {
+			target.OauthType = &OAuth2_Oauth2{
+				Oauth2: proto.Clone(m.GetOauth2()).(*PlainOAuth2),
+			}
+		}
+
 	}
 
 	return target
@@ -732,6 +744,72 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 }
 
 // Clone function
+func (m *PlainOAuth2) Clone() proto.Message {
+	var target *PlainOAuth2
+	if m == nil {
+		return target
+	}
+	target = &PlainOAuth2{}
+
+	target.ClientId = m.GetClientId()
+
+	if h, ok := interface{}(m.GetClientSecretRef()).(clone.Cloner); ok {
+		target.ClientSecretRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.ClientSecretRef = proto.Clone(m.GetClientSecretRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	if m.GetAuthEndpointQueryParams() != nil {
+		target.AuthEndpointQueryParams = make(map[string]string, len(m.GetAuthEndpointQueryParams()))
+		for k, v := range m.GetAuthEndpointQueryParams() {
+
+			target.AuthEndpointQueryParams[k] = v
+
+		}
+	}
+
+	target.AppUrl = m.GetAppUrl()
+
+	target.CallbackPath = m.GetCallbackPath()
+
+	if m.GetScopes() != nil {
+		target.Scopes = make([]string, len(m.GetScopes()))
+		for idx, v := range m.GetScopes() {
+
+			target.Scopes[idx] = v
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetSession()).(clone.Cloner); ok {
+		target.Session = h.Clone().(*UserSession)
+	} else {
+		target.Session = proto.Clone(m.GetSession()).(*UserSession)
+	}
+
+	target.LogoutPath = m.GetLogoutPath()
+
+	if m.GetTokenEndpointQueryParams() != nil {
+		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
+		for k, v := range m.GetTokenEndpointQueryParams() {
+
+			target.TokenEndpointQueryParams[k] = v
+
+		}
+	}
+
+	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
+
+	target.AuthEndpoint = m.GetAuthEndpoint()
+
+	target.TokenEndpoint = m.GetTokenEndpoint()
+
+	target.RevocationEndpoint = m.GetRevocationEndpoint()
+
+	return target
+}
+
+// Clone function
 func (m *JwtValidation) Clone() proto.Message {
 	var target *JwtValidation
 	if m == nil {
@@ -922,6 +1000,185 @@ func (m *ApiKeyAuth) Clone() proto.Message {
 		}
 	}
 
+	if m.GetHeadersFromMetadataEntry() != nil {
+		target.HeadersFromMetadataEntry = make(map[string]*ApiKeyAuth_MetadataEntry, len(m.GetHeadersFromMetadataEntry()))
+		for k, v := range m.GetHeadersFromMetadataEntry() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HeadersFromMetadataEntry[k] = h.Clone().(*ApiKeyAuth_MetadataEntry)
+			} else {
+				target.HeadersFromMetadataEntry[k] = proto.Clone(v).(*ApiKeyAuth_MetadataEntry)
+			}
+
+		}
+	}
+
+	switch m.StorageBackend.(type) {
+
+	case *ApiKeyAuth_K8SSecretApikeyStorage:
+
+		if h, ok := interface{}(m.GetK8SSecretApikeyStorage()).(clone.Cloner); ok {
+			target.StorageBackend = &ApiKeyAuth_K8SSecretApikeyStorage{
+				K8SSecretApikeyStorage: h.Clone().(*K8SSecretApiKeyStorage),
+			}
+		} else {
+			target.StorageBackend = &ApiKeyAuth_K8SSecretApikeyStorage{
+				K8SSecretApikeyStorage: proto.Clone(m.GetK8SSecretApikeyStorage()).(*K8SSecretApiKeyStorage),
+			}
+		}
+
+	case *ApiKeyAuth_AerospikeApikeyStorage:
+
+		if h, ok := interface{}(m.GetAerospikeApikeyStorage()).(clone.Cloner); ok {
+			target.StorageBackend = &ApiKeyAuth_AerospikeApikeyStorage{
+				AerospikeApikeyStorage: h.Clone().(*AerospikeApiKeyStorage),
+			}
+		} else {
+			target.StorageBackend = &ApiKeyAuth_AerospikeApikeyStorage{
+				AerospikeApikeyStorage: proto.Clone(m.GetAerospikeApikeyStorage()).(*AerospikeApiKeyStorage),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *K8SSecretApiKeyStorage) Clone() proto.Message {
+	var target *K8SSecretApiKeyStorage
+	if m == nil {
+		return target
+	}
+	target = &K8SSecretApiKeyStorage{}
+
+	if m.GetLabelSelector() != nil {
+		target.LabelSelector = make(map[string]string, len(m.GetLabelSelector()))
+		for k, v := range m.GetLabelSelector() {
+
+			target.LabelSelector[k] = v
+
+		}
+	}
+
+	if m.GetApiKeySecretRefs() != nil {
+		target.ApiKeySecretRefs = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetApiKeySecretRefs()))
+		for idx, v := range m.GetApiKeySecretRefs() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeySecretRefs[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			} else {
+				target.ApiKeySecretRefs[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AerospikeApiKeyStorage) Clone() proto.Message {
+	var target *AerospikeApiKeyStorage
+	if m == nil {
+		return target
+	}
+	target = &AerospikeApiKeyStorage{}
+
+	target.Hostname = m.GetHostname()
+
+	target.Namespace = m.GetNamespace()
+
+	target.Set = m.GetSet()
+
+	target.Port = m.GetPort()
+
+	target.BatchSize = m.GetBatchSize()
+
+	if h, ok := interface{}(m.GetReadModeSc()).(clone.Cloner); ok {
+		target.ReadModeSc = h.Clone().(*AerospikeApiKeyStorageReadModeSc)
+	} else {
+		target.ReadModeSc = proto.Clone(m.GetReadModeSc()).(*AerospikeApiKeyStorageReadModeSc)
+	}
+
+	if h, ok := interface{}(m.GetReadModeAp()).(clone.Cloner); ok {
+		target.ReadModeAp = h.Clone().(*AerospikeApiKeyStorageReadModeAp)
+	} else {
+		target.ReadModeAp = proto.Clone(m.GetReadModeAp()).(*AerospikeApiKeyStorageReadModeAp)
+	}
+
+	target.NodeTlsName = m.GetNodeTlsName()
+
+	target.CertPath = m.GetCertPath()
+
+	target.KeyPath = m.GetKeyPath()
+
+	target.AllowInsecure = m.GetAllowInsecure()
+
+	target.RootCaPath = m.GetRootCaPath()
+
+	target.TlsVersion = m.GetTlsVersion()
+
+	if m.GetTlsCurveGroups() != nil {
+		target.TlsCurveGroups = make([]*AerospikeApiKeyStorageTlsCurveID, len(m.GetTlsCurveGroups()))
+		for idx, v := range m.GetTlsCurveGroups() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.TlsCurveGroups[idx] = h.Clone().(*AerospikeApiKeyStorageTlsCurveID)
+			} else {
+				target.TlsCurveGroups[idx] = proto.Clone(v).(*AerospikeApiKeyStorageTlsCurveID)
+			}
+
+		}
+	}
+
+	switch m.CommitLevel.(type) {
+
+	case *AerospikeApiKeyStorage_CommitAll:
+
+		target.CommitLevel = &AerospikeApiKeyStorage_CommitAll{
+			CommitAll: m.GetCommitAll(),
+		}
+
+	case *AerospikeApiKeyStorage_CommitMaster:
+
+		target.CommitLevel = &AerospikeApiKeyStorage_CommitMaster{
+			CommitMaster: m.GetCommitMaster(),
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKey) Clone() proto.Message {
+	var target *ApiKey
+	if m == nil {
+		return target
+	}
+	target = &ApiKey{}
+
+	target.ApiKey = m.GetApiKey()
+
+	if m.GetLabels() != nil {
+		target.Labels = make([]string, len(m.GetLabels()))
+		for idx, v := range m.GetLabels() {
+
+			target.Labels[idx] = v
+
+		}
+	}
+
+	if m.GetMetadata() != nil {
+		target.Metadata = make(map[string]string, len(m.GetMetadata()))
+		for k, v := range m.GetMetadata() {
+
+			target.Metadata[k] = v
+
+		}
+	}
+
 	return target
 }
 
@@ -932,8 +1189,6 @@ func (m *ApiKeySecret) Clone() proto.Message {
 		return target
 	}
 	target = &ApiKeySecret{}
-
-	target.GenerateApiKey = m.GetGenerateApiKey()
 
 	target.ApiKey = m.GetApiKey()
 
@@ -1166,6 +1421,215 @@ func (m *ExtAuthConfig) Clone() proto.Message {
 	}
 
 	target.FailOnRedirect = m.GetFailOnRedirect()
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyCreateRequest) Clone() proto.Message {
+	var target *ApiKeyCreateRequest
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyCreateRequest{}
+
+	if m.GetApiKeys() != nil {
+		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))
+		for idx, v := range m.GetApiKeys() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeys[idx] = h.Clone().(*ApiKey)
+			} else {
+				target.ApiKeys[idx] = proto.Clone(v).(*ApiKey)
+			}
+
+		}
+	}
+
+	if m.GetRawApiKeys() != nil {
+		target.RawApiKeys = make([]string, len(m.GetRawApiKeys()))
+		for idx, v := range m.GetRawApiKeys() {
+
+			target.RawApiKeys[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyCreateResponse) Clone() proto.Message {
+	var target *ApiKeyCreateResponse
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyCreateResponse{}
+
+	if m.GetApiKeys() != nil {
+		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))
+		for idx, v := range m.GetApiKeys() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeys[idx] = h.Clone().(*ApiKey)
+			} else {
+				target.ApiKeys[idx] = proto.Clone(v).(*ApiKey)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyReadRequest) Clone() proto.Message {
+	var target *ApiKeyReadRequest
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyReadRequest{}
+
+	if m.GetRawApiKeys() != nil {
+		target.RawApiKeys = make([]string, len(m.GetRawApiKeys()))
+		for idx, v := range m.GetRawApiKeys() {
+
+			target.RawApiKeys[idx] = v
+
+		}
+	}
+
+	if m.GetLabels() != nil {
+		target.Labels = make([]string, len(m.GetLabels()))
+		for idx, v := range m.GetLabels() {
+
+			target.Labels[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyReadResponse) Clone() proto.Message {
+	var target *ApiKeyReadResponse
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyReadResponse{}
+
+	if m.GetApiKeys() != nil {
+		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))
+		for idx, v := range m.GetApiKeys() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeys[idx] = h.Clone().(*ApiKey)
+			} else {
+				target.ApiKeys[idx] = proto.Clone(v).(*ApiKey)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyUpdateRequest) Clone() proto.Message {
+	var target *ApiKeyUpdateRequest
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyUpdateRequest{}
+
+	target.Upsert = m.GetUpsert()
+
+	if m.GetApiKeys() != nil {
+		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))
+		for idx, v := range m.GetApiKeys() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeys[idx] = h.Clone().(*ApiKey)
+			} else {
+				target.ApiKeys[idx] = proto.Clone(v).(*ApiKey)
+			}
+
+		}
+	}
+
+	if m.GetRawApiKeys() != nil {
+		target.RawApiKeys = make([]string, len(m.GetRawApiKeys()))
+		for idx, v := range m.GetRawApiKeys() {
+
+			target.RawApiKeys[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyUpdateResponse) Clone() proto.Message {
+	var target *ApiKeyUpdateResponse
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyUpdateResponse{}
+
+	if m.GetApiKeys() != nil {
+		target.ApiKeys = make([]*ApiKey, len(m.GetApiKeys()))
+		for idx, v := range m.GetApiKeys() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ApiKeys[idx] = h.Clone().(*ApiKey)
+			} else {
+				target.ApiKeys[idx] = proto.Clone(v).(*ApiKey)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyDeleteRequest) Clone() proto.Message {
+	var target *ApiKeyDeleteRequest
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyDeleteRequest{}
+
+	if m.GetRawApiKeys() != nil {
+		target.RawApiKeys = make([]string, len(m.GetRawApiKeys()))
+		for idx, v := range m.GetRawApiKeys() {
+
+			target.RawApiKeys[idx] = v
+
+		}
+	}
+
+	if m.GetLabels() != nil {
+		target.Labels = make([]string, len(m.GetLabels()))
+		for idx, v := range m.GetLabels() {
+
+			target.Labels[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyDeleteResponse) Clone() proto.Message {
+	var target *ApiKeyDeleteResponse
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyDeleteResponse{}
 
 	return target
 }
@@ -1467,6 +1931,8 @@ func (m *UserSession_RedisSession) Clone() proto.Message {
 
 	target.TargetDomain = m.GetTargetDomain()
 
+	target.HeaderName = m.GetHeaderName()
+
 	return target
 }
 
@@ -1568,6 +2034,126 @@ func (m *ApiKeyAuth_SecretKey) Clone() proto.Message {
 	target.Name = m.GetName()
 
 	target.Required = m.GetRequired()
+
+	return target
+}
+
+// Clone function
+func (m *ApiKeyAuth_MetadataEntry) Clone() proto.Message {
+	var target *ApiKeyAuth_MetadataEntry
+	if m == nil {
+		return target
+	}
+	target = &ApiKeyAuth_MetadataEntry{}
+
+	target.Name = m.GetName()
+
+	target.Required = m.GetRequired()
+
+	return target
+}
+
+// Clone function
+func (m *AerospikeApiKeyStorageReadModeSc) Clone() proto.Message {
+	var target *AerospikeApiKeyStorageReadModeSc
+	if m == nil {
+		return target
+	}
+	target = &AerospikeApiKeyStorageReadModeSc{}
+
+	switch m.ReadModeSc.(type) {
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScSession:
+
+		target.ReadModeSc = &AerospikeApiKeyStorageReadModeSc_ReadModeScSession{
+			ReadModeScSession: m.GetReadModeScSession(),
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize:
+
+		target.ReadModeSc = &AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize{
+			ReadModeScLinearize: m.GetReadModeScLinearize(),
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScReplica:
+
+		target.ReadModeSc = &AerospikeApiKeyStorageReadModeSc_ReadModeScReplica{
+			ReadModeScReplica: m.GetReadModeScReplica(),
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable:
+
+		target.ReadModeSc = &AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable{
+			ReadModeScAllowUnavailable: m.GetReadModeScAllowUnavailable(),
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AerospikeApiKeyStorageReadModeAp) Clone() proto.Message {
+	var target *AerospikeApiKeyStorageReadModeAp
+	if m == nil {
+		return target
+	}
+	target = &AerospikeApiKeyStorageReadModeAp{}
+
+	switch m.ReadModeAp.(type) {
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApOne:
+
+		target.ReadModeAp = &AerospikeApiKeyStorageReadModeAp_ReadModeApOne{
+			ReadModeApOne: m.GetReadModeApOne(),
+		}
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApAll:
+
+		target.ReadModeAp = &AerospikeApiKeyStorageReadModeAp_ReadModeApAll{
+			ReadModeApAll: m.GetReadModeApAll(),
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AerospikeApiKeyStorageTlsCurveID) Clone() proto.Message {
+	var target *AerospikeApiKeyStorageTlsCurveID
+	if m == nil {
+		return target
+	}
+	target = &AerospikeApiKeyStorageTlsCurveID{}
+
+	switch m.CurveId.(type) {
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP256:
+
+		target.CurveId = &AerospikeApiKeyStorageTlsCurveID_CurveP256{
+			CurveP256: m.GetCurveP256(),
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP384:
+
+		target.CurveId = &AerospikeApiKeyStorageTlsCurveID_CurveP384{
+			CurveP384: m.GetCurveP384(),
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP521:
+
+		target.CurveId = &AerospikeApiKeyStorageTlsCurveID_CurveP521{
+			CurveP521: m.GetCurveP521(),
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_X_25519:
+
+		target.CurveId = &AerospikeApiKeyStorageTlsCurveID_X_25519{
+			X_25519: m.GetX_25519(),
+		}
+
+	}
 
 	return target
 }
@@ -1868,6 +2454,68 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
+	var target *ExtAuthConfig_PlainOAuth2Config
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_PlainOAuth2Config{}
+
+	target.ClientId = m.GetClientId()
+
+	target.ClientSecret = m.GetClientSecret()
+
+	if m.GetAuthEndpointQueryParams() != nil {
+		target.AuthEndpointQueryParams = make(map[string]string, len(m.GetAuthEndpointQueryParams()))
+		for k, v := range m.GetAuthEndpointQueryParams() {
+
+			target.AuthEndpointQueryParams[k] = v
+
+		}
+	}
+
+	target.AppUrl = m.GetAppUrl()
+
+	target.CallbackPath = m.GetCallbackPath()
+
+	if m.GetScopes() != nil {
+		target.Scopes = make([]string, len(m.GetScopes()))
+		for idx, v := range m.GetScopes() {
+
+			target.Scopes[idx] = v
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetSession()).(clone.Cloner); ok {
+		target.Session = h.Clone().(*UserSession)
+	} else {
+		target.Session = proto.Clone(m.GetSession()).(*UserSession)
+	}
+
+	target.LogoutPath = m.GetLogoutPath()
+
+	if m.GetTokenEndpointQueryParams() != nil {
+		target.TokenEndpointQueryParams = make(map[string]string, len(m.GetTokenEndpointQueryParams()))
+		for k, v := range m.GetTokenEndpointQueryParams() {
+
+			target.TokenEndpointQueryParams[k] = v
+
+		}
+	}
+
+	target.AfterLogoutUrl = m.GetAfterLogoutUrl()
+
+	target.AuthEndpoint = m.GetAuthEndpoint()
+
+	target.TokenEndpoint = m.GetTokenEndpoint()
+
+	target.RevocationEndpoint = m.GetRevocationEndpoint()
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_OAuth2Config) Clone() proto.Message {
 	var target *ExtAuthConfig_OAuth2Config
 	if m == nil {
@@ -1898,6 +2546,18 @@ func (m *ExtAuthConfig_OAuth2Config) Clone() proto.Message {
 		} else {
 			target.OauthType = &ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig{
 				AccessTokenValidationConfig: proto.Clone(m.GetAccessTokenValidationConfig()).(*ExtAuthConfig_AccessTokenValidationConfig),
+			}
+		}
+
+	case *ExtAuthConfig_OAuth2Config_Oauth2Config:
+
+		if h, ok := interface{}(m.GetOauth2Config()).(clone.Cloner); ok {
+			target.OauthType = &ExtAuthConfig_OAuth2Config_Oauth2Config{
+				Oauth2Config: h.Clone().(*ExtAuthConfig_PlainOAuth2Config),
+			}
+		} else {
+			target.OauthType = &ExtAuthConfig_OAuth2Config_Oauth2Config{
+				Oauth2Config: proto.Clone(m.GetOauth2Config()).(*ExtAuthConfig_PlainOAuth2Config),
 			}
 		}
 
@@ -1936,6 +2596,34 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Clone() proto.Message {
 			target.HeadersFromKeyMetadata[k] = v
 
 		}
+	}
+
+	switch m.StorageBackend.(type) {
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage:
+
+		if h, ok := interface{}(m.GetK8SSecretApikeyStorage()).(clone.Cloner); ok {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage{
+				K8SSecretApikeyStorage: h.Clone().(*K8SSecretApiKeyStorage),
+			}
+		} else {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage{
+				K8SSecretApikeyStorage: proto.Clone(m.GetK8SSecretApikeyStorage()).(*K8SSecretApiKeyStorage),
+			}
+		}
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage:
+
+		if h, ok := interface{}(m.GetAerospikeApikeyStorage()).(clone.Cloner); ok {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage{
+				AerospikeApikeyStorage: h.Clone().(*AerospikeApiKeyStorage),
+			}
+		} else {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage{
+				AerospikeApikeyStorage: proto.Clone(m.GetAerospikeApikeyStorage()).(*AerospikeApiKeyStorage),
+			}
+		}
+
 	}
 
 	return target

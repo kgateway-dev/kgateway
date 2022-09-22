@@ -27,7 +27,9 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-        {{- if .Values.global.istioIntegration.whitelistDiscovery }}
+        {{- if and .Values.global.istioIntegration.whitelistDiscovery .Values.global.istioIntegration.istioSidecarRevTag }}
+        istio.io/rev: {{ .Values.global.istioIntegration.istioSidecarRevTag }}
+        {{- else if .Values.global.istioIntegration.whitelistDiscovery }}
         sidecar.istio.io/inject: "true"
         {{- else if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"

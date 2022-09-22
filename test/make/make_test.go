@@ -118,7 +118,7 @@ var _ = Describe("Make", func() {
 			out, err := exec.Command("git", "remote", "get-url", "origin").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 
-			expectedVersion := "0.0.0-fork"
+			expectedVersion := "0.0.1-fork"
 			remoteUrl := string(out)
 			if strings.Contains(remoteUrl, "git@github.com:solo-io/gloo.git") ||
 				strings.Contains(remoteUrl, "https://www.github.com/solo-io/gloo.git") {

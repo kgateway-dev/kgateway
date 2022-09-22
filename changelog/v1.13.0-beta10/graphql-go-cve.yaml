@@ -1,0 +1,13 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Update the CLI command used to run scans to not create Github issues by default,
+      which makes it easier for developers to run scans locally.
+      Add `CVE-2022-37315` to our .trivyignore since it is a vulnerability that does not
+      affect Gloo Edge and does not have a fix yet. This will ensure that it does not appear
+      in the scan results that are published to the docs.
+  - type: NON_USER_FACING
+    description: >
+      Update minimum version that we use to determine which CVEs to publish to our docs.
+      We now scan versions >=1.9, so we should only publish the results that match that
+      constraint as well. Previously, we published reports for >=1.8.

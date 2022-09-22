@@ -73,14 +73,10 @@ func (c *kubeReporterClient) Read(namespace, name string, opts clients.ReadOpts)
 	return c.skClient.Read(namespace, name, opts)
 }
 
-func (c *kubeReporterClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
-	rlConfig, ok := resource.(*RateLimitConfig)
+func (c *kubeReporterClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	rlConfig, ok := inputResource.(*RateLimitConfig)
 	if !ok {
-		return nil, eris.Errorf("unexpected type: expected %T, got %T", &RateLimitConfig{}, resource)
-	}
-	if !opts.OverwriteExisting {
-		// Reporters should never create resources
-		return nil, eris.New("unexpected create operation")
+		return nil, eris.Errorf("unexpected type: expected %T, got %T", &RateLimitConfig{}, inputResource)
 	}
 
 	baseRlConfig := rlv1alpha1.RateLimitConfig(rlConfig.RateLimitConfig)
@@ -93,4 +89,8 @@ func (c *kubeReporterClient) Write(resource resources.Resource, opts clients.Wri
 	return &RateLimitConfig{
 		RateLimitConfig: skratelimit.RateLimitConfig(baseRlConfig),
 	}, nil
+}
+
+func (c *kubeReporterClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+	return c.skClient.Write(resource, opts)
 }

@@ -23,9 +23,7 @@ spec:
     metadata:
       labels:
         gloo: resource-cleanup
-        {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
-        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-cleanup
@@ -47,6 +45,12 @@ spec:
           - -c
           - |
             kubectl delete --ignore-not-found validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-{{ .Release.Namespace }} || exit $?
+
+            if ! kubectl get crd upstreams.gloo.solo.io; then
+              echo "Could not find Upstream CRD. Gloo Edge CRDs may have already been deleted. Skipping cleanup of Gloo Edge resources."
+              exit 0
+            fi
+
             kubectl delete --ignore-not-found upstreams.gloo.solo.io -n {{ .Release.Namespace }} -l app=gloo || exit $?
 
             # gateways can be in multiple namespaces

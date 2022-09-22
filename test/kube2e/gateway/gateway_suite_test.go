@@ -9,9 +9,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/avast/retry-go"
+
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
+	"github.com/solo-io/k8s-utils/kubeutils"
+
 	"github.com/solo-io/go-utils/testutils/exec"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
@@ -39,9 +45,19 @@ func TestGateway(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "Gateway Suite", []Reporter{junitReporter})
 }
 
-var testHelper *helper.SoloTestHelper
-var ctx, cancel = context.WithCancel(context.Background())
-var namespace = defaults.GlooSystem
+const (
+	gatewayProxy = gatewaydefaults.GatewayProxyName
+	gatewayPort  = int(80)
+	namespace    = gloodefaults.GlooSystem
+)
+
+var (
+	testHelper        *helper.SoloTestHelper
+	resourceClientset *kube2e.KubeResourceClientSet
+	snapshotWriter    helpers.SnapshotWriter
+
+	ctx, cancel = context.WithCancel(context.Background())
+)
 
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
@@ -92,6 +108,14 @@ func StartTestHelper() {
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
 	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+
+	cfg, err := kubeutils.GetConfig("", "")
+	Expect(err).NotTo(HaveOccurred())
+
+	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
 }
 
 func installXdsRelay() error {
@@ -128,12 +152,18 @@ global:
 settings:
   singleNamespace: true
   create: true
-  replaceInvalidRoutes: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: true
 gloo:
   deployment:
-    replicas: 1
+    replicas: 2
+    customEnv:
+      - name: LEADER_ELECTION_LEASE_DURATION
+        value: 4s
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
@@ -155,6 +185,6 @@ func TearDownTestHelper() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 		Expect(apierrors.IsNotFound(err)).To(BeTrue())
-		cancel()
 	}
+	cancel()
 }
