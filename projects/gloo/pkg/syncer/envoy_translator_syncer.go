@@ -126,7 +126,10 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			Messages: map[*core.ResourceRef][]string{},
 		}
 
-		xdsSnapshot, reports, _ := s.translator.Translate(params, proxy)
+		xdsSnapshot, reports, _, err := s.translator.Translate(params, proxy)
+		if err != nil {
+			logger.DPanic("Error in syncEnvoy: %v", err)
+		}
 
 		// Messages are aggregated during translation, and need to be added to reports
 		for _, messages := range params.Messages {

@@ -347,14 +347,16 @@ var _ = Describe("Translator", func() {
 	JustBeforeEach(justBeforeEach)
 
 	translateWithError := func() *validation.ProxyReport {
-		_, errs, report := translator.Translate(params, proxy)
+		_, errs, report, err := translator.Translate(params, proxy)
+		Expect(err).ToNot(HaveOccurred())
 		ExpectWithOffset(1, errs.Validate()).To(HaveOccurred())
 		return report
 	}
 
 	// returns md5 Sum of current snapshot
 	translate := func() {
-		snap, errs, report := translator.Translate(params, proxy)
+		snap, errs, report, err := translator.Translate(params, proxy)
+		Expect(err).ToNot(HaveOccurred())
 		ExpectWithOffset(1, errs.Validate()).NotTo(HaveOccurred())
 		ExpectWithOffset(1, snap).NotTo(BeNil())
 		ExpectWithOffset(1, report).To(Equal(validationutils.MakeReport(proxy)))
@@ -371,7 +373,7 @@ var _ = Describe("Translator", func() {
 
 		hcmFilter := listener.FilterChains[0].Filters[0]
 		hcmCfg = &envoyhttp.HttpConnectionManager{}
-		err := ParseTypedConfig(hcmFilter, hcmCfg)
+		err = ParseTypedConfig(hcmFilter, hcmCfg)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 		routes := snap.GetResources(types.RouteTypeV3)
@@ -390,7 +392,8 @@ var _ = Describe("Translator", func() {
 		proxyClone := proto.Clone(proxy).(*v1.Proxy)
 		proxyClone.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Name = "invalid.name"
 
-		snap, errs, report := translator.Translate(params, proxyClone)
+		snap, errs, report, err := translator.Translate(params, proxyClone)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(errs.Validate()).NotTo(HaveOccurred())
 		Expect(snap).NotTo(BeNil())
 		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
@@ -408,7 +411,8 @@ var _ = Describe("Translator", func() {
 		proxyClone := proto.Clone(proxy).(*v1.Proxy)
 		proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].GetHttpListener().GetVirtualHosts()[0].Name = "invalid.name"
 
-		snap, errs, report := translator.Translate(params, proxyClone)
+		snap, errs, report, err := translator.Translate(params, proxyClone)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(errs.Validate()).NotTo(HaveOccurred())
 		Expect(snap).NotTo(BeNil())
 		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
@@ -428,7 +432,8 @@ var _ = Describe("Translator", func() {
 
 		proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{PerConnectionBufferLimitBytes: &wrappers.UInt32Value{Value: 4096}}
 
-		snap, errs, report := translator.Translate(params, proxyClone)
+		snap, errs, report, err := translator.Translate(params, proxyClone)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(errs.Validate()).NotTo(HaveOccurred())
 		Expect(snap).NotTo(BeNil())
 		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
@@ -453,7 +458,8 @@ var _ = Describe("Translator", func() {
 					},
 				}
 
-			_, errs, _ := translator.Translate(params, proxyClone)
+			_, errs, _, err := translator.Translate(params, proxyClone)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
 			Expect(errs.Validate().Error()).To(ContainSubstring("VirtualHost Error: ProcessingError. Reason: auth config not found:"))
 		})
@@ -469,7 +475,8 @@ var _ = Describe("Translator", func() {
 					},
 				}
 
-			_, errs, _ := translator.Translate(params, proxyClone)
+			_, errs, _, err := translator.Translate(params, proxyClone)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
 			Expect(errs.Validate().Error()).To(ContainSubstring("VirtualHost Error: ProcessingError. Reason: auth config not found:"))
 		})
@@ -502,7 +509,8 @@ var _ = Describe("Translator", func() {
 			}
 		})
 		It("should error when path match is missing", func() {
-			_, errs, report := translator.Translate(params, proxy)
+			_, errs, report, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
 			invalidMatcherName := fmt.Sprintf("%s-route-0", virtualHostName)
 			Expect(errs.Validate().Error()).To(ContainSubstring(fmt.Sprintf("Route Error: InvalidMatcherError. Reason: no path specifier provided. Route Name: %s", invalidMatcherName)))
@@ -526,7 +534,8 @@ var _ = Describe("Translator", func() {
 					},
 				},
 			}
-			_, errs, report := translator.Translate(params, proxy)
+			_, errs, report, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
 			invalidMatcherName := fmt.Sprintf("%s-route-0", virtualHostName)
 			processingErrorName := fmt.Sprintf("%s-route-0-%s-matcher-0", virtualHostName, routes[0].Name)
@@ -1096,7 +1105,8 @@ var _ = Describe("Translator", func() {
 				},
 			}
 
-			snap, errs, report := translator.Translate(params, proxy)
+			snap, errs, report, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			Expect(snap).NotTo(BeNil())
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
@@ -1366,7 +1376,8 @@ var _ = Describe("Translator", func() {
 			})
 
 			It("should warn about invalid http header name", func() {
-				_, _, report := translator.Translate(params, proxy)
+				_, _, report, err := translator.Translate(params, proxy)
+				Expect(err).ToNot(HaveOccurred())
 				routeReportWarning := report.GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetWarnings()[0]
 				reason := routeReportWarning.GetReason()
 				Expect(reason).To(Equal("invalid:-cluster is an invalid HTTP header name"))
@@ -1456,8 +1467,9 @@ var _ = Describe("Translator", func() {
 		It("should error on invalid ref in upstream groups", func() {
 			upstreamGroup.Destinations[0].Destination.GetUpstream().Name = "notexist"
 
-			_, errs, report := translator.Translate(params, proxy)
-			err := errs.Validate()
+			_, errs, report, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
+			err = errs.Validate()
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("destination # 1: upstream not found: list did not find upstream gloo-system.notexist"))
 
@@ -1505,7 +1517,8 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should set a ClusterSpecifier on the referring route", func() {
-			snap, _, _ := translator.Translate(params, proxy)
+			snap, _, _, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
 			routes := snap.GetResources(types.RouteTypeV3)
 			routesProto := routes.Items["http-listener-routes"]
 
@@ -1731,7 +1744,8 @@ var _ = Describe("Translator", func() {
 			})
 
 			It("should error the route", func() {
-				_, errs, report := translator.Translate(params, proxy)
+				_, errs, report, err := translator.Translate(params, proxy)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(errs.Validate()).To(HaveOccurred())
 				Expect(errs.Validate().Error()).To(ContainSubstring("route has a subset config, but none of the subsets in the upstream match it"))
 				processingErrorName := fmt.Sprintf("%s-route-0-matcher-0", virtualHostName)
@@ -1766,7 +1780,8 @@ var _ = Describe("Translator", func() {
 			})
 
 			It("should warn a route when a destination is missing", func() {
-				_, errs, report := translator.Translate(params, proxy)
+				_, errs, report, err := translator.Translate(params, proxy)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 				Expect(errs.ValidateStrict()).To(HaveOccurred())
 				Expect(errs.ValidateStrict().Error()).To(ContainSubstring("*v1.Upstream { notexist.do } not found"))
@@ -2178,7 +2193,8 @@ var _ = Describe("Translator", func() {
 
 			routes := proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()
 			proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Routes = append(routes, invalidLambdaRoute)
-			_, resourceReport, _ := translator.Translate(params, proxy)
+			_, resourceReport, _, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(resourceReport.Validate()).To(HaveOccurred())
 			Expect(resourceReport.Validate().Error()).To(ContainSubstring("a route references nonexistentLambdaFunc AWS lambda which does not exist on the route's upstream"))
 		})
@@ -2213,7 +2229,8 @@ var _ = Describe("Translator", func() {
 
 			routes := proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()
 			proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Routes = append(routes, invalidLambdaRoute)
-			_, resourceReport, _ := translator.Translate(params, proxy)
+			_, resourceReport, _, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(resourceReport.Validate()).To(HaveOccurred())
 			Expect(resourceReport.Validate().Error()).To(ContainSubstring("a route references nonexistentLambdaFunc AWS lambda which does not exist on the route's upstream"))
 		})
@@ -2249,7 +2266,8 @@ var _ = Describe("Translator", func() {
 		//Positive Tests
 		It("Should translate single routes when multiRoute is passed and only one destination is specified", func() {
 			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteOneDest}
-			snap, resourceReport, _ := translator.Translate(params, proxy)
+			snap, resourceReport, _, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
 
 			// A weighted route to the service has been configured
@@ -2281,7 +2299,8 @@ var _ = Describe("Translator", func() {
 
 		It("Should translate 0 weight destinations if there are other destinations with weights over 0", func() {
 			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteZeroAndFiveAsWeights}
-			snap, resourceReport, _ := translator.Translate(params, proxy)
+			snap, resourceReport, _, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
 
 			// A weighted route to the service has been configured
@@ -2321,7 +2340,8 @@ var _ = Describe("Translator", func() {
 		//Negative Tests
 		It("Should report an error when total weight is 0 - nil and 0 weights passed", func() {
 			proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{multiActionRouteWithNoWeightPassedDest}
-			_, errs, _ := translator.Translate(params, proxy)
+			_, errs, _, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
 			Expect(errs.Validate().Error()).To(ContainSubstring(expectedErrorString))
 		})
@@ -2598,7 +2618,8 @@ var _ = Describe("Translator", func() {
 				SslSecrets: invalidSslSecretRef,
 			}}
 
-			_, errs, _ := translator.Translate(params, proxyClone)
+			_, errs, _, err := translator.Translate(params, proxyClone)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
 			Expect(errs.Validate().Error()).To(ContainSubstring("Listener Error: SSLConfigError. Reason: SSL secret not found: list did not find secret"))
 		})
@@ -2727,19 +2748,22 @@ var _ = Describe("Translator", func() {
 
 		Context("failure", func() {
 			It("should fail with an upstream with no tls config", func() {
-				_, errs, _ := translator.Translate(params, proxy)
+				_, errs, _, err := translator.Translate(params, proxy)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(errs.Validate()).To(HaveOccurred())
 			})
 
 			It("should fail with only private key", func() {
 				tlsConf.PrivateKey = gloohelpers.PrivateKey()
-				_, errs, _ := translator.Translate(params, proxy)
+				_, errs, _, err := translator.Translate(params, proxy)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(errs.Validate()).To(HaveOccurred())
 			})
 
 			It("should fail with only cert chain", func() {
 				tlsConf.CertChain = gloohelpers.Certificate()
-				_, errs, _ := translator.Translate(params, proxy)
+				_, errs, _, err := translator.Translate(params, proxy)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(errs.Validate()).To(HaveOccurred())
 			})
 		})
@@ -3184,7 +3208,8 @@ var _ = Describe("Translator", func() {
 						SniDomains: []string{"a.com"},
 					},
 				})
-				_, errs, _ := translator.Translate(params, proxy)
+				_, errs, _, err := translator.Translate(params, proxy)
+				Expect(err).ToNot(HaveOccurred())
 				proxyKind := resources.Kind(proxy)
 				_, reports := errs.Find(proxyKind, proxy.Metadata.Ref())
 				Expect(reports.Errors.Error()).To(ContainSubstring("Tried to apply multiple filter chains with the" +
@@ -3226,7 +3251,8 @@ var _ = Describe("Translator", func() {
 						},
 					},
 				})
-				_, errs, _ := translator.Translate(params, proxy)
+				_, errs, _, err := translator.Translate(params, proxy)
+				Expect(err).ToNot(HaveOccurred())
 				proxyKind := resources.Kind(proxy)
 				_, reports := errs.Find(proxyKind, proxy.Metadata.Ref())
 				Expect(reports.Errors.Error()).To(ContainSubstring("Tried to apply multiple filter chains with the" +
@@ -3348,7 +3374,8 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}
-		snap, resourceReport, _ := translator.Translate(params, proxy)
+		snap, resourceReport, _, err := translator.Translate(params, proxy)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
 		routes := snap.GetResources(types.RouteTypeV3)
 		routesProto := routes.Items["http-listener-routes"]
@@ -3362,7 +3389,8 @@ var _ = Describe("Translator", func() {
 			// Set the value
 			upstream.IgnoreHealthOnHostRemoval = upstreamValue
 
-			snap, errs, report := translator.Translate(params, proxy)
+			snap, errs, report, err := translator.Translate(params, proxy)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			Expect(snap).NotTo(BeNil())
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
