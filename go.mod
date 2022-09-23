@@ -36,7 +36,7 @@ require (
 	github.com/jhump/protoreflect v1.5.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
-	github.com/mitchellh/hashstructure v1.0.0
+	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
