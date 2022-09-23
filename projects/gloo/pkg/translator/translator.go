@@ -256,23 +256,17 @@ func (t *translatorInstance) generateXDSSnapshot(
 	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
 
 	for _, ep := range endpoints {
-		// important to clone, ownership will be transferred to goroutine serving xds snapshot.
-		// marshalling a proto to serve over grpc xds can mutate it, which can race with other reads (e.g. hashing last seen snapshot)
-		endpointsProto = append(endpointsProto, resource.NewEnvoyResource(proto.Clone(ep)))
+		endpointsProto = append(endpointsProto, resource.NewEnvoyResource(ep))
 	}
 	for _, cluster := range clusters {
-		// important to clone, ownership will be transferred to goroutine serving xds snapshot.
-		// marshalling a proto to serve over grpc xds can mutate it, which can race with other reads (e.g. hashing last seen snapshot)
-		clustersProto = append(clustersProto, resource.NewEnvoyResource(proto.Clone(cluster)))
+		clustersProto = append(clustersProto, resource.NewEnvoyResource(cluster))
 	}
 	for _, listener := range listeners {
 		// don't add empty listeners, envoy will complain
 		if len(listener.GetFilterChains()) < 1 {
 			continue
 		}
-		// important to clone, ownership will be transferred to goroutine serving xds snapshot.
-		// marshalling a proto to serve over grpc xds can mutate it, which can race with other reads (e.g. hashing last seen snapshot)
-		listenersProto = append(listenersProto, resource.NewEnvoyResource(proto.Clone(listener)))
+		listenersProto = append(listenersProto, resource.NewEnvoyResource(listener))
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
@@ -331,9 +325,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 		if len(routeCfg.GetVirtualHosts()) < 1 {
 			continue
 		}
-		// important to clone, ownership will be transferred to goroutine serving xds snapshot.
-		// marshalling a proto to serve over grpc xds can mutate it, which can race with other reads (e.g. hashing last seen snapshot)
-		routesProto = append(routesProto, resource.NewEnvoyResource(proto.Clone(routeCfg)))
+		routesProto = append(routesProto, resource.NewEnvoyResource(routeCfg))
 
 	}
 
