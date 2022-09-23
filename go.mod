@@ -52,8 +52,8 @@ require (
 	github.com/solo-io/protoc-gen-ext v0.0.17
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.21.6
-	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
-	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
+	// Pinned to the `gloo-edge-safe-hasher` tag of solo-apis
+	github.com/solo-io/solo-apis v0.0.0-20220923183548-9746539fc625
 	github.com/solo-io/solo-kit v0.30.3
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
