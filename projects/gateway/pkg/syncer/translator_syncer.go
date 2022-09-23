@@ -406,8 +406,13 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 				// to get the status performance improvements, we need to make the assumption that the user has the latest CRDs installed.
 				// if a user forgets the error message is very confusing (invalid request during kubectl patch);
 				// this should help them understand what's going on in case they did not read the changelog.
+<<<<<<< HEAD
 				wrappedErr := errors.Wrapf(err, "failed to write reports for %v;"+
 					"did you make sure your CRDs have been updated since v1.12.17? (i.e. `status` and `status.statuses` fields exist on your CR)", inputResource.GetMetadata().Ref().Key())
+=======
+				wrappedErr := errors.Wrapf(err, "failed to write reports for %v; "+
+					"did you make sure your CRDs have been updated since v1.13.0-beta14? (i.e. `status` and `status.statuses` fields exist on your CR)", inputResource.GetMetadata().Ref().Key())
+>>>>>>> c780bcce0 (Resolve various data races in translation and validation (#7207))
 				errs = multierror.Append(errs, wrappedErr)
 			} else {
 				// The inputResource's status was successfully written, update the cache and metric with that status

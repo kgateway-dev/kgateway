@@ -11,6 +11,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -42,6 +44,13 @@ type kubeReporterClient struct {
 	skv2Client rlv1alpha1.RateLimitConfigClient
 }
 
+func init() {
+	scheme := scheme.Scheme
+	if err := rlv1alpha1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+}
+
 func NewRateLimitClients(ctx context.Context, rcFactory factory.ResourceClientFactory) (RateLimitConfigClient, reporter.ReporterResourceClient, error) {
 	rlClient, err := NewRateLimitConfigClient(ctx, rcFactory)
 	if err != nil {
@@ -51,7 +60,10 @@ func NewRateLimitClients(ctx context.Context, rcFactory factory.ResourceClientFa
 	var reporterClient reporter.ReporterResourceClient
 	switch typedFactory := rcFactory.(type) {
 	case *factory.KubeResourceClientFactory:
-		rlClientSet, err := rlv1alpha1.NewClientsetFromConfig(typedFactory.Cfg)
+		cli, err := client.New(typedFactory.Cfg, client.Options{
+			Scheme: scheme.Scheme,
+		})
+		rlClientSet := rlv1alpha1.NewClientset(cli)
 		if err != nil {
 			return nil, nil, err
 		}
