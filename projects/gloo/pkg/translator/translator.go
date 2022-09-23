@@ -3,6 +3,7 @@ package translator
 import (
 	"fmt"
 	"hash/fnv"
+	"sync"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -43,6 +44,7 @@ var (
 
 // translatorInstance is the implementation for a Translator used during Gloo translation
 type translatorInstance struct {
+	lock                      sync.Mutex
 	pluginRegistry            plugins.PluginRegistry
 	settings                  *v1.Settings
 	hasher                    func(resources []envoycache.Resource) uint64
@@ -56,6 +58,7 @@ func NewTranslatorWithHasher(
 	hasher func(resources []envoycache.Resource) uint64,
 ) *translatorInstance {
 	return &translatorInstance{
+		lock:                      sync.Mutex{},
 		pluginRegistry:            pluginRegistry,
 		settings:                  settings,
 		hasher:                    hasher,
@@ -68,6 +71,8 @@ func (t *translatorInstance) Translate(
 	proxy *v1.Proxy,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
 	// setup tracing, logging
+	t.lock.Lock()
+	defer t.lock.Unlock()
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
 	params.Ctx = contextutils.WithLogger(ctx, "translator")
