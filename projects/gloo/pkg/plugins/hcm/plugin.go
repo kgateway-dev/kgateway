@@ -110,7 +110,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		}
 	}
 
-	if in.GetAllowChunkedLength() {
+	if in.GetAllowChunkedLength().GetValue() {
 		if out.GetHttpProtocolOptions() == nil {
 			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
 		}
