@@ -36,7 +36,7 @@ require (
 	github.com/jhump/protoreflect v1.5.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
-	github.com/mitchellh/hashstructure v1.0.0
+	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
@@ -49,11 +49,12 @@ require (
 	github.com/solo-io/go-list-licenses v0.1.0
 	github.com/solo-io/go-utils v0.22.1
 	github.com/solo-io/k8s-utils v0.1.0
-	github.com/solo-io/protoc-gen-ext v0.0.16
+	github.com/solo-io/protoc-gen-ext v0.0.17
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.21.6
-	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
-	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
+
+	// Pinned to the `gloo-edge-safe-hasher` tag of solo-apis
+	github.com/solo-io/solo-apis v0.0.0-20220923183548-9746539fc625
 	github.com/solo-io/solo-kit v0.30.4
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
