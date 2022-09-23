@@ -1,0 +1,13 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7209
+  fixesIssue: true
+  description: >-
+    Use leaner version of hashstructure, that does not read full structs. This helps solve data races
+    observed when performing proto.Clone or proto.Marshal in a different goroutine.
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7210
+  fixesIssue: true
+  description: >-
+    Use leaner version of hashstructure, that does not read full structs. This helps solve data races
+    observed when performing proto.Clone or proto.Marshal in a different goroutine.
