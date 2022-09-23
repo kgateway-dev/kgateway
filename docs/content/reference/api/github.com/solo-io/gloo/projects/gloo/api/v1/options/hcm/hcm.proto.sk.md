@@ -14,6 +14,8 @@ weight: 5
 - [HttpConnectionManagerSettings](#httpconnectionmanagersettings)
 - [SetCurrentClientCertDetails](#setcurrentclientcertdetails)
 - [UuidRequestIdConfigSettings](#uuidrequestidconfigsettings)
+- [CidrRange](#cidrrange)
+- [InternalAddressConfig](#internaladdressconfig)
 - [ForwardClientCertDetails](#forwardclientcertdetails)
 - [ServerHeaderTransformation](#serverheadertransformation)
 - [HeadersWithUnderscoreAction](#headerswithunderscoreaction)
@@ -77,6 +79,7 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 "normalizePath": .google.protobuf.BoolValue
 "uuidRequestIdConfig": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings
 "http2ProtocolOptions": .protocol.options.gloo.solo.io.Http2ProtocolOptions
+"internalAddressConfig": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.InternalAddressConfig
 
 ```
 
@@ -120,6 +123,7 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 | `normalizePath` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should paths be normalized according to RFC 3986 before any processing of requests by HTTP filters or routing? See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto. |
 | `uuidRequestIdConfig` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings](../hcm.proto.sk/#uuidrequestidconfigsettings) |  |
 | `http2ProtocolOptions` | [.protocol.options.gloo.solo.io.Http2ProtocolOptions](../../protocol/protocol.proto.sk/#http2protocoloptions) | Additional HTTP/2 settings that are passed directly to the HTTP/2 codec. |
+| `internalAddressConfig` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.InternalAddressConfig](../hcm.proto.sk/#internaladdressconfig) | Configuration of internal addresses. |
 
 
 
@@ -165,6 +169,46 @@ Contains setup for Envoy's UuidRequestIdConfig
 | ----- | ---- | ----------- | 
 | `packTraceReason` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether the implementation alters the UUID to contain the trace sampling decision as per the `UuidRequestIdConfig` message documentation. This defaults to true. If disabled no modification to the UUID will be performed. It is important to note that if disabled, stable sampling of traces, access logs, etc. will no longer work and only random sampling will be possible. |
 | `useRequestIdForTraceSampling` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set whether to use :ref:`x-request-id<config_http_conn_man_headers_x-request-id>` for sampling or not. This defaults to true. See the :ref:`context propagation <arch_overview_tracing_context_propagation>` overview for more information. |
+
+
+
+
+---
+### CidrRange
+
+ 
+Subnet mask for CIDR ranges
+
+```yaml
+"addressPrefix": string
+"prefixLen": .google.protobuf.UInt32Value
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `addressPrefix` | `string` | IPv4 or IPv6 address. |
+| `prefixLen` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Length of prefix in bits. |
+
+
+
+
+---
+### InternalAddressConfig
+
+ 
+Manages Envoy's internal address configuration
+
+```yaml
+"unixSockets": bool
+"cidrRanges": []hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CidrRange
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `unixSockets` | `bool` | Whether unix socket addresses should be considered internal. |
+| `cidrRanges` | [[]hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CidrRange](../hcm.proto.sk/#cidrrange) | List of CIDR ranges that are treated as internal. |
 
 
 
