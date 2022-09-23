@@ -410,9 +410,6 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 				wrappedErr := errors.Wrapf(err, "failed to write reports for %v; "+
 					"did you make sure your CRDs have been updated since v1.12.17? (i.e. `status` and `status.statuses` fields exist on your CR)", inputResource.GetMetadata().Ref().Key())
 
-
-
-
 				errs = multierror.Append(errs, wrappedErr)
 			} else {
 				// The inputResource's status was successfully written, update the cache and metric with that status

@@ -11,12 +11,7 @@ import (
 	"hash/fnv"
 
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
-<<<<<<< HEAD
-=======
 	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
-
-	consul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
->>>>>>> 22a2a3cfa (Use new hashstructure (#7227))
 )
 
 // ensure the imports are used
