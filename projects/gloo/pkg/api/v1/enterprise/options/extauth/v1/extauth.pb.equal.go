@@ -1674,6 +1674,23 @@ func (m *ApiKeyAuth) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetHeadersFromMetadataEntry()) != len(target.GetHeadersFromMetadataEntry()) {
+		return false
+	}
+	for k, v := range m.GetHeadersFromMetadataEntry() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHeadersFromMetadataEntry()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetHeadersFromMetadataEntry()[k]) {
+				return false
+			}
+		}
+
+	}
+
 	switch m.StorageBackend.(type) {
 
 	case *ApiKeyAuth_K8SSecretApikeyStorage:
@@ -1951,6 +1968,56 @@ func (m *ApiKey) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ApiKeySecret) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeySecret)
+	if !ok {
+		that2, ok := that.(ApiKeySecret)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetApiKey(), target.GetApiKey()) != 0 {
+		return false
+	}
+
+	if len(m.GetLabels()) != len(target.GetLabels()) {
+		return false
+	}
+	for idx, v := range m.GetLabels() {
+
+		if strings.Compare(v, target.GetLabels()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetMetadata()) != len(target.GetMetadata()) {
+		return false
+	}
+	for k, v := range m.GetMetadata() {
+
+		if strings.Compare(v, target.GetMetadata()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *OpaAuth) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -2127,6 +2194,10 @@ func (m *PassThroughAuth) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetConfig(), target.GetConfig()) {
 			return false
 		}
+	}
+
+	if m.GetFailureModeAllow() != target.GetFailureModeAllow() {
+		return false
 	}
 
 	switch m.Protocol.(type) {
@@ -3312,6 +3383,38 @@ func (m *AccessTokenValidation_ScopeList) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyAuth_SecretKey) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyAuth_SecretKey)
+	if !ok {
+		that2, ok := that.(ApiKeyAuth_SecretKey)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+		return false
+	}
+
+	if m.GetRequired() != target.GetRequired() {
+		return false
 	}
 
 	return true

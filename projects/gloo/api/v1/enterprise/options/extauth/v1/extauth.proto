@@ -826,16 +826,31 @@ message ApiKeyAuth {
     // with this name. This field is optional; if not provided it defaults to `api-key`.
     string header_name = 3;
 
+    // DEPRECATED: use headers_from_metadata_entry
+    map<string, SecretKey> headers_from_metadata = 4 [deprecated = true];
+
     // API key structures might contain additional data (e.g. the ID of the user that the API key belongs to)
     // in the form of extra fields included in the API key metadata structure.
     // This configuration can be used to add this data to the headers of successfully authenticated requests.
     // Each key in the map represents the name of header to be added; the corresponding value determines the key
     // in the API key metadata structure that will be inspected to determine the value for the header.
-    map<string, MetadataEntry> headers_from_metadata = 4;
+    map<string, MetadataEntry> headers_from_metadata_entry = 5;
 
     oneof storage_backend {
-        K8sSecretApiKeyStorage k8s_secret_apikey_storage = 5;
-        AerospikeApiKeyStorage aerospike_apikey_storage = 6;
+        K8sSecretApiKeyStorage k8s_secret_apikey_storage = 6;
+        AerospikeApiKeyStorage aerospike_apikey_storage = 7;
+    }
+
+    // DEPRECATED: use generalized MetadataEntry
+    message SecretKey {
+        // DEPRECATED
+        // (Required) The key of the API key metadata entry to inspect.
+        string name = 1;
+        // DEPRECATED
+        // If this field is set to `true`, Gloo will reject an API key structure that does not contain data for the given key.
+        // Defaults to `false`. In this case, if an API key structure does not contain the requested data, no header will be added
+        // to the request.
+        bool required = 2;
     }
 
     // For the K8s secret backend, this data is stored as key-value data in the secret itself.
@@ -948,6 +963,17 @@ message ApiKey {
     map<string, string> metadata = 4;
 }
 
+// DEPRECATED: use ApiKey
+message ApiKeySecret {
+    // The string value of the API key.
+    string api_key = 2;
+    // A list of labels (key=value) for the apikey secret.
+    // These labels are used by the storage driver to facilitate lookups by label
+    repeated string labels = 3;
+    // additional data the client needs associated with this API key
+    map<string, string> metadata = 4;
+}
+
 message OpaAuth {
     // An optional resource reference to config maps containing modules to assist in the resolution of `query`.
     repeated core.solo.io.ResourceRef modules = 1;
@@ -1026,6 +1052,10 @@ message PassThroughAuth {
     // Custom config to be passed per request to the passthrough auth service.
     google.protobuf.Struct config = 4;
 
+    // If set to true, the service will accept client request even if the communication with
+    //  the authorization service has failed, or if the authorization service has returned a server error.
+    // Defaults to false.
+    bool failure_mode_allow = 5;
 }
 
 // Authorizes requests by querying a custom extauth grpc server
