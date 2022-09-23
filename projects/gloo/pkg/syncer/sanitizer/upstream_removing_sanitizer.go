@@ -22,7 +22,10 @@ var (
 	_ XdsSanitizer = new(UpstreamRemovingSanitizer)
 )
 
-type UpstreamRemovingSanitizer struct{}
+type UpstreamRemovingSanitizer struct {
+	// note to devs: this can be called in parallel by the validation webhook and main translation loops at the same time
+	// any stateful fields should be protected by a mutex
+}
 
 func NewUpstreamRemovingSanitizer() *UpstreamRemovingSanitizer {
 	return &UpstreamRemovingSanitizer{}
