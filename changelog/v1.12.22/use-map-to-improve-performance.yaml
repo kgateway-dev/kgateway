@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6899
+    description: Gloo loop a large size pods array in a large size upstreams when using gloo in a large k8s cluster with much pods and upstreams. Using map instead of array will accelerate it.
