@@ -292,7 +292,7 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 			for _, routePlugin := range pluginRegistry.GetRoutePlugins() {
 				err := routePlugin.ProcessRoute(routeParams, emptyRoute, &envoy_config_route_v3.Route{})
 				if err != nil {
-					t.Fatalf(("plugin route filter failed", err)
+					t.Fatalf("plugin route filter failed", err)
 					return
 				}
 			}
