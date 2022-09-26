@@ -49,6 +49,8 @@ var (
 )
 
 type RouteReplacingSanitizer struct {
+	// note to devs: this can be called in parallel by the validation webhook and main translation loops at the same time
+	// any stateful fields should be protected by a mutex
 	enabled          bool
 	fallbackListener *envoy_config_listener_v3.Listener
 	fallbackCluster  *envoy_config_cluster_v3.Cluster
