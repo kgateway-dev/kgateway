@@ -3,8 +3,9 @@ package secret_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/log"
 	"os"
+
+	"github.com/solo-io/go-utils/log"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
 
