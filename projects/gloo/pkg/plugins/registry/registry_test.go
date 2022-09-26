@@ -3,9 +3,7 @@ package registry
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"testing"
-
+	. "github.com/onsi/ginkgo"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
@@ -13,6 +11,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"reflect"
+	"testing"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -307,12 +307,12 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 
 			// Validate that the emptyListener filter count and configuredListener filter count are different
 			if emptyListenerFilterCount != len(knownBaseFilters) {
-				t.Fatalf(fmt.Sprintf("Found %d filters that were configured, but expected %d", emptyListenerFilterCount, len(knownBaseFilters)))
+				Fail(fmt.Sprintf("Found %d filters that were configured, but expected %d", emptyListenerFilterCount, len(knownBaseFilters)))
 				return
 			}
 
 			if configuredListenerFilterCount <= len(knownBaseFilters) {
-				t.Fatalf(fmt.Sprintf("Found %d filters that were configured, but expected at least %d", configuredListenerFilterCount, len(knownBaseFilters)))
+				Fail(fmt.Sprintf("Found %d filters that were configured, but expected at least %d", configuredListenerFilterCount, len(knownBaseFilters)))
 				return
 			}
 

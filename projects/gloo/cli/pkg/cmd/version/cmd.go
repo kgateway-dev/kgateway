@@ -172,6 +172,7 @@ func GetYaml(pb proto.Message) []byte {
 	data, err := yaml.JSONToYAML(jsn)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)
+		return []byte{}
 	}
 	return data
 }

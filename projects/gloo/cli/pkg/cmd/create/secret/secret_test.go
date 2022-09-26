@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/go-utils/log"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
@@ -18,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -192,7 +191,6 @@ metadata:
 
 			rootca := mustWriteTestFile("foo")
 			err := testutils.Glooctl("create secret tls valid --namespace gloo-system --rootca " + rootca)
-			err = testutils.Glooctl("create secret tls valid --namespace gloo-system --rootca " + rootca)
 			Expect(err).NotTo(HaveOccurred())
 			tls := v1.TlsSecret{
 				RootCa: "foo",
