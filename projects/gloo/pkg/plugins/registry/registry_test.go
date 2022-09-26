@@ -183,7 +183,7 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 			for _, httpPlug := range pluginRegistry.GetHttpFilterPlugins() {
 				filters, err := httpPlug.HttpFilters(params, emptyListener.GetHttpListener())
 				if err != nil {
-					t.Errorf("plugin http filter failed %v", err)
+					t.Fatalf("plugin http filter failed %v", err)
 				}
 				if len(filters) > 0 {
 					potentiallyNonConformingFilters = append(potentiallyNonConformingFilters, filters...)
@@ -199,7 +199,7 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 					}
 					hNames = append(hNames, httpF.HttpFilter.Name)
 				}
-				t.Errorf("Found a set of filters that were added by default %v", hNames)
+				t.Fatalf("Found a set of filters that were added by default %v", hNames)
 			}
 		})
 		t.Run("Http Filters with override value", func(t *testing.T) {
@@ -224,12 +224,12 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 			for _, httpPlug := range pluginRegistry.GetHttpFilterPlugins() {
 				filters, err := httpPlug.HttpFilters(params, emptyListener.GetHttpListener())
 				if err != nil {
-					t.Errorf("plugin http filter failed %v", err)
+					t.Fatalf("plugin http filter failed %v", err)
 				}
 				filterCount += len(filters)
 			}
 			if len(knownBaseFilters) >= filterCount {
-				t.Errorf("reinstating to old behavior for unused filters failed with to have more filters than %d", filterCount)
+				t.Fatalf("reinstating to old behavior for unused filters failed with to have more filters than %d", filterCount)
 			}
 		})
 
@@ -266,13 +266,13 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 			for _, routePlugin := range pluginRegistry.GetRoutePlugins() {
 				err := routePlugin.ProcessRoute(routeParams, configuredRoute, &envoy_config_route_v3.Route{})
 				if err != nil {
-					t.Errorf("plugin route filter failed %v", err)
+					t.Fatalf("plugin route filter failed %v", err)
 				}
 			}
 			for _, httpPlug := range pluginRegistry.GetHttpFilterPlugins() {
 				filters, err := httpPlug.HttpFilters(params, configuredListener.GetHttpListener())
 				if err != nil {
-					t.Errorf("plugin http filter failed %v", err)
+					t.Fatalf("plugin http filter failed %v", err)
 				}
 				configuredListenerFilterCount += len(filters)
 			}
@@ -292,14 +292,14 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 			for _, routePlugin := range pluginRegistry.GetRoutePlugins() {
 				err := routePlugin.ProcessRoute(routeParams, emptyRoute, &envoy_config_route_v3.Route{})
 				if err != nil {
-					t.Log("plugin route filter failed", err)
+					t.Fatalf(("plugin route filter failed", err)
 					return
 				}
 			}
 			for _, httpPlug := range pluginRegistry.GetHttpFilterPlugins() {
 				filters, err := httpPlug.HttpFilters(params, emptyListener.GetHttpListener())
 				if err != nil {
-					t.Log("plugin http filter failed", err)
+					t.Fatalf("plugin http filter failed", err)
 					return
 				}
 				emptyListenerFilterCount += len(filters)
@@ -307,12 +307,12 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 
 			// Validate that the emptyListener filter count and configuredListener filter count are different
 			if emptyListenerFilterCount != len(knownBaseFilters) {
-				t.Log(fmt.Sprintf("Found %d filters that were configured, but expected %d", emptyListenerFilterCount, len(knownBaseFilters)))
+				t.Fatalf(fmt.Sprintf("Found %d filters that were configured, but expected %d", emptyListenerFilterCount, len(knownBaseFilters)))
 				return
 			}
 
 			if configuredListenerFilterCount <= len(knownBaseFilters) {
-				t.Log(fmt.Sprintf("Found %d filters that were configured, but expected at least %d", configuredListenerFilterCount, len(knownBaseFilters)))
+				t.Fatalf(fmt.Sprintf("Found %d filters that were configured, but expected at least %d", configuredListenerFilterCount, len(knownBaseFilters)))
 				return
 			}
 

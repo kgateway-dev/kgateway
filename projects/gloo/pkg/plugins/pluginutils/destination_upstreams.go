@@ -1,6 +1,7 @@
 package pluginutils
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -33,7 +34,7 @@ func DestinationUpstreams(snap *v1snap.ApiSnapshot, in *v1.RouteAction) ([]core.
 		}
 		return destinationsToRefs(upstreamGroup.GetDestinations())
 	}
-	contextutils.LoggerFrom(nil).DPanic("invalid route")
+	contextutils.LoggerFrom(context.Background()).DPanic("invalid route")
 	return nil, fmt.Errorf("invalid route")
 }
 

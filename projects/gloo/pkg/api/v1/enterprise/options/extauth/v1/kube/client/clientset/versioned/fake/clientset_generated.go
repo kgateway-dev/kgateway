@@ -22,7 +22,6 @@ import (
 	clientset "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/client/clientset/versioned"
 	enterprisev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/client/clientset/versioned/typed/enterprise.gloo.solo.io/v1"
 	fakeenterprisev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/client/clientset/versioned/typed/enterprise.gloo.solo.io/v1/fake"
-	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -38,7 +37,7 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 	o := testing.NewObjectTracker(scheme, codecs.UniversalDecoder())
 	for _, obj := range objects {
 		if err := o.Add(obj); err != nil {
-			contextutils.LoggerFrom(nil).DPanic(err)
+			panic(err)
 		}
 	}
 

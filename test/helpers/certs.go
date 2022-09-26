@@ -12,17 +12,12 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"math/big"
 	"net"
 	"os"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/solo-io/go-utils/contextutils"
-
-	"github.com/rotisserie/eris"
 
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,7 +64,7 @@ type Params struct {
 	EcdsaCurve string         // ECDSA curve to use to generate a key. Valid values are P224, P256 (recommended), P384, P521
 }
 
-func GetCerts(params Params) (string, string, error) {
+func GetCerts(params Params) (string, string) {
 
 	if len(params.Hosts) == 0 {
 		Fail("Missing required --host parameter")
@@ -113,8 +108,7 @@ func GetCerts(params Params) (string, string, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		log.Println("failed to generate serial number: %s", err)
-		return "", "", eris.Wrapf(err, "failed to generate serial number: %s")
+		Fail(fmt.Sprintf("failed to generate serial number: %s", err))
 	}
 
 	template := x509.Certificate{
@@ -146,8 +140,7 @@ func GetCerts(params Params) (string, string, error) {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
 	if err != nil {
-		log.Println("Failed to create certificate: %s", err)
-		return "", "", eris.Wrapf(err, "Failed to create certificate: %s")
+		Fail(fmt.Sprintf("Failed to create certificate: %s", err))
 	}
 
 	var certOut bytes.Buffer
@@ -159,7 +152,7 @@ func GetCerts(params Params) (string, string, error) {
 	err = pem.Encode(&keyOut, pemBlockForKey(priv))
 	Expect(err).NotTo(HaveOccurred())
 
-	return certOut.String(), keyOut.String(), nil
+	return certOut.String(), keyOut.String()
 }
 
 var (
@@ -170,13 +163,10 @@ var (
 )
 
 func gencerts() {
-	cert, privKey, err = GetCerts(Params{
+	cert, privKey = GetCerts(Params{
 		Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 		IsCA:  true,
 	})
-	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(fmt.Errorf("Error in gencerts: %v", err))
-	}
 }
 
 func Certificate() string {

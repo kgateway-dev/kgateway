@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -56,8 +54,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		for k := range r {
 			return k
 		}
-		contextutils.LoggerFrom(nil).DPanic("unreachable")
-		return ""
+		panic("unreachable")
 	}
 
 	It("should set status correctly", func() {

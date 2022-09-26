@@ -1,6 +1,7 @@
 package nsselect
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -37,7 +38,8 @@ func generateCommonResourceSelectOptions(typeName string, nsrMap NsResourceMap) 
 		case "upstream":
 			resArray = nsr.Upstreams
 		default:
-			contextutils.LoggerFrom(nil).DPanic(fmt.Errorf("resource type %v not recognized", typeName))
+			contextutils.LoggerFrom(context.Background()).DPanic(fmt.Errorf("resource type %v not recognized", typeName))
+			return nil, nil
 		}
 		for _, res := range resArray {
 			selectMenuString := fmt.Sprintf("%v, %v", namespace, res)

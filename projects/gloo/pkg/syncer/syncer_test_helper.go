@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -29,29 +27,24 @@ type MockXdsCache struct {
 }
 
 func (*MockXdsCache) CreateWatch(envoycache.Request) (value chan envoycache.Response, cancel func()) {
-	contextutils.LoggerFrom(nil).DPanic("implement me")
-	return nil, nil
+	panic("implement me")
 }
 
 func (*MockXdsCache) Fetch(context.Context, envoycache.Request) (*envoycache.Response, error) {
-	contextutils.LoggerFrom(nil).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*MockXdsCache) GetStatusInfo(string) envoycache.StatusInfo {
-	contextutils.LoggerFrom(nil).DPanic("implement me")
-	return nil
+	panic("implement me")
 }
 
 func (c *MockXdsCache) GetStatusKeys() []string {
 	return []string{}
 }
-
 func (c *MockXdsCache) SetSnapshot(node string, snapshot envoycache.Snapshot) {
 	c.Called = true
 	c.SetSnap = snapshot
 }
-
 func (c *MockXdsCache) GetSnapshot(node string) (envoycache.Snapshot, error) {
 	if c.GetSnap != nil {
 		return c.GetSnap, nil
@@ -60,7 +53,7 @@ func (c *MockXdsCache) GetSnapshot(node string) (envoycache.Snapshot, error) {
 }
 
 func (*MockXdsCache) ClearSnapshot(node string) {
-	contextutils.LoggerFrom(nil).DPanic("implement me")
+	panic("implement me")
 }
 
 type MockXdsSanitizer struct {

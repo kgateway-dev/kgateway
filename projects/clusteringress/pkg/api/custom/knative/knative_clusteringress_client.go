@@ -67,22 +67,22 @@ func (rc *ResourceClient) Register() error {
 }
 
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
-	contextutils.LoggerFrom(nil).DPanic("this client does not support read operations")
+	contextutils.LoggerFrom(context.Background()).DPanic("this client does not support read operations")
 	return nil, fmt.Errorf("this client does not support read operations")
 }
 
 func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
-	contextutils.LoggerFrom(nil).DPanic("this client does not support write operations")
+	contextutils.LoggerFrom(context.Background()).DPanic("this client does not support write operations")
 	return nil, fmt.Errorf("this client does not support write operations")
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	contextutils.LoggerFrom(nil).DPanic("this client does not support delete operations")
+	contextutils.LoggerFrom(context.Background()).DPanic("this client does not support delete operations")
 	return fmt.Errorf("this client does not support delete operations")
 }
 
 func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
-	contextutils.LoggerFrom(nil).DPanic("this client does not support apply status operations")
+	contextutils.LoggerFrom(context.Background()).DPanic("this client does not support apply status operations")
 	return nil, fmt.Errorf("this client does not support apply status operations")
 }
 

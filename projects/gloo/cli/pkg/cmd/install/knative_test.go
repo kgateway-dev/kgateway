@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -94,12 +92,12 @@ var _ = Describe("Knative", func() {
 var expected0100Manifests = func() string {
 	currentFile, err := testutils.GetCurrentFile()
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		panic(err)
 	}
 	knativeTestYaml := filepath.Join(filepath.Dir(currentFile), "knative_test_yaml.yaml")
 	b, err := ioutil.ReadFile(knativeTestYaml)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		panic(err)
 	}
 	return string(b)
 

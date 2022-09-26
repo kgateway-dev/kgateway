@@ -67,13 +67,13 @@ func (s *validator) shouldNotify(snap *v1snap.ApiSnapshot) bool {
 
 		hash, err := hashutils.HashAllSafe(nil, toHash...)
 		if err != nil {
-			contextutils.LoggerFrom(nil).DPanic("this error should never happen, as this is safe hasher")
+			contextutils.LoggerFrom(context.Background()).DPanic("this error should never happen, as this is safe hasher")
 			return 0
 		}
 		return hash
 	}
 
-	hashChanged := hashFunc(s.latestSnapshot) != hashFunc(snap)
+	hashChanged := hashFunc(s.latestSnapshot) != hashFunc(snap) && hashFunc(snap) != 0
 
 	logger := contextutils.LoggerFrom(s.ctx)
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large

@@ -214,13 +214,12 @@ var _ = Describe("Aggregate Listener", func() {
 	Context("Secure HttpGateway", func() {
 
 		var (
-			eastCert, eastPK      = gloohelpers.Certificate(), gloohelpers.PrivateKey()
-			westCert, westPK, err = gloohelpers.GetCerts(gloohelpers.Params{
+			eastCert, eastPK = gloohelpers.Certificate(), gloohelpers.PrivateKey()
+			westCert, westPK = gloohelpers.GetCerts(gloohelpers.Params{
 				Hosts: "other-host",
 				IsCA:  false,
 			})
 		)
-		Expect(err).ToNot(HaveOccurred())
 
 		TestUpstreamReturns := func(host, path, cert string, responseStatus int) {
 			v1helpers.ExpectCurlWithOffset(
@@ -450,13 +449,12 @@ var _ = Describe("Aggregate Listener", func() {
 	Context("Secure HybridGateway (Matched)", func() {
 
 		var (
-			eastCert, eastPK      = gloohelpers.Certificate(), gloohelpers.PrivateKey()
-			westCert, westPK, err = gloohelpers.GetCerts(gloohelpers.Params{
+			eastCert, eastPK = gloohelpers.Certificate(), gloohelpers.PrivateKey()
+			westCert, westPK = gloohelpers.GetCerts(gloohelpers.Params{
 				Hosts: "other-host",
 				IsCA:  false,
 			})
 		)
-		Expect(err).ToNot(HaveOccurred())
 
 		TestUpstreamReturns := func(host, path, cert string, responseStatus int) {
 			v1helpers.ExpectCurlWithOffset(
@@ -689,13 +687,12 @@ var _ = Describe("Aggregate Listener", func() {
 	Context("Secure HybridGateway (Delegated)", func() {
 
 		var (
-			eastCert, eastPK      = gloohelpers.Certificate(), gloohelpers.PrivateKey()
-			westCert, westPK, err = gloohelpers.GetCerts(gloohelpers.Params{
+			eastCert, eastPK = gloohelpers.Certificate(), gloohelpers.PrivateKey()
+			westCert, westPK = gloohelpers.GetCerts(gloohelpers.Params{
 				Hosts: "other-host",
 				IsCA:  false,
 			})
 		)
-		Expect(err).ToNot(HaveOccurred())
 
 		TestUpstreamReturns := func(host, path, cert string, responseStatus int) {
 			v1helpers.ExpectCurlWithOffset(

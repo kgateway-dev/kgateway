@@ -2,10 +2,7 @@ package translator
 
 import (
 	"context"
-	"fmt"
 	"time"
-
-	"github.com/solo-io/go-utils/contextutils"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
@@ -199,23 +196,19 @@ func (c *mockCiClient) UpdateStatus(ctx context.Context, ci *knativev1alpha1.Ing
 }
 
 func (*mockCiClient) Create(ctx context.Context, ci *knativev1alpha1.Ingress, opts v12.CreateOptions) (*knativev1alpha1.Ingress, error) {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*mockCiClient) Update(ctx context.Context, ci *knativev1alpha1.Ingress, opts v12.UpdateOptions) (*knativev1alpha1.Ingress, error) {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*mockCiClient) Delete(ctx context.Context, name string, options v12.DeleteOptions) error {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*mockCiClient) DeleteCollection(ctx context.Context, options v12.DeleteOptions, listOptions v12.ListOptions) error {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (c *mockCiClient) Get(ctx context.Context, name string, options v12.GetOptions) (*knativev1alpha1.Ingress, error) {
@@ -223,16 +216,13 @@ func (c *mockCiClient) Get(ctx context.Context, name string, options v12.GetOpti
 }
 
 func (*mockCiClient) List(ctx context.Context, opts v12.ListOptions) (*knativev1alpha1.IngressList, error) {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*mockCiClient) Watch(ctx context.Context, opts v12.ListOptions) (watch.Interface, error) {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*mockCiClient) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v12.PatchOptions, subresources ...string) (result *knativev1alpha1.Ingress, err error) {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }

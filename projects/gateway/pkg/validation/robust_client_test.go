@@ -6,8 +6,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/rotisserie/eris"
 
 	. "github.com/onsi/ginkgo"
@@ -29,8 +27,7 @@ func (s *mockValidationService) Validate(context.Context, *validation.GlooValida
 }
 
 func (s *mockValidationService) NotifyOnResync(*validation.NotifyOnResyncRequest, validation.GlooValidationService_NotifyOnResyncServer) error {
-	contextutils.LoggerFrom(nil).DPanic("implement me")
-	return fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func makeListener(errToReturn error, addr string) (string, func()) {

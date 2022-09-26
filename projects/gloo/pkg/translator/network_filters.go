@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"context"
 	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -146,7 +147,7 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params)
 	// 4. Generate the typedConfig for the HCM
 	hcmFilter, err := NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, httpConnectionManager)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(errors.Wrapf(err, "failed to convert proto message to struct"))
+		contextutils.LoggerFrom(context.Background()).DPanic(errors.Wrapf(err, "failed to convert proto message to struct"))
 		return nil, errors.Wrapf(err, "failed to convert proto message to struct")
 	}
 

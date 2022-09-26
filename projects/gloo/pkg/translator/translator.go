@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"context"
 	"fmt"
 	"hash/fnv"
 
@@ -292,12 +293,12 @@ func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint6
 		// another path to further improve performance here.
 		out, err := mo.MarshalAppend(buf, proto.MessageV2(r.ResourceProto()))
 		if err != nil {
-			contextutils.LoggerFrom(nil).DPanic(errors.Wrap(err, "marshalling envoy snapshot components"))
+			contextutils.LoggerFrom(context.Background()).DPanic(errors.Wrap(err, "marshalling envoy snapshot components"))
 			return 0
 		}
 		_, err = hasher.Write(out)
 		if err != nil {
-			contextutils.LoggerFrom(nil).DPanic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
+			contextutils.LoggerFrom(context.Background()).DPanic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
 			return 0
 		}
 	}
@@ -308,7 +309,7 @@ func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint6
 func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
 	hash, err := hashstructure.Hash(resources, nil)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic("constructing version hash for endpoints envoy snapshot components")
+		panic("constructing version hash for endpoints envoy snapshot components")
 		return 0
 	}
 	return hash

@@ -43,7 +43,7 @@ func getInformerFactory(ctx context.Context, client kubernetes.Interface, watchN
 	}
 	kubePluginSharedFactory := startInformerFactory(ctx, client, watchNamespaces)
 	if kubePluginSharedFactory.initError != nil {
-		contextutils.LoggerFrom(nil).DPanic(kubePluginSharedFactory.initError)
+		contextutils.LoggerFrom(context.Background()).DPanic(kubePluginSharedFactory.initError)
 	}
 	return kubePluginSharedFactory
 }

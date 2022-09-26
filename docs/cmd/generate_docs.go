@@ -321,13 +321,11 @@ func scanImagesForRepo(ctx context.Context, targetRepo string, vulnerabilityActi
 
 	versionConstraint, err := getScannerVersionConstraint()
 	if err != nil {
-		logger.DPanic("Invalid constraint version: %v", err)
-		return eris.Wrapf(err, "Invalid constraint version: %v")
+		logger.Fatalf("Invalid constraint version: %v", err)
 	}
 	if versionConstraint == nil {
 		// to be extra-safe, we should require devs to configure a constraint
-		logger.DPanic("No version constraint defined")
-		return eris.Errorf("No version constraint defined")
+		logger.Fatalf("No version constraint defined")
 	}
 
 	outputDir := getScannerOutputDir()
@@ -375,8 +373,7 @@ func scanImagesForRepo(ctx context.Context, targetRepo string, vulnerabilityActi
 	}
 
 	if securityScanRepos == nil {
-		logger.DPanic("No repositories were targeted to be scanned")
-		return eris.Errorf("No repositories were targeted to be scanned")
+		logger.Fatalf("No repositories were targeted to be scanned")
 	}
 
 	scanner := &securityscanutils.SecurityScanner{

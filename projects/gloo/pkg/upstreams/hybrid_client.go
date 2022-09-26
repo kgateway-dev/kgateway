@@ -72,22 +72,22 @@ func (c *hybridUpstreamClient) Register() error {
 }
 
 func (c *hybridUpstreamClient) Read(namespace, name string, opts clients.ReadOpts) (*v1.Upstream, error) {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) Write(resource *v1.Upstream, opts clients.WriteOpts) (*v1.Upstream, error) {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return fmt.Errorf(notImplementedErrMsg)
 }
 
 func (rc *hybridUpstreamClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (*v1.Upstream, error) {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
@@ -159,7 +159,7 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 		// return success for the sync (ie if there still needs changes its a false)
 		syncFunc := func() bool {
 			currentHash := current.hash()
-			if currentHash == previousHash {
+			if currentHash == previousHash && currentHash != 0 {
 				return true
 			}
 			toSend := current.clone()

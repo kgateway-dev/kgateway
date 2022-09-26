@@ -1,6 +1,7 @@
 package ratelimit
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -78,8 +79,7 @@ func (r *RateLimitConfig) GetNamespacedStatuses() *core.NamespacedStatuses {
 }
 
 func (r *RateLimitConfig) SetNamespacedStatuses(status *core.NamespacedStatuses) {
-	contextutils.LoggerFrom(nil).DPanic("implement me")
-
+	contextutils.LoggerFrom(context.Background()).DPanic("implement me")
 }
 
 func (r *RateLimitConfig) convertSoloKitStatusToRateLimitConfigStatus(status *core.Status) *v1alpha1.RateLimitConfigStatus {
@@ -97,7 +97,8 @@ func (r *RateLimitConfig) convertSoloKitStatusToRateLimitConfigStatus(status *co
 		outputState = types.RateLimitConfigStatus_REJECTED
 	case core.Status_Warning:
 		// should lever happen
-		contextutils.LoggerFrom(nil).DPanic("cannot set WARNING status on RateLimitConfig resources")
+		contextutils.LoggerFrom(context.Background()).DPanic("cannot set WARNING status on RateLimitConfig resources")
+		return nil
 	}
 
 	return &v1alpha1.RateLimitConfigStatus{

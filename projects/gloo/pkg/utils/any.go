@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -31,8 +32,8 @@ func MessageToAny(msg proto.Message) (*pany.Any, error) {
 func MustMessageToAny(msg proto.Message) *pany.Any {
 	anymsg, err := MessageToAny(msg)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
-		return nil
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
+		return &pany.Any{}
 	}
 	return anymsg
 }
@@ -47,7 +48,7 @@ func MustAnyToMessage(a *pany.Any) proto.Message {
 	var x ptypes.DynamicAny
 	err := ptypes.UnmarshalAny(a, &x)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
 		return proto.MessageV1("")
 	}
 	return x.Message

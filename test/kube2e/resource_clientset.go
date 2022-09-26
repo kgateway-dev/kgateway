@@ -3,8 +3,6 @@ package kube2e
 import (
 	"context"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	externalrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -269,13 +267,11 @@ func (k KubeResourceClientSet) SettingsClient() gloov1.SettingsClient {
 }
 
 func (k KubeResourceClientSet) SecretClient() gloov1.SecretClient {
-	contextutils.LoggerFrom(nil).DPanic("unsupported")
-	return nil
+	panic("unsupported")
 }
 
 func (k KubeResourceClientSet) ArtifactClient() gloov1.ArtifactClient {
-	contextutils.LoggerFrom(nil).DPanic("unsupported")
-	return nil
+	panic("unsupported")
 }
 
 func (k KubeResourceClientSet) KubeClients() *kubernetes.Clientset {

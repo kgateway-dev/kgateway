@@ -25,27 +25,27 @@ type kubernetesUpstreamClient struct {
 }
 
 func (c *kubernetesUpstreamClient) BaseClient() skclients.ResourceClient {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil
 }
 
 func (c *kubernetesUpstreamClient) Register() error {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *kubernetesUpstreamClient) Read(namespace, name string, opts skclients.ReadOpts) (*v1.Upstream, error) {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *kubernetesUpstreamClient) Write(resource *v1.Upstream, opts skclients.WriteOpts) (*v1.Upstream, error) {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *kubernetesUpstreamClient) Delete(namespace, name string, opts skclients.DeleteOpts) error {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return fmt.Errorf(notImplementedErrMsg)
 }
 

@@ -1,6 +1,7 @@
 package upstreams
 
 import (
+	"context"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
@@ -44,7 +45,7 @@ func (s *hybridUpstreamSnapshot) hash() uint64 {
 	allUpstreams.Sort()
 	hash, err := hashutils.HashAllSafe(nil, allUpstreams.AsInterfaces()...)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic("this error should never happen, as it is in a safe hasher")
+		contextutils.LoggerFrom(context.Background()).DPanic("this error should never happen, as it is in a safe hasher")
 		return 0
 	}
 

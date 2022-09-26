@@ -161,7 +161,8 @@ func getDistributionName(name string, enterprise bool) string {
 func GetJson(pb proto.Message) []byte {
 	data, err := protoutils.MarshalBytes(pb)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
+		return []byte{}
 	}
 	return data
 }
@@ -170,7 +171,7 @@ func GetYaml(pb proto.Message) []byte {
 	jsn := GetJson(pb)
 	data, err := yaml.JSONToYAML(jsn)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
 	}
 	return data
 }

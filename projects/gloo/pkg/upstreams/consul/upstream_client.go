@@ -1,6 +1,7 @@
 package consul
 
 import (
+	"context"
 	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -25,27 +26,27 @@ type consulUpstreamClient struct {
 }
 
 func (*consulUpstreamClient) BaseClient() skclients.ResourceClient {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil
 }
 
 func (*consulUpstreamClient) Register() error {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return fmt.Errorf(notImplementedErrMsg)
 }
 
 func (*consulUpstreamClient) Read(namespace, name string, opts skclients.ReadOpts) (*v1.Upstream, error) {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (*consulUpstreamClient) Write(resource *v1.Upstream, opts skclients.WriteOpts) (*v1.Upstream, error) {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (*consulUpstreamClient) Delete(namespace, name string, opts skclients.DeleteOpts) error {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return fmt.Errorf(notImplementedErrMsg)
 }
 

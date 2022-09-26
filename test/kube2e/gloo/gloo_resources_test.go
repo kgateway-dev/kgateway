@@ -179,18 +179,17 @@ var _ = Describe("GlooResourcesTest", func() {
 			timeInBetweenRotation := secondsForCurling + timeForCurling + offset
 			Consistently(func(g Gomega) {
 				By("Generate new CaCrt and PrivateKey")
-				crt, crtKey, err := helpers.GetCerts(helpers.Params{
+				crt, crtKey := helpers.GetCerts(helpers.Params{
 					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 					IsCA:  true,
 				})
-				Expect(err).ToNot(HaveOccurred())
 
 				By("Update the kube secret with the new values")
 				tlsSecret.Data = map[string][]byte{
 					kubev1.TLSCertKey:       []byte(crt),
 					kubev1.TLSPrivateKeyKey: []byte(crtKey),
 				}
-				_, err = resourceClientset.KubeClients().CoreV1().Secrets(tlsSecret.GetNamespace()).Update(ctx, tlsSecret, metav1.UpdateOptions{})
+				_, err := resourceClientset.KubeClients().CoreV1().Secrets(tlsSecret.GetNamespace()).Update(ctx, tlsSecret, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Eventually can curl the endpoint")

@@ -4,7 +4,6 @@ import (
 	gatwayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/go-utils/contextutils"
 )
 
 const (
@@ -42,7 +41,7 @@ func MakeMatcher(pathType, length int) *matchers.Matcher {
 	case RegexPath:
 		m.PathSpecifier = &matchers.Matcher_Regex{pathStr}
 	default:
-		contextutils.LoggerFrom(nil).DPanic("bad test")
+		panic("bad test")
 	}
 	return m
 }

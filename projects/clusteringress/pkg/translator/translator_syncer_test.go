@@ -2,10 +2,7 @@ package translator
 
 import (
 	"context"
-	"fmt"
 	"time"
-
-	"github.com/solo-io/go-utils/contextutils"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
@@ -88,23 +85,19 @@ func (c *mockCiClient) UpdateStatus(ctx context.Context, ingress *v1alpha12.Ingr
 }
 
 func (*mockCiClient) Create(ctx context.Context, ingress *v1alpha12.Ingress, opts v12.CreateOptions) (*v1alpha12.Ingress, error) {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*mockCiClient) Update(ctx context.Context, ingress *v1alpha12.Ingress, opts v12.UpdateOptions) (*v1alpha12.Ingress, error) {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*mockCiClient) Delete(ctx context.Context, name string, opts v12.DeleteOptions) error {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*mockCiClient) DeleteCollection(ctx context.Context, opts v12.DeleteOptions, listOpts v12.ListOptions) error {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (c *mockCiClient) Get(ctx context.Context, name string, opts v12.GetOptions) (*v1alpha12.Ingress, error) {
@@ -112,16 +105,13 @@ func (c *mockCiClient) Get(ctx context.Context, name string, opts v12.GetOptions
 }
 
 func (*mockCiClient) List(ctx context.Context, opts v12.ListOptions) (*v1alpha12.IngressList, error) {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*mockCiClient) Watch(ctx context.Context, opts v12.ListOptions) (watch.Interface, error) {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }
 
 func (*mockCiClient) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v12.PatchOptions, subresources ...string) (result *v1alpha12.Ingress, err error) {
-	contextutils.LoggerFrom(ctx).DPanic("implement me")
-	return nil, fmt.Errorf("implement me")
+	panic("implement me")
 }

@@ -1,6 +1,7 @@
 package upstreams
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/rotisserie/eris"
@@ -26,7 +27,7 @@ func (c *readOnlyUpstreamBaseClient) Kind() string {
 }
 
 func (c *readOnlyUpstreamBaseClient) NewResource() resources.Resource {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil
 }
 
@@ -59,16 +60,16 @@ func (c *readOnlyUpstreamBaseClient) ApplyStatus(statusClient resources.StatusCl
 }
 
 func (c *readOnlyUpstreamBaseClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *readOnlyUpstreamBaseClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *readOnlyUpstreamBaseClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-	contextutils.LoggerFrom(nil).DPanic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, nil, fmt.Errorf(notImplementedErrMsg)
 }

@@ -21,7 +21,6 @@ package v1
 import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/scheme"
-	"github.com/solo-io/go-utils/contextutils"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -82,7 +81,7 @@ func NewForConfig(c *rest.Config) (*GatewayV1Client, error) {
 func NewForConfigOrDie(c *rest.Config) *GatewayV1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
-		contextutils.LoggerFrom(nil).DPanic(err)
+		panic(err)
 	}
 	return client
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -29,7 +28,7 @@ var _ = Describe("HttpGatewaySelector", func() {
 
 		// We do not expect a selection error to occur. To be extra certain, panic if one does
 		onSelectionError = func(err error) {
-			contextutils.LoggerFrom(nil).DPanic(err)
+			panic(err)
 		}
 	})
 
