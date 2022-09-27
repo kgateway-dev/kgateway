@@ -72,7 +72,7 @@ jobs:
         USE_XDS_RELAY: ${{ matrix.xds-relay }}
         CLUSTER_NAME: 'kind'
         CLUSTER_NODE_VERSION: 'v1.22.4@sha256:ca3587e6e545a96c07bf82e2c46503d9ef86fc704f44c17577fca7bcabf5f978'
-        VERSION: '0.0.0-kind'
+        VERSION: '0.0.0-kind1'
       run: |
         ./ci/deploy-to-kind-cluster.sh
     - name: Testing - kube e2e regression tests
