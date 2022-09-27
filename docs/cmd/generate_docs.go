@@ -419,10 +419,7 @@ func generateSecurityScanGloo(ctx context.Context) error {
 		}
 	}
 	githubutils.SortReleasesBySemver(allReleases)
-	versionsToScan, err := getVersionsToScan(allReleases)
-	if err != nil {
-		return err
-	}
+	versionsToScan := getVersionsToScan(allReleases)
 	return BuildSecurityScanReportGloo(versionsToScan)
 }
 
@@ -443,7 +440,7 @@ func generateSecurityScanGlooE(ctx context.Context) error {
 	}
 
 	githubutils.SortReleasesBySemver(allReleases)
-	versionsToScan, err := getVersionsToScan(allReleases)
+	versionsToScan := getVersionsToScan(allReleases)
 	if err != nil {
 		return err
 	}
@@ -486,7 +483,7 @@ func fetchEnterpriseHelmValues(args []string) error {
 	return nil
 }
 
-func getVersionsToScan(releases []*github.RepositoryRelease) ([]string, error) {
+func getVersionsToScan(releases []*github.RepositoryRelease) []string {
 	var (
 		versions             []string
 		stableOnlyConstraint *semver.Constraints
@@ -498,8 +495,7 @@ func getVersionsToScan(releases []*github.RepositoryRelease) ([]string, error) {
 	} else {
 		stableOnlyConstraint, err = semver.NewConstraint(fmt.Sprintf(">= %s", minVersionToScan))
 		if err != nil {
-			log.Println("Invalid constraint version: %s", minVersionToScan)
-			return nil, eris.Wrapf(err, "Invalid constraint version: %s")
+			log.Fatalf("Invalid constraint version: %s", minVersionToScan)
 		}
 	}
 
@@ -513,5 +509,5 @@ func getVersionsToScan(releases []*github.RepositoryRelease) ([]string, error) {
 			versions = append(versions, test.String())
 		}
 	}
-	return versions, nil
+	return versions
 }
