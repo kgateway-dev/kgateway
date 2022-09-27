@@ -48,7 +48,7 @@ type translatorInstance struct {
 	lock                      sync.Mutex
 	pluginRegistry            plugins.PluginRegistry
 	settings                  *v1.Settings
-	hasher                    func(resources []envoycache.Resource) uint64
+	hasher                    func(resources []envoycache.Resource) (uint64, error)
 	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
 }
 
@@ -56,7 +56,7 @@ func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
 	pluginRegistry plugins.PluginRegistry,
-	hasher func(resources []envoycache.Resource) uint64,
+	hasher func(resources []envoycache.Resource) (uint64, error),
 ) *translatorInstance {
 	return &translatorInstance{
 		lock:                      sync.Mutex{},
@@ -270,9 +270,21 @@ func (t *translatorInstance) generateXDSSnapshot(
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
-	endpointsVersion := t.hasher(endpointsProto)
-	clustersVersion := t.hasher(clustersProto)
-	listenersVersion := t.hasher(listenersProto)
+	endpointsVersion, err := t.hasher(endpointsProto)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash endpointsProto: %v", err))
+		return nil
+	}
+	clustersVersion, err := t.hasher(clustersProto)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash clustersProto: %v", err))
+		return nil
+	}
+	listenersVersion, err := t.hasher(listenersProto)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash listenersProto: %v", err))
+		return nil
+	}
 
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
@@ -283,7 +295,7 @@ func (t *translatorInstance) generateXDSSnapshot(
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
 }
 
-func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
+func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) (uint64, error) {
 	hasher := fnv.New64()
 	// 8kb capacity, consider raising if we find the buffer is frequently being
 	// re-allocated by MarshalAppend to fit larger protos.
@@ -299,25 +311,25 @@ func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint6
 		out, err := mo.MarshalAppend(buf, proto.MessageV2(r.ResourceProto()))
 		if err != nil {
 			contextutils.LoggerFrom(context.Background()).DPanic(errors.Wrap(err, "marshalling envoy snapshot components"))
-			return 0
+			return 0, errors.Wrap(err, "marshalling envoy snapshot components")
 		}
 		_, err = hasher.Write(out)
 		if err != nil {
 			contextutils.LoggerFrom(context.Background()).DPanic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
-			return 0
+			return 0, errors.Wrap(err, "constructing hash for envoy snapshot components")
 		}
 	}
-	return hasher.Sum64()
+	return hasher.Sum64(), nil
 }
 
 // deprecated, slower than MustEnvoyCacheResourcesListToFnvHash
-func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
+func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) (uint64, error) {
 	hash, err := hashstructure.Hash(resources, nil)
 	if err != nil {
 		panic("constructing version hash for endpoints envoy snapshot components")
-		return 0
+		return 0, nil
 	}
-	return hash
+	return hash, nil
 }
 
 func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {
@@ -332,7 +344,11 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 
 	}
 
-	routesVersion := MustEnvoyCacheResourcesListToFnvHash(routesProto)
+	routesVersion, err := MustEnvoyCacheResourcesListToFnvHash(routesProto)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash routesProto: %v", err))
+		return envoycache.Resources{}
+	}
 	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }
 
