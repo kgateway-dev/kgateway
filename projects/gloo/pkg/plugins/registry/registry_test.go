@@ -293,14 +293,14 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 			for _, routePlugin := range pluginRegistry.GetRoutePlugins() {
 				err := routePlugin.ProcessRoute(routeParams, emptyRoute, &envoy_config_route_v3.Route{})
 				if err != nil {
-					t.Fatalf("plugin route filter failed", err)
+					Fail(fmt.Sprintf("plugin route filter failed %v", err))
 					return
 				}
 			}
 			for _, httpPlug := range pluginRegistry.GetHttpFilterPlugins() {
 				filters, err := httpPlug.HttpFilters(params, emptyListener.GetHttpListener())
 				if err != nil {
-					t.Fatalf("plugin http filter failed", err)
+					Fail(fmt.Sprintf("plugin http filter failed %v", err))
 					return
 				}
 				emptyListenerFilterCount += len(filters)
