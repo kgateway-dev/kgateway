@@ -2,8 +2,8 @@ package translator_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/onsi/ginkgo/extensions/table"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -349,6 +349,18 @@ var _ = Describe("Translator", func() {
 	translateWithError := func() *validation.ProxyReport {
 		_, errs, report := translator.Translate(params, proxy)
 		ExpectWithOffset(1, errs.Validate()).To(HaveOccurred())
+		return report
+	}
+
+	translateWithBuggyHasher := func() *validation.ProxyReport {
+		buggyHasher := func(resources []envoycache.Resource) (uint64, error) {
+			return 0, errors.New("This is a buggy hasher error")
+		}
+		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, registry.NewPluginRegistry(registeredPlugins), buggyHasher)
+		snapshot, _, report := translator.Translate(params, proxy)
+		Expect(snapshot.GetResources(types.EndpointTypeV3).Items).To(BeNil())
+		Expect(snapshot.GetResources(types.ClusterTypeV3).Items).To(BeNil())
+		Expect(snapshot.GetResources(types.ListenerTypeV3).Items).To(BeNil())
 		return report
 	}
 
@@ -1023,6 +1035,14 @@ var _ = Describe("Translator", func() {
 			upstream.OutlierDetection = api_conversion.ToGlooOutlierDetection(expectedResult)
 			report := translateWithError()
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
+		})
+
+		FIt("errors upon hashing errors", func() {
+			params = plugins.Params{
+				Ctx:      context.Background(),
+				Snapshot: &v1snap.ApiSnapshot{},
+			}
+			translateWithBuggyHasher()
 		})
 
 		It("can translate health check with secret header", func() {

@@ -270,29 +270,36 @@ func (t *translatorInstance) generateXDSSnapshot(
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
-	endpointsVersion, err := t.hasher(endpointsProto)
-	if err != nil {
-		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash endpointsProto: %v", err))
-		return nil
+	endpointsVersion, endpointsErr := t.hasher(endpointsProto)
+	if endpointsErr != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash endpointsProto: %v", endpointsErr))
 	}
-	clustersVersion, err := t.hasher(clustersProto)
-	if err != nil {
-		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash clustersProto: %v", err))
-		return nil
+	clustersVersion, clustersErr := t.hasher(clustersProto)
+	if clustersErr != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash clustersProto: %v", clustersErr))
 	}
-	listenersVersion, err := t.hasher(listenersProto)
-	if err != nil {
-		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash listenersProto: %v", err))
-		return nil
+	listenersVersion, listenersErr := t.hasher(listenersProto)
+	if listenersErr != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash listenersProto: %v", listenersErr))
 	}
 
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
+	var endpointsNew, clustersNew, listenersNew envoycache.Resources
+	if endpointsErr == nil {
+		endpointsNew = envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto)
+	}
+	if clustersErr == nil {
+		clustersNew = envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto)
+	}
+	if listenersErr == nil {
+		listenersNew = envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto)
+	}
 	return xds.NewSnapshotFromResources(
-		envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto),
-		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
+		endpointsNew,
+		clustersNew,
 		MakeRdsResources(routeConfigs),
-		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
+		listenersNew)
 }
 
 func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) (uint64, error) {
