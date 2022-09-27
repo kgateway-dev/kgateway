@@ -400,12 +400,13 @@ gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfi
 # This is intended to be used to aid in local debugging by swapping out this image in a running gloo instance
 #----------------------------------------------------------------------------------
 GLOO_RACE_OUT_DIR=$(OUTPUT_DIR)/gloo-race
-_ := $(shell mkdir -p $(GLOO_RACE_OUT_DIR))
 
+$(GLOO_RACE_OUT_DIR):
+	mkdir -p $@
 $(GLOO_RACE_OUT_DIR)/Dockerfile.build: $(GLOO_DIR)/Dockerfile
 	cp $< $@
 
-$(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
+$(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_RACE_OUT_DIR) $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
 	docker build -t $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) \
 		-f $(GLOO_RACE_OUT_DIR)/Dockerfile.build \
 		--build-arg GO_BUILD_IMAGE=$(GOLANG_VERSION) \
