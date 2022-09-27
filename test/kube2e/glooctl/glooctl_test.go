@@ -189,7 +189,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				Expect(err).To(HaveOccurred(), "should not be able to run 'glooctl istio uninject' without errors")
 			})
 
-			FIt("succeeds when upstreams contain sds configuration and --include-upstreams=true", func() {
+			It("succeeds when upstreams contain sds configuration and --include-upstreams=true", func() {
 				// Swap mTLS mode to permissive for the petstore app
 				err = toggleStictModePetstore(false)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls permissive mode on the petstore app")
