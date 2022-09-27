@@ -1,7 +1,6 @@
 package glooctl_test
 
 import (
-	"fmt"
 	"path/filepath"
 	"time"
 
@@ -30,9 +29,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			petstoreCurlOpts helper.CurlOpts
 		)
 
-		// Note to reviewers: I've extracted the BeforeEach and AfterEach blocks into named functions to that I can call them
-		// repeatedly in the tests below. This is a hack to rapidly iterate on the tests. I'll clean this up before merging.
-		beforeEach := func() {
+		BeforeEach(func() {
 			// Install Petstore
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", "https://raw.githubusercontent.com/solo-io/gloo/v1.4.12/example/petstore/petstore.yaml")
 			Expect(err).NotTo(HaveOccurred(), "should be able to install petstore")
@@ -59,12 +56,9 @@ var _ = Describe("Kube2e: glooctl", func() {
 					"Cache-Control": "no-cache",
 				},
 			}
-		}
+		})
 
-		BeforeEach(beforeEach)
-
-		// Named AfterEach function to allow for rapid iteration on tests. See note above.
-		afterEach := func() {
+		AfterEach(func() {
 			// Disable Istio Injection on default namespace
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "label", "namespace", "default", "istio-injection-")
 			Expect(err).NotTo(HaveOccurred(), "should be able to remove the istio injection label")
@@ -78,9 +72,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				g.Expect(err).NotTo(HaveOccurred(), "should be able to list virtual services")
 				g.Expect(virtualservices).To(HaveLen(0), "should have no virtual services")
 			}, 5*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
-		}
-
-		AfterEach(afterEach)
+		})
 
 		ExpectIstioInjected := func() {
 			// Check for sds sidecar
@@ -149,7 +141,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 		Context("istio uninject", func() {
 
-			iuBeforeEach := func() {
+			BeforeEach(func() {
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 10*time.Second, 1*time.Second)
 
 				err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
@@ -165,20 +157,14 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 				// mTLS strict mode enabled
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 10*time.Second, 1*time.Second)
-			}
-
-			BeforeEach(func() {
-				iuBeforeEach()
 			})
 
-			iuAfterEach := func() {
+			AfterEach(func() {
 				// Tests may have already successfully run uninject, so we can ignore the error
 				_ = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
 
 				ExpectIstioUninjected()
-			}
-
-			AfterEach(iuAfterEach)
+			})
 
 			It("succeeds when no upstreams contain sds configuration", func() {
 				// Swap mTLS mode to permissive for the petstore app
@@ -203,7 +189,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				Expect(err).To(HaveOccurred(), "should not be able to run 'glooctl istio uninject' without errors")
 			})
 
-			sdsUpstreamTestContent := func() {
+			It("succeeds when upstreams contain sds configuration and --include-upstreams=true", func() {
 				// Swap mTLS mode to permissive for the petstore app
 				err = toggleStictModePetstore(false)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls permissive mode on the petstore app")
@@ -215,28 +201,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 				// Expect it to work
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
-			}
-
-			FIt("succeeds when upstreams contain sds configuration and --include-upstreams=true", func() {
-				sdsUpstreamTestContent()
-
-				for i := 0; i < 1000; i++ {
-					// record the time at the start of the iteration
-					start := time.Now()
-					fmt.Println("Running the test for the ", i, "th time")
-					// tear down existing setup
-					iuAfterEach()
-					afterEach()
-					// set up new setup
-					beforeEach()
-					iuBeforeEach()
-					// run test
-					sdsUpstreamTestContent()
-					// record the time at the end of the iteration
-					end := time.Now()
-					// print the time taken for the iteration
-					fmt.Println("Time taken for the ", i, "th iteration is ", end.Sub(start), " seconds")
-				}
 			})
 		})
 
