@@ -13,7 +13,6 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
@@ -39,8 +38,7 @@ func TestGlooctl(t *testing.T) {
 }
 
 var (
-	testHelper        *helper.SoloTestHelper
-	resourceClientset *kube2e.KubeResourceClientSet
+	testHelper *helper.SoloTestHelper
 )
 
 var ctx, _ = context.WithCancel(context.Background())
@@ -77,13 +75,6 @@ func StartTestHelper() {
 
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
-
-	// Create KubeResourceClientSet
-	cfg, err := kubeutils.GetConfig("", "")
-	Expect(err).NotTo(HaveOccurred())
-
-	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
-	Expect(err).NotTo(HaveOccurred())
 }
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {

@@ -7,7 +7,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -68,9 +67,10 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err).NotTo(HaveOccurred(), "should be able to delete the petstore VS")
 
 			Eventually(func(g Gomega) {
-				virtualservices, err := resourceClientset.VirtualServiceClient().List(testHelper.InstallNamespace, clients.ListOpts{})
-				g.Expect(err).NotTo(HaveOccurred(), "should be able to list virtual services")
-				g.Expect(virtualservices).To(HaveLen(0), "should have no virtual services")
+				// get virtual services via kubectl
+				out, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "vs", "-n", testHelper.InstallNamespace)
+				g.Expect(err).NotTo(HaveOccurred(), "should be able to get virtual services")
+				g.Expect(out).To(ContainSubstring("No resources found"))
 			}, 5*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
 		})
 
@@ -189,7 +189,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				Expect(err).To(HaveOccurred(), "should not be able to run 'glooctl istio uninject' without errors")
 			})
 
-			It("succeeds when upstreams contain sds configuration and --include-upstreams=true", func() {
+			FIt("succeeds when upstreams contain sds configuration and --include-upstreams=true", func() {
 				// Swap mTLS mode to permissive for the petstore app
 				err = toggleStictModePetstore(false)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls permissive mode on the petstore app")
