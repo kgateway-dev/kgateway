@@ -401,12 +401,11 @@ gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfi
 #----------------------------------------------------------------------------------
 GLOO_RACE_OUT_DIR=$(OUTPUT_DIR)/gloo-race
 
-$(GLOO_RACE_OUT_DIR):
-	mkdir -p $@
 $(GLOO_RACE_OUT_DIR)/Dockerfile.build: $(GLOO_DIR)/Dockerfile
+	mkdir -p $(GLOO_RACE_OUT_DIR)
 	cp $< $@
 
-$(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_RACE_OUT_DIR) $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
+$(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
 	docker build -t $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) \
 		-f $(GLOO_RACE_OUT_DIR)/Dockerfile.build \
 		--build-arg GO_BUILD_IMAGE=$(GOLANG_VERSION) \
@@ -424,12 +423,14 @@ $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_RACE_OUT_DIR)/.gloo-race-docke
 	docker cp gloo-race-temp-container:/gloo-linux-$(GOARCH) $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH)
 	docker rm -f gloo-race-temp-container
 
+# Build the gloo project with race detection enabled
 .PHONY: gloo-race
 gloo-race: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH)
 
 $(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
 	cp $< $@
 
+# Take the executable built in gloo-race and put it in a docker container
 .PHONY: gloo-race-docker
 gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker
 $(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_RACE_OUT_DIR)/Dockerfile
