@@ -96,10 +96,7 @@ func (s *TranslatorSyncer) Sync(ctx context.Context, snap *gloov1snap.ApiSnapsho
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
-	desiredProxies, invalidProxies, err := s.GeneratedDesiredProxies(ctx, snap)
-	if err != nil {
-		return err
-	}
+	desiredProxies, invalidProxies := s.GeneratedDesiredProxies(ctx, snap)
 
 	return s.reconcile(ctx, desiredProxies, invalidProxies)
 }
@@ -110,7 +107,7 @@ func (s *TranslatorSyncer) Sync(ctx context.Context, snap *gloov1snap.ApiSnapsho
 func (s *TranslatorSyncer) UpdateProxies(ctx context.Context) {
 	s.statusSyncer.handleUpdatedProxies(ctx)
 }
-func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *gloov1snap.ApiSnapshot) (reconciler.GeneratedProxies, reconciler.InvalidProxies, error) {
+func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *gloov1snap.ApiSnapshot) (reconciler.GeneratedProxies, reconciler.InvalidProxies) {
 	logger := contextutils.LoggerFrom(ctx)
 	gatewaysByProxyName := utils.GatewaysByProxyName(snap.Gateways)
 
@@ -142,7 +139,7 @@ func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *gl
 			invalidProxies[invalidProxyRef] = reports
 		}
 	}
-	return desiredProxies, invalidProxies, nil
+	return desiredProxies, invalidProxies
 }
 
 func (s *TranslatorSyncer) shouldCompresss(ctx context.Context) bool {
