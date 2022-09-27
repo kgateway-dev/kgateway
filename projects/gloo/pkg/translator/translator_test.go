@@ -1037,7 +1037,7 @@ var _ = Describe("Translator", func() {
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 		})
 
-		FIt("errors upon hashing errors", func() {
+		It("errors upon hashing errors", func() {
 			params = plugins.Params{
 				Ctx:      context.Background(),
 				Snapshot: &v1snap.ApiSnapshot{},
