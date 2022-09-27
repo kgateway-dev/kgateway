@@ -175,14 +175,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 				// Tests may have already successfully run uninject, so we can ignore the error
 				_ = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
 
-				// confirm that uninject has gone through
-				Eventually(func(g Gomega) {
-					containers, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "deployments", "gateway-proxy", "-o", `jsonpath='{.spec.template.spec.containers[*].name}'`)
-					g.Expect(err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
-					fmt.Println("containers: ", containers)
-					g.Expect(containers).To(Equal("'gateway-proxy'"), "istio-proxy container should be removed after uninjection")
-				}, 5*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
-
 				ExpectIstioUninjected()
 			}
 
