@@ -29,6 +29,7 @@ func MessageToAny(msg proto.Message) (*pany.Any, error) {
 	}, nil
 }
 
+// This will only DPanic in dev builds
 func MustMessageToAny(msg proto.Message) *pany.Any {
 	anymsg, err := MessageToAny(msg)
 	if err != nil {
