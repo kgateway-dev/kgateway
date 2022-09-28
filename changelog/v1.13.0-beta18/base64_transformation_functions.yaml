@@ -1,0 +1,5 @@
+ - type: DEPENDENCY_BUMP
+   description: Bump the version of envoy-gloo to get support for base64 encode/decode inja functions.
+   dependencyOwner: solo-io
+   dependencyRepo: envoy-gloo-ee
+   dependencyTag: NOT_YET_AVAILABLE
