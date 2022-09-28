@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -247,6 +248,60 @@ var _ = Describe("Staged Transformation", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Printf("%+v\n", res.Header)
 			Expect(res.Header["X-Custom-Header"]).To(ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2"))
+		})
+
+		It("Should be able to base64 encode the body", func() {
+			setProxy(&transformation.TransformationStages{
+				Regular: &transformation.RequestResponseTransformations{
+					ResponseTransforms: []*transformation.ResponseMatch{{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &envoytransformation.TransformationTemplate{
+									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+									BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+										Body: &envoytransformation.InjaTemplate{
+											Text: "{{base64Encode(body())}}",
+										},
+									},
+								},
+							},
+						},
+					}},
+				},
+			})
+			TestUpstreamReachable()
+
+			body := []byte("test")
+			encodedBodystring := base64.StdEncoding.EncodeToString(body)
+			// send a request, expect that the response body is base64 encoded
+			v1helpers.ExpectHttpOK(body, nil, envoyPort, encodedBodystring)
+		})
+
+		It("Should be able to base64 decode the body", func() {
+			setProxy(&transformation.TransformationStages{
+				Regular: &transformation.RequestResponseTransformations{
+					ResponseTransforms: []*transformation.ResponseMatch{{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &envoytransformation.TransformationTemplate{
+									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+									BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+										Body: &envoytransformation.InjaTemplate{
+											Text: "{{base64Decode(body())}}",
+										},
+									},
+								},
+							},
+						},
+					}},
+				},
+			})
+			TestUpstreamReachable()
+
+			body := []byte("test")
+			encodedBody := base64.StdEncoding.EncodeToString(body)
+			// send a request, expect that the response body is base64 decoded
+			v1helpers.ExpectHttpOK([]byte(encodedBody), nil, envoyPort, string(body))
 		})
 
 		It("should apply transforms from most specific level only", func() {
