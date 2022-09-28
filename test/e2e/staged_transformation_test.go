@@ -304,6 +304,61 @@ var _ = Describe("Staged Transformation", func() {
 			v1helpers.ExpectHttpOK([]byte(encodedBody), nil, envoyPort, string(body))
 		})
 
+		It("Can extract a substring from the body", func() {
+			setProxy(&transformation.TransformationStages{
+				Regular: &transformation.RequestResponseTransformations{
+					ResponseTransforms: []*transformation.ResponseMatch{{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &envoytransformation.TransformationTemplate{
+									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+									BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+										Body: &envoytransformation.InjaTemplate{
+											Text: "{{substring(body(), 0, 4)}}",
+										},
+									},
+								},
+							},
+						},
+					}},
+				},
+			})
+			TestUpstreamReachable()
+
+			body := []byte("123456789")
+			// send a request, expect that the response body contains only the first 4 characters
+			v1helpers.ExpectHttpOK(body, nil, envoyPort, "1234")
+		})
+
+		It("Can base64 decode and transform headers", func() {
+			setProxy(&transformation.TransformationStages{
+				Regular: &transformation.RequestResponseTransformations{
+					ResponseTransforms: []*transformation.ResponseMatch{{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &envoytransformation.TransformationTemplate{
+									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+									Headers: map[string]*envoytransformation.InjaTemplate{
+										// decode the x-custom-header header and then extract a substring
+										"x-new-custom-header": {Text: `{{ substring(base64Decode(request_header("x-custom-header")), 6, 5) }}`},
+									},
+								},
+							},
+						},
+					}},
+				},
+			})
+			TestUpstreamReachable()
+
+			var client http.Client
+			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), nil)
+			Expect(err).NotTo(HaveOccurred())
+			req.Header.Add("x-custom-header", base64.StdEncoding.EncodeToString([]byte("test1.test2")))
+			res, err := client.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res.Header["X-New-Custom-Header"]).To(ContainElements("test2"))
+		})
+
 		It("should apply transforms from most specific level only", func() {
 			vhostTransform := &transformation.TransformationStages{
 				Regular: &transformation.RequestResponseTransformations{
