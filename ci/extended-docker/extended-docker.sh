@@ -18,7 +18,7 @@ if [ "$err" != 0 ]; then
   exit $err
 fi
 # grab the image names out of the `make docker` output
-sed -nE 's|Successfully tagged (.*$)|\1|p' ${TEMP_FILE} | grep -v "build-container" | while read f;
+sed -nE 's|Successfully tagged (.*$)|\1|p' ${TEMP_FILE} | grep -v "build-container" | grep -v "-race" | while read f;
 do
   docker build ci/extended-docker --build-arg BASE_IMAGE=$f -t $f-extended;
   docker push $f-extended;
