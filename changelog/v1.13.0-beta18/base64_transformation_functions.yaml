@@ -3,3 +3,4 @@
    dependencyOwner: solo-io
    dependencyRepo: envoy-gloo-ee
    dependencyTag: NOT_YET_AVAILABLE
+   issueLink: https://github.com/solo-io/gloo/issues/3597
