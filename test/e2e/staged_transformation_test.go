@@ -260,7 +260,7 @@ var _ = Describe("Staged Transformation", func() {
 									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 									BodyTransformation: &envoytransformation.TransformationTemplate_Body{
 										Body: &envoytransformation.InjaTemplate{
-											Text: "{{base64Encode(body())}}",
+											Text: "{{base64_encode(body())}}",
 										},
 									},
 								},
@@ -287,7 +287,7 @@ var _ = Describe("Staged Transformation", func() {
 									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 									BodyTransformation: &envoytransformation.TransformationTemplate_Body{
 										Body: &envoytransformation.InjaTemplate{
-											Text: "{{base64Decode(body())}}",
+											Text: "{{base64_decode(body())}}",
 										},
 									},
 								},

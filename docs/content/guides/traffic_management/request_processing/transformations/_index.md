@@ -385,6 +385,9 @@ In addition to the standard functions available in the core _Inja_ library, you 
 - `body()`: returns the request/response body.
 - `context()`: returns the base JSON context (allowing for example to range on a JSON body that is an array).
 - `request_header(header_name)`: return the value of the request header with the given name. Useful for including request header values in response transformations.
+- `base64_encode(string)`: encodes the input string as base64
+- `base64_decode(string)`: decodes the input string from base64
+- `substring(string, start_pos, substring_len)`: returns a substring of the input string, starting at `start_pods` and extending for `substring_len` characters. If length is not provided or `substring_len` is <= 0, the substring will extend to the end of the string.
 
 You can use templates to mutate [headers](#headers), the [body](#body), and [dynamic metadata](#dynamicmetadatavalues).
 

@@ -838,17 +838,6 @@ func (*TransformationTemplate_Passthrough) isTransformationTemplate_BodyTransfor
 
 func (*TransformationTemplate_MergeExtractorsToBody) isTransformationTemplate_BodyTransformation() {}
 
-// Defines an [Inja template](https://github.com/pantor/inja) that will be
-// rendered by Gloo. In addition to the core template functions, the Gloo
-// transformation filter defines the following custom functions:
-// - header(header_name): returns the value of the header with the given name
-// - extraction(extractor_name): returns the value of the extractor with the
-// given name
-// - env(env_var_name): returns the value of the environment variable with the
-// given name
-// - body(): returns the request/response body
-// - context(): returns the base JSON context (allowing for example to range on
-// a JSON body that is an array)
 type InjaTemplate struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
