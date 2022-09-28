@@ -441,9 +441,6 @@ func generateSecurityScanGlooE(ctx context.Context) error {
 
 	githubutils.SortReleasesBySemver(allReleases)
 	versionsToScan := getVersionsToScan(allReleases)
-	if err != nil {
-		return err
-	}
 	return BuildSecurityScanReportGlooE(versionsToScan)
 }
 

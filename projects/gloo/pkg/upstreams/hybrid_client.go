@@ -159,7 +159,7 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 		// return success for the sync (ie if there still needs changes its a false)
 		syncFunc := func() bool {
 			currentHash := current.hash()
-			if currentHash == previousHash && currentHash != 0 {
+			if currentHash == previousHash {
 				return true
 			}
 			toSend := current.clone()

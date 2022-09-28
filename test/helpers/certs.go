@@ -159,7 +159,6 @@ var (
 	getCerts sync.Once
 	cert     string
 	privKey  string
-	err      error
 )
 
 func gencerts() {

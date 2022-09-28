@@ -334,7 +334,7 @@ func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) (uint64,
 	hash, err := hashstructure.Hash(resources, nil)
 	if err != nil {
 		panic("constructing version hash for endpoints envoy snapshot components")
-		return 0, nil
+		return 0, errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components")
 	}
 	return hash, nil
 }
