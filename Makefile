@@ -65,11 +65,7 @@ else
   endif
 endif
 
-# Corresponds to my WIP envoy gloo PR to add base64 encoder and decoder inja functions
-# Note to self/reviewers: This PR should not merge until envoy-gloo has been released
-# and this points to a valid release tag
-# https://github.com/solo-io/envoy-gloo/pull/184
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:f105915196798ca381358177f2c9e34070cf2919
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:v1.23.1-patch2
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
