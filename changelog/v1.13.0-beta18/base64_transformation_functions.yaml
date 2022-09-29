@@ -7,5 +7,3 @@ changelog:
   - type: NON_USER_FACING
     description: add e2e testing around base64 encode/decode and substring inja functions
     issueLink: https://github.com/solo-io/gloo/issues/3597
-  - type: NON_USER_FACING
-    description: backport https://github.com/solo-io/gloo/pull/7264 to fix CI.
