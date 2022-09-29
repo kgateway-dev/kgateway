@@ -47,7 +47,7 @@ var _ = Describe("Eds", func() {
 
 		mockCache.EXPECT().NamespacedServiceLister("bar").Return(nil)
 
-		watcher, err := newEndpointWatcherForUpstreams(func([]string) KubePluginSharedFactory { return mockSharedFactory }, mockCache, "foo", upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
+		watcher, err := newEndpointWatcherForUpstreams(func([]string) (KubePluginSharedFactory, error) { return mockSharedFactory, nil }, mockCache, "foo", upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, nil)
 		Expect(err).NotTo(HaveOccurred())
 		watcher.List("foo", clients.ListOpts{Ctx: ctx})
 		Expect(func() {}).NotTo(Panic())

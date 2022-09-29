@@ -108,7 +108,7 @@ func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) (KubePl
 
 	kubeFactory, err := kubeFactoryFactory(namespaces)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error in kubeFactory: %s")
+		return nil, errors.Wrapf(err, "Error in kubeFactory")
 	}
 	// this can take a bit of time some make sure we are still in business
 	if opts.Ctx.Err() != nil {
