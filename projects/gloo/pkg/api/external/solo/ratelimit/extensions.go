@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"os"
 
 	"github.com/rotisserie/eris"
 	skratelimit "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
@@ -15,8 +16,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	// 1024 chars = 1kb
+	MaxStatusMessageBytes = 1024
+)
+
+func init() {
+	DisableMaxStatusSize = os.Getenv("DISABLE_MAX_STATUS_SIZE") == "true"
+}
+
 var (
-	RateLimitConfigCrd = crd.NewCrd(
+	// only public for unit tests!
+	DisableMaxStatusSize = false
+	RateLimitConfigCrd   = crd.NewCrd(
 		"ratelimitconfigs",
 		RateLimitConfigGVK.Group,
 		RateLimitConfigGVK.Version,
@@ -92,6 +104,12 @@ func (c *kubeReporterClient) ApplyStatus(statusClient resources.StatusClient, in
 	}
 
 	baseRlConfig := rlv1alpha1.RateLimitConfig(rlConfig.RateLimitConfig)
+
+	// see https://github.com/solo-io/solo-kit/issues/523
+	// we should move this logic into skv2 so other clients can benefit from it
+	if !DisableMaxStatusSize && len(baseRlConfig.Status.GetMessage()) > MaxStatusMessageBytes {
+		baseRlConfig.Status.Message = baseRlConfig.Status.Message[:MaxStatusMessageBytes]
+	}
 
 	err := c.skv2Client.UpdateRateLimitConfigStatus(opts.Ctx, &baseRlConfig)
 	if err != nil {
