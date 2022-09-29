@@ -84,7 +84,11 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 	// ignoring error so we still print client version even if we can't get server versions (e.g., not deployed, no rbac)
 	switch opts.Top.Output {
 	case printers.JSON:
-		clientVersionStr := string(GetJson(vrs.GetClient()))
+		clientVersion, err := GetJson(vrs.GetClient())
+		if err != nil {
+			return err
+		}
+		clientVersionStr := string(clientVersion)
 		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
 		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
 		if vrs.GetServer() == nil {
@@ -93,11 +97,18 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 		}
 		fmt.Fprint(w, "Server: ")
 		for _, v := range vrs.GetServer() {
-			serverVersionStr := GetJson(v)
+			serverVersionStr, err := GetJson(v)
+			if err != nil {
+				return err
+			}
 			fmt.Fprintf(w, "%s\n", string(serverVersionStr))
 		}
 	case printers.YAML:
-		clientVersionStr := string(GetYaml(vrs.GetClient()))
+		clientVersion, err := GetYaml(vrs.GetClient())
+		if err != nil {
+			return err
+		}
+		clientVersionStr := string(clientVersion)
 		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
 		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
 		if vrs.GetServer() == nil {
@@ -106,7 +117,11 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 		}
 		fmt.Fprintln(w, "Server:")
 		for _, v := range vrs.GetServer() {
-			serverVersionStr := string(GetYaml(v))
+			serverVersion, err := GetYaml(v)
+			if err != nil {
+				return err
+			}
+			serverVersionStr := string(serverVersion)
 			clientVersionStr = strings.TrimRight(clientVersionStr, "\n")
 			fmt.Fprintf(w, "%s\n", serverVersionStr)
 		}
@@ -158,21 +173,25 @@ func getDistributionName(name string, enterprise bool) string {
 	return name
 }
 
-func GetJson(pb proto.Message) []byte {
+func GetJson(pb proto.Message) ([]byte, error) {
 	data, err := protoutils.MarshalBytes(pb)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)
-		return []byte{}
+		return nil, err
 	}
-	return data
+	return data, nil
 }
 
-func GetYaml(pb proto.Message) []byte {
-	jsn := GetJson(pb)
+func GetYaml(pb proto.Message) ([]byte, error) {
+	jsn, err := GetJson(pb)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
+		return nil, err
+	}
 	data, err := yaml.JSONToYAML(jsn)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)
-		return []byte{}
+		return nil, err
 	}
-	return data
+	return data, nil
 }

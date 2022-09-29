@@ -3,6 +3,7 @@ package ec2
 import (
 	"context"
 	"fmt"
+	"github.com/rotisserie/eris"
 	"time"
 
 	"github.com/solo-io/k8s-utils/kubeutils"
@@ -47,9 +48,10 @@ func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstre
 	var namespaces []string
 
 	// We either watch all namespaces, or create individual watchers for each namespace we watch
-	settings, err := settingsutil.FromContext(watchCtx)
-	if err != nil {
-		return nil, err
+
+	settings := settingsutil.MaybeFromContext(watchCtx)
+	if settings == nil {
+		return nil, eris.Errorf("no settings on context")
 	}
 	if settingsutil.IsAllNamespacesFromSettings(settings) {
 		namespaces = []string{metav1.NamespaceAll}

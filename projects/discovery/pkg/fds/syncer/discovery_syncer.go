@@ -2,8 +2,6 @@ package syncer
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
@@ -40,11 +38,7 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 	if contextutils.GetLogLevel() == zapcore.DebugLevel {
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
-	upstreamsToDetect, err := selectUpstreamsForDiscovery(s.fdsMode, snap.Upstreams, snap.Kubenamespaces)
-	if err != nil {
-		return err
-	}
-
+	upstreamsToDetect := selectUpstreamsForDiscovery(s.fdsMode, snap.Upstreams, snap.Kubenamespaces)
 	return s.fd.Update(upstreamsToDetect, snap.Secrets)
 }
 
@@ -54,7 +48,7 @@ const (
 	disabledLabelValue = "disabled"
 )
 
-func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) (v1.UpstreamList, error) {
+func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
 	whitelistNamespaces := sets.NewString()
 	blacklistNamespaces := sets.NewString()
 	for _, namespace := range namespaces {
@@ -68,12 +62,12 @@ func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, u
 
 	switch fdsMode {
 	case v1.Settings_DiscoveryOptions_BLACKLIST:
-		return selectUpstreamsBlacklist(upstreams, blacklistNamespaces), nil
+		return selectUpstreamsBlacklist(upstreams, blacklistNamespaces)
 	case v1.Settings_DiscoveryOptions_WHITELIST:
-		return selectUpstreamsWhitelist(upstreams, whitelistNamespaces, blacklistNamespaces), nil
+		return selectUpstreamsWhitelist(upstreams, whitelistNamespaces, blacklistNamespaces)
 	}
 	contextutils.LoggerFrom(context.Background()).DPanic("invalid fds mode: " + fdsMode.String())
-	return nil, fmt.Errorf("invalid fds mode: %v", fdsMode.String())
+	return selectUpstreamsBlacklist(upstreams, blacklistNamespaces)
 }
 
 func isBlacklistedUpstream(us *v1.Upstream) bool {

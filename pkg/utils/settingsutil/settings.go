@@ -3,10 +3,6 @@ package settingsutil
 import (
 	"context"
 
-	"github.com/rotisserie/eris"
-
-	"github.com/solo-io/go-utils/contextutils"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -16,19 +12,6 @@ var settingsKey = settingsKeyStruct{}
 
 func WithSettings(ctx context.Context, settings *v1.Settings) context.Context {
 	return context.WithValue(ctx, settingsKey, settings)
-}
-
-func FromContext(ctx context.Context) (*v1.Settings, error) {
-	if ctx == nil {
-		return nil, nil
-	}
-	settings := MaybeFromContext(ctx)
-	if settings != nil {
-		return settings, nil
-	}
-	// we should always have settings when this method is called.
-	contextutils.LoggerFrom(ctx).DPanic("no settings on context")
-	return nil, eris.Errorf("no settings on context")
 }
 
 func MaybeFromContext(ctx context.Context) *v1.Settings {

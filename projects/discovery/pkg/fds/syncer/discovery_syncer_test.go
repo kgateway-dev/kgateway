@@ -64,12 +64,10 @@ var _ = Describe("selectUpstreamsForDiscovery", func() {
 	usList := gloov1.UpstreamList{disabledUs1, disabledUs2, disabledUs3, enabledUs1, enabledUs2, explicitlyEnabledUs1, explicitlyEnabledUs2, disabledAwsUs1, enabledAwsUs3, disabledAwsUs2, enabledAwsUs1, enabledAwsUs2}
 
 	var filtered gloov1.UpstreamList
-	var err error
 
 	Context("blacklist mode", func() {
 		BeforeEach(func() {
-			filtered, err = selectUpstreamsForDiscovery(gloov1.Settings_DiscoveryOptions_BLACKLIST, usList, nsList)
-			Expect(err).ToNot(HaveOccurred())
+			filtered = selectUpstreamsForDiscovery(gloov1.Settings_DiscoveryOptions_BLACKLIST, usList, nsList)
 		})
 
 		It("excludes upstreams whose namespace has the disabled label", func() {
@@ -95,8 +93,7 @@ var _ = Describe("selectUpstreamsForDiscovery", func() {
 
 	Context("whitelist mode", func() {
 		BeforeEach(func() {
-			filtered, err = selectUpstreamsForDiscovery(gloov1.Settings_DiscoveryOptions_WHITELIST, usList, nsList)
-			Expect(err).ToNot(HaveOccurred())
+			filtered = selectUpstreamsForDiscovery(gloov1.Settings_DiscoveryOptions_WHITELIST, usList, nsList)
 		})
 
 		It("excludes upstreams whose namespace has the disabled label", func() {

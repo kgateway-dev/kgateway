@@ -98,7 +98,7 @@ func (r *RateLimitConfig) convertSoloKitStatusToRateLimitConfigStatus(status *co
 	case core.Status_Warning:
 		// should lever happen
 		contextutils.LoggerFrom(context.Background()).DPanic("cannot set WARNING status on RateLimitConfig resources")
-		return nil
+		outputState = types.RateLimitConfigStatus_REJECTED
 	}
 
 	return &v1alpha1.RateLimitConfigStatus{
