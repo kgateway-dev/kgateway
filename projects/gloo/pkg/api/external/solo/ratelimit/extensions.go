@@ -107,7 +107,7 @@ func (c *kubeReporterClient) ApplyStatus(statusClient resources.StatusClient, in
 	// see https://github.com/solo-io/solo-kit/issues/523
 	// we should move this logic into skv2 so other clients can benefit from it
 	if !disableMaxStatusSize && len(baseRlConfig.Status.GetMessage()) > MaxStatusMessageBytes {
-		baseRlConfig.Status.Message = baseRlConfig.Status.Message[:MaxStatusMessageBytes]
+		baseRlConfig.Status.Message = baseRlConfig.Status.GetMessage()[:MaxStatusMessageBytes]
 	}
 
 	err := c.skv2Client.UpdateRateLimitConfigStatus(opts.Ctx, &baseRlConfig)
