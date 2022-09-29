@@ -69,7 +69,7 @@ endif
 # Note to self/reviewers: This PR should not merge until envoy-gloo has been released
 # and this points to a valid release tag
 # https://github.com/solo-io/envoy-gloo/pull/184
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:39092cc81016c641cee113ac425481f92f31a985
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:f105915196798ca381358177f2c9e34070cf2919
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)

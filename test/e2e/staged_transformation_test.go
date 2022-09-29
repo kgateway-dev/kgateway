@@ -340,7 +340,7 @@ var _ = Describe("Staged Transformation", func() {
 									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 									Headers: map[string]*envoytransformation.InjaTemplate{
 										// decode the x-custom-header header and then extract a substring
-										"x-new-custom-header": {Text: `{{ substring(base64Decode(request_header("x-custom-header")), 6, 5) }}`},
+										"x-new-custom-header": {Text: `{{substring(base64_decode(request_header("x-custom-header")), 6, 5)}}`},
 									},
 								},
 							},
