@@ -849,14 +849,14 @@ func (*TransformationTemplate_MergeExtractorsToBody) isTransformationTemplate_Bo
 // - body(): returns the request/response body.
 // - context(): returns the base JSON context (allowing for example to range on
 // a JSON body that is an array).
-// - request_header(header_name): return the value of the request header with
-// the given name. Useful for including request header values in response
+// - request_header(header_name): returns the value of the request header with
+// the given name. Use this option when you want to include request header values in response
 // transformations.
-// - base64_encode(string): encodes the input string as base64
-// - base64_decode(string): decodes the input string from base64
+// - base64_encode(string): encodes the input string to base64.
+// - base64_decode(string): decodes the input string from base64.
 // - substring(string, start_pos, substring_len): returns a substring of the
-// input string, starting at start_pods and extending for substring_len
-// characters. If length is not provided or substring_len is <= 0, the
+// input string, starting at `start_pos` and extending for `substring_len`
+// characters. If no `substring_len` is provided or `substring_len` is <= 0, the
 // substring will extend to the end of the string.
 type InjaTemplate struct {
 	state         protoimpl.MessageState
