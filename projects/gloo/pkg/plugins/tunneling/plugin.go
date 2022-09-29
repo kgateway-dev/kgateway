@@ -186,7 +186,7 @@ func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string, 
 	}
 	typedConfig, err := utils.MessageToAny(cfg)
 	if err != nil {
-		typedConfig, _ = utils.MessageToAny(nil)
+		typedConfig, _ = utils.MessageToAny(&envoytcp.TcpProxy{})
 	}
 	return &envoy_config_listener_v3.Listener{
 		Name: "solo_io_generated_self_listener_" + cluster,

@@ -197,7 +197,7 @@ func newSslFilterChain(
 	clonedListenerFilters := cloneListenerFilters(listenerFilters)
 	typedConfig, err := utils.MessageToAny(downstreamTlsContext)
 	if err != nil {
-		typedConfig, _ = utils.MessageToAny(nil)
+		typedConfig, _ = utils.MessageToAny(&envoy_config_listener_v3.FilterChain{})
 	}
 	return &envoy_config_listener_v3.FilterChain{
 		FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{

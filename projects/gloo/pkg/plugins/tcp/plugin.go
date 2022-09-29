@@ -242,7 +242,7 @@ func (p *plugin) newSslFilterChain(
 	}
 	typedConfig, err := utils.MessageToAny(downstreamConfig)
 	if err != nil {
-		typedConfig, _ = utils.MessageToAny(nil)
+		typedConfig, _ = utils.MessageToAny(&envoy_config_listener_v3.FilterChain{})
 	}
 	return &envoy_config_listener_v3.FilterChain{
 		FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{
