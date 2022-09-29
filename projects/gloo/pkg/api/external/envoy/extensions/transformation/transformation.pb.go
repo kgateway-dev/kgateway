@@ -857,7 +857,7 @@ func (*TransformationTemplate_MergeExtractorsToBody) isTransformationTemplate_Bo
 // - substring(string, start_pos, substring_len): returns a substring of the
 // input string, starting at `start_pos` and extending for `substring_len`
 // characters. If no `substring_len` is provided or `substring_len` is <= 0, the
-// substring will extend to the end of the string.
+// substring extends to the end of the input string.
 type InjaTemplate struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

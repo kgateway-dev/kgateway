@@ -387,7 +387,7 @@ In addition to the standard functions available in the core _Inja_ library, you 
 - `request_header(header_name)`: return the value of the request header with the given name. Useful for including request header values in response transformations.
 - base64_encode(string): encodes the input string to base64.
 - base64_decode(string): decodes the input string from base64.
-- substring(string, start_pos, substring_len): returns a substring of the input string, starting at `start_pos` and extending for `substring_len` characters. If no `substring_len` is provided or `substring_len` is <= 0, the substring will extend to the end of the string.
+- substring(string, start_pos, substring_len): returns a substring of the input string, starting at `start_pos` and extending for `substring_len` characters. If no `substring_len` is provided or `substring_len` is <= 0, the substring extends to the end of the input string.
 
 You can use templates to mutate [headers](#headers), the [body](#body), and [dynamic metadata](#dynamicmetadatavalues).
 
