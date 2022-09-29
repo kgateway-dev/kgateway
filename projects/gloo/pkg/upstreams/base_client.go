@@ -28,7 +28,7 @@ func (c *readOnlyUpstreamBaseClient) Kind() string {
 
 func (c *readOnlyUpstreamBaseClient) NewResource() resources.Resource {
 	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
-	return nil
+	return resources.Resource(nil)
 }
 
 func (c *readOnlyUpstreamBaseClient) Register() error {

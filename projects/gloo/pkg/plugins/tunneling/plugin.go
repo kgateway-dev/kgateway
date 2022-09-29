@@ -117,9 +117,13 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 								// successfully to their generated targets
 								return generatedClusters, nil, nil, generatedListeners, nil
 							}
+							typedConfig, err := utils.MessageToAny(cfg)
+							if err != nil {
+								return nil, nil, nil, nil, err
+							}
 							inCluster.TransportSocket = &envoy_config_core_v3.TransportSocket{
 								Name:       wellknown.TransportSocketTls,
-								ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
+								ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 							}
 							break
 						}
@@ -180,7 +184,10 @@ func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string, 
 		TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname, HeadersToAdd: tunnelingHeadersToAdd},
 		ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: cluster}, // route to original target
 	}
-
+	typedConfig, err := utils.MessageToAny(cfg)
+	if err != nil {
+		typedConfig, _ = utils.MessageToAny(nil)
+	}
 	return &envoy_config_listener_v3.Listener{
 		Name: "solo_io_generated_self_listener_" + cluster,
 		Address: &envoy_config_core_v3.Address{
@@ -196,7 +203,7 @@ func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string, 
 					{
 						Name: "tcp",
 						ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
-							TypedConfig: utils.MustMessageToAny(cfg),
+							TypedConfig: typedConfig,
 						},
 					},
 				},

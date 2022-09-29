@@ -294,14 +294,12 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 				err := routePlugin.ProcessRoute(routeParams, emptyRoute, &envoy_config_route_v3.Route{})
 				if err != nil {
 					Fail(fmt.Sprintf("plugin route filter failed %v", err))
-					return
 				}
 			}
 			for _, httpPlug := range pluginRegistry.GetHttpFilterPlugins() {
 				filters, err := httpPlug.HttpFilters(params, emptyListener.GetHttpListener())
 				if err != nil {
 					Fail(fmt.Sprintf("plugin http filter failed %v", err))
-					return
 				}
 				emptyListenerFilterCount += len(filters)
 			}
@@ -309,12 +307,10 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 			// Validate that the emptyListener filter count and configuredListener filter count are different
 			if emptyListenerFilterCount != len(knownBaseFilters) {
 				Fail(fmt.Sprintf("Found %d filters that were configured, but expected %d", emptyListenerFilterCount, len(knownBaseFilters)))
-				return
 			}
 
 			if configuredListenerFilterCount <= len(knownBaseFilters) {
 				Fail(fmt.Sprintf("Found %d filters that were configured, but expected at least %d", configuredListenerFilterCount, len(knownBaseFilters)))
-				return
 			}
 
 		})

@@ -26,7 +26,7 @@ type kubernetesUpstreamClient struct {
 
 func (c *kubernetesUpstreamClient) BaseClient() skclients.ResourceClient {
 	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
-	return nil
+	return skclients.ResourceClient(nil)
 }
 
 func (c *kubernetesUpstreamClient) Register() error {

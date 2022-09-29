@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"

@@ -359,9 +359,9 @@ var _ = Describe("Translator", func() {
 		}
 		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, registry.NewPluginRegistry(registeredPlugins), buggyHasher)
 		snapshot, _, report := translator.Translate(params, proxy)
-		Expect(snapshot.GetResources(types.EndpointTypeV3).Items).To(BeNil())
-		Expect(snapshot.GetResources(types.ClusterTypeV3).Items).To(BeNil())
-		Expect(snapshot.GetResources(types.ListenerTypeV3).Items).To(BeNil())
+		Expect(snapshot.GetResources(types.EndpointTypeV3).Version).To(Equal("endpoints-hashErr"))
+		Expect(snapshot.GetResources(types.ClusterTypeV3).Version).To(Equal("clusters-hashErr"))
+		Expect(snapshot.GetResources(types.ListenerTypeV3).Version).To(Equal("listeners-hashErr"))
 		return report
 	}
 

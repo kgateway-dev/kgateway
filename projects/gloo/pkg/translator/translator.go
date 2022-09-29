@@ -285,13 +285,15 @@ func (t *translatorInstance) generateXDSSnapshot(
 
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
-	var endpointsNew, clustersNew, listenersNew envoycache.Resources
+	endpointsNew := envoycache.NewResources("endpoints-hashErr", endpointsProto)
 	if endpointsErr == nil {
 		endpointsNew = envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto)
 	}
+	clustersNew := envoycache.NewResources("clusters-hashErr", endpointsProto)
 	if clustersErr == nil {
 		clustersNew = envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto)
 	}
+	listenersNew := envoycache.NewResources("listeners-hashErr", listenersProto)
 	if listenersErr == nil {
 		listenersNew = envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto)
 	}
@@ -354,7 +356,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 	routesVersion, err := MustEnvoyCacheResourcesListToFnvHash(routesProto)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash routesProto: %v", err))
-		return envoycache.Resources{}
+		return envoycache.NewResources("routes-hashErr", routesProto)
 	}
 	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }

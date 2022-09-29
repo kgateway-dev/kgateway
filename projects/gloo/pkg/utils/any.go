@@ -29,16 +29,6 @@ func MessageToAny(msg proto.Message) (*pany.Any, error) {
 	}, nil
 }
 
-// This will only DPanic in dev builds
-func MustMessageToAny(msg proto.Message) *pany.Any {
-	anymsg, err := MessageToAny(msg)
-	if err != nil {
-		contextutils.LoggerFrom(context.Background()).DPanic(err)
-		return &pany.Any{}
-	}
-	return anymsg
-}
-
 func AnyToMessage(a *pany.Any) (proto.Message, error) {
 	var x ptypes.DynamicAny
 	err := ptypes.UnmarshalAny(a, &x)

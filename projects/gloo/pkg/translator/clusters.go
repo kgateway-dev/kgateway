@@ -110,9 +110,13 @@ func (t *translatorInstance) initializeCluster(
 		if err != nil {
 			reports.AddError(upstream, err)
 		} else {
+			typedConfig, err := utils.MessageToAny(cfg)
+			if err != nil {
+				typedConfig, _ = utils.MessageToAny(nil)
+			}
 			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
 				Name:       wellknown.TransportSocketTls,
-				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 			}
 		}
 	}

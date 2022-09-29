@@ -157,10 +157,14 @@ func (p *plugin) tcpProxyFilters(
 			Cluster: "",
 		}
 		// append empty sni-forward-filter to pass the SNI name to the cluster field above
+		typedConfig, err := utils.MessageToAny(&envoy_extensions_filters_network_sni_cluster_v3.SniCluster{})
+		if err != nil {
+			return nil, err
+		}
 		filters = append(filters, &envoy_config_listener_v3.Filter{
 			Name: SniFilter,
 			ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
-				TypedConfig: utils.MustMessageToAny(&envoy_extensions_filters_network_sni_cluster_v3.SniCluster{}),
+				TypedConfig: typedConfig,
 			},
 		})
 	default:
@@ -236,7 +240,10 @@ func (p *plugin) newSslFilterChain(
 	for i, lf := range listenerFilters {
 		listenerFiltersCopy[i] = proto.Clone(lf).(*envoy_config_listener_v3.Filter)
 	}
-
+	typedConfig, err := utils.MessageToAny(downstreamConfig)
+	if err != nil {
+		typedConfig, _ = utils.MessageToAny(nil)
+	}
 	return &envoy_config_listener_v3.FilterChain{
 		FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{
 			ServerNames: sniDomains,
@@ -244,7 +251,7 @@ func (p *plugin) newSslFilterChain(
 		Filters: listenerFiltersCopy,
 		TransportSocket: &envoy_config_core_v3.TransportSocket{
 			Name:       wellknown.TransportSocketTls,
-			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamConfig)},
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 		},
 		TransportSocketConnectTimeout: timeout,
 	}

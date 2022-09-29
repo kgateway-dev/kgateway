@@ -1,7 +1,10 @@
 package translator
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
@@ -83,7 +86,13 @@ type httpFilterChainTranslator struct {
 func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
 	// 1. Generate all the network filters (including the HttpConnectionManager)
 	networkFilters, err := h.networkFilterTranslator.ComputeNetworkFilters(params)
-	if err != nil || len(networkFilters) == 0 {
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
+		return nil
+	}
+	if len(networkFilters) == 0 {
+
+		contextutils.LoggerFrom(context.Background()).DPanic("networkFilters cannot be empty")
 		return nil
 	}
 
@@ -186,7 +195,10 @@ func newSslFilterChain(
 
 	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
 	clonedListenerFilters := cloneListenerFilters(listenerFilters)
-
+	typedConfig, err := utils.MessageToAny(downstreamTlsContext)
+	if err != nil {
+		typedConfig, _ = utils.MessageToAny(nil)
+	}
 	return &envoy_config_listener_v3.FilterChain{
 		FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{
 			ServerNames: sniDomains,
@@ -194,7 +206,7 @@ func newSslFilterChain(
 		Filters: clonedListenerFilters,
 		TransportSocket: &envoy_config_core_v3.TransportSocket{
 			Name:       wellknown.TransportSocketTls,
-			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamTlsContext)},
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 		},
 		TransportSocketConnectTimeout: timeout,
 	}

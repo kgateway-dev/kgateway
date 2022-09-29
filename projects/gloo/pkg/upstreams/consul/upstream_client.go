@@ -27,7 +27,7 @@ type consulUpstreamClient struct {
 
 func (*consulUpstreamClient) BaseClient() skclients.ResourceClient {
 	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
-	return nil
+	return skclients.ResourceClient(nil)
 }
 
 func (*consulUpstreamClient) Register() error {

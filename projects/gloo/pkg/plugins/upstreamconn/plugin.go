@@ -144,11 +144,15 @@ func convertHttp1ProtocolOptions(hpo protocol.Http1ProtocolOptions) (*envoy_conf
 			},
 		}
 	} else if hpo.GetPreserveCaseHeaderKeyFormat() {
+		typedConfig, err := utils.MessageToAny(&envoy_extensions_http_header_formatters_preserve_case_v3.PreserveCaseFormatterConfig{})
+		if err != nil {
+			return nil, err
+		}
 		out.HeaderKeyFormat = &envoy_config_core_v3.Http1ProtocolOptions_HeaderKeyFormat{
 			HeaderFormat: &envoy_config_core_v3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
 				StatefulFormatter: &envoy_config_core_v3.TypedExtensionConfig{
 					Name:        PreserveCasePlugin,
-					TypedConfig: utils.MustMessageToAny(&envoy_extensions_http_header_formatters_preserve_case_v3.PreserveCaseFormatterConfig{}),
+					TypedConfig: typedConfig,
 				},
 			},
 		}

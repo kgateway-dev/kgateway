@@ -117,10 +117,14 @@ func copyFileSettings(cfg *envoyalfile.FileAccessLog, alsSettings *als.AccessLog
 	cfg.Path = alsSettings.FileSink.GetPath()
 
 	query := &envoy_req_without_query.ReqWithoutQuery{}
+	typedConfig, err := utils.MessageToAny(query)
+	if err != nil {
+		return err
+	}
 	formatterExtensions := []*envoycore.TypedExtensionConfig{
 		{
 			Name:        "envoy.formatter.req_without_query",
-			TypedConfig: utils.MustMessageToAny(query),
+			TypedConfig: typedConfig,
 		},
 	}
 

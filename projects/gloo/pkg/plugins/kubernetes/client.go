@@ -37,16 +37,16 @@ type KubePluginListers struct {
 	cacheUpdatedWatchersMutex sync.Mutex
 }
 
-func getInformerFactory(ctx context.Context, client kubernetes.Interface, watchNamespaces []string) *KubePluginListers {
+func getInformerFactory(ctx context.Context, client kubernetes.Interface, watchNamespaces []string) (*KubePluginListers, error) {
 	if len(watchNamespaces) == 0 {
 		watchNamespaces = []string{metav1.NamespaceAll}
 	}
 	kubePluginSharedFactory := startInformerFactory(ctx, client, watchNamespaces)
 	if kubePluginSharedFactory.initError != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(kubePluginSharedFactory.initError)
-		return nil
+		return nil, kubePluginSharedFactory.initError
 	}
-	return kubePluginSharedFactory
+	return kubePluginSharedFactory, nil
 }
 
 func startInformerFactory(ctx context.Context, client kubernetes.Interface, watchNamespaces []string) *KubePluginListers {
