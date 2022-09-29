@@ -13,7 +13,7 @@ weight: 5
 
 - [Failover](#failover)
 - [PrioritizedLocality](#prioritizedlocality)
-- [Priority](#priority)
+- [Policy](#policy)
 - [LocalityLbEndpoints](#localitylbendpoints)
 - [LbEndpoint](#lbendpoint)
 - [HealthCheckConfig](#healthcheckconfig)
@@ -47,14 +47,14 @@ the list, first being `0` through `n-1`.
 
 ```yaml
 "prioritizedLocalities": []gloo.solo.io.Failover.PrioritizedLocality
-"priority": .gloo.solo.io.Failover.Priority
+"policy": .gloo.solo.io.Failover.Policy
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `prioritizedLocalities` | [[]gloo.solo.io.Failover.PrioritizedLocality](../failover.proto.sk/#prioritizedlocality) | PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each list of `LocalityLbEndpoints` is determined by its index in the list. |
-| `priority` | [.gloo.solo.io.Failover.Priority](../failover.proto.sk/#priority) | Load balancing policy settings. |
+| `policy` | [.gloo.solo.io.Failover.Policy](../failover.proto.sk/#policy) | Load balancing policy settings. |
 
 
 
@@ -77,7 +77,7 @@ the list, first being `0` through `n-1`.
 
 
 ---
-### Priority
+### Policy
 
 
 

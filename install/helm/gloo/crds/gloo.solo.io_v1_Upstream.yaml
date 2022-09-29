@@ -328,6 +328,14 @@ spec:
                 type: object
               failover:
                 properties:
+                  policy:
+                    properties:
+                      overprovisioningFactor:
+                        maximum: 4294967295
+                        minimum: 0
+                        nullable: true
+                        type: integer
+                    type: object
                   prioritizedLocalities:
                     items:
                       properties:
@@ -449,14 +457,6 @@ spec:
                           type: array
                       type: object
                     type: array
-                  priority:
-                    properties:
-                      overprovisioningFactor:
-                        maximum: 4294967295
-                        minimum: 0
-                        nullable: true
-                        type: integer
-                    type: object
                 type: object
               healthChecks:
                 items:

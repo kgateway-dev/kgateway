@@ -36,9 +36,9 @@ message Failover {
     }
 
     // Load balancing policy settings.
-    Priority priority = 2;
+    Policy policy = 2;
 
-    message Priority {
+    message Policy {
       // Priority levels and localities are considered overprovisioned with this
       // factor (in percentage). This means that we don't consider a priority
       // level or locality unhealthy until the fraction of healthy hosts
