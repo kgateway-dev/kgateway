@@ -22,12 +22,11 @@ const (
 )
 
 func init() {
-	DisableMaxStatusSize = os.Getenv("DISABLE_MAX_STATUS_SIZE") == "true"
+	disableMaxStatusSize = os.Getenv("DISABLE_MAX_STATUS_SIZE") == "true"
 }
 
 var (
-	// only public for unit tests!
-	DisableMaxStatusSize = false
+	disableMaxStatusSize = false
 	RateLimitConfigCrd   = crd.NewCrd(
 		"ratelimitconfigs",
 		RateLimitConfigGVK.Group,
@@ -107,7 +106,7 @@ func (c *kubeReporterClient) ApplyStatus(statusClient resources.StatusClient, in
 
 	// see https://github.com/solo-io/solo-kit/issues/523
 	// we should move this logic into skv2 so other clients can benefit from it
-	if !DisableMaxStatusSize && len(baseRlConfig.Status.GetMessage()) > MaxStatusMessageBytes {
+	if !disableMaxStatusSize && len(baseRlConfig.Status.GetMessage()) > MaxStatusMessageBytes {
 		baseRlConfig.Status.Message = baseRlConfig.Status.Message[:MaxStatusMessageBytes]
 	}
 
