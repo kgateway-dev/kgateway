@@ -48,6 +48,12 @@ func (m *Failover) Clone() proto.Message {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPolicy()).(clone.Cloner); ok {
+		target.Policy = h.Clone().(*Failover_Policy)
+	} else {
+		target.Policy = proto.Clone(m.GetPolicy()).(*Failover_Policy)
+	}
+
 	return target
 }
 
@@ -156,6 +162,23 @@ func (m *Failover_PrioritizedLocality) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Failover_Policy) Clone() proto.Message {
+	var target *Failover_Policy
+	if m == nil {
+		return target
+	}
+	target = &Failover_Policy{}
+
+	if h, ok := interface{}(m.GetOverprovisioningFactor()).(clone.Cloner); ok {
+		target.OverprovisioningFactor = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.OverprovisioningFactor = proto.Clone(m.GetOverprovisioningFactor()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
 	return target
