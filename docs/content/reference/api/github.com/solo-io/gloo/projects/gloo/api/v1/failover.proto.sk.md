@@ -13,6 +13,7 @@ weight: 5
 
 - [Failover](#failover)
 - [PrioritizedLocality](#prioritizedlocality)
+- [Priority](#priority)
 - [LocalityLbEndpoints](#localitylbendpoints)
 - [LbEndpoint](#lbendpoint)
 - [HealthCheckConfig](#healthcheckconfig)
@@ -46,12 +47,14 @@ the list, first being `0` through `n-1`.
 
 ```yaml
 "prioritizedLocalities": []gloo.solo.io.Failover.PrioritizedLocality
+"priority": .gloo.solo.io.Failover.Priority
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `prioritizedLocalities` | [[]gloo.solo.io.Failover.PrioritizedLocality](../failover.proto.sk/#prioritizedlocality) | PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each list of `LocalityLbEndpoints` is determined by its index in the list. |
+| `priority` | [.gloo.solo.io.Failover.Priority](../failover.proto.sk/#priority) | Load balancing policy settings. |
 
 
 
@@ -69,6 +72,23 @@ the list, first being `0` through `n-1`.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `localityEndpoints` | [[]gloo.solo.io.LocalityLbEndpoints](../failover.proto.sk/#localitylbendpoints) |  |
+
+
+
+
+---
+### Priority
+
+
+
+```yaml
+"overprovisioningFactor": .google.protobuf.UInt32Value
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `overprovisioningFactor` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Priority levels and localities are considered overprovisioned with this factor (in percentage). This means that we don't consider a priority level or locality unhealthy until the fraction of healthy hosts multiplied by the overprovisioning factor drops below 100. With the default value 140(1.4), Envoy doesn't consider a priority level or a locality unhealthy until their percentage of healthy hosts drops below 72%. For example: .. code-block:: json { "overprovisioning_factor": 100 } Read more at :ref:`priority levels <arch_overview_load_balancing_priority_levels>` and :ref:`localities <arch_overview_load_balancing_locality_weighted_lb>`. |
 
 
 
