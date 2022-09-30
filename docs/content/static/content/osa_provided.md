@@ -41,7 +41,6 @@ Name|Version|License
 [spf13/viper](https://github.com/spf13/viper)|v1.8.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.23.0|Apache License 2.0
 [go.uber.org/atomic](https://go.uber.org/atomic)|v1.9.0|MIT License
-[go.uber.org/goleak](https://go.uber.org/goleak)|v1.2.0|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.19.1|MIT License
 [x/mod](https://golang.org/x/mod)|v0.6.0-dev.0.20220106191415-9b9b3d81d5e3|BSD 3-clause "New" or "Revised" License

@@ -717,6 +717,28 @@ func (m *OAuth2) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *OAuth2_Oauth2:
+
+		if h, ok := interface{}(m.GetOauth2()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Oauth2")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetOauth2(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Oauth2")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil
@@ -1348,6 +1370,148 @@ func (m *OidcAuthorizationCode) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *PlainOAuth2) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.PlainOAuth2")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClientId())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetClientSecretRef()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ClientSecretRef")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetClientSecretRef(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ClientSecretRef")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetAuthEndpointQueryParams() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAppUrl())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetCallbackPath())); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetScopes() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetSession()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Session")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetSession(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Session")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if _, err = hasher.Write([]byte(m.GetLogoutPath())); err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetTokenEndpointQueryParams() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAfterLogoutUrl())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAuthEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetTokenEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRevocationEndpoint())); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
@@ -2727,6 +2891,10 @@ func (m *UserSession_RedisSession) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if _, err = hasher.Write([]byte(m.GetHeaderName())); err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -3519,6 +3687,132 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Hash(hasher hash.Hash64) (ui
 }
 
 // Hash function
+func (m *ExtAuthConfig_PlainOAuth2Config) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_PlainOAuth2Config")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClientId())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClientSecret())); err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetAuthEndpointQueryParams() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAppUrl())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetCallbackPath())); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetScopes() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetSession()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Session")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetSession(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Session")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if _, err = hasher.Write([]byte(m.GetLogoutPath())); err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetTokenEndpointQueryParams() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAfterLogoutUrl())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAuthEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetTokenEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRevocationEndpoint())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *ExtAuthConfig_OAuth2Config) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -3569,6 +3863,28 @@ func (m *ExtAuthConfig_OAuth2Config) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("AccessTokenValidationConfig")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ExtAuthConfig_OAuth2Config_Oauth2Config:
+
+		if h, ok := interface{}(m.GetOauth2Config()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Oauth2Config")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetOauth2Config(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Oauth2Config")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
