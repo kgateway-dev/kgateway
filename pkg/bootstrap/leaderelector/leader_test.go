@@ -33,7 +33,7 @@ var _ = Describe("Leader Startup Action", func() {
 			atomic.AddUint64(&startupOps, 1)
 			return nil
 		})
-		startupOps = 0
+		atomic.StoreUint64(&startupOps, 0)
 	})
 
 	AfterEach(func() {

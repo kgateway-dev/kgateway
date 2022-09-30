@@ -41,7 +41,6 @@ Name|Version|License
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
 [spf13/viper](https://github.com/spf13/viper)|v1.8.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.23.0|Apache License 2.0
-[go.uber.org/atomic](https://go.uber.org/atomic)|v1.9.0|MIT License
 [go.uber.org/goleak](https://go.uber.org/goleak)|v1.2.0|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.19.1|MIT License
