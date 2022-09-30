@@ -423,8 +423,8 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 			}
 		} else {
 			contextutils.LoggerFrom(ctx).Debug("Not a leader, skipping reports writing")
-			s.leaderStartupAction.SetStartupAction(func() error {
-				// Store the closure in the onElectedAction so that it is invoked if this component becomes the new leader
+			s.leaderStartupAction.SetAction(func() error {
+				// Store the closure in the StartupAction so that it is invoked if this component becomes the new leader
 				// That way we can be sure that statuses are updated even if no changes occur after election completes
 				// https://github.com/solo-io/gloo/issues/7148
 				return s.reporter.WriteReports(ctx, reports, currentStatuses)

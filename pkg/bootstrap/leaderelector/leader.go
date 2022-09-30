@@ -3,7 +3,6 @@ package leaderelector
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -11,8 +10,8 @@ import (
 type LeaderStartupAction struct {
 	identity Identity
 
-	lock          sync.RWMutex
-	startupAction func() error
+	actionLock sync.RWMutex
+	action     func() error
 }
 
 func NewLeaderStartupAction(identity Identity) *LeaderStartupAction {
@@ -21,32 +20,33 @@ func NewLeaderStartupAction(identity Identity) *LeaderStartupAction {
 	}
 }
 
-func (a *LeaderStartupAction) SetStartupAction(action func() error) {
-	a.lock.Lock()
-	defer a.lock.Unlock()
-	a.startupAction = action
+func (a *LeaderStartupAction) SetAction(action func() error) {
+	a.actionLock.Lock()
+	defer a.actionLock.Unlock()
+	a.action = action
 }
 
-func (a *LeaderStartupAction) GetStartupAction() func() error {
-	a.lock.RLock()
-	defer a.lock.RUnlock()
-	return a.startupAction
+func (a *LeaderStartupAction) GetAction() func() error {
+	a.actionLock.RLock()
+	defer a.actionLock.RUnlock()
+	return a.action
 }
 
 func (a *LeaderStartupAction) WatchElectionResults(ctx context.Context) {
-	var retryChan <-chan time.Time
 
-	doPerformStartupAction := func() {
-		startupAction := a.GetStartupAction()
-		if startupAction == nil {
+	if a.identity.Elected() == nil {
+		// no election channel, return early
+		return
+	}
+
+	doPerformAction := func() {
+		action := a.GetAction()
+		if action == nil {
 			return
 		}
-		err := startupAction()
+		err := action()
 		if err != nil {
-			contextutils.LoggerFrom(ctx).Warnw("failed to perform leader startup action; will try again shortly.", "error", err)
-			retryChan = time.After(time.Second)
-		} else {
-			retryChan = nil
+			contextutils.LoggerFrom(ctx).Warnw("failed to perform leader startup action", "error", err)
 		}
 	}
 
@@ -55,14 +55,11 @@ func (a *LeaderStartupAction) WatchElectionResults(ctx context.Context) {
 			select {
 			case <-electionCtx.Done():
 				return
-			case <-retryChan:
-				doPerformStartupAction()
-			case _, ok := <-a.identity.ElectedChannel():
-				if !ok {
-					// channel has been closed
-					return
-				}
-				doPerformStartupAction()
+			case <-a.identity.Elected():
+				// channel is closed, signaling leadership
+				doPerformAction()
+				return
+
 			default:
 				// receiving from other channels would block
 			}
