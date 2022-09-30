@@ -51,6 +51,7 @@ weight: 5
 - [ScopeList](#scopelist)
 - [OauthSecret](#oauthsecret)
 - [ApiKeyAuth](#apikeyauth)
+- [SecretKey](#secretkey)
 - [MetadataEntry](#metadataentry)
 - [K8sSecretApiKeyStorage](#k8ssecretapikeystorage)
 - [AerospikeApiKeyStorage](#aerospikeapikeystorage)
@@ -58,6 +59,7 @@ weight: 5
 - [readModeAp](#readmodeap)
 - [tlsCurveID](#tlscurveid)
 - [ApiKey](#apikey)
+- [ApiKeySecret](#apikeysecret)
 - [OpaAuth](#opaauth)
 - [OpaAuthOptions](#opaauthoptions)
 - [Ldap](#ldap)
@@ -1051,7 +1053,8 @@ These values will be encoded in a basic auth header in order to authenticate the
 "labelSelector": map<string, string>
 "apiKeySecretRefs": []core.solo.io.ResourceRef
 "headerName": string
-"headersFromMetadata": map<string, map<string, bool>>
+"headersFromMetadata": map<string, .enterprise.gloo.solo.io.ApiKeyAuth.SecretKey>
+"headersFromMetadataEntry": map<string, map<string, bool>>
 "k8SSecretApikeyStorage": .enterprise.gloo.solo.io.K8sSecretApiKeyStorage
 "aerospikeApikeyStorage": .enterprise.gloo.solo.io.AerospikeApiKeyStorage
 
@@ -1062,9 +1065,30 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `labelSelector` | `map<string, string>` | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here will be overwritten if values are specified in the storage backend. Identify all valid API key secrets that match the provided label selector. API key secrets must be in one of the watch namespaces for gloo to locate them. |
 | `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here will be overwritten if values are specified in the storage backend. A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred. |
 | `headerName` | `string` | When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
-| `headersFromMetadata` | `map<string, map<string, bool>>` | API key structures might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra fields included in the API key metadata structure. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the API key metadata structure that will be inspected to determine the value for the header. |
+| `headersFromMetadata` | `map<string, .enterprise.gloo.solo.io.ApiKeyAuth.SecretKey>` | DEPRECATED: use headers_from_metadata_entry. |
+| `headersFromMetadataEntry` | `map<string, map<string, bool>>` | API key structures might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra fields included in the API key metadata structure. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the API key metadata structure that will be inspected to determine the value for the header. |
 | `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage` or `aerospikeApikeyStorage` can be set. |
 | `aerospikeApikeyStorage` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage](../extauth.proto.sk/#aerospikeapikeystorage) |  Only one of `aerospikeApikeyStorage` or `k8sSecretApikeyStorage` can be set. |
+
+
+
+
+---
+### SecretKey
+
+ 
+DEPRECATED: use generalized MetadataEntry
+
+```yaml
+"name": string
+"required": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | DEPRECATED (Required) The key of the API key metadata entry to inspect. |
+| `required` | `bool` | DEPRECATED If this field is set to `true`, Gloo will reject an API key structure that does not contain data for the given key. Defaults to `false`. In this case, if an API key structure does not contain the requested data, no header will be added to the request. |
 
 
 
@@ -1243,6 +1267,28 @@ For the Aerospike backend, this data is stored as bins on the key's record
 
 
 ---
+### ApiKeySecret
+
+ 
+DEPRECATED: use ApiKey
+
+```yaml
+"apiKey": string
+"labels": []string
+"metadata": map<string, bool>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `apiKey` | `string` | The string value of the API key. |
+| `labels` | `[]string` | A list of labels (key=value) for the apikey secret. These labels are used by the storage driver to facilitate lookups by label. |
+| `metadata` | `map<string, bool>` | additional data the client needs associated with this API key. |
+
+
+
+
+---
 ### OpaAuth
 
 
@@ -1345,6 +1391,7 @@ Authorizes requests by querying a custom extauth server.
 "grpc": .enterprise.gloo.solo.io.PassThroughGrpc
 "http": .enterprise.gloo.solo.io.PassThroughHttp
 "config": .google.protobuf.Struct
+"failureModeAllow": bool
 
 ```
 
@@ -1353,6 +1400,7 @@ Authorizes requests by querying a custom extauth server.
 | `grpc` | [.enterprise.gloo.solo.io.PassThroughGrpc](../extauth.proto.sk/#passthroughgrpc) |  Only one of `grpc` or `http` can be set. |
 | `http` | [.enterprise.gloo.solo.io.PassThroughHttp](../extauth.proto.sk/#passthroughhttp) |  Only one of `http` or `grpc` can be set. |
 | `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Custom config to be passed per request to the passthrough auth service. |
+| `failureModeAllow` | `bool` | If set to true, the service will accept client request even if the communication with the authorization service has failed, or if the authorization service has returned a server error. Defaults to false. |
 
 
 

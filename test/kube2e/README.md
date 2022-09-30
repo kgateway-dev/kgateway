@@ -33,7 +33,7 @@ It accepts a number of environment variables, to control the creation of a kind 
 | ---                   |   ---      |    ---      |
 | CLUSTER_NAME          | kind       | The name of the cluster that will be generated |
 | CLUSTER_NODE_VERSION  | v1.22.4    | The version of the [Node Docker image](https://hub.docker.com/r/kindest/node/) to use for booting the cluster |
-| VERSION               | 0.0.0-kind | The version used to tag Gloo images that are deployed to the cluster |
+| VERSION               | 0.0.0-kind1 | The version used to tag Gloo images that are deployed to the cluster |
 | KUBE2E_TESTS          | gateway    | Name of the test suite to be run. Options: `'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl'` |
 
 Example:
@@ -45,9 +45,9 @@ CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.22.4 VERSION=v1.0.0-solo-
 The CI install script executes a series of make targets.
 
 Create a kind cluster: `kind create cluster --name kind`\
-Build the helm chart: `VERSION=0.0.0-kind make build-test-chart`\
+Build the helm chart: `VERSION=0.0.0-kind1 make build-test-chart`\
 Build glooctl: `make glooctl`\
-Load the images into the cluster: `CLUSTER_NAME=kind VERSION=0.0.0-kind make push-kind-images`
+Load the images into the cluster: `CLUSTER_NAME=kind VERSION=0.0.0-kind1 make push-kind-images`
 
 
 ## Verify Your Setup
@@ -64,7 +64,7 @@ You should see the list of images in the cluster, including the ones you just up
 `Error: validation: chart.metadata.version "solo" is invalid`\
 In newer versions of helm (>3.5), the version used to build the helm chart (ie the VERSION env variable), needs to respect semantic versioning. This error implies that the version provided does not.
 
-Prepend a valid semver to avoid the error. (ie `kind` can become `0.0.0-kind`)
+Prepend a valid semver to avoid the error. (ie `kind` can become `0.0.0-kind1`)
 
 ## Run Tests
 To run the regression tests, your kubeconfig file must point to a running Kubernetes cluster.
