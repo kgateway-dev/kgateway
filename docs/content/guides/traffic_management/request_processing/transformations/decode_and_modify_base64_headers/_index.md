@@ -1,15 +1,15 @@
 ---
 title: Decode and modify base64 request headers
 weight: 10
-description: Decode and modify base64 encoded request headers before forwarding them upstream.
+description: Decode and modify base64 encoded request headers before forwarding the requests upstream.
 ---
 
-What if you need to decode and modify incoming headers before sending them to an upstream?
+You can decode and modify incoming headers before sending the request to an upstream by using Gloo [transformations]({{% versioned_link_path fromRoot="/latest/guides/traffic_management/request_processing/transformations/" %}}).
 
-### Setup
+## Setup
 {{< readfile file="/static/content/setup_postman_echo.md" markdown="true">}}
 
-Let's also create a simple Virtual Service that matches any path and routes all traffic to our Upstream:
+Next, create a simple Virtual Service that matches any path and routes all traffic to the Upstream.
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
@@ -33,15 +33,15 @@ spec:
 {{< /tab >}}
 {{< /tabs >}}
 
-Let's test that the configuration was correctly picked up by Gloo Edge by executing the following command to send a request with a base64 encoded header:
+Finally, test that Gloo Edge picked up the configuration by sending a request with a base64-encoded header.
 
 ```shell
 curl -v -H "x-test: $(echo -n 'testprefix.testsuffix' | base64)" localhost:8080/get | jq
 ```
 
-You should get a response with status `200` and a JSON body similar to the one below. Note that the `x-test` header is in the payload response from postman-echo, containing the base64 representation of the string literal `testprefix.testsuffix` as its value.
+Review the JSON output similar to the following `200` status response. Note that the `x-test` header in the payload response from postman-echo has the base64 representation of the string literal `testprefix.testsuffix` that you passed in the request.
 
-```json
+{{< highlight json "hl_lines=10" >}}
 {
   "args": {},
   "headers": {
@@ -57,13 +57,13 @@ You should get a response with status `200` and a JSON body similar to the one b
   },
   "url": "http://localhost/get"
 }
-```
+{{< /highlight >}}
 
-### Modifying the request header
-As you can see from the response above, the upstream service echoes the headers we included in our request inside the `headers` response body attribute. We will now configure Gloo Edge to decode and modify the value of this header before sending it to the upstream
+## Modifying the request header
+As confirmed in the test request of the setup, the upstream service echoes the headers that you include in the request inside the `headers` response body attribute. Now, you can configure Gloo Edge to decode and modify the value of this header before sending it to the upstream.
 
-#### Update the Virtual Service
-To implement this behavior, we need to add a `responseTransformation` stanza to our original Virtual Service definition. Note that the `request_header`, `base64_decode`, and `substring` functions are used in an [Inja template]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations#templating-language" %}}) to:
+### Update the Virtual Service
+To implement this behavior, add a `responseTransformation` stanza to the original Virtual Service definition. Note that the `request_header`, `base64_decode`, and `substring` functions are used in an [Inja template]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations#templating-language" %}}) to:
  - Extract the value of the `x-test` header from the request
  - Decode the extracted value from base64
  - Extract the substring beginning with the eleventh character of the input string
@@ -97,16 +97,16 @@ spec:
                 text: '{{substring(base64_decode(request_header("x-test")), 11)}}'
 {{< /highlight >}}
 
-#### Test the modified configuration
-We'll test our modified Virtual Service by issuing the same curl command as before:
+### Test the modified configuration
+Test the modified Virtual Service by issuing a curl request.
 
 ```shell
 curl -v -H "x-test: $(echo -n 'testprefix.testsuffix' | base64)" localhost:8080/get | jq
 ```
 
-This should yield something similar to the following output. Note that in the JSON response, there is now the value of the inject header `x-decoded-test`, which contains a substring of the decoded base64 value sent in the x-test header
+Review the output similar to the following JSON response. Note that the value of the inject header `x-decoded-test` has a substring of the decoded base64 value that was sent in the `x-test` header.
 
-```json
+{{< highlight json "hl_lines=12" >}}
 {
   "args": {},
   "headers": {
@@ -123,12 +123,13 @@ This should yield something similar to the following output. Note that in the JS
   },
   "url": "http://localhost/get"
 }
-```
+{{< /highlight >}}
 
-Congratulations! You have successfully used a request transformation to decode and modify a request header!
+Congratulations! You successfully used a request transformation to decode and modify a request header!
 
-### Cleanup
-To cleanup the resources created in this tutorial you can run the following commands:
+## Cleanup
+
+You can clean up the resources that you created in this tutorial.
 
 ```shell
 kubectl delete virtualservice -n gloo-system decode-and-modify-header
