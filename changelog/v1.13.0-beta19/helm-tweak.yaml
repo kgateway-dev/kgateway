@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: force DiscoveryDeployment.Image field to be a standardized data type
+    issueLink: https://github.com/solo-io/gloo/issues/6581
