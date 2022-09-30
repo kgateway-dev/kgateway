@@ -2,7 +2,6 @@ package translator
 
 import (
 	"fmt"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -113,11 +112,12 @@ func (t *translatorInstance) initializeCluster(
 		} else {
 			typedConfig, err := utils.MessageToAny(cfg)
 			if err != nil {
-				typedConfig, _ = utils.MessageToAny(&envoyauth.UpstreamTlsContext{})
-			}
-			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
-				Name:       wellknown.TransportSocketTls,
-				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
+				reports.AddError(upstream, err)
+			} else {
+				out.TransportSocket = &envoy_config_core_v3.TransportSocket{
+					Name:       wellknown.TransportSocketTls,
+					ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
+				}
 			}
 		}
 	}

@@ -225,7 +225,7 @@ func (p *plugin) computeTcpFilterChain(
 	if err != nil {
 		return nil, InvalidSecretsError(err, host.GetName())
 	}
-	return p.newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters, sslConfig.GetTransportSocketConnectTimeout()), nil
+	return p.newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters, sslConfig.GetTransportSocketConnectTimeout())
 }
 
 func (p *plugin) newSslFilterChain(
@@ -233,7 +233,7 @@ func (p *plugin) newSslFilterChain(
 	sniDomains []string,
 	listenerFilters []*envoy_config_listener_v3.Filter,
 	timeout *duration.Duration,
-) *envoy_config_listener_v3.FilterChain {
+) (*envoy_config_listener_v3.FilterChain, error) {
 
 	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
 	listenerFiltersCopy := make([]*envoy_config_listener_v3.Filter, len(listenerFilters))
@@ -242,7 +242,7 @@ func (p *plugin) newSslFilterChain(
 	}
 	typedConfig, err := utils.MessageToAny(downstreamConfig)
 	if err != nil {
-		typedConfig, _ = utils.MessageToAny(&envoy_config_listener_v3.FilterChain{})
+		return nil, err
 	}
 	return &envoy_config_listener_v3.FilterChain{
 		FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{
@@ -254,7 +254,7 @@ func (p *plugin) newSslFilterChain(
 			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 		},
 		TransportSocketConnectTimeout: timeout,
-	}
+	}, nil
 }
 
 func convertToEnvoyTunnelingConfig(config *tcp.TcpProxySettings_TunnelingConfig) *envoytcp.TcpProxy_TunnelingConfig {
