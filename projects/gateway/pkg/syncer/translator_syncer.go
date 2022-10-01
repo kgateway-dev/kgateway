@@ -296,10 +296,11 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 }
 
 func (s *statusSyncer) forceSync() {
-	select {
-	case s.syncNeeded <- struct{}{}:
-	default:
+	if len(s.syncNeeded) > 0 {
+		// sync is already needed; no reason to block on send
+		return
 	}
+	s.syncNeeded <- struct{}{}
 }
 
 func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {

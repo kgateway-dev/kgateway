@@ -102,6 +102,7 @@ spec:
 {{- /* need to do this weird if/else because Helm cannot differentiate between 'false' and 'unset' */}}
       alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
       allowWarnings: {{ .Values.gateway.validation.allowWarnings }}
+      serverEnabled: {{ .Values.gateway.validation.serverEnabled }}
       disableTransformationValidation: {{ .Values.gateway.validation.disableTransformationValidation }}
       warnRouteShortCircuiting: {{ .Values.gateway.validation.warnRouteShortCircuiting }}
       validationServerGrpcMaxSizeBytes: {{ .Values.gateway.validation.validationServerGrpcMaxSizeBytes }}

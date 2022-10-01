@@ -2,6 +2,8 @@ package syncer
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
@@ -24,7 +26,7 @@ type translatorSyncer struct {
 	translator translator.Translator
 	sanitizer  sanitizer.XdsSanitizer
 	xdsCache   envoycache.SnapshotCache
-	reporter   reporter.StatusReporter
+	reporter   reporter.StatusReporter // shared with status syncer; no data race because StatusFromReport() only reads values set at reporter initialization
 
 	syncerExtensions []TranslatorSyncerExtension
 	settings         *v1.Settings
@@ -33,13 +35,25 @@ type translatorSyncer struct {
 	proxyClient      v1.ProxyClient
 	writeNamespace   string
 
-	identity leaderelector.Identity
-
 	// used for debugging purposes only
 	latestSnap *v1snap.ApiSnapshot
+
+	statusSyncer *statusSyncer
+}
+
+type statusSyncer struct {
+	// shared with translator syncer; no data race because we own the reporter.
+	// if translator syncer starts doing writes with the reporter, we should add locks
+	reporter reporter.StatusReporter
+
+	syncNeeded    chan struct{}
+	identity      leaderelector.Identity
+	reportsLock   sync.RWMutex
+	latestReports reporter.ResourceReports
 }
 
 func NewTranslatorSyncer(
+	ctx context.Context,
 	translator translator.Translator,
 	xdsCache envoycache.SnapshotCache,
 	sanitizer sanitizer.XdsSanitizer,
@@ -64,7 +78,12 @@ func NewTranslatorSyncer(
 		gatewaySyncer:    gatewaySyncer,
 		proxyClient:      proxyClient,
 		writeNamespace:   writeNamespace,
-		identity:         identity,
+		statusSyncer: &statusSyncer{
+			reporter:    reporter,
+			syncNeeded:  make(chan struct{}, 1),
+			identity:    identity,
+			reportsLock: sync.RWMutex{},
+		},
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
@@ -72,7 +91,7 @@ func NewTranslatorSyncer(
 			_ = s.ServeXdsSnapshots()
 		}()
 	}
-
+	go s.statusSyncer.syncStatusOnEmit(ctx)
 	return s
 }
 
@@ -102,6 +121,85 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 		reports.Merge(intermediateReports)
 	}
 
+	// Update resource status metrics
+	for resource, report := range reports {
+		status := s.reporter.StatusFromReport(report, nil)
+		s.statusMetrics.SetResourceStatus(ctx, resource, status)
+	}
+
+	// After reports are written for proxies, save in gateway syncer (previously gw watched for status changes to proxies)
+	if s.gatewaySyncer != nil {
+		s.gatewaySyncer.UpdateProxies(ctx)
+	}
+
+	s.statusSyncer.reportsLock.Lock()
+	s.statusSyncer.latestReports = reports
+	s.statusSyncer.reportsLock.Unlock()
+	s.statusSyncer.forceSync()
+
+	return multiErr.ErrorOrNil()
+}
+func (s *translatorSyncer) translateProxies(ctx context.Context, snap *v1snap.ApiSnapshot) error {
+	var multiErr *multierror.Error
+	err := s.gatewaySyncer.Sync(ctx, snap)
+	if err != nil {
+		multiErr = multierror.Append(multiErr, err)
+	}
+	proxyList, err := s.proxyClient.List(s.writeNamespace, clients.ListOpts{})
+	if err != nil {
+		multiErr = multierror.Append(multiErr, err)
+	}
+	snap.Proxies = proxyList
+	return multiErr.ErrorOrNil()
+}
+
+func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
+	var retryChan <-chan time.Time
+
+	doSync := func() {
+		err := s.syncStatus(ctx)
+		if err != nil {
+			contextutils.LoggerFrom(ctx).Debugw("failed to sync status; will try again shortly.", "error", err)
+			retryChan = time.After(time.Second)
+		} else {
+			retryChan = nil
+		}
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-retryChan:
+			doSync()
+		case <-s.syncNeeded:
+			doSync()
+		}
+	}
+}
+
+func (s *statusSyncer) forceSync() {
+	if len(s.syncNeeded) > 0 {
+		// sync is already needed; no reason to block on send
+		return
+	}
+	s.syncNeeded <- struct{}{}
+}
+
+func (s *statusSyncer) syncStatus(ctx context.Context) error {
+	s.reportsLock.RLock()
+	// deep copy the reports so we can release the lock
+	reports := make(reporter.ResourceReports, len(s.latestReports))
+	for k, v := range s.latestReports {
+		reports[k] = v
+	}
+	s.reportsLock.RUnlock()
+
+	if len(reports) == 0 {
+		return nil
+	}
+
+	logger := contextutils.LoggerFrom(ctx)
 	if s.identity.IsLeader() {
 		// Only leaders will write reports
 		//
@@ -117,35 +215,10 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 
 			wrappedErr := eris.Wrapf(err, "failed to write reports. "+
 				"did you make sure your CRDs have been updated since v1.12.17 of open-source? (i.e. `status` and `status.statuses` fields exist on your CR)")
-
-			multiErr = multierror.Append(multiErr, eris.Wrapf(wrappedErr, "writing reports"))
+			return wrappedErr
 		}
 	} else {
 		logger.Debugf("Not a leader, skipping reports writing")
 	}
-
-	// Update resource status metrics
-	for resource, report := range reports {
-		status := s.reporter.StatusFromReport(report, nil)
-		s.statusMetrics.SetResourceStatus(ctx, resource, status)
-	}
-
-	//After reports are written for proxies, save in gateway syncer (previously gw watched for status changes to proxies)
-	if s.gatewaySyncer != nil {
-		s.gatewaySyncer.UpdateProxies(ctx)
-	}
-	return multiErr.ErrorOrNil()
-}
-func (s *translatorSyncer) translateProxies(ctx context.Context, snap *v1snap.ApiSnapshot) error {
-	var multiErr *multierror.Error
-	err := s.gatewaySyncer.Sync(ctx, snap)
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
-	}
-	proxyList, err := s.proxyClient.List(s.writeNamespace, clients.ListOpts{})
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
-	}
-	snap.Proxies = proxyList
-	return multiErr.ErrorOrNil()
+	return nil
 }
