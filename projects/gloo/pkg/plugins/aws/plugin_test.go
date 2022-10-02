@@ -1,6 +1,7 @@
 package aws_test
 
 import (
+	"context"
 	"net/url"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -35,6 +36,8 @@ const (
 var _ = Describe("Plugin", func() {
 
 	var (
+		ctx         context.Context
+		cancel      context.CancelFunc
 		initParams  plugins.InitParams
 		params      plugins.Params
 		vhostParams plugins.VirtualHostParams
@@ -47,6 +50,8 @@ var _ = Describe("Plugin", func() {
 	)
 
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+		params.Ctx = ctx
 		awsPlugin = NewPlugin(GenerateAWSLambdaRouteConfig)
 
 		upstreamName := "up"
@@ -130,6 +135,10 @@ var _ = Describe("Plugin", func() {
 
 	JustBeforeEach(func() {
 		awsPlugin.Init(initParams)
+	})
+
+	AfterEach(func() {
+		cancel()
 	})
 
 	processProtocolOptions := func() {
