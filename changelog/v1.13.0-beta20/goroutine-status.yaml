@@ -1,0 +1,12 @@
+changelog:
+  - type: FIX
+    resolvesIssue: false
+    description: >-
+      Improve performance of gloo translation and speed to serve xds config by moving status reporting to its own goroutine.
+    issueLink: https://github.com/solo-io/gloo/issues/7261
+  - type: FIX
+    resolvesIssue: false
+    description: >-
+      Add a new field to Gloo `Settings` which allows users to disable the validation server (even if they also configured
+      other validation fields, such as `disable_transformation_validation`).
+    issueLink: https://github.com/solo-io/gloo/issues/7275
