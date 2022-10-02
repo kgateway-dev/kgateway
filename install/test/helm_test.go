@@ -3640,6 +3640,7 @@ spec:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
       allowWarnings: true
+      serverEnabled: true
       disableTransformationValidation: false
       warnRouteShortCircuiting: false
       validationServerGrpcMaxSizeBytes: 104857600
