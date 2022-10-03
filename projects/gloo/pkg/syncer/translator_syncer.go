@@ -46,10 +46,11 @@ type statusSyncer struct {
 	// if translator syncer starts doing writes with the reporter, we should add locks
 	reporter reporter.StatusReporter
 
-	syncNeeded    chan struct{}
-	identity      leaderelector.Identity
-	reportsLock   sync.RWMutex
-	latestReports reporter.ResourceReports
+	syncNeeded          chan struct{}
+	identity            leaderelector.Identity
+	leaderStartupAction *leaderelector.LeaderStartupAction
+	reportsLock         sync.RWMutex
+	latestReports       reporter.ResourceReports
 }
 
 func NewTranslatorSyncer(
@@ -79,10 +80,11 @@ func NewTranslatorSyncer(
 		proxyClient:      proxyClient,
 		writeNamespace:   writeNamespace,
 		statusSyncer: &statusSyncer{
-			reporter:    reporter,
-			syncNeeded:  make(chan struct{}, 1),
-			identity:    identity,
-			reportsLock: sync.RWMutex{},
+			reporter:            reporter,
+			syncNeeded:          make(chan struct{}, 1),
+			identity:            identity,
+			leaderStartupAction: leaderelector.NewLeaderStartupAction(identity),
+			reportsLock:         sync.RWMutex{},
 		},
 	}
 	if devMode {
@@ -92,6 +94,7 @@ func NewTranslatorSyncer(
 		}()
 	}
 	go s.statusSyncer.syncStatusOnEmit(ctx)
+	s.statusSyncer.leaderStartupAction.WatchElectionResults(ctx)
 	return s
 }
 
@@ -139,6 +142,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 
 	return multiErr.ErrorOrNil()
 }
+
 func (s *translatorSyncer) translateProxies(ctx context.Context, snap *v1snap.ApiSnapshot) error {
 	var multiErr *multierror.Error
 	err := s.gatewaySyncer.Sync(ctx, snap)
@@ -219,6 +223,12 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		}
 	} else {
 		logger.Debugf("Not a leader, skipping reports writing")
+		s.leaderStartupAction.SetAction(func() error {
+			// Store the closure in the StartupAction so that it is invoked if this component becomes the new leader
+			// That way we can be sure that statuses are updated even if no changes occur after election completes
+			// https://github.com/solo-io/gloo/issues/7148
+			return s.reporter.WriteReports(ctx, reports, nil)
+		})
 	}
 	return nil
 }
