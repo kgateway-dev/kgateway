@@ -71,6 +71,7 @@ gateway:
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
     allowWarnings: true
+    serverEnabled: true
     disableTransformationValidation: false
     warnRouteShortCircuiting: false
     validationServerGrpcMaxSizeBytes: 104857600
