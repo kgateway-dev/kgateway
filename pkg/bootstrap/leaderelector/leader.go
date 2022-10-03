@@ -22,8 +22,8 @@ func NewLeaderStartupAction(identity Identity) *LeaderStartupAction {
 
 func (a *LeaderStartupAction) SetAction(action func() error) {
 	a.actionLock.Lock()
-	defer a.actionLock.Unlock()
 	a.action = action
+	a.actionLock.Unlock()
 }
 
 func (a *LeaderStartupAction) GetAction() func() error {
@@ -42,6 +42,8 @@ func (a *LeaderStartupAction) WatchElectionResults(ctx context.Context) {
 	doPerformAction := func() {
 		action := a.GetAction()
 		if action == nil {
+			// this case is the result of developer error
+			contextutils.LoggerFrom(ctx).Warnw("leader startup action not defined")
 			return
 		}
 		err := action()
