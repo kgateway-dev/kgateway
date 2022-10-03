@@ -5,7 +5,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/atomic"
 )
 
 var _ leaderelector.ElectionFactory = new(singleReplicaElectionFactory)
@@ -27,5 +26,7 @@ func (f *singleReplicaElectionFactory) StartElection(ctx context.Context, _ *lea
 // Identity returns the Identity used in single replica elections
 // Since there is only 1 replica, the identity is always considered the "leader"
 func Identity() leaderelector.Identity {
-	return leaderelector.NewIdentity(atomic.NewBool(true))
+	elected := make(chan struct{})
+	close(elected) // immediately signal the identity as the leader
+	return leaderelector.NewIdentity(elected)
 }

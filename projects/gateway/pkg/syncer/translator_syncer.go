@@ -79,6 +79,7 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 		t.proxyStatusMaxSize = pxStatusSizeEnv
 	}
 	go t.statusSyncer.syncStatusOnEmit(ctx)
+	t.statusSyncer.syncStatusOnElectionChange(ctx)
 	return t
 }
 
@@ -176,7 +177,8 @@ type statusSyncer struct {
 	syncNeeded              chan struct{}
 	previousProxyStatusHash uint64
 
-	identity leaderelector.Identity
+	identity            leaderelector.Identity
+	leaderStartupAction *leaderelector.LeaderStartupAction
 }
 
 func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, reporter reporter.StatusReporter, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics, identity leaderelector.Identity) statusSyncer {
@@ -190,6 +192,7 @@ func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, repo
 		statusMetrics:           statusMetrics,
 		syncNeeded:              make(chan struct{}, 1),
 		identity:                identity,
+		leaderStartupAction:     leaderelector.NewLeaderStartupAction(identity),
 	}
 }
 
@@ -328,6 +331,10 @@ func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 	}
 }
 
+func (s *statusSyncer) syncStatusOnElectionChange(ctx context.Context) {
+	s.leaderStartupAction.WatchElectionResults(ctx)
+}
+
 // extractCurrentReports massages several asynchronously set `statusSyncer` variables into formats consumable by `syncStatus`
 func (s *statusSyncer) extractCurrentReports() (reporter.ResourceReports, map[resources.InputResource]map[string]*core.Status, map[resources.InputResource]*core.Status) {
 	var nilProxy *gloov1.Proxy
@@ -421,6 +428,12 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 			}
 		} else {
 			contextutils.LoggerFrom(ctx).Debug("Not a leader, skipping reports writing")
+			s.leaderStartupAction.SetAction(func() error {
+				// Store the closure in the StartupAction so that it is invoked if this component becomes the new leader
+				// That way we can be sure that statuses are updated even if no changes occur after election completes
+				// https://github.com/solo-io/gloo/issues/7148
+				return s.reporter.WriteReports(ctx, reports, currentStatuses)
+			})
 		}
 
 		status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
