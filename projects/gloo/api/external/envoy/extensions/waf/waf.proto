@@ -8,7 +8,6 @@ option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto";
-import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 message AuditLogging {
   enum AuditLogAction {
