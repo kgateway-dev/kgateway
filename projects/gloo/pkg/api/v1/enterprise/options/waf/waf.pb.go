@@ -38,10 +38,13 @@ type Settings struct {
 	// Add OWASP core rule set
 	// if nil will not be added
 	CoreRuleSet *CoreRuleSet `protobuf:"bytes,3,opt,name=core_rule_set,json=coreRuleSet,proto3" json:"core_rule_set,omitempty"`
-	// Custom rule sets rules to add - File option will not dynamically load changes - name must be versioned
+	// Custom rule sets rules to add - File option will not dynamically load changes
+	// If you want changes to ruleset values stores in a file to propagate to Enovy you will need to change the name of the file to indicate a change to its contents
+	// The recommendation if you want dynamically loaded rules is to use CustomConfigMapRuleSets
 	RuleSets []*waf.RuleSet `protobuf:"bytes,4,rep,name=rule_sets,json=ruleSets,proto3" json:"rule_sets,omitempty"`
-	//Rule stored in kubernetes configmap are dynamically loaded
-	//Rules from configmaped .conf files will be treated the same as if they were entered as a rulestr under a RuleSet
+	// Use CustomConfigMapRuleSets to reference configmaps that contain rules that you want dynamically loaded
+	// The format required for this functionality is for the rules to be in the value of the key value map of the data field of a configmap
+	// If the configmap has been created from multiple file sources only the value from the first key-value mapping under the data field will be used
 	CustomConfigMapRuleSets []*core.ResourceRef `protobuf:"bytes,8,rep,name=custom_config_map_rule_sets,json=customConfigMapRuleSets,proto3" json:"custom_config_map_rule_sets,omitempty"`
 	// Audit Log settings
 	AuditLogging *waf.AuditLogging `protobuf:"bytes,5,opt,name=audit_logging,json=auditLogging,proto3" json:"audit_logging,omitempty"`
