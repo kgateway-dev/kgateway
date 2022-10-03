@@ -46,11 +46,11 @@ type statusSyncer struct {
 	// if translator syncer starts doing writes with the reporter, we should add locks
 	reporter reporter.StatusReporter
 
-	syncNeeded    chan struct{}
-	identity      leaderelector.Identity
+	syncNeeded          chan struct{}
+	identity            leaderelector.Identity
 	leaderStartupAction *leaderelector.LeaderStartupAction
-	reportsLock   sync.RWMutex
-	latestReports reporter.ResourceReports
+	reportsLock         sync.RWMutex
+	latestReports       reporter.ResourceReports
 }
 
 func NewTranslatorSyncer(
@@ -80,11 +80,11 @@ func NewTranslatorSyncer(
 		proxyClient:      proxyClient,
 		writeNamespace:   writeNamespace,
 		statusSyncer: &statusSyncer{
-			reporter:    reporter,
-			syncNeeded:  make(chan struct{}, 1),
-			identity:    identity,
+			reporter:            reporter,
+			syncNeeded:          make(chan struct{}, 1),
+			identity:            identity,
 			leaderStartupAction: leaderelector.NewLeaderStartupAction(identity),
-			reportsLock: sync.RWMutex{},
+			reportsLock:         sync.RWMutex{},
 		},
 	}
 	if devMode {
