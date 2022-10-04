@@ -137,6 +137,9 @@ message Action {
 		ALL_CREDIT_CARDS:
 		  - (All credit card related regexes from above)
 
+		ALL_CREDIT_CARDS_COMBINED:
+		  - Same as ALL_CREDIT_CARDS but using a single action instead of multiple which should be marginally faster
+
     */
     enum ActionType {
         CUSTOM = 0;
@@ -150,6 +153,7 @@ message Action {
         CREDIT_CARD_TRACKERS = 8;
         ALL_CREDIT_CARDS = 9;
         KEYVALUE = 10;
+        ALL_CREDIT_CARDS_COMBINED = 11;
     }
 
     // The action type to implement.
