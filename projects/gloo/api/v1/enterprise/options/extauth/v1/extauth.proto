@@ -1039,6 +1039,16 @@ message Ldap {
     // and disables validation for the membership attribute of the user entry.
     // Group checking is enabled by default.
     bool disable_group_checking = 7;
+
+    // Settings for using a separate service account for looking up group membership
+    // To use this, you also need to configure credentials
+    // TODO: secret name
+    LdapServiceAccount group_lookup_settings = 8;
+}
+
+message LdapServiceAccount {
+    // If true, Gloo will use the service account to check group membership
+    bool check_groups_with_service_account = 1;
 }
 
 // Authorizes requests by querying a custom extauth server.
