@@ -14,6 +14,19 @@ func WithSettings(ctx context.Context, settings *v1.Settings) context.Context {
 	return context.WithValue(ctx, settingsKey, settings)
 }
 
+// Deprecated: potentially unsafe panic
+func FromContext(ctx context.Context) *v1.Settings {
+	if ctx == nil {
+		return nil
+	}
+	settings := MaybeFromContext(ctx)
+	if settings != nil {
+		return settings
+	}
+	// we should always have settings when this method is called.
+	panic("no settings on context")
+}
+
 func MaybeFromContext(ctx context.Context) *v1.Settings {
 	if ctx == nil {
 		return nil
