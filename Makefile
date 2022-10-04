@@ -65,7 +65,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.23.0-patch7
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.23.1-patch2
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -782,7 +782,6 @@ build-test-chart:
 #----------------------------------------------------------------------------------
 # Locally run the Trivy security scan to generate result report as markdown
 
-TRIVY_VERSION ?= $(shell curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
 

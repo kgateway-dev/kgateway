@@ -252,7 +252,6 @@ func (t *translatorInstance) generateXDSSnapshot(
 	routeConfigs []*envoy_config_route_v3.RouteConfiguration,
 	listeners []*envoy_config_listener_v3.Listener,
 ) envoycache.Snapshot {
-
 	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
 
 	for _, ep := range endpoints {
