@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3329
+    resolvesIssue: false
+    description: >
+      Allow direct specification of a config map with mod security ruleset to allow for dynamic loading of customer specified rulesets
