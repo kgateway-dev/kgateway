@@ -64,6 +64,7 @@ weight: 5
 - [OpaAuthOptions](#opaauthoptions)
 - [Ldap](#ldap)
 - [ConnectionPool](#connectionpool)
+- [LdapServiceAccount](#ldapserviceaccount)
 - [PassThroughAuth](#passthroughauth)
 - [PassThroughGrpc](#passthroughgrpc)
 - [PassThroughHttp](#passthroughhttp)
@@ -1344,6 +1345,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 "pool": .enterprise.gloo.solo.io.Ldap.ConnectionPool
 "searchFilter": string
 "disableGroupChecking": bool
+"groupLookupSettings": .enterprise.gloo.solo.io.LdapServiceAccount
 
 ```
 
@@ -1356,6 +1358,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 | `pool` | [.enterprise.gloo.solo.io.Ldap.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |
 | `searchFilter` | `string` | Use to set a custom filter when searching a member. Defaults to "(uid=*)". |
 | `disableGroupChecking` | `bool` | Disables group checking, regardless of the value for allowedGroups, and disables validation for the membership attribute of the user entry. Group checking is enabled by default. |
+| `groupLookupSettings` | [.enterprise.gloo.solo.io.LdapServiceAccount](../extauth.proto.sk/#ldapserviceaccount) | Settings for using a separate service account for looking up group membership To use this, you also need to configure credentials TODO: secret name. |
 
 
 
@@ -1377,6 +1380,23 @@ is requested (meaning that all the polled connections are in use), the connectio
 | ----- | ---- | ----------- | 
 | `maxSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Maximum number connections that are pooled at any give time. The default value is 5. |
 | `initialSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Number of connections that the pool will be pre-populated with upon initialization. The default value is 2. |
+
+
+
+
+---
+### LdapServiceAccount
+
+
+
+```yaml
+"checkGroupsWithServiceAccount": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `checkGroupsWithServiceAccount` | `bool` | If true, Gloo will use the service account to check group membership. |
 
 
 

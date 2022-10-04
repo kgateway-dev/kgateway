@@ -1291,6 +1291,25 @@ func (m *Ldap) Clone() proto.Message {
 
 	target.DisableGroupChecking = m.GetDisableGroupChecking()
 
+	if h, ok := interface{}(m.GetGroupLookupSettings()).(clone.Cloner); ok {
+		target.GroupLookupSettings = h.Clone().(*LdapServiceAccount)
+	} else {
+		target.GroupLookupSettings = proto.Clone(m.GetGroupLookupSettings()).(*LdapServiceAccount)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *LdapServiceAccount) Clone() proto.Message {
+	var target *LdapServiceAccount
+	if m == nil {
+		return target
+	}
+	target = &LdapServiceAccount{}
+
+	target.CheckGroupsWithServiceAccount = m.GetCheckGroupsWithServiceAccount()
+
 	return target
 }
 

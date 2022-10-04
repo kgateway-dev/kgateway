@@ -185,6 +185,11 @@ spec:
                           type: array
                         disableGroupChecking:
                           type: boolean
+                        groupLookupSettings:
+                          properties:
+                            checkGroupsWithServiceAccount:
+                              type: boolean
+                          type: object
                         membershipAttributeName:
                           type: string
                         pool:
