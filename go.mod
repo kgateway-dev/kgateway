@@ -84,7 +84,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require github.com/mitchellh/hashstructure v1.0.0 // indirect
 
 require (
 	cloud.google.com/go v0.98.0 // indirect
@@ -224,6 +223,7 @@ require (
 	github.com/mitchellh/copystructure v1.1.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
+	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
