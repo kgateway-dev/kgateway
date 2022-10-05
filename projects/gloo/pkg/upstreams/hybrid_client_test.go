@@ -2,6 +2,7 @@ package upstreams_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/rotisserie/eris"
@@ -35,15 +36,18 @@ var _ = Describe("Hybrid Upstream Client", func() {
 
 		watchNamespace = "watched-ns"
 		err            error
+		usIndex        = 0
 
 		// Results in 5 upstreams being created, 1 real, 4 service-derived (one of which is in a different namespace)
+		writeAnotherUpstream = func() {
+			usIndex++
+			// Real upstream
+			_, err = baseUsClient.Write(getUpstream(fmt.Sprintf("us-%d", usIndex), watchNamespace, "svc-3", watchNamespace, 1234), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+		}
 		writeResources = func() {
 			opts := clients.WriteOpts{Ctx: ctx}
-
-			// Real upstream
-			_, err = baseUsClient.Write(getUpstream("us-1", watchNamespace, "svc-3", watchNamespace, 1234), opts)
-			Expect(err).NotTo(HaveOccurred())
-
+			writeAnotherUpstream()
 			// Kubernetes services
 			_, err = svcClient.Write(getService("svc-1", watchNamespace, []int32{8080, 8081}), opts)
 			Expect(err).NotTo(HaveOccurred())
@@ -122,6 +126,36 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		cancel()
 		Eventually(usChan).Should(BeClosed())
 		Eventually(errChan).Should(BeClosed())
+	})
+
+	It("successfully sends even if polled sporadically", func() {
+		timerC := make(chan time.Time, 1)
+		upstreams.TimerOverride = timerC
+		usChan, _, err := hybridClient.Watch(watchNamespace, clients.WatchOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		// get the initial list
+		Eventually(usChan).Should(Receive())
+
+		writeResources()
+		// give it time to propagate to watch goroutine <-collectUpstreamsChan
+		time.Sleep(time.Second / 10)
+		timerC <- time.Now()
+		// give it time to propagate to watch goroutine <-timerC
+		time.Sleep(time.Second / 10)
+		// do a **single** poll.
+		Expect(usChan).To(Receive(HaveLen(4)))
+
+		for i := 0; i < 5; i++ {
+			// add another upstream give time to process and try again
+			writeAnotherUpstream()
+			time.Sleep(time.Second / 10)
+			timerC <- time.Now()
+			time.Sleep(time.Second / 10)
+			// do a **single** poll.
+			Expect(usChan).To(Receive(HaveLen(4 + (i + 1))))
+		}
+
 	})
 
 	Context("Sleep client", func() {
