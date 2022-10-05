@@ -28,6 +28,11 @@ const (
 	notImplementedErrMsg = "this operation is not supported by this client"
 )
 
+var (
+	// used in tests
+	TimerOverride <-chan time.Time
+)
+
 func NewHybridUpstreamClient(
 	upstreamClient v1.UpstreamClient,
 	serviceClient skkube.ServiceClient,
@@ -151,7 +156,7 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 		})
 	}
 
-	upstreamsOut := make(chan v1.UpstreamList)
+	upstreamsOut := make(chan v1.UpstreamList, 1)
 
 	go func() {
 		var previousHash uint64
@@ -164,12 +169,17 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 			}
 			toSend := current.clone()
 
+			// empty the channel if not empty, as we only care about the latest
+			select {
+			case <-upstreamsOut:
+			default:
+			}
+
 			select {
 			case upstreamsOut <- toSend.toList():
 				previousHash = currentHash
 			default:
-				contextutils.LoggerFrom(ctx).Debugw("failed to push hybrid upstream list to "+
-					"channel (must be full), retrying in 1s", zap.Uint64("list hash", currentHash))
+				contextutils.LoggerFrom(ctx).DPanic("sending to a buffered channel blocked")
 				return false
 			}
 			return true
@@ -177,8 +187,12 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 
 		// First time - sync the current state
 		needsSync := syncFunc()
-		timer := time.NewTicker(time.Second * 1)
-
+		timerC := TimerOverride
+		if timerC == nil {
+			timer := time.NewTicker(time.Second * 1)
+			timerC = timer.C
+			defer timer.Stop()
+		}
 		for {
 			select {
 			case <-ctx.Done():
@@ -192,7 +206,11 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 					needsSync = true
 					current.setUpstreams(upstreamWithSource.source, upstreamWithSource.upstreams)
 				}
-			case <-timer.C:
+			case <-timerC:
+				if len(upstreamsOut) != 0 {
+					contextutils.LoggerFrom(ctx).Debugw("failed to push hybrid upstream list to "+
+						"channel (must be full), retrying in 1s", zap.Uint64("list hash", previousHash))
+				}
 				if needsSync {
 
 					needsSync = !syncFunc()
