@@ -1,11 +1,8 @@
 package utils
 
 import (
-	"context"
 	"errors"
 	"fmt"
-
-	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/golang/protobuf/proto"
 	gogoproto "github.com/golang/protobuf/proto"
@@ -41,12 +38,12 @@ func AnyToMessage(a *pany.Any) (proto.Message, error) {
 	return x.Message, err
 }
 
+// Deprecated: Use AnyToMessage
 func MustAnyToMessage(a *pany.Any) proto.Message {
 	var x ptypes.DynamicAny
 	err := ptypes.UnmarshalAny(a, &x)
 	if err != nil {
-		contextutils.LoggerFrom(context.Background()).DPanic(err)
-		return proto.MessageV1("")
+		panic(err)
 	}
 	return x.Message
 }

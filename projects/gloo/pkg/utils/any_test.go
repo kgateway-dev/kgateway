@@ -44,6 +44,6 @@ var _ = Describe("Any", func() {
 	It("fails with nil message", func() {
 		var msg proto.Message
 		_, err := MessageToAny(msg)
-		Expect(err).To(HaveOccurred())
+		Expect(err).To(MatchError("MessageToAny: message cannot be nil"))
 	})
 })

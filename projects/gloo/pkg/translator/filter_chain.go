@@ -91,7 +91,6 @@ func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) [
 		return nil
 	}
 	if len(networkFilters) == 0 {
-
 		contextutils.LoggerFrom(context.Background()).DPanic("networkFilters cannot be empty")
 		return nil
 	}

@@ -156,7 +156,7 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 	go func() {
 		var previousHash uint64
 
-		// return success for the sync (ie if there still needs changes its a false)
+		// return success for the sync (ie if there still needs changes or there is a hash error it's a false)
 		syncFunc := func() bool {
 			currentHash, err := current.hash()
 			if currentHash == previousHash && err == nil {

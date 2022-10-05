@@ -208,6 +208,9 @@ func (v *validator) gatewayUpdate(snap *gloov1snap.ApiSnapshot) bool {
 	}
 	oldHash, oldHashErr := hashFunc(v.latestSnapshot)
 	newHash, newHashErr := hashFunc(snap)
+
+	// If we cannot hash then we choose to treat them as different hashes since this is just a performance optimization.
+	// In worst case we'd prefer correctness
 	hashChanged := oldHash != newHash || oldHashErr != nil || newHashErr != nil
 	return hashChanged
 }

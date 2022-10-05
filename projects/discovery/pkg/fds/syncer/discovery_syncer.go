@@ -67,7 +67,7 @@ func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, u
 	case v1.Settings_DiscoveryOptions_WHITELIST:
 		return selectUpstreamsWhitelist(upstreams, whitelistNamespaces, blacklistNamespaces)
 	}
-	contextutils.LoggerFrom(context.Background()).DPanic("invalid fds mode: " + fdsMode.String())
+	contextutils.LoggerFrom(context.Background()).DPanic("invalid fds mode, falling back to blacklist fds mode: " + fdsMode.String())
 	return selectUpstreamsBlacklist(upstreams, blacklistNamespaces)
 }
 
