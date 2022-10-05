@@ -33,32 +33,45 @@ type proxyReconciler struct {
 		*validation.GlooValidationServiceRequest,
 	) (*validation.GlooValidationServiceResponse, error)
 	baseReconciler gloov1.ProxyReconciler
+	settings       *gloov1.Settings
 }
 
 func NewProxyReconciler(proxyValidator func(context.Context, *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error),
-	proxyClient gloov1.ProxyClient, statusClient resources.StatusClient) *proxyReconciler {
+	proxyClient gloov1.ProxyClient, statusClient resources.StatusClient, settings *gloov1.Settings) *proxyReconciler {
 
 	return &proxyReconciler{
 		statusClient:   statusClient,
 		proxyValidator: proxyValidator,
 		baseReconciler: gloov1.NewProxyReconciler(proxyClient, statusClient),
+		settings:       settings,
 	}
 }
 
 const proxyValidationErrMsg = "internal err: communication with proxy validation (gloo) failed"
 
-func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite GeneratedProxies, writeNamespace string, labelSelectorOptions clients.ListOpts) error {
-	if err := s.addProxyValidationResults(ctx, proxiesToWrite); err != nil {
-		return errors.Wrapf(err, "failed to add proxy validation results to reports")
-	}
+func noopTransition(_, _ *gloov1.Proxy) (bool, error) {
+	// no-op
+	return true, nil
+}
 
-	proxiesToWrite, err := stripInvalidListenersAndVirtualHosts(ctx, proxiesToWrite)
-	if err != nil {
-		return err
+func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite GeneratedProxies, writeNamespace string, labelSelectorOptions clients.ListOpts) error {
+
+	proxies := proxiesToWrite
+
+	if s.settings.GetGateway().GetEnableGatewayController().GetValue() {
+		// support old behavior for backwards compatibility
+		if err := s.addProxyValidationResults(ctx, proxiesToWrite); err != nil {
+			return errors.Wrapf(err, "failed to add proxy validation results to reports")
+		}
+		proxiesToWrite, err := stripInvalidListenersAndVirtualHosts(ctx, proxiesToWrite)
+		if err != nil {
+			return err
+		}
+		proxies = proxiesToWrite
 	}
 
 	var allProxies gloov1.ProxyList
-	for proxy := range proxiesToWrite {
+	for proxy := range proxies {
 		allProxies = append(allProxies, proxy)
 	}
 
@@ -66,9 +79,15 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 		return allProxies[i].GetMetadata().Less(allProxies[j].GetMetadata())
 	})
 
-	proxyTransitionFunction := transitionFunc(proxiesToWrite, s.statusClient)
+	transitionProxyFunc := noopTransition
+	if s.settings.GetGateway().GetEnableGatewayController().GetValue() {
+		// the transition function only works if the last known good proxy is stored somewhere persistent (e.g. etcd)
+		// in the case of gloo/gateway pods being merged, this assumption breaks down as gloo pod stores the proxy in-memory
+		// and the last known good proxy is not available as it's stored in memory and lost when gloo is cycled / rescheduled.
+		transitionProxyFunc = transitionFunc(proxiesToWrite, s.statusClient)
+	}
 
-	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, proxyTransitionFunction, clients.ListOpts{
+	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, transitionProxyFunc, clients.ListOpts{
 		Ctx:                ctx,
 		Selector:           labelSelectorOptions.Selector,
 		ExpressionSelector: labelSelectorOptions.ExpressionSelector,
