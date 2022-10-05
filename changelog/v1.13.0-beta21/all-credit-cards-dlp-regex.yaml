@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/3957
+    resolvesIssue: false
+    description: Add a new ALL_CREDIT_CARDS_COMBINED dlp action which should be the same as the ALL_CREDIT_CARDS action but more performant
