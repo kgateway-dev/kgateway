@@ -77,7 +77,7 @@ func (s *validator) shouldNotify(snap *v1snap.ApiSnapshot) bool {
 	}
 	oldHash, oldHashErr := hashFunc(s.latestSnapshot)
 	newHash, newHashErr := hashFunc(snap)
-	hashChanged := oldHash != newHash || oldHashErr == nil || newHashErr == nil
+	hashChanged := oldHash != newHash || oldHashErr != nil || newHashErr != nil
 
 	logger := contextutils.LoggerFrom(s.ctx)
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
