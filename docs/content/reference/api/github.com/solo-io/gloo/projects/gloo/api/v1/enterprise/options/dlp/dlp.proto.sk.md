@@ -208,6 +208,9 @@ CREDIT_CARD_TRACKERS:
 ALL_CREDIT_CARDS:
 - (All credit card related regexes from above)
 
+ALL_CREDIT_CARDS_COMBINED:
+- Same as ALL_CREDIT_CARDS but using a single action instead of multiple which should be marginally faster
+
 | Name | Description |
 | ----- | ----------- | 
 | `CUSTOM` |  |
@@ -221,6 +224,7 @@ ALL_CREDIT_CARDS:
 | `CREDIT_CARD_TRACKERS` |  |
 | `ALL_CREDIT_CARDS` |  |
 | `KEYVALUE` |  |
+| `ALL_CREDIT_CARDS_COMBINED` |  |
 
 
 
