@@ -56,22 +56,20 @@ func noopTransition(_, _ *gloov1.Proxy) (bool, error) {
 
 func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite GeneratedProxies, writeNamespace string, labelSelectorOptions clients.ListOpts) error {
 
-	proxies := proxiesToWrite
-
 	if s.settings.GetGateway().GetEnableGatewayController().GetValue() {
 		// support old behavior for backwards compatibility
 		if err := s.addProxyValidationResults(ctx, proxiesToWrite); err != nil {
 			return errors.Wrapf(err, "failed to add proxy validation results to reports")
 		}
-		proxiesToWrite, err := stripInvalidListenersAndVirtualHosts(ctx, proxiesToWrite)
+		var err error
+		proxiesToWrite, err = stripInvalidListenersAndVirtualHosts(ctx, proxiesToWrite)
 		if err != nil {
 			return err
 		}
-		proxies = proxiesToWrite
 	}
 
 	var allProxies gloov1.ProxyList
-	for proxy := range proxies {
+	for proxy := range proxiesToWrite {
 		allProxies = append(allProxies, proxy)
 	}
 

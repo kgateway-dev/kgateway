@@ -22,6 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -97,7 +98,11 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		}
 
 		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
-		reconciler = NewProxyReconciler(validationClient, proxyClient, statusClient)
+		reconciler = NewProxyReconciler(validationClient, proxyClient, statusClient, &gloov1.Settings{
+			Gateway: &gloov1.GatewayOptions{
+				EnableGatewayController: &wrapperspb.BoolValue{Value: true},
+			},
+		})
 
 		snap = samples.SimpleGlooSnapshot(ns)
 
