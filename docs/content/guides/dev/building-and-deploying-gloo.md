@@ -47,13 +47,17 @@ First, install `gloo` into the cluster if it is not already present:
 
     glooctl install gateway
 
-Then copy the image into the kind cluster:
+Next, make the image accessible to the kind cluster. On `x86_64`:
 
     kind load docker-image quay.io/solo-io/gloo:0.0.1
 
-Then update the kind cluster to use this new image as the template 
+Or on `arm64` or `m1`:
 
-    kubectl -n gloo-system set image deployments/gloo gloo=quay.io/solo-io/gloo:0.0.1
+    docker push localhost:5000/gloo:1.13.0-beta13-2-g24ba2e1b8-dirty
+
+Then update the kind cluster to use this new image as the template. On `x64_64`, replace `image-tag` with `quay.io/solo-io/gloo:0.0.1`, and on `arm64`, replace it with `localhost:5000/solo-io/gloo:0.0.1`
+
+    kubectl -n gloo-system set image deployments/gloo gloo=<image-tag>
 
 Now observe kubernetes as it updates the deployment, shutting down the old pod and start up the new one:
 
