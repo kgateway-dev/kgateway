@@ -25,9 +25,10 @@ message Settings {
     // If you want changes to ruleset values stores in a file to propagate to Envoy you will need to change the name of the file to indicate a change to its contents.
     // The recommendation if you want dynamically loaded rules is to use CustomConfigMapRuleSets.
     repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 4;
-    // Use CustomConfigMapRuleSets to reference configmaps that contain rules that you want dynamically loaded
-    // The format required for this functionality is for the rules to be in the value of the key value map of the data field of a configmap
-    // If the configmap has been created from multiple file sources only the value from the first key-value mapping under the data field will be used
+    // Use CustomConfigMapRuleSets to reference configmaps that contain rules that you want dynamically loaded.
+    // The rules must be contained in the value of the key-value mappings in the ConfigMap `data` field.
+    // If the configmap has multiple Key-Value pairs in the Data map (Ex: when a config map is created from multiple file sources)
+    // The rules will be configured in order of sorted key values. This may not be the order they appear in the configmap.
     repeated core.solo.io.ResourceRef custom_config_map_rule_sets = 8;
     // Audit Log settings
     envoy.config.filter.http.modsecurity.v2.AuditLogging audit_logging = 5;

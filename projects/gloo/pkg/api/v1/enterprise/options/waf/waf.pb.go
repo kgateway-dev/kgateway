@@ -42,9 +42,10 @@ type Settings struct {
 	// If you want changes to ruleset values stores in a file to propagate to Enovy you will need to change the name of the file to indicate a change to its contents
 	// The recommendation if you want dynamically loaded rules is to use CustomConfigMapRuleSets
 	RuleSets []*waf.RuleSet `protobuf:"bytes,4,rep,name=rule_sets,json=ruleSets,proto3" json:"rule_sets,omitempty"`
-	// Use CustomConfigMapRuleSets to reference configmaps that contain rules that you want dynamically loaded
-	// The format required for this functionality is for the rules to be in the value of the key value map of the data field of a configmap
-	// If the configmap has been created from multiple file sources only the value from the first key-value mapping under the data field will be used
+	// Use CustomConfigMapRuleSets to reference configmaps that contain rules that you want dynamically loaded.
+	// The rules must be contained in the value of the key-value mappings in the ConfigMap `data` field.
+	// If the configmap has multiple Key-Value pairs in the Data map (Ex: when a config map is created from multiple file sources)
+	// The rules will be configured in order of sorted key values. This may not be the order they appear in the configmap.
 	CustomConfigMapRuleSets []*core.ResourceRef `protobuf:"bytes,8,rep,name=custom_config_map_rule_sets,json=customConfigMapRuleSets,proto3" json:"custom_config_map_rule_sets,omitempty"`
 	// Audit Log settings
 	AuditLogging *waf.AuditLogging `protobuf:"bytes,5,opt,name=audit_logging,json=auditLogging,proto3" json:"audit_logging,omitempty"`

@@ -116,7 +116,7 @@ spec:
 
 Once this config has been accepted run the following to test that the rule has been applied
 ```bash
-curl -v -H User-Agent: scammer $(glooctl proxy url)/sample-route-1
+curl -v -H User-Agent:scammer $(glooctl proxy url)/sample-route-1
 ```
 should respond with
 ```
@@ -166,6 +166,74 @@ spec:
 After this config has been successfully applied, run the curl command from above and the output should be the same.
 
 The two methods outlined above represent the two main ways to apply basic rule string WAF configs to Gloo Edge routes.
+
+#### Dynamically Load Rule Set 
+
+In some cases you may want your rulesets to update automatically when you make changes
+
+If you are using ruleSets as shown above with a ruleString passed in WAF settings then you will already have this behavior. If you would prefer to place your rules outside of the CRD definition you can do so with kubernetes configmaps 
+
+Create a file containing the same ruleStr from the first example 
+
+```bash
+cat <<EOF > wafruleset.conf
+SecRuleEngine On
+SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
+EOF
+```
+
+Now create a configmap from this file 
+Note: Kubernetes Configmaps can be created from multiple files. The rulesets from the files will be ordered based on the filenames, not the order they appear in the configmaps Data map. 
+
+```bash
+kubectl --namespace=gloo-system create configmap wafruleset --from-file=wafruleset.conf
+```
+
+And view this configmap
+
+```bash
+kubectl --namespace=gloo-system get configmap wafruleset -oyaml
+```
+
+We should see 
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+data:
+  wafruleset.conf: |
+    SecRuleEngine On
+    SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
+```
+
+In order to use the configmap we now need to update our WAF settings using the CustomConfigMapRuleSets field 
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  proxyNames:
+  - gateway-proxy
+  httpGateway:
+    options:
+      waf:
+        customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
+        customConfigMapRuleSets:
+          - name: wafruleset
+            namespace: gloo-system
+  useProxyProto: false
+```
+
+You can now test this in the same way as before with a curl command - the behavior will be the same
+
+```bash
+curl -v -H User-Agent:scammer $(glooctl proxy url)/sample-route-1
+```
 
 #### Core Rule Set
 
