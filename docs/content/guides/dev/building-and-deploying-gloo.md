@@ -33,6 +33,10 @@ This will output a `gloo` binary in `_output/projects/gloo/`. To build the docke
 
     make -B VERSION=0.0.1 gloo-docker
 
+On `arm64` or `m1`, it is also necessary to specify the `IMAGE_REPO` like so:
+
+    make -B VERSION=0.0.1 IMAGE_REPO=localhost:5000 gloo-docker
+
 This will build a docker image and tag it as something like this:
 
     Successfully tagged quay.io/solo-io/gloo:0.0.1
