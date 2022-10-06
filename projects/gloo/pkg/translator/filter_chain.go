@@ -232,7 +232,10 @@ func (m *multiFilterChainTranslator) ComputeFilterChains(params plugins.Params) 
 	var outFilterChains []*envoy_config_listener_v3.FilterChain
 
 	for _, translator := range m.translators {
-		outFilterChains = append(outFilterChains, translator.ComputeFilterChains(params)...)
+		newFilterChains := translator.ComputeFilterChains(params)
+		if newFilterChains != nil {
+			outFilterChains = append(outFilterChains, newFilterChains...)
+		}
 	}
 
 	return outFilterChains
