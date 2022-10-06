@@ -29,11 +29,13 @@ There are multiple products in the Gloo repository. The code for `gloo` itself c
 
 This will output a `gloo` binary in `_output/projects/gloo/`. To build the docker image, run
 
-    make -B gloo-docker
+    make -B VERSION=0.0.1 gloo-docker
 
 This will build a docker image and tag it as something like this:
 
-    Successfully tagged quay.io/solo-io/gloo:1.13.0-beta13-2-g24ba2e1b8-dirty
+    Successfully tagged quay.io/solo-io/gloo:0.0.1
+
+Note that the `VERSION` value is optional and can be set to another value; however, it *must* be a valid semantic versioning](https://semver.org/) tag.
 
 ### Deployment
 
@@ -45,11 +47,11 @@ First, install `gloo` into the cluster if it is not already present:
 
 Then copy the image into the kind cluster:
 
-    kind load docker-image quay.io/solo-io/gloo:1.13.0-beta13-2-g24ba2e1b8-dirty
+    kind load docker-image quay.io/solo-io/gloo:0.0.1
 
 Then update the kind cluster to use this new image as the template 
 
-    kubectl -n gloo-system set image deployments/gloo gloo=quay.io/solo-io/gloo:1.13.0-beta13-2-g24ba2e1b8-dirty
+    kubectl -n gloo-system set image deployments/gloo gloo=quay.io/solo-io/gloo:0.0.1
 
 Now observe kubernetes as it updates the deployment, shutting down the old pod and start up the new one:
 
