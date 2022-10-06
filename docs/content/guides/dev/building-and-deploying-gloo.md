@@ -43,7 +43,11 @@ Note that the `VERSION` value is optional and can be set to another value; howev
 
 Gloo can be set up and installed in [many different ways](https://docs.solo.io/gloo-edge/latest/installation/preparation/#deployment-requirements). From this point, we will assume we want to deploy Gloo into a kubernetes cluster running locally via [kind](https://docs.solo.io/gloo-edge/latest/installation/platform_configuration/cluster_setup/#kind).
 
-First, install `gloo` into the cluster if it is not already present:
+First, if using `arm64` or `m1` you will need the docker registry to upload and use images in kind.
+You can build kind using `JUST_KIND=true ./ci/deploy-to-kind-cluster.sh`. 
+NOTE: If kind is already runnning, please delete the cluster using `kind delete  cluster`. Then run the CI command above. This will build the registry for you, and set up kind for the registry. The docker registry is located at `localhost:5000`. The docker registry is a running container with the image name `registry:2`.
+
+Then install `gloo` into the cluster if it is not already present:
 
     glooctl install gateway
 
