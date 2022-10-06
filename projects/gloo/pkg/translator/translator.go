@@ -304,7 +304,16 @@ func (t *translatorInstance) generateXDSSnapshot(
 		listenersNew)
 }
 
-func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) (uint64, error) {
+// deprecated, use EnvoyCacheResourcesListToFnvHash
+func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
+	out, err := EnvoyCacheResourcesListToFnvHash(resources)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
+	}
+	return out
+}
+
+func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) (uint64, error) {
 	hasher := fnv.New64()
 	// 8kb capacity, consider raising if we find the buffer is frequently being
 	// re-allocated by MarshalAppend to fit larger protos.
@@ -352,7 +361,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 
 	}
 
-	routesVersion, err := MustEnvoyCacheResourcesListToFnvHash(routesProto)
+	routesVersion, err := EnvoyCacheResourcesListToFnvHash(routesProto)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash routesProto: %v", err))
 		return envoycache.NewResources("routes-hashErr", routesProto)

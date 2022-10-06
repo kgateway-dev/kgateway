@@ -185,7 +185,7 @@ var _ = Describe("Translator", func() {
 	justBeforeEach := func() {
 		pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 
-		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, MustEnvoyCacheResourcesListToFnvHash)
+		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",

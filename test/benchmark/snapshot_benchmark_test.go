@@ -162,7 +162,7 @@ var _ = Describe("SnapshotBenchmark", func() {
 		JustBeforeEach(func() {
 			pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 
-			fnvTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, translator.MustEnvoyCacheResourcesListToFnvHash)
+			fnvTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, translator.EnvoyCacheResourcesListToFnvHash)
 			hashstructureTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, translator.MustEnvoyCacheResourcesListToHash)
 
 			httpListener := &v1.Listener{

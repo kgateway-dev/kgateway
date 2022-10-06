@@ -108,11 +108,13 @@ func (t *translatorInstance) initializeCluster(
 		applyDefaultsToUpstreamSslConfig(sslConfig, t.settings.GetUpstreamOptions())
 		cfg, err := utils.NewSslConfigTranslator().ResolveUpstreamSslConfig(*secrets, sslConfig)
 		if err != nil {
-			// TODO: Need to change the upstream to use a direct response action instead of leaving the upstream untouched
 			reports.AddError(upstream, err)
 		} else {
 			typedConfig, err := utils.MessageToAny(cfg)
 			if err != nil {
+				// TODO: Need to change the upstream to use a direct response action instead of leaving the upstream untouched
+				// Difficult because direct response is not on the upsrtream but on the virtual host
+				// The fallback listener would take much more piping as well
 				reports.AddError(upstream, err)
 			} else {
 				out.TransportSocket = &envoy_config_core_v3.TransportSocket{
