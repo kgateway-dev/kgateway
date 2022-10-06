@@ -61,7 +61,7 @@ Next, make the image accessible to the kind cluster. On `x86_64`:
 
 Or on `arm64` or `m1`:
 
-    docker push localhost:5000/gloo:1.13.0-beta13-2-g24ba2e1b8-dirty
+    docker push localhost:5000/gloo:0.0.1
 
 Then update the kind cluster to use this new image as the template. On `x64_64`, replace `image-tag` with `quay.io/solo-io/gloo:0.0.1`, and on `arm64`, replace it with `localhost:5000/solo-io/gloo:0.0.1`
 
