@@ -21,6 +21,8 @@ The `install-go-tools` target will install dependencies necessary to build gloo 
 
 2. It generates the CRDs used to interact with Gloo via kubernetes. These CRDs can be found in `install/helm/gloo/crds`.
 
+3. It generates [solo-kit](https://github.com/solo-io/solo-kit) resources, event loops, emitters, snapshots, and resource clients. These are denoted by `.sk.go`.  These are built using `solo-kit.json` configuration files.
+
 ### Building Gloo and Docker Images
 
 There are multiple products in the Gloo repository. The code for `gloo` itself can be found in `projects/gloo`. Each product has its own set of build targets. To compile the `gloo` binary, simply run
