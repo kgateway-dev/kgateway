@@ -7,34 +7,35 @@ You can build and deploy Gloo Edge Open Source from the source code.
 
 ## Before you begin
 
-1. Follow the [setup guide](https://docs.solo.io/gloo-edge/latest/guides/dev/setting-up-dev-environment/) to clone the Gloo repository and install the project dependencies.
-2. In your terminal, navigate to the Gloo project.
+1. Follow the [setup guide](https://docs.solo.io/gloo-edge/latest/guides/dev/setting-up-dev-environment/) to clone the Gloo Edge repository and install the project dependencies.
+2. In your terminal, navigate to the Gloo Edge project.
    ```sh
    cd ${GOPATH}/src/github.com/solo-io/gloo
    ```
-3. Continue with this guide to learn how you can build all Gloo from the top-level [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile).
+3. Continue with this guide to learn how you can build Gloo Edge from the top-level [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile).
 
 ## Set up build dependencies and code generation {#setup}
 
-From the Gloo project directory, run:
+From the Gloo Edge project directory, run:
+```sh
+make -B install-go-tools generated-code
+```
 
-    make -B install-go-tools generated-code
-
-The `install-go-tools` target installs the dependencies to build Gloo in `_output/.bin`. 
+The `install-go-tools` target installs the dependencies to build Gloo Edge in `_output/.bin`. 
 
 The `generated-code` target does multiple things:
 
-1. It generates the Go source code from the `.proto` files in the `api` directories. For example, `.proto` files in `projects/gloo/api` will be generated in `projects/gloo/pkg/api`
+1. It generates the Go source code from the `.proto` files in the `api` directories. For example, `.proto` files in `projects/gloo/api` will be generated in `projects/gloo/pkg/api`.
 
-2. It generates the custom resource definitions (CRDs) so that Gloo can interact with Kubernetes. These CRDs can be found in `install/helm/gloo/crds`.
+2. It generates the custom resource definitions (CRDs) so that Gloo Edge can interact with Kubernetes. These CRDs can be found in `install/helm/gloo/crds`.
 
 3. It generates [`solo-kit`](https://github.com/solo-io/solo-kit) resources, event loops, emitters, snapshots, and resource clients. These tools are denoted by `.sk.go`, and are built using `solo-kit.json` configuration files.
 
-## Build Gloo and Docker Images {#build}
+## Build Gloo Edge and Docker Images {#build}
 
-The Gloo project has several products. The code for `gloo` itself can be found in `projects/gloo`. Each product has its own set of build targets. 
+The Gloo Edge project has several products. The code for `gloo` itself can be found in `projects/gloo`. Each product has its own set of build targets. 
 
-**Gloo binary**
+**Gloo Edge binary**
 
 To compile the `gloo` binary to the `_output/projects/gloo/` directory, run:
 
@@ -56,16 +57,16 @@ Example output:
 
     Successfully tagged quay.io/solo-io/gloo:0.0.1
 
-## Deploy Gloo {#deploy}
+## Deploy Gloo Edge {#deploy}
 
-You can choose from [several Gloo installation options]({{% versioned_link_path fromRoot="/installation/preparation/#deployment-requirements" %}}). This guide assumes you deploy Gloo into a Kubernetes cluster that runs locally in [kind]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind" %}}).
+You can choose from [several Gloo Edge installation options]({{% versioned_link_path fromRoot="/installation/preparation/#deployment-requirements" %}}). This guide assumes you deploy Gloo Edge into a Kubernetes cluster that runs locally in [kind]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind" %}}).
 
 1. **For `arm64` or `m1` machines only**: Use the Docker registry to upload and use images in kind. 
    1. If kind is already a different cluster, delete the cluster. 
       ```sh
       kind delete cluster
       ```
-   2. Build a kind cluster by running the script from the Gloo project.
+   2. Build a kind cluster by running the script from the Gloo Edge project.
       ```sh
       JUST_KIND=true ./ci/deploy-to-kind-cluster.sh
       ```
@@ -121,9 +122,9 @@ kubectl -n gloo-system set image deployments/gloo gloo=localhost:5000/solo-io/gl
 
 ## Make and debug changes {#changes}
 
-Now that you can build and deploy your own builds, you can start editing Gloo itself. An in-depth discussion on making code changes is outside the scope of this guide. However, a brief overview of Gloo's software architecture will make things easier to understand.
+Now that you can build and deploy your own builds, you can start editing Gloo Edge itself. An in-depth discussion on making code changes is outside the scope of this guide. However, a brief overview of Gloo's software architecture will make things easier to understand.
 
-Gloo is primarily composed of *plugins*. You can find the code for these plugins in `projects/gloo/pkg/plugins`. Gloo has a lot of them! Generally speaking, these plugins take Gloo configuration as input, and translate Envoy configuration as output. You can test any changes you make to plugins by following two main steps:
+Gloo Edge is primarily composed of *plugins*. You can find the code for these plugins in `projects/gloo/pkg/plugins`. Gloo Edge has a lot of them! Generally speaking, these plugins take Gloo Edge configuration as input, and translate Envoy configuration as output. You can test any changes you make to plugins by following two main steps:
 1. Unit tests, including dynamic and static breakpoints
 2. Deploying the code
 
