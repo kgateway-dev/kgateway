@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"os"
 
 	"github.com/rotisserie/eris"
 	skratelimit "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
@@ -11,10 +12,22 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	// 1024 chars = 1kb
+	MaxStatusMessageBytes = 1024
+)
+
+func init() {
+	disableMaxStatusSize = os.Getenv("DISABLE_MAX_STATUS_SIZE") == "true"
+}
+
 var (
-	RateLimitConfigCrd = crd.NewCrd(
+	disableMaxStatusSize = false
+	RateLimitConfigCrd   = crd.NewCrd(
 		"ratelimitconfigs",
 		RateLimitConfigGVK.Group,
 		RateLimitConfigGVK.Version,
@@ -42,6 +55,13 @@ type kubeReporterClient struct {
 	skv2Client rlv1alpha1.RateLimitConfigClient
 }
 
+func init() {
+	scheme := scheme.Scheme
+	if err := rlv1alpha1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+}
+
 func NewRateLimitClients(ctx context.Context, rcFactory factory.ResourceClientFactory) (RateLimitConfigClient, reporter.ReporterResourceClient, error) {
 	rlClient, err := NewRateLimitConfigClient(ctx, rcFactory)
 	if err != nil {
@@ -51,7 +71,10 @@ func NewRateLimitClients(ctx context.Context, rcFactory factory.ResourceClientFa
 	var reporterClient reporter.ReporterResourceClient
 	switch typedFactory := rcFactory.(type) {
 	case *factory.KubeResourceClientFactory:
-		rlClientSet, err := rlv1alpha1.NewClientsetFromConfig(typedFactory.Cfg)
+		cli, err := client.New(typedFactory.Cfg, client.Options{
+			Scheme: scheme.Scheme,
+		})
+		rlClientSet := rlv1alpha1.NewClientset(cli)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -80,6 +103,12 @@ func (c *kubeReporterClient) ApplyStatus(statusClient resources.StatusClient, in
 	}
 
 	baseRlConfig := rlv1alpha1.RateLimitConfig(rlConfig.RateLimitConfig)
+
+	// see https://github.com/solo-io/solo-kit/issues/523
+	// we should move this logic into skv2 so other clients can benefit from it
+	if !disableMaxStatusSize && len(baseRlConfig.Status.GetMessage()) > MaxStatusMessageBytes {
+		baseRlConfig.Status.Message = baseRlConfig.Status.GetMessage()[:MaxStatusMessageBytes]
+	}
 
 	err := c.skv2Client.UpdateRateLimitConfigStatus(opts.Ctx, &baseRlConfig)
 	if err != nil {

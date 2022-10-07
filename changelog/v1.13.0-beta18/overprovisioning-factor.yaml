@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: This is an api-only change to add failover config policy which will be implemented in enterprise.
+    issueLink: https://github.com/solo-io/gloo/issues/7258

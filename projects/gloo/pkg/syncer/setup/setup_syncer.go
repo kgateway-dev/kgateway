@@ -213,7 +213,6 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 }
 
 func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
-
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
 		xdsAddr = DefaultXdsBindAddr
@@ -736,8 +735,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	resourceHasher := translator.MustEnvoyCacheResourcesListToFnvHash
 
-	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
-	validationTranslator := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
+	sharedTranslator := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
 		return err
@@ -747,7 +745,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		sanitizer.NewUpstreamRemovingSanitizer(),
 		routeReplacingSanitizer,
 	}
-	validator := validation.NewValidator(watchOpts.Ctx, validationTranslator, xdsSanitizer)
+	validator := validation.NewValidator(watchOpts.Ctx, sharedTranslator, xdsSanitizer)
 	if opts.ValidationServer.Server != nil {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}
@@ -795,7 +793,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	translationSync := syncer.NewTranslatorSyncer(
-		t,
+		opts.WatchOpts.Ctx,
+		sharedTranslator,
 		opts.ControlPlane.SnapshotCache,
 		xdsSanitizer,
 		rpt,
@@ -832,7 +831,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
-	//Start the validation webhook
+	// Start the validation webhook
 	validationServerErr := make(chan error, 1)
 	if gwOpts.Validation != nil {
 		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
@@ -1075,13 +1074,20 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	}
 	var validation *gwtranslator.ValidationOpts
 	validationCfg := settings.GetGateway().GetValidation()
+
+	validationServerEnabled := validationCfg != nil // default to true if validation top level field is set
+	if validationCfg.GetServerEnabled() != nil {
+		// allow user to explicitly disable validation server
+		validationServerEnabled = validationCfg.GetServerEnabled().GetValue()
+	}
+
 	var gatewayMode bool
 	if settings.GetGateway().GetEnableGatewayController() != nil {
 		gatewayMode = settings.GetGateway().GetEnableGatewayController().GetValue()
 	} else {
 		gatewayMode = true
 	}
-	if validationCfg != nil && gatewayMode {
+	if validationServerEnabled && gatewayMode {
 		alwaysAcceptResources := AcceptAllResourcesByDefault
 
 		if alwaysAccept := validationCfg.GetAlwaysAccept(); alwaysAccept != nil {

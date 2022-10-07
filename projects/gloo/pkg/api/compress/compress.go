@@ -194,6 +194,8 @@ func MarshalStatus(in resources.InputResource) (v1.Status, error) {
 	return namespacedStatusMap, nil
 }
 
+// deprecated and will be removed in future releases.
+// see https://github.com/solo-io/solo-kit/pull/524 and https://github.com/solo-io/solo-kit/pull/525 for current behavior
 func shortenStatus(namespacedStatuses *core.NamespacedStatuses, maxLength int64) *core.NamespacedStatuses {
 	statuses := namespacedStatuses.GetStatuses()
 	for ns, status := range namespacedStatuses.GetStatuses() {

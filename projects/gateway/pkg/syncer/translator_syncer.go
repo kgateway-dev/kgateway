@@ -74,9 +74,12 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient, statusMetrics, identity),
 	}
 	if pxStatusSizeEnv := os.Getenv("PROXY_STATUS_MAX_SIZE_BYTES"); pxStatusSizeEnv != "" {
+		contextutils.LoggerFrom(ctx).Warnf("PROXY_STATUS_MAX_SIZE_BYTES (currently %s) is deprecated and will be removed in future releases. "+
+			"status max size is 2kb and gloo will attempt to truncate status before this limit to protect kubernetes backing storage", pxStatusSizeEnv)
 		t.proxyStatusMaxSize = pxStatusSizeEnv
 	}
 	go t.statusSyncer.syncStatusOnEmit(ctx)
+	t.statusSyncer.syncStatusOnElectionChange(ctx)
 	return t
 }
 
@@ -174,7 +177,8 @@ type statusSyncer struct {
 	syncNeeded              chan struct{}
 	previousProxyStatusHash uint64
 
-	identity leaderelector.Identity
+	identity            leaderelector.Identity
+	leaderStartupAction *leaderelector.LeaderStartupAction
 }
 
 func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, reporter reporter.StatusReporter, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics, identity leaderelector.Identity) statusSyncer {
@@ -188,6 +192,7 @@ func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, repo
 		statusMetrics:           statusMetrics,
 		syncNeeded:              make(chan struct{}, 1),
 		identity:                identity,
+		leaderStartupAction:     leaderelector.NewLeaderStartupAction(identity),
 	}
 }
 
@@ -294,10 +299,11 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 }
 
 func (s *statusSyncer) forceSync() {
-	select {
-	case s.syncNeeded <- struct{}{}:
-	default:
+	if len(s.syncNeeded) > 0 {
+		// sync is already needed; no reason to block on send
+		return
 	}
+	s.syncNeeded <- struct{}{}
 }
 
 func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
@@ -323,6 +329,10 @@ func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 			doSync()
 		}
 	}
+}
+
+func (s *statusSyncer) syncStatusOnElectionChange(ctx context.Context) {
+	s.leaderStartupAction.WatchElectionResults(ctx)
 }
 
 // extractCurrentReports massages several asynchronously set `statusSyncer` variables into formats consumable by `syncStatus`
@@ -406,7 +416,7 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 				// to get the status performance improvements, we need to make the assumption that the user has the latest CRDs installed.
 				// if a user forgets the error message is very confusing (invalid request during kubectl patch);
 				// this should help them understand what's going on in case they did not read the changelog.
-				wrappedErr := errors.Wrapf(err, "failed to write reports for %v;"+
+				wrappedErr := errors.Wrapf(err, "failed to write reports for %v; "+
 					"did you make sure your CRDs have been updated since v1.13.0-beta14? (i.e. `status` and `status.statuses` fields exist on your CR)", inputResource.GetMetadata().Ref().Key())
 				errs = multierror.Append(errs, wrappedErr)
 			} else {
@@ -416,6 +426,12 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 			}
 		} else {
 			contextutils.LoggerFrom(ctx).Debug("Not a leader, skipping reports writing")
+			s.leaderStartupAction.SetAction(func() error {
+				// Store the closure in the StartupAction so that it is invoked if this component becomes the new leader
+				// That way we can be sure that statuses are updated even if no changes occur after election completes
+				// https://github.com/solo-io/gloo/issues/7148
+				return s.reporter.WriteReports(ctx, reports, currentStatuses)
+			})
 		}
 
 		status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)

@@ -116,6 +116,7 @@ var _ = Describe("AuthConfig", func() {
 		Entry("with apikey config -- label selector", ctx, "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-label-selector k1=v1",
 			extauthpb.ApiKeyAuth{
+				LabelSelector: map[string]string{"k1": "v1"},
 				StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
 					K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
 						LabelSelector: map[string]string{"k1": "v1"},
@@ -126,6 +127,13 @@ var _ = Describe("AuthConfig", func() {
 		Entry("with apikey config -- secret refs", ctx, "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-secret-namespace ns1 --apikey-secret-name s1 ",
 			extauthpb.ApiKeyAuth{
+				LabelSelector: nil,
+				ApiKeySecretRefs: []*core.ResourceRef{
+					{
+						Namespace: "ns1",
+						Name:      "s1",
+					},
+				},
 				StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
 					K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
 						LabelSelector: nil,
@@ -141,6 +149,13 @@ var _ = Describe("AuthConfig", func() {
 		Entry("with apikey config -- both groups & secret refs", ctx, "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-label-selector k1=v1 --apikey-secret-namespace ns1 --apikey-secret-name s1 ",
 			extauthpb.ApiKeyAuth{
+				LabelSelector: map[string]string{"k1": "v1"},
+				ApiKeySecretRefs: []*core.ResourceRef{
+					{
+						Namespace: "ns1",
+						Name:      "s1",
+					},
+				},
 				StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
 					K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
 						LabelSelector: map[string]string{"k1": "v1"},
@@ -335,6 +350,13 @@ var _ = Describe("AuthConfig", func() {
 
 				apiKey := getApiKeyConfig(ctx)
 				expected := extauthpb.ApiKeyAuth{
+					LabelSelector: map[string]string{"k1": "v1"},
+					ApiKeySecretRefs: []*core.ResourceRef{
+						{
+							Namespace: "ns1",
+							Name:      "s1",
+						},
+					},
 					StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
 						K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
 							LabelSelector: map[string]string{"k1": "v1"},
