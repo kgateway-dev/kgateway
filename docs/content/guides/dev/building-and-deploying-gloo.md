@@ -7,7 +7,7 @@ You can build and deploy Gloo Edge Open Source from the source code.
 
 ## Before you begin
 
-1. Follow the [setup guide](https://docs.solo.io/gloo-edge/latest/guides/dev/setting-up-dev-environment/) to clone the Gloo Edge repository and install the project dependencies.
+1. Follow the [setup guide]({{% versioned_link_path fromRoot="/guides/dev/setting-up-dev-environment/" %}}) to clone the Gloo Edge repository and install the project dependencies.
 2. In your terminal, navigate to the Gloo Edge project.
    ```sh
    cd ${GOPATH}/src/github.com/solo-io/gloo
