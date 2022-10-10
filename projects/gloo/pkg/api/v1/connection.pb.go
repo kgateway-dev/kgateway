@@ -121,7 +121,7 @@ func (x *ConnectionConfig) GetHttp1ProtocolOptions() *protocol.Http1ProtocolOpti
 }
 
 // If set then set SO_KEEPALIVE on the socket to enable TCP Keepalives.
-// see more info here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/address.proto#envoy-api-msg-core-tcpkeepalive
+// see more info here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#config-core-v3-tcpkeepalive
 type ConnectionConfig_TcpKeepAlive struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

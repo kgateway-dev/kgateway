@@ -26,7 +26,7 @@ const (
 // If set, Envoy will send a portion of the route's traffic to the shadowed upstream. This can be a useful way to
 // preview a new service's behavior before putting the service in the critical path.
 // Note that this plugin is only applicable to routes with upstream destinations (not redirect or direct response routes).
-// See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
+// See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
 type RouteShadowing struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

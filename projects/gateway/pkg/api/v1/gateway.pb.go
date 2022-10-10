@@ -73,7 +73,7 @@ type Gateway struct {
 	//
 	// Proxies have a one-to-many relationship with Envoy bootstrap configuration.
 	// In order to connect to Gloo, the Envoy bootstrap configuration sets a `role` in
-	// the [node metadata](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/base.proto#envoy-api-msg-core-node)
+	// the [node metadata](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-api-msg-core-node)
 	// Envoy instances announce their `role` to Gloo, which maps to the  `{{ .Namespace }}~{{ .Name }}`
 	// of the Proxy resource.
 	//

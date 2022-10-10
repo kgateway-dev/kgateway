@@ -84,7 +84,7 @@ func (Upstream_ClusterProtocolSelection) EnumDescriptor() ([]byte, []int) {
 
 //
 // Upstreams represent destination for routing HTTP requests. Upstreams can be compared to
-// [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cds.proto) in Envoy terminology.
+// [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto) in Envoy terminology.
 // Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
 // Each upstream type is handled by a corresponding Gloo plugin. (plugins currently need to be compiled into Gloo)
 type Upstream struct {
@@ -103,7 +103,7 @@ type Upstream struct {
 	// SslConfig contains the options necessary to configure envoy to originate TLS to an upstream.
 	SslConfig *UpstreamSslConfig `protobuf:"bytes,4,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
 	// Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
-	// if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
+	// if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
 	// will be used.
 	CircuitBreakers    *CircuitBreakerConfig     `protobuf:"bytes,5,opt,name=circuit_breakers,json=circuitBreakers,proto3" json:"circuit_breakers,omitempty"`
 	LoadBalancerConfig *LoadBalancerConfig       `protobuf:"bytes,6,opt,name=load_balancer_config,json=loadBalancerConfig,proto3" json:"load_balancer_config,omitempty"`
