@@ -170,8 +170,8 @@ inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_
 ### Metrics
 
 * Failure Mode Allow
-  * Metric Name: extauth.solo.io/http_passthrough_bypass_failure
-  * Description: The number of times a server error or timeout occurred and was bypassed through failure_mode_allow=true
+  * Metric Name: `extauth.solo.io/http_passthrough_bypass_failure`
+  * Description: The number of times a server error or timeout occurred and was bypassed through the `failure_mode_allow=true` setting
 
 
 ### Logging
