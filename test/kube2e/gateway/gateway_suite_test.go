@@ -157,10 +157,10 @@ settings:
     invalidRouteResponseCode: 404
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
-  persistProxySpec: true
+  persistProxySpec: false
 gloo:
   deployment:
-    replicas: 2
+    replicas: 1
     customEnv:
       - name: LEADER_ELECTION_LEASE_DURATION
         value: 4s

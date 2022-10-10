@@ -511,7 +511,7 @@ settings:
   create: true
   replaceInvalidRoutes: true
 gateway:
-  persistProxySpec: true
+  persistProxySpec: false
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
