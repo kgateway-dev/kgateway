@@ -2118,6 +2118,11 @@ func (m *PassThroughAuth) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetFailureModeAllow())
+	if err != nil {
+		return 0, err
+	}
+
 	switch m.Protocol.(type) {
 
 	case *PassThroughAuth_Grpc:
