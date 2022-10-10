@@ -350,7 +350,7 @@ type HttpConnectionManagerSettings struct {
 	DelayedCloseTimeout   *duration.Duration    `protobuf:"bytes,13,opt,name=delayed_close_timeout,json=delayedCloseTimeout,proto3" json:"delayed_close_timeout,omitempty"`
 	ServerName            *wrappers.StringValue `protobuf:"bytes,14,opt,name=server_name,json=serverName,proto3" json:"server_name,omitempty"`
 	StripAnyHostPort      *wrappers.BoolValue   `protobuf:"bytes,36,opt,name=strip_any_host_port,json=stripAnyHostPort,proto3" json:"strip_any_host_port,omitempty"`
-	// For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions
+	// For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-api-msg-core-http1protocoloptions
 	AcceptHttp_10         *wrappers.BoolValue   `protobuf:"bytes,15,opt,name=accept_http_10,json=acceptHttp10,proto3" json:"accept_http_10,omitempty"`
 	DefaultHostForHttp_10 *wrappers.StringValue `protobuf:"bytes,16,opt,name=default_host_for_http_10,json=defaultHostForHttp10,proto3" json:"default_host_for_http_10,omitempty"`
 	// For an explanation of these settings, see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions

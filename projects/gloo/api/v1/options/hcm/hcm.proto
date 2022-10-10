@@ -67,7 +67,7 @@ message HttpConnectionManagerSettings {
     google.protobuf.BoolValue strip_any_host_port = 36;
 
 
-    // For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions
+    // For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-api-msg-core-http1protocoloptions
     google.protobuf.BoolValue accept_http_10 = 15;
     google.protobuf.StringValue default_host_for_http_10 = 16;
 
