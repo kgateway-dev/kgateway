@@ -182,8 +182,8 @@ If the auth config has been received successfully, you should see the log line:
 ### Metrics
 
 * Failure Mode Allow
-  * Metric Name: extauth.solo.io/passthrough_failure_bypass
-  * Description: The number of times a server error or timeout occurred and was bypassed through failure_mode_allow=true
+  * Metric Name: `extauth.solo.io/passthrough_failure_bypass`
+  * Description: The number of times a server error or timeout occurred and was bypassed through the `failure_mode_allow=true` setting
 
 ## Testing the secured Virtual Service
 The virtual service that we have created should now be secured using our external authentication service. To test this, we can try our original command, and the request should not be allowed through because of missing authentication.
