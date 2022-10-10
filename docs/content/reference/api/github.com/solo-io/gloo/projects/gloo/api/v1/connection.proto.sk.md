@@ -56,7 +56,7 @@ Fine tune the settings for connections to an upstream
 
  
 If set then set SO_KEEPALIVE on the socket to enable TCP Keepalives.
-see more info here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/address.proto#envoy-api-msg-core-tcpkeepalive
+see more info here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#config-core-v3-tcpkeepalive
 
 ```yaml
 "keepaliveProbes": int

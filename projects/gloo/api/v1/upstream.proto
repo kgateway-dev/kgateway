@@ -30,7 +30,7 @@ import "google/protobuf/wrappers.proto";
 
 /*
  * Upstreams represent destination for routing HTTP requests. Upstreams can be compared to
- * [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cds.proto) in Envoy terminology.
+ * [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto) in Envoy terminology.
  * Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
  * Each upstream type is handled by a corresponding Gloo plugin. (plugins currently need to be compiled into Gloo)
  */
@@ -57,7 +57,7 @@ message Upstream {
     UpstreamSslConfig ssl_config = 4;
 
     // Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
-    // if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
+    // if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
     // will be used.
     CircuitBreakerConfig circuit_breakers = 5;
     LoadBalancerConfig load_balancer_config = 6;
