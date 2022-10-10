@@ -81,17 +81,17 @@ func (m *Settings) Equal(that interface{}) bool {
 
 	}
 
-	if len(m.GetCustomConfigMapRuleSets()) != len(target.GetCustomConfigMapRuleSets()) {
+	if len(m.GetConfigMapRuleSets()) != len(target.GetConfigMapRuleSets()) {
 		return false
 	}
-	for idx, v := range m.GetCustomConfigMapRuleSets() {
+	for idx, v := range m.GetConfigMapRuleSets() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetCustomConfigMapRuleSets()[idx]) {
+			if !h.Equal(target.GetConfigMapRuleSets()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetCustomConfigMapRuleSets()[idx]) {
+			if !proto.Equal(v, target.GetConfigMapRuleSets()[idx]) {
 				return false
 			}
 		}
@@ -114,6 +114,51 @@ func (m *Settings) Equal(that interface{}) bool {
 
 	if m.GetResponseHeadersOnly() != target.GetResponseHeadersOnly() {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *RuleSetFromConfigMap) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RuleSetFromConfigMap)
+	if !ok {
+		that2, ok := that.(RuleSetFromConfigMap)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetConfigmapLocation()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConfigmapLocation()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetConfigmapLocation(), target.GetConfigmapLocation()) {
+			return false
+		}
+	}
+
+	if len(m.GetDataMapKey()) != len(target.GetDataMapKey()) {
+		return false
+	}
+	for idx, v := range m.GetDataMapKey() {
+
+		if strings.Compare(v, target.GetDataMapKey()[idx]) != 0 {
+			return false
+		}
+
 	}
 
 	return true

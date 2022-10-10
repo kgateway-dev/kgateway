@@ -60,14 +60,14 @@ func (m *Settings) Clone() proto.Message {
 		}
 	}
 
-	if m.GetCustomConfigMapRuleSets() != nil {
-		target.CustomConfigMapRuleSets = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetCustomConfigMapRuleSets()))
-		for idx, v := range m.GetCustomConfigMapRuleSets() {
+	if m.GetConfigMapRuleSets() != nil {
+		target.ConfigMapRuleSets = make([]*RuleSetFromConfigMap, len(m.GetConfigMapRuleSets()))
+		for idx, v := range m.GetConfigMapRuleSets() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.CustomConfigMapRuleSets[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+				target.ConfigMapRuleSets[idx] = h.Clone().(*RuleSetFromConfigMap)
 			} else {
-				target.CustomConfigMapRuleSets[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+				target.ConfigMapRuleSets[idx] = proto.Clone(v).(*RuleSetFromConfigMap)
 			}
 
 		}
@@ -82,6 +82,32 @@ func (m *Settings) Clone() proto.Message {
 	target.RequestHeadersOnly = m.GetRequestHeadersOnly()
 
 	target.ResponseHeadersOnly = m.GetResponseHeadersOnly()
+
+	return target
+}
+
+// Clone function
+func (m *RuleSetFromConfigMap) Clone() proto.Message {
+	var target *RuleSetFromConfigMap
+	if m == nil {
+		return target
+	}
+	target = &RuleSetFromConfigMap{}
+
+	if h, ok := interface{}(m.GetConfigmapLocation()).(clone.Cloner); ok {
+		target.ConfigmapLocation = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.ConfigmapLocation = proto.Clone(m.GetConfigmapLocation()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	if m.GetDataMapKey() != nil {
+		target.DataMapKey = make([]string, len(m.GetDataMapKey()))
+		for idx, v := range m.GetDataMapKey() {
+
+			target.DataMapKey[idx] = v
+
+		}
+	}
 
 	return target
 }

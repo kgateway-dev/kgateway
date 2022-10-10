@@ -12,6 +12,7 @@ weight: 5
 
 
 - [Settings](#settings)
+- [RuleSetFromConfigMap](#rulesetfromconfigmap)
 - [CoreRuleSet](#coreruleset)
   
 
@@ -33,7 +34,7 @@ weight: 5
 "customInterventionMessage": string
 "coreRuleSet": .waf.options.gloo.solo.io.CoreRuleSet
 "ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
-"customConfigMapRuleSets": []core.solo.io.ResourceRef
+"configMapRuleSets": []waf.options.gloo.solo.io.RuleSetFromConfigMap
 "auditLogging": .envoy.config.filter.http.modsecurity.v2.AuditLogging
 "requestHeadersOnly": bool
 "responseHeadersOnly": bool
@@ -46,10 +47,29 @@ weight: 5
 | `customInterventionMessage` | `string` | Custom massage to display if an intervention occurs. |
 | `coreRuleSet` | [.waf.options.gloo.solo.io.CoreRuleSet](../waf.proto.sk/#coreruleset) | Add OWASP core rule set if nil will not be added. |
 | `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets rules to add - File option will not dynamically load changes. If you want changes to ruleset values stores in a file to propagate to Envoy you will need to change the name of the file to indicate a change to its contents. The recommendation if you want dynamically loaded rules is to use CustomConfigMapRuleSets. |
-| `customConfigMapRuleSets` | [[]core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use CustomConfigMapRuleSets to reference configmaps that contain rules that you want dynamically loaded. The rules must be contained in the value of the key-value mappings in the ConfigMap `data` field. If the configmap has multiple Key-Value pairs in the Data map (Ex: when a config map is created from multiple file sources) The rules will be configured in order of sorted key values. This may not be the order they appear in the configmap. |
+| `configMapRuleSets` | [[]waf.options.gloo.solo.io.RuleSetFromConfigMap](../waf.proto.sk/#rulesetfromconfigmap) | Use configMap rulesets to reference configmaps that contain rules that you want dynamically loaded. The rules must be contained in the value of the key-value mappings in the ConfigMap `data` field. |
 | `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../../../../../external/envoy/extensions/waf/waf.proto.sk/#auditlogging) | Audit Log settings. |
 | `requestHeadersOnly` | `bool` | Only process request headers, not buffering the request body. |
 | `responseHeadersOnly` | `bool` | Only process response headers, not buffering the response body. |
+
+
+
+
+---
+### RuleSetFromConfigMap
+
+
+
+```yaml
+"configmapLocation": .core.solo.io.ResourceRef
+"dataMapKey": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `configmapLocation` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | the configmap fromm which the rules will be taken. |
+| `dataMapKey` | `[]string` | If the configmap has multiple Key-Value pairs in the Data map (Ex: when a config map is created from multiple file sources) you can use dataMapKey to select which rules and the order you want them included. If included - Desired Keys and their order from the Data Map of a configmap. If not included - The rules will be configured in order of sorted keys from the Data map of the configmap. This may not be the order they appear in the configmap. |
 
 
 

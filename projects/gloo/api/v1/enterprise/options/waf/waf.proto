@@ -25,17 +25,25 @@ message Settings {
     // If you want changes to ruleset values stores in a file to propagate to Envoy you will need to change the name of the file to indicate a change to its contents.
     // The recommendation if you want dynamically loaded rules is to use CustomConfigMapRuleSets.
     repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 4;
-    // Use CustomConfigMapRuleSets to reference configmaps that contain rules that you want dynamically loaded.
+    // Use configMap rulesets to reference configmaps that contain rules that you want dynamically loaded.
     // The rules must be contained in the value of the key-value mappings in the ConfigMap `data` field.
-    // If the configmap has multiple Key-Value pairs in the Data map (Ex: when a config map is created from multiple file sources)
-    // The rules will be configured in order of sorted key values. This may not be the order they appear in the configmap.
-    repeated core.solo.io.ResourceRef custom_config_map_rule_sets = 8;
+    repeated RuleSetFromConfigMap config_map_rule_sets = 8;
     // Audit Log settings
     envoy.config.filter.http.modsecurity.v2.AuditLogging audit_logging = 5;
     // Only process request headers, not buffering the request body
     bool request_headers_only = 6;
     // Only process response headers, not buffering the response body
     bool response_headers_only = 7;
+}
+
+message RuleSetFromConfigMap {
+    //the configmap fromm which the rules will be taken
+    core.solo.io.ResourceRef configmap_location = 1;
+    // If the configmap has multiple Key-Value pairs in the Data map (Ex: when a config map is created from multiple file sources)
+    // you can use dataMapKey to select which rules and the order you want them included.
+    // If included - Desired Keys and their order from the Data Map of a configmap.
+    // If not included - The rules will be configured in order of sorted keys from the Data map of the configmap. This may not be the order they appear in the configmap.
+    repeated string dataMapKey = 2;
 }
 
 message CoreRuleSet {

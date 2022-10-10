@@ -2081,6 +2081,22 @@ spec:
                                 type: string
                                 x-kubernetes-int-or-string: true
                             type: object
+                          configMapRuleSets:
+                            items:
+                              properties:
+                                configmapLocation:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
+                                dataMapKey:
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                            type: array
                           coreRuleSet:
                             properties:
                               customSettingsFile:
@@ -2088,15 +2104,6 @@ spec:
                               customSettingsString:
                                 type: string
                             type: object
-                          customConfigMapRuleSets:
-                            items:
-                              properties:
-                                name:
-                                  type: string
-                                namespace:
-                                  type: string
-                              type: object
-                            type: array
                           customInterventionMessage:
                             type: string
                           disabled:
@@ -4115,6 +4122,22 @@ spec:
                                       type: string
                                       x-kubernetes-int-or-string: true
                                   type: object
+                                configMapRuleSets:
+                                  items:
+                                    properties:
+                                      configmapLocation:
+                                        properties:
+                                          name:
+                                            type: string
+                                          namespace:
+                                            type: string
+                                        type: object
+                                      dataMapKey:
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  type: array
                                 coreRuleSet:
                                   properties:
                                     customSettingsFile:
@@ -4122,15 +4145,6 @@ spec:
                                     customSettingsString:
                                       type: string
                                   type: object
-                                customConfigMapRuleSets:
-                                  items:
-                                    properties:
-                                      name:
-                                        type: string
-                                      namespace:
-                                        type: string
-                                    type: object
-                                  type: array
                                 customInterventionMessage:
                                   type: string
                                 disabled:
