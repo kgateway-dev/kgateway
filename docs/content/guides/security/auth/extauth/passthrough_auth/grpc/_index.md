@@ -129,6 +129,11 @@ spec:
 EOF
 {{< /highlight >}}
 
+{{% notice note %}}
+Passthrough services also allow for failing "open" through its [`failureModeAllow`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#settings" >}}) field. 
+By setting this field to `true`, the auth service responds with an `OK` if your server has a `5XX` response, or the request times out.
+{{% /notice %}}
+
 Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
 
 {{< highlight shell "hl_lines=21-25" >}}
@@ -173,6 +178,12 @@ If the auth config has been received successfully, you should see the log line:
 ```
 "logger":"extauth","caller":"runner/run.go:179","msg":"got new config"
 ```
+
+### Metrics
+
+* Failure Mode Allow
+  * Metric Name: extauth.solo.io/passthrough_failure_bypass
+  * Description: The number of times a server error or timeout occurred and was bypassed through failure_mode_allow=true
 
 ## Testing the secured Virtual Service
 The virtual service that we have created should now be secured using our external authentication service. To test this, we can try our original command, and the request should not be allowed through because of missing authentication.
