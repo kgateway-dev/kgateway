@@ -3,6 +3,9 @@ package NoOpUpstreamClient
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"reflect"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -18,11 +21,16 @@ type NoOpUpstreamClient struct {
 
 func (c *NoOpUpstreamClient) NewResource() resources.Resource {
 	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
-	return nil
+	return &v1.Upstream{
+		Metadata: &core.Metadata{
+			Name:      "dev-error-placeholder",
+			Namespace: utils.GetPodNamespace(),
+		},
+	}
 }
 
 func (c *NoOpUpstreamClient) Kind() string {
-	return ""
+	return reflect.TypeOf(c).String()
 }
 
 func (c *NoOpUpstreamClient) Register() error {

@@ -35,7 +35,7 @@ type KubePluginListers struct {
 	cacheUpdatedWatchersMutex sync.Mutex
 }
 
-func getInformerFactory(ctx context.Context, client kubernetes.Interface, watchNamespaces []string) (*KubePluginListers, error) {
+func getInformerFactory(ctx context.Context, client kubernetes.Interface, watchNamespaces []string) *KubePluginListers {
 	if len(watchNamespaces) == 0 {
 		watchNamespaces = []string{metav1.NamespaceAll}
 	}
@@ -46,7 +46,7 @@ func getInformerFactory(ctx context.Context, client kubernetes.Interface, watchN
 		// preventing this from working rather than this hiding in the logs
 		panic(kubePluginSharedFactory.initError)
 	}
-	return kubePluginSharedFactory, nil
+	return kubePluginSharedFactory
 }
 
 func startInformerFactory(ctx context.Context, client kubernetes.Interface, watchNamespaces []string) *KubePluginListers {

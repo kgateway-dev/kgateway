@@ -76,7 +76,7 @@ func (pm *podMap) getPodLabelsForIp(ip string, podName, podNamespace string) (ma
 
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 
-	kubeFactory := func(namespaces []string) (KubePluginSharedFactory, error) {
+	kubeFactory := func(namespaces []string) KubePluginSharedFactory {
 		return getInformerFactory(opts.Ctx, p.kube, namespaces)
 	}
 	watcher, err := newEndpointWatcherForUpstreams(kubeFactory, p.kubeCoreCache, writeNamespace, upstreamsToTrack, opts, p.settings)
@@ -86,7 +86,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	return watcher.watch(writeNamespace, opts)
 }
 
-func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) (KubePluginSharedFactory, error), kubeCoreCache corecache.KubeCoreCache, writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts, settings *v1.Settings) (*edsWatcher, error) {
+func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) KubePluginSharedFactory, kubeCoreCache corecache.KubeCoreCache, writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts, settings *v1.Settings) (*edsWatcher, error) {
 	var namespaces []string
 
 	if settingsutil.IsAllNamespacesFromSettings(settings) {
@@ -106,10 +106,7 @@ func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) (KubePl
 		}
 	}
 
-	kubeFactory, err := kubeFactoryFactory(namespaces)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error in kubeFactory")
-	}
+	kubeFactory := kubeFactoryFactory(namespaces)
 	// this can take a bit of time some make sure we are still in business
 	if opts.Ctx.Err() != nil {
 		return nil, opts.Ctx.Err()
