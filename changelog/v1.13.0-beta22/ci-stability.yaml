@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add `help` make target to self-document Makefile.
+    issueLink: https://github.com/solo-io/gloo/issues/7148
