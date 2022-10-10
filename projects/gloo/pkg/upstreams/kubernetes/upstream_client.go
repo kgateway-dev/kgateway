@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/NoOpUpstreamClient"
 	"github.com/solo-io/go-utils/contextutils"
 
