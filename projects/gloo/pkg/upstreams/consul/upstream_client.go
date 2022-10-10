@@ -3,9 +3,8 @@ package consul
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/go-utils/contextutils"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )

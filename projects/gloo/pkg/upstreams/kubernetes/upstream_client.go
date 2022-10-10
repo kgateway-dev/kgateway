@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-
 	"github.com/solo-io/go-utils/contextutils"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
