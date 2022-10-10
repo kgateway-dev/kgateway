@@ -9,11 +9,11 @@ The route rules in a *Virtual Service* can use header matching rules to match re
 * `name` - the name of the request header. Note: Gloo Edge/Envoy use HTTP/2 so if you want to match against HTTP/1 `Host`,
 use `:authority` (HTTP/2) as the name instead.
 * `regex` - boolean (true|false) defaults to `false`. Indicates how to interpret the `value` attribute:
-  * `false` (default) - treat `value` field as an [Envoy exact_match](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-headermatcher-exact-match)
-  * `true` - treat `value` field as a regular expression as defined by [Envoy regex_match](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-headermatcher-regex-match)
+  * `false` (default) - treat `value` field as an [Envoy exact_match](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-field-route-headermatcher-exact-match)
+  * `true` - treat `value` field as a regular expression as defined by [Envoy regex_match](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-field-route-headermatcher-regex-match)
 * `value`
   * If no value is specified, then the presence of the header in the request with any value will match
-([Envoy present_match](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-headermatcher-present-match))
+([Envoy present_match](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-field-route-headermatcher-present-match))
   * If present, then field value interpreted based on the value of `regex` field
   * `invertMatch` - inverts the matching logic. A request matches if it does **not** match the above criteria. Note that Gloo Edge 0.20.9 or later is required to use this setting.
 
