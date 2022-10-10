@@ -3,6 +3,7 @@ package consul
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -27,7 +28,7 @@ type consulUpstreamClient struct {
 
 func (*consulUpstreamClient) BaseClient() skclients.ResourceClient {
 	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
-	return skclients.ResourceClient(nil)
+	return &upstreams.NoOpUpstreamClient{}
 }
 
 func (*consulUpstreamClient) Register() error {

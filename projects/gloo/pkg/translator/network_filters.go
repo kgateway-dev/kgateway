@@ -146,6 +146,7 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params)
 	// 4. Generate the typedConfig for the HCM
 	hcmFilter, err := NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, httpConnectionManager)
 	if err != nil {
+		contextutils.LoggerFrom(params.Ctx).DPanic("failed to convert proto message to struct")
 		return nil, errors.Wrapf(err, "failed to convert proto message to struct")
 	}
 

@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -26,7 +27,7 @@ type kubernetesUpstreamClient struct {
 
 func (c *kubernetesUpstreamClient) BaseClient() skclients.ResourceClient {
 	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
-	return skclients.ResourceClient(nil)
+	return &upstreams.NoOpUpstreamClient{}
 }
 
 func (c *kubernetesUpstreamClient) Register() error {

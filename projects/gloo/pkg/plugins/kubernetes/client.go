@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	errors "github.com/rotisserie/eris"
 	"k8s.io/client-go/tools/cache"
 
@@ -43,8 +41,10 @@ func getInformerFactory(ctx context.Context, client kubernetes.Interface, watchN
 	}
 	kubePluginSharedFactory := startInformerFactory(ctx, client, watchNamespaces)
 	if kubePluginSharedFactory.initError != nil {
-		contextutils.LoggerFrom(context.Background()).DPanic(kubePluginSharedFactory.initError)
-		return nil, kubePluginSharedFactory.initError
+		// This is an unrecoverable error (no shared informer factory means all of kube EDS won't work, which is
+		// probably the most valuable / important role for gloo) and  users know immediately about e.g. any rbac errors
+		// preventing this from working rather than this hiding in the logs
+		panic(kubePluginSharedFactory.initError)
 	}
 	return kubePluginSharedFactory, nil
 }

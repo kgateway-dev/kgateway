@@ -115,7 +115,7 @@ func (t *translatorInstance) initializeCluster(
 				// TODO: Need to change the upstream to use a direct response action instead of leaving the upstream untouched
 				// Difficult because direct response is not on the upsrtream but on the virtual host
 				// The fallback listener would take much more piping as well
-				reports.AddError(upstream, err)
+				panic(err)
 			} else {
 				out.TransportSocket = &envoy_config_core_v3.TransportSocket{
 					Name:       wellknown.TransportSocketTls,

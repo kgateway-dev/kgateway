@@ -285,17 +285,17 @@ func (t *translatorInstance) generateXDSSnapshot(
 
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
-	endpointsNew := envoycache.NewResources("endpoints-hashErr", endpointsProto)
-	if endpointsErr == nil && clustersErr == nil {
-		endpointsNew = envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto)
+	endpointsNew := envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto)
+	if endpointsErr != nil || clustersErr != nil {
+		endpointsNew = envoycache.NewResources("endpoints-hashErr", endpointsProto)
 	}
-	clustersNew := envoycache.NewResources("clusters-hashErr", endpointsProto)
-	if clustersErr == nil {
-		clustersNew = envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto)
+	clustersNew := envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto)
+	if clustersErr != nil {
+		clustersNew = envoycache.NewResources("clusters-hashErr", endpointsProto)
 	}
-	listenersNew := envoycache.NewResources("listeners-hashErr", listenersProto)
-	if listenersErr == nil {
-		listenersNew = envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto)
+	listenersNew := envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto)
+	if listenersErr != nil {
+		listenersNew = envoycache.NewResources("listeners-hashErr", listenersProto)
 	}
 	return xds.NewSnapshotFromResources(
 		endpointsNew,
@@ -341,12 +341,12 @@ func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) (uint64, 
 }
 
 // deprecated, slower than MustEnvoyCacheResourcesListToFnvHash
-func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) (uint64, error) {
+func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
 	hash, err := hashstructure.Hash(resources, nil)
 	if err != nil {
 		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
 	}
-	return hash, nil
+	return hash
 }
 
 func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {
