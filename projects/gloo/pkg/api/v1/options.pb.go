@@ -933,7 +933,7 @@ type RouteOptions struct {
 	// See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
 	Tracing *tracing.RouteTracingSettings `protobuf:"bytes,7,opt,name=tracing,proto3" json:"tracing,omitempty"`
 	// Specifies traffic shadowing configuration for the route.
-	// See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
+	// See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
 	Shadowing *shadowing.RouteShadowing `protobuf:"bytes,8,opt,name=shadowing,proto3" json:"shadowing,omitempty"`
 	// Append/Remove headers on Requests or Responses on this Route
 	HeaderManipulation *headers.HeaderManipulation `protobuf:"bytes,9,opt,name=header_manipulation,json=headerManipulation,proto3" json:"header_manipulation,omitempty"`

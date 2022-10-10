@@ -11,7 +11,7 @@ option (extproto.clone_all) = true;
 option (extproto.equal_all) = true;
 
 // Specifies the route’s hashing policy if the upstream cluster uses a hashing load balancer.
-// https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-hashpolicy
+// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-hashpolicy
 message RouteActionHashConfig {
     // The list of policies Envoy will use when generating a hash key for a hashing load balancer
     repeated HashPolicy hash_policies = 1;
@@ -21,7 +21,7 @@ message RouteActionHashConfig {
 // - Passive: Envoy reads the cookie from the headers
 // - Generated: Envoy uses the cookie spec to generate a cookie
 // In either case, the cookie is incorporated in the hash key.
-// additional notes https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-hashpolicy-cookie
+// additional notes https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-hashpolicy-cookie
 message Cookie {
     // required, the name of the cookie to be used to obtain the hash key
     string name = 1;

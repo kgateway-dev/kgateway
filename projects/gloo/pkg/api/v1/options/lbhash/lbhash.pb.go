@@ -23,7 +23,7 @@ const (
 )
 
 // Specifies the route’s hashing policy if the upstream cluster uses a hashing load balancer.
-// https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-hashpolicy
+// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-hashpolicy
 type RouteActionHashConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -76,7 +76,7 @@ func (x *RouteActionHashConfig) GetHashPolicies() []*HashPolicy {
 // - Passive: Envoy reads the cookie from the headers
 // - Generated: Envoy uses the cookie spec to generate a cookie
 // In either case, the cookie is incorporated in the hash key.
-// additional notes https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-hashpolicy-cookie
+// additional notes https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-hashpolicy-cookie
 type Cookie struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
