@@ -131,7 +131,7 @@ EOF
 
 {{% notice note %}}
 Passthrough services also allow for failing "open" through the [`failureModeAllow`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#settings" >}}) field. 
-By setting this field to `true`, the auth service responds with an `OK` if either your server returns a `5XX` response or the request times out.
+By setting this field to `true`, the auth service responds with an `OK` if either your server returns a `5XX`-equivalent response or the request times out.
 {{% /notice %}}
 
 Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
