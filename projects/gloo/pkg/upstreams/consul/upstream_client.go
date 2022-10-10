@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/NoOpUpstreamClient"
 	"github.com/solo-io/go-utils/contextutils"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
@@ -27,7 +27,7 @@ type consulUpstreamClient struct {
 
 func (*consulUpstreamClient) BaseClient() skclients.ResourceClient {
 	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
-	return &upstreams.NoOpUpstreamClient{}
+	return &NoOpUpstreamClient.NoOpUpstreamClient{}
 }
 
 func (*consulUpstreamClient) Register() error {

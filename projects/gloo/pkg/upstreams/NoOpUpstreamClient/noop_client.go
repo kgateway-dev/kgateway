@@ -1,4 +1,4 @@
-package upstreams
+package NoOpUpstreamClient
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
+
+const notImplementedErrMsg = "this operation is not supported by this client"
 
 type NoOpUpstreamClient struct {
 	clientMap map[string]v1.UpstreamClient
