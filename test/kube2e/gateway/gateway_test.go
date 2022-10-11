@@ -1921,7 +1921,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					return nil
 				}
 				return eris.Errorf("expected all test resources to have been deleted but found: "+
-					"%d pods, %d virtual services, %d proxies", len(coloredPods.Items), len(vsList))
+					"%d pods, %d virtual services", len(coloredPods.Items), len(vsList))
 			}, time.Minute, time.Second).Should(BeNil())
 		})
 
