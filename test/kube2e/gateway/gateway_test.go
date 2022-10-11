@@ -148,6 +148,22 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	Context("Proxy reconciliation", func() {
 
+		BeforeEach(func() {
+			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+				Expect(settings.GetGateway()).NotTo(BeNil())
+				settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: true}
+				settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: true}
+			}, testHelper.InstallNamespace)
+		})
+
+		AfterEach(func() {
+			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+				Expect(settings.GetGateway()).NotTo(BeNil())
+				settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: false}
+				settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: false}
+			}, testHelper.InstallNamespace)
+		})
+
 		// This function parses a Proxy and determines how many routes are configured to point to the testrunner service
 		getRoutesToTestRunner := func(proxy *gloov1.Proxy) int {
 			routesToTestRunner := 0
@@ -240,37 +256,57 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	Context("tests with virtual service", func() {
 
-		DescribeTable("can route to upstream", func(compressedProxy bool) {
-			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
-				settings.GetGateway().CompressedProxySpec = compressedProxy
-			}, testHelper.InstallNamespace)
+		Context("with persisted proxy", func() {
 
-			// We delete the existing Proxy so that a new one can be auto-generated according to the `compressedSpec` definition
-			err := resourceClientset.ProxyClient().Delete(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.DeleteOpts{
-				Ctx:            ctx,
-				IgnoreNotExist: true,
+			BeforeEach(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					Expect(settings.GetGateway()).NotTo(BeNil())
+					settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: true}
+					settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: true}
+				}, testHelper.InstallNamespace)
 			})
-			Expect(err).NotTo(HaveOccurred())
 
-			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-				Protocol:          "http",
-				Path:              "/",
-				Method:            "GET",
-				Host:              helper.TestrunnerName,
-				Service:           gatewayProxy,
-				Port:              gatewayPort,
-				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
-				WithoutStats:      true,
-			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+			AfterEach(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					Expect(settings.GetGateway()).NotTo(BeNil())
+					settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: false}
+					settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: false}
+				}, testHelper.InstallNamespace)
+			})
 
-			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
-				settings.GetGateway().CompressedProxySpec = false
-			}, testHelper.InstallNamespace)
-		},
-			Entry("can route to upstreams", false),
-			Entry("can route to upstreams with compressed proxy", true))
+			DescribeTable("can route to upstream", func(compressedProxy bool) {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
+					settings.GetGateway().CompressedProxySpec = true
+				}, testHelper.InstallNamespace)
+
+				// We delete the existing Proxy so that a new one can be auto-generated according to the `compressedSpec` definition
+				err := resourceClientset.ProxyClient().Delete(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.DeleteOpts{
+					Ctx:            ctx,
+					IgnoreNotExist: true,
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Host:              helper.TestrunnerName,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
+					settings.GetGateway().CompressedProxySpec = false
+				}, testHelper.InstallNamespace)
+			},
+				Entry("can route to upstreams", false),
+				Entry("can route to upstreams with compressed proxy", true))
+
+		})
 
 		Context("native ssl", func() {
 
@@ -908,6 +944,22 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		Context("proxy debug endpoint", func() {
 
+			BeforeEach(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					Expect(settings.GetGateway()).NotTo(BeNil())
+					settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: true}
+					settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: true}
+				}, testHelper.InstallNamespace)
+			})
+
+			AfterEach(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					Expect(settings.GetGateway()).NotTo(BeNil())
+					settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: false}
+					settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: false}
+				}, testHelper.InstallNamespace)
+			})
+
 			It("Returns proxies", func() {
 				dialContext := context.Background()
 				portFwd := exec.Command("kubectl", "port-forward", "-n", testHelper.InstallNamespace,
@@ -935,7 +987,6 @@ var _ = Describe("Kube2e: gateway", func() {
 					if err != nil {
 						return err
 					}
-					fmt.Sprintf("response %v", resp)
 					if len(resp.GetProxies()) != 1 {
 						return eris.Errorf("Expected to find 1 proxy, found %d", len(resp.GetProxies()))
 					}
@@ -988,7 +1039,23 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 	})
 
-	Context("tests with VirtualHostOptions", func() {
+	Context("tests with VirtualHostOptions and persisted proxy", func() {
+
+		BeforeEach(func() {
+			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+				Expect(settings.GetGateway()).NotTo(BeNil())
+				settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: true}
+				settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: true}
+			}, testHelper.InstallNamespace)
+		})
+
+		AfterEach(func() {
+			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+				Expect(settings.GetGateway()).NotTo(BeNil())
+				settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: false}
+				settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: false}
+			}, testHelper.InstallNamespace)
+		})
 
 		BeforeEach(func() {
 			vh1 := &gatewayv1.VirtualHostOption{
@@ -1850,17 +1917,11 @@ var _ = Describe("Kube2e: gateway", func() {
 				if err != nil {
 					return err
 				}
-				// After we remove the virtual service, the proxy should be removed as well by the gateway controller
-				proxyList, err := resourceClientset.ProxyClient().List(testHelper.InstallNamespace, clients.ListOpts{Ctx: ctx})
-				if err != nil {
-					return err
-				}
-
-				if len(coloredPods.Items)+len(vsList)+len(proxyList) == 0 {
+				if len(coloredPods.Items)+len(vsList) == 0 {
 					return nil
 				}
 				return eris.Errorf("expected all test resources to have been deleted but found: "+
-					"%d pods, %d virtual services, %d proxies", len(coloredPods.Items), len(vsList), len(proxyList))
+					"%d pods, %d virtual services, %d proxies", len(coloredPods.Items), len(vsList))
 			}, time.Minute, time.Second).Should(BeNil())
 		})
 
