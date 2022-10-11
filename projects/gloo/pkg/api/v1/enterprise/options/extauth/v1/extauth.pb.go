@@ -3788,6 +3788,7 @@ type ExtAuthConfig struct {
 	// How to handle processing of named configs within an auth config chain.
 	// An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )`
 	// The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
+	// Defaults to an empty string, which is interpreted as `and`-ing the configs.
 	BooleanExpr *wrappers.StringValue `protobuf:"bytes,10,opt,name=boolean_expr,json=booleanExpr,proto3" json:"boolean_expr,omitempty"`
 	// How the service should handle a redirect response from an OIDC issuer. In the default false mode,
 	// the redirect will be considered a successful response, and the client will receive a 302 with a location header.
