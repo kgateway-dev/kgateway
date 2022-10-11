@@ -169,6 +169,10 @@ inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_
 
 ### Metrics
 
+{{% notice note %}}
+For more information on how Gloo Edge handles observability and metrics, view our [observability introduction]({{< versioned_link_path fromRoot="/introduction/observability/" >}}).
+{{% /notice %}}
+
 * Failure Mode Allow
   * Metric Name: `extauth.solo.io/http_passthrough_bypass_failure`
   * Description: The number of times a server error or timeout occurred and was bypassed through the `failure_mode_allow=true` setting

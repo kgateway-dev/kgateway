@@ -181,6 +181,10 @@ If the auth config has been received successfully, you should see the log line:
 
 ### Metrics
 
+{{% notice note %}}
+For more information on how Gloo Edge handles observability and metrics, view our [observability introduction]({{< versioned_link_path fromRoot="/introduction/observability/" >}}).
+{{% /notice %}}
+
 * Failure Mode Allow
   * Metric Name: `extauth.solo.io/passthrough_failure_bypass`
   * Description: The number of times a server error or timeout occurred and was bypassed through the `failure_mode_allow=true` setting
