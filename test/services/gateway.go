@@ -273,10 +273,10 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		glooOpts.Settings.Gateway = &gloov1.GatewayOptions{}
 	}
 	if glooOpts.Settings.GetGateway().GetPersistProxySpec() == nil {
-		glooOpts.Settings.Gateway.PersistProxySpec = &wrapperspb.BoolValue{Value: false}
+		glooOpts.Settings.GetGateway().PersistProxySpec = &wrapperspb.BoolValue{Value: false}
 	}
 	if glooOpts.Settings.GetGateway().GetEnableGatewayController() == nil {
-		glooOpts.Settings.Gateway.PersistProxySpec = &wrapperspb.BoolValue{Value: false}
+		glooOpts.Settings.GetGateway().EnableGatewayController = &wrapperspb.BoolValue{Value: false}
 	}
 
 	testClients := getTestClients(ctx, runOptions.Cache, glooOpts.KubeServiceClient)
