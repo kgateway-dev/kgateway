@@ -8,6 +8,7 @@ settings:
   linkerd: false
   enableRestEds: false
   aws: {}
+  circuitBreakers: {}
   invalidConfigPolicy:
     replaceInvalidRoutes: false
     invalidRouteResponseCode: 404
