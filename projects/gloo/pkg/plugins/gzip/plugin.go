@@ -68,11 +68,14 @@ func glooToEnvoyCompressor(gzip *v2.Gzip) (*envoycompressor.Compressor, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	typedConfig, err := utils.MessageToAny(envoyGzip)
+	if err != nil {
+		return nil, err
+	}
 	envoyCompressor := &envoycompressor.Compressor{
 		CompressorLibrary: &v3.TypedExtensionConfig{
 			Name:        GzipLibrary,
-			TypedConfig: utils.MustMessageToAny(envoyGzip),
+			TypedConfig: typedConfig,
 		},
 	}
 

@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"context"
 	"fmt"
 	"hash/fnv"
 	"sync"
@@ -47,7 +48,7 @@ type translatorInstance struct {
 	lock                      sync.Mutex
 	pluginRegistry            plugins.PluginRegistry
 	settings                  *v1.Settings
-	hasher                    func(resources []envoycache.Resource) uint64
+	hasher                    func(resources []envoycache.Resource) (uint64, error)
 	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
 }
 
@@ -55,7 +56,7 @@ func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
 	pluginRegistry plugins.PluginRegistry,
-	hasher func(resources []envoycache.Resource) uint64,
+	hasher func(resources []envoycache.Resource) (uint64, error),
 ) *translatorInstance {
 	return &translatorInstance{
 		lock:                      sync.Mutex{},
@@ -95,7 +96,6 @@ func (t *translatorInstance) Translate(
 	// during these translations, params.messages is side effected for the reports to use later in this loop
 	clusters, endpoints := t.translateClusterSubsystemComponents(params, proxy, reports)
 	routeConfigs, listeners := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
-
 	// run Resource Generator Plugins
 	for _, plugin := range t.pluginRegistry.GetResourceGeneratorPlugins() {
 		generatedClusters, generatedEndpoints, generatedRouteConfigs, generatedListeners, err := plugin.GeneratedResources(params, clusters, endpoints, routeConfigs, listeners)
@@ -108,7 +108,7 @@ func (t *translatorInstance) Translate(
 		listeners = append(listeners, generatedListeners...)
 	}
 
-	xdsSnapshot := t.generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
+	xdsSnapshot := t.generateXDSSnapshot(params, clusters, endpoints, routeConfigs, listeners)
 
 	if err := validation.GetProxyError(proxyReport); err != nil {
 		reports.AddError(proxy, err)
@@ -247,6 +247,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 }
 
 func (t *translatorInstance) generateXDSSnapshot(
+	params plugins.Params,
 	clusters []*envoy_config_cluster_v3.Cluster,
 	endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment,
 	routeConfigs []*envoy_config_route_v3.RouteConfiguration,
@@ -269,20 +270,50 @@ func (t *translatorInstance) generateXDSSnapshot(
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
-	endpointsVersion := t.hasher(endpointsProto)
-	clustersVersion := t.hasher(clustersProto)
-	listenersVersion := t.hasher(listenersProto)
+	endpointsVersion, endpointsErr := t.hasher(endpointsProto)
+	if endpointsErr != nil {
+		contextutils.LoggerFrom(params.Ctx).DPanic(fmt.Sprintf("error trying to hash endpointsProto: %v", endpointsErr))
+	}
+	clustersVersion, clustersErr := t.hasher(clustersProto)
+	if clustersErr != nil {
+		contextutils.LoggerFrom(params.Ctx).DPanic(fmt.Sprintf("error trying to hash clustersProto: %v", clustersErr))
+	}
+	listenersVersion, listenersErr := t.hasher(listenersProto)
+	if listenersErr != nil {
+		contextutils.LoggerFrom(params.Ctx).DPanic(fmt.Sprintf("error trying to hash listenersProto: %v", listenersErr))
+	}
 
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
+	endpointsNew := envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto)
+	if endpointsErr != nil || clustersErr != nil {
+		endpointsNew = envoycache.NewResources("endpoints-hashErr", endpointsProto)
+	}
+	clustersNew := envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto)
+	if clustersErr != nil {
+		clustersNew = envoycache.NewResources("clusters-hashErr", endpointsProto)
+	}
+	listenersNew := envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto)
+	if listenersErr != nil {
+		listenersNew = envoycache.NewResources("listeners-hashErr", listenersProto)
+	}
 	return xds.NewSnapshotFromResources(
-		envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto),
-		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
+		endpointsNew,
+		clustersNew,
 		MakeRdsResources(routeConfigs),
-		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
+		listenersNew)
 }
 
+// deprecated, use EnvoyCacheResourcesListToFnvHash
 func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
+	out, err := EnvoyCacheResourcesListToFnvHash(resources)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
+	}
+	return out
+}
+
+func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) (uint64, error) {
 	hasher := fnv.New64()
 	// 8kb capacity, consider raising if we find the buffer is frequently being
 	// re-allocated by MarshalAppend to fit larger protos.
@@ -297,14 +328,16 @@ func MustEnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint6
 		// another path to further improve performance here.
 		out, err := mo.MarshalAppend(buf, proto.MessageV2(r.ResourceProto()))
 		if err != nil {
-			panic(errors.Wrap(err, "marshalling envoy snapshot components"))
+			contextutils.LoggerFrom(context.Background()).DPanic(errors.Wrap(err, "marshalling envoy snapshot components"))
+			return 0, errors.Wrap(err, "marshalling envoy snapshot components")
 		}
 		_, err = hasher.Write(out)
 		if err != nil {
-			panic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
+			contextutils.LoggerFrom(context.Background()).DPanic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
+			return 0, errors.Wrap(err, "constructing hash for envoy snapshot components")
 		}
 	}
-	return hasher.Sum64()
+	return hasher.Sum64(), nil
 }
 
 // deprecated, slower than MustEnvoyCacheResourcesListToFnvHash
@@ -328,7 +361,11 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 
 	}
 
-	routesVersion := MustEnvoyCacheResourcesListToFnvHash(routesProto)
+	routesVersion, err := EnvoyCacheResourcesListToFnvHash(routesProto)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("error trying to hash routesProto: %v", err))
+		return envoycache.NewResources("routes-hashErr", routesProto)
+	}
 	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }
 

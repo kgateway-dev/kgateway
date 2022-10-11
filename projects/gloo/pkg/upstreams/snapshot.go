@@ -1,7 +1,12 @@
 package upstreams
 
 import (
+	"context"
+
+	errors "github.com/rotisserie/eris"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 )
 
@@ -33,7 +38,7 @@ func (s *hybridUpstreamSnapshot) clone() *hybridUpstreamSnapshot {
 	}
 }
 
-func (s *hybridUpstreamSnapshot) hash() uint64 {
+func (s *hybridUpstreamSnapshot) hash() (uint64, error) {
 	var allUpstreams v1.UpstreamList
 	for _, upstreams := range s.upstreamsBySource {
 		allUpstreams = append(allUpstreams, upstreams...)
@@ -43,8 +48,9 @@ func (s *hybridUpstreamSnapshot) hash() uint64 {
 	allUpstreams.Sort()
 	hash, err := hashutils.HashAllSafe(nil, allUpstreams.AsInterfaces()...)
 	if err != nil {
-		panic("this error should never happen, as it is in a safe hasher")
+		contextutils.LoggerFrom(context.Background()).DPanic("this error should never happen, as it is in a safe hasher")
+		return 0, errors.New("this error should never happen, as this is safe hasher")
 	}
 
-	return hash
+	return hash, nil
 }

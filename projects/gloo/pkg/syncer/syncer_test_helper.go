@@ -41,12 +41,10 @@ func (*MockXdsCache) GetStatusInfo(string) envoycache.StatusInfo {
 func (c *MockXdsCache) GetStatusKeys() []string {
 	return []string{}
 }
-
 func (c *MockXdsCache) SetSnapshot(node string, snapshot envoycache.Snapshot) {
 	c.Called = true
 	c.SetSnap = snapshot
 }
-
 func (c *MockXdsCache) GetSnapshot(node string) (envoycache.Snapshot, error) {
 	if c.GetSnap != nil {
 		return c.GetSnap, nil
