@@ -157,7 +157,7 @@ message UpstreamSpec {
     UpstreamSslConfig ssl_config = 6;
 
     // Circuit breakers for this upstream. if not set, the defaults ones from the Gloo Edge settings will be used.
-    // if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
+    // if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
     // will be used.
     CircuitBreakerConfig circuit_breakers = 7;
     LoadBalancerConfig load_balancer_config = 8;
@@ -283,7 +283,7 @@ can be no-op and will simply be ignored by Gloo Edge.
 
 First, let's handle `ProcessUpstream`. `ProcessUpstream` is called for every **Upstream** known to Gloo Edge in 
 each iteration of Gloo Edge's translation loop (in which Gloo Edge config is translated to Envoy config). `ProcessUpstream`
-looks at each individual Upstream (the user input object) and modifies, if necessary, the ouptut [Envoy Cluster](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cds.proto) corresponding to that Upstream. 
+looks at each individual Upstream (the user input object) and modifies, if necessary, the ouptut [Envoy Cluster](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto) corresponding to that Upstream. 
 
 Our `ProcessUpstream` function should:
 

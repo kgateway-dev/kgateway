@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
@@ -57,7 +58,7 @@ func (s *validator) shouldNotify(snap *v1snap.ApiSnapshot) bool {
 	// rather than compare the hash of the whole snapshot,
 	// we compare the hash of resources that can affect
 	// the validation result (which excludes Endpoints)
-	hashFunc := func(snap *v1snap.ApiSnapshot) uint64 {
+	hashFunc := func(snap *v1snap.ApiSnapshot) (uint64, error) {
 		toHash := append([]interface{}{}, snap.Upstreams.AsInterfaces()...)
 		toHash = append(toHash, snap.UpstreamGroups.AsInterfaces()...)
 		toHash = append(toHash, snap.Secrets.AsInterfaces()...)
@@ -69,12 +70,16 @@ func (s *validator) shouldNotify(snap *v1snap.ApiSnapshot) bool {
 
 		hash, err := hashutils.HashAllSafe(nil, toHash...)
 		if err != nil {
-			panic("this error should never happen, as this is safe hasher")
+			contextutils.LoggerFrom(context.Background()).DPanic("this error should never happen, as this is safe hasher")
+			return 0, errors.New("this error should never happen, as this is safe hasher")
 		}
-		return hash
+		return hash, nil
 	}
-
-	hashChanged := hashFunc(s.latestSnapshot) != hashFunc(snap)
+	oldHash, oldHashErr := hashFunc(s.latestSnapshot)
+	newHash, newHashErr := hashFunc(snap)
+	// If we cannot hash then we choose to treat them as different hashes since this is just a performance optimization.
+	// In worst case we'd prefer correctness
+	hashChanged := oldHash != newHash || oldHashErr != nil || newHashErr != nil
 
 	logger := contextutils.LoggerFrom(s.ctx)
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
@@ -203,7 +208,6 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	}
 	for _, proxy := range proxiesToValidate {
 		xdsSnapshot, resourceReports, proxyReport := s.translator.Translate(params, proxy)
-
 		// Sanitize routes before sending report to gateway
 		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
 		routeErrorToWarnings(resourceReports, proxyReport)

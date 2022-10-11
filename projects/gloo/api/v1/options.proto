@@ -323,7 +323,7 @@ message RouteOptions {
     // See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
     tracing.options.gloo.solo.io.RouteTracingSettings tracing = 7;
     // Specifies traffic shadowing configuration for the route.
-    // See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
+    // See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
     shadowing.options.gloo.solo.io.RouteShadowing shadowing = 8;
     // Append/Remove headers on Requests or Responses on this Route
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 9;

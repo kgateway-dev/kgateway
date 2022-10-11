@@ -12,7 +12,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"math/big"
 	"net"
 	"os"
@@ -109,7 +108,7 @@ func GetCerts(params Params) (string, string) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		log.Fatalf("failed to generate serial number: %s", err)
+		Fail(fmt.Sprintf("failed to generate serial number: %s", err))
 	}
 
 	template := x509.Certificate{
@@ -141,7 +140,7 @@ func GetCerts(params Params) (string, string) {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
 	if err != nil {
-		log.Fatalf("Failed to create certificate: %s", err)
+		Fail(fmt.Sprintf("Failed to create certificate: %s", err))
 	}
 
 	var certOut bytes.Buffer
@@ -163,7 +162,6 @@ var (
 )
 
 func gencerts() {
-
 	cert, privKey = GetCerts(Params{
 		Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 		IsCA:  true,

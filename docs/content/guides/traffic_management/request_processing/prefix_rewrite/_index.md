@@ -131,7 +131,7 @@ returns
 {"code":404,"message":"path // was not found"}
 ```
 
-To avoid this problem, we (and [Envoy](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto.html#envoy-api-field-route-routeaction-prefix-rewrite))
+To avoid this problem, we (and [Envoy](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto.html#envoy-api-field-route-routeaction-prefix-rewrite))
 recommend two matchers, one for each case (order matters)
 ```yaml
 kubectl apply -f - << EOF

@@ -10,12 +10,18 @@ Review the following information about supported release versions for Gloo Edge 
 
 Gloo Edge Enterprise offers `n-3` patching support for bug and critical security fixes. In other words, the current release and the three previous releases are supported. For example, if the latest stable Gloo Edge Enterprise release is 1.12, then Gloo Edge Enterprise 1.11.x, 1.10.x, and 1.9.x are also supported.
 
-| Gloo Edge | Kubernetes | Envoy | Helm | Istio |
+
+| Gloo Edge | Kubernetes`*` | Envoy | Helm | Istio`†` |
 |------|----------|---------|--------|------|
-| 1.12.x | Supported: 1.21 - 1.22</br>Supported pending validation tests: 1.23 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
-| 1.11.x | Supported: 1.21 - 1.22</br>Supported pending validation tests: 1.23 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
-| 1.10.x | 1.21 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
-| 1.9.x | 1.19 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
+| 1.12.x | 1.21 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |
+| 1.11.x | 1.21 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.15|
+| 1.10.x | 1.21 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |
+| 1.9.x | 1.19 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |
+
+{{% notice note %}}`*` **Kubernetes versions**: Gloo Edge is tested on Kubernetes 1.21 - 1.22.{{% /notice %}}
+
+{{% notice note %}}`†` **Istio versions**: Gloo Edge is tested on Istio 1.11 - 1.12. Istio must run on a compatible version of Kubernetes. For example, you cannot run Istio 1.15 on Kubernetes 1.21. For more information, see the [Istio docs](https://istio.io/latest/docs/releases/supported-releases/). If you want hardened `n-4` versions of Istio for particular requirements such as FIPS, consider using [Gloo Platform](https://www.solo.io/products/gloo-platform/), which includes Gateway and Mesh components.{{% /notice %}}
+
 <!--TO FIND VERSIONS
 Go to the branch for the Edge version you want, like 1.11.x. In https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh, search for CLUSTER_NODE_VERSION to see the max k8s version, and ISTIO_VERSION for max istio version. You will have to ask someone on the team to find out the minimum versions of each for a given Edge release. They do have an [issue](https://github.com/solo-io/gloo/issues/5358) open to run regular tests for min-max though.-->
 

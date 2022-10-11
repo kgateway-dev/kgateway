@@ -40,7 +40,6 @@ func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) *env
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+l.listener.GetName())
 
 	filterChains := l.filterChainTranslator.ComputeFilterChains(params)
-
 	CheckForDuplicateFilterChainMatches(filterChains, l.report)
 
 	out := &envoy_config_listener_v3.Listener{

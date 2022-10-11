@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/7301
+  description: Implement the "Building and Deploying Gloo Edge from Source" as developer documentation
