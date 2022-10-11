@@ -250,21 +250,6 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	glooOpts.ValidationServer.StartGrpcServer = true
 	glooOpts.GatewayControllerEnabled = !runOptions.WhatToRun.DisableGateway
 
-	go setup.RunGloo(glooOpts)
-
-	if !runOptions.WhatToRun.DisableFds {
-		go func() {
-			defer GinkgoRecover()
-			fds_syncer.RunFDS(glooOpts)
-		}()
-	}
-	if !runOptions.WhatToRun.DisableUds {
-		go func() {
-			defer GinkgoRecover()
-			uds_syncer.RunUDS(glooOpts)
-		}()
-	}
-
 	glooOpts.GatewayControllerEnabled = false
 	if glooOpts.Settings == nil {
 		glooOpts.Settings = &gloov1.Settings{}
@@ -283,6 +268,21 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	}
 	if glooOpts.Settings.GetGateway().GetEnableGatewayController().GetValue() {
 		glooOpts.Settings.GetGateway().EnableGatewayController = &wrapperspb.BoolValue{Value: false}
+	}
+
+	go setup.RunGloo(glooOpts)
+
+	if !runOptions.WhatToRun.DisableFds {
+		go func() {
+			defer GinkgoRecover()
+			fds_syncer.RunFDS(glooOpts)
+		}()
+	}
+	if !runOptions.WhatToRun.DisableUds {
+		go func() {
+			defer GinkgoRecover()
+			uds_syncer.RunUDS(glooOpts)
+		}()
 	}
 
 	testClients := getTestClients(ctx, runOptions.Cache, glooOpts.KubeServiceClient)
