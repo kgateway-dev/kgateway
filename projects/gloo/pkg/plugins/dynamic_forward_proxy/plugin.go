@@ -90,6 +90,10 @@ func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy
 		AllowInsecureClusterOptions: false,
 		AllowCoalescedConnections:   false, // not-implemented in envoy yet
 	}
+	typedConfig, err := utils.MessageToAny(cc)
+	if err != nil {
+		return nil, err
+	}
 	return &envoy_config_cluster_v3.Cluster{
 		Name:           GetGeneratedClusterName(listenerCfg),
 		ConnectTimeout: &duration.Duration{Seconds: 5},
@@ -97,7 +101,7 @@ func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_ClusterType{
 			ClusterType: &envoy_config_cluster_v3.Cluster_CustomClusterType{
 				Name:        "envoy.clusters.dynamic_forward_proxy",
-				TypedConfig: utils.MustMessageToAny(cc),
+				TypedConfig: typedConfig,
 			},
 		},
 	}, nil
@@ -212,15 +216,23 @@ func convertTypedDnsResolverConfig(dfpListenerCfg *dynamic_forward_proxy.DnsCach
 			Resolvers:          addrs,
 			DnsResolverOptions: convertDnsResolverOptions(cacheConf.CaresDns.GetDnsResolverOptions()),
 		}
+		typedConfig, err := utils.MessageToAny(c)
+		if err != nil {
+			return nil, err
+		}
 		typedConf = &envoy_config_core_v3.TypedExtensionConfig{
 			Name:        "envoy.network.dns_resolver.cares",
-			TypedConfig: utils.MustMessageToAny(c),
+			TypedConfig: typedConfig,
 		}
 	case *dynamic_forward_proxy.DnsCacheConfig_AppleDns:
 		c := &envoy_extensions_network_dns_resolver_apple_v3.AppleDnsResolverConfig{}
+		typedConfig, err := utils.MessageToAny(c)
+		if err != nil {
+			return nil, err
+		}
 		typedConf = &envoy_config_core_v3.TypedExtensionConfig{
 			Name:        "envoy.network.dns_resolver.apple",
-			TypedConfig: utils.MustMessageToAny(c),
+			TypedConfig: typedConfig,
 		}
 	default:
 		return nil, eris.Errorf("unsupported type for dns cache type %T", dfpListenerCfg.GetDnsCacheType())

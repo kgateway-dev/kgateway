@@ -32,25 +32,27 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-
+		typedConfig, err := utils.MessageToAny(&envoygzip.Gzip{
+			MemoryLevel:         &wrappers.UInt32Value{Value: 9},
+			CompressionLevel:    envoygzip.Gzip_BEST_SPEED,
+			CompressionStrategy: envoygzip.Gzip_HUFFMAN_ONLY,
+			WindowBits:          &wrappers.UInt32Value{Value: 10},
+		})
+		Expect(err).NotTo(HaveOccurred())
 		compressorConfig := &envoycompressor.Compressor{
 			CompressorLibrary: &v3.TypedExtensionConfig{
-				Name: GzipLibrary,
-				TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-					MemoryLevel:         &wrappers.UInt32Value{Value: 9},
-					CompressionLevel:    envoygzip.Gzip_BEST_SPEED,
-					CompressionStrategy: envoygzip.Gzip_HUFFMAN_ONLY,
-					WindowBits:          &wrappers.UInt32Value{Value: 10},
-				}),
+				Name:        GzipLibrary,
+				TypedConfig: typedConfig,
 			},
 		}
-
+		typedConfig, err = utils.MessageToAny(compressorConfig)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(compressorConfig),
+						TypedConfig: typedConfig,
 					},
 				},
 				Stage: plugins.DuringStage(plugins.FaultStage),
@@ -64,23 +66,25 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-
+		typedConfig, err = utils.MessageToAny(&envoygzip.Gzip{
+			CompressionLevel:    envoygzip.Gzip_DEFAULT_COMPRESSION,
+			CompressionStrategy: envoygzip.Gzip_DEFAULT_STRATEGY,
+		})
+		Expect(err).NotTo(HaveOccurred())
 		compressorConfig = &envoycompressor.Compressor{
 			CompressorLibrary: &v3.TypedExtensionConfig{
-				Name: GzipLibrary,
-				TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-					CompressionLevel:    envoygzip.Gzip_DEFAULT_COMPRESSION,
-					CompressionStrategy: envoygzip.Gzip_DEFAULT_STRATEGY,
-				}),
+				Name:        GzipLibrary,
+				TypedConfig: typedConfig,
 			},
 		}
-
+		typedConfig, err = utils.MessageToAny(compressorConfig)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(compressorConfig),
+						TypedConfig: typedConfig,
 					},
 				},
 				Stage: plugins.DuringStage(plugins.FaultStage),
@@ -103,7 +107,8 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-
+		typedConfig, err := utils.MessageToAny(&envoygzip.Gzip{})
+		Expect(err).ToNot(HaveOccurred())
 		compressorConfig := &envoycompressor.Compressor{
 			ContentLength:              &wrappers.UInt32Value{Value: 10},
 			ContentType:                []string{"type1", "type2"},
@@ -111,16 +116,17 @@ var _ = Describe("Plugin", func() {
 			RemoveAcceptEncodingHeader: true,
 			CompressorLibrary: &v3.TypedExtensionConfig{
 				Name:        GzipLibrary,
-				TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{}),
+				TypedConfig: typedConfig,
 			},
 		}
-
+		typedConfig, err = utils.MessageToAny(compressorConfig)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(compressorConfig),
+						TypedConfig: typedConfig,
 					},
 				},
 				Stage: plugins.DuringStage(plugins.FaultStage),
@@ -136,21 +142,22 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-
+		typedConfig, err = utils.MessageToAny(&envoygzip.Gzip{})
 		compressorConfig = &envoycompressor.Compressor{
 			RemoveAcceptEncodingHeader: true,
 			CompressorLibrary: &v3.TypedExtensionConfig{
 				Name:        GzipLibrary,
-				TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{}),
+				TypedConfig: typedConfig,
 			},
 		}
-
+		typedConfig, err = utils.MessageToAny(compressorConfig)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(compressorConfig),
+						TypedConfig: typedConfig,
 					},
 				},
 				Stage: plugins.DuringStage(plugins.FaultStage),

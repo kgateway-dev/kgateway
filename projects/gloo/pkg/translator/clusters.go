@@ -110,9 +110,17 @@ func (t *translatorInstance) initializeCluster(
 		if err != nil {
 			reports.AddError(upstream, err)
 		} else {
-			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
-				Name:       wellknown.TransportSocketTls,
-				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
+			typedConfig, err := utils.MessageToAny(cfg)
+			if err != nil {
+				// TODO: Need to change the upstream to use a direct response action instead of leaving the upstream untouched
+				// Difficult because direct response is not on the upsrtream but on the virtual host
+				// The fallback listener would take much more piping as well
+				panic(err)
+			} else {
+				out.TransportSocket = &envoy_config_core_v3.TransportSocket{
+					Name:       wellknown.TransportSocketTls,
+					ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
+				}
 			}
 		}
 	}
