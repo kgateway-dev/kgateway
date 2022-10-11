@@ -39,6 +39,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
@@ -264,6 +265,20 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		}()
 	}
 
+	glooOpts.GatewayControllerEnabled = false
+	if glooOpts.Settings == nil {
+		glooOpts.Settings = &gloov1.Settings{}
+	}
+	if glooOpts.Settings.GetGateway() == nil {
+		glooOpts.Settings.Gateway = &gloov1.GatewayOptions{}
+	}
+	if glooOpts.Settings.GetGateway().GetPersistProxySpec() == nil {
+		glooOpts.Settings.Gateway.PersistProxySpec = &wrapperspb.BoolValue{Value: false}
+	}
+	if glooOpts.Settings.GetGateway().GetEnableGatewayController() == nil {
+		glooOpts.Settings.Gateway.PersistProxySpec = &wrapperspb.BoolValue{Value: false}
+	}
+
 	testClients := getTestClients(ctx, runOptions.Cache, glooOpts.KubeServiceClient)
 	testClients.GlooPort = int(runOptions.GlooPort)
 	testClients.RestXdsPort = int(runOptions.RestXdsPort)
@@ -444,7 +459,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			ConsulWatcher: runOptions.ConsulClient,
 			DnsServer:     runOptions.ConsulDnsAddress,
 		},
-		GatewayControllerEnabled: true,
+		GatewayControllerEnabled: false,
 		ValidationOpts:           validationOpts,
 		Identity:                 singlereplica.Identity(),
 	}

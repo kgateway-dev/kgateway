@@ -937,6 +937,8 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 		})
 
+		// TODO(kdorosh) this passes if you install with persist proxy spec true!
+
 		// Context("proxy debug endpoint", func() {
 
 		// 	BeforeEach(func() {

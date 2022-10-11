@@ -56,7 +56,7 @@ func noopTransition(_, _ *gloov1.Proxy) (bool, error) {
 
 func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite GeneratedProxies, writeNamespace string, labelSelectorOptions clients.ListOpts) error {
 
-	if s.settings.GetGateway().GetEnableGatewayController().GetValue() {
+	if s.settings.GetGateway().GetEnableGatewayController().GetValue() || true { // TODO(kdorosh)
 		// support old behavior for backwards compatibility
 		if err := s.addProxyValidationResults(ctx, proxiesToWrite); err != nil {
 			return errors.Wrapf(err, "failed to add proxy validation results to reports")
@@ -78,7 +78,7 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 	})
 
 	transitionProxyFunc := noopTransition
-	if s.settings.GetGateway().GetEnableGatewayController().GetValue() {
+	if s.settings.GetGateway().GetEnableGatewayController().GetValue() || true { // TODO(kdorosh)
 		// the transition function only works if the last known good proxy is stored somewhere persistent (e.g. etcd)
 		// in the case of gloo/gateway pods being merged, this assumption breaks down as gloo pod stores the proxy in-memory
 		// and the last known good proxy is not available as it's stored in memory and lost when gloo is cycled / rescheduled.
