@@ -3,9 +3,10 @@ package NoOpUpstreamClient
 import (
 	"context"
 	"fmt"
+	"reflect"
+
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"reflect"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -30,7 +31,7 @@ func (c *NoOpUpstreamClient) NewResource() resources.Resource {
 }
 
 func (c *NoOpUpstreamClient) Kind() string {
-	return reflect.TypeOf(c).String()
+	return reflect.TypeOf(&v1.Upstream{}).String()
 }
 
 func (c *NoOpUpstreamClient) Register() error {
@@ -39,27 +40,22 @@ func (c *NoOpUpstreamClient) Register() error {
 }
 
 func (c *NoOpUpstreamClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
-	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *NoOpUpstreamClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
-	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *NoOpUpstreamClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return fmt.Errorf(notImplementedErrMsg)
 }
 
 func (rc *NoOpUpstreamClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
-	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *NoOpUpstreamClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
-	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
 	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 

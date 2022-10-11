@@ -3,6 +3,7 @@ package upstreams
 import (
 	"context"
 	"fmt"
+
 	"github.com/solo-io/gloo/pkg/utils"
 
 	"github.com/rotisserie/eris"
