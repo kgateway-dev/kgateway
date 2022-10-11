@@ -1,16 +1,20 @@
 package gateway_test
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
 	ratelimit2 "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
 	v1alpha1skv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	rlv1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	matchers2 "github.com/solo-io/solo-kit/test/matchers"
+	"google.golang.org/grpc"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 
@@ -937,63 +941,66 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 		})
 
-		// TODO(kdorosh) this passes if you install with persist proxy spec true!
+		Context("proxy debug endpoint", func() {
 
-		// Context("proxy debug endpoint", func() {
+			BeforeEach(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					Expect(settings.GetGateway()).NotTo(BeNil())
+					settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: true}
+					settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: true}
+				}, testHelper.InstallNamespace)
+				time.Sleep(2 * time.Second) // ensure settings pick up
+				// TODO(kdorosh) open an issue for this
+				// for some reason we need to have gloo START UP with persistProxySpec set to true or else this test fails :/
+				install.Kubectl(nil, "rollout", "restart", "deployment", "-n", testHelper.InstallNamespace, "gloo")
+				time.Sleep(45 * time.Second) // ensure restart is done
+			})
 
-		// 	BeforeEach(func() {
-		// 		kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-		// 			Expect(settings.GetGateway()).NotTo(BeNil())
-		// 			settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: true}
-		// 			settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: true}
-		// 		}, testHelper.InstallNamespace)
-		// 	})
+			AfterEach(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					Expect(settings.GetGateway()).NotTo(BeNil())
+					settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: false}
+					settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: false}
+				}, testHelper.InstallNamespace)
+			})
 
-		// 	AfterEach(func() {
-		// 		kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-		// 			Expect(settings.GetGateway()).NotTo(BeNil())
-		// 			settings.GetGateway().EnableGatewayController = &wrappers.BoolValue{Value: false}
-		// 			settings.GetGateway().PersistProxySpec = &wrappers.BoolValue{Value: false}
-		// 		}, testHelper.InstallNamespace)
-		// 	})
+			It("Returns proxies", func() {
+				dialContext := context.Background()
+				portFwd := exec.Command("kubectl", "port-forward", "-n", testHelper.InstallNamespace,
+					"deployment/gloo", "9966")
+				portFwd.Stdout = os.Stderr
+				portFwd.Stderr = os.Stderr
+				err := portFwd.Start()
+				Expect(err).ToNot(HaveOccurred())
+				defer func() {
+					if portFwd.Process != nil {
+						portFwd.Process.Kill()
+					}
+				}()
 
-		// 	FIt("Returns proxies", func() {
-		// 		dialContext := context.Background()
-		// 		portFwd := exec.Command("kubectl", "port-forward", "-n", testHelper.InstallNamespace,
-		// 			"deployment/gloo", "9966")
-		// 		portFwd.Stdout = os.Stderr
-		// 		portFwd.Stderr = os.Stderr
-		// 		err := portFwd.Start()
-		// 		Expect(err).ToNot(HaveOccurred())
-		// 		defer func() {
-		// 			if portFwd.Process != nil {
-		// 				portFwd.Process.Kill()
-		// 			}
-		// 		}()
+				cc, err := grpc.DialContext(dialContext, "localhost:9966", grpc.WithInsecure())
+				Expect(err).NotTo(HaveOccurred())
+				debugClient := debug.NewProxyEndpointServiceClient(cc)
 
-		// 		cc, err := grpc.DialContext(dialContext, "localhost:9966", grpc.WithInsecure())
-		// 		Expect(err).NotTo(HaveOccurred())
-		// 		debugClient := debug.NewProxyEndpointServiceClient(cc)
-
-		// 		Eventually(func() error {
-		// 			referenceProxy, err := resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-		// 			if err != nil {
-		// 				return errors.Wrapf(err, "reading proxy CR from cluster")
-		// 			}
-		// 			resp, err := debugClient.GetProxies(ctx, &debug.ProxyEndpointRequest{Namespace: testHelper.InstallNamespace, Name: defaults.GatewayProxyName})
-		// 			if err != nil {
-		// 				return errors.Wrapf(err, "getting proxies from debug endpoint")
-		// 			}
-		// 			if len(resp.GetProxies()) != 1 {
-		// 				return eris.Errorf("Expected to find 1 proxy, found %d", len(resp.GetProxies()))
-		// 			}
-		// 			if !resp.GetProxies()[0].Equal(referenceProxy) {
-		// 				return eris.Errorf("Expected the proxy from the debug endpoint to equal the proxy from proxyClient")
-		// 			}
-		// 			return nil
-		// 		}, "10s", "1s").ShouldNot(HaveOccurred())
-		// 	})
-		// })
+				Eventually(func() error {
+					referenceProxy, err := resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+					if err != nil {
+						return errors.Wrapf(err, "reading proxy CR from cluster")
+					}
+					resp, err := debugClient.GetProxies(ctx, &debug.ProxyEndpointRequest{Namespace: testHelper.InstallNamespace, Name: defaults.GatewayProxyName})
+					if err != nil {
+						return errors.Wrapf(err, "getting proxies from debug endpoint")
+					}
+					if len(resp.GetProxies()) != 1 {
+						return eris.Errorf("Expected to find 1 proxy, found %d", len(resp.GetProxies()))
+					}
+					if !resp.GetProxies()[0].Equal(referenceProxy) {
+						return eris.Errorf("Expected the proxy from the debug endpoint to equal the proxy from proxyClient")
+					}
+					return nil
+				}, "10s", "1s").ShouldNot(HaveOccurred())
+			})
+		})
 	})
 
 	Context("tests with route tables", func() {
