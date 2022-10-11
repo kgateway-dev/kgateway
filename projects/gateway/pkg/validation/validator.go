@@ -191,7 +191,7 @@ func (v *validator) gatewayUpdate(snap *gloov1snap.ApiSnapshot) bool {
 		return true
 	}
 	//look at the hash of resources that affect the gateway snapshot
-	hashFunc := func(snap *gloov1snap.ApiSnapshot) uint64 {
+	hashFunc := func(snap *gloov1snap.ApiSnapshot) (uint64, error) {
 		toHash := append([]interface{}{}, snap.VirtualHostOptions.AsInterfaces()...)
 		toHash = append(toHash, snap.VirtualServices.AsInterfaces()...)
 		toHash = append(toHash, snap.Gateways.AsInterfaces()...)
@@ -201,11 +201,17 @@ func (v *validator) gatewayUpdate(snap *gloov1snap.ApiSnapshot) bool {
 		toHash = append(toHash, snap.VirtualHostOptions.AsInterfaces()...)
 		hash, err := hashutils.HashAllSafe(nil, toHash...)
 		if err != nil {
-			panic("this error should never happen, as this is safe hasher")
+			contextutils.LoggerFrom(context.Background()).DPanic("this error should never happen, as this is safe hasher")
+			return 0, errors.New("this error should never happen, as this is safe hasher")
 		}
-		return hash
+		return hash, nil
 	}
-	hashChanged := hashFunc(v.latestSnapshot) != hashFunc(snap)
+	oldHash, oldHashErr := hashFunc(v.latestSnapshot)
+	newHash, newHashErr := hashFunc(snap)
+
+	// If we cannot hash then we choose to treat them as different hashes since this is just a performance optimization.
+	// In worst case we'd prefer correctness
+	hashChanged := oldHash != newHash || oldHashErr != nil || newHashErr != nil
 	return hashChanged
 }
 

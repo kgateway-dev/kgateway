@@ -29,13 +29,15 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
+		typedConfig, err := utils.MessageToAny(&envoybuffer.Buffer{
+			MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},
+		})
+		Expect(err).NotTo(HaveOccurred())
 		expectedStageFilter := plugins.StagedHttpFilter{
 			HttpFilter: &envoyhcm.HttpFilter{
 				Name: wellknown.Buffer,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-					TypedConfig: utils.MustMessageToAny(&envoybuffer.Buffer{
-						MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},
-					}),
+					TypedConfig: typedConfig,
 				},
 			},
 

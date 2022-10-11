@@ -2,6 +2,7 @@ package upstreams
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -76,19 +77,23 @@ func (c *hybridUpstreamClient) Register() error {
 }
 
 func (c *hybridUpstreamClient) Read(namespace, name string, opts clients.ReadOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) Write(resource *v1.Upstream, opts clients.WriteOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return fmt.Errorf(notImplementedErrMsg)
 }
 
 func (rc *hybridUpstreamClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) List(namespace string, opts clients.ListOpts) (v1.UpstreamList, error) {
@@ -156,10 +161,10 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 	go func() {
 		var previousHash uint64
 
-		// return success for the sync (ie if there still needs changes its a false)
+		// return success for the sync (ie if there still needs changes or there is a hash error it's a false)
 		syncFunc := func() bool {
-			currentHash := current.hash()
-			if currentHash == previousHash {
+			currentHash, err := current.hash()
+			if currentHash == previousHash && err == nil {
 				return true
 			}
 			toSend := current.clone()
