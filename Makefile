@@ -189,7 +189,7 @@ install-test-tools:
 # requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
 
 .PHONY: run-tests
-run-tests: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+run-tests: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified (see https://github.com/solo-io/gloo/blob/master/test/e2e/README.md)
 ifneq ($(RELEASE), "true")
 	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
 endif
