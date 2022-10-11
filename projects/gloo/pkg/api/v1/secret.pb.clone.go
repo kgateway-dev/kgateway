@@ -117,6 +117,18 @@ func (m *Secret) Clone() proto.Message {
 			}
 		}
 
+	case *Secret_Credentials:
+
+		if h, ok := interface{}(m.GetCredentials()).(clone.Cloner); ok {
+			target.Kind = &Secret_Credentials{
+				Credentials: h.Clone().(*AccountCredentialsSecret),
+			}
+		} else {
+			target.Kind = &Secret_Credentials{
+				Credentials: proto.Clone(m.GetCredentials()).(*AccountCredentialsSecret),
+			}
+		}
+
 	case *Secret_Extensions:
 
 		if h, ok := interface{}(m.GetExtensions()).(clone.Cloner); ok {
@@ -216,7 +228,7 @@ func (m *AccountCredentialsSecret) Clone() proto.Message {
 	}
 	target = &AccountCredentialsSecret{}
 
-	target.User = m.GetUser()
+	target.Username = m.GetUsername()
 
 	target.Password = m.GetPassword()
 

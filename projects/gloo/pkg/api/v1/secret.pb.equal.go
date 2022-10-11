@@ -148,6 +148,21 @@ func (m *Secret) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Secret_Credentials:
+		if _, ok := target.Kind.(*Secret_Credentials); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetCredentials()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCredentials()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetCredentials(), target.GetCredentials()) {
+				return false
+			}
+		}
+
 	case *Secret_Extensions:
 		if _, ok := target.Kind.(*Secret_Extensions); !ok {
 			return false
@@ -336,7 +351,7 @@ func (m *AccountCredentialsSecret) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetUser(), target.GetUser()) != 0 {
+	if strings.Compare(m.GetUsername(), target.GetUsername()) != 0 {
 		return false
 	}
 
