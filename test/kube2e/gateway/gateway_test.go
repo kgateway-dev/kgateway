@@ -981,11 +981,11 @@ var _ = Describe("Kube2e: gateway", func() {
 				Eventually(func() error {
 					referenceProxy, err := resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 					if err != nil {
-						return err
+						return errors.Wrapf(err, "reading proxy CR from cluster")
 					}
 					resp, err := debugClient.GetProxies(ctx, &debug.ProxyEndpointRequest{Namespace: testHelper.InstallNamespace, Name: defaults.GatewayProxyName})
 					if err != nil {
-						return err
+						return errors.Wrapf(err, "getting proxies from debug endpoint")
 					}
 					if len(resp.GetProxies()) != 1 {
 						return eris.Errorf("Expected to find 1 proxy, found %d", len(resp.GetProxies()))
