@@ -100,11 +100,11 @@ func (m *RuleSetFromConfigMap) Clone() proto.Message {
 		target.ConfigmapLocation = proto.Clone(m.GetConfigmapLocation()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 	}
 
-	if m.GetDataMapKey() != nil {
-		target.DataMapKey = make([]string, len(m.GetDataMapKey()))
-		for idx, v := range m.GetDataMapKey() {
+	if m.GetDataMapKeys() != nil {
+		target.DataMapKeys = make([]string, len(m.GetDataMapKeys()))
+		for idx, v := range m.GetDataMapKeys() {
 
-			target.DataMapKey[idx] = v
+			target.DataMapKeys[idx] = v
 
 		}
 	}

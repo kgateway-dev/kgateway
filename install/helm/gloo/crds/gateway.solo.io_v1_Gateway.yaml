@@ -832,7 +832,7 @@ spec:
                                     namespace:
                                       type: string
                                   type: object
-                                dataMapKey:
+                                dataMapKeys:
                                   items:
                                     type: string
                                   type: array
@@ -2124,7 +2124,7 @@ spec:
                                               namespace:
                                                 type: string
                                             type: object
-                                          dataMapKey:
+                                          dataMapKeys:
                                             items:
                                               type: string
                                             type: array

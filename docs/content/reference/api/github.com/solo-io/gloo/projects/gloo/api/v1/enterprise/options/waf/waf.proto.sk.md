@@ -62,14 +62,14 @@ weight: 5
 
 ```yaml
 "configmapLocation": .core.solo.io.ResourceRef
-"dataMapKey": []string
+"dataMapKeys": []string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `configmapLocation` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | the configmap fromm which the rules will be taken. |
-| `dataMapKey` | `[]string` | If the configmap has multiple Key-Value pairs in the Data map (Ex: when a config map is created from multiple file sources) you can use dataMapKey to select which rules and the order you want them included. If included - Desired Keys and their order from the Data Map of a configmap. If not included - The rules will be configured in order of sorted keys from the Data map of the configmap. This may not be the order they appear in the configmap. |
+| `dataMapKeys` | `[]string` | If the configmap has multiple Key-Value pairs in the Data map (Ex: when a config map is created from multiple file sources) you can use dataMapKey to select which rules and the order you want them included. If included - Desired Keys and their order from the Data Map of a configmap. If not included - The rules will be configured in order of sorted keys from the Data map of the configmap. This may not be the order they appear in the configmap. |
 
 
 

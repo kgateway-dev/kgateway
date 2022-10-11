@@ -150,12 +150,12 @@ func (m *RuleSetFromConfigMap) Equal(that interface{}) bool {
 		}
 	}
 
-	if len(m.GetDataMapKey()) != len(target.GetDataMapKey()) {
+	if len(m.GetDataMapKeys()) != len(target.GetDataMapKeys()) {
 		return false
 	}
-	for idx, v := range m.GetDataMapKey() {
+	for idx, v := range m.GetDataMapKeys() {
 
-		if strings.Compare(v, target.GetDataMapKey()[idx]) != 0 {
+		if strings.Compare(v, target.GetDataMapKeys()[idx]) != 0 {
 			return false
 		}
 
