@@ -1591,6 +1591,7 @@ message ExtAuthConfig {
     // How to handle processing of named configs within an auth config chain.
     // An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )`
     // The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
+    // Defaults to an empty string, which is interpreted as `and`-ing the configs.
     google.protobuf.StringValue boolean_expr = 10;
 
     // How the service should handle a redirect response from an OIDC issuer. In the default false mode,
