@@ -275,7 +275,13 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if glooOpts.Settings.GetGateway().GetPersistProxySpec() == nil {
 		glooOpts.Settings.GetGateway().PersistProxySpec = &wrapperspb.BoolValue{Value: false}
 	}
+	if glooOpts.Settings.GetGateway().GetPersistProxySpec().GetValue() {
+		glooOpts.Settings.GetGateway().PersistProxySpec = &wrapperspb.BoolValue{Value: false}
+	}
 	if glooOpts.Settings.GetGateway().GetEnableGatewayController() == nil {
+		glooOpts.Settings.GetGateway().EnableGatewayController = &wrapperspb.BoolValue{Value: false}
+	}
+	if glooOpts.Settings.GetGateway().GetEnableGatewayController().GetValue() {
 		glooOpts.Settings.GetGateway().EnableGatewayController = &wrapperspb.BoolValue{Value: false}
 	}
 
