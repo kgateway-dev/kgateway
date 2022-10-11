@@ -207,3 +207,18 @@ func (m *HeaderSecret) Clone() proto.Message {
 
 	return target
 }
+
+// Clone function
+func (m *AccountCredentialsSecret) Clone() proto.Message {
+	var target *AccountCredentialsSecret
+	if m == nil {
+		return target
+	}
+	target = &AccountCredentialsSecret{}
+
+	target.User = m.GetUser()
+
+	target.Password = m.GetPassword()
+
+	return target
+}

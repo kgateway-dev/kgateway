@@ -1390,12 +1390,14 @@ is requested (meaning that all the polled connections are in use), the connectio
 
 
 ```yaml
+"credentialsSecretRef": .core.solo.io.ResourceRef
 "checkGroupsWithServiceAccount": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `credentialsSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Reference to an AccountCredentialsSecret to use to authenticate as the service account. |
 | `checkGroupsWithServiceAccount` | `bool` | If true, Gloo will use the service account to check group membership. |
 
 

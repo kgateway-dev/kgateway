@@ -1047,10 +1047,11 @@ message Ldap {
 }
 
 message LdapServiceAccount {
+    // Reference to an AccountCredentialsSecret to use to authenticate as the service account
+    core.solo.io.ResourceRef credentials_secret_ref = 1;
     // If true, Gloo will use the service account to check group membership
-    bool check_groups_with_service_account = 1;
+    bool check_groups_with_service_account = 2;
 }
-
 // Authorizes requests by querying a custom extauth server.
 message PassThroughAuth {
 

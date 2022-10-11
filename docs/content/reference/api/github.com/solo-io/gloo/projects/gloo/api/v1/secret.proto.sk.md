@@ -16,6 +16,7 @@ weight: 5
 - [AzureSecret](#azuresecret)
 - [TlsSecret](#tlssecret)
 - [HeaderSecret](#headersecret)
+- [AccountCredentialsSecret](#accountcredentialssecret)
   
 
 
@@ -186,6 +187,25 @@ metadata:
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `headers` | `map<string, string>` | A collection of header name to header value mappings, each representing an additional header that could be added to a request. Provided by `glooctl create secret header`. |
+
+
+
+
+---
+### AccountCredentialsSecret
+
+
+
+```yaml
+"user": string
+"password": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `user` | `string` |  |
+| `password` | `string` |  |
 
 
 

@@ -314,3 +314,35 @@ func (m *HeaderSecret) Equal(that interface{}) bool {
 
 	return true
 }
+
+// Equal function
+func (m *AccountCredentialsSecret) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AccountCredentialsSecret)
+	if !ok {
+		that2, ok := that.(AccountCredentialsSecret)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetUser(), target.GetUser()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetPassword(), target.GetPassword()) != 0 {
+		return false
+	}
+
+	return true
+}

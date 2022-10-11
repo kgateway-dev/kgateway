@@ -1308,6 +1308,12 @@ func (m *LdapServiceAccount) Clone() proto.Message {
 	}
 	target = &LdapServiceAccount{}
 
+	if h, ok := interface{}(m.GetCredentialsSecretRef()).(clone.Cloner); ok {
+		target.CredentialsSecretRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.CredentialsSecretRef = proto.Clone(m.GetCredentialsSecretRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
 	target.CheckGroupsWithServiceAccount = m.GetCheckGroupsWithServiceAccount()
 
 	return target

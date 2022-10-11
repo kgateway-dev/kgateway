@@ -352,3 +352,27 @@ func (m *HeaderSecret) Hash(hasher hash.Hash64) (uint64, error) {
 
 	return hasher.Sum64(), nil
 }
+
+// Hash function
+func (m *AccountCredentialsSecret) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.AccountCredentialsSecret")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetUser())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetPassword())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
