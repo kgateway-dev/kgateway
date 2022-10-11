@@ -3,6 +3,8 @@ package helpers
 import (
 	"time"
 
+	errorsBuiltIn "errors"
+
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -56,12 +58,20 @@ func (s snapshotWriterImpl) doWriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, 
 	// the parent resource
 
 	for _, secret := range snapshot.Secrets {
-		if _, writeErr := s.SecretClient().Write(secret, writeOptions); !s.isContinuableWriteError(writeErr) {
+		secretClient := s.SecretClient()
+		if secretClient == nil {
+			return errorsBuiltIn.New("SecretClient on current snapshotWriterImpl is nil")
+		}
+		if _, writeErr := secretClient.Write(secret, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, artifact := range snapshot.Artifacts {
-		if _, writeErr := s.ArtifactClient().Write(artifact, writeOptions); !s.isContinuableWriteError(writeErr) {
+		artifactClient := s.ArtifactClient()
+		if artifactClient == nil {
+			return errorsBuiltIn.New("ArtifactClient on current snapshotWriterImpl is nil")
+		}
+		if _, writeErr := artifactClient.Write(artifact, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
@@ -190,13 +200,21 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 	}
 	for _, secret := range snapshot.Secrets {
 		secretNamespace, secretName := secret.GetMetadata().Ref().Strings()
-		if deleteErr := s.SecretClient().Delete(secretNamespace, secretName, deleteOptions); deleteErr != nil {
+		secretClient := s.SecretClient()
+		if secretClient == nil {
+			return errorsBuiltIn.New("SecretClient on current snapshotWriterImpl is nil")
+		}
+		if deleteErr := secretClient.Delete(secretNamespace, secretName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
 	for _, artifact := range snapshot.Artifacts {
 		artifactNamespace, artifactName := artifact.GetMetadata().Ref().Strings()
-		if deleteErr := s.SecretClient().Delete(artifactNamespace, artifactName, deleteOptions); deleteErr != nil {
+		secretClient := s.SecretClient()
+		if secretClient == nil {
+			return errorsBuiltIn.New("SecretClient on current snapshotWriterImpl is nil")
+		}
+		if deleteErr := secretClient.Delete(artifactNamespace, artifactName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}

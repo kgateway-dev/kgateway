@@ -108,9 +108,13 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		// TODO(yuval-k): Add verification context
 		Sni: lambdaHostname,
 	}
+	typedConfig, err := utils.MessageToAny(tlsContext)
+	if err != nil {
+		return err
+	}
 	out.TransportSocket = &envoy_config_core_v3.TransportSocket{
 		Name:       wellknown.TransportSocketTls,
-		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(tlsContext)},
+		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 	}
 
 	var accessKey, sessionToken, secretKey string

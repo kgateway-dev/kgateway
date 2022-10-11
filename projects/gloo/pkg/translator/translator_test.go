@@ -2,6 +2,7 @@ package translator_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
@@ -184,7 +185,7 @@ var _ = Describe("Translator", func() {
 	justBeforeEach := func() {
 		pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 
-		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, MustEnvoyCacheResourcesListToFnvHash)
+		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",
@@ -349,6 +350,18 @@ var _ = Describe("Translator", func() {
 	translateWithError := func() *validation.ProxyReport {
 		_, errs, report := translator.Translate(params, proxy)
 		ExpectWithOffset(1, errs.Validate()).To(HaveOccurred())
+		return report
+	}
+
+	translateWithBuggyHasher := func() *validation.ProxyReport {
+		buggyHasher := func(resources []envoycache.Resource) (uint64, error) {
+			return 0, errors.New("This is a buggy hasher error")
+		}
+		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, registry.NewPluginRegistry(registeredPlugins), buggyHasher)
+		snapshot, _, report := translator.Translate(params, proxy)
+		Expect(snapshot.GetResources(types.EndpointTypeV3).Version).To(Equal("endpoints-hashErr"))
+		Expect(snapshot.GetResources(types.ClusterTypeV3).Version).To(Equal("clusters-hashErr"))
+		Expect(snapshot.GetResources(types.ListenerTypeV3).Version).To(Equal("listeners-hashErr"))
 		return report
 	}
 
@@ -1023,6 +1036,14 @@ var _ = Describe("Translator", func() {
 			upstream.OutlierDetection = api_conversion.ToGlooOutlierDetection(expectedResult)
 			report := translateWithError()
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
+		})
+
+		It("doesnt add resources to snapshot if hashing error", func() {
+			params = plugins.Params{
+				Ctx:      context.Background(),
+				Snapshot: &v1snap.ApiSnapshot{},
+			}
+			translateWithBuggyHasher()
 		})
 
 		It("can translate health check with secret header", func() {
