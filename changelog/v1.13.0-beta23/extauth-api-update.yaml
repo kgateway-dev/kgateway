@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add the API required to configure extauth to look up group membership using a service account.
+    issueLink: https://github.com/solo-io/ext-auth-service/issues/404
+    resolvesIssue: false
