@@ -1666,61 +1666,6 @@ spec:
 						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
 					})
 
-					It("can set circuitBreakers", func() {
-						name := defaults.GatewayProxyName
-						bindPort := "8080"
-						ssl := "false"
-						gwYaml := `apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: ` + name + `
-  namespace: gloo-system
-  labels:
-    app: gloo
-spec:
-  bindAddress: "::"
-  bindPort: ` + bindPort + `
-  httpGateway: {}
-  circuitBreakers:
-    maxConnections: 400000
-    maxRequests: 4000000
-    maxPendingRequests: 250000
-    maxRetries: 50
-  useProxyProto: false
-  ssl: ` + ssl + `
-  proxyNames:
-  - gateway-proxy`
-						prepareMakefileFromValuesFile("values/val_default_gateway_access_logging_service.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
-
-						name = defaults.GatewayProxyName + "-ssl"
-						bindPort = "8443"
-						ssl = "true"
-						gwSslYaml := `apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: ` + name + `
-  namespace: gloo-system
-  labels:
-    app: gloo
-spec:
-  bindAddress: "::"
-  bindPort: ` + bindPort + `
-  httpGateway: {}
-  options:
-    accessLoggingService:
-      accessLog:
-      - fileSink:
-          path: /dev/stdout
-          stringFormat: ""
-  useProxyProto: false
-  ssl: ` + ssl + `
-  proxyNames:
-  - gateway-proxy`
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml))
-					})
-
 					It("can set accessLoggingService", func() {
 						name := defaults.GatewayProxyName
 						bindPort := "8080"
