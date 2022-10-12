@@ -157,10 +157,14 @@ func (p *plugin) tcpProxyFilters(
 			Cluster: "",
 		}
 		// append empty sni-forward-filter to pass the SNI name to the cluster field above
+		typedConfig, err := utils.MessageToAny(&envoy_extensions_filters_network_sni_cluster_v3.SniCluster{})
+		if err != nil {
+			return nil, err
+		}
 		filters = append(filters, &envoy_config_listener_v3.Filter{
 			Name: SniFilter,
 			ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
-				TypedConfig: utils.MustMessageToAny(&envoy_extensions_filters_network_sni_cluster_v3.SniCluster{}),
+				TypedConfig: typedConfig,
 			},
 		})
 	default:
@@ -221,7 +225,7 @@ func (p *plugin) computeTcpFilterChain(
 	if err != nil {
 		return nil, InvalidSecretsError(err, host.GetName())
 	}
-	return p.newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters, sslConfig.GetTransportSocketConnectTimeout()), nil
+	return p.newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters, sslConfig.GetTransportSocketConnectTimeout())
 }
 
 func (p *plugin) newSslFilterChain(
@@ -229,14 +233,17 @@ func (p *plugin) newSslFilterChain(
 	sniDomains []string,
 	listenerFilters []*envoy_config_listener_v3.Filter,
 	timeout *duration.Duration,
-) *envoy_config_listener_v3.FilterChain {
+) (*envoy_config_listener_v3.FilterChain, error) {
 
 	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
 	listenerFiltersCopy := make([]*envoy_config_listener_v3.Filter, len(listenerFilters))
 	for i, lf := range listenerFilters {
 		listenerFiltersCopy[i] = proto.Clone(lf).(*envoy_config_listener_v3.Filter)
 	}
-
+	typedConfig, err := utils.MessageToAny(downstreamConfig)
+	if err != nil {
+		return nil, err
+	}
 	return &envoy_config_listener_v3.FilterChain{
 		FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{
 			ServerNames: sniDomains,
@@ -244,10 +251,10 @@ func (p *plugin) newSslFilterChain(
 		Filters: listenerFiltersCopy,
 		TransportSocket: &envoy_config_core_v3.TransportSocket{
 			Name:       wellknown.TransportSocketTls,
-			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamConfig)},
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 		},
 		TransportSocketConnectTimeout: timeout,
-	}
+	}, nil
 }
 
 func convertToEnvoyTunnelingConfig(config *tcp.TcpProxySettings_TunnelingConfig) *envoytcp.TcpProxy_TunnelingConfig {

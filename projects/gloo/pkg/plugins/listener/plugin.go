@@ -30,7 +30,7 @@ func (p *plugin) Name() string {
 func (p *plugin) Init(_ plugins.InitParams) {
 }
 
-// Used to set config that are directly on the [Envoy listener](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/listener.proto)
+// Used to set config that are directly on the [Envoy listener](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto)
 func (p *plugin) ProcessListener(_ plugins.Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error {
 	if in.GetOptions().GetPerConnectionBufferLimitBytes().GetValue() != 0 {
 		out.PerConnectionBufferLimitBytes = in.GetOptions().GetPerConnectionBufferLimitBytes()

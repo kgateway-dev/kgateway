@@ -40,7 +40,6 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 	upstreamsToDetect := selectUpstreamsForDiscovery(s.fdsMode, snap.Upstreams, snap.Kubenamespaces)
-
 	return s.fd.Update(upstreamsToDetect, snap.Secrets)
 }
 
@@ -68,7 +67,8 @@ func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, u
 	case v1.Settings_DiscoveryOptions_WHITELIST:
 		return selectUpstreamsWhitelist(upstreams, whitelistNamespaces, blacklistNamespaces)
 	}
-	panic("invalid fds mode: " + fdsMode.String())
+	contextutils.LoggerFrom(context.Background()).DPanic("invalid fds mode, falling back to blacklist fds mode: " + fdsMode.String())
+	return selectUpstreamsBlacklist(upstreams, blacklistNamespaces)
 }
 
 func isBlacklistedUpstream(us *v1.Upstream) bool {
