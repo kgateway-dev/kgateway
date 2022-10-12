@@ -28,6 +28,7 @@ type Opts struct {
 }
 
 type ValidationOpts struct {
+	ServerEnabled                bool
 	ProxyValidationServerAddress string
 	ValidatingWebhookPort        int
 	ValidatingWebhookCertPath    string

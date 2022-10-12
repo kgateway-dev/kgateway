@@ -833,7 +833,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	// Start the validation webhook
 	validationServerErr := make(chan error, 1)
-	if gwOpts.Validation != nil {
+	if gwOpts.Validation != nil && gwOpts.Validation.ServerEnabled == true {
 		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
 		// ReadGatewaysFromAllNamespaces is false
 		if !gwOpts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
@@ -1080,6 +1080,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		// allow user to explicitly disable validation server
 		validationServerEnabled = validationCfg.GetServerEnabled().GetValue()
 	}
+	validation.ServerEnabled = validationServerEnabled
 
 	var gatewayMode bool
 	if settings.GetGateway().GetEnableGatewayController() != nil {
