@@ -3504,7 +3504,9 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"settings.circuitBreakers.maxConnections=1024",
+								"settings.circuitBreakers.maxPendingRequests=1024",
 								"settings.circuitBreakers.maxRequests=1024",
+								"settings.circuitBreakers.maxRetries=3",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
