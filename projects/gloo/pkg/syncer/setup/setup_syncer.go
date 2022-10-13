@@ -831,7 +831,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
-	// Start the validation webhook
+	// Start the validation webhook if the user has not opted out of the validation server
 	validationServerErr := make(chan error, 1)
 	if gwOpts.Validation != nil && gwOpts.Validation.ServerEnabled == true {
 		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
