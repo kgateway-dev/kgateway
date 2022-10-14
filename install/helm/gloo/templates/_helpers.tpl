@@ -20,7 +20,11 @@ ClusterRole
 Expand the name of a container image, adding -fips to the name of the repo if configured.
 */}}
 {{- define "gloo.image" -}}
+{{- if and .fips .fipsDigest -}}
+{{ .registry }}/{{ .repository }}-fips:{{ .tag }}@{{ .fipsDigest }}
+{{- else -}}
 {{ .registry }}/{{ .repository }}{{ ternary "-fips" "" ( and (has .repository (list "gloo-ee" "extauth-ee" "gloo-ee-envoy-wrapper" "rate-limit-ee" )) (default false .fips)) }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}{{- if .digest -}}@{{ .digest }}{{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "gloo.pullSecret" -}}
