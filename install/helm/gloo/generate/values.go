@@ -50,6 +50,7 @@ type Image struct {
 	Tag        *string `json:"tag,omitempty"  desc:"The image tag for the container."`
 	Repository *string `json:"repository,omitempty"  desc:"The image repository (name) for the container."`
 	Digest     *string `json:"digest,omitempty"  desc:"The hash digest of the container's image, ie. sha256:12345...."`
+	FipsDigest *string `json:"fipsDigest,omitempty"  desc:"The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true"`
 	Registry   *string `json:"registry,omitempty" desc:"The image hostname prefix and registry, such as quay.io/solo-io."`
 	PullPolicy *string `json:"pullPolicy,omitempty"  desc:"The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting"`
 	PullSecret *string `json:"pullSecret,omitempty" desc:"The image pull secret to use for the container, in the same namespace as the container pod."`
