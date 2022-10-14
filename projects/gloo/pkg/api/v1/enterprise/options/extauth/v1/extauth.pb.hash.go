@@ -4963,6 +4963,120 @@ func (m *ExtAuthConfig_OpaAuthConfig) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+func (m *ExtAuthConfig_LdapConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_LdapConfig")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAddress())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetUserDnTemplate())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetMembershipAttributeName())); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetAllowedGroups() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetPool()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Pool")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetPool(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Pool")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if _, err = hasher.Write([]byte(m.GetSearchFilter())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetDisableGroupChecking())
+	if err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetGroupLookupSettings()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("GroupLookupSettings")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetGroupLookupSettings(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("GroupLookupSettings")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ExtAuthConfig_LdapServiceAccountConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_LdapServiceAccountConfig")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetUsername())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetPassword())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetCheckGroupsWithServiceAccount())
+	if err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *ExtAuthConfig_Config) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -5422,6 +5536,62 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata) Hash(hasher hash.Hash64) (u
 			return 0, err
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ExtAuthConfig_LdapConfig_ConnectionPool) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_LdapConfig_ConnectionPool")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetMaxSize()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("MaxSize")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetMaxSize(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("MaxSize")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetInitialSize()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("InitialSize")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetInitialSize(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("InitialSize")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil

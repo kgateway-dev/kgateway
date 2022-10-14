@@ -2683,6 +2683,65 @@ func (m *ExtAuthConfig_OpaAuthConfig) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_LdapConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_LdapConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_LdapConfig{}
+
+	target.Address = m.GetAddress()
+
+	target.UserDnTemplate = m.GetUserDnTemplate()
+
+	target.MembershipAttributeName = m.GetMembershipAttributeName()
+
+	if m.GetAllowedGroups() != nil {
+		target.AllowedGroups = make([]string, len(m.GetAllowedGroups()))
+		for idx, v := range m.GetAllowedGroups() {
+
+			target.AllowedGroups[idx] = v
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetPool()).(clone.Cloner); ok {
+		target.Pool = h.Clone().(*ExtAuthConfig_LdapConfig_ConnectionPool)
+	} else {
+		target.Pool = proto.Clone(m.GetPool()).(*ExtAuthConfig_LdapConfig_ConnectionPool)
+	}
+
+	target.SearchFilter = m.GetSearchFilter()
+
+	target.DisableGroupChecking = m.GetDisableGroupChecking()
+
+	if h, ok := interface{}(m.GetGroupLookupSettings()).(clone.Cloner); ok {
+		target.GroupLookupSettings = h.Clone().(*LdapServiceAccount)
+	} else {
+		target.GroupLookupSettings = proto.Clone(m.GetGroupLookupSettings()).(*LdapServiceAccount)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_LdapServiceAccountConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_LdapServiceAccountConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_LdapServiceAccountConfig{}
+
+	target.Username = m.GetUsername()
+
+	target.Password = m.GetPassword()
+
+	target.CheckGroupsWithServiceAccount = m.GetCheckGroupsWithServiceAccount()
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_Config) Clone() proto.Message {
 	var target *ExtAuthConfig_Config
 	if m == nil {
@@ -2940,6 +2999,29 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata) Clone() proto.Message {
 			target.Metadata[k] = v
 
 		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_LdapConfig_ConnectionPool) Clone() proto.Message {
+	var target *ExtAuthConfig_LdapConfig_ConnectionPool
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_LdapConfig_ConnectionPool{}
+
+	if h, ok := interface{}(m.GetMaxSize()).(clone.Cloner); ok {
+		target.MaxSize = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.MaxSize = proto.Clone(m.GetMaxSize()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
+
+	if h, ok := interface{}(m.GetInitialSize()).(clone.Cloner); ok {
+		target.InitialSize = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.InitialSize = proto.Clone(m.GetInitialSize()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
 	return target

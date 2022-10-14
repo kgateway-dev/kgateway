@@ -4506,6 +4506,117 @@ func (m *ExtAuthConfig_OpaAuthConfig) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ExtAuthConfig_LdapConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_LdapConfig)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_LdapConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetAddress(), target.GetAddress()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetUserDnTemplate(), target.GetUserDnTemplate()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetMembershipAttributeName(), target.GetMembershipAttributeName()) != 0 {
+		return false
+	}
+
+	if len(m.GetAllowedGroups()) != len(target.GetAllowedGroups()) {
+		return false
+	}
+	for idx, v := range m.GetAllowedGroups() {
+
+		if strings.Compare(v, target.GetAllowedGroups()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetPool()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPool()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPool(), target.GetPool()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetSearchFilter(), target.GetSearchFilter()) != 0 {
+		return false
+	}
+
+	if m.GetDisableGroupChecking() != target.GetDisableGroupChecking() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetGroupLookupSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGroupLookupSettings()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGroupLookupSettings(), target.GetGroupLookupSettings()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_LdapServiceAccountConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_LdapServiceAccountConfig)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_LdapServiceAccountConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetUsername(), target.GetUsername()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetPassword(), target.GetPassword()) != 0 {
+		return false
+	}
+
+	if m.GetCheckGroupsWithServiceAccount() != target.GetCheckGroupsWithServiceAccount() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -4925,6 +5036,50 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata) Equal(that interface{}) boo
 			return false
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_LdapConfig_ConnectionPool) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_LdapConfig_ConnectionPool)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_LdapConfig_ConnectionPool)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetMaxSize()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxSize()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxSize(), target.GetMaxSize()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetInitialSize()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetInitialSize()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetInitialSize(), target.GetInitialSize()) {
+			return false
+		}
 	}
 
 	return true

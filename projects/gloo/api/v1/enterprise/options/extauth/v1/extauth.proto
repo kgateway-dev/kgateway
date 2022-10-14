@@ -1041,8 +1041,7 @@ message Ldap {
     bool disable_group_checking = 7;
 
     // Settings for using a separate service account for looking up group membership
-    // To use this, you also need to configure credentials
-    // TODO: secret name
+    // To use this, you also need to configure credentials in a secret
     LdapServiceAccount group_lookup_settings = 8;
 }
 
@@ -1564,7 +1563,56 @@ message ExtAuthConfig {
         // Additional Options for Opa Auth configuration.
         OpaAuthOptions options = 3;
     }
+    message LdapConfig {
+        // Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
+        // is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
+        message ConnectionPool {
+            // Maximum number connections that are pooled at any give time. The default value is 5.
+            google.protobuf.UInt32Value maxSize = 1;
+            // Number of connections that the pool will be pre-populated with upon initialization. The default value is 2.
+            google.protobuf.UInt32Value initialSize = 2;
+        }
 
+        // Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`.
+        string address = 1;
+
+        // Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder.
+        // When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the
+        // placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope).
+        // E.g. "uid=%s,ou=people,dc=solo,dc=io"
+        string userDnTemplate = 2;
+
+        // Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look
+        // for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided.
+        string membershipAttributeName = 3;
+
+        // In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must
+        // contain at least of one of the group DNs specified via this option.
+        // E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }
+        repeated string allowedGroups = 4;
+
+        // Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
+        ConnectionPool pool = 5;
+
+        // Use to set a custom filter when searching a member. Defaults to "(uid=*)".
+        string searchFilter = 6;
+
+        // Disables group checking, regardless of the value for allowedGroups,
+        // and disables validation for the membership attribute of the user entry.
+        // Group checking is enabled by default.
+        bool disable_group_checking = 7;
+
+        // Settings for using a separate service account for looking up group membership
+        // To use this, you also need to configure credentials
+        LdapServiceAccount group_lookup_settings = 8;
+    }
+    message LdapServiceAccountConfig {
+        // username and password are taken from the secret during gloo-ee translation
+        string username = 1;
+        string password = 2;
+        // If true, Gloo will use the service account to check group membership
+        bool check_groups_with_service_account = 3;
+    }
     message Config {
 
         reserved 1, 2;

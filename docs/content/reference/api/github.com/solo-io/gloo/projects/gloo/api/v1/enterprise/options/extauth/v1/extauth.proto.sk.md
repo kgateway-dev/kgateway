@@ -84,6 +84,9 @@ weight: 5
 - [ApiKeyAuthConfig](#apikeyauthconfig)
 - [KeyMetadata](#keymetadata)
 - [OpaAuthConfig](#opaauthconfig)
+- [LdapConfig](#ldapconfig)
+- [ConnectionPool](#connectionpool)
+- [LdapServiceAccountConfig](#ldapserviceaccountconfig)
 - [Config](#config)
 - [ApiKeyCreateRequest](#apikeycreaterequest)
 - [ApiKeyCreateResponse](#apikeycreateresponse)
@@ -1358,7 +1361,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 | `pool` | [.enterprise.gloo.solo.io.Ldap.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |
 | `searchFilter` | `string` | Use to set a custom filter when searching a member. Defaults to "(uid=*)". |
 | `disableGroupChecking` | `bool` | Disables group checking, regardless of the value for allowedGroups, and disables validation for the membership attribute of the user entry. Group checking is enabled by default. |
-| `groupLookupSettings` | [.enterprise.gloo.solo.io.LdapServiceAccount](../extauth.proto.sk/#ldapserviceaccount) | Settings for using a separate service account for looking up group membership To use this, you also need to configure credentials TODO: secret name. |
+| `groupLookupSettings` | [.enterprise.gloo.solo.io.LdapServiceAccount](../extauth.proto.sk/#ldapserviceaccount) | Settings for using a separate service account for looking up group membership To use this, you also need to configure credentials in a secret. |
 
 
 
@@ -1916,6 +1919,79 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `modules` | `map<string, string>` | An optional modules (filename, module content) maps containing modules assist in the resolution of `query`. |
 | `query` | `string` | The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied. |
 | `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional Options for Opa Auth configuration. |
+
+
+
+
+---
+### LdapConfig
+
+
+
+```yaml
+"address": string
+"userDnTemplate": string
+"membershipAttributeName": string
+"allowedGroups": []string
+"pool": .enterprise.gloo.solo.io.ExtAuthConfig.LdapConfig.ConnectionPool
+"searchFilter": string
+"disableGroupChecking": bool
+"groupLookupSettings": .enterprise.gloo.solo.io.LdapServiceAccount
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `address` | `string` | Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`. |
+| `userDnTemplate` | `string` | Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder. When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope). E.g. "uid=%s,ou=people,dc=solo,dc=io". |
+| `membershipAttributeName` | `string` | Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided. |
+| `allowedGroups` | `[]string` | In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }. |
+| `pool` | [.enterprise.gloo.solo.io.ExtAuthConfig.LdapConfig.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |
+| `searchFilter` | `string` | Use to set a custom filter when searching a member. Defaults to "(uid=*)". |
+| `disableGroupChecking` | `bool` | Disables group checking, regardless of the value for allowedGroups, and disables validation for the membership attribute of the user entry. Group checking is enabled by default. |
+| `groupLookupSettings` | [.enterprise.gloo.solo.io.LdapServiceAccount](../extauth.proto.sk/#ldapserviceaccount) | Settings for using a separate service account for looking up group membership To use this, you also need to configure credentials. |
+
+
+
+
+---
+### ConnectionPool
+
+ 
+Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
+is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
+
+```yaml
+"maxSize": .google.protobuf.UInt32Value
+"initialSize": .google.protobuf.UInt32Value
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `maxSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Maximum number connections that are pooled at any give time. The default value is 5. |
+| `initialSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Number of connections that the pool will be pre-populated with upon initialization. The default value is 2. |
+
+
+
+
+---
+### LdapServiceAccountConfig
+
+
+
+```yaml
+"username": string
+"password": string
+"checkGroupsWithServiceAccount": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `username` | `string` | username and password are taken from the secret during gloo-ee translation. |
+| `password` | `string` |  |
+| `checkGroupsWithServiceAccount` | `bool` | If true, Gloo will use the service account to check group membership. |
 
 
 
