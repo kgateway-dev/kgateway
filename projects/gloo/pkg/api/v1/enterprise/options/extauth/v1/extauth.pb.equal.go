@@ -4754,6 +4754,21 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 			}
 		}
 
+	case *ExtAuthConfig_Config_LdapInternal:
+		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_LdapInternal); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetLdapInternal()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetLdapInternal()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetLdapInternal(), target.GetLdapInternal()) {
+				return false
+			}
+		}
+
 	case *ExtAuthConfig_Config_Jwt:
 		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_Jwt); !ok {
 			return false

@@ -2841,6 +2841,18 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 			}
 		}
 
+	case *ExtAuthConfig_Config_LdapInternal:
+
+		if h, ok := interface{}(m.GetLdapInternal()).(clone.Cloner); ok {
+			target.AuthConfig = &ExtAuthConfig_Config_LdapInternal{
+				LdapInternal: h.Clone().(*ExtAuthConfig_LdapConfig),
+			}
+		} else {
+			target.AuthConfig = &ExtAuthConfig_Config_LdapInternal{
+				LdapInternal: proto.Clone(m.GetLdapInternal()).(*ExtAuthConfig_LdapConfig),
+			}
+		}
+
 	case *ExtAuthConfig_Config_Jwt:
 
 		if h, ok := interface{}(m.GetJwt()).(clone.Cloner); ok {
