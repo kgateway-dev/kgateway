@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Expose the `circuitBreakers` settings field as a Helm chart value.
+  issueLink: https://github.com/solo-io/gloo/issues/7316
