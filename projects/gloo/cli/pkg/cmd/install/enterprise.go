@@ -24,7 +24,9 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 				"license_key":      opts.Install.LicenseKey,
 				"gloo-fed.enabled": opts.Install.WithGlooFed,
 			}
-
+			if opts.Install.LicenseKey == "" {
+				return eris.New("No licence key provided, please re-run the install with the following flag `--license_key=<YOUR-LICENSE-KEY>")
+			}
 			mode := Enterprise
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
