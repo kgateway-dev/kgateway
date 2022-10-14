@@ -66,7 +66,7 @@ var _ = Describe("Install", func() {
 
 	It("should get errors for installing enterprise without license key", func() {
 		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run", file))
-		Expect(err).To(ContainSubstring("No licence key provided, please re-run the install with the following flag `--license_key=<YOUR-LICENSE-KEY>"))
+		Expect(err).To(ContainSubstring("No license key provided, please re-run the install with the following flag `--license-key=<YOUR-LICENSE-KEY>"))
 	})
 
 	It("shouldn't get errors for enterprise dry run without file", func() {
