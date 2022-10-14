@@ -21,6 +21,10 @@ Expand the name of a container image, adding -fips to the name of the repo if co
 */}}
 {{- define "gloo.image" -}}
 {{- if and .fips .fipsDigest -}}
+{{- /*
+In consideration of https://github.com/solo-io/gloo/issues/7326, we want the ability for -fips images to use their own digests,
+rather than falling back (incorrectly) onto the digests of non-fips images
+*/ -}}
 {{ .registry }}/{{ .repository }}-fips:{{ .tag }}@{{ .fipsDigest }}
 {{- else -}}
 {{ .registry }}/{{ .repository }}{{ ternary "-fips" "" ( and (has .repository (list "gloo-ee" "extauth-ee" "gloo-ee-envoy-wrapper" "rate-limit-ee" )) (default false .fips)) }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}{{- if .digest -}}@{{ .digest }}{{- end -}}
