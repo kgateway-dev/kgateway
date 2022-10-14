@@ -1936,7 +1936,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 "pool": .enterprise.gloo.solo.io.ExtAuthConfig.LdapConfig.ConnectionPool
 "searchFilter": string
 "disableGroupChecking": bool
-"groupLookupSettings": .enterprise.gloo.solo.io.LdapServiceAccount
+"groupLookupSettings": .enterprise.gloo.solo.io.ExtAuthConfig.LdapServiceAccountConfig
 
 ```
 
@@ -1949,7 +1949,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `pool` | [.enterprise.gloo.solo.io.ExtAuthConfig.LdapConfig.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |
 | `searchFilter` | `string` | Use to set a custom filter when searching a member. Defaults to "(uid=*)". |
 | `disableGroupChecking` | `bool` | Disables group checking, regardless of the value for allowedGroups, and disables validation for the membership attribute of the user entry. Group checking is enabled by default. |
-| `groupLookupSettings` | [.enterprise.gloo.solo.io.LdapServiceAccount](../extauth.proto.sk/#ldapserviceaccount) | Settings for using a separate service account for looking up group membership To use this, you also need to configure credentials. |
+| `groupLookupSettings` | [.enterprise.gloo.solo.io.ExtAuthConfig.LdapServiceAccountConfig](../extauth.proto.sk/#ldapserviceaccountconfig) | Settings for using a separate service account for looking up group membership To use this, you also need to configure credentials. |
 
 
 

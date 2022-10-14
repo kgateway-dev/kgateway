@@ -2716,9 +2716,9 @@ func (m *ExtAuthConfig_LdapConfig) Clone() proto.Message {
 	target.DisableGroupChecking = m.GetDisableGroupChecking()
 
 	if h, ok := interface{}(m.GetGroupLookupSettings()).(clone.Cloner); ok {
-		target.GroupLookupSettings = h.Clone().(*LdapServiceAccount)
+		target.GroupLookupSettings = h.Clone().(*ExtAuthConfig_LdapServiceAccountConfig)
 	} else {
-		target.GroupLookupSettings = proto.Clone(m.GetGroupLookupSettings()).(*LdapServiceAccount)
+		target.GroupLookupSettings = proto.Clone(m.GetGroupLookupSettings()).(*ExtAuthConfig_LdapServiceAccountConfig)
 	}
 
 	return target

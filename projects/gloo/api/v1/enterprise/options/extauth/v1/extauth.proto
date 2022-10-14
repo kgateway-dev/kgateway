@@ -1604,7 +1604,7 @@ message ExtAuthConfig {
 
         // Settings for using a separate service account for looking up group membership
         // To use this, you also need to configure credentials
-        LdapServiceAccount group_lookup_settings = 8;
+        LdapServiceAccountConfig group_lookup_settings = 8;
     }
     message LdapServiceAccountConfig {
         // username and password are taken from the secret during gloo-ee translation
