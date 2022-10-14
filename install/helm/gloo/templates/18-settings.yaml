@@ -33,6 +33,10 @@ spec:
 {{- if .Values.settings.regexMaxProgramSize }}
     regexMaxProgramSize: {{ .Values.settings.regexMaxProgramSize }}
 {{- end }}
+{{- if .Values.settings.circuitBreakers }}
+    circuitBreakers:
+{{ toYaml .Values.settings.circuitBreakers | indent 6}}
+{{- end }}
 {{- if .Values.settings.aws }}
     awsOptions:
 {{- if .Values.settings.aws.enableServiceAccountCredentials }}
