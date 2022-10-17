@@ -256,6 +256,7 @@
 |gateway.deployment.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.deployment.image.repository|string|gateway|The image repository (name) for the container.|
 |gateway.deployment.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|gateway.deployment.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
 |gateway.deployment.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
 |gateway.deployment.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
 |gateway.deployment.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
