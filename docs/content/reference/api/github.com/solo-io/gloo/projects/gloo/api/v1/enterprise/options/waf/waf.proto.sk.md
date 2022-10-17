@@ -61,14 +61,14 @@ weight: 5
 
 
 ```yaml
-"configmapLocation": .core.solo.io.ResourceRef
+"configmapRef": .core.solo.io.ResourceRef
 "dataMapKeys": []string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `configmapLocation` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The Kubernetes configmap that has the rule sets as values in the `data` section. |
+| `configmapRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The Kubernetes configmap that has the rule sets as values in the `data` section. |
 | `dataMapKeys` | `[]string` | The configmap might have multiple key-value pairs in the `data` section, such as when you create the configmap from multiple files. You can use the `dataMapKey` field to select which rules and the order you want them included. If this field is included, only the specified keys are applied in order. Any rules not included are ignored. If this field is not included, all of the rules in the `data` section of the configmap are sorted and applied. The order might differ from their order in the configmap. |
 
 

@@ -140,12 +140,12 @@ func (m *RuleSetFromConfigMap) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetConfigmapLocation()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetConfigmapLocation()) {
+	if h, ok := interface{}(m.GetConfigmapRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConfigmapRef()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetConfigmapLocation(), target.GetConfigmapLocation()) {
+		if !proto.Equal(m.GetConfigmapRef(), target.GetConfigmapRef()) {
 			return false
 		}
 	}

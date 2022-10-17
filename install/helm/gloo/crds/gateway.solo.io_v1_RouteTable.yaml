@@ -2017,7 +2017,7 @@ spec:
                             configMapRuleSets:
                               items:
                                 properties:
-                                  configmapLocation:
+                                  configmapRef:
                                     properties:
                                       name:
                                         type: string

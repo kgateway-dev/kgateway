@@ -38,7 +38,7 @@ message Settings {
 
 message RuleSetFromConfigMap {
     // The Kubernetes configmap that has the rule sets as values in the `data` section.
-    core.solo.io.ResourceRef configmap_location = 1;
+    core.solo.io.ResourceRef configmap_ref = 1;
     // The configmap might have multiple key-value pairs in the `data` section, such as when you create the configmap from multiple files.
     // You can use the `dataMapKey` field to select which rules and the order you want them included.
     // If this field is included, only the specified keys are applied in order. Any rules not included are ignored.

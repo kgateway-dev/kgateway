@@ -94,10 +94,10 @@ func (m *RuleSetFromConfigMap) Clone() proto.Message {
 	}
 	target = &RuleSetFromConfigMap{}
 
-	if h, ok := interface{}(m.GetConfigmapLocation()).(clone.Cloner); ok {
-		target.ConfigmapLocation = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	if h, ok := interface{}(m.GetConfigmapRef()).(clone.Cloner); ok {
+		target.ConfigmapRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 	} else {
-		target.ConfigmapLocation = proto.Clone(m.GetConfigmapLocation()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+		target.ConfigmapRef = proto.Clone(m.GetConfigmapRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 	}
 
 	if m.GetDataMapKeys() != nil {

@@ -825,7 +825,7 @@ spec:
                           configMapRuleSets:
                             items:
                               properties:
-                                configmapLocation:
+                                configmapRef:
                                   properties:
                                     name:
                                       type: string
@@ -2117,7 +2117,7 @@ spec:
                                     configMapRuleSets:
                                       items:
                                         properties:
-                                          configmapLocation:
+                                          configmapRef:
                                             properties:
                                               name:
                                                 type: string

@@ -251,7 +251,7 @@ And view this configmap
          waf:
            customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
            configMapRuleSets:
-           - configmapLocation:
+           - configmapRef:
                name: wafruleset
                namespace: gloo-system
      useProxyProto: false
@@ -284,7 +284,7 @@ And view this configmap
          waf:
            customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
            configMapRuleSets:
-           - configmapLocation:
+           - configmapRef:
                name: wafruleset
                namespace: gloo-system
              dataMapKeys:
