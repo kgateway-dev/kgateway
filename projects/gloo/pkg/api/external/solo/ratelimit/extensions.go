@@ -94,3 +94,8 @@ func (c *kubeReporterClient) Write(resource resources.Resource, opts clients.Wri
 		RateLimitConfig: skratelimit.RateLimitConfig(baseRlConfig),
 	}, nil
 }
+
+func (c *kubeReporterClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	// Not yet implemented. for now, kubeReporterClient should not be used for ApplyStatus operations.
+	return nil, eris.New("unexpected apply status operation")
+}

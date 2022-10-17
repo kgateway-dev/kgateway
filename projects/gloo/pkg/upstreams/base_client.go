@@ -56,3 +56,7 @@ func (c *readOnlyUpstreamBaseClient) List(namespace string, opts clients.ListOpt
 func (c *readOnlyUpstreamBaseClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	panic(notImplementedErrMsg)
 }
+
+func (c *readOnlyUpstreamBaseClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	panic(notImplementedErrMsg)
+}
