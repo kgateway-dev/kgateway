@@ -46,8 +46,8 @@ weight: 5
 | `disabled` | `bool` | Disable waf on this resource (if omitted defaults to false). If a route/virtual host is configured with WAF, you must explicitly disable its WAF, i.e., it will not inherit the disabled status of its parent. |
 | `customInterventionMessage` | `string` | Custom massage to display if an intervention occurs. |
 | `coreRuleSet` | [.waf.options.gloo.solo.io.CoreRuleSet](../waf.proto.sk/#coreruleset) | Add OWASP core rule set if nil will not be added. |
-| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets rules to add - File option will not dynamically load changes. If you want changes to ruleset values stores in a file to propagate to Envoy you will need to change the name of the file to indicate a change to its contents. The recommendation if you want dynamically loaded rules is to use CustomConfigMapRuleSets. |
-| `configMapRuleSets` | [[]waf.options.gloo.solo.io.RuleSetFromConfigMap](../waf.proto.sk/#rulesetfromconfigmap) | Use configMap rulesets to reference configmaps that contain rules that you want dynamically loaded. The rules must be contained in the value of the key-value mappings in the ConfigMap `data` field. |
+| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets to add. Any subsequent changes to the rules in these files are not automatically updated. To update rules from files, version and update the file name. If you want dynamically updated rules, use the `configMapRuleSets` option instead. |
+| `configMapRuleSets` | [[]waf.options.gloo.solo.io.RuleSetFromConfigMap](../waf.proto.sk/#rulesetfromconfigmap) | Kubernetes configmaps with the rule sets that you want to use. The rules must be in the value of the key-value mappings in the `data` field of the configmap. Subsequent updates to the configmap values are dynamically updated in the configuration. |
 | `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../../../../../external/envoy/extensions/waf/waf.proto.sk/#auditlogging) | Audit Log settings. |
 | `requestHeadersOnly` | `bool` | Only process request headers, not buffering the request body. |
 | `responseHeadersOnly` | `bool` | Only process response headers, not buffering the response body. |
@@ -68,8 +68,8 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `configmapLocation` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The configmap from which the rules will be taken. |
-| `dataMapKeys` | `[]string` | If the configmap has multiple Key-Value pairs in the Data map (Ex: when a config map is created from multiple file sources) you can use dataMapKey to select which rules and the order you want them included. If included - Desired Keys and their order from the Data Map of a configmap. If not included - The rules will be configured in order of sorted keys from the Data map of the configmap. This may not be the order they appear in the configmap. |
+| `configmapLocation` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The Kubernetes configmap that has the rule sets as values in the `data` section. |
+| `dataMapKeys` | `[]string` | The configmap might have multiple key-value pairs in the `data` section, such as when you create the configmap from multiple files. You can use the `dataMapKey` field to select which rules and the order you want them included. If this field is included, only the specified keys are applied in order. Any rules not included are ignored. If this field is not included, all of the rules in the `data` section of the configmap are sorted and applied. The order might differ from their order in the configmap. |
 
 
 
