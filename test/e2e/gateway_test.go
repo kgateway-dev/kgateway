@@ -200,7 +200,7 @@ var _ = Describe("Gateway", func() {
 				Expect(numssl).To(Equal(1))
 			})
 
-			It("correctly configures gateway for a virtual service which contains a route to a service", func() {
+			FIt("correctly configures gateway for a virtual service which contains a route to a service", func() {
 				// Create a service so gloo can generate "fake" upstreams for it
 				svc := kubernetes.NewService("default", "my-service")
 				svc.Spec = corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 1234}}}
@@ -217,7 +217,9 @@ var _ = Describe("Gateway", func() {
 				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					var err error
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-
+					if err != nil {
+						return nil, err
+					}
 					// Verify that the proxy has the expected route
 					Expect(proxy.Listeners).To(HaveLen(2))
 					var nonSslListener gloov1.Listener
@@ -237,11 +239,12 @@ var _ = Describe("Gateway", func() {
 					Expect(service.Ref.Name).To(Equal(svc.Name))
 					Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
 
-					// clean up the virtual service that we created
-					err = testClients.VirtualServiceClient.Delete(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.DeleteOpts{})
-					Expect(err).NotTo(HaveOccurred())
 					return proxy, err
 				})
+
+				// clean up the virtual service that we created
+				err = testClients.VirtualServiceClient.Delete(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.DeleteOpts{})
+				Expect(err).NotTo(HaveOccurred())
 
 			})
 
