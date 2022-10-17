@@ -39,11 +39,11 @@ type Settings struct {
 	// if nil will not be added
 	CoreRuleSet *CoreRuleSet `protobuf:"bytes,3,opt,name=core_rule_set,json=coreRuleSet,proto3" json:"core_rule_set,omitempty"`
 	// Custom rule sets to add. Any subsequent changes to the rules in these files are not automatically updated. To update rules from files, version and update the file name.
-    // If you want dynamically updated rules, use the `configMapRuleSets` option instead.
+	// If you want dynamically updated rules, use the `configMapRuleSets` option instead.
 	RuleSets []*waf.RuleSet `protobuf:"bytes,4,rep,name=rule_sets,json=ruleSets,proto3" json:"rule_sets,omitempty"`
 	// Kubernetes configmaps with the rule sets that you want to use.
-    // The rules must be in the value of the key-value mappings in the `data` field of the configmap.
-    // Subsequent updates to the configmap values are dynamically updated in the configuration.
+	// The rules must be in the value of the key-value mappings in the `data` field of the configmap.
+	// Subsequent updates to the configmap values are dynamically updated in the configuration.
 	ConfigMapRuleSets []*RuleSetFromConfigMap `protobuf:"bytes,8,rep,name=config_map_rule_sets,json=configMapRuleSets,proto3" json:"config_map_rule_sets,omitempty"`
 	// Audit Log settings
 	AuditLogging *waf.AuditLogging `protobuf:"bytes,5,opt,name=audit_logging,json=auditLogging,proto3" json:"audit_logging,omitempty"`
@@ -149,9 +149,9 @@ type RuleSetFromConfigMap struct {
 	// The Kubernetes configmap that has the rule sets as values in the `data` section.
 	ConfigmapLocation *core.ResourceRef `protobuf:"bytes,1,opt,name=configmap_location,json=configmapLocation,proto3" json:"configmap_location,omitempty"`
 	// The configmap might have multiple key-value pairs in the `data` section, such as when you create the configmap from multiple files.
-    // You can use the `dataMapKey` field to select which rules and the order you want them included.
-    // If this field is included, only the specified keys are applied in order. Any rules not included are ignored.
-    // If this field is not included, all of the rules in the `data` section of the configmap are sorted and applied. The order might differ from their order in the configmap.
+	// You can use the `dataMapKey` field to select which rules and the order you want them included.
+	// If this field is included, only the specified keys are applied in order. Any rules not included are ignored.
+	// If this field is not included, all of the rules in the `data` section of the configmap are sorted and applied. The order might differ from their order in the configmap.
 	DataMapKeys []string `protobuf:"bytes,2,rep,name=data_map_keys,json=dataMapKeys,proto3" json:"data_map_keys,omitempty"`
 }
 

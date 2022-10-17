@@ -303,9 +303,9 @@ type RuleSet struct {
 
 	// String of rules which are added directly
 	RuleStr string `protobuf:"bytes,1,opt,name=rule_str,json=ruleStr,proto3" json:"rule_str,omitempty"`
-	// Array of files with rules to include. 
-	// Any subsequent changes to the rules in these files are not automatically updated. To update rules from files, version and update the file name. 
-	// If you want dynamically updated rules, use the `configMapRuleSets` option instead. 
+	// Array of files with rules to include.
+	// Any subsequent changes to the rules in these files are not automatically updated. To update rules from files, version and update the file name.
+	// If you want dynamically updated rules, use the `configMapRuleSets` option instead.
 	Files []string `protobuf:"bytes,3,rep,name=files,proto3" json:"files,omitempty"`
 	// A directory to include. all *.conf files in this directory will be
 	// included. sub directories will NOT be checked.
