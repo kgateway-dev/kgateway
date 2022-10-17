@@ -167,26 +167,29 @@ After this config has been successfully applied, run the curl command from above
 
 The two methods outlined above represent the two main ways to apply basic rule string WAF configs to Gloo Edge routes.
 
-#### Dynamically Load Rule Set 
+#### Dynamically Load Rule Set - Kubernetes Configmaps
 
 In some cases you may want your rulesets to update automatically when you make changes
 
 If you are using ruleSets as shown above with a ruleString passed in WAF settings then you will already have this behavior. If you would prefer to place your rules outside of the CRD definition you can do so with kubernetes configmaps 
 
-Create a file containing the same ruleStr from the first example 
+Create a file containing the same ruleStr from the first example and create a file with a new rule
 
 ```bash
 cat <<EOF > wafruleset.conf
 SecRuleEngine On
 SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
 EOF
+
+cat <<EOF > wafruleset2.conf
+SecRule REQUEST_HEADERS:User-Agent "scammer2" "deny,status:403,id:108,phase:1,msg:'blocked scammer2'"
+EOF
 ```
 
-Now create a configmap from this file 
-Note: Kubernetes Configmaps can be created from multiple files. The rulesets from the files will be ordered based on the filenames, not the order they appear in the configmaps Data map. 
+Now create a configmap from these files - For this example the configmap is created from 2 files. It is reccomended, if possible, to keep all rules in one file
 
 ```bash
-kubectl --namespace=gloo-system create configmap wafruleset --from-file=wafruleset.conf
+kubectl --namespace=gloo-system create configmap wafrulesets --from-file=wafruleset2.conf --from-file=wafruleset.conf 
 ```
 
 And view this configmap
@@ -204,6 +207,8 @@ data:
   wafruleset.conf: |
     SecRuleEngine On
     SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
+  wafruleset2.conf: |
+    SecRule REQUEST_HEADERS:User-Agent "scammer2" "deny,status:403,id:108,phase:1,msg:'blocked scammer2'"
 ```
 
 In order to use the configmap we now need to update our WAF settings using the CustomConfigMapRuleSets field 
@@ -223,8 +228,9 @@ spec:
     options:
       waf:
         customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
-        customConfigMapRuleSets:
-          - name: wafruleset
+        configMapRuleSets:
+        - configmapLocation:
+            name: wafruleset
             namespace: gloo-system
   useProxyProto: false
 ```
@@ -234,6 +240,51 @@ You can now test this in the same way as before with a curl command - the behavi
 ```bash
 curl -v -H User-Agent:scammer $(glooctl proxy url)/sample-route-1
 ```
+
+When no dataMapKey is specified for a configMapRuleSet all key-value pairs in the configmap data are sorted by key and applied in sorted key order. 
+In this case the rule for wafruleset.conf is applied first followed by the rule for wafruleset2.conf. 
+
+Try a curl statement with the blocked user agent from the rule in wafruleset2.conf
+
+```bash
+curl -v -H User-Agent:scammer2 $(glooctl proxy url)/sample-route-1
+```
+
+If you only want rules from one key in the data in your configmap, or you want to specify a certain order you can use the keys from the data map. 
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  proxyNames:
+  - gateway-proxy
+  httpGateway:
+    options:
+      waf:
+        customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
+        configMapRuleSets:
+        - configmapLocation:
+            name: wafruleset
+            namespace: gloo-system
+          dataMapKeys:
+          - wafruleset.conf
+  useProxyProto: false
+```
+
+This will only add the rule specified under wafruleset.conf key in the data map of your configmap. If multiple datMapKeys are specified the rules will be added in the order that the keys are listed and all other rules will be ignroed 
+
+Try curling again with the previously blocked scammer2
+
+```bash
+curl -v -H User-Agent:scammer2 $(glooctl proxy url)/sample-route-1
+```
+
+This call we now be allowed as we are only adding the rule for wafruleset.conf which blocks scammer but not scammer2
 
 #### Core Rule Set
 
