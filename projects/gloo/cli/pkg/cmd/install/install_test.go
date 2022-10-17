@@ -2,6 +2,7 @@ package install_test
 
 import (
 	"fmt"
+
 	"github.com/rotisserie/eris"
 
 	. "github.com/onsi/ginkgo"
