@@ -217,31 +217,32 @@ var _ = Describe("Gateway", func() {
 				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					var err error
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+
+					// Verify that the proxy has the expected route
+					Expect(proxy.Listeners).To(HaveLen(2))
+					var nonSslListener gloov1.Listener
+					for _, l := range proxy.Listeners {
+						if l.BindPort == defaults.HttpPort {
+							nonSslListener = *l
+							break
+						}
+					}
+					Expect(nonSslListener.GetHttpListener()).NotTo(BeNil())
+					Expect(nonSslListener.GetHttpListener().VirtualHosts).To(HaveLen(1))
+					Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes).To(HaveLen(1))
+					Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction()).NotTo(BeNil())
+					Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle()).NotTo(BeNil())
+					service := nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetKube()
+					Expect(service.Ref.Namespace).To(Equal(svc.Namespace))
+					Expect(service.Ref.Name).To(Equal(svc.Name))
+					Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
+
+					// clean up the virtual service that we created
+					err = testClients.VirtualServiceClient.Delete(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.DeleteOpts{})
+					Expect(err).NotTo(HaveOccurred())
 					return proxy, err
 				})
 
-				// Verify that the proxy has the expected route
-				Expect(proxy.Listeners).To(HaveLen(2))
-				var nonSslListener gloov1.Listener
-				for _, l := range proxy.Listeners {
-					if l.BindPort == defaults.HttpPort {
-						nonSslListener = *l
-						break
-					}
-				}
-				Expect(nonSslListener.GetHttpListener()).NotTo(BeNil())
-				Expect(nonSslListener.GetHttpListener().VirtualHosts).To(HaveLen(1))
-				Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes).To(HaveLen(1))
-				Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction()).NotTo(BeNil())
-				Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle()).NotTo(BeNil())
-				service := nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetKube()
-				Expect(service.Ref.Namespace).To(Equal(svc.Namespace))
-				Expect(service.Ref.Name).To(Equal(svc.Name))
-				Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
-
-				// clean up the virtual service that we created
-				err = testClients.VirtualServiceClient.Delete(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.DeleteOpts{})
-				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("won't allow a bad authconfig in a virtualservice to block updates to a gateway", func() {
