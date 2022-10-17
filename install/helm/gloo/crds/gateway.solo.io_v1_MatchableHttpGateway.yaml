@@ -820,7 +820,7 @@ spec:
                           configMapRuleSets:
                             items:
                               properties:
-                                configmapRef:
+                                configMapRef:
                                   properties:
                                     name:
                                       type: string

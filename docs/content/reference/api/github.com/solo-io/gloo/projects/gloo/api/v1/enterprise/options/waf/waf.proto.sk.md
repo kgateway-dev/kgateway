@@ -61,15 +61,15 @@ weight: 5
 
 
 ```yaml
-"configmapRef": .core.solo.io.ResourceRef
+"configMapRef": .core.solo.io.ResourceRef
 "dataMapKeys": []string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `configmapRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The Kubernetes configmap that has the rule sets as values in the `data` section. |
-| `dataMapKeys` | `[]string` | The configmap might have multiple key-value pairs in the `data` section, such as when you create the configmap from multiple files. You can use the `dataMapKey` field to select which rules and the order you want them included. If this field is included, only the specified keys are applied in order. Any rules not included are ignored. If this field is not included, all of the rules in the `data` section of the configmap are sorted and applied. The order might differ from their order in the configmap. |
+| `configMapRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The Kubernetes configmap that has the rule sets as values in the `data` section. |
+| `dataMapKeys` | `[]string` | The ConfigMap might have multiple key-value pairs in the `data` section, such as when you create the ConfigMap from multiple files. Each value in a key-value pair may contain 0 or more rules. You can use the `dataMapKey` field to select which keys to use, and the order you want them applied. If this field is included, only the rules from the specified keys are applied, in the specified order. Any rules contained in the value of keys not included are ignored. If this field is not included, all of the keys in the `data` section of the ConfigMap are sorted alphabetically, and all of the rules are included in the resulting order. The order of key-value pairs might differ from the order in which they appear in the ConfigMap (note, the ordering of the rules within each mapping stay the same as they appear in the ConfigMap). |
 
 
 

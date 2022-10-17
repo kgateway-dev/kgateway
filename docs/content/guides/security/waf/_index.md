@@ -230,7 +230,7 @@ And view this configmap
        SecRule REQUEST_HEADERS:User-Agent "scammer2" "deny,status:403,id:108,phase:1,msg:'blocked scammer2'"
    ```
 
-4. Update the `Gateway` or `VirtualService` resource to refer to the configmap for your WAF filter configuration. The following example does not set the `dataMapKey` field for the configmap rule set. Therefore, all key-value pairs in the configmap `data` section are sorted by key and applied in sorted key order. In this case the rule for `wafruleset.conf` is applied first, followed by the rule for `wafruleset2.conf`. 
+4. Update the `Gateway` or `VirtualService` resource to refer to the ConfigMap for your WAF filter configuration. The following example does not set the `dataMapKey` field for the ConfigMap rule set. Therefore, all key-value pairs in the ConfigMap `data` section are sorted by key and applied in sorted key order. In this case the rule for `wafruleset.conf` is applied first, followed by the rule for `wafruleset2.conf`. 
 
    ```bash
    kubectl edit gateway -n gloo-system gateway-proxy
@@ -251,7 +251,7 @@ And view this configmap
          waf:
            customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
            configMapRuleSets:
-           - configmapRef:
+           - configMapRef:
                name: wafruleset
                namespace: gloo-system
      useProxyProto: false
@@ -264,7 +264,7 @@ And view this configmap
    ```bash
    curl -v -H User-Agent:scammer2 $(glooctl proxy url)/sample-route-1
    ```
-7. Optional: To apply a certain rule or a certain order for the rules, add the `dataMapKeys` section. If you only want rules from one key in the data in your configmap, or you want to specify a certain order you can use the keys from the data map. The following examples configures only the rule in the `wafruleset.conf` key in the data section of your configmap. If multiple `dataMapKeys` are specified, the rules are applied in the order that the keys are listed. Any rules not included are ignored.
+7. Optional: To apply a certain rule or a certain order for the rules, add the `dataMapKeys` section. If you only want rules from one key in the data in your ConfigMap, or you want to specify a certain order you can use the keys from the data map. The following examples configures only the rule in the `wafruleset.conf` key in the data section of your ConfigMap. If multiple `dataMapKeys` are specified, the rules are applied in the order that the keys are listed. Any rules not included are ignored.
    ```bash
    kubectl edit gateway -n gloo-system gateway-proxy
    ```
@@ -284,7 +284,7 @@ And view this configmap
          waf:
            customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
            configMapRuleSets:
-           - configmapRef:
+           - configMapRef:
                name: wafruleset
                namespace: gloo-system
              dataMapKeys:

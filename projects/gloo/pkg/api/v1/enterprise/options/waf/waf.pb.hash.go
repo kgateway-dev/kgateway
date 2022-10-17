@@ -161,18 +161,18 @@ func (m *RuleSetFromConfigMap) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetConfigmapRef()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ConfigmapRef")); err != nil {
+	if h, ok := interface{}(m.GetConfigMapRef()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ConfigMapRef")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetConfigmapRef(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetConfigMapRef(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ConfigmapRef")); err != nil {
+			if _, err = hasher.Write([]byte("ConfigMapRef")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
