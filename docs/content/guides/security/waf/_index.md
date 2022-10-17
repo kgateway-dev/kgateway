@@ -12,7 +12,7 @@ The WAF feature was introduced with **Gloo Edge Enterprise**, release 0.18.23. I
 
 ## About web application firewalls
 
-WAFs protect your web apps by monitoring, filtering, and blocking potentially harmful HTTP traffic. You write a WAF policy by following a framework and ruleset. Then, you apply the WAF policy to the route for the apps that you want to protect. When Gloo Gateway receives an incoming request for that route (ingress traffic), the WAF intercepts and inspects the network packets and uses the rules that you set in the policy to determine access to the web app. The WAF policy also applies to any outgoing responses (egress traffic) along the route. This setup provides an additional layer of protection between your apps and end users.
+WAFs protect your web apps by monitoring, filtering, and blocking potentially harmful HTTP traffic. You write a WAF policy by following a framework and ruleset. Then, you apply the WAF policy to the route for the apps that you want to protect. When Gloo Edge receives an incoming request for that route (ingress traffic), the WAF intercepts and inspects the network packets and uses the rules that you set in the policy to determine access to the web app. The WAF policy also applies to any outgoing responses (egress traffic) along the route. This setup provides an additional layer of protection between your apps and end users.
 
 In this section, you can learn about the following WAF topics:
 * [ModSecurity rule sets](#about-rule-sets)
