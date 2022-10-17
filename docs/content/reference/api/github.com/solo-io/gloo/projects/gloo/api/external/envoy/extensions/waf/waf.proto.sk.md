@@ -119,7 +119,7 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `ruleStr` | `string` | String of rules which are added directly. |
-| `files` | `[]string` | Array of files to include The file option will not dynamically load changes to its contents - in order to update rules from files the filename must be versioned to indicate there has been a change to its contents If you want dynamically loaded rules, use the custom config map settings. |
+| `files` | `[]string` | Array of files to include The file option will not dynamically load changes to its contents - in order to update rules from files the filename must be versioned to indicate there has been a change to its contents If you want dynamically loaded rules, use the config map rule sets. |
 | `directory` | `string` | A directory to include. all *.conf files in this directory will be included. sub directories will NOT be checked. |
 
 
