@@ -1003,7 +1003,7 @@ message OpaAuthOptions {
 message Ldap {
 
     // Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
-    // is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
+    // is requested (meaning that all the pooled connections are in use), the connection will be created on the fly.
     message ConnectionPool {
         // Maximum number connections that are pooled at any give time. The default value is 5.
         google.protobuf.UInt32Value maxSize = 1;
