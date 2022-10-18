@@ -1847,6 +1847,9 @@ apis:
   waf.options.gloo.solo.io.CoreRuleSet:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#CoreRuleSet
     package: waf.options.gloo.solo.io
+  waf.options.gloo.solo.io.RuleSetFromConfigMap:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#RuleSetFromConfigMap
+    package: waf.options.gloo.solo.io
   waf.options.gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#Settings
     package: waf.options.gloo.solo.io
