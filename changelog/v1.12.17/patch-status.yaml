@@ -1,0 +1,11 @@
+changelog:
+  - type: FIX
+    resolvesIssue: false
+    description: >-
+      Use kubectl patch rather than read then write pattern to update status on custom resources, which
+      makes gloo a less noisy client to the k8s apiserver. **NOTE: Users will need to apply new CRDs with
+      this release to get CRD field defaulting behavior that this fix depends on, or else status updates
+      to brand new resources (i.e. `status` or `status.statuses` does not exist) will fail.**
+      Even if these status updates fail, data-plane traffic and control-plane updates will be
+      unaffected and work as usual.
+    issueLink: https://github.com/solo-io/gloo/issues/7076

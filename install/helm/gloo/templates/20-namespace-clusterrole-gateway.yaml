@@ -47,6 +47,7 @@ rules:
   - watch
   - create
   - update
+  - patch
   - delete
 ---
 kind: {{ include "gloo.roleKind" . }}
@@ -70,7 +71,7 @@ rules:
   - get
   - list
   - watch
-  - update # needed for status updates
+  - patch # needed for status updates
 - apiGroups:
   - enterprise.gloo.solo.io
   resources:
@@ -79,7 +80,7 @@ rules:
   - get
   - list
   - watch
-  - update # needed for status updates
+  - patch # needed for status updates
 - apiGroups:
   - ratelimit.solo.io
   resources:
@@ -89,7 +90,7 @@ rules:
   - get
   - list
   - watch
-  - update # needed for status updates
+  - patch # needed for status updates
 - apiGroups:
   - graphql.gloo.solo.io
   resources:
@@ -99,14 +100,7 @@ rules:
   - get
   - list
   - watch
-  - update # needed for status updates
-- apiGroups:
-  - ""
-  resources:
-  - configmaps # used for recording envoy metrics
-  verbs:
-  - get
-  - update
+  - patch # needed for status updates
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -127,7 +121,6 @@ rules:
   - get
   - list
   - watch
-  - create
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -150,6 +143,7 @@ rules:
   - watch
   - create
   - update
+  - patch
   - delete
 ---
 kind: {{ include "gloo.roleKind" . }}
@@ -176,13 +170,7 @@ rules:
   - get
   - list
   - watch
-  - update # needed for status updates
-- apiGroups:
-  - gateway.solo.io
-  resources:
-  - gateways
-  verbs:
-  - create # needed for creating the default gateways
+  - patch # needed for status updates
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -205,6 +193,7 @@ rules:
   - list
   - watch
   - update
+  - patch
   - create
 {{- end -}}
 {{- end -}}

@@ -191,7 +191,7 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"gloo.solo.io"},
 								Resources: []string{"upstreams"},
-								Verbs:     []string{"get", "list", "watch", "create", "update", "delete"},
+								Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -264,27 +264,22 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"gloo.solo.io"},
 								Resources: []string{"upstreams", "upstreamgroups", "proxies"},
-								Verbs:     []string{"get", "list", "watch", "update"},
+								Verbs:     []string{"get", "list", "watch", "patch"},
 							},
 							{
 								APIGroups: []string{"enterprise.gloo.solo.io"},
 								Resources: []string{"authconfigs"},
-								Verbs:     []string{"get", "list", "watch", "update"},
+								Verbs:     []string{"get", "list", "watch", "patch"},
 							},
 							{
 								APIGroups: []string{"ratelimit.solo.io"},
 								Resources: []string{"ratelimitconfigs", "ratelimitconfigs/status"},
-								Verbs:     []string{"get", "list", "watch", "update"},
+								Verbs:     []string{"get", "list", "watch", "patch"},
 							},
 							{
 								APIGroups: []string{"graphql.gloo.solo.io"},
 								Resources: []string{"graphqlapis", "graphqlapis/status"},
-								Verbs:     []string{"get", "list", "watch", "update"},
-							},
-							{
-								APIGroups: []string{""},
-								Resources: []string{"configmaps"},
-								Verbs:     []string{"get", "update"},
+								Verbs:     []string{"get", "list", "watch", "patch"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -344,7 +339,7 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"graphql.gloo.solo.io"},
 								Resources: []string{"graphqlapis", "graphqlapis/status"},
-								Verbs:     []string{"get", "list", "watch", "update", "create"},
+								Verbs:     []string{"get", "list", "watch", "update", "patch", "create"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -417,7 +412,7 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"gloo.solo.io"},
 								Resources: []string{"settings"},
-								Verbs:     []string{"get", "list", "watch", "create"},
+								Verbs:     []string{"get", "list", "watch"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -498,7 +493,7 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"gloo.solo.io"},
 								Resources: []string{"proxies"},
-								Verbs:     []string{"get", "list", "watch", "create", "update", "delete"},
+								Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -558,11 +553,7 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"gateway.solo.io"},
 								Resources: []string{"gateways", "httpgateways", "virtualservices", "routetables", "virtualhostoptions", "routeoptions"},
-								Verbs:     []string{"get", "list", "watch", "update"},
-							}, {
-								APIGroups: []string{"gateway.solo.io"},
-								Resources: []string{"gateways"},
-								Verbs:     []string{"create"},
+								Verbs:     []string{"get", "list", "watch", "patch"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{

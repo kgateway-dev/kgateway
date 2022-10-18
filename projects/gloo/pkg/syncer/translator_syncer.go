@@ -106,9 +106,20 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 		s.extensionKeys[nodeID] = struct{}{}
 	}
 
+	// while tempting to write statuses in parallel to increase performance, we should actually first consider recommending the user tunes k8s qps/burst:
+	// https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/gloo/api/v1/settings.proto#L337-L350
+	//
+	// add TEMPORARY wrap to our WriteReports error that we should remove in Gloo Edge ~v1.16.0+.
+	// to get the status performance improvements, we need to make the assumption that the user has the latest CRDs installed.
+	// if a user forgets the error message is very confusing (invalid request during kubectl patch);
+	// this should help them understand what's going on in case they did not read the changelog.
 	if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
 		logger.Debugf("Failed writing report for proxies: %v", err)
-		multiErr = multierror.Append(multiErr, eris.Wrapf(err, "writing reports"))
+		wrappedErr := eris.Wrapf(err, "failed to write reports"+
+			"did you make sure your CRDs have been updated since v1.12.17 of open-source? (i.e. `status` and `status.statuses` fields exist on your CR)")
+		multiErr = multierror.Append(multiErr, eris.Wrapf(wrappedErr, "writing reports"))
+	}
+
 	}
 	// Update resource status metrics
 	for resource, report := range reports {

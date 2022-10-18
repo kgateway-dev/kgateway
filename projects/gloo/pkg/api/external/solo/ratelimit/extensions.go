@@ -73,6 +73,10 @@ func (c *kubeReporterClient) Read(namespace, name string, opts clients.ReadOpts)
 	return c.skClient.Read(namespace, name, opts)
 }
 
+func (c *kubeReporterClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	return c.skClient.ApplyStatus(statusClient, inputResource, opts)
+}
+
 func (c *kubeReporterClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	rlConfig, ok := resource.(*RateLimitConfig)
 	if !ok {
