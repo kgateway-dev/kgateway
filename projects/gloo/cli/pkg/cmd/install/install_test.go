@@ -3,6 +3,8 @@ package install_test
 import (
 	"fmt"
 
+	"github.com/rotisserie/eris"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/version"
@@ -62,6 +64,11 @@ var _ = Describe("Install", func() {
 	It("shouldn't get errors for enterprise dry run", func() {
 		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run %s", file, licenseKey))
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should get errors for installing enterprise without license key", func() {
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run", file))
+		Expect(err).To(MatchError(eris.New("No license key provided, please re-run the install with the following flag `--license-key=<YOUR-LICENSE-KEY>")))
 	})
 
 	It("shouldn't get errors for enterprise dry run without file", func() {
