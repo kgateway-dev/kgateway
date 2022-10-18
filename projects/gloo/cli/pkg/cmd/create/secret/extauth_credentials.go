@@ -66,7 +66,7 @@ func credentialsSecretArgsInteractive(ctx context.Context, meta *core.Metadata, 
 	if err := cliutil.GetStringInput("Username to store:", &input.Username); err != nil {
 		return err
 	}
-	if err := cliutil.GetStringInput("Password to store:", &input.Username); err != nil {
+	if err := cliutil.GetStringInput("Password to store:", &input.Password); err != nil {
 		return err
 	}
 	return nil

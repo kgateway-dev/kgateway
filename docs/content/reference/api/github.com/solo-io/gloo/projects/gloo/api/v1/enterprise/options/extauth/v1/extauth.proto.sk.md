@@ -1371,7 +1371,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 
  
 Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
-is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
+is requested (meaning that all the pooled connections are in use), the connection will be created on the fly.
 
 ```yaml
 "maxSize": .google.protobuf.UInt32Value
@@ -1959,7 +1959,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 
  
 Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
-is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
+is requested (meaning that all the pooled connections are in use), the connection will be created on the fly.
 
 ```yaml
 "maxSize": .google.protobuf.UInt32Value

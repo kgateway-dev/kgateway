@@ -1565,7 +1565,7 @@ message ExtAuthConfig {
     }
     message LdapConfig {
         // Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
-        // is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
+        // is requested (meaning that all the pooled connections are in use), the connection will be created on the fly.
         message ConnectionPool {
             // Maximum number connections that are pooled at any give time. The default value is 5.
             google.protobuf.UInt32Value maxSize = 1;
@@ -1608,8 +1608,8 @@ message ExtAuthConfig {
     }
     message LdapServiceAccountConfig {
         // username and password are taken from the secret during gloo-ee translation
-        string username = 1;
-        string password = 2;
+        string username = 1 [(extproto.sensitive) = true];
+        string password = 2 [(extproto.sensitive) = true];
         // If true, Gloo will use the service account to check group membership
         bool check_groups_with_service_account = 3;
     }
