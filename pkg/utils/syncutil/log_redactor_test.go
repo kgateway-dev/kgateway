@@ -168,7 +168,7 @@ var _ = Describe("Log Redactor", func() {
 	}), Entry("doesn't hide anything for LDAP auth", "irrelevant", &xdsproto.ExtAuthConfig{
 		Configs: []*xdsproto.ExtAuthConfig_Config{{
 			AuthConfig: &xdsproto.ExtAuthConfig_Config_Ldap{
-				Ldap: &xdsproto.Ldap{
+				Ldap: &xdsproto.ExtAuthConfig_LdapConfig{
 					AllowedGroups: []string{"test1", "test2"},
 				},
 			},
