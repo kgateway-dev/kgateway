@@ -13,6 +13,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	skerrors "github.com/solo-io/solo-kit/pkg/errors"
+
 	"github.com/solo-io/go-utils/testutils/goimpl"
 	"go.uber.org/zap/zapcore"
 
@@ -86,12 +89,19 @@ global:
 settings:
   singleNamespace: true
   create: true
-  replaceInvalidRoutes: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: true
 gloo:
   deployment:
-    replicas: 1
+    replicas: 2
+    customEnv:
+      - name: LEADER_ELECTION_LEASE_DURATION
+        value: 4s
+    livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
@@ -263,6 +273,39 @@ func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Setting
 	Expect(err).NotTo(HaveOccurred())
 
 	waitForSettingsToPropagate()
+}
+
+func ToFile(content string) string {
+	f, err := ioutil.TempFile("", "")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	n, err := f.WriteString(content)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, n).To(Equal(len(content)))
+	_ = f.Close()
+	return f.Name()
+}
+
+// PatchResource mutates an existing resource, retrying if a resourceVersionError is encountered
+func PatchResource(ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource), client clients.ResourceClient) error {
+	// There is a potential bug in our resource writing implementation that leads to test flakes
+	// https://github.com/solo-io/gloo/issues/7044
+	// This is a temporary solution to ensure that tests do not flake
+
+	var patchErr error
+
+	EventuallyWithOffset(1, func(g Gomega) {
+		resource, err := client.Read(resourceRef.GetNamespace(), resourceRef.GetName(), clients.ReadOpts{Ctx: ctx})
+		g.Expect(err).NotTo(HaveOccurred())
+		resourceVersion := resource.GetMetadata().GetResourceVersion()
+
+		mutator(resource)
+		resource.GetMetadata().ResourceVersion = resourceVersion
+
+		_, patchErr = client.Write(resource, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+		g.Expect(skerrors.IsResourceVersion(patchErr)).To(BeFalse())
+	}).ShouldNot(HaveOccurred())
+
+	return patchErr
 }
 
 // https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604

@@ -19,6 +19,7 @@ spec:
     validation:
       alwaysAccept: true
       allowWarnings: true
+      serverEnabled: true
       disableTransformationValidation: false
       warnRouteShortCircuiting: false
       proxyValidationServerAddr: gloo:9988

@@ -1738,6 +1738,16 @@ func (m *GatewayOptions_ValidationOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetServerEnabled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetServerEnabled()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetServerEnabled(), target.GetServerEnabled()) {
+			return false
+		}
+	}
+
 	return true
 }
 

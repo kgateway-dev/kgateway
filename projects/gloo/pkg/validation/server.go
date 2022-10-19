@@ -29,6 +29,8 @@ type Validator interface {
 }
 
 type validator struct {
+	// note to devs: this can be called in parallel by the validation webhook and main translation loops at the same time
+	// any stateful fields should be protected by a mutex or themselves be synchronized (like the xds sanitizer / translator)
 	lock           sync.RWMutex
 	latestSnapshot *v1snap.ApiSnapshot
 	translator     translator.Translator
@@ -161,14 +163,14 @@ func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream
 }
 
 func (s *validator) Validate(ctx context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
-	s.lock.RLock()
+	s.lock.Lock()
 	// we may receive a Validate call before a Sync has occurred
 	if s.latestSnapshot == nil {
-		s.lock.RUnlock()
+		s.lock.Unlock()
 		return nil, eris.New("proxy validation called before the validation server received its first sync of resources")
 	}
-	snapCopy := s.latestSnapshot.Clone()
-	s.lock.RUnlock()
+	snapCopy := s.latestSnapshot.Clone() // cloning can mutate so we need a write lock
+	s.lock.Unlock()
 
 	// update the snapshot copy with the resources from the request
 	applyRequestToSnapshot(&snapCopy, req)
@@ -186,6 +188,15 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 		// if no proxy was passed in, call translate for all proxies in snapshot
 		proxiesToValidate = snapCopy.Proxies
 	}
+
+	if len(proxiesToValidate) == 0 {
+		// This can occur when a Gloo resource (Upstream), is modified before the ApiSnapshot
+		// contains any Proxies. Orphaned resources are never invalid, but they may be accepted
+		// even if they are semantically incorrect.
+		// This log line is attempting to identify these situations
+		logger.Warnf("found no proxies to validate, accepting update without translating Gloo resources")
+	}
+
 	params := plugins.Params{
 		Ctx:      ctx,
 		Snapshot: &snapCopy,

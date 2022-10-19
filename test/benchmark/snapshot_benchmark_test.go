@@ -24,11 +24,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/mitchellh/hashstructure"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 

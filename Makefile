@@ -65,7 +65,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.23.0-patch7
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.23.1-patch2
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -111,6 +111,7 @@ ifeq ($(GOOS),)
 endif
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
+GOLANG_VERSION := golang:1.18.2-alpine
 
 # Passed by cloudbuild
 GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
@@ -148,7 +149,7 @@ DEPSGOBIN=$(shell pwd)/_output/.bin
 
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 .PHONY: install-go-tools
-install-go-tools: mod-download
+install-go-tools: mod-download install-test-tools
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
@@ -159,8 +160,12 @@ install-go-tools: mod-download
 	GOBIN=$(DEPSGOBIN) go install github.com/cratonica/2goarray
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 	GOBIN=$(DEPSGOBIN) go install github.com/saiskee/gettercheck
+
+.PHONY: install-test-tools
+install-test-tools:
+	mkdir -p $(DEPSGOBIN)
+	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
 # command to run regression tests with guaranteed access to $(DEPSGOBIN)/ginkgo
 # requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
@@ -168,13 +173,13 @@ install-go-tools: mod-download
 .PHONY: run-tests
 run-tests:
 ifneq ($(RELEASE), "true")
-	RUN_REGRESSION_TESTS=$(RUN_REGRESSION_TESTS) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
+	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests
-run-ci-regression-tests: TEST_PKG=./test/kube2e/...
-run-ci-regression-tests: RUN_REGRESSION_TESTS=true
-run-ci-regression-tests: install-go-tools run-tests
+run-ci-regression-tests: install-test-tools
+	# We intentionally leave out the `-r` ginkgo flag, since we are specifying the exact package that we want run
+	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
 
 .PHONY: check-format
 check-format:
@@ -389,6 +394,49 @@ gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfi
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		-t $(IMAGE_REPO)/gloo:$(VERSION) $(QUAY_EXPIRATION_LABEL)
 
+#----------------------------------------------------------------------------------
+# Gloo with race detection enabled.
+# This is intended to be used to aid in local debugging by swapping out this image in a running gloo instance
+#----------------------------------------------------------------------------------
+GLOO_RACE_OUT_DIR=$(OUTPUT_DIR)/gloo-race
+
+$(GLOO_RACE_OUT_DIR)/Dockerfile.build: $(GLOO_DIR)/Dockerfile
+	mkdir -p $(GLOO_RACE_OUT_DIR)
+	cp $< $@
+
+$(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
+	docker build -t $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) \
+		-f $(GLOO_RACE_OUT_DIR)/Dockerfile.build \
+		--build-arg GO_BUILD_IMAGE=$(GOLANG_VERSION) \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg GCFLAGS=$(GCFLAGS) \
+		--build-arg LDFLAGS=$(LDFLAGS) \
+		--build-arg USE_APK=true \
+		--build-arg GOARCH=$(GOARCH) \
+		.
+	touch $@
+# Build inside container as we need to target linux and must compile with CGO_ENABLED=1
+# We may be running Docker in a VM (eg, minikube) so be careful about how we copy files out of the containers
+$(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build
+	docker create -ti --name gloo-race-temp-container $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) bash
+	docker cp gloo-race-temp-container:/gloo-linux-$(GOARCH) $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH)
+	docker rm -f gloo-race-temp-container
+
+# Build the gloo project with race detection enabled
+.PHONY: gloo-race
+gloo-race: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH)
+
+$(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
+	cp $< $@
+
+# Take the executable built in gloo-race and put it in a docker container
+.PHONY: gloo-race-docker
+gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker
+$(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_RACE_OUT_DIR)/Dockerfile
+	docker build $(call get_test_tag_option,gloo) $(GLOO_RACE_OUT_DIR) \
+		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=$(GOARCH) $(PLATFORM) \
+		-t $(IMAGE_REPO)/gloo:$(VERSION)-race $(QUAY_EXPIRATION_LABEL)
+	touch $@
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config for Gloo Edge MTLS
 #----------------------------------------------------------------------------------
@@ -615,6 +663,7 @@ ifeq ($(RELEASE), "true")
 	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION) $(IMAGE_REPO)/gloo:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION)-race $(IMAGE_REPO)/gloo:$(VERSION)-race && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION) $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/kubectl:$(VERSION) $(IMAGE_REPO)/kubectl:$(VERSION) && \
@@ -633,6 +682,7 @@ ifeq ($(RELEASE), "true")
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race && \
 	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
 	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
@@ -650,7 +700,7 @@ ifeq ($(RELEASE), "true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gloo-docker \
+docker: discovery-docker gloo-docker gloo-race-docker \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker kubectl-docker
 
@@ -667,6 +717,7 @@ ifeq ($(CREATE_ASSETS), "true")
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race && \
 	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
 	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
@@ -730,7 +781,6 @@ build-test-chart:
 #----------------------------------------------------------------------------------
 # Locally run the Trivy security scan to generate result report as markdown
 
-TRIVY_VERSION ?= $(shell curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
 
 ifeq ($(shell uname), Darwin)

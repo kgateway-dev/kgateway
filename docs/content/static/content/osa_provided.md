@@ -7,7 +7,6 @@ Name|Version|License
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.10.3|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.6.7|Apache License 2.0
-[fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
 [form3tech-oss/jwt-go](https://github.com/form3tech-oss/jwt-go)|v3.2.3+incompatible|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.5.4|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
@@ -27,7 +26,6 @@ Name|Version|License
 [inconshreveable/go-update](https://github.com/inconshreveable/go-update)|v0.0.0-20160112193335-8152e7eb6ccf|UNKNOWN
 [jhump/protoreflect](https://github.com/jhump/protoreflect)|v1.5.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
-[mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.5|MIT License
 [onsi/ginkgo](https://github.com/onsi/ginkgo)|v1.16.5|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.16.0|MIT License
@@ -42,7 +40,6 @@ Name|Version|License
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
 [spf13/viper](https://github.com/spf13/viper)|v1.8.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.23.0|Apache License 2.0
-[go.uber.org/atomic](https://go.uber.org/atomic)|v1.9.0|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.19.1|MIT License
 [x/mod](https://golang.org/x/mod)|v0.6.0-dev.0.20220106191415-9b9b3d81d5e3|BSD 3-clause "New" or "Revised" License

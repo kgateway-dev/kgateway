@@ -5,7 +5,8 @@
     {
       "package": "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit",
       "type": "RateLimitConfig",
-      "plural_name": "ratelimitconfigs"
+      "plural_name": "ratelimitconfigs",
+      "spec_has_hash": true
     }
   ],
   "go_package": "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit",

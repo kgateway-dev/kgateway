@@ -555,6 +555,23 @@ spec:
                             type: object
                           idleTimeout:
                             type: string
+                          internalAddressConfig:
+                            properties:
+                              cidrRanges:
+                                items:
+                                  properties:
+                                    addressPrefix:
+                                      type: string
+                                    prefixLen:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
+                                      type: integer
+                                  type: object
+                                type: array
+                              unixSockets:
+                                type: boolean
+                            type: object
                           maxConnectionDuration:
                             type: string
                           maxHeadersCount:
@@ -959,6 +976,23 @@ spec:
                             type: object
                           idleTimeout:
                             type: string
+                          internalAddressConfig:
+                            properties:
+                              cidrRanges:
+                                items:
+                                  properties:
+                                    addressPrefix:
+                                      type: string
+                                    prefixLen:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
+                                      type: integer
+                                  type: object
+                                type: array
+                              unixSockets:
+                                type: boolean
+                            type: object
                           maxConnectionDuration:
                             type: string
                           maxHeadersCount:
@@ -1795,6 +1829,23 @@ spec:
                                       type: object
                                     idleTimeout:
                                       type: string
+                                    internalAddressConfig:
+                                      properties:
+                                        cidrRanges:
+                                          items:
+                                            properties:
+                                              addressPrefix:
+                                                type: string
+                                              prefixLen:
+                                                maximum: 4294967295
+                                                minimum: 0
+                                                nullable: true
+                                                type: integer
+                                            type: object
+                                          type: array
+                                        unixSockets:
+                                          type: boolean
+                                      type: object
                                     maxConnectionDuration:
                                       type: string
                                     maxHeadersCount:

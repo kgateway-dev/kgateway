@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -62,15 +63,22 @@ var _ = Describe("Kube2e: glooctl", func() {
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "label", "namespace", "default", "istio-injection-")
 			Expect(err).NotTo(HaveOccurred(), "should be able to remove the istio injection label")
 
-			// Remove the gloo route to petstore
-			err = runGlooctlCommand("remove", "route", "--name", "petstore", "--namespace", testHelper.InstallNamespace)
-			Expect(err).NotTo(HaveOccurred(), "should be able to remove gloo route to petstore")
+			// Remove Petstore vs
+			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "vs", "petstore", "-n", testHelper.InstallNamespace)
+			Expect(err).NotTo(HaveOccurred(), "should be able to delete the petstore VS")
+
+			Eventually(func(g Gomega) {
+				virtualservices, err := resourceClientset.VirtualServiceClient().List(testHelper.InstallNamespace, clients.ListOpts{})
+				g.Expect(err).NotTo(HaveOccurred(), "should be able to list virtual services")
+				g.Expect(virtualservices).To(HaveLen(0), "should have no virtual services")
+			}, 5*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
 		})
 
 		ExpectIstioInjected := func() {
 			// Check for sds sidecar
 			sdsContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "deployments", "gateway-proxy", "-o", `jsonpath='{.spec.template.spec.containers[?(@.name == "sds")].name}'`)
 			ExpectWithOffset(1, sdsContainer).To(Equal("'sds'"), "sds container should be present after injection")
+			// check that container is started properly
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
 
 			// Check for istio-proxy sidecar
@@ -134,7 +142,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		Context("istio uninject", func() {
 
 			BeforeEach(func() {
-				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
+				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 10*time.Second, 1*time.Second)
 
 				err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio inject' without errors")
@@ -148,7 +156,14 @@ var _ = Describe("Kube2e: glooctl", func() {
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls strict mode on the petstore app")
 
 				// mTLS strict mode enabled
-				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
+				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 10*time.Second, 1*time.Second)
+			})
+
+			AfterEach(func() {
+				// Tests may have already successfully run uninject, so we can ignore the error
+				_ = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
+
+				ExpectIstioUninjected()
 			})
 
 			It("succeeds when no upstreams contain sds configuration", func() {
@@ -187,14 +202,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 				// Expect it to work
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
 			})
-
-			AfterEach(func() {
-				// Tests may have already successfully run uninject, so we can ignore the error
-				_ = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
-
-				ExpectIstioUninjected()
-			})
-
 		})
 
 	})
@@ -204,7 +211,8 @@ var _ = Describe("Kube2e: glooctl", func() {
 func runGlooctlCommand(args ...string) error {
 	glooctlCommand := []string{filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName)}
 	glooctlCommand = append(glooctlCommand, args...)
-	return exec.RunCommand(testHelper.RootDir, false, glooctlCommand...)
+	// execute the command with verbose output
+	return exec.RunCommand(testHelper.RootDir, true, glooctlCommand...)
 }
 
 func toggleStictModePetstore(strictModeEnabled bool) error {

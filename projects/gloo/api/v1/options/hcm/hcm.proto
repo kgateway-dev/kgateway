@@ -217,4 +217,25 @@ message HttpConnectionManagerSettings {
 
     // Additional HTTP/2 settings that are passed directly to the HTTP/2 codec.
     protocol.options.gloo.solo.io.Http2ProtocolOptions http2_protocol_options = 39;
+
+    // Subnet mask for CIDR ranges
+    message CidrRange {
+        // IPv4 or IPv6 address
+        string address_prefix = 1;
+
+        // Length of prefix in bits
+        google.protobuf.UInt32Value prefix_len = 2;
+    }
+
+    // Manages Envoy's internal address configuration
+    message InternalAddressConfig {
+        // Whether unix socket addresses should be considered internal
+        bool unix_sockets = 1;
+
+        // List of CIDR ranges that are treated as internal
+        repeated CidrRange cidr_ranges = 2;
+    }
+
+    // Configuration of internal addresses
+    InternalAddressConfig internal_address_config = 38;
 }

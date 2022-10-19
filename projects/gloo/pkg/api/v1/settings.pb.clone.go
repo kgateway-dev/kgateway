@@ -998,6 +998,12 @@ func (m *GatewayOptions_ValidationOptions) Clone() proto.Message {
 		target.ValidationServerGrpcMaxSizeBytes = proto.Clone(m.GetValidationServerGrpcMaxSizeBytes()).(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
 	}
 
+	if h, ok := interface{}(m.GetServerEnabled()).(clone.Cloner); ok {
+		target.ServerEnabled = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.ServerEnabled = proto.Clone(m.GetServerEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

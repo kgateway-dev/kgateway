@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6470
+    description: >
+       Expose `extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.InternalAddressConfig` This change
+       was previously reverted due to issues bumping the go-control-plane dependency which have since been fixed.
