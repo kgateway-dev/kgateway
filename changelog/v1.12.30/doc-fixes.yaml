@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Backports the docs for various items, such as bumping the version, reviewing a dev guide, and adding more information about version support.
