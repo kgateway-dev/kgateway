@@ -4,7 +4,6 @@ import (
 	"context"
 	"sort"
 
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
@@ -156,9 +155,4 @@ func (rc *ResourceClient) Watch(_ string, opts clients.WatchOpts) (<-chan resour
 func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) bool {
 	_, err := rc.knativeClient.NetworkingV1alpha1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
 	return err == nil
-}
-
-func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
-	// Not yet implemented. for now, kubeReporterClient should not be used for ApplyStatus operations.
-	return nil, eris.New("unexpected apply status operation")
 }

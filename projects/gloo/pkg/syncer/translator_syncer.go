@@ -120,7 +120,6 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 		multiErr = multierror.Append(multiErr, eris.Wrapf(wrappedErr, "writing reports"))
 	}
 
-	}
 	// Update resource status metrics
 	for resource, report := range reports {
 		status := s.reporter.StatusFromReport(report, nil)

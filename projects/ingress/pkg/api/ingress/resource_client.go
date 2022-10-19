@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -322,9 +321,4 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) bool {
 	_, err := rc.kube.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
 	return err == nil
-}
-
-func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
-	// Not yet implemented. for now, kubeReporterClient should not be used for ApplyStatus operations.
-	return nil, eris.New("unexpected apply status operation")
 }
