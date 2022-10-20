@@ -11,25 +11,19 @@ func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAc
 		namespace,
 		[]string{"gloo.solo.io"},
 		[]string{"settings"},
-		[]string{"get", "list", "watch", "create"})
+		[]string{"get", "list", "watch"})
 	permissions.AddExpectedPermission(
 		"gloo-system.gateway",
 		namespace,
 		[]string{"gloo.solo.io"},
 		[]string{"proxies"},
-		[]string{"get", "list", "watch", "create", "update", "delete"})
+		[]string{"get", "list", "watch", "create", "update", "delete", "patch"})
 	permissions.AddExpectedPermission(
 		"gloo-system.gateway",
 		namespace,
 		[]string{"gateway.solo.io"},
 		[]string{"gateways", "httpgateways", "virtualservices", "routetables", "virtualhostoptions", "routeoptions"},
-		[]string{"get", "list", "watch", "update"})
-	permissions.AddExpectedPermission(
-		"gloo-system.gateway",
-		namespace,
-		[]string{"gateway.solo.io"},
-		[]string{"gateways"},
-		[]string{"create"})
+		[]string{"get", "list", "watch", "patch"})
 
 	// Gloo
 	permissions.AddExpectedPermission(
@@ -38,20 +32,6 @@ func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAc
 		[]string{""},
 		[]string{"pods", "services", "configmaps", "namespaces", "secrets", "endpoints"},
 		[]string{"get", "list", "watch"})
-	permissions.AddExpectedPermission(
-		"gloo-system.gloo",
-		namespace,
-		[]string{""},
-		[]string{"configmaps"},
-		[]string{"*"},
-	)
-	permissions.AddExpectedPermission(
-		"gloo-system.gloo",
-		namespace,
-		[]string{"coordination.k8s.io"},
-		[]string{"leases"},
-		[]string{"*"},
-	)
 	permissions.AddExpectedPermission(
 		"gloo-system.gloo",
 		namespace,
@@ -67,15 +47,9 @@ func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAc
 	permissions.AddExpectedPermission(
 		"gloo-system.gloo",
 		namespace,
-		[]string{"gateway.solo.io"},
-		[]string{"gateways"},
-		[]string{"create"})
-	permissions.AddExpectedPermission(
-		"gloo-system.gloo",
-		namespace,
 		[]string{"gloo.solo.io"},
 		[]string{"proxies"},
-		[]string{"get", "list", "watch", "update", "patch", "create", "delete"})
+		[]string{"get", "list", "watch", "patch"})
 	permissions.AddExpectedPermission(
 		"gloo-system.gloo",
 		namespace,
