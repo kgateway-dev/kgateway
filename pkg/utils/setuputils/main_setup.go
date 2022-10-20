@@ -118,7 +118,11 @@ func fileOrKubeSettingsClient(ctx context.Context, setupNamespace, settingsDir s
 }
 
 func startLeaderElection(ctx context.Context, settingsDir string, electionConfig *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
-	if electionConfig == nil || settingsDir != "" {
+	if electionConfig == nil || settingsDir != "" || leaderelector.ShouldDisableLeaderElection() {
+		// If a component does not contain election config, it does not support HA
+		// If the settingsDir is non-empty, it means that Settings are not defined in Kubernetes and therefore we can't use the
+		// leader election library which depends on Kubernetes
+		// If leader election is explicitly disabled, it means a user has decided not to opt-into HA
 		return singlereplica.NewElectionFactory().StartElection(ctx, electionConfig)
 	}
 
