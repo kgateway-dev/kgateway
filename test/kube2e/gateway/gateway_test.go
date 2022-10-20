@@ -94,6 +94,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		proxyClient             gloov1.ProxyClient
 		serviceClient           skkube.ServiceClient
 		statusClient            resources.StatusClient
+		rateLimitConfigClient   v1alpha1skv1.RateLimitConfigClient
 	)
 
 	BeforeEach(func() {
@@ -152,6 +153,11 @@ var _ = Describe("Kube2e: gateway", func() {
 			Cfg:         cfg,
 			SharedCache: cache,
 		}
+		ratelimitConfigClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         v1alpha1skv1.RateLimitConfigCrd,
+			Cfg:         cfg,
+			SharedCache: cache,
+		}
 
 		gatewayClient, err = gatewayv1.NewGatewayClient(ctx, gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -201,6 +207,11 @@ var _ = Describe("Kube2e: gateway", func() {
 		kubeCoreCache, err := kubecache.NewKubeCoreCache(ctx, kubeClient)
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
+
+		rateLimitConfigClient, err = v1alpha1skv1.NewRateLimitConfigClient(ctx, ratelimitConfigClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		err = rateLimitConfigClient.Register()
+		Expect(err).NotTo(HaveOccurred())
 
 		statusClient = gloostatusutils.GetStatusClientForNamespace(testHelper.InstallNamespace)
 	})
@@ -1483,13 +1494,15 @@ var _ = Describe("Kube2e: gateway", func() {
 					},
 				},
 			}
-			glooResources.Ratelimitconfigs = v1alpha1skv1.RateLimitConfigList{rateLimitConfig}
+
+			_, err := rateLimitConfigClient.Write(rateLimitConfig, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("correctly sets a status to a RateLimitConfig", func() {
 			// demand that a created ratelimit config _has_ a rejected status.
 			Eventually(func() error {
-				rlc, err := resourceClientset.RateLimitConfigClient().Read(rateLimitConfig.GetMetadata().GetNamespace(), rateLimitConfig.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+				rlc, err := rateLimitConfigClient.Read(rateLimitConfig.GetMetadata().GetNamespace(), rateLimitConfig.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 				if err != nil {
 					return err
 				}
