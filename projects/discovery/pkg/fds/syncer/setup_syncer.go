@@ -137,7 +137,9 @@ func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts bootstrap.Opts, regist
 	discFactories := registryDiscFacts(opts)
 	for _, discoveryFactoryExtension := range pluginfuncs {
 		pe := discoveryFactoryExtension(opts)
-		discFactories = append(discFactories, pe)
+		if pe != (fds.FunctionDiscoveryFactory)(nil) {
+			discFactories = append(discFactories, pe)
+		}
 	}
 	return discFactories
 }
