@@ -2706,9 +2706,9 @@ func (m *ExtAuthConfig_LdapConfig) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetPool()).(clone.Cloner); ok {
-		target.Pool = h.Clone().(*ExtAuthConfig_LdapConfig_ConnectionPool)
+		target.Pool = h.Clone().(*Ldap_ConnectionPool)
 	} else {
-		target.Pool = proto.Clone(m.GetPool()).(*ExtAuthConfig_LdapConfig_ConnectionPool)
+		target.Pool = proto.Clone(m.GetPool()).(*Ldap_ConnectionPool)
 	}
 
 	target.SearchFilter = m.GetSearchFilter()
@@ -3011,29 +3011,6 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata) Clone() proto.Message {
 			target.Metadata[k] = v
 
 		}
-	}
-
-	return target
-}
-
-// Clone function
-func (m *ExtAuthConfig_LdapConfig_ConnectionPool) Clone() proto.Message {
-	var target *ExtAuthConfig_LdapConfig_ConnectionPool
-	if m == nil {
-		return target
-	}
-	target = &ExtAuthConfig_LdapConfig_ConnectionPool{}
-
-	if h, ok := interface{}(m.GetMaxSize()).(clone.Cloner); ok {
-		target.MaxSize = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
-	} else {
-		target.MaxSize = proto.Clone(m.GetMaxSize()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
-	}
-
-	if h, ok := interface{}(m.GetInitialSize()).(clone.Cloner); ok {
-		target.InitialSize = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
-	} else {
-		target.InitialSize = proto.Clone(m.GetInitialSize()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
 	return target

@@ -85,7 +85,6 @@ weight: 5
 - [KeyMetadata](#keymetadata)
 - [OpaAuthConfig](#opaauthconfig)
 - [LdapConfig](#ldapconfig)
-- [ConnectionPool](#connectionpool)
 - [LdapServiceAccountConfig](#ldapserviceaccountconfig)
 - [Config](#config)
 - [ApiKeyCreateRequest](#apikeycreaterequest)
@@ -1935,7 +1934,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 "userDnTemplate": string
 "membershipAttributeName": string
 "allowedGroups": []string
-"pool": .enterprise.gloo.solo.io.ExtAuthConfig.LdapConfig.ConnectionPool
+"pool": .enterprise.gloo.solo.io.Ldap.ConnectionPool
 "searchFilter": string
 "disableGroupChecking": bool
 "groupLookupSettings": .enterprise.gloo.solo.io.ExtAuthConfig.LdapServiceAccountConfig
@@ -1948,31 +1947,10 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `userDnTemplate` | `string` | Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder. When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope). E.g. "uid=%s,ou=people,dc=solo,dc=io". |
 | `membershipAttributeName` | `string` | Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided. |
 | `allowedGroups` | `[]string` | In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }. |
-| `pool` | [.enterprise.gloo.solo.io.ExtAuthConfig.LdapConfig.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |
+| `pool` | [.enterprise.gloo.solo.io.Ldap.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |
 | `searchFilter` | `string` | Use to set a custom filter when searching a member. Defaults to "(uid=*)". |
 | `disableGroupChecking` | `bool` | Disables group checking, regardless of the value for allowedGroups, and disables validation for the membership attribute of the user entry. Group checking is enabled by default. |
 | `groupLookupSettings` | [.enterprise.gloo.solo.io.ExtAuthConfig.LdapServiceAccountConfig](../extauth.proto.sk/#ldapserviceaccountconfig) | Settings for using a separate service account for looking up group membership To use this, you also need to configure credentials. |
-
-
-
-
----
-### ConnectionPool
-
- 
-Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
-is requested (meaning that all the pooled connections are in use), the connection will be created on the fly.
-
-```yaml
-"maxSize": .google.protobuf.UInt32Value
-"initialSize": .google.protobuf.UInt32Value
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `maxSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Maximum number connections that are pooled at any give time. The default value is 5. |
-| `initialSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Number of connections that the pool will be pre-populated with upon initialization. The default value is 2. |
 
 
 

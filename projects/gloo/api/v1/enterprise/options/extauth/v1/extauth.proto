@@ -1567,14 +1567,6 @@ message ExtAuthConfig {
         OpaAuthOptions options = 3;
     }
     message LdapConfig {
-        // Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
-        // is requested (meaning that all the pooled connections are in use), the connection will be created on the fly.
-        message ConnectionPool {
-            // Maximum number connections that are pooled at any give time. The default value is 5.
-            google.protobuf.UInt32Value maxSize = 1;
-            // Number of connections that the pool will be pre-populated with upon initialization. The default value is 2.
-            google.protobuf.UInt32Value initialSize = 2;
-        }
 
         // Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`.
         string address = 1;
@@ -1595,7 +1587,7 @@ message ExtAuthConfig {
         repeated string allowedGroups = 4;
 
         // Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
-        ConnectionPool pool = 5;
+        Ldap.ConnectionPool pool = 5;
 
         // Use to set a custom filter when searching a member. Defaults to "(uid=*)".
         string searchFilter = 6;
