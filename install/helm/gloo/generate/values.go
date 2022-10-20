@@ -57,6 +57,7 @@ type Image struct {
 	PullSecret *string `json:"pullSecret,omitempty" desc:"The image pull secret to use for the container, in the same namespace as the container pod."`
 	Extended   *bool   `json:"extended,omitempty" desc:"If true, deploys an extended version of the container with additional debug tools."`
 	Fips       *bool   `json:"fips,omitempty" desc:"If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)"`
+	PreferTag  *bool   `json:"preferTag,omitempty"  desc:"If true, prevent image digests from being used"`
 }
 
 type ResourceAllocation struct {

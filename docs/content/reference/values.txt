@@ -14,6 +14,7 @@
 |settings.integrations.knative.proxy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |settings.integrations.knative.proxy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |settings.integrations.knative.proxy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|settings.integrations.knative.proxy.image.preferTag|bool||If true, prevent image digests from being used|
 |settings.integrations.knative.proxy.httpPort|int|8080|HTTP port for the proxy|
 |settings.integrations.knative.proxy.httpsPort|int|8443|HTTPS port for the proxy|
 |settings.integrations.knative.proxy.tracing|string||tracing configuration|
@@ -124,6 +125,7 @@
 |gloo.deployment.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |gloo.deployment.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |gloo.deployment.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gloo.deployment.image.preferTag|bool||If true, prevent image digests from being used|
 |gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy|
 |gloo.deployment.restXdsPort|uint32|9976|port where gloo serves REST xDS API to Envoy|
 |gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
@@ -193,6 +195,7 @@
 |discovery.deployment.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |discovery.deployment.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |discovery.deployment.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|discovery.deployment.image.preferTag|bool||If true, prevent image digests from being used|
 |discovery.deployment.stats.enabled|bool||Controls whether or not Envoy stats are enabled|
 |discovery.deployment.stats.routePrefixRewrite|string||The Envoy stats endpoint to which the metrics are written|
 |discovery.deployment.stats.setDatadogAnnotations|bool||Sets the default datadog annotations|
@@ -274,6 +277,7 @@
 |gateway.certGenJob.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |gateway.certGenJob.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |gateway.certGenJob.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gateway.certGenJob.image.preferTag|bool||If true, prevent image digests from being used|
 |gateway.certGenJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
 |gateway.certGenJob.priorityClassName|string||name of a defined priority class|
 |gateway.certGenJob.nodeName|string||name of node to run on|
@@ -324,6 +328,7 @@
 |gateway.rolloutJob.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |gateway.rolloutJob.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |gateway.rolloutJob.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gateway.rolloutJob.image.preferTag|bool||If true, prevent image digests from being used|
 |gateway.rolloutJob.resources.limits.memory|string||amount of memory|
 |gateway.rolloutJob.resources.limits.cpu|string||amount of CPUs|
 |gateway.rolloutJob.resources.requests.memory|string||amount of memory|
@@ -353,6 +358,7 @@
 |gateway.cleanupJob.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |gateway.cleanupJob.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |gateway.cleanupJob.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gateway.cleanupJob.image.preferTag|bool||If true, prevent image digests from being used|
 |gateway.cleanupJob.resources.limits.memory|string||amount of memory|
 |gateway.cleanupJob.resources.limits.cpu|string||amount of CPUs|
 |gateway.cleanupJob.resources.requests.memory|string||amount of memory|
@@ -413,6 +419,7 @@
 |gatewayProxies.NAME.podTemplate.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |gatewayProxies.NAME.podTemplate.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |gatewayProxies.NAME.podTemplate.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gatewayProxies.NAME.podTemplate.image.preferTag|bool||If true, prevent image digests from being used|
 |gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service target port|
 |gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service target port|
 |gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
@@ -607,6 +614,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |gatewayProxies.gatewayProxy.podTemplate.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |gatewayProxies.gatewayProxy.podTemplate.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gatewayProxies.gatewayProxy.podTemplate.image.preferTag|bool||If true, prevent image digests from being used|
 |gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service target port|
 |gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service target port|
 |gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
@@ -772,6 +780,7 @@
 |ingress.deployment.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |ingress.deployment.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |ingress.deployment.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|ingress.deployment.image.preferTag|bool||If true, prevent image digests from being used|
 |ingress.deployment.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
 |ingress.deployment.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
 |ingress.deployment.extraIngressLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment.|
@@ -824,6 +833,7 @@
 |ingressProxy.deployment.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |ingressProxy.deployment.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |ingressProxy.deployment.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|ingressProxy.deployment.image.preferTag|bool||If true, prevent image digests from being used|
 |ingressProxy.deployment.httpPort|int|8080|HTTP port for the ingress container|
 |ingressProxy.deployment.httpsPort|int|8443|HTTPS port for the ingress container|
 |ingressProxy.deployment.extraPorts[]|interface|||
@@ -889,6 +899,7 @@
 |accessLogger.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |accessLogger.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |accessLogger.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|accessLogger.image.preferTag|bool||If true, prevent image digests from being used|
 |accessLogger.port|uint|8083||
 |accessLogger.serviceName|string|AccessLog||
 |accessLogger.enabled|bool|false||
@@ -950,6 +961,7 @@
 |global.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.image.extended|bool|false|If true, deploys an extended version of the container with additional debug tools.|
 |global.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.image.preferTag|bool||If true, prevent image digests from being used|
 |global.extensions|interface|||
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
@@ -971,6 +983,7 @@
 |global.glooMtls.sds.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.sds.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.sds.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.glooMtls.sds.image.preferTag|bool||If true, prevent image digests from being used|
 |global.glooMtls.envoy.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |global.glooMtls.envoy.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |global.glooMtls.envoy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -980,6 +993,7 @@
 |global.glooMtls.envoy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.envoy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.envoy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.glooMtls.envoy.image.preferTag|bool||If true, prevent image digests from being used|
 |global.glooMtls.istioProxy.image.tag|string|1.9.5|The image tag for the container.|
 |global.glooMtls.istioProxy.image.repository|string|proxyv2|The image repository (name) for the container.|
 |global.glooMtls.istioProxy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -989,6 +1003,7 @@
 |global.glooMtls.istioProxy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.istioProxy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.istioProxy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.glooMtls.istioProxy.image.preferTag|bool||If true, prevent image digests from being used|
 |global.glooMtls.envoySidecarResources.limits.memory|string||amount of memory|
 |global.glooMtls.envoySidecarResources.limits.cpu|string||amount of CPUs|
 |global.glooMtls.envoySidecarResources.requests.memory|string||amount of memory|
