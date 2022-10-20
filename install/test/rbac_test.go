@@ -274,12 +274,12 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"ratelimit.solo.io"},
 								Resources: []string{"ratelimitconfigs", "ratelimitconfigs/status"},
-								Verbs:     []string{"get", "list", "watch", "patch"},
+								Verbs:     []string{"get", "list", "watch", "patch", "update"},
 							},
 							{
 								APIGroups: []string{"graphql.gloo.solo.io"},
 								Resources: []string{"graphqlapis", "graphqlapis/status"},
-								Verbs:     []string{"get", "list", "watch", "patch"},
+								Verbs:     []string{"get", "list", "watch", "patch", "update"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{

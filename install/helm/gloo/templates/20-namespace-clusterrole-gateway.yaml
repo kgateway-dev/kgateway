@@ -71,7 +71,7 @@ rules:
   - get
   - list
   - watch
-  - patch # needed for status updates
+  - patch # needed for status updates for skv1
 - apiGroups:
   - enterprise.gloo.solo.io
   resources:
@@ -80,7 +80,7 @@ rules:
   - get
   - list
   - watch
-  - patch # needed for status updates
+  - patch # needed for status updates for skv1
 - apiGroups:
   - ratelimit.solo.io
   resources:
@@ -90,7 +90,8 @@ rules:
   - get
   - list
   - watch
-  - patch # needed for status updates
+  - patch # needed for status updates for skv1
+  - update # needed for status updates for skv2
 - apiGroups:
   - graphql.gloo.solo.io
   resources:
@@ -100,7 +101,8 @@ rules:
   - get
   - list
   - watch
-  - patch # needed for status updates
+  - patch # needed for status updates for skv1
+  - update # needed for status updates for skv2
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1

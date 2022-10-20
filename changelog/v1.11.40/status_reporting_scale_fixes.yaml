@@ -9,3 +9,14 @@ changelog:
       Even if these status updates fail, data-plane traffic and control-plane updates will be
       unaffected and work as usual.
     issueLink: https://github.com/solo-io/gloo/issues/7076
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4069
+    resolvesIssue: false
+    description: >-
+      Update the ratelimit config status implementation with the correct permissions to write statuses.
+      This will only affect enterprise code, so this change is marked as non user facing.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4076
+    resolvesIssue: true
+    description: >-
+      Update tests to ensure we can write ratelimit config statuses even though they use skv2 and /status
