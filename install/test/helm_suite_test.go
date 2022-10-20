@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 	"text/template"
 
@@ -111,11 +112,11 @@ func MustGetVersion() string {
 	output := MustMakeReturnStdout(".", "-C", "../../", "print-VERSION") // use print-VERSION so version matches on forks
 	// sample output
 	// make: Entering directory '/var/home/kdorosh/git/forks/gloo'\n0.0.0-fork\nmake: Leaving directory '/var/home/kdorosh/git/forks/gloo'\n"
-	//lines := strings.Split(output, "\n")
+
 	// https://github.com/solo-io/gloo/issues/7063
-	//Expect(len(lines)).To(BeNumerically(">", 2))
-	//return lines[1]
-	return output[:len(output)-1]
+	lines := strings.Split(output, "\n")
+	Expect(len(lines)).To(BeNumerically(">", 2))
+	return lines[1]
 }
 
 type helmValues struct {
