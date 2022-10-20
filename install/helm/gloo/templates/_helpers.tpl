@@ -29,7 +29,7 @@ Expand the name of a container image, adding -fips to the name of the repo if co
       {{- .registry }}/{{ .repository }}-fips:{{ .tag }}@{{ .fipsDigest }}
     {{- else -}}
       {{- /* use .digest; if available, falling back to .tag */ -}}
-      {{- .registry }}/{{ .repository }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}{{- if .digest -}}@{{ .digest }}{{- end -}}
+      {{- .registry }}/{{ .repository }}{{ ternary "-fips" "" ( and (has .repository (list "gloo-ee" "extauth-ee" "gloo-ee-envoy-wrapper" "rate-limit-ee" )) (default false .fips)) }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}{{- if .digest -}}@{{ .digest }}{{- end -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
