@@ -74,7 +74,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.GetHttp1ProtocolOptions() != nil {
-		http1ProtocolOptions, err := convertHttp1ProtocolOptions(*cfg.GetHttp1ProtocolOptions())
+		http1ProtocolOptions, err := ConvertHttp1ProtocolOptions(*cfg.GetHttp1ProtocolOptions())
 		if err != nil {
 			return err
 		}
@@ -128,7 +128,7 @@ func convertHttpProtocolOptions(hpo protocol.HttpProtocolOptions) (*envoy_config
 	return out, nil
 }
 
-func convertHttp1ProtocolOptions(hpo protocol.Http1ProtocolOptions) (*envoy_config_core_v3.Http1ProtocolOptions, error) {
+func ConvertHttp1ProtocolOptions(hpo protocol.Http1ProtocolOptions) (*envoy_config_core_v3.Http1ProtocolOptions, error) {
 	out := &envoy_config_core_v3.Http1ProtocolOptions{}
 
 	if hpo.GetEnableTrailers() {
