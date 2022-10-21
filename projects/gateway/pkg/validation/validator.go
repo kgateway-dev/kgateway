@@ -306,12 +306,6 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		snapshotClone.UpsertToResourceList(opts.Resource)
 	}
 
-	// only set the glooResource if we are validating a gloo resource
-	var glooResource resources.Resource
-	if opts.Gvk.Group != GatewayGroup {
-		glooResource = opts.Resource
-	}
-
 	var (
 		errs         error
 		proxyReports ProxyReports
@@ -337,7 +331,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 		proxies = append(proxies, proxy)
 		// validate the proxy with gloo
-		glooReports, err := v.glooValidator(ctx, proxy, glooResource, opts.Delete)
+		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, opts.Delete)
 		if err != nil {
 			err = errors.Wrapf(err, failedGlooValidation)
 			if v.ignoreProxyValidationFailure {
