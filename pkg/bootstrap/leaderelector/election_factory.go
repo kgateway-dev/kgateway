@@ -44,7 +44,7 @@ type ElectionFactory interface {
 	StartElection(ctx context.Context, config *ElectionConfig) (Identity, error)
 }
 
-// Returns true if leader election is disabled using an environment variable
-func ShouldDisableLeaderElection() bool {
+// IsDisabled returns true if leader election is disabled using an environment variable
+func IsDisabled() bool {
 	return disableElection
 }
