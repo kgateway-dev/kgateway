@@ -64,19 +64,19 @@ func (rc *ResourceClient) Register() error {
 }
 
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
-	panic("this client does not support read operations")
+	return nil, errors.Errorf("this client does not support read operations")
 }
 
 func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
-	panic("this client does not support write operations")
+	return nil, errors.Errorf("this client does not support write operations")
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	panic("this client does not support delete operations")
+	return errors.Errorf("this client does not support delete operations")
 }
 
 func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
-	panic("this client does not support apply status operations")
+	return nil, errors.Errorf("this client does not support apply status operations")
 }
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {

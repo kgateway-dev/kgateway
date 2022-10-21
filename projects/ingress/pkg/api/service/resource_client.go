@@ -180,7 +180,7 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 	}
 	opts = opts.WithDefaults()
 
-	data, err := shared.GetJsonPatchData(context.TODO(), inputResource)
+	data, err := shared.GetJsonPatchData(opts.Ctx, inputResource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting status json patch data")
 	}
