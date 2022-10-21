@@ -91,15 +91,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		OverrideStreamErrorOnInvalidHttpMessage: ose,
 	}
 
-	protobuf := &envoy_extensions_upstreams_http_v3.HttpProtocolOptions{
-		UpstreamProtocolOptions: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
-			ExplicitHttpConfig: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
-				ProtocolConfig: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-					Http2ProtocolOptions: http2ProtocolOptions,
-				},
-			},
-		},
-	}
+	protobuf := &envoy_extensions_upstreams_http_v3.HttpProtocolOptions{}
 	if in.GetProtocolSelection() == v1.Upstream_USE_DOWNSTREAM_PROTOCOL {
 		var err error
 
@@ -115,6 +107,14 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			UseDownstreamProtocolConfig: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_UseDownstreamHttpConfig{
 				HttpProtocolOptions:  http1ProtocolOptions,
 				Http2ProtocolOptions: http2ProtocolOptions,
+			},
+		}
+	} else {
+		protobuf.UpstreamProtocolOptions = &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+			ExplicitHttpConfig: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+				ProtocolConfig: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+					Http2ProtocolOptions: http2ProtocolOptions,
+				},
 			},
 		}
 	}
