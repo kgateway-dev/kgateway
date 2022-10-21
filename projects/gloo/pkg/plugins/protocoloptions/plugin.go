@@ -9,7 +9,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/httpprotocolhelpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/httpprotocolvalidation"
 )
 
@@ -97,7 +97,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 		http1ProtocolOptions := &envoy_config_core_v3.Http1ProtocolOptions{}
 		if in.GetConnectionConfig().GetHttp1ProtocolOptions() != nil {
-			http1ProtocolOptions, err = upstreamconn.ConvertHttp1ProtocolOptions(*in.GetConnectionConfig().GetHttp1ProtocolOptions())
+			http1ProtocolOptions, err = httpprotocolhelpers.ConvertHttp1ProtocolOptions(*in.GetConnectionConfig().GetHttp1ProtocolOptions())
 			if err != nil {
 				return err
 			}
