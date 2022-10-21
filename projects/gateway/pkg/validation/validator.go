@@ -301,9 +301,13 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	if opts.Delete {
-		snapshotClone.RemoveFromResourceList(opts.Resource)
+		if err := snapshotClone.RemoveFromResourceList(opts.Resource); err != nil {
+			return nil, err
+		}
 	} else {
-		snapshotClone.UpsertToResourceList(opts.Resource)
+		if err := snapshotClone.UpsertToResourceList(opts.Resource); err != nil {
+			return nil, err
+		}
 	}
 
 	var (
@@ -386,16 +390,21 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		utils2.MeasureOne(ctx, mValidConfig)
 	}
 
+	reports := &Reports{ProxyReports: &proxyReports, Proxies: proxies}
 	if !opts.DryRun {
 		// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
 		if opts.Delete {
-			v.latestSnapshot.RemoveFromResourceList(opts.Resource)
+			if err = v.latestSnapshot.RemoveFromResourceList(opts.Resource); err != nil {
+				return reports, err
+			}
 		} else {
-			v.latestSnapshot.UpsertToResourceList(opts.Resource)
+			if err = v.latestSnapshot.UpsertToResourceList(opts.Resource); err != nil {
+				return reports, err
+			}
 		}
 	}
 
-	return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, nil
+	return reports, nil
 }
 
 // ValidateDeletedGvk will validate a deletion of a resource, as long as it is supported, against the Gateway and Gloo Translations.
