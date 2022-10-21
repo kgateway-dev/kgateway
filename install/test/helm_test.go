@@ -4636,6 +4636,28 @@ metadata:
 					"gateway-proxy-id": "gateway-proxy",
 				}
 
+				FIt("should allow customising tcp keepalive", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"",
+							"gatewayProxies.gatewayProxy.tcpKeepaliveTimeSeconds=30"},
+					})
+					byt, err := ioutil.ReadFile("fixtures/envoy_config/tcp_keepalive.yaml")
+					Expect(err).ToNot(HaveOccurred())
+					envoyBootstrapYaml := string(byt)
+
+					envoyBootstrapSpec := make(map[string]string)
+					envoyBootstrapSpec["envoy.yaml"] = envoyBootstrapYaml
+
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      envoyBootstrapSpec,
+					}
+					envoyBootstrapCm := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
+				})
+
 				It("is not created if disabled", func() {
 
 					prepareMakefile(namespace, helmValues{
