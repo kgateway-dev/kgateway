@@ -4636,7 +4636,7 @@ metadata:
 					"gateway-proxy-id": "gateway-proxy",
 				}
 
-				FIt("should allow customising tcp keepalive", func() {
+				It("should allow customising tcp keepalive", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"",
 							"gatewayProxies.gatewayProxy.tcpKeepaliveTimeSeconds=30"},
