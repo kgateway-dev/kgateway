@@ -10,6 +10,20 @@ import (
 // If you wish to disable it, set this env variable to a truthy value ("1", "t", "T", "true", "TRUE", "True")
 const disableElectionEnvVar = "DISABLE_LEADER_ELECTION"
 
+var (
+	disableElection = false
+)
+
+func init() {
+	disableElectionVal := os.Getenv(disableElectionEnvVar)
+	boolValue, err := strconv.ParseBool(disableElectionVal)
+	// in the case where a non-truthy string was provided, this will return an error
+	// in that case, we ignore the value altogether
+	if err == nil {
+		disableElection = boolValue
+	}
+}
+
 // ElectionConfig is the set of properties that can be used to configure leader elections
 type ElectionConfig struct {
 	// The name of the component
@@ -32,14 +46,5 @@ type ElectionFactory interface {
 
 // Returns true if leader election is disabled using an environment variable
 func ShouldDisableLeaderElection() bool {
-	disableElectionVal := os.Getenv(disableElectionEnvVar)
-	boolValue, err := strconv.ParseBool(disableElectionVal)
-	// in the case where a non-truthy string was provided, this will return an error
-	// in that case, we ignore the value altogether
-	if err == nil {
-		return boolValue
-	}
-
-	// by default, leader election is enabled
-	return false
+	return disableElection
 }
