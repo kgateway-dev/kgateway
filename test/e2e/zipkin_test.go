@@ -34,8 +34,6 @@ import (
 
 var _ = Describe("Zipkin config loading", func() {
 
-	// Non-functional change to trigger CI (#4)
-
 	var (
 		ctx           context.Context
 		cancel        context.CancelFunc
