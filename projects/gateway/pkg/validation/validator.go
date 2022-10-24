@@ -334,7 +334,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		}
 
 		proxies = append(proxies, proxy)
-		// validate the proxy with gloo
+		// validate the proxy with gloo this occurs in projects/gloo/pkg/validation/gloo_validator.go
 		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, opts.Delete)
 		if err != nil {
 			err = errors.Wrapf(err, failedGlooValidation)

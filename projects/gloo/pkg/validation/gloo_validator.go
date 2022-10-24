@@ -69,12 +69,15 @@ func (gv glooValidator) Validate(ctx context.Context, proxy *gloov1.Proxy, snaps
 		// even if they are semantically incorrect.
 		// This log line is attempting to identify these situations
 		contextutils.LoggerFrom(ctx).Warnf("found no proxies to validate, accepting update without translating Gloo resources")
+		return validationReports
 	}
 
 	params := plugins.Params{
 		Ctx:      ctx,
 		Snapshot: snapshot,
 	}
+	// Validation with gateway occurs in /projects/gateway/pkg/validation/validator.go, were as validation for the Gloo
+	// resources occurs in the following for loop.
 	for _, proxy := range proxiesToValidate {
 		xdsSnapshot, resourceReports, proxyReport := gv.glooTranslator.Translate(params, proxy)
 

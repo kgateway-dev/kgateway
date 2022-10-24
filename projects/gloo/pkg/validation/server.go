@@ -171,6 +171,7 @@ func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream
 	}
 }
 
+// Validate is a gRPC call that we use for validating resources against a request to add upstreams and secrets.
 func (s *validator) Validate(ctx context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
 	s.lock.Lock()
 	// we may receive a Validate call before a Sync has occurred
@@ -205,6 +206,9 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 		// even if they are semantically incorrect.
 		// This log line is attempting to identify these situations
 		logger.Warnf("found no proxies to validate, accepting update without translating Gloo resources")
+		return &validation.GlooValidationServiceResponse{
+			ValidationReports: validationReports,
+		}, nil
 	}
 
 	params := plugins.Params{
@@ -229,6 +233,7 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 // exported because it is used as a gRPC service. A synced version of the snapshot is needed for
 // gloo validation.
 func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource resources.Resource, delete bool) ([]*GlooValidationReport, error) {
+	// the gateway validator will call this function to validate Gloo resources.
 	s.lock.Lock()
 	// we may receive a Validate call before a Sync has occurred
 	if s.latestSnapshot == nil {
