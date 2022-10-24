@@ -8,6 +8,7 @@ metadata:
   namespace: {{ . }}
 spec:
   discovery:
+    fdsMode: WHITELIST
     fdsOptions:
       graphqlEnabled: false
   gateway:
