@@ -234,6 +234,10 @@ spec:
           - name: ENABLE_ISTIO_INTEGRATION
             value: "true"
         {{- end}}
+        {{- if .Values.gloo.disableLeaderElection }}
+          - name: DISABLE_LEADER_ELECTION
+            value: "true"
+        {{- end}}
 {{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:
           tcpSocket:
