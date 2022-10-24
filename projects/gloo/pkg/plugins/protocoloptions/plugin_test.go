@@ -9,6 +9,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/protocoloptions"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
@@ -33,6 +34,47 @@ var _ = Describe("Plugin", func() {
 
 	})
 	Context("upstream", func() {
+		Context("USE_DOWNSTREAM_PROTOCOL is set", func() {
+			It("should account for `nil` Http1ProtocolOptions", func() {
+				upstream := createTestUpstreamWithProtocolOptions(true, v1.Upstream_USE_DOWNSTREAM_PROTOCOL)
+				upstream.ConnectionConfig = nil
+
+				err := p.ProcessUpstream(params, upstream, out)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should unpack Http1ProtocolOptions to envoy object", func() {
+				upstream := createTestUpstreamWithProtocolOptions(true, v1.Upstream_USE_DOWNSTREAM_PROTOCOL)
+				upstream.ConnectionConfig.Http1ProtocolOptions = &protocol.Http1ProtocolOptions{
+					EnableTrailers: true,
+				}
+
+				err := p.ProcessUpstream(params, upstream, out)
+				Expect(err).ToNot(HaveOccurred())
+
+				test, err := utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"])
+				Expect(err).ToNot(HaveOccurred())
+				protocolOptions, ok := test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions)
+				Expect(ok).To(BeTrue())
+
+				Expect(protocolOptions.GetUseDownstreamProtocolConfig().GetHttpProtocolOptions().GetEnableTrailers()).To(BeTrue())
+			})
+
+			It("should unpack Http2ProtocolOptions to envoy object", func() {
+				upstream := createTestUpstreamWithProtocolOptions(true, v1.Upstream_USE_DOWNSTREAM_PROTOCOL)
+
+				err := p.ProcessUpstream(params, upstream, out)
+				Expect(err).ToNot(HaveOccurred())
+
+				test, err := utils.AnyToMessage(out.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"])
+				Expect(err).ToNot(HaveOccurred())
+				protocolOptions, ok := test.(*envoy_extensions_upstreams_http_v3.HttpProtocolOptions)
+				Expect(ok).To(BeTrue())
+
+				Expect(protocolOptions.GetUseDownstreamProtocolConfig().GetHttp2ProtocolOptions().GetMaxConcurrentStreams()).To(Equal(&wrappers.UInt32Value{Value: 1234}))
+			})
+		})
+
 		It("should not use window sizes if UseHttp2 is not true", func() {
 			falseVal := &v1.Upstream{
 				MaxConcurrentStreams:        &wrappers.UInt32Value{Value: 123},
