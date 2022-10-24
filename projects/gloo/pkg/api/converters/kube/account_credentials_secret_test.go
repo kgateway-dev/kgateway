@@ -65,9 +65,9 @@ var _ = Describe("API Key Secret Converter", func() {
 				},
 				Type: corev1.SecretTypeOpaque,
 			}
-			glooSecret, err := converter.FromKubeSecret(ctx, resourceClient, secret)
+			actual, err := converter.FromKubeSecret(ctx, resourceClient, secret)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(glooSecret).To(BeNil())
+			Expect(actual).To(BeNil())
 		})
 
 		It("ignores AccountCredentials secrets that do not contain a username and password", func() {
@@ -81,9 +81,9 @@ var _ = Describe("API Key Secret Converter", func() {
 				},
 				Type: kubeconverters.AccountCredentialsSecretType,
 			}
-			glooSecret, err := converter.FromKubeSecret(ctx, resourceClient, secret)
+			actual, err := converter.FromKubeSecret(ctx, resourceClient, secret)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(glooSecret).To(BeNil())
+			Expect(actual).To(BeNil())
 		})
 
 		It("correctly converts AccountCredentials secrets", func() {
