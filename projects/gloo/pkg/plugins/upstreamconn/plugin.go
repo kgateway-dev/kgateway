@@ -73,7 +73,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.GetHttp1ProtocolOptions() != nil {
-		http1ProtocolOptions, err := httpprotocolhelpers.ConvertHttp1ProtocolOptions(*cfg.GetHttp1ProtocolOptions())
+		http1ProtocolOptions, err := httpprotocolhelpers.ConvertHttp1(*cfg.GetHttp1ProtocolOptions())
 		if err != nil {
 			return err
 		}
