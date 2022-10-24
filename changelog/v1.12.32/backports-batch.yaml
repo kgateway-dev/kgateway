@@ -13,3 +13,13 @@ changelog:
     description: >-
       Allow leader election to be disabled in Gloo by configuring the DISABLE_LEADER_ELECTION
       environment variable to a truthy value. Previously, it could not be disabled explicitly.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7096
+    resolvesIssue: false
+    description: >
+      Differentiate between `use_downstream_protocol_config` and `explicit_http_config` when `useHttp2` is set on an Upstream.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7096
+    resolvesIssue: false
+    description: >
+      Differentiate between `use_downstream_protocol_config` and `explicit_http_config` when `useHttp2` is set on an Upstream.
