@@ -185,6 +185,18 @@ spec:
                           type: array
                         disableGroupChecking:
                           type: boolean
+                        groupLookupSettings:
+                          properties:
+                            checkGroupsWithServiceAccount:
+                              type: boolean
+                            credentialsSecretRef:
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                          type: object
                         membershipAttributeName:
                           type: string
                         pool:
