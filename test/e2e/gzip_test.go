@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -32,17 +34,17 @@ var _ = Describe("gzip", func() {
 	var (
 		ctx           context.Context
 		cancel        context.CancelFunc
-		testClients   services.TestClients
 		envoyInstance *services.EnvoyInstance
-		up            *gloov1.Upstream
 
-		writeNamespace = defaults.GlooSystem
+		testClients  services.TestClients
+		testUpstream *v1helpers.TestUpstream
+
+		resourcesToCreate *gloosnapshot.ApiSnapshot
+		writeNamespace    = defaults.GlooSystem
 	)
 
 	BeforeEach(func() {
-		var err error
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
 
 		// run gloo
 		ro := &services.RunOptions{
@@ -55,25 +57,36 @@ var _ = Describe("gzip", func() {
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
-		// write gateways and wait for them to be created
-		err = gloohelpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
-		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-		Eventually(func() (gatewayv1.GatewayList, error) {
-			return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
-		}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
-
 		// run envoy
+		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		// write a test upstream
 		// this is the upstream that will handle requests
-		testUs := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		up = testUs.Upstream
-		_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
+		testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+
+		vsToTestUpstream := gloohelpers.NewVirtualServiceBuilder().
+			WithName("vs-test").
+			WithNamespace(writeNamespace).
+			WithDomain("test.com").
+			WithRoutePrefixMatcher("test", "/").
+			WithRouteActionToUpstream("test", testUpstream.Upstream).
+			Build()
+
+		// The set of resources that these tests will generate
+		resourcesToCreate = &gloosnapshot.ApiSnapshot{
+			Gateways: gatewayv1.GatewayList{
+				gatewaydefaults.DefaultGateway(writeNamespace),
+			},
+			VirtualServices: gatewayv1.VirtualServiceList{
+				vsToTestUpstream,
+			},
+			Upstreams: gloov1.UpstreamList{
+				testUpstream.Upstream,
+			},
+		}
 	})
 
 	AfterEach(func() {
@@ -81,126 +94,81 @@ var _ = Describe("gzip", func() {
 		cancel()
 	})
 
-	checkProxy := func() {
-		// ensure the proxy is created
-		Eventually(func() (*gloov1.Proxy, error) {
-			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-		}, "5s", "0.1s").ShouldNot(BeNil())
-	}
+	JustBeforeEach(func() {
+		// Create Resources
+		err := testClients.WriteSnapshot(ctx, resourcesToCreate)
+		Expect(err).NotTo(HaveOccurred())
 
-	checkVirtualService := func(testVs *gatewayv1.VirtualService) {
-		Eventually(func() (*gatewayv1.VirtualService, error) {
-			return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
-		}, "5s", "0.1s").ShouldNot(BeNil())
-	}
+		// Wait for a proxy to be accepted
+		gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		})
 
-	testRequest := func(jsonStr string) string {
-		By("Make request")
-		responseBody := ""
-		EventuallyWithOffset(1, func() error {
-			var json = []byte(jsonStr)
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
-			if err != nil {
-				return err
-			}
-			req.Header.Set("Accept-Encoding", "gzip")
-			req.Header.Set("Content-Type", "application/json")
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return err
-			}
-			if res.StatusCode != 200 {
-				return errors.New(fmt.Sprintf("expected status code 200 got %v", res.StatusCode))
-			}
-			p := new(bytes.Buffer)
-			if _, err := io.Copy(p, res.Body); err != nil {
-				return err
-			}
-			defer res.Body.Close()
-			responseBody = p.String()
-			return nil
-		}, "10s", ".1s").Should(BeNil())
-		return responseBody
-	}
+		// Ensure the testUpstream is reachable
+		v1helpers.ExpectCurlWithOffset(
+			0,
+			v1helpers.CurlRequest{
+				RootCA: nil,
+				Port:   defaults.HttpPort,
+				Host:   "test.com", // to match the vs-test
+				Path:   "/",
+				Body:   []byte("solo.io test"),
+			},
+			v1helpers.CurlResponse{
+				Status:  http.StatusOK,
+				Message: "",
+			},
+		)
+	})
+
+	JustAfterEach(func() {
+		// We do not need to clean up the Snapshot that was written in the JustBeforeEach
+		// That is because each test uses its own InMemoryCache
+	})
 
 	Context("filter undefined", func() {
 
-		JustBeforeEach(func() {
-			// write a virtual service so we have a proxy to our test upstream
-			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			_, err := testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			checkProxy()
-			checkVirtualService(testVs)
+		BeforeEach(func() {
+			resourcesToCreate.Gateways[0].GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				Gzip: nil,
+			}
 		})
 
 		It("should return uncompressed json", func() {
 			// json needs to be longer than default content length to trigger
 			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
-			testReq := testRequest(jsonStr)
+			testReq := executePostRequest("test.com", jsonStr)
 			Expect(testReq).Should(Equal(jsonStr))
 		})
 	})
 
 	Context("filter defined", func() {
 
-		JustBeforeEach(func() {
-			gatewayClient := testClients.GatewayClient
-			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			// build a gzip policy
-			gzipPolicy := &gloogzip.Gzip{
-				MemoryLevel: &wrappers.UInt32Value{
-					Value: 5,
-				},
-				CompressionLevel:    gloogzip.Gzip_CompressionLevel_SPEED,
-				CompressionStrategy: gloogzip.Gzip_HUFFMAN,
-				WindowBits: &wrappers.UInt32Value{
-					Value: 12,
+		BeforeEach(func() {
+			resourcesToCreate.Gateways[0].GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				Gzip: &gloogzip.Gzip{
+					MemoryLevel: &wrappers.UInt32Value{
+						Value: 5,
+					},
+					CompressionLevel:    gloogzip.Gzip_CompressionLevel_SPEED,
+					CompressionStrategy: gloogzip.Gzip_HUFFMAN,
+					WindowBits: &wrappers.UInt32Value{
+						Value: 12,
+					},
 				},
 			}
-
-			// update the listener to include the gzip policy
-			httpGateway := gw.GetHttpGateway()
-			httpGateway.Options = &gloov1.HttpListenerOptions{
-				Gzip: gzipPolicy,
-			}
-			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
-
-			// Wait until the gateway is written
-			Eventually(func() error {
-				readGateway, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				if err != nil {
-					return err
-				}
-				if readGateway.GetHttpGateway() == nil || readGateway.GetHttpGateway().GetOptions() == nil || readGateway.GetHttpGateway().GetOptions().Gzip == nil {
-					return fmt.Errorf("gzip not set, new gateway is not yet written")
-				}
-				return nil
-			}, "15s", "0.5s").ShouldNot(HaveOccurred())
-
-			// write a virtual service so we have a proxy to our test upstream
-			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			checkProxy()
-			checkVirtualService(testVs)
 		})
 
 		It("should return compressed json", func() {
 			// json needs to be longer than default content length to trigger
 			// len(short json) < 30
 			shortJsonStr := `{"value":"Hello, world!"}`
-			testShortReq := testRequest(shortJsonStr)
+			testShortReq := executePostRequest("test.com", shortJsonStr)
 			Expect(testShortReq).Should(Equal(shortJsonStr))
 
 			// raw json should be compressed
 			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
-			testReqBody := testRequest(jsonStr)
+			testReqBody := executePostRequest("test.com", jsonStr)
 			Expect(testReqBody).ShouldNot(Equal(jsonStr))
 
 			// decompressed json from response should equal original
@@ -213,3 +181,28 @@ var _ = Describe("gzip", func() {
 		})
 	})
 })
+
+func executePostRequest(host, jsonStr string) string {
+	By("Make request")
+	responseBody := ""
+	EventuallyWithOffset(1, func(g Gomega) error {
+		var json = []byte(jsonStr)
+		req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+		g.ExpectWithOffset(1, err).NotTo(HaveOccurred())
+		req.Host = host
+		req.Header.Set("Accept-Encoding", "gzip")
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		g.ExpectWithOffset(1, err).NotTo(HaveOccurred())
+		g.ExpectWithOffset(1, res.StatusCode).Should(Equal(http.StatusOK))
+
+		p := new(bytes.Buffer)
+		_, err = io.Copy(p, res.Body)
+		g.ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+		defer res.Body.Close()
+		responseBody = p.String()
+		return nil
+	}, "10s", ".1s").Should(Succeed())
+	return responseBody
+}
