@@ -150,14 +150,14 @@ var _ = Describe("selectUpstreamsForDiscovery", func() {
 			Expect(RunFDS(opts)).To(HaveOccurred())
 		})
 		It("excludes nil discovery factories from the array", func() {
-			f := func(opts bootstrap.Opts) fds.FunctionDiscoveryFactory {
+			discoveryFactoryFunc := func(opts bootstrap.Opts) fds.FunctionDiscoveryFactory {
 				return nil
 			}
-			f2 := func(opts bootstrap.Opts) []fds.FunctionDiscoveryFactory {
+			discoveryFactorySliceFunc := func(opts bootstrap.Opts) []fds.FunctionDiscoveryFactory {
 				return nil
 			}
-			Expect(GetFunctionDiscoveriesWithExtensionsAndRegistry(opts, f2, Extensions{
-				DiscoveryFactoryFuncs: []func(opts bootstrap.Opts) fds.FunctionDiscoveryFactory{f},
+			Expect(GetFunctionDiscoveriesWithExtensionsAndRegistry(opts, discoveryFactorySliceFunc, Extensions{
+				DiscoveryFactoryFuncs: []func(opts bootstrap.Opts) fds.FunctionDiscoveryFactory{discoveryFactoryFunc},
 			})).To(HaveLen(0))
 
 		})

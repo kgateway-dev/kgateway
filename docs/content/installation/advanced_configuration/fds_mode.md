@@ -74,7 +74,7 @@ FDS can run in one of 3 modes:
 
 Setting the `fdsMode` can be done either via the Helm Chart, or by directly modifying the `default` `gloo.solo.io/v1.Settings` custom resource in Gloo Edge's installation namespace (`gloo-system`).
 
-(Enterprise Only) Automated schema generation for GraphQL is enabled by default. This can be disabled by modifying the `gloo.solo.io/v1.Settings` custom resource as seen [below](https://docs.solo.io/gloo-edge/latest/installation/advanced_configuration/fds_mode/#settings-fdsmode-by-editing-the-gloosoloiov1settings-custom-resource)
+(Enterprise Only) Automated schema generation for GraphQL is enabled by default. This can be disabled by modifying the `gloo.solo.io/v1.Settings` custom resource as seen [below]({{% versioned_link_path fromRoot="/installation/preparation/" %}}#settings-fdsmode-by-editing-the-gloosoloiov1settings-custom-resource)
 
 ### Setting `fdsMode` via the Helm chart
 
