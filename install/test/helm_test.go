@@ -4302,6 +4302,18 @@ metadata:
 						})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
+					It("can set disable leader election env var", func() {
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							glooDeployment.Spec.Template.Spec.Containers[0].Env,
+							v1.EnvVar{
+								Name:  "DISABLE_LEADER_ELECTION",
+								Value: "true",
+							})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gloo.disableLeaderElection=true"},
+						})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
 					It("can disable validation", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = []v1.EnvVar{GetPodNamespaceEnvVar(), GetPodNamespaceStats()}
 						glooDeployment.Spec.Template.Spec.Volumes = []v1.Volume{{
