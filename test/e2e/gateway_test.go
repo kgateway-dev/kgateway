@@ -206,32 +206,34 @@ var _ = Describe("Gateway", func() {
 				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
-				// Wait for proxy to be accepted
-				var proxy *gloov1.Proxy
-				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-					var err error
-					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-					return proxy, err
-				})
+				// Wait for the Proxy to contain the updated configuration
+				Eventually(func(g Gomega) {
+					proxy, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				// Verify that the proxy has the expected route
-				Expect(proxy.Listeners).To(HaveLen(2))
-				var nonSslListener gloov1.Listener
-				for _, l := range proxy.Listeners {
-					if l.BindPort == defaults.HttpPort {
-						nonSslListener = *l
-						break
+					g.Expect(proxy.Listeners).To(HaveLen(2))
+					var nonSslListener gloov1.Listener
+					for _, l := range proxy.Listeners {
+						if l.BindPort == defaults.HttpPort {
+							nonSslListener = *l
+							break
+						}
 					}
-				}
-				Expect(nonSslListener.GetHttpListener()).NotTo(BeNil())
-				Expect(nonSslListener.GetHttpListener().VirtualHosts).To(HaveLen(1))
-				Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes).To(HaveLen(1))
-				Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction()).NotTo(BeNil())
-				Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle()).NotTo(BeNil())
-				service := nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetKube()
-				Expect(service.Ref.Namespace).To(Equal(svc.Namespace))
-				Expect(service.Ref.Name).To(Equal(svc.Name))
-				Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
+					g.Expect(nonSslListener.GetHttpListener()).NotTo(BeNil())
+					g.Expect(nonSslListener.GetHttpListener().VirtualHosts).To(HaveLen(1))
+					g.Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes).To(HaveLen(1))
+					g.Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction()).NotTo(BeNil())
+					g.Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle()).NotTo(BeNil())
+					service := nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetKube()
+					g.Expect(service.Ref.Namespace).To(Equal(svc.Namespace))
+					g.Expect(service.Ref.Name).To(Equal(svc.Name))
+					g.Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
+				}).Should(Succeed())
+
+				// Verify that the proxy is accepted
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				})
 
 				// clean up the virtual service that we created
 				err = testClients.VirtualServiceClient.Delete(vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName(), clients.DeleteOpts{})
@@ -886,38 +888,30 @@ var _ = Describe("Gateway", func() {
 				_, err = testClients.VirtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
-				// Wait for proxy to be accepted
-				var proxy *gloov1.Proxy
+				// Wait for the Proxy to contain the updated configuration
+				Eventually(func(g Gomega) {
+					proxy, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+					g.Expect(err).NotTo(HaveOccurred())
+					// Verify that the proxy has the expected route
+					g.Expect(proxy.Listeners).To(HaveLen(1))
+					listener := proxy.Listeners[0]
+
+					g.Expect(listener.GetHybridListener().GetMatchedListeners()[0].GetHttpListener()).NotTo(BeNil())
+					httpListener := listener.GetHybridListener().GetMatchedListeners()[0].GetHttpListener()
+					g.Expect(httpListener.VirtualHosts).To(HaveLen(1))
+					g.Expect(httpListener.VirtualHosts[0].Routes).To(HaveLen(1))
+					g.Expect(httpListener.VirtualHosts[0].Routes[0].GetRouteAction()).NotTo(BeNil())
+					g.Expect(httpListener.VirtualHosts[0].Routes[0].GetRouteAction().GetSingle()).NotTo(BeNil())
+					service := httpListener.VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetKube()
+					g.Expect(service.GetRef().GetNamespace()).To(Equal(svc.Namespace))
+					g.Expect(service.GetRef().GetName()).To(Equal(svc.Name))
+					g.Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
+				}, time.Second*5, time.Second).Should(Succeed())
+
+				// Verify that the proxy is accepted
 				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-					if err != nil {
-						return nil, err
-					}
-					for _, l := range proxy.Listeners {
-						if hl := l.GetHybridListener(); hl != nil {
-							if len(hl.MatchedListeners) != 1 {
-								continue
-							}
-							return proxy, nil
-						}
-					}
-					return nil, nil
-				}, "5s", "0.1s")
-
-				// Verify that the proxy has the expected route
-				Expect(proxy.Listeners).To(HaveLen(1))
-				listener := proxy.Listeners[0]
-
-				Expect(listener.GetHybridListener().GetMatchedListeners()[0].GetHttpListener()).NotTo(BeNil())
-				httpListener := listener.GetHybridListener().GetMatchedListeners()[0].GetHttpListener()
-				Expect(httpListener.VirtualHosts).To(HaveLen(1))
-				Expect(httpListener.VirtualHosts[0].Routes).To(HaveLen(1))
-				Expect(httpListener.VirtualHosts[0].Routes[0].GetRouteAction()).NotTo(BeNil())
-				Expect(httpListener.VirtualHosts[0].Routes[0].GetRouteAction().GetSingle()).NotTo(BeNil())
-				service := httpListener.VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetKube()
-				Expect(service.GetRef().GetNamespace()).To(Equal(svc.Namespace))
-				Expect(service.GetRef().GetName()).To(Equal(svc.Name))
-				Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
+					return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				}, time.Second*5, time.Second)
 			})
 
 			Context("http traffic", func() {
