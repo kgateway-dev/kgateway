@@ -12,6 +12,7 @@ const (
 	PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
 )
 
+// convert an upstream.ConnectionConfig into an equivalent envoy object
 func ConvertHttp1ProtocolOptions(hpo protocol.Http1ProtocolOptions) (*envoy_config_core_v3.Http1ProtocolOptions, error) {
 	out := &envoy_config_core_v3.Http1ProtocolOptions{}
 
