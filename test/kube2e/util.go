@@ -288,7 +288,7 @@ func ToFile(content string) string {
 // PatchResource mutates an existing resource, retrying if a resourceVersionError is encountered
 // Deprecated: Prefer the helpers.PatchResource, which is not a Kubernetes specific package
 func PatchResource(ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource), client clients.ResourceClient) error {
-	return helpers.PatchResource(ctx, resourceRef, mutator, client)
+	return helpers.PatchResourceWithOffset(1, ctx, resourceRef, mutator, client)
 }
 
 // https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604
