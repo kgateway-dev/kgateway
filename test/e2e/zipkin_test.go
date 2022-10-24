@@ -32,6 +32,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
+const zipkinPort = 9411
+
 var _ = Describe("Zipkin config loading", func() {
 
 	var (
@@ -69,7 +71,7 @@ var _ = Describe("Zipkin config loading", func() {
 				fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
 				apiHit <- true
 			}))
-			startCancellableZipkinServer(ctx, ":9411", zipkinHandler)
+			startCancellableZipkinServer(ctx, fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), zipkinPort), zipkinHandler)
 
 			// Execute a request against the admin endpoint, as this should result in a trace
 			testRequest := createRequestWithTracingEnabled("127.0.0.1", 11082)
@@ -132,7 +134,7 @@ var _ = Describe("Zipkin config loading", func() {
 						Hosts: []*static_plugin_gloo.Host{
 							{
 								Addr: envoyInstance.LocalAddr(),
-								Port: 9411,
+								Port: zipkinPort,
 							},
 						},
 					},
@@ -161,7 +163,7 @@ var _ = Describe("Zipkin config loading", func() {
 				fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
 				zipkinApiHit <- true
 			}))
-			startCancellableZipkinServer(ctx, envoyInstance.LocalAddr()+":9411", zipkinHandler)
+			startCancellableZipkinServer(ctx, fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), zipkinPort), zipkinHandler)
 		})
 
 		AfterEach(func() {
