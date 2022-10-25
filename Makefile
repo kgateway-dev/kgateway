@@ -48,7 +48,8 @@ endif
 ORIGIN_URL ?= $(shell git remote get-url origin)
 UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
-ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)"),)
+UPSTREAM_ORIGIN_URL_SSH ?= ssh://git@github.com/solo-io/gloo.git
+ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)" "$(UPSTREAM_ORIGIN_URL_SSH)"),)
 	VERSION := 0.0.1-fork
 	CREATE_TEST_ASSETS := "false"
 endif
@@ -427,14 +428,15 @@ $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DI
 		--build-arg GCFLAGS=$(GCFLAGS) \
 		--build-arg LDFLAGS=$(LDFLAGS) \
 		--build-arg USE_APK=true \
-		--build-arg GOARCH=$(GOARCH) \
+		--build-arg GOARCH=amd64 \
+		$(PLATFORM) \
 		.
 	touch $@
 # Build inside container as we need to target linux and must compile with CGO_ENABLED=1
 # We may be running Docker in a VM (eg, minikube) so be careful about how we copy files out of the containers
 $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build
 	docker create -ti --name gloo-race-temp-container $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) bash
-	docker cp gloo-race-temp-container:/gloo-linux-$(GOARCH) $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH)
+	docker cp gloo-race-temp-container:/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64
 	docker rm -f gloo-race-temp-container
 
 # Build the gloo project with race detection enabled
@@ -447,9 +449,9 @@ $(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
 # Take the executable built in gloo-race and put it in a docker container
 .PHONY: gloo-race-docker
 gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker ## gloo-race-docker
-$(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_RACE_OUT_DIR)/Dockerfile
+$(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/Dockerfile
 	docker build $(call get_test_tag_option,gloo) $(GLOO_RACE_OUT_DIR) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=$(GOARCH) $(PLATFORM) \
+		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=amd64 $(PLATFORM) \
 		-t $(IMAGE_REPO)/gloo:$(VERSION)-race $(QUAY_EXPIRATION_LABEL)
 	touch $@
 #----------------------------------------------------------------------------------
@@ -496,7 +498,7 @@ $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint
 	cp $< $@
 
 .PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
+gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh ## Envoy container used by Gloo (required for target run-tests)
 	docker build $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
@@ -706,9 +708,19 @@ ifeq ($(RELEASE), "true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gloo-docker gloo-race-docker \
+docker: docker-local docker-ci
+
+.PHONY: docker-local
+docker-local: discovery-docker gloo-docker  \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker kubectl-docker
+
+.PHONY: docker-ci
+ifeq ($(UNAME_M), arm64)
+docker-ci:
+else
+docker-ci: gloo-race-docker
+endif
 
 .PHONY: docker-push-local-arm
 docker-push-local-arm: docker docker-push
@@ -718,17 +730,25 @@ docker-push-local-arm: docker docker-push
 # to be used for local testing.
 # docker-push is intended to be run by CI
 .PHONY: docker-push
-docker-push: $(DOCKER_IMAGES)
+docker-push: docker-push-local docker-push-ci
+
+.PHONY: docker-push-local
+docker-push-local: $(DOCKER_IMAGES)
 ifeq ($(CREATE_ASSETS), "true")
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race && \
 	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
 	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
+endif
+
+.PHONY: docker-push-ci
+docker-push-ci:
+ifneq ($(and $(filter $(CREATE_ASSETS), "true"), $(filter-out $(UNAME_M), arm64)),)
+	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race
 endif
 
 .PHONY: docker-push-extended
