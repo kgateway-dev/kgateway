@@ -102,9 +102,9 @@ type Validator interface {
 	gloov1snap.ApiSyncer
 	// ValidateList will validate a list of resources
 	ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*Reports, *multierror.Error)
-	// ValidateModifiedGvk validate the deletion of a resource.
+	// ValidateModifiedGvk validate the creation or update of a resource.
 	ValidateModifiedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) (*Reports, error)
-	// ValidateDeletedGvk validate the creation or update of a resource.
+	// ValidateDeletedGvk validate the deletion of a resource.
 	ValidateDeletedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) error
 	// ModificationIsSupported returns whether a resource is supported
 	ModificationIsSupported(gvk schema.GroupVersionKind) bool
