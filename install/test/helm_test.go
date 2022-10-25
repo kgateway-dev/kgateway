@@ -4016,7 +4016,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           resources:
-            requests: 
+            requests:
               cpu: 250m
               memory: 64Mi
             limits:
@@ -4315,6 +4315,18 @@ metadata:
 						})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
+					It("can set disable leader election env var", func() {
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							glooDeployment.Spec.Template.Spec.Containers[0].Env,
+							v1.EnvVar{
+								Name:  "DISABLE_LEADER_ELECTION",
+								Value: "true",
+							})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gloo.disableLeaderElection=true"},
+						})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
 					It("can disable validation", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = []v1.EnvVar{GetPodNamespaceEnvVar(), GetPodNamespaceStats()}
 						glooDeployment.Spec.Template.Spec.Volumes = []v1.Volume{{
@@ -4562,6 +4574,16 @@ metadata:
 						})
 						discoveryDeployment.Spec.Template.Spec.SecurityContext = nil
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+					})
+
+					It("allows disabling FDS GraphQL discovery", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/graphql_fds_disabled.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.fdsOptions.graphqlEnabled=false",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
 					It("allows disabling upstream discovery", func() {

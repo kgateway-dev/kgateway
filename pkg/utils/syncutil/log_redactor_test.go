@@ -173,6 +173,20 @@ var _ = Describe("Log Redactor", func() {
 				},
 			},
 		}},
+	}), Entry("hides ldap credentials from logs", "serviceusersecret", &xdsproto.ExtAuthConfig{
+		AuthConfigRefName: "ref-name",
+		Configs: []*xdsproto.ExtAuthConfig_Config{{
+			AuthConfig: &xdsproto.ExtAuthConfig_Config_LdapInternal{
+				LdapInternal: &xdsproto.ExtAuthConfig_LdapConfig{
+					GroupLookupSettings: &xdsproto.ExtAuthConfig_LdapServiceAccountConfig{
+						CheckGroupsWithServiceAccount: true,
+						Username:                      "serviceusersecretuser",
+						Password:                      "serviceusersecretpassword",
+					},
+				},
+			},
+		},
+		},
 	}),
 	)
 })
