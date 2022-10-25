@@ -21,7 +21,7 @@ import (
 )
 
 type Extensions struct {
-	DiscoveryFactoryFuncs []func() fds.FunctionDiscoveryFactory
+	DiscoveryFactoryFuncs []func(opts bootstrap.Opts) fds.FunctionDiscoveryFactory
 }
 
 func NewSetupFunc() setuputils.SetupFunc {
@@ -136,8 +136,10 @@ func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts bootstrap.Opts, regist
 	pluginfuncs := extensions.DiscoveryFactoryFuncs
 	discFactories := registryDiscFacts(opts)
 	for _, discoveryFactoryExtension := range pluginfuncs {
-		pe := discoveryFactoryExtension()
-		discFactories = append(discFactories, pe)
+		pe := discoveryFactoryExtension(opts)
+		if pe != nil {
+			discFactories = append(discFactories, pe)
+		}
 	}
 	return discFactories
 }
