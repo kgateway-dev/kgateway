@@ -185,7 +185,7 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	applyRequestToSnapshot(&snapCopy, req)
 	contextutils.LoggerFrom(ctx).Infof("received proxy validation request")
 
-	reports := s.glooValidator.Validate(ctx, req.Proxy, &snapCopy, false)
+	reports := s.glooValidator.Validate(ctx, req.GetProxy(), &snapCopy, false)
 
 	var validationReports []*validation.ValidationReport
 	// convert the reports for the gRPC response
