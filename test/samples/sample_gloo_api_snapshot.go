@@ -233,13 +233,17 @@ func SimpleGlooSnapshot(namespace string) *v1snap.ApiSnapshot {
 			},
 		},
 		VirtualServices: []*gwv1.VirtualService{
-			{
-				Metadata: &core.Metadata{Namespace: namespace, Name: "virtualservice"},
-				VirtualHost: &gwv1.VirtualHost{
-					Domains: []string{"*"},
-					Routes:  SimpleRoute(us.GetMetadata().Ref()),
-				},
-			},
+			SimpleVS(namespace, "virtualservice", "*", us.GetMetadata().Ref()),
+		},
+	}
+}
+
+func SimpleVS(namespace, name, domain string, upstreamRef *core.ResourceRef) *gwv1.VirtualService {
+	return &gwv1.VirtualService{
+		Metadata: &core.Metadata{Namespace: namespace, Name: name},
+		VirtualHost: &gwv1.VirtualHost{
+			Domains: []string{domain},
+			Routes:  SimpleRoute(upstreamRef),
 		},
 	}
 }

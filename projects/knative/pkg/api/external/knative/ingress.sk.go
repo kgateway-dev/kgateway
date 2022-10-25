@@ -23,6 +23,10 @@ var (
 	_ resources.Resource = new(Ingress)
 )
 
+func NewIngressHashableResource() resources.HashableResource {
+	return new(Ingress)
+}
+
 func NewIngress(namespace, name string) *Ingress {
 	ingress := &Ingress{}
 	ingress.Ingress.SetMetadata(&core.Metadata{
