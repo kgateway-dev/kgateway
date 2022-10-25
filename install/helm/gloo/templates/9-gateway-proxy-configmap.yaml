@@ -171,7 +171,7 @@ data:
         http2_protocol_options: {}
         upstream_connection_options:
           tcp_keepalive:
-            keepalive_time: {{ $spec.tcpKeepaliveTimeSeconds | default 60}}
+            keepalive_time: {{ $spec.tcpKeepaliveTimeSeconds }}
         type: STRICT_DNS
         respect_dns_ttl: true
 {{- if $global.glooMtls.enabled }}
@@ -273,7 +273,7 @@ data:
                     port_value: 9979
         upstream_connection_options:
           tcp_keepalive:
-            keepalive_time: {{ $spec.tcpKeepaliveTimeSeconds | default 60}}
+            keepalive_time: {{ $spec.tcpKeepaliveTimeSeconds }}
         type: STRICT_DNS
         respect_dns_ttl: true
 {{- if .Values.accessLogger.enabled }}
