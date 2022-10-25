@@ -11,7 +11,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -184,46 +183,15 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 	// update the snapshot copy with the resources from the request
 	applyRequestToSnapshot(&snapCopy, req)
+	contextutils.LoggerFrom(ctx).Infof("received proxy validation request")
 
-	ctx = contextutils.WithLogger(ctx, "proxy-validator")
-	logger := contextutils.LoggerFrom(ctx)
-
-	logger.Infof("received proxy validation request")
+	reports := s.glooValidator.Validate(ctx, req.Proxy, &snapCopy, false)
 
 	var validationReports []*validation.ValidationReport
-	var proxiesToValidate v1.ProxyList
-
-	if req.GetProxy() != nil {
-		proxiesToValidate = v1.ProxyList{req.GetProxy()}
-	} else {
-		// if no proxy was passed in, call translate for all proxies in snapshot
-		proxiesToValidate = snapCopy.Proxies
+	// convert the reports for the gRPC response
+	for _, rep := range reports {
+		validationReports = append(validationReports, convertToValidationReport(rep.ProxyReport, rep.ResourceReports, rep.Proxy))
 	}
-
-	if len(proxiesToValidate) == 0 {
-		// This can occur when a Gloo resource (Upstream), is modified before the ApiSnapshot
-		// contains any Proxies. Orphaned resources are never invalid, but they may be accepted
-		// even if they are semantically incorrect.
-		// This log line is attempting to identify these situations
-		logger.Warnf("found no proxies to validate, accepting update without translating Gloo resources")
-		return &validation.GlooValidationServiceResponse{
-			ValidationReports: validationReports,
-		}, nil
-	}
-
-	params := plugins.Params{
-		Ctx:      ctx,
-		Snapshot: &snapCopy,
-	}
-	for _, proxy := range proxiesToValidate {
-		xdsSnapshot, resourceReports, proxyReport := s.translator.Translate(params, proxy)
-		// Sanitize routes before sending report to gateway
-		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
-		routeErrorToWarnings(resourceReports, proxyReport)
-
-		validationReports = append(validationReports, convertToValidationReport(proxyReport, resourceReports, proxy))
-	}
-
 	return &validation.GlooValidationServiceResponse{
 		ValidationReports: validationReports,
 	}, nil
