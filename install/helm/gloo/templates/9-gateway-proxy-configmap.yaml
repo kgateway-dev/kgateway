@@ -230,7 +230,7 @@ data:
                     port_value: {{ empty $spec.xdsServicePort | ternary .Values.gloo.deployment.restXdsPort $spec.xdsServicePort }}
         upstream_connection_options:
           tcp_keepalive:
-            keepalive_time: {{ $spec.tcpKeepaliveTimeSeconds | default 60}}
+            keepalive_time: {{ $spec.tcpKeepaliveTimeSeconds }}
         type: STRICT_DNS
         respect_dns_ttl: true
 {{- if $global.glooMtls.enabled }}
