@@ -4016,7 +4016,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           resources:
-            requests: 
+            requests:
               cpu: 250m
               memory: 64Mi
             limits:
@@ -4574,6 +4574,16 @@ metadata:
 						})
 						discoveryDeployment.Spec.Template.Spec.SecurityContext = nil
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+					})
+
+					It("allows disabling FDS GraphQL discovery", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/graphql_fds_disabled.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.fdsOptions.graphqlEnabled=false",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
 					It("allows disabling upstream discovery", func() {
