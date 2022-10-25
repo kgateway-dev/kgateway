@@ -11,12 +11,12 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	sk_resources "github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.uber.org/zap"
@@ -27,6 +27,7 @@ import (
 type Validator interface {
 	v1snap.ApiSyncer
 	validation.GlooValidationServiceServer
+	ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource resources.Resource, delete bool) ([]*GlooValidationReport, error)
 }
 
 type validator struct {
@@ -34,6 +35,7 @@ type validator struct {
 	// any stateful fields should be protected by a mutex or themselves be synchronized (like the xds sanitizer / translator)
 	lock           sync.RWMutex
 	latestSnapshot *v1snap.ApiSnapshot
+	glooValidator  GlooValidator
 	translator     translator.Translator
 	notifyResync   map[*validation.NotifyOnResyncRequest]chan struct{}
 	ctx            context.Context
@@ -42,10 +44,11 @@ type validator struct {
 
 func NewValidator(ctx context.Context, translator translator.Translator, xdsSanitizer sanitizer.XdsSanitizers) *validator {
 	return &validator{
-		translator:   translator,
-		notifyResync: make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1),
-		ctx:          ctx,
-		xdsSanitizer: xdsSanitizer,
+		translator:    translator,
+		glooValidator: NewGlooValidator(translator, xdsSanitizer),
+		notifyResync:  make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1),
+		ctx:           ctx,
+		xdsSanitizer:  xdsSanitizer,
 	}
 }
 
@@ -167,6 +170,7 @@ func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream
 	}
 }
 
+// Validate is a gRPC call that we use for validating resources against a request to add upstreams and secrets.
 func (s *validator) Validate(ctx context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
 	s.lock.Lock()
 	// we may receive a Validate call before a Sync has occurred
@@ -179,49 +183,51 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 	// update the snapshot copy with the resources from the request
 	applyRequestToSnapshot(&snapCopy, req)
+	contextutils.LoggerFrom(ctx).Infof("received proxy validation request")
 
-	ctx = contextutils.WithLogger(ctx, "proxy-validator")
-	logger := contextutils.LoggerFrom(ctx)
-
-	logger.Infof("received proxy validation request")
+	reports := s.glooValidator.Validate(ctx, req.GetProxy(), &snapCopy, false)
 
 	var validationReports []*validation.ValidationReport
-	var proxiesToValidate v1.ProxyList
-	if req.GetProxy() != nil {
-		proxiesToValidate = v1.ProxyList{req.GetProxy()}
-	} else {
-		// if no proxy was passed in, call translate for all proxies in snapshot
-		proxiesToValidate = snapCopy.Proxies
+	// convert the reports for the gRPC response
+	for _, rep := range reports {
+		validationReports = append(validationReports, convertToValidationReport(rep.ProxyReport, rep.ResourceReports, rep.Proxy))
 	}
-
-	if len(proxiesToValidate) == 0 {
-		// This can occur when a Gloo resource (Upstream), is modified before the ApiSnapshot
-		// contains any Proxies. Orphaned resources are never invalid, but they may be accepted
-		// even if they are semantically incorrect.
-		// This log line is attempting to identify these situations
-		logger.Warnf("found no proxies to validate, accepting update without translating Gloo resources")
-	}
-
-	params := plugins.Params{
-		Ctx:      ctx,
-		Snapshot: &snapCopy,
-	}
-	for _, proxy := range proxiesToValidate {
-		xdsSnapshot, resourceReports, proxyReport := s.translator.Translate(params, proxy)
-		// Sanitize routes before sending report to gateway
-		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
-		routeErrorToWarnings(resourceReports, proxyReport)
-
-		validationReports = append(validationReports, convertToValidationReport(proxyReport, resourceReports, proxy))
-	}
-
 	return &validation.GlooValidationServiceResponse{
 		ValidationReports: validationReports,
 	}, nil
 }
 
+// ValidateGloo replaces the functionality of Validate.  Validate is still a method that needs to be
+// exported because it is used as a gRPC service. A synced version of the snapshot is needed for
+// gloo validation.
+func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource resources.Resource, delete bool) ([]*GlooValidationReport, error) {
+	// the gateway validator will call this function to validate Gloo resources.
+	s.lock.Lock()
+	// we may receive a Validate call before a Sync has occurred
+	if s.latestSnapshot == nil {
+		s.lock.Unlock()
+		return nil, eris.New("proxy validation called before the validation server received its first sync of resources")
+	}
+	snapCopy := s.latestSnapshot.Clone() // cloning can mutate so we need a write lock
+	s.lock.Unlock()
+	if resource != nil {
+		if delete {
+			if err := snapCopy.RemoveFromResourceList(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := snapCopy.UpsertToResourceList(resource); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return s.glooValidator.Validate(ctx, proxy, &snapCopy, delete), nil
+}
+
 // updates the given snapshot with the resources from the request
 func applyRequestToSnapshot(snap *v1snap.ApiSnapshot, req *validation.GlooValidationServiceRequest) {
+	// if we want to change the type, we could use API snapshots as containers.  Like this struct
+	// projects/gloo/pkg/validation/api_snapshot_request.go
 	if req.GetModifiedResources() != nil {
 		existingUpstreams := snap.Upstreams.AsResources()
 		modifiedUpstreams := utils.UpstreamsToResourceList(req.GetModifiedResources().GetUpstreams())

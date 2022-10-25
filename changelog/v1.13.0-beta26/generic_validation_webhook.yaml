@@ -1,0 +1,13 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    description: >
+      To support a generic validation webhook, solo kit will have to be bumped with the necessary changes
+      to make resources interface the Hashable Resource, and changes to the Resource and Snapshot templates.
+      This allows for creating resources, and upserting and removing from the snapshot.
+    dependencyOwner: solo-io
+    dependencyRepo:  solo-kit
+    dependencyTag: v0.30.8
+  - type: NON_USER_FACING
+    description: generic validation webhook. Future enhancements to the validation webhook will have to include the supported gvks.
+    issueLink: https://github.com/solo-io/gloo/issues/7273
+    resolvesIssue: false
