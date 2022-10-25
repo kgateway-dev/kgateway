@@ -1,0 +1,8 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    issueLink: https://github.com/solo-io/gloo/issues/7361
+    dependencyOwner: golang.org
+    dependencyRepo: x/text
+    dependencyTag: v0.4.0
+    description: >
+      Bump golang.org/x/text to resolve [CVE-2022-32149](https://github.com/advisories/GHSA-69ch-w2m2-3vjp)
