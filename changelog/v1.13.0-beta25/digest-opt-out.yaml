@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/4206
-    description: specify .global.image.preferTag=true to opt out of using image digests
-    resolvesIssue: false
