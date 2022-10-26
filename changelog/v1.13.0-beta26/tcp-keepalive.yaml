@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7349
+    description: >
+      Allow configuration of TCP keepalive time via helm at time of installation. Additionally, reduces the default TCP keepalive time from 2 hours to 1 minute.

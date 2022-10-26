@@ -170,7 +170,8 @@ data:
                     port_value: {{ empty $spec.xdsServicePort | ternary .Values.gloo.deployment.xdsPort $spec.xdsServicePort }}
         http2_protocol_options: {}
         upstream_connection_options:
-          tcp_keepalive: {}
+          tcp_keepalive:
+            keepalive_time: {{ $spec.tcpKeepaliveTimeSeconds }}
         type: STRICT_DNS
         respect_dns_ttl: true
 {{- if $global.glooMtls.enabled }}
@@ -228,7 +229,8 @@ data:
                     address: {{ empty $spec.xdsServiceAddress | ternary $glooAddress $spec.xdsServiceAddress }}
                     port_value: {{ empty $spec.xdsServicePort | ternary .Values.gloo.deployment.restXdsPort $spec.xdsServicePort }}
         upstream_connection_options:
-          tcp_keepalive: {}
+          tcp_keepalive:
+            keepalive_time: {{ $spec.tcpKeepaliveTimeSeconds }}
         type: STRICT_DNS
         respect_dns_ttl: true
 {{- if $global.glooMtls.enabled }}
@@ -270,7 +272,8 @@ data:
                     address: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
                     port_value: 9979
         upstream_connection_options:
-          tcp_keepalive: {}
+          tcp_keepalive:
+            keepalive_time: {{ $spec.tcpKeepaliveTimeSeconds }}
         type: STRICT_DNS
         respect_dns_ttl: true
 {{- if .Values.accessLogger.enabled }}
