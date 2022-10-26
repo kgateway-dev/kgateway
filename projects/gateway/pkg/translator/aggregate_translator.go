@@ -70,12 +70,13 @@ func (a *AggregateTranslator) computeAggregateListenerForHttpGateway(params Para
 	builder := newBuilder()
 	if gateway.GetSsl() {
 		// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-		virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-		for sslConfig, virtualServiceList := range virtualServicesBySslConfig {
+		orderedSslConfigs, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+		for _, vsSslConfig := range orderedSslConfigs {
+			virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 			virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServiceList, proxyName)
 			httpOptions := httpGateway.GetOptions()
 			matcher := &gloov1.Matcher{
-				SslConfig:          sslConfig,
+				SslConfig:          vsSslConfig,
 				SourcePrefixRanges: nil, // not supported for HttpListener
 			}
 
@@ -117,7 +118,7 @@ func (a *AggregateTranslator) computeAggregateListenerForHybridGateway(params Pa
 		aggregateListener = a.computeListenerFromDelegatedGateway(params, proxyName, gateway, delegatedGateways)
 		if len(aggregateListener.GetHttpFilterChains()) == 0 {
 			// missing refs should only result in a warning
-			// this allows resources to be applied asynchronously
+			// this allows resources to be applied asynchronously if the validation webhook is configured to allow warnings
 			params.reports.AddWarning(gateway, EmptyHybridGatewayMessage)
 			return nil
 		}
@@ -147,8 +148,9 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 
 			if gatewaySsl != nil {
 				// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-				virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-				for vsSslConfig, virtualServiceList := range virtualServicesBySslConfig {
+				orderedSslConfigs, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+				for _, vsSslConfig := range orderedSslConfigs {
+					virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 					// SslConfig is evaluated by having the VS definition merged into the Gateway, and overriding
 					// any shared fields. The Gateway is purely used to define default values.
 					reconciledSslConfig := mergeSslConfig(gatewaySsl, vsSslConfig, false)
@@ -228,8 +230,9 @@ func (a *AggregateTranslator) processMatchableGateway(
 
 	if sslGateway {
 		// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-		virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-		for vsSslConfig, virtualServiceList := range virtualServicesBySslConfig {
+		orderedSslConfigs, virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
+		for _, vsSslConfig := range orderedSslConfigs {
+			virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 			// SslConfig is evaluated by having the VS definition merged into the Gateway, and overriding
 			// any shared fields. The Gateway is purely used to define default values.
 			reconciledSslConfig := mergeSslConfig(sslConfig, vsSslConfig, false)

@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    resolvesIssue: false
+    description: >-
+      Truncate size of ratelimitconfig statuses written to k8s / etcd to protect against large keys stored in k8s backend.
+    issueLink: https://github.com/solo-io/solo-kit/issues/523

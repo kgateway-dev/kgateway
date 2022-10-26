@@ -29,7 +29,7 @@ weight: 5
 
  
 Specifies the route’s hashing policy if the upstream cluster uses a hashing load balancer.
-https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-hashpolicy
+https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-hashpolicy
 
 ```yaml
 "hashPolicies": []lbhash.options.gloo.solo.io.HashPolicy
@@ -51,7 +51,7 @@ Envoy supports two types of cookie affinity:
 - Passive: Envoy reads the cookie from the headers
 - Generated: Envoy uses the cookie spec to generate a cookie
 In either case, the cookie is incorporated in the hash key.
-additional notes https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-hashpolicy-cookie
+additional notes https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-hashpolicy-cookie
 
 ```yaml
 "name": string

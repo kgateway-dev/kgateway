@@ -973,6 +973,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetMaxStreamDuration()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxStreamDuration()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxStreamDuration(), target.GetMaxStreamDuration()) {
+			return false
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
@@ -1345,6 +1355,60 @@ func (m *WeightedDestinationOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetStagedTransformations(), target.GetStagedTransformations()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *RouteOptions_MaxStreamDuration) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RouteOptions_MaxStreamDuration)
+	if !ok {
+		that2, ok := that.(RouteOptions_MaxStreamDuration)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetMaxStreamDuration()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxStreamDuration()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxStreamDuration(), target.GetMaxStreamDuration()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetGrpcTimeoutHeaderMax()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGrpcTimeoutHeaderMax()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGrpcTimeoutHeaderMax(), target.GetGrpcTimeoutHeaderMax()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetGrpcTimeoutHeaderOffset()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGrpcTimeoutHeaderOffset()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGrpcTimeoutHeaderOffset(), target.GetGrpcTimeoutHeaderOffset()) {
 			return false
 		}
 	}

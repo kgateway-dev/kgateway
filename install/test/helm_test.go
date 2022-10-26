@@ -3640,6 +3640,7 @@ spec:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
       allowWarnings: true
+      serverEnabled: true
       disableTransformationValidation: false
       warnRouteShortCircuiting: false
       validationServerGrpcMaxSizeBytes: 104857600
@@ -4298,6 +4299,18 @@ metadata:
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gloo.logLevel=debug"},
+						})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
+					It("can set disable leader election env var", func() {
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							glooDeployment.Spec.Template.Spec.Containers[0].Env,
+							v1.EnvVar{
+								Name:  "DISABLE_LEADER_ELECTION",
+								Value: "true",
+							})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gloo.disableLeaderElection=true"},
 						})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})

@@ -303,6 +303,9 @@ spec:
                         type: boolean
                       proxyValidationServerAddr:
                         type: string
+                      serverEnabled:
+                        nullable: true
+                        type: boolean
                       validationServerGrpcMaxSizeBytes:
                         maximum: 2147483647
                         minimum: -2147483648

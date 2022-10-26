@@ -42,6 +42,7 @@ weight: 5
 - [EndSessionProperties](#endsessionproperties)
 - [MethodType](#methodtype)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
+- [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
 - [LocalJwks](#localjwks)
@@ -70,6 +71,7 @@ weight: 5
 - [LocalJwks](#localjwks)
 - [IntrospectionValidation](#introspectionvalidation)
 - [ScopeList](#scopelist)
+- [PlainOAuth2Config](#plainoauth2config)
 - [OAuth2Config](#oauth2config)
 - [ApiKeyAuthConfig](#apikeyauthconfig)
 - [KeyMetadata](#keymetadata)
@@ -460,13 +462,15 @@ Deprecated: Prefer OAuth2
 ```yaml
 "oidcAuthorizationCode": .enterprise.gloo.solo.io.OidcAuthorizationCode
 "accessTokenValidation": .enterprise.gloo.solo.io.AccessTokenValidation
+"oauth2": .enterprise.gloo.solo.io.PlainOAuth2
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.OidcAuthorizationCode](../extauth.proto.sk/#oidcauthorizationcode) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode` or `accessTokenValidation` can be set. |
-| `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidation` or `oidcAuthorizationCode` can be set. |
+| `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.OidcAuthorizationCode](../extauth.proto.sk/#oidcauthorizationcode) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode`, `accessTokenValidation`, or `oauth2` can be set. |
+| `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidation`, `oidcAuthorizationCode`, or `oauth2` can be set. |
+| `oauth2` | [.enterprise.gloo.solo.io.PlainOAuth2](../extauth.proto.sk/#plainoauth2) | Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change. provide issuer location and let Gloo handle Oauth2 flow for you. requests authorized by validating the contents of access token. Prefer to use OIDC for better security. Only one of `oauth2`, `oidcAuthorizationCode`, or `accessTokenValidation` can be set. |
 
 
 
@@ -563,6 +567,7 @@ redis socket types
 "cookieName": string
 "allowRefreshing": .google.protobuf.BoolValue
 "preExpiryBuffer": .google.protobuf.Duration
+"headerName": string
 
 ```
 
@@ -573,6 +578,7 @@ redis socket types
 | `cookieName` | `string` | Cookie name to set and store the session id. If empty the default "__session" is used. |
 | `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set, refresh expired id-tokens using the refresh-token. Defaults to true. Explicitly set to false to disable refreshing. |
 | `preExpiryBuffer` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies a time buffer in which an id-token will be refreshed prior to its actual expiration. Defaults to 2 seconds. A duration of 0 will only refresh tokens after they have already expired. To refresh tokens, you must also set 'allowRefreshing' to 'true'; otherwise, this field is ignored. |
+| `headerName` | `string` | If set, the name of the header that will include the randomly generated session id This would be used as part of the code exchange with the Oauth2 token endpoint. |
 
 
 
@@ -803,10 +809,51 @@ The Method used to make the request.
 | `discoveryOverride` | [.enterprise.gloo.solo.io.DiscoveryOverride](../extauth.proto.sk/#discoveryoverride) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The discovery override defines any properties that should override this discovery configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system issuer_url: https://accounts.google.com discovery_override: token_endpoint: "https://token.url/gettoken" ``` And this will ensure that regardless of what value is discovered at <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint. |
 | `discoveryPollInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes. |
 | `jwksCacheRefreshPolicy` | [.enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy](../extauth.proto.sk/#jwksondemandcacherefreshpolicy) | If a user executes a request with a key that is not found in the JWKS, it could be that the keys have rotated on the remote source, and not yet in the local cache. This policy lets you define the behavior for how to refresh the local cache during a request where an invalid key is provided. |
-| `sessionIdHeaderName` | `string` | If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
+| `sessionIdHeaderName` | `string` | DEPRECATED: Prefer the RedisSession.HeaderName field If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange The session id is used as the key for sessions in Redis. |
 | `parseCallbackPathAsRegex` | `bool` | If set, CallbackPath will be evaluated as a regular expression. |
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
+
+
+
+
+---
+### PlainOAuth2
+
+
+
+```yaml
+"clientId": string
+"clientSecretRef": .core.solo.io.ResourceRef
+"authEndpointQueryParams": map<string, string>
+"appUrl": string
+"callbackPath": string
+"scopes": []string
+"session": .enterprise.gloo.solo.io.UserSession
+"logoutPath": string
+"tokenEndpointQueryParams": map<string, string>
+"afterLogoutUrl": string
+"authEndpoint": string
+"tokenEndpoint": string
+"revocationEndpoint": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientId` | `string` | Your client ID as registered with the issuer. |
+| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. |
+| `authEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
+| `appUrl` | `string` | Where to redirect after successful auth, if Gloo can't determine the original URL. Set this field to your publicly available app URL. |
+| `callbackPath` | `string` | A callback path relative to the app URL to be used for OAuth2 callbacks. Do not use this path in the application itself. |
+| `scopes` | `[]string` | Scopes to request for. |
+| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |
+| `logoutPath` | `string` | A path relative to the app URL to use for logging out from an OAuth2 session. Do not use this path in the application itself. If not provided, logout functionality is disabled. |
+| `tokenEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's token request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
+| `afterLogoutUrl` | `string` | URL to redirect to after logout. Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value. |
+| `authEndpoint` | `string` | The URL of the provider authorization endpoint. |
+| `tokenEndpoint` | `string` | The URL of the provider token endpoint. |
+| `revocationEndpoint` | `string` | The URL of the provider token revocation endpoint. For more information, refer to https://www.rfc-editor.org/rfc/rfc7009. |
 
 
 
@@ -1146,6 +1193,7 @@ Authorizes requests by querying a custom extauth server.
 "grpc": .enterprise.gloo.solo.io.PassThroughGrpc
 "http": .enterprise.gloo.solo.io.PassThroughHttp
 "config": .google.protobuf.Struct
+"failureModeAllow": bool
 
 ```
 
@@ -1154,6 +1202,7 @@ Authorizes requests by querying a custom extauth server.
 | `grpc` | [.enterprise.gloo.solo.io.PassThroughGrpc](../extauth.proto.sk/#passthroughgrpc) |  Only one of `grpc` or `http` can be set. |
 | `http` | [.enterprise.gloo.solo.io.PassThroughHttp](../extauth.proto.sk/#passthroughhttp) |  Only one of `http` or `grpc` can be set. |
 | `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Custom config to be passed per request to the passthrough auth service. |
+| `failureModeAllow` | `bool` | If set to true, the service will accept client request even if the communication with the authorization service has failed, or if the authorization service has returned a server error. Defaults to false. |
 
 
 
@@ -1284,7 +1333,7 @@ JSON marshalling.
 | ----- | ---- | ----------- | 
 | `authConfigRefName` | `string` |  |
 | `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
-| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
+| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. Defaults to an empty string, which is interpreted as `and`-ing the configs. |
 | `failOnRedirect` | `bool` | How the service should handle a redirect response from an OIDC issuer. In the default false mode, the redirect will be considered a successful response, and the client will receive a 302 with a location header. If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where API calls are being made or other such occurrences where the client cannot handle the redirect. |
 
 
@@ -1524,6 +1573,47 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 
 ---
+### PlainOAuth2Config
+
+
+
+```yaml
+"clientId": string
+"clientSecret": string
+"authEndpointQueryParams": map<string, string>
+"appUrl": string
+"callbackPath": string
+"scopes": []string
+"session": .enterprise.gloo.solo.io.UserSession
+"logoutPath": string
+"tokenEndpointQueryParams": map<string, string>
+"afterLogoutUrl": string
+"authEndpoint": string
+"tokenEndpoint": string
+"revocationEndpoint": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientId` | `string` | Your client ID as registered with the issuer. |
+| `clientSecret` | `string` | Your client secret as registered with the issuer. |
+| `authEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
+| `appUrl` | `string` | Where to redirect after successful auth, if Gloo can't determine the original URL. Set this field to your publicly available app URL. |
+| `callbackPath` | `string` | A callback path relative to the app URL to be used for OAuth2 callbacks. Do not use this path in the application itself. |
+| `scopes` | `[]string` | Scopes to request for. |
+| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |
+| `logoutPath` | `string` | A path relative to the app URL to use for logging out from an OAuth2 session. Do not use this path in the application itself. If not provided, logout functionality is disabled. |
+| `tokenEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's token request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
+| `afterLogoutUrl` | `string` | URL to redirect to after logout. Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value. |
+| `authEndpoint` | `string` | The URL of the provider authorization endpoint. |
+| `tokenEndpoint` | `string` | The URL of the provider token endpoint. |
+| `revocationEndpoint` | `string` | The URL of the provider token revocation endpoint. For more information, refer to https://www.rfc-editor.org/rfc/rfc7009. |
+
+
+
+
+---
 ### OAuth2Config
 
 
@@ -1531,13 +1621,15 @@ These values will be encoded in a basic auth header in order to authenticate the
 ```yaml
 "oidcAuthorizationCode": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig
 "accessTokenValidationConfig": .enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig
+"oauth2Config": .enterprise.gloo.solo.io.ExtAuthConfig.PlainOAuth2Config
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig](../extauth.proto.sk/#oidcauthorizationcodeconfig) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode` or `accessTokenValidationConfig` can be set. |
-| `accessTokenValidationConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig](../extauth.proto.sk/#accesstokenvalidationconfig) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidationConfig` or `oidcAuthorizationCode` can be set. |
+| `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig](../extauth.proto.sk/#oidcauthorizationcodeconfig) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode`, `accessTokenValidationConfig`, or `oauth2Config` can be set. |
+| `accessTokenValidationConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig](../extauth.proto.sk/#accesstokenvalidationconfig) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidationConfig`, `oidcAuthorizationCode`, or `oauth2Config` can be set. |
+| `oauth2Config` | [.enterprise.gloo.solo.io.ExtAuthConfig.PlainOAuth2Config](../extauth.proto.sk/#plainoauth2config) | Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change. provide issuer location and let Gloo handle Oauth2 flow for you. requests authorized by validating the contents of access token. Prefer to use OIDC for better security. Only one of `oauth2Config`, `oidcAuthorizationCode`, or `accessTokenValidationConfig` can be set. |
 
 
 

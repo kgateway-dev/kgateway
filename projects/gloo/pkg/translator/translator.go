@@ -3,13 +3,13 @@ package translator
 import (
 	"fmt"
 	"hash/fnv"
+	"sync"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/proto"
-	"github.com/mitchellh/hashstructure"
 	errors "github.com/rotisserie/eris"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -43,6 +44,7 @@ var (
 
 // translatorInstance is the implementation for a Translator used during Gloo translation
 type translatorInstance struct {
+	lock                      sync.Mutex
 	pluginRegistry            plugins.PluginRegistry
 	settings                  *v1.Settings
 	hasher                    func(resources []envoycache.Resource) uint64
@@ -56,6 +58,7 @@ func NewTranslatorWithHasher(
 	hasher func(resources []envoycache.Resource) uint64,
 ) *translatorInstance {
 	return &translatorInstance{
+		lock:                      sync.Mutex{},
 		pluginRegistry:            pluginRegistry,
 		settings:                  settings,
 		hasher:                    hasher,
@@ -68,6 +71,8 @@ func (t *translatorInstance) Translate(
 	proxy *v1.Proxy,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
 	// setup tracing, logging
+	t.lock.Lock()
+	defer t.lock.Unlock()
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
 	params.Ctx = contextutils.WithLogger(ctx, "translator")
@@ -136,6 +141,24 @@ func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.
 
 	endpoints := t.computeClusterEndpoints(params, upstreamRefKeyToEndpoints, reports)
 
+	upstreamMap := make(map[string]struct{}, len(params.Snapshot.Upstreams))
+	// make sure to call EndpointPlugin with empty endpoint
+	for _, upstream := range params.Snapshot.Upstreams {
+		key := UpstreamToClusterName(&core.ResourceRef{
+			Name:      upstream.GetMetadata().GetName(),
+			Namespace: upstream.GetMetadata().GetNamespace(),
+		})
+		upstreamMap[key] = struct{}{}
+	}
+	endpointMap := make(map[string][]*envoy_config_endpoint_v3.ClusterLoadAssignment, len(endpoints))
+	for _, ep := range endpoints {
+		if _, ok := endpointMap[ep.GetClusterName()]; !ok {
+			endpointMap[ep.GetClusterName()] = []*envoy_config_endpoint_v3.ClusterLoadAssignment{ep}
+		} else {
+			// TODO: should check why has duplicated upstream
+			endpointMap[ep.GetClusterName()] = append(endpointMap[ep.GetClusterName()], ep)
+		}
+	}
 	// Find all the EDS clusters without endpoints (can happen with kube service that have no endpoints), and create a zero sized load assignment
 	// this is important as otherwise envoy will wait for them forever wondering their fate and not doing much else.
 ClusterLoop:
@@ -152,31 +175,29 @@ ClusterLoop:
 		// Workaround for envoy bug: https://github.com/envoyproxy/envoy/issues/13009
 		// Change the cluster eds config, forcing envoy to re-request latest EDS config
 		c.GetEdsClusterConfig().ServiceName = endpointClusterName
-		for _, ep := range endpoints {
-			if ep.GetClusterName() == c.GetName() {
-
+		if eList, ok := endpointMap[c.GetName()]; ok {
+			for _, ep := range eList {
 				// the endpoint ClusterName needs to match the cluster's EdsClusterConfig ServiceName
 				ep.ClusterName = endpointClusterName
-				continue ClusterLoop
 			}
+			continue ClusterLoop
 		}
 		emptyEndpointList := &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: endpointClusterName,
 		}
 		// make sure to call EndpointPlugin with empty endpoint
-		for _, upstream := range params.Snapshot.Upstreams {
-			if UpstreamToClusterName(&core.ResourceRef{
-				Name:      upstream.GetMetadata().GetName(),
-				Namespace: upstream.GetMetadata().GetNamespace(),
-			}) == c.GetName() {
-				for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
-					if err := plugin.ProcessEndpoints(params, upstream, emptyEndpointList); err != nil {
-						reports.AddError(upstream, err)
-					}
+		if _, ok := upstreamMap[c.GetName()]; ok {
+			for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
+				if err := plugin.ProcessEndpoints(params, upstream, emptyEndpointList); err != nil {
+					reports.AddError(upstream, err)
 				}
 			}
 		}
-
+		if _, ok := endpointMap[emptyEndpointList.GetClusterName()]; !ok {
+			endpointMap[emptyEndpointList.GetClusterName()] = []*envoy_config_endpoint_v3.ClusterLoadAssignment{emptyEndpointList}
+		} else {
+			endpointMap[emptyEndpointList.GetClusterName()] = append(endpointMap[emptyEndpointList.GetClusterName()], emptyEndpointList)
+		}
 		endpoints = append(endpoints, emptyEndpointList)
 	}
 
@@ -231,7 +252,6 @@ func (t *translatorInstance) generateXDSSnapshot(
 	routeConfigs []*envoy_config_route_v3.RouteConfiguration,
 	listeners []*envoy_config_listener_v3.Listener,
 ) envoycache.Snapshot {
-
 	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
 
 	for _, ep := range endpoints {

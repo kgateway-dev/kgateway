@@ -323,7 +323,7 @@ message RouteOptions {
     // See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
     tracing.options.gloo.solo.io.RouteTracingSettings tracing = 7;
     // Specifies traffic shadowing configuration for the route.
-    // See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
+    // See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
     shadowing.options.gloo.solo.io.RouteShadowing shadowing = 8;
     // Append/Remove headers on Requests or Responses on this Route
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 9;
@@ -449,6 +449,32 @@ message RouteOptions {
     // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-regex-rewrite)
     // for more details about the `regex_rewrite` attribute
     .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute regex_rewrite = 27;
+
+    // This is a 1:1 translation to the [Envoy API described here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration)
+    message MaxStreamDuration {
+        // Specifies the maximum duration allowed for streams on the route. If not specified, the value
+        // from the [max_stream_duration](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-stream-duration)
+        // field in [HttpConnectionManager.common_http_protocol_options](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-common-http-protocol-options)
+        // is used. If this field is set explicitly to zero, any HttpConnectionManager max_stream_duration timeout will be disabled for this route.
+        google.protobuf.Duration max_stream_duration = 1;
+
+        // If present, and the request contains a [grpc-timeout header](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md), use that value as the
+        // `max_stream_duration`, but limit the applied timeout to the maximum value specified here.
+        // If set to 0, the `grpc-timeout` header is used without modification.
+        google.protobuf.Duration grpc_timeout_header_max = 2;
+
+        // If present, Envoy will adjust the timeout provided by the `grpc-timeout` header by
+        // subtracting the provided duration from the header. This is useful for allowing Envoy to set
+        // its global timeout to be less than that of the deadline imposed by the calling client, which
+        // makes it more likely that Envoy will handle the timeout instead of having the call canceled
+        // by the client. If, after applying the offset, the resulting timeout is zero or negative,
+        // the stream will timeout immediately.
+        google.protobuf.Duration grpc_timeout_header_offset = 3;
+    }
+
+    // Settings for maximum durations and timeouts for streams on the route.
+    // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration)
+    MaxStreamDuration max_stream_duration = 28;
 }
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
 message DestinationSpec {

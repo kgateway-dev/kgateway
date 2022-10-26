@@ -13,7 +13,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/gloo/test/helpers"
+
 	"github.com/solo-io/go-utils/testutils/goimpl"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/golang/protobuf/proto"
@@ -86,12 +89,19 @@ global:
 settings:
   singleNamespace: true
   create: true
-  replaceInvalidRoutes: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: true
 gloo:
   deployment:
-    replicas: 1
+    replicas: 2
+    customEnv:
+      - name: LEADER_ELECTION_LEASE_DURATION
+        value: 4s
+    livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
@@ -263,6 +273,22 @@ func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Setting
 	Expect(err).NotTo(HaveOccurred())
 
 	waitForSettingsToPropagate()
+}
+
+func ToFile(content string) string {
+	f, err := ioutil.TempFile("", "")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	n, err := f.WriteString(content)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, n).To(Equal(len(content)))
+	_ = f.Close()
+	return f.Name()
+}
+
+// PatchResource mutates an existing resource, retrying if a resourceVersionError is encountered
+// Deprecated: Prefer the helpers.PatchResource, which is not a Kubernetes specific package
+func PatchResource(ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource), client clients.ResourceClient) error {
+	return helpers.PatchResourceWithOffset(1, ctx, resourceRef, mutator, client)
 }
 
 // https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604
