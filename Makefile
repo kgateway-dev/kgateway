@@ -420,7 +420,7 @@ $(GLOO_RACE_OUT_DIR)/Dockerfile.build: $(GLOO_DIR)/Dockerfile
 	mkdir -p $(GLOO_RACE_OUT_DIR)
 	cp $< $@
 
-# image is built with amd64 architecture only because it wil build on arm
+# image is built with amd64 architecture only because it will not build on arm
 $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
 	docker build -t $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) \
 		-f $(GLOO_RACE_OUT_DIR)/Dockerfile.build \
@@ -434,7 +434,7 @@ $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DI
 		.
 	touch $@
 
-# image is built with amd64 architecture only because it wil build on arm
+# image is built with amd64 architecture only because it will not build on arm
 # Build inside container as we need to target linux and must compile with CGO_ENABLED=1
 # We may be running Docker in a VM (eg, minikube) so be careful about how we copy files out of the containers
 $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build
@@ -449,7 +449,7 @@ gloo-race: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH) ## Gloo with race detection
 $(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
 	cp $< $@
 
-# image is built with amd64 architecture only because it wil build on arm
+# image is built with amd64 architecture only because it will build on arm
 # Take the executable built in gloo-race and put it in a docker container
 .PHONY: gloo-race-docker
 gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker ## gloo-race-docker
