@@ -10,6 +10,13 @@ Gloo Edge can automatically discover API specifications and create GraphQL schem
 
 Gloo Edge supports two modes of discovery: allowlist and blocklist. For more information about these discovery modes, see the [Function Discovery Service (FDS) guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#function-discovery-service-fds" %}}).
 
+{{% notice note %}}
+GraphQL discovery can be disabled entirely in the `Settings` resource.
+```sh
+kubectl patch settings -n gloo-system default --type=merge --patch '{"spec":{"discovery":{"fdsOptions":{"graphqlEnabled":"false"}}}}'
+```
+{{% /notice %}}
+
 ## Allowlist mode
 
 In allowlist mode, discovery is enabled manually for only specific services by labeling those services with the `function_discovery=enabled` label. This mode gives you full manual control over which services you want to expose as GraphQL services.
