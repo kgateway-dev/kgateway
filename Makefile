@@ -420,6 +420,7 @@ $(GLOO_RACE_OUT_DIR)/Dockerfile.build: $(GLOO_DIR)/Dockerfile
 	mkdir -p $(GLOO_RACE_OUT_DIR)
 	cp $< $@
 
+# image is built with amd64 architecture only because it wil build on arm
 $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
 	docker build -t $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) \
 		-f $(GLOO_RACE_OUT_DIR)/Dockerfile.build \
@@ -432,6 +433,8 @@ $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DI
 		$(PLATFORM) \
 		.
 	touch $@
+
+# image is built with amd64 architecture only because it wil build on arm
 # Build inside container as we need to target linux and must compile with CGO_ENABLED=1
 # We may be running Docker in a VM (eg, minikube) so be careful about how we copy files out of the containers
 $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build
@@ -446,6 +449,7 @@ gloo-race: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH) ## Gloo with race detection
 $(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
 	cp $< $@
 
+# image is built with amd64 architecture only because it wil build on arm
 # Take the executable built in gloo-race and put it in a docker container
 .PHONY: gloo-race-docker
 gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker ## gloo-race-docker
@@ -725,10 +729,10 @@ endif
 .PHONY: docker-push-local-arm
 docker-push-local-arm: docker docker-push
 
-# Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
-# This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker-build`
+# Depends on DOCKER_IMAGES, which is set to docker if CREATE_ASSETS is "true", otherwise empty (making this a no-op).
+# This prevents executing the dependent targets if CREATE_ASSETS is not true, while still enabling `make docker`
 # to be used for local testing.
-# docker-push is intended to be run by CI
+# docker-push-ci is intended to be run by CI, where as docker-push-local is inteneded for local builds. Primarily used for arm support.
 .PHONY: docker-push
 docker-push: docker-push-local docker-push-ci
 
