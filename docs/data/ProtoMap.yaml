@@ -233,6 +233,9 @@ apis:
   enterprise.gloo.solo.io.Ldap:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#Ldap
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.LdapServiceAccount:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#LdapServiceAccount
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.OAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OAuth
     package: enterprise.gloo.solo.io
@@ -593,6 +596,9 @@ apis:
   gateway.solo.io.VirtualServiceSelectorExpressions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#VirtualServiceSelectorExpressions
     package: gateway.solo.io
+  gloo.solo.io.AccountCredentialsSecret:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#AccountCredentialsSecret
+    package: gloo.solo.io
   gloo.solo.io.AggregateListener:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#AggregateListener
     package: gloo.solo.io
@@ -1840,6 +1846,9 @@ apis:
     package: validate
   waf.options.gloo.solo.io.CoreRuleSet:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#CoreRuleSet
+    package: waf.options.gloo.solo.io
+  waf.options.gloo.solo.io.RuleSetFromConfigMap:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#RuleSetFromConfigMap
     package: waf.options.gloo.solo.io
   waf.options.gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#Settings

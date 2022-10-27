@@ -1,7 +1,10 @@
 package translator
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
@@ -82,7 +85,11 @@ type httpFilterChainTranslator struct {
 
 func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
 	// 1. Generate all the network filters (including the HttpConnectionManager)
-	networkFilters := h.networkFilterTranslator.ComputeNetworkFilters(params)
+	networkFilters, err := h.networkFilterTranslator.ComputeNetworkFilters(params)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
+		return nil
+	}
 	if len(networkFilters) == 0 {
 		return nil
 	}
@@ -141,11 +148,15 @@ func (h *httpFilterChainTranslator) createFilterChainsFromSslConfiguration(
 			continue
 		}
 
-		filterChain := newSslFilterChain(
+		filterChain, err := newSslFilterChain(
 			downstreamTlsContext,
 			sslConfig.GetSniDomains(),
 			networkFilters,
 			sslConfig.GetTransportSocketConnectTimeout())
+		if err != nil {
+			validation.AppendListenerError(h.parentReport, validationapi.ListenerReport_Error_SSLConfigError, err.Error())
+			continue
+		}
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
 	return secureFilterChains
@@ -182,11 +193,14 @@ func newSslFilterChain(
 	sniDomains []string,
 	listenerFilters []*envoy_config_listener_v3.Filter,
 	timeout *duration.Duration,
-) *envoy_config_listener_v3.FilterChain {
+) (*envoy_config_listener_v3.FilterChain, error) {
 
 	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
 	clonedListenerFilters := cloneListenerFilters(listenerFilters)
-
+	typedConfig, err := utils.MessageToAny(downstreamTlsContext)
+	if err != nil {
+		return nil, err
+	}
 	return &envoy_config_listener_v3.FilterChain{
 		FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{
 			ServerNames: sniDomains,
@@ -194,10 +208,10 @@ func newSslFilterChain(
 		Filters: clonedListenerFilters,
 		TransportSocket: &envoy_config_core_v3.TransportSocket{
 			Name:       wellknown.TransportSocketTls,
-			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamTlsContext)},
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 		},
 		TransportSocketConnectTimeout: timeout,
-	}
+	}, nil
 }
 
 func cloneListenerFilters(originalListenerFilters []*envoy_config_listener_v3.Filter) []*envoy_config_listener_v3.Filter {
@@ -217,7 +231,10 @@ func (m *multiFilterChainTranslator) ComputeFilterChains(params plugins.Params) 
 	var outFilterChains []*envoy_config_listener_v3.FilterChain
 
 	for _, translator := range m.translators {
-		outFilterChains = append(outFilterChains, translator.ComputeFilterChains(params)...)
+		newFilterChains := translator.ComputeFilterChains(params)
+		if newFilterChains != nil {
+			outFilterChains = append(outFilterChains, newFilterChains...)
+		}
 	}
 
 	return outFilterChains

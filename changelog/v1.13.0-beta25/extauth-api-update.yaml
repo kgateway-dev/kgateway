@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+       Add the API required to configure extauth to look up group membership using a service account. Also add a glooctl 
+       command to create secrets to store credentials for the service account.
+    issueLink: https://github.com/solo-io/ext-auth-service/issues/404
+    resolvesIssue: false

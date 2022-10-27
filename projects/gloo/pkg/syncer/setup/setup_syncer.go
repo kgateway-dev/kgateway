@@ -733,7 +733,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		allowWarnings = gwOpts.Validation.AllowWarnings
 	}
 
-	resourceHasher := translator.MustEnvoyCacheResourcesListToFnvHash
+	resourceHasher := translator.EnvoyCacheResourcesListToFnvHash
 
 	sharedTranslator := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
@@ -771,9 +771,10 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	} else {
 		logger.Debugf("Gateway translation is disabled. Proxies are provided from another source")
 	}
+
 	gwValidationSyncer := gwvalidation.NewValidator(gwvalidation.NewValidatorConfig(
 		gatewayTranslator,
-		validator.Validate,
+		validator.ValidateGloo,
 		ignoreProxyValidationFailure,
 		allowWarnings,
 	))

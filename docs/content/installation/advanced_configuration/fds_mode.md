@@ -74,9 +74,11 @@ FDS can run in one of 3 modes:
 
 Setting the `fdsMode` can be done either via the Helm Chart, or by directly modifying the `default` `gloo.solo.io/v1.Settings` custom resource in Gloo Edge's installation namespace (`gloo-system`).
 
+(Enterprise Only) Automated schema generation for GraphQL is enabled by default. This can be disabled by modifying the `gloo.solo.io/v1.Settings` custom resource as seen [below](#setting-fdsmode-by-editing-the-gloosoloiov1settings-custom-resource)
+
 ### Setting `fdsMode` via the Helm chart
 
-Add the following to your Helm overrides file: 
+Add the following to your Helm overrides file:
 ```yaml
 settings:
   create: true
@@ -93,12 +95,12 @@ Or add the following CLI flags to `helm install|template` commands:
 helm install|template ... --set settings.create=true --set discovery.fdsMode=BLACKLIST
 ```
 
-### Settings `fdsMode` by editing the `gloo.solo.io/v1.Settings` custom resource:
+### Setting `fdsMode` by editing the `gloo.solo.io/v1.Settings` custom resource:
 
 ```bash
 kubectl edit -n gloo-system settings.gloo.solo.io
 ```
-{{< highlight yaml "hl_lines=20-24" >}}
+{{< highlight yaml "hl_lines=20-28" >}}
 # Please edit the object below. Lines beginning with a '#' will be ignored,
 # and an empty file will abort the edit. If an error occurs while saving this file will be
 # reopened with the relevant failures.
@@ -123,6 +125,10 @@ spec:
     # set to either WHITELIST, BLACKLIST, or DISABLED
     # WHITELIST is the default value
     fdsMode: WHITELIST
+    fdsOptions:
+      # set to false to disable automated GraphQL schema generation as part of FDS.
+      # true is the default value (enabled)
+      graphqlEnabled: true
 {{< /highlight >}}
 
 ---

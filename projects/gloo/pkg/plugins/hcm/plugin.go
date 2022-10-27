@@ -83,11 +83,15 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 			},
 		}
 	} else if in.GetPreserveCaseHeaderKeyFormat().GetValue() {
+		typedConfig, err := utils.MessageToAny(&envoy_extensions_http_header_formatters_preserve_case_v3.PreserveCaseFormatterConfig{})
+		if err != nil {
+			return err
+		}
 		out.GetHttpProtocolOptions().HeaderKeyFormat = &envoycore.Http1ProtocolOptions_HeaderKeyFormat{
 			HeaderFormat: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
 				StatefulFormatter: &envoycore.TypedExtensionConfig{
 					Name:        PreserveCasePlugin,
-					TypedConfig: utils.MustMessageToAny(&envoy_extensions_http_header_formatters_preserve_case_v3.PreserveCaseFormatterConfig{}),
+					TypedConfig: typedConfig,
 				},
 			},
 		}

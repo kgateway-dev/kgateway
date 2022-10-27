@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf"
+
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // ensure the imports are used
@@ -58,6 +60,19 @@ func (m *Settings) Clone() proto.Message {
 		}
 	}
 
+	if m.GetConfigMapRuleSets() != nil {
+		target.ConfigMapRuleSets = make([]*RuleSetFromConfigMap, len(m.GetConfigMapRuleSets()))
+		for idx, v := range m.GetConfigMapRuleSets() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ConfigMapRuleSets[idx] = h.Clone().(*RuleSetFromConfigMap)
+			} else {
+				target.ConfigMapRuleSets[idx] = proto.Clone(v).(*RuleSetFromConfigMap)
+			}
+
+		}
+	}
+
 	if h, ok := interface{}(m.GetAuditLogging()).(clone.Cloner); ok {
 		target.AuditLogging = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf.AuditLogging)
 	} else {
@@ -67,6 +82,32 @@ func (m *Settings) Clone() proto.Message {
 	target.RequestHeadersOnly = m.GetRequestHeadersOnly()
 
 	target.ResponseHeadersOnly = m.GetResponseHeadersOnly()
+
+	return target
+}
+
+// Clone function
+func (m *RuleSetFromConfigMap) Clone() proto.Message {
+	var target *RuleSetFromConfigMap
+	if m == nil {
+		return target
+	}
+	target = &RuleSetFromConfigMap{}
+
+	if h, ok := interface{}(m.GetConfigMapRef()).(clone.Cloner); ok {
+		target.ConfigMapRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.ConfigMapRef = proto.Clone(m.GetConfigMapRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	if m.GetDataMapKeys() != nil {
+		target.DataMapKeys = make([]string, len(m.GetDataMapKeys()))
+		for idx, v := range m.GetDataMapKeys() {
+
+			target.DataMapKeys[idx] = v
+
+		}
+	}
 
 	return target
 }

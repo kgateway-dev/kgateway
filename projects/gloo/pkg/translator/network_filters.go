@@ -21,7 +21,7 @@ import (
 )
 
 type NetworkFilterTranslator interface {
-	ComputeNetworkFilters(params plugins.Params) []*envoy_config_listener_v3.Filter
+	ComputeNetworkFilters(params plugins.Params) ([]*envoy_config_listener_v3.Filter, error)
 }
 
 var _ NetworkFilterTranslator = new(httpNetworkFilterTranslator)
@@ -61,10 +61,10 @@ func NewHttpListenerNetworkFilterTranslator(
 	}
 }
 
-func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Params) []*envoy_config_listener_v3.Filter {
+func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Params) ([]*envoy_config_listener_v3.Filter, error) {
 	// return if listener has no virtual hosts
 	if len(n.listener.GetVirtualHosts()) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	var networkFilters []plugins.StagedNetworkFilter
@@ -90,12 +90,16 @@ func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Param
 	}
 
 	// add the http connection manager filter after all the InAuth Listener Filters
+	networkFilter, err := n.hcmNetworkFilterTranslator.ComputeNetworkFilter(params)
+	if err != nil {
+		return nil, err
+	}
 	networkFilters = append(networkFilters, plugins.StagedNetworkFilter{
-		NetworkFilter: n.hcmNetworkFilterTranslator.ComputeNetworkFilter(params),
+		NetworkFilter: networkFilter,
 		Stage:         plugins.AfterStage(plugins.AuthZStage),
 	})
 
-	return sortNetworkFilters(networkFilters)
+	return sortNetworkFilters(networkFilters), nil
 }
 
 func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config_listener_v3.Filter {
@@ -121,7 +125,7 @@ type hcmNetworkFilterTranslator struct {
 	routeConfigName string
 }
 
-func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params) *envoy_config_listener_v3.Filter {
+func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params) (*envoy_config_listener_v3.Filter, error) {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_http_connection_manager")
 
 	// 1. Initialize the HCM
@@ -142,10 +146,11 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params)
 	// 4. Generate the typedConfig for the HCM
 	hcmFilter, err := NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, httpConnectionManager)
 	if err != nil {
-		panic(errors.Wrapf(err, "failed to convert proto message to struct"))
+		contextutils.LoggerFrom(params.Ctx).DPanic("failed to convert proto message to struct")
+		return nil, errors.Wrapf(err, "failed to convert proto message to struct")
 	}
 
-	return hcmFilter
+	return hcmFilter, nil
 }
 
 func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionManager {

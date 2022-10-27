@@ -1,8 +1,23 @@
-##########################################################################################
-# run-ci-regression-tests - runs a set of regression tests. Set KUBE2E_TESTS = (gateway, gloo, gloomtls, glooctl, helm, ingress)
-# run-tests - runs tests (see https://github.com/solo-io/gloo/blob/master/test/e2e/README.md)
+# https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
+.DEFAULT_GOAL := help
+
+#----------------------------------------------------------------------------------
+# Help
+#----------------------------------------------------------------------------------
+# Our Makefile is quite large, and hard to reason through
+# `make help` can be used to self-document targets
+# To update a target to be self-documenting (and appear with the `help` command),
+# place a comment after the target that is prefixed by `##`. For example:
+#	custom-target: ## comment that will appear in the documentation when running `make help`
 #
-##########################################################################################
+# **NOTE TO DEVELOPERS**
+# As you encounter make targets that are frequently used, please make them self-documenting
+.PHONY: help
+help: FIRST_COLUMN_WIDTH=35
+help: ## Output the self-documenting make targets
+	@grep -hE '^[%a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-$(FIRST_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2}'
+
+
 #----------------------------------------------------------------------------------
 # Base
 #----------------------------------------------------------------------------------
@@ -33,7 +48,8 @@ endif
 ORIGIN_URL ?= $(shell git remote get-url origin)
 UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
-ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)"),)
+UPSTREAM_ORIGIN_URL_SSH ?= ssh://git@github.com/solo-io/gloo.git
+ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)" "$(UPSTREAM_ORIGIN_URL_SSH)"),)
 	VERSION := 0.0.1-fork
 	CREATE_TEST_ASSETS := "false"
 endif
@@ -149,7 +165,7 @@ DEPSGOBIN=$(shell pwd)/_output/.bin
 
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 .PHONY: install-go-tools
-install-go-tools: mod-download install-test-tools
+install-go-tools: mod-download install-test-tools ## Download and install Go dependencies
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
@@ -170,14 +186,15 @@ install-test-tools:
 # command to run regression tests with guaranteed access to $(DEPSGOBIN)/ginkgo
 # requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
 
+# see https://github.com/solo-io/gloo/blob/master/test/e2e/README.md
 .PHONY: run-tests
-run-tests:
+run-tests: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
 	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests
-run-ci-regression-tests: install-test-tools
+run-ci-regression-tests: install-test-tools  ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
 	# We intentionally leave out the `-r` ginkgo flag, since we are specifying the exact package that we want run
 	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
 
@@ -207,10 +224,10 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: generate-all
-generate-all: generated-code
+generate-all: generated-code ## generated-code
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-helm-files update-licenses init
+generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-helm-files update-licenses init ## Evaluate go generate
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
@@ -233,9 +250,8 @@ $(OUTPUT_DIR)/.generated-code:
 	mkdir -p $(OUTPUT_DIR)
 	touch $@
 
-# Make sure that the enterprise API *.pb.go files that are generated but not used in this repo are valid.
 .PHONY: verify-enterprise-protos
-verify-enterprise-protos:
+verify-enterprise-protos: ## Make sure that the enterprise API *.pb.go files that are generated but not used in this repo are valid.
 	@echo Verifying validity of generated enterprise files...
 	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
 
@@ -259,7 +275,6 @@ MOCK_RESOURCE_INFO := \
 	gateway:virtual_service:VirtualServiceClient\
 	gateway:route_table:RouteTableClient\
 
-# Use gomock (https://github.com/golang/mock) to generate mocks for our resource clients.
 .PHONY: generate-client-mocks
 generate-client-mocks:
 	@$(foreach INFO, $(MOCK_RESOURCE_INFO), \
@@ -383,13 +398,13 @@ $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
 
 .PHONY: gloo
-gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH)
+gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) ## Gloo Edge
 
 $(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
 	cp $< $@
 
 .PHONY: gloo-docker
-gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo
+gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo ## gloo-docker
 	docker build $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
@@ -405,6 +420,7 @@ $(GLOO_RACE_OUT_DIR)/Dockerfile.build: $(GLOO_DIR)/Dockerfile
 	mkdir -p $(GLOO_RACE_OUT_DIR)
 	cp $< $@
 
+# Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
 $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
 	docker build -t $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) \
 		-f $(GLOO_RACE_OUT_DIR)/Dockerfile.build \
@@ -413,29 +429,33 @@ $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DI
 		--build-arg GCFLAGS=$(GCFLAGS) \
 		--build-arg LDFLAGS=$(LDFLAGS) \
 		--build-arg USE_APK=true \
-		--build-arg GOARCH=$(GOARCH) \
+		--build-arg GOARCH=amd64 \
+		$(PLATFORM) \
 		.
 	touch $@
+
+# Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
 # Build inside container as we need to target linux and must compile with CGO_ENABLED=1
 # We may be running Docker in a VM (eg, minikube) so be careful about how we copy files out of the containers
 $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build
 	docker create -ti --name gloo-race-temp-container $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) bash
-	docker cp gloo-race-temp-container:/gloo-linux-$(GOARCH) $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH)
+	docker cp gloo-race-temp-container:/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64
 	docker rm -f gloo-race-temp-container
 
 # Build the gloo project with race detection enabled
 .PHONY: gloo-race
-gloo-race: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH)
+gloo-race: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH) ## Gloo with race detection enabled.
 
 $(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
 	cp $< $@
 
+# Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
 # Take the executable built in gloo-race and put it in a docker container
 .PHONY: gloo-race-docker
-gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker
-$(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_RACE_OUT_DIR)/Dockerfile
+gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker ## gloo-race-docker
+$(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/Dockerfile
 	docker build $(call get_test_tag_option,gloo) $(GLOO_RACE_OUT_DIR) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=$(GOARCH) $(PLATFORM) \
+		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=amd64 $(PLATFORM) \
 		-t $(IMAGE_REPO)/gloo:$(VERSION)-race $(QUAY_EXPIRATION_LABEL)
 	touch $@
 #----------------------------------------------------------------------------------
@@ -450,7 +470,7 @@ $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/cmd/main.go
 
 .PHONY: sds
-sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
+sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) ## gRPC server for serving Secret Discovery Service config for Gloo Edge MTLS
 
 $(SDS_OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/cmd/Dockerfile
 	cp $< $@
@@ -482,7 +502,7 @@ $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint
 	cp $< $@
 
 .PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
+gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh ## Envoy container used by Gloo (required for target run-tests)
 	docker build $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
@@ -500,7 +520,7 @@ $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH): $(CERTGEN_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go
 
 .PHONY: certgen
-certgen: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH)
+certgen: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) ## Job for creating TLS Secrets in Kubernetes
 
 $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 	cp $< $@
@@ -532,7 +552,7 @@ kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
 # Build All
 #----------------------------------------------------------------------------------
 .PHONY: build
-build: gloo glooctl discovery envoyinit certgen ingress
+build: gloo glooctl discovery envoyinit certgen ingress ## Build All
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
@@ -549,9 +569,8 @@ ifeq ($(RELEASE), "false")
 	HELM_BUCKET := gs://solo-public-tagged-helm
 endif
 
-# Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
 .PHONY: generate-helm-files
-generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
+generate-helm-files: $(OUTPUT_DIR)/.helm-prepared ## Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
 
 HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
 $(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
@@ -587,12 +606,8 @@ ifeq ($(CREATE_ASSETS), "true")
 	done
 endif
 
-#----------------------------------------------------------------------------------
-# Build the Gloo Edge Manifests that are published as release assets
-#----------------------------------------------------------------------------------
-
 .PHONY: render-manifests
-render-manifests: install/gloo-gateway.yaml install/gloo-ingress.yaml install/gloo-knative.yaml
+render-manifests: install/gloo-gateway.yaml install/gloo-ingress.yaml install/gloo-knative.yaml ## Build the Gloo Edge Manifests that are published as release assets
 
 INSTALL_NAMESPACE ?= gloo-system
 
@@ -636,9 +651,8 @@ endif
 $(OUTPUT_DIR)/gloo-enterprise-version:
 	GO111MODULE=on go run hack/find_latest_enterprise_version.go
 
-# The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets
-upload-github-release-assets: print-git-info build-cli render-manifests
+upload-github-release-assets: print-git-info build-cli render-manifests ## The code does the proper checking for a {TAGGED_VERSION}
 	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY_RELEASE)
 
 
@@ -655,11 +669,8 @@ ifeq ($(CREATE_ASSETS),"true")
 	DOCKER_IMAGES := docker
 endif
 
-# check if all images are already built for RETAG_IMAGE_REGISTRY.
-# if so, retag them for the repository specified by IMAGE_REPO.
-# if not, build them with tags for the repository specified by IMAGE_REPO.
 .PHONY: docker-push-retag
-docker-push-retag:
+docker-push-retag: ## check if all images are already built for {RETAG_IMAGE_REGISTRY}, and build/retag them respectively with tags for the repository specified by {IMAGE_REPO}.
 ifeq ($(RELEASE), "true")
 	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
@@ -701,29 +712,47 @@ ifeq ($(RELEASE), "true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gloo-docker gloo-race-docker \
+docker: docker-local docker-non-arm
+
+.PHONY: docker-local
+docker-local: discovery-docker gloo-docker  \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker kubectl-docker
+
+.PHONY: docker-non-arm
+ifeq ($(UNAME_M), arm64)
+docker-non-arm:
+else
+docker-non-arm: gloo-race-docker
+endif
 
 .PHONY: docker-push-local-arm
 docker-push-local-arm: docker docker-push
 
-# Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
-# This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker-build`
+# Depends on DOCKER_IMAGES, which is set to docker if CREATE_ASSETS is "true", otherwise empty (making this a no-op).
+# This prevents executing the dependent targets if CREATE_ASSETS is not true, while still enabling `make docker`
 # to be used for local testing.
-# docker-push is intended to be run by CI
+# docker-push-non-arm is intended to be run on CI only, where as docker-push-local is inteneded for local builds. Primarily used for arm support.
 .PHONY: docker-push
-docker-push: $(DOCKER_IMAGES)
+docker-push: docker-push-local docker-push-non-arm
+
+.PHONY: docker-push-local
+docker-push-local: $(DOCKER_IMAGES)
 ifeq ($(CREATE_ASSETS), "true")
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race && \
 	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
 	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
+endif
+
+.PHONY: docker-push-non-arm
+docker-push-non-arm:
+ifneq ($(and $(filter $(CREATE_ASSETS), "true"), $(filter-out $(UNAME_M), arm64)),)
+	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race
 endif
 
 .PHONY: docker-push-extended
@@ -760,15 +789,11 @@ push-docker-images-arm-to-kind-registry:
 # Build assets for Kube2e tests
 #----------------------------------------------------------------------------------
 #
-# The following targets are used to generate the assets on which the kube2e tests rely upon. The following actions are performed:
-#
-#   1. Generate Gloo Edge value files
-#   2. Package the Gloo Edge Helm chart to the _test directory (also generate an index file)
-#
+# The following targets are used to generate the assets on which the kube2e tests rely upon.
 # The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the GKE test cluster.
 
 .PHONY: build-test-assets
-build-test-assets: build-test-chart $(OUTPUT_DIR)/glooctl-linux-$(GOARCH) \
+build-test-assets: build-test-chart $(OUTPUT_DIR)/glooctl-linux-$(GOARCH) \ ## Generate Gloo Edge value files and then package the Gloo Edge Helm chart to the _test directory (also generate an index file)
 	$(OUTPUT_DIR)/glooctl-darwin-$(GOARCH)
 .PHONY: build-test-chart
 build-test-chart:
@@ -786,9 +811,7 @@ SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
 
 .PHONY: run-security-scans
-run-security-scan:
-	# Run security scan on gloo and solo-projects
-	# Generates scan files to _output/scans directory
+run-security-scan: ## Run security scan on gloo and solo-projects, Generates scan files to _output/scans directory
 	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo -a github-issue-latest
 	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe -a github-issue-latest
 
@@ -804,8 +827,7 @@ publish-security-scan:
 # Third Party License Management
 #----------------------------------------------------------------------------------
 .PHONY: update-licenses
-update-licenses:
-	# check for GPL licenses, if there are any, this will fail
+update-licenses: ## Check for GPL licenses, if there are any, this will fail
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -c "GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"
 
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> docs/content/static/content/osa_provided.md

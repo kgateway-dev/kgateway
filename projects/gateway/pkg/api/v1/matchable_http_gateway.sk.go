@@ -20,6 +20,10 @@ var (
 	_ resources.InputResource = new(MatchableHttpGateway)
 )
 
+func NewMatchableHttpGatewayHashableResource() resources.HashableResource {
+	return new(MatchableHttpGateway)
+}
+
 func NewMatchableHttpGateway(namespace, name string) *MatchableHttpGateway {
 	matchablehttpgateway := &MatchableHttpGateway{}
 	matchablehttpgateway.SetMetadata(&core.Metadata{

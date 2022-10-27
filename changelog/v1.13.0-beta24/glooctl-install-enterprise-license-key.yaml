@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/4124
+    description: Glooctl install gateway enterprise now requires a license key or it will fail
