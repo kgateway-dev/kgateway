@@ -17,16 +17,14 @@ spec:
     validation:
       alwaysAccept: true
       allowWarnings: true
-      serverEnabled: true
       disableTransformationValidation: false
       warnRouteShortCircuiting: false
       proxyValidationServerAddr: gloo:9988
-      validationServerGrpcMaxSizeBytes: 104857600
+      validationServerGrpcMaxSizeBytes: 4000000
   gloo:
     enableRestEds: false
     xdsBindAddr: 0.0.0.0:9977
     restXdsBindAddr: 0.0.0.0:9976
-    proxyDebugBindAddr: 0.0.0.0:9966
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
     invalidConfigPolicy:
