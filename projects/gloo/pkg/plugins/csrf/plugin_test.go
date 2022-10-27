@@ -81,14 +81,16 @@ var _ = Describe("plugin", func() {
 		})
 
 		Expect(err).NotTo(HaveOccurred())
+		typedConfig, err := utils.MessageToAny(&envoycsrf.CsrfPolicy{
+			FilterEnabled:     &envoyFilter,
+			AdditionalOrigins: envoyAdditionalOrigins,
+		})
+		Expect(err).NotTo(HaveOccurred())
 		expectedStageFilter := plugins.StagedHttpFilter{
 			HttpFilter: &envoyhcm.HttpFilter{
 				Name: FilterName,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-					TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-						FilterEnabled:     &envoyFilter,
-						AdditionalOrigins: envoyAdditionalOrigins,
-					}),
+					TypedConfig: typedConfig,
 				},
 			},
 			Stage: plugins.FilterStage{
@@ -114,17 +116,19 @@ var _ = Describe("plugin", func() {
 		})
 
 		Expect(err).NotTo(HaveOccurred())
+		typedConfig, err := utils.MessageToAny(&envoycsrf.CsrfPolicy{
+			FilterEnabled: &envoy_config_core.RuntimeFractionalPercent{
+				DefaultValue: &envoytype.FractionalPercent{},
+			},
+			ShadowEnabled:     &envoyFilter,
+			AdditionalOrigins: envoyAdditionalOrigins,
+		})
+		Expect(err).NotTo(HaveOccurred())
 		expectedStageFilter := plugins.StagedHttpFilter{
 			HttpFilter: &envoyhcm.HttpFilter{
 				Name: FilterName,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-					TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-						FilterEnabled: &envoy_config_core.RuntimeFractionalPercent{
-							DefaultValue: &envoytype.FractionalPercent{},
-						},
-						ShadowEnabled:     &envoyFilter,
-						AdditionalOrigins: envoyAdditionalOrigins,
-					}),
+					TypedConfig: typedConfig,
 				},
 			},
 			Stage: plugins.FilterStage{
@@ -152,16 +156,18 @@ var _ = Describe("plugin", func() {
 		})
 
 		Expect(err).NotTo(HaveOccurred())
+		typedConfig, err := utils.MessageToAny(&envoycsrf.CsrfPolicy{
+			FilterEnabled:     &envoyFilter,
+			ShadowEnabled:     &envoyFilter,
+			AdditionalOrigins: envoyAdditionalOrigins,
+		})
+		Expect(err).NotTo(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-							FilterEnabled:     &envoyFilter,
-							ShadowEnabled:     &envoyFilter,
-							AdditionalOrigins: envoyAdditionalOrigins,
-						}),
+						TypedConfig: typedConfig,
 					},
 				},
 				Stage: plugins.FilterStage{

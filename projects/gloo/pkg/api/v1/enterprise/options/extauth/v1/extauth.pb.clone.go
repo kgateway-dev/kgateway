@@ -1291,6 +1291,31 @@ func (m *Ldap) Clone() proto.Message {
 
 	target.DisableGroupChecking = m.GetDisableGroupChecking()
 
+	if h, ok := interface{}(m.GetGroupLookupSettings()).(clone.Cloner); ok {
+		target.GroupLookupSettings = h.Clone().(*LdapServiceAccount)
+	} else {
+		target.GroupLookupSettings = proto.Clone(m.GetGroupLookupSettings()).(*LdapServiceAccount)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *LdapServiceAccount) Clone() proto.Message {
+	var target *LdapServiceAccount
+	if m == nil {
+		return target
+	}
+	target = &LdapServiceAccount{}
+
+	if h, ok := interface{}(m.GetCredentialsSecretRef()).(clone.Cloner); ok {
+		target.CredentialsSecretRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.CredentialsSecretRef = proto.Clone(m.GetCredentialsSecretRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	target.CheckGroupsWithServiceAccount = m.GetCheckGroupsWithServiceAccount()
+
 	return target
 }
 
@@ -2658,6 +2683,65 @@ func (m *ExtAuthConfig_OpaAuthConfig) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_LdapConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_LdapConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_LdapConfig{}
+
+	target.Address = m.GetAddress()
+
+	target.UserDnTemplate = m.GetUserDnTemplate()
+
+	target.MembershipAttributeName = m.GetMembershipAttributeName()
+
+	if m.GetAllowedGroups() != nil {
+		target.AllowedGroups = make([]string, len(m.GetAllowedGroups()))
+		for idx, v := range m.GetAllowedGroups() {
+
+			target.AllowedGroups[idx] = v
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetPool()).(clone.Cloner); ok {
+		target.Pool = h.Clone().(*Ldap_ConnectionPool)
+	} else {
+		target.Pool = proto.Clone(m.GetPool()).(*Ldap_ConnectionPool)
+	}
+
+	target.SearchFilter = m.GetSearchFilter()
+
+	target.DisableGroupChecking = m.GetDisableGroupChecking()
+
+	if h, ok := interface{}(m.GetGroupLookupSettings()).(clone.Cloner); ok {
+		target.GroupLookupSettings = h.Clone().(*ExtAuthConfig_LdapServiceAccountConfig)
+	} else {
+		target.GroupLookupSettings = proto.Clone(m.GetGroupLookupSettings()).(*ExtAuthConfig_LdapServiceAccountConfig)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_LdapServiceAccountConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_LdapServiceAccountConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_LdapServiceAccountConfig{}
+
+	target.Username = m.GetUsername()
+
+	target.Password = m.GetPassword()
+
+	target.CheckGroupsWithServiceAccount = m.GetCheckGroupsWithServiceAccount()
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_Config) Clone() proto.Message {
 	var target *ExtAuthConfig_Config
 	if m == nil {
@@ -2754,6 +2838,18 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 		} else {
 			target.AuthConfig = &ExtAuthConfig_Config_Ldap{
 				Ldap: proto.Clone(m.GetLdap()).(*Ldap),
+			}
+		}
+
+	case *ExtAuthConfig_Config_LdapInternal:
+
+		if h, ok := interface{}(m.GetLdapInternal()).(clone.Cloner); ok {
+			target.AuthConfig = &ExtAuthConfig_Config_LdapInternal{
+				LdapInternal: h.Clone().(*ExtAuthConfig_LdapConfig),
+			}
+		} else {
+			target.AuthConfig = &ExtAuthConfig_Config_LdapInternal{
+				LdapInternal: proto.Clone(m.GetLdapInternal()).(*ExtAuthConfig_LdapConfig),
 			}
 		}
 

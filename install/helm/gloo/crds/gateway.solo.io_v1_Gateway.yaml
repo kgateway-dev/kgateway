@@ -822,6 +822,22 @@ spec:
                                 type: string
                                 x-kubernetes-int-or-string: true
                             type: object
+                          configMapRuleSets:
+                            items:
+                              properties:
+                                configMapRef:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
+                                dataMapKeys:
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                            type: array
                           coreRuleSet:
                             properties:
                               customSettingsFile:
@@ -2098,6 +2114,22 @@ spec:
                                           type: string
                                           x-kubernetes-int-or-string: true
                                       type: object
+                                    configMapRuleSets:
+                                      items:
+                                        properties:
+                                          configMapRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                          dataMapKeys:
+                                            items:
+                                              type: string
+                                            type: array
+                                        type: object
+                                      type: array
                                     coreRuleSet:
                                       properties:
                                         customSettingsFile:

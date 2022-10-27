@@ -51,6 +51,7 @@ type Image struct {
 	Tag        *string `json:"tag,omitempty"  desc:"The image tag for the container."`
 	Repository *string `json:"repository,omitempty"  desc:"The image repository (name) for the container."`
 	Digest     *string `json:"digest,omitempty"  desc:"The hash digest of the container's image, ie. sha256:12345...."`
+	FipsDigest *string `json:"fipsDigest,omitempty"  desc:"The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true"`
 	Registry   *string `json:"registry,omitempty" desc:"The image hostname prefix and registry, such as quay.io/solo-io."`
 	PullPolicy *string `json:"pullPolicy,omitempty"  desc:"The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting"`
 	PullSecret *string `json:"pullSecret,omitempty" desc:"The image pull secret to use for the container, in the same namespace as the container pod."`
@@ -181,20 +182,21 @@ type KnativeProxyInternal struct {
 }
 
 type Settings struct {
-	WatchNamespaces               []string             `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces"`
-	WriteNamespace                *string              `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery."`
-	Integrations                  *Integrations        `json:"integrations,omitempty"`
-	Create                        *bool                `json:"create,omitempty" desc:"create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers"`
-	Extensions                    interface{}          `json:"extensions,omitempty"`
-	SingleNamespace               *bool                `json:"singleNamespace,omitempty" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
-	InvalidConfigPolicy           *InvalidConfigPolicy `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo Edge to handle invalid configuration"`
-	Linkerd                       *bool                `json:"linkerd,omitempty" desc:"Enable automatic Linkerd integration in Gloo Edge"`
-	DisableProxyGarbageCollection *bool                `json:"disableProxyGarbageCollection,omitempty" desc:"Set this option to determine the state of an Envoy listener when the corresponding Proxy resource has no routes. If false (default), Gloo Edge will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo Edge will keep serving the routes from the last applied valid configuration."`
-	RegexMaxProgramSize           *uint32              `json:"regexMaxProgramSize,omitempty" desc:"Set this field to specify the RE2 default max program size which is a rough estimate of how complex the compiled regex is to evaluate. If not specified, this defaults to 100."`
-	DisableKubernetesDestinations *bool                `json:"disableKubernetesDestinations,omitempty" desc:"Gloo Edge allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo Edge scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo Edge is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
-	Aws                           AwsSettings          `json:"aws,omitempty"`
-	RateLimit                     interface{}          `json:"rateLimit,omitempty" desc:"Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
-	EnableRestEds                 *bool                `json:"enableRestEds,omitempty" desc:"Whether or not to use rest xds for all EDS by default. Defaults to false."`
+	WatchNamespaces               []string                `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces"`
+	WriteNamespace                *string                 `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery."`
+	Integrations                  *Integrations           `json:"integrations,omitempty"`
+	Create                        *bool                   `json:"create,omitempty" desc:"create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers"`
+	Extensions                    interface{}             `json:"extensions,omitempty"`
+	SingleNamespace               *bool                   `json:"singleNamespace,omitempty" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
+	InvalidConfigPolicy           *InvalidConfigPolicy    `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo Edge to handle invalid configuration"`
+	Linkerd                       *bool                   `json:"linkerd,omitempty" desc:"Enable automatic Linkerd integration in Gloo Edge"`
+	DisableProxyGarbageCollection *bool                   `json:"disableProxyGarbageCollection,omitempty" desc:"Set this option to determine the state of an Envoy listener when the corresponding Proxy resource has no routes. If false (default), Gloo Edge will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo Edge will keep serving the routes from the last applied valid configuration."`
+	RegexMaxProgramSize           *uint32                 `json:"regexMaxProgramSize,omitempty" desc:"Set this field to specify the RE2 default max program size which is a rough estimate of how complex the compiled regex is to evaluate. If not specified, this defaults to 100."`
+	DisableKubernetesDestinations *bool                   `json:"disableKubernetesDestinations,omitempty" desc:"Gloo Edge allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo Edge scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo Edge is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
+	Aws                           AwsSettings             `json:"aws,omitempty"`
+	RateLimit                     interface{}             `json:"rateLimit,omitempty" desc:"Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
+	CircuitBreakers               CircuitBreakersSettings `json:"circuitBreakers,omitempty desc:"Set this to configure the circuit breaker settings for Gloo."`
+	EnableRestEds                 *bool                   `json:"enableRestEds,omitempty" desc:"Whether or not to use rest xds for all EDS by default. Defaults to false."`
 	*KubeResourceOverride
 }
 
@@ -206,6 +208,13 @@ type AwsSettings struct {
 	CredentialRefreshDelay          *Duration `json:"credential_refresh_delay,omitempty" desc:"Adds a timed refresh to for ServiceAccount credentials in addition to the default filewatch."`
 }
 
+type CircuitBreakersSettings struct {
+	MaxConnections     *uint32 `json:"maxConnections,omitempty" desc:"Set this field to specify the maximum number of connections that Envoy will make to the upstream cluster. If not specified, the default is 1024."`
+	MaxPendingRequests *uint32 `json:"maxPendingRequests,omitempty" desc:"Set this field to specfify the maximum number of pending requests that Envoy will allow to the upstream cluster. If not specified, the default is 1024."`
+	MaxRequests        *uint32 `json:"maxRequests,omitempty" desc:"Set this field to specfify the maximum number of parallel requests that Envoy will make to the upstream cluster. If not specified, the default is 1024."`
+	MaxRetries         *uint32 `json:"maxRetries,omitempty" desc:"Set this field to specify the maximum number of parallel retries that Envoy will allow to the upstream cluster. If not specified, the default is 3."`
+}
+
 type InvalidConfigPolicy struct {
 	ReplaceInvalidRoutes     *bool   `json:"replaceInvalidRoutes,omitempty" desc:"Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo Edge will serve the route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid."`
 	InvalidRouteResponseCode *int64  `json:"invalidRouteResponseCode,omitempty" desc:"the response code for the direct response"`
@@ -213,11 +222,12 @@ type InvalidConfigPolicy struct {
 }
 
 type Gloo struct {
-	Deployment     *GlooDeployment `json:"deployment,omitempty"`
-	ServiceAccount `json:"serviceAccount,omitempty"`
-	SplitLogOutput *bool                 `json:"splitLogOutput,omitempty" desc:"Set to true to send debug/info/warning logs to stdout, error/fatal/panic to stderr. Set to false to send all logs to stdout"`
-	GlooService    *KubeResourceOverride `json:"service,omitempty"`
-	LogLevel       *string               `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
+	Deployment            *GlooDeployment `json:"deployment,omitempty"`
+	ServiceAccount        `json:"serviceAccount,omitempty"`
+	SplitLogOutput        *bool                 `json:"splitLogOutput,omitempty" desc:"Set to true to send debug/info/warning logs to stdout, error/fatal/panic to stderr. Set to false to send all logs to stdout"`
+	GlooService           *KubeResourceOverride `json:"service,omitempty"`
+	LogLevel              *string               `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
+	DisableLeaderElection *bool                 `json:"disableLeaderElection,omitempty" desc:"Set to true to disable leader election, and ensure all running replicas are considered the leader. Do not enable this with multiple replicas of Gloo"`
 }
 
 type GlooDeployment struct {
@@ -241,6 +251,7 @@ type Discovery struct {
 	Deployment     *DiscoveryDeployment `json:"deployment,omitempty"`
 	FdsMode        *string              `json:"fdsMode,omitempty" desc:"mode for function discovery (blacklist or whitelist). See more info in the settings docs"`
 	UdsOptions     *UdsOptions          `json:"udsOptions,omitempty" desc:"Configuration options for the Upstream Discovery Service (UDS)."`
+	FdsOptions     *FdsOptions          `json:"fdsOptions,omitempty" desc:"Configuration options for the Function Discovery Service (FDS)."`
 	Enabled        *bool                `json:"enabled,omitempty" desc:"enable Discovery features"`
 	ServiceAccount `json:"serviceAccount,omitempty" `
 	LogLevel       *string `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
@@ -262,6 +273,11 @@ type DiscoveryDeployment struct {
 type UdsOptions struct {
 	Enabled     *bool             `json:"enabled,omitempty" desc:"Enable upstream discovery service. Defaults to true."`
 	WatchLabels map[string]string `json:"watchLabels,omitempty" desc:"Map of labels to watch. Only services which match all of the selectors specified here will be discovered by UDS."`
+}
+
+// Configuration options for the Function Discovery Service (FDS).
+type FdsOptions struct {
+	GraphqlEnabled *bool `json:"graphqlEnabled,omitempty" desc:"Enable GraphQL schema generation on the function discovery service. Defaults to true."`
 }
 
 type Gateway struct {
@@ -400,6 +416,7 @@ type GatewayProxy struct {
 	LogLevel                       *string                      `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
 	XdsServiceAddress              *string                      `json:"xdsServiceAddress,omitempty" desc:"The k8s service name for the xds server. Defaults to gloo."`
 	XdsServicePort                 *uint32                      `json:"xdsServicePort,omitempty" desc:"The k8s service port for the xds server. Defaults to the value from .Values.gloo.deployment.xdsPort, but can be overridden to use, for example, xds-relay."`
+	TcpKeepaliveTimeSeconds        *uint32                      `json:"tcpKeepaliveTimeSeconds,omitempty" desc:"The amount of time in seconds for connections to be idle before sending keep-alive probes. Defaults to 60. See here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive"`
 	*KubeResourceOverride
 }
 

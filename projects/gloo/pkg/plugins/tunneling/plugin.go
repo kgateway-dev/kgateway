@@ -117,15 +117,23 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 								// successfully to their generated targets
 								return generatedClusters, nil, nil, generatedListeners, nil
 							}
+							typedConfig, err := utils.MessageToAny(cfg)
+							if err != nil {
+								return nil, nil, nil, nil, err
+							}
 							inCluster.TransportSocket = &envoy_config_core_v3.TransportSocket{
 								Name:       wellknown.TransportSocketTls,
-								ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
+								ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 							}
 							break
 						}
 					}
 					generatedClusters = append(generatedClusters, generateSelfCluster(selfCluster, selfPipe, originalTransportSocket))
-					generatedListeners = append(generatedListeners, generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname, tunnelingHeaders))
+					forwardingTcpListener, err := generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname, tunnelingHeaders)
+					if err != nil {
+						return nil, nil, nil, nil, err
+					}
+					generatedListeners = append(generatedListeners, forwardingTcpListener)
 				}
 			}
 		}
@@ -174,13 +182,16 @@ func generateSelfCluster(selfCluster, selfPipe string, originalTransportSocket *
 }
 
 // the generated cluster routes to this generated listener, which forwards TCP traffic to an HTTP Connect proxy
-func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string, tunnelingHeadersToAdd []*envoy_config_core_v3.HeaderValueOption) *envoy_config_listener_v3.Listener {
+func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string, tunnelingHeadersToAdd []*envoy_config_core_v3.HeaderValueOption) (*envoy_config_listener_v3.Listener, error) {
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix:       "soloioTcpStats" + cluster,
 		TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname, HeadersToAdd: tunnelingHeadersToAdd},
 		ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: cluster}, // route to original target
 	}
-
+	typedConfig, err := utils.MessageToAny(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &envoy_config_listener_v3.Listener{
 		Name: "solo_io_generated_self_listener_" + cluster,
 		Address: &envoy_config_core_v3.Address{
@@ -196,11 +207,11 @@ func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string, 
 					{
 						Name: "tcp",
 						ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
-							TypedConfig: utils.MustMessageToAny(cfg),
+							TypedConfig: typedConfig,
 						},
 					},
 				},
 			},
 		},
-	}
+	}, nil
 }

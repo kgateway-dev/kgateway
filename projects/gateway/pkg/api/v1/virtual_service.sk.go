@@ -20,6 +20,10 @@ var (
 	_ resources.InputResource = new(VirtualService)
 )
 
+func NewVirtualServiceHashableResource() resources.HashableResource {
+	return new(VirtualService)
+}
+
 func NewVirtualService(namespace, name string) *VirtualService {
 	virtualservice := &VirtualService{}
 	virtualservice.SetMetadata(&core.Metadata{

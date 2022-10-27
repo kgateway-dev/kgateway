@@ -272,9 +272,11 @@ var _ = Describe("Plugin", func() {
 
 		It("should not override existing tls config", func() {
 			existing := &envoyauth.UpstreamTlsContext{}
+			typedConfig, err := utils.MessageToAny(existing)
+			Expect(err).ToNot(HaveOccurred())
 			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
 				Name:       wellknown.TransportSocketTls,
-				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(existing)},
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 			}
 			upstreamSpec.UseTls = true
 			p.ProcessUpstream(params, upstream, out)

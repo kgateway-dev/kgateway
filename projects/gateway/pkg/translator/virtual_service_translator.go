@@ -171,6 +171,9 @@ func getVirtualServicesForHttpGateway(
 	return virtualServicesForGateway
 }
 
+// HttpGatewayContainsVirtualService determines whether the VS has the same selector/expression matching and the same namespace
+// so that the two resources can co-exist.  A VS must match on these terms. Else see if the VS matches the same refs
+// that are currently on the gateway.
 func HttpGatewayContainsVirtualService(httpGateway *v1.HttpGateway, virtualService *v1.VirtualService, ssl bool) (bool, error) {
 	if ssl != hasSsl(virtualService) {
 		return false, nil

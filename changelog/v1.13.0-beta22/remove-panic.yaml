@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7174
+    resolvesIssue: false
+    description: >
+      Removed calls to potentially dangerous `panic()` replaced with `contextutils.LoggerFrom(ctx).DPanic()`

@@ -54,6 +54,7 @@ glooctl create secret [flags]
 
 * [glooctl create](../glooctl_create)	 - Create a Gloo resource
 * [glooctl create secret apikey](../glooctl_create_secret_apikey)	 - Create an ApiKey secret with the given name (Enterprise)
+* [glooctl create secret authcredentials](../glooctl_create_secret_authcredentials)	 - Create an AuthenticationCredentials secret with the given name (Enterprise)
 * [glooctl create secret aws](../glooctl_create_secret_aws)	 - Create an AWS secret with the given name
 * [glooctl create secret azure](../glooctl_create_secret_azure)	 - Create an Azure secret with the given name
 * [glooctl create secret header](../glooctl_create_secret_header)	 - Create a header secret with the given name

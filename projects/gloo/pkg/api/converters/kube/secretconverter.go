@@ -18,6 +18,7 @@ var GlooSecretConverterChain = NewSecretConverterChain(
 	new(AwsSecretConverter),
 	new(APIKeySecretConverter),
 	new(OAuthSecretConverter),
+	new(AccountCredentialsSecretConverter),
 	new(OpaqueSecretConverter),
 	// the header converter needs to run last because it has a fall-back to convert any opaque k8s secret with
 	// non-empty data into a gloo header secret

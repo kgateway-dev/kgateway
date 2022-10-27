@@ -33,6 +33,10 @@ spec:
 {{- if .Values.settings.regexMaxProgramSize }}
     regexMaxProgramSize: {{ .Values.settings.regexMaxProgramSize }}
 {{- end }}
+{{- if .Values.settings.circuitBreakers }}
+    circuitBreakers:
+{{ toYaml .Values.settings.circuitBreakers | indent 6}}
+{{- end }}
 {{- if .Values.settings.aws }}
     awsOptions:
 {{- if .Values.settings.aws.enableServiceAccountCredentials }}
@@ -117,6 +121,10 @@ spec:
     udsOptions:
     {{- toYaml .Values.discovery.udsOptions | nindent 6 }}
 {{- end }} {{/* if .Values.discovery.udsOptions */}}
+{{- if .Values.discovery.fdsOptions }}
+    fdsOptions:
+    {{- toYaml .Values.discovery.fdsOptions | nindent 6 }}
+{{- end }} {{/* if .Values.discovery.fdsOptions */}}
 {{- end }} {{/* if .Values.discovery */}}
 
 {{- if .Values.settings.extensions }}

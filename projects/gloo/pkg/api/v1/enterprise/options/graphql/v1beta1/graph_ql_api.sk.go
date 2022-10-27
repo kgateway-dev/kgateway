@@ -20,6 +20,10 @@ var (
 	_ resources.InputResource = new(GraphQLApi)
 )
 
+func NewGraphQLApiHashableResource() resources.HashableResource {
+	return new(GraphQLApi)
+}
+
 func NewGraphQLApi(namespace, name string) *GraphQLApi {
 	graphqlapi := &GraphQLApi{}
 	graphqlapi.SetMetadata(&core.Metadata{
