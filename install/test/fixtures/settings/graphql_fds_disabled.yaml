@@ -13,7 +13,6 @@ spec:
       graphqlEnabled: false
   gateway:
     readGatewaysFromAllNamespaces: false
-    enableGatewayController: true
     isolateVirtualHostsBySslConfig: false
     validation:
       alwaysAccept: true
