@@ -712,18 +712,18 @@ ifeq ($(RELEASE), "true")
 endif
 
 .PHONY: docker docker-push
-docker: docker-local docker-ci
+docker: docker-local docker-non-arm
 
 .PHONY: docker-local
 docker-local: discovery-docker gloo-docker  \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker kubectl-docker
 
-.PHONY: docker-ci
+.PHONY: docker-non-arm
 ifeq ($(UNAME_M), arm64)
-docker-ci:
+docker-non-arm:
 else
-docker-ci: gloo-race-docker
+docker-non-arm: gloo-race-docker
 endif
 
 .PHONY: docker-push-local-arm
@@ -732,9 +732,9 @@ docker-push-local-arm: docker docker-push
 # Depends on DOCKER_IMAGES, which is set to docker if CREATE_ASSETS is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if CREATE_ASSETS is not true, while still enabling `make docker`
 # to be used for local testing.
-# docker-push-ci is intended to be run by CI, where as docker-push-local is inteneded for local builds. Primarily used for arm support.
+# docker-push-non-arm is intended to be run on CI only, where as docker-push-local is inteneded for local builds. Primarily used for arm support.
 .PHONY: docker-push
-docker-push: docker-push-local docker-push-ci
+docker-push: docker-push-local docker-push-non-arm
 
 .PHONY: docker-push-local
 docker-push-local: $(DOCKER_IMAGES)
@@ -749,8 +749,8 @@ ifeq ($(CREATE_ASSETS), "true")
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
 endif
 
-.PHONY: docker-push-ci
-docker-push-ci:
+.PHONY: docker-push-non-arm
+docker-push-non-arm:
 ifneq ($(and $(filter $(CREATE_ASSETS), "true"), $(filter-out $(UNAME_M), arm64)),)
 	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race
 endif
