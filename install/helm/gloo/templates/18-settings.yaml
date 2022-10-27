@@ -111,6 +111,10 @@ spec:
     udsOptions:
     {{- toYaml .Values.discovery.udsOptions | nindent 6 }}
 {{- end }} {{/* if .Values.discovery.udsOptions */}}
+{{- if .Values.discovery.fdsOptions }}
+    fdsOptions:
+    {{- toYaml .Values.discovery.fdsOptions | nindent 6 }}
+{{- end }} {{/* if .Values.discovery.fdsOptions */}}
 {{- end }} {{/* if .Values.discovery */}}
 
 {{- if .Values.settings.extensions }}

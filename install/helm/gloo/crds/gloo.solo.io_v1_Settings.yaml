@@ -120,6 +120,12 @@ spec:
                   fdsMode:
                     type: string
                     x-kubernetes-int-or-string: true
+                  fdsOptions:
+                    properties:
+                      graphqlEnabled:
+                        nullable: true
+                        type: boolean
+                    type: object
                   udsOptions:
                     properties:
                       enabled:

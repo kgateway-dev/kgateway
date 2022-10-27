@@ -21,6 +21,7 @@ weight: 5
 - [KnativeOptions](#knativeoptions)
 - [DiscoveryOptions](#discoveryoptions)
 - [UdsOptions](#udsoptions)
+- [FdsOptions](#fdsoptions)
 - [FdsMode](#fdsmode)
 - [ConsulConfiguration](#consulconfiguration)
 - [ServiceDiscoveryOptions](#servicediscoveryoptions)
@@ -278,6 +279,7 @@ This option determines the root of the directory tree used to this end.
 ```yaml
 "fdsMode": .gloo.solo.io.Settings.DiscoveryOptions.FdsMode
 "udsOptions": .gloo.solo.io.Settings.DiscoveryOptions.UdsOptions
+"fdsOptions": .gloo.solo.io.Settings.DiscoveryOptions.FdsOptions
 
 ```
 
@@ -285,6 +287,7 @@ This option determines the root of the directory tree used to this end.
 | ----- | ---- | ----------- | 
 | `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk/#fdsmode) |  |
 | `udsOptions` | [.gloo.solo.io.Settings.DiscoveryOptions.UdsOptions](../settings.proto.sk/#udsoptions) |  |
+| `fdsOptions` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsOptions](../settings.proto.sk/#fdsoptions) |  |
 
 
 
@@ -304,6 +307,23 @@ This option determines the root of the directory tree used to this end.
 | ----- | ---- | ----------- | 
 | `enabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable upstream discovery service. Defaults to true. |
 | `watchLabels` | `map<string, string>` | Map of labels to watch. Only services which match all of the selectors specified here will be discovered by UDS. |
+
+
+
+
+---
+### FdsOptions
+
+
+
+```yaml
+"graphqlEnabled": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `graphqlEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable function discovery service on GraphQL gRPC and OpenApi upstreams. Defaults to true. |
 
 
 

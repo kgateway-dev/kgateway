@@ -604,6 +604,12 @@ func (m *Settings_DiscoveryOptions) Clone() proto.Message {
 		target.UdsOptions = proto.Clone(m.GetUdsOptions()).(*Settings_DiscoveryOptions_UdsOptions)
 	}
 
+	if h, ok := interface{}(m.GetFdsOptions()).(clone.Cloner); ok {
+		target.FdsOptions = h.Clone().(*Settings_DiscoveryOptions_FdsOptions)
+	} else {
+		target.FdsOptions = proto.Clone(m.GetFdsOptions()).(*Settings_DiscoveryOptions_FdsOptions)
+	}
+
 	return target
 }
 
@@ -755,6 +761,23 @@ func (m *Settings_DiscoveryOptions_UdsOptions) Clone() proto.Message {
 			target.WatchLabels[k] = v
 
 		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_DiscoveryOptions_FdsOptions) Clone() proto.Message {
+	var target *Settings_DiscoveryOptions_FdsOptions
+	if m == nil {
+		return target
+	}
+	target = &Settings_DiscoveryOptions_FdsOptions{}
+
+	if h, ok := interface{}(m.GetGraphqlEnabled()).(clone.Cloner); ok {
+		target.GraphqlEnabled = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.GraphqlEnabled = proto.Clone(m.GetGraphqlEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
 	return target

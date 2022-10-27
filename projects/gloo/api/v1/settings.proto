@@ -186,6 +186,13 @@ message Settings {
         }
 
         UdsOptions uds_options = 2;
+
+        message FdsOptions {
+            // Enable function discovery service on GraphQL gRPC and OpenApi upstreams. Defaults to true.
+            google.protobuf.BoolValue graphql_enabled = 1;
+        }
+
+        FdsOptions fds_options = 3;
     }
 
     // Options for configuring Gloo's Discovery service
@@ -474,7 +481,7 @@ message GlooOptions {
         }
 
         // Send downstream path and method as `x-envoy-original-path` and
-        // `x-envoy-original-method` headers on the request to AWS lambda. 
+        // `x-envoy-original-method` headers on the request to AWS lambda.
         // Defaults to false.
         google.protobuf.BoolValue propagate_original_routing = 3;
 
