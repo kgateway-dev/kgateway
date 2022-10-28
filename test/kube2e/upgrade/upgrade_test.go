@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"text/template"
 	"time"
+
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
 
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
