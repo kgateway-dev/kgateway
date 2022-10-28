@@ -73,7 +73,8 @@ static_resources:
                 port_value: 9977
     http2_protocol_options: {}
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
     type: STRICT_DNS
     respect_dns_ttl: true
   - name: rest_xds_cluster
@@ -89,7 +90,8 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9976
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
     type: STRICT_DNS
     respect_dns_ttl: true
   - name: wasm-cache
@@ -104,7 +106,8 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9979
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
     type: STRICT_DNS
     respect_dns_ttl: true
   - name: aws_sts_cluster
@@ -214,7 +217,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - alt_stat_name: rest_xds_cluster
     connect_timeout: 5.000s
     load_assignment:
@@ -230,7 +234,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - connect_timeout: 5.000s
     load_assignment:
       cluster_name: wasm-cache
@@ -245,7 +250,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - connect_timeout: 5.000s
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -354,7 +360,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - alt_stat_name: rest_xds_cluster
     connect_timeout: 5.000s
     load_assignment:
@@ -370,7 +377,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - connect_timeout: 5.000s
     load_assignment:
       cluster_name: wasm-cache
@@ -385,7 +393,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - connect_timeout: 1s
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -508,7 +517,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - alt_stat_name: rest_xds_cluster
     connect_timeout: 5.000s
     load_assignment:
@@ -524,7 +534,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - connect_timeout: 5.000s
     load_assignment:
       cluster_name: wasm-cache
@@ -539,7 +550,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - connect_timeout: 5.000s
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -699,7 +711,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - alt_stat_name: rest_xds_cluster
     connect_timeout: 5.000s
     load_assignment:
@@ -715,7 +728,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - connect_timeout: 5.000s
     load_assignment:
       cluster_name: wasm-cache
@@ -730,7 +744,8 @@ static_resources:
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
   - connect_timeout: 5.000s
     http2_protocol_options: {}
     load_assignment:

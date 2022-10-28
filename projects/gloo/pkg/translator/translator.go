@@ -52,6 +52,10 @@ type translatorInstance struct {
 	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
 }
 
+func NewDefaultTranslator(settings *v1.Settings, pluginRegistry plugins.PluginRegistry) *translatorInstance {
+	return NewTranslatorWithHasher(utils.NewSslConfigTranslator(), settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)
+}
+
 func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,

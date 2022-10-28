@@ -10,7 +10,7 @@ Gloo Edge includes an HTTP health checking plugin that can be enabled in a {{< p
 To activate a health check endpoint on a Gateway, you must first configure a Virtual Service.
 {{% /notice %}}
  
-Envoy can be forced into a draining state by sending an `HTTP GET` to the Envoy admin port on `<envoy-ip>:<admin-addr>/healthcheck/fail`. This port defaults to `19000`. 
+Envoy can be forced into a draining state by sending an `HTTP POST` to the Envoy admin port on `<envoy-ip>:<admin-addr>/healthcheck/fail`. This port defaults to `19000`. 
 
 To add the health check to a gateway, add the `healthCheck` stanza to the Gateway's `options`, like so:
 
