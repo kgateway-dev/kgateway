@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"text/template"
 	"time"
 
@@ -40,46 +40,48 @@ var _ = Describe("Kube2e: Upgrade", func() {
 
 	var (
 		//crdDir   string
-		chartUri string
+		//chartUri string
 
-		ctx    context.Context
-		cancel context.CancelFunc
+		ctx context.Context
+		//cancel context.CancelFunc
 
-		testHelper *helper.SoloTestHelper
-
+		//testHelper *helper.SoloTestHelper
+		//
 		// if set, the test will install from a released version (rather than local version) of the helm chart
-		fromRelease string
-		// whether to set validation webhook's failurePolicy=Fail
-		strictValidation bool
+		//fromRelease string
+		//// whether to set validation webhook's failurePolicy=Fail
+		//strictValidation bool
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
 
-		cwd, err := os.Getwd()
-		Expect(err).NotTo(HaveOccurred())
-		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.RootDir = filepath.Join(cwd, "../../..")
-			defaults.HelmChartName = "gloo"
-			defaults.InstallNamespace = namespace
-			defaults.Verbose = true
-			return defaults
-		})
-		Expect(err).NotTo(HaveOccurred())
+		ctx = context.Background()
+		//ctx, cancel = context.WithCancel(context.Background())
+
+		//cwd, err := os.Getwd()
+		//Expect(err).NotTo(HaveOccurred())
+		//testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+		//	defaults.RootDir = filepath.Join(cwd, "../../..")
+		//	defaults.HelmChartName = "gloo"
+		//	defaults.InstallNamespace = namespace
+		//	defaults.Verbose = true
+		//	return defaults
+		//})
+		//Expect(err).NotTo(HaveOccurred())
 
 		//crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
-		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
-		//
-		fromRelease = ""
-		strictValidation = false
+		//chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
+		////
+		//fromRelease = ""
+		//strictValidation = false
 	})
 
 	JustBeforeEach(func() {
-		installGloo(testHelper, chartUri, fromRelease, strictValidation)
+		//installGloo(testHelper, chartUri, fromRelease, strictValidation)
 	})
 	//
 	AfterEach(func() {
-		uninstallGloo(testHelper, ctx, cancel)
+		//uninstallGloo(testHelper, ctx, cancel)
 	})
 
 	Context("upgrades", func() {
@@ -87,14 +89,29 @@ var _ = Describe("Kube2e: Upgrade", func() {
 		//	fromRelease = earliestVersionWithV1CRDs
 		//})
 
+		files, err := ioutil.ReadDir("./")
+		if err != nil {
+			fmt.Println()
+		}
+
+		for _, f := range files {
+			fmt.Println(f.Name())
+		}
+
 		FIt("Initial work to get correct versions", func() {
+
+			version1, version2, err := upgrade.GetUpgradeVersions(ctx)
 			fmt.Println("==================================================")
 			//LastPatchMostRecentMinorVersion
-			fmt.Printf("LastPatchMostRecentMinorVersion:%s\n", "GET VERISON")
+			fmt.Printf("LastPatchMostRecentMinorVersion:%s\n", version1)
 			//CurrentPatchMostRecentMinorVersion
-			fmt.Printf("LastPatchMostRecentMinorVersion:%s\n", "GET VERISON")
+			fmt.Printf("LastPatchMostRecentMinorVersion:%s\n", version2)
 			//PRVersion
-			fmt.Printf("LastPatchMostRecentMinorVersion:%s\n", testHelper.ChartVersion())
+
+			if err != nil {
+				fmt.Printf("Error:%s\n", err.Error())
+			}
+
 			fmt.Println("==================================================")
 		})
 
