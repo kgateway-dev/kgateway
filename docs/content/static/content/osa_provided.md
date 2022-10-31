@@ -46,8 +46,8 @@ Name|Version|License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.19.1|MIT License
 [x/mod](https://golang.org/x/mod)|v0.6.0-dev.0.20220419223038-86c51ed26bb4|BSD 3-clause "New" or "Revised" License
-[x/sync](https://golang.org/x/sync)|v0.0.0-20210220032951-036812b2e83c|BSD 3-clause "New" or "Revised" License
-[x/tools](https://golang.org/x/tools)|v0.1.10|BSD 3-clause "New" or "Revised" License
+[x/sync](https://golang.org/x/sync)|v0.0.0-20220722155255-886fb9371eb4|BSD 3-clause "New" or "Revised" License
+[x/tools](https://golang.org/x/tools)|v0.1.12|BSD 3-clause "New" or "Revised" License
 [google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20211129164237-f09f9a12af12|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.40.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.27.1|BSD 3-clause "New" or "Revised" License
