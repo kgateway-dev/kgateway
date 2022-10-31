@@ -3,6 +3,9 @@ package upgrade
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -11,7 +14,6 @@ import (
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"
-	"github.com/solo-io/go-utils/vfsutils"
 )
 
 var (
@@ -49,15 +51,21 @@ func GetUpgradeVersions(ctx context.Context) (lastMinorLatestPatchVersion *versi
 }
 
 func GetLastReleaseOfCurrentMinor(ctx context.Context) (*versionutils.Version, error) {
-	repoRootPath := "."
-	owner := "solo-io"
-	repo := "gloo"
-	changelogDirPath := changelogutils.ChangelogDirectory
-	mountedRepo, err := vfsutils.NewLocalMountedRepoForFs(repoRootPath, owner, repo)
-	if err != nil {
-		return nil, changelogutils.MountLocalDirectoryError(err)
+	repo_name := "gloo"                    // pull out to const
+	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
+	fParts := strings.Split(filename, string(os.PathSeparator))
+	splitIdx := 0
+	for idx, dir := range fParts {
+		if dir == repo_name {
+			splitIdx = idx
+			break
+		}
 	}
-	files, err := mountedRepo.ListFiles(ctx, changelogDirPath)
+	pathToChangelogs := filepath.Join(fParts[:splitIdx+1]...)
+	pathToChangelogs = filepath.Join(pathToChangelogs, changelogutils.ChangelogDirectory)
+	pathToChangelogs = string(os.PathSeparator) + pathToChangelogs
+
+	files, err := os.ReadDir(pathToChangelogs)
 	if err != nil {
 		return nil, changelogutils.ReadChangelogDirError(err)
 	}
