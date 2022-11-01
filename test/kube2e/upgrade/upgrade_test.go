@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"text/template"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/skv2/codegen/util"
@@ -122,7 +123,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 // Repeated Test Code
 func helmUpdateSettingsTest(ctx context.Context, crdDir string, startingVersion string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
-	By("should start with gloo version 1.9.0")
+	By(fmt.Sprintf("should start with gloo version %s", startingVersion))
 	Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(startingVersion))
 
 	// upgrade to the gloo version being tested
@@ -209,7 +210,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 		//runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
 		//	"https://storage.googleapis.com/solo-public-helm", "--force-update")
 		args = append(args, "gloo/gloo",
-			"--version", fmt.Sprintf("v%s", fromRelease))
+			"--version", fromRelease)
 	} else {
 		args = append(args, chartUri)
 	}
