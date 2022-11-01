@@ -55,10 +55,10 @@ func GetLastReleaseOfCurrentMinor(ctx context.Context) (*versionutils.Version, e
 	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
 	fParts := strings.Split(filename, string(os.PathSeparator))
 	splitIdx := 0
+	//we can end up in a situation where the path contains the repo_name twice when running in ci - keep going until we find the last use ex: /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
 	for idx, dir := range fParts {
 		if dir == repo_name {
 			splitIdx = idx
-			break
 		}
 	}
 	pathToChangelogs := filepath.Join(fParts[:splitIdx+1]...)
