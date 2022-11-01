@@ -2,7 +2,7 @@
 
 ## Running Locally
 
-If needed for testing, run from the root of this repo:
+If needed for testing, run from the root of this repo (note: VERSION is optional):
 kind delete cluster
 kind create cluster
 docker run -d -p 5001:5000 --restart=always --name registry registry:2
