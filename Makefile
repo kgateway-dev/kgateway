@@ -224,10 +224,10 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: generate-all
-generate-all: generated-code ## generated-code
+generate-all: generated-code ## Calls generated-code
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-helm-files update-licenses init ## Evaluate go generate
+generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-helm-files update-licenses init ## Execute Gloo Edge codegen
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
@@ -251,7 +251,7 @@ $(OUTPUT_DIR)/.generated-code:
 	touch $@
 
 .PHONY: verify-enterprise-protos
-verify-enterprise-protos: ## Make sure that the enterprise API *.pb.go files that are generated but not used in this repo are valid.
+verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
 	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
 
@@ -306,7 +306,7 @@ $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe: $(SOURCES)
 
 
 .PHONY: glooctl
-glooctl: $(OUTPUT_DIR)/glooctl
+glooctl: $(OUTPUT_DIR)/glooctl ## Builds the command line tool
 .PHONY: glooctl-linux-$(GOARCH)
 glooctl-linux-$(GOARCH): $(OUTPUT_DIR)/glooctl-linux-$(GOARCH)
 .PHONY: glooctl-darwin-$(GOARCH)
@@ -444,7 +444,7 @@ $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_RACE_OUT_DIR)/.gloo-race-docke
 
 # Build the gloo project with race detection enabled
 .PHONY: gloo-race
-gloo-race: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH) ## Gloo with race detection enabled.
+gloo-race: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH)
 
 $(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
 	cp $< $@
@@ -470,7 +470,7 @@ $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/cmd/main.go
 
 .PHONY: sds
-sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) ## gRPC server for serving Secret Discovery Service config for Gloo Edge MTLS
+sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
 
 $(SDS_OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/cmd/Dockerfile
 	cp $< $@
@@ -520,7 +520,7 @@ $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH): $(CERTGEN_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go
 
 .PHONY: certgen
-certgen: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) ## Job for creating TLS Secrets in Kubernetes
+certgen: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH)
 
 $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 	cp $< $@
@@ -552,7 +552,7 @@ kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
 # Build All
 #----------------------------------------------------------------------------------
 .PHONY: build
-build: gloo glooctl discovery envoyinit certgen ingress ## Build All
+build: gloo glooctl discovery envoyinit certgen ingress ## Build all Docker containers
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
@@ -607,7 +607,7 @@ ifeq ($(CREATE_ASSETS), "true")
 endif
 
 .PHONY: render-manifests
-render-manifests: install/gloo-gateway.yaml install/gloo-ingress.yaml install/gloo-knative.yaml ## Build the Gloo Edge Manifests that are published as release assets
+render-manifests: install/gloo-gateway.yaml install/gloo-ingress.yaml install/gloo-knative.yaml
 
 INSTALL_NAMESPACE ?= gloo-system
 
@@ -652,7 +652,7 @@ $(OUTPUT_DIR)/gloo-enterprise-version:
 	GO111MODULE=on go run hack/find_latest_enterprise_version.go
 
 .PHONY: upload-github-release-assets
-upload-github-release-assets: print-git-info build-cli render-manifests ## The code does the proper checking for a {TAGGED_VERSION}
+upload-github-release-assets: print-git-info build-cli render-manifests
 	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY_RELEASE)
 
 
@@ -670,7 +670,7 @@ ifeq ($(CREATE_ASSETS),"true")
 endif
 
 .PHONY: docker-push-retag
-docker-push-retag: ## check if all images are already built for {RETAG_IMAGE_REGISTRY}, and build/retag them respectively with tags for the repository specified by {IMAGE_REPO}.
+docker-push-retag:
 ifeq ($(RELEASE), "true")
 	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
@@ -755,6 +755,8 @@ ifneq ($(and $(filter $(CREATE_ASSETS), "true"), $(filter-out $(UNAME_M), arm64)
 	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race
 endif
 
+# To mimic the effects of CI, CREATE_ASSETS, TAGGED_VERSION and CREATE_TEST_ASSETS need to be set
+# Extended images are the same as regular images but with curl
 .PHONY: docker-push-extended
 docker-push-extended:
 ifeq ($(CREATE_ASSETS), "true")
@@ -792,9 +794,6 @@ push-docker-images-arm-to-kind-registry:
 # The following targets are used to generate the assets on which the kube2e tests rely upon.
 # The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the GKE test cluster.
 
-.PHONY: build-test-assets
-build-test-assets: build-test-chart $(OUTPUT_DIR)/glooctl-linux-$(GOARCH) \ ## Generate Gloo Edge value files and then package the Gloo Edge Helm chart to the _test directory (also generate an index file)
-	$(OUTPUT_DIR)/glooctl-darwin-$(GOARCH)
 .PHONY: build-test-chart
 build-test-chart:
 	mkdir -p $(TEST_ASSET_DIR)
@@ -811,7 +810,7 @@ SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
 
 .PHONY: run-security-scans
-run-security-scan: ## Run security scan on gloo and solo-projects, Generates scan files to _output/scans directory
+run-security-scan:
 	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo -a github-issue-latest
 	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe -a github-issue-latest
 
@@ -827,7 +826,7 @@ publish-security-scan:
 # Third Party License Management
 #----------------------------------------------------------------------------------
 .PHONY: update-licenses
-update-licenses: ## Check for GPL licenses, if there are any, this will fail
+update-licenses:
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -c "GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"
 
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> docs/content/static/content/osa_provided.md
