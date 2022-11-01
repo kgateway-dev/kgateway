@@ -114,12 +114,20 @@ LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
 UNAME_M := $(shell uname -m)
-# Define Architecture. Default: amd64
-# If GOARCH is unset, docker-build will fail
-GOARCH ?= amd64
-ifneq ($(or $(filter $(UNAME_M), arm64), $(filter $(UNAME_M), aarch64)), )
-	GOARCH=arm64
-	PLATFORM=--platform=linux/amd64
+# if `GO_ARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
+# if the machines architecture is set to arm64 then we want to set the appropriate values, else we only support amd64
+IS_ARM_MACHINE := $(or	$(filter $(UNAME_M), arm64), $(filter $(UNAME_M), aarch64))
+ifneq ($(IS_ARM_MACHINE), )
+	PLATFORM := --platform=linux/amd64
+	ifneq ($(GOARCH), amd64)
+		GOARCH := arm64
+		PLATFORM := --platform=linux/arm64
+	endif
+else
+	# currently we only support arm64 and amd64 as a GOARCH option.
+	ifneq ($(GOARCH), arm64)
+		GOARCH := amd64
+	endif
 endif
 
 ifeq ($(GOOS),)
@@ -540,7 +548,7 @@ KUBECTL_OUTPUT_DIR=$(OUTPUT_DIR)/$(KUBECTL_DIR)
 
 $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl: $(KUBECTL_DIR)/Dockerfile
 	mkdir -p $(KUBECTL_OUTPUT_DIR)
-	cp $< $@
+	cp $< $@F
 
 .PHONY: kubectl-docker
 kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
