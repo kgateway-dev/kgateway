@@ -552,7 +552,7 @@ kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
 # Build All
 #----------------------------------------------------------------------------------
 .PHONY: build
-build: gloo glooctl discovery envoyinit certgen ingress ## Build all Docker containers
+build: gloo glooctl discovery envoyinit certgen ingress ## Build all Docker images
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
