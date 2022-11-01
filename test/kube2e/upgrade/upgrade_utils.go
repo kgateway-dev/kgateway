@@ -91,10 +91,7 @@ func GetLastReleaseOfCurrentMinor(ctx context.Context) (*versionutils.Version, e
 }
 
 func GetLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion int) (*versionutils.Version, error) {
-	client, err := githubutils.GetClient(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error making github client")
-	}
+	client := githubutils.GetClientWithOrWithoutToken(ctx)
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
 
 	// inexact version requested may be prerelease and not have assets

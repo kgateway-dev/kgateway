@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/versionutils"
-	"github.com/solo-io/skv2/codegen/util"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"text/template"
 	"time"
+
+	"github.com/solo-io/go-utils/versionutils"
+	"github.com/solo-io/skv2/codegen/util"
 
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
 
