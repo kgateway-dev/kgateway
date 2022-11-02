@@ -64,11 +64,11 @@ jobs:
       matrix:
         # knative support has been deprecated: https://github.com/solo-io/gloo/issues/5707
         # We have removed it from our CI regression tests
-        kube-e2e-test-type: ['upgrade', 'helm']
+        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
         xds-relay: [ 'false' ]
-#        include:
-#          - kube-e2e-test-type: 'gateway'
-#            xds-relay: 'true'
+        include:
+          - kube-e2e-test-type: 'gateway'
+            xds-relay: 'true'
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.4.1
