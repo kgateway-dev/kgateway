@@ -84,12 +84,12 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 	Describe("Upgrading from a previous gloo version to current version", func() {
 		Context("Upgrading from LastPatchMostRecentMinorVersion to PR version of gloo", func() {
 			BeforeEach(func() {
-				installGloo(testHelper, chartUri, LastPatchMostRecentMinorVersion.String(), strictValidation)
+				installGloo(testHelper, LastPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
-			It("helm updates the settings without errors", func() {
+			FIt("helm updates the settings without errors", func() {
 				helmUpdateSettingsTest(ctx, crdDir, LastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
 			})
 
@@ -104,7 +104,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 		Context("When upgrading from CurrentPatchMostRecentMinorVersion to PR version of gloo", func() {
 			BeforeEach(func() {
-				installGloo(testHelper, chartUri, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
+				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
@@ -127,7 +127,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 // Repeated Test Code
 func helmUpdateSettingsTest(ctx context.Context, crdDir string, startingVersion string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
 	By(fmt.Sprintf("should start with gloo version %s", startingVersion))
-	Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(startingVersion))
+	Expect(fmt.Sprintf("v%s", getGlooServerVersion(ctx, testHelper.InstallNamespace))).To(Equal(startingVersion))
 
 	// upgrade to the gloo version being tested
 	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, nil)
@@ -203,20 +203,18 @@ func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *u
 	return makeUnstructured(b.String())
 }
 
-func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease string, strictValidation bool) {
+func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictValidation bool) {
 	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
 	defer cleanupFunc()
 
 	// construct helm args
 	var args = []string{"install", testHelper.HelmChartName}
-	if fromRelease != "" {
-		//runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
-		//	"https://storage.googleapis.com/solo-public-helm", "--force-update")
-		args = append(args, "gloo/gloo",
-			"--version", fromRelease)
-	} else {
-		args = append(args, chartUri)
-	}
+
+	runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
+		"https://storage.googleapis.com/solo-public-helm", "--force-update")
+	args = append(args, "gloo/gloo",
+		"--version", fromRelease)
+
 	args = append(args, "-n", testHelper.InstallNamespace,
 		"--create-namespace",
 		"--values", valueOverrideFile)
@@ -257,10 +255,10 @@ func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir stri
 	args = append(args, additionalArgs...)
 
 	fmt.Printf("running helm with args: %v\n", args)
-	//runAndCleanCommand("helm", args...)
+	runAndCleanCommand("helm", args...)
 
-	// Check that everything is OK
-	//checkGlooHealthy(testHelper)
+	//Check that everything is OK
+	checkGlooHealthy(testHelper)
 }
 
 func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cancel context.CancelFunc) {
