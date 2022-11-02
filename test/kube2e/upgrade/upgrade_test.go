@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
+	"github.com/solo-io/skv2/codegen/util"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -14,17 +16,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
-	"github.com/solo-io/go-utils/versionutils"
-	"github.com/solo-io/skv2/codegen/util"
-
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
-
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,6 +55,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 	// setup for all tests
 	BeforeEach(func() {
+		fmt.Println("HERE ------------------")
 		ctx, cancel = context.WithCancel(context.Background())
 
 		cwd, err := os.Getwd()
@@ -76,11 +75,15 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 		LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(ctx)
 		Expect(err).NotTo(HaveOccurred())
+
+		fmt.Printf(LastPatchMostRecentMinorVersion.String())
+		fmt.Printf(CurrentPatchMostRecentMinorVersion.String())
+		//uninstallGloo(testHelper, ctx, cancel)
 	})
 
 	Describe("Upgrading from a previous gloo version to current version", func() {
-		Context(fmt.Sprintf("Upgrading from %s to PR version of gloo", LastPatchMostRecentMinorVersion), func() {
-			JustBeforeEach(func() {
+		Context("Upgrading from LastPatchMostRecentMinorVersion to PR version of gloo", func() {
+			BeforeEach(func() {
 				installGloo(testHelper, chartUri, LastPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
@@ -99,8 +102,8 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			})
 		})
 
-		Context(fmt.Sprintf("When upgrading from %s to PR version of gloo", CurrentPatchMostRecentMinorVersion), func() {
-			JustBeforeEach(func() {
+		Context("When upgrading from CurrentPatchMostRecentMinorVersion to PR version of gloo", func() {
+			BeforeEach(func() {
 				installGloo(testHelper, chartUri, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
@@ -222,10 +225,10 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 	}
 
 	fmt.Printf("running helm with args: %v\n", args)
-	//runAndCleanCommand("helm", args...)
+	runAndCleanCommand("helm", args...)
 
 	// Check that everything is OK
-	//checkGlooHealthy(testHelper)
+	checkGlooHealthy(testHelper)
 }
 
 // CRDs are applied to a cluster when performing a `helm install` operation
