@@ -55,7 +55,6 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 	// setup for all tests
 	BeforeEach(func() {
-		fmt.Println("HERE ------------------")
 		ctx, cancel = context.WithCancel(context.Background())
 
 		cwd, err := os.Getwd()
@@ -75,10 +74,6 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 		LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(ctx)
 		Expect(err).NotTo(HaveOccurred())
-
-		fmt.Printf(LastPatchMostRecentMinorVersion.String())
-		fmt.Printf(CurrentPatchMostRecentMinorVersion.String())
-		//uninstallGloo(testHelper, ctx, cancel)
 	})
 
 	Describe("Upgrading from a previous gloo version to current version", func() {
@@ -89,7 +84,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
-			FIt("helm updates the settings without errors", func() {
+			It("helm updates the settings without errors", func() {
 				helmUpdateSettingsTest(ctx, crdDir, LastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
 			})
 
@@ -263,7 +258,7 @@ func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir stri
 
 func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cancel context.CancelFunc) {
 	Expect(testHelper).ToNot(BeNil())
-	err := testHelper.UninstallGlooAll()
+	err := testHelper.UninstallGloo()
 	Expect(err).NotTo(HaveOccurred())
 	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
