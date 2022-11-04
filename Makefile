@@ -118,11 +118,10 @@ UNAME_M := $(shell uname -m)
 # if the machines architecture is set to arm64 then we want to set the appropriate values, else we only support amd64
 IS_ARM_MACHINE := $(or	$(filter $(UNAME_M), arm64), $(filter $(UNAME_M), aarch64))
 ifneq ($(IS_ARM_MACHINE), )
-	PLATFORM := --platform=linux/amd64
 	ifneq ($(GOARCH), amd64)
 		GOARCH := arm64
-		PLATFORM := --platform=linux/arm64
 	endif
+	PLATFORM := --platform=linux/$(GOARCH)
 else
 	# currently we only support arm64 and amd64 as a GOARCH option.
 	ifneq ($(GOARCH), arm64)
