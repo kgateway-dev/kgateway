@@ -1,8 +1,6 @@
 package tunneling
 
 import (
-	"log"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -56,11 +54,8 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 
 	// find all the route config that points to upstreams with tunneling
 	for _, rtConfig := range inRouteConfigurations {
-		log.Println("processing rtConfig " + rtConfig.GetName())
 		for _, vh := range rtConfig.GetVirtualHosts() {
-			log.Println("processing vh " + vh.GetName())
 			for _, rt := range vh.GetRoutes() {
-				log.Println("processing route " + rt.GetName())
 				rtAction := rt.GetRoute()
 				// we do not handle the weighted cluster or cluster header cases
 				if cluster := rtAction.GetCluster(); cluster != "" {
@@ -84,7 +79,6 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 					if tunnelingHostname == "" {
 						continue
 					}
-					log.Println("tunnelingHostname = " + tunnelingHostname)
 
 					var tunnelingHeaders []*envoy_config_core_v3.HeaderValueOption
 					for _, header := range us.GetHttpConnectHeaders() {
@@ -106,19 +100,13 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 
 					// we only want to generate a new encapsulating cluster and internal listener if we have not done so already
 					if _, found := processedClusters[cluster]; found {
-						log.Println("skipping previously processed cluster " + cluster)
 						continue
 					}
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
 					for _, inCluster := range inClusters {
-						log.Println("processing inCluster " + inCluster.GetName())
-						log.Println("looking for cluster " + cluster)
 						// inCluster name and cluster are not equal here ???
 						if inCluster.GetName() == cluster {
-							log.Println("found our cluster " + cluster)
-							log.Println("cluster TransportSocket " + inCluster.GetTransportSocket().String())
 							if inCluster.GetTransportSocket() != nil {
-								log.Println("stashing TransportSocket")
 								tmp := *inCluster.GetTransportSocket()
 								originalTransportSocket = &tmp
 							}
@@ -156,7 +144,6 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 						return nil, nil, nil, nil, err
 					}
 					generatedListeners = append(generatedListeners, forwardingTcpListener)
-					log.Println("adding cluster to processedClusters " + cluster)
 					processedClusters[cluster] = struct{}{}
 				}
 			}
@@ -173,7 +160,6 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 // the HTTP Connection Manager runs to allow route-level matching on HTTP parameters (such as request path),
 // but then we forward the bytes as raw TCP to the HTTP Connect proxy (which can only be done on a TCP listener)
 func generateEncapsulatingCluster(encapsulatingClusterName, internalListenerName string, originalTransportSocket *envoy_config_core_v3.TransportSocket) *envoy_config_cluster_v3.Cluster {
-	log.Printf("creating encapsulating cluster called %s with TransportSocket %s\n", encapsulatingClusterName, originalTransportSocket.String())
 	return &envoy_config_cluster_v3.Cluster{
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
 			Type: envoy_config_cluster_v3.Cluster_STATIC,
