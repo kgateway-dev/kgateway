@@ -62,6 +62,7 @@ var _ = Describe("Plugin", func() {
 						Domains: []string{"*"},
 						Routes: []*envoy_config_route_v3.Route{
 							{
+								Name: "testroute",
 								Match: &envoy_config_route_v3.RouteMatch{
 									PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{
 										Prefix: "/",
@@ -81,13 +82,13 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
+		// use UpstreamToClusterName to emulate a real translation loop.
+		clusterName := translator.UpstreamToClusterName(us.Metadata.Ref())
 		inClusters = []*envoy_config_cluster_v3.Cluster{
 			{
-				Name: "http_proxy",
-				// Name: "http-proxy-upstream_gloo-system",
+				Name: clusterName,
 				LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-					ClusterName: "http_proxy",
-					// ClusterName: "http-proxy-upstream_gloo-system",
+					ClusterName: clusterName,
 					Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 						{
 							LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
@@ -154,7 +155,6 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 
-			// update route input with duplicate route, the copy points to the cluster correlating to the copied upstream
 			inRoute := inRouteConfigurations[0].VirtualHosts[0].Routes[0]
 
 			// update route input with duplicate route, the duplicate points to the same upstream as existing
@@ -170,7 +170,7 @@ var _ = Describe("Plugin", func() {
 			inRouteConfigurations[0].VirtualHosts[0].Routes = append(inRouteConfigurations[0].VirtualHosts[0].Routes, dupRoute)
 		})
 
-		FIt("should allow multiple routes to same upstream", func() {
+		It("should allow multiple routes to same upstream", func() {
 			p := tunneling.NewPlugin()
 			log.Println("sending inClusters[0].TransportSocket" + inClusters[0].GetTransportSocket().String())
 			generatedClusters, _, _, _, err := p.GeneratedResources(params, inClusters, nil, inRouteConfigurations, nil)
