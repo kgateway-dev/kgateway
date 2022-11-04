@@ -51,7 +51,6 @@ const versionBeforeGlooGatewayMerge = "1.11.0"
 const namespace = defaults.GlooSystem
 
 var _ = Describe("Kube2e: helm", func() {
-
 	var (
 		crdDir   string
 		chartUri string
@@ -453,20 +452,17 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 // CRDs are applied to a cluster when performing a `helm install` operation
 // However, `helm upgrade` intentionally does not apply CRDs (https://helm.sh/docs/topics/charts/#limitations-on-crds)
 // Before performing the upgrade, we must manually apply any CRDs that were introduced since v1.9.0
-func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir string) {
+func upgradeCrds(crdDir string) {
 	// if we're just upgrading within the same release, no need to reapply crds
-	if fromRelease == "" {
-		return
-	}
-
 	// apply crds from the release we're upgrading to
+	fmt.Printf("Upgrade CRDS: kubectl apply -f %s\n", crdDir)
 	runAndCleanCommand("kubectl", "apply", "-f", crdDir)
 	// allow some time for the new crds to take effect
 	time.Sleep(time.Second * 5)
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, strictValidation bool, additionalArgs []string) {
-	upgradeCrds(testHelper, fromRelease, crdDir)
+	upgradeCrds(crdDir)
 
 	valueOverrideFile, cleanupFunc := getHelmUpgradeValuesOverrideFile()
 	defer cleanupFunc()

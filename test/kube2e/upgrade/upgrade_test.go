@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
-	"github.com/solo-io/skv2/codegen/util"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"text/template"
 	"time"
+
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
+	"github.com/solo-io/skv2/codegen/util"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -84,7 +85,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
-			It("helm updates the settings without errors", func() {
+			FIt("helm updates the settings without errors", func() {
 				helmUpdateSettingsTest(ctx, crdDir, LastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
 			})
 
@@ -230,9 +231,12 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 func upgradeCrds(testHelper *helper.SoloTestHelper, crdDir string) {
 
 	// apply crds from the release we're upgrading to
+	fmt.Println("======== Upgrade CRDS =========")
+	fmt.Printf("Upgrade crds: kubectl apply -f %s\n", crdDir)
 	runAndCleanCommand("kubectl", "apply", "-f", crdDir)
 	// allow some time for the new crds to take effect
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 10)
+	fmt.Println("===============================")
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, strictValidation bool, additionalArgs []string) {
