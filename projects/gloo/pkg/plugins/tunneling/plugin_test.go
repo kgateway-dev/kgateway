@@ -1,6 +1,8 @@
 package tunneling_test
 
 import (
+	"log"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -81,11 +83,11 @@ var _ = Describe("Plugin", func() {
 
 		inClusters = []*envoy_config_cluster_v3.Cluster{
 			{
-				// Name: "http_proxy",
-				Name: "http-proxy-upstream_gloo-system",
+				Name: "http_proxy",
+				// Name: "http-proxy-upstream_gloo-system",
 				LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-					// ClusterName: "http_proxy",
-					ClusterName: "http-proxy-upstream_gloo-system",
+					ClusterName: "http_proxy",
+					// ClusterName: "http-proxy-upstream_gloo-system",
 					Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 						{
 							LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
@@ -168,11 +170,13 @@ var _ = Describe("Plugin", func() {
 			inRouteConfigurations[0].VirtualHosts[0].Routes = append(inRouteConfigurations[0].VirtualHosts[0].Routes, dupRoute)
 		})
 
-		It("should allow multiple routes to same upstream", func() {
+		FIt("should allow multiple routes to same upstream", func() {
 			p := tunneling.NewPlugin()
+			log.Println("sending inClusters[0].TransportSocket" + inClusters[0].GetTransportSocket().String())
 			generatedClusters, _, _, _, err := p.GeneratedResources(params, inClusters, nil, inRouteConfigurations, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(generatedClusters).To(HaveLen(1), "should generate a single cluster for the upstream")
+			log.Println(generatedClusters[0].String())
 			Expect(generatedClusters[0].GetTransportSocket()).ToNot(BeNil())
 		})
 	})
