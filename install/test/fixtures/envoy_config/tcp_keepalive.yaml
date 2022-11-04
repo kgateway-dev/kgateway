@@ -2,8 +2,6 @@ layered_runtime:
   layers:
     - name: static_layer
       static_layer:
-        envoy.reloadable_features.strict_1xx_and_204_response_headers: false
-        envoy.reloadable_features.disable_tls_inspector_injection: false
         overload:
           global_downstream_max_connections: 250000
         upstream:
@@ -73,7 +71,7 @@ static_resources:
       http2_protocol_options: {}
       upstream_connection_options:
         tcp_keepalive:
-          keepalive_time: 60
+          keepalive_time: 30
       type: STRICT_DNS
       respect_dns_ttl: true
     - name: rest_xds_cluster
@@ -90,7 +88,7 @@ static_resources:
                       port_value: 9976
       upstream_connection_options:
         tcp_keepalive:
-          keepalive_time: 60
+          keepalive_time: 30
       type: STRICT_DNS
       respect_dns_ttl: true
     - name: wasm-cache
@@ -106,7 +104,7 @@ static_resources:
                       port_value: 9979
       upstream_connection_options:
         tcp_keepalive:
-          keepalive_time: 60
+          keepalive_time: 30
       type: STRICT_DNS
       respect_dns_ttl: true
     - name: admin_port_cluster
