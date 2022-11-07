@@ -155,28 +155,45 @@ var _ = Describe("Plugin", func() {
 		//    3. protocolSelection == CONFIGURED
 		// otherwise, all configurations should be accepted
 		It("Should only deny configuration if (1) useHttp2 is true AND (2) Http1ProtocolOptions != nil AND (3) ProtocolSelection == CONFIGURED", func() {
-			useHttp2Opts := []bool{false, true}
-			http1Opts := []*protocol.Http1ProtocolOptions{nil, {}}
-			protocolSelectionOpts := []v1.Upstream_ClusterProtocolSelection{
-				v1.Upstream_USE_CONFIGURED_PROTOCOL,
-				v1.Upstream_USE_DOWNSTREAM_PROTOCOL,
-			}
-			for _, useHttp2 := range useHttp2Opts {
-				for _, http1Opt := range http1Opts {
-					for _, protocolSelection := range protocolSelectionOpts {
-						upstream := createTestUpstreamWithProtocolOptions(useHttp2, http1Opt, protocolSelection)
-						err := p.ProcessUpstream(params, upstream, out)
-						if useHttp2 && http1Opt != nil && protocolSelection == v1.Upstream_USE_CONFIGURED_PROTOCOL {
-							Expect(err).To(HaveOccurred())
-							Expect(err.Error()).To(BeEquivalentTo(expectedProtocolErrorString))
-						} else {
-							Expect(err).NotTo(HaveOccurred())
-						}
-					}
-				}
-			}
+			var http1Opt *protocol.Http1ProtocolOptions
+			useHttp2 := true
+			http1Opt = &protocol.Http1ProtocolOptions{}
+			protocolSelection := v1.Upstream_USE_CONFIGURED_PROTOCOL
+			upstream := createTestUpstreamWithProtocolOptions(useHttp2, http1Opt, protocolSelection)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(BeEquivalentTo(expectedProtocolErrorString))
 		})
 
+		It("Should allow configuration if useHttp2 is false", func() {
+			var http1Opt *protocol.Http1ProtocolOptions
+			useHttp2 := false
+			http1Opt = &protocol.Http1ProtocolOptions{}
+			protocolSelection := v1.Upstream_USE_CONFIGURED_PROTOCOL
+			upstream := createTestUpstreamWithProtocolOptions(useHttp2, http1Opt, protocolSelection)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should allow configuration if Http1ProtocolOptions is nil", func() {
+			var http1Opt *protocol.Http1ProtocolOptions
+			useHttp2 := true
+			http1Opt = nil
+			protocolSelection := v1.Upstream_USE_CONFIGURED_PROTOCOL
+			upstream := createTestUpstreamWithProtocolOptions(useHttp2, http1Opt, protocolSelection)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should allow configuration if Upstream_ClusterProtocolSelection is USE_DOWNSTREAM_PROTOCOL", func() {
+			var http1Opt *protocol.Http1ProtocolOptions
+			useHttp2 := true
+			http1Opt = &protocol.Http1ProtocolOptions{}
+			protocolSelection := v1.Upstream_USE_DOWNSTREAM_PROTOCOL
+			upstream := createTestUpstreamWithProtocolOptions(useHttp2, http1Opt, protocolSelection)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 })
 
