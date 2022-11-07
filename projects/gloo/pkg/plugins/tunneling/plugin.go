@@ -91,12 +91,11 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 						})
 					}
 
-					// we create a cluster with this name whose endpoint is an internal listener
-					encapsulatingClusterName := "encapsulating_cluster_" + cluster
-					internalListenerName := "internal_listener_" + cluster // use an in-memory pipe to ourselves (only works on linux)
+					selfCluster := "solo_io_generated_self_cluster_" + cluster
+					selfPipe := "@/" + cluster // use an in-memory pipe to ourselves (only works on linux)
 
-					// update the old route to point to the internal listener first
-					rtAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{Cluster: encapsulatingClusterName}
+					// update the old cluster to route to ourselves first
+					rtAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{Cluster: selfCluster}
 
 					// we only want to generate a new encapsulating cluster and internal listener if we have not done so already
 					if _, found := processedClusters[cluster]; found {
@@ -104,7 +103,6 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 					}
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
 					for _, inCluster := range inClusters {
-						// inCluster name and cluster are not equal here ???
 						if inCluster.GetName() == cluster {
 							if inCluster.GetTransportSocket() != nil {
 								tmp := *inCluster.GetTransportSocket()
@@ -138,8 +136,8 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 							break
 						}
 					}
-					generatedClusters = append(generatedClusters, generateEncapsulatingCluster(encapsulatingClusterName, internalListenerName, originalTransportSocket))
-					forwardingTcpListener, err := generateInternalListener(cluster, internalListenerName, tunnelingHostname, tunnelingHeaders)
+					generatedClusters = append(generatedClusters, generateSelfCluster(selfCluster, selfPipe, originalTransportSocket))
+					forwardingTcpListener, err := generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname, tunnelingHeaders)
 					if err != nil {
 						return nil, nil, nil, nil, err
 					}
@@ -154,12 +152,12 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 }
 
 // the initial route is updated to route to this generated cluster, which routes envoy back to itself (to the
-// generated internal TCP listener, which forwards to the original destination)
+// generated TCP listener, which forwards to the original destination)
 //
 // the purpose of doing this is to allow both the HTTP Connection Manager filter and TCP filter to run.
 // the HTTP Connection Manager runs to allow route-level matching on HTTP parameters (such as request path),
 // but then we forward the bytes as raw TCP to the HTTP Connect proxy (which can only be done on a TCP listener)
-func generateEncapsulatingCluster(encapsulatingClusterName, internalListenerName string, originalTransportSocket *envoy_config_core_v3.TransportSocket) *envoy_config_cluster_v3.Cluster {
+func generateSelfCluster(encapsulatingClusterName, internalListenerName string, originalTransportSocket *envoy_config_core_v3.TransportSocket) *envoy_config_cluster_v3.Cluster {
 	return &envoy_config_cluster_v3.Cluster{
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
 			Type: envoy_config_cluster_v3.Cluster_STATIC,
@@ -195,7 +193,7 @@ func generateEncapsulatingCluster(encapsulatingClusterName, internalListenerName
 }
 
 // the generated cluster routes to this generated listener, which forwards TCP traffic to an HTTP Connect proxy
-func generateInternalListener(cluster, selfPipe, tunnelingHostname string, tunnelingHeadersToAdd []*envoy_config_core_v3.HeaderValueOption) (*envoy_config_listener_v3.Listener, error) {
+func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string, tunnelingHeadersToAdd []*envoy_config_core_v3.HeaderValueOption) (*envoy_config_listener_v3.Listener, error) {
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix:       "soloioTcpStats" + cluster,
 		TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname, HeadersToAdd: tunnelingHeadersToAdd},
