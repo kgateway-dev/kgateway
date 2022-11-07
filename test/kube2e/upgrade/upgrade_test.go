@@ -157,29 +157,9 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 	})
 })
 
-func updateValidationWebhookTests(ctx context.Context, crdDir string, kubeClientset kubernetes.Interface, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
-	webhookConfigClient := kubeClientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
-	secretClient := kubeClientset.CoreV1().Secrets(testHelper.InstallNamespace)
-
-	By("the webhook caBundle should be the same as the secret's root ca value")
-	webhookConfig, err := webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
-	secret, err := secretClient.Get(ctx, "gateway-validation-certs", metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
-
-	// do an upgrade
-	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, nil)
-
-	By("the webhook caBundle and secret's root ca value should still match after upgrade")
-	webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
-	secret, err = secretClient.Get(ctx, "gateway-validation-certs", metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
-}
-
+// ===================================
 // Repeated Test Code
+// ===================================
 // Based case test for local runs to help narrow down failures
 func baseUpgradeTest(ctx context.Context, crdDir string, startingVersion string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
 	By(fmt.Sprintf("should start with gloo version %s", startingVersion))
@@ -251,6 +231,30 @@ func addSecondGatewayProxySeparateNamespaceTest(crdDir string, testHelper *helpe
 	}, "10s", "1s").Should(ContainSubstring("gateway-proxy"))
 }
 
+func updateValidationWebhookTests(ctx context.Context, crdDir string, kubeClientset kubernetes.Interface, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
+	webhookConfigClient := kubeClientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
+	secretClient := kubeClientset.CoreV1().Secrets(testHelper.InstallNamespace)
+
+	By("the webhook caBundle should be the same as the secret's root ca value")
+	webhookConfig, err := webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	secret, err := secretClient.Get(ctx, "gateway-validation-certs", metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
+
+	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, nil)
+
+	By("the webhook caBundle and secret's root ca value should still match after upgrade")
+	webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	secret, err = secretClient.Get(ctx, "gateway-validation-certs", metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
+}
+
+// ===================================
+// Util methods
+// ===================================
 func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 	glooVersion, err := version.GetClientServerVersions(ctx, version.NewKube(namespace, ""))
 	Expect(err).To(BeNil())
@@ -312,7 +316,6 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 // However, `helm upgrade` intentionally does not apply CRDs (https://helm.sh/docs/topics/charts/#limitations-on-crds)
 // Before performing the upgrade, we must manually apply any CRDs that were introduced since v1.9.0
 func upgradeCrds(testHelper *helper.SoloTestHelper, crdDir string) {
-
 	// apply crds from the release we're upgrading to
 	fmt.Printf("Upgrade crds: kubectl apply -f %s\n", crdDir)
 	runAndCleanCommand("kubectl", "apply", "-f", crdDir)
