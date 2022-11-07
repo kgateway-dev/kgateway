@@ -4,6 +4,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -20,6 +21,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	httpProxyHostname string = "host.com:443"
+)
+
 var _ = Describe("Plugin", func() {
 
 	var (
@@ -33,7 +38,7 @@ var _ = Describe("Plugin", func() {
 				Namespace: "gloo-system",
 			},
 			SslConfig:         nil,
-			HttpProxyHostname: &wrappers.StringValue{Value: "host.com:443"},
+			HttpProxyHostname: &wrappers.StringValue{Value: httpProxyHostname},
 		}
 	)
 
@@ -54,6 +59,7 @@ var _ = Describe("Plugin", func() {
 						Domains: []string{"*"},
 						Routes: []*envoy_config_route_v3.Route{
 							{
+								Name: "testroute",
 								Match: &envoy_config_route_v3.RouteMatch{
 									PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{
 										Prefix: "/",
@@ -73,11 +79,13 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
+		// use UpstreamToClusterName to emulate a real translation loop.
+		clusterName := translator.UpstreamToClusterName(us.Metadata.Ref())
 		inClusters = []*envoy_config_cluster_v3.Cluster{
 			{
-				Name: "http_proxy",
+				Name: clusterName,
 				LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-					ClusterName: "http_proxy",
+					ClusterName: clusterName,
 					Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 						{
 							LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
@@ -169,11 +177,11 @@ var _ = Describe("Plugin", func() {
 
 			Expect(generatedClusters[0].Name).ToNot(Equal(generatedClusters[1].Name), "should not have name collisions")
 			Expect(generatedClusters[0].LoadAssignment.ClusterName).ToNot(Equal(generatedClusters[1].LoadAssignment.ClusterName), "should not route to same cluster")
-			cluster1Pipe := generatedClusters[0].LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetAddress().GetPipe().GetPath()
-			cluster2Pipe := generatedClusters[1].LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetAddress().GetPipe().GetPath()
-			Expect(cluster1Pipe).ToNot(BeEmpty(), "generated cluster should be in-memory pipe to self")
-			Expect(cluster2Pipe).ToNot(BeEmpty(), "generated cluster should be in-memory pipe to self")
-			Expect(cluster1Pipe).ToNot(Equal(cluster2Pipe), "should not reuse the same pipe to same generated tcp listener")
+			cluster1InternalListener := generatedClusters[0].LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetAddress().GetEnvoyInternalAddress().GetServerListenerName()
+			cluster2InternalListener := generatedClusters[1].LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetAddress().GetEnvoyInternalAddress().GetServerListenerName()
+			Expect(cluster1InternalListener).ToNot(BeEmpty(), "generated cluster should point to internal listener")
+			Expect(cluster2InternalListener).ToNot(BeEmpty(), "generated cluster should point to internal listener")
+			Expect(cluster1InternalListener).ToNot(Equal(cluster2InternalListener), "should not reuse the same internal tcp listener")
 
 			// wipe the fields we expect to be different
 			generatedClusters[0].Name = ""
@@ -184,7 +192,6 @@ var _ = Describe("Plugin", func() {
 			generatedClusters[1].LoadAssignment.Endpoints[0].LbEndpoints[0] = nil
 
 			Expect(generatedClusters[0]).To(matchers.MatchProto(generatedClusters[1]), "generated clusters should be identical, barring name, clustername, endpoints")
-
 		})
 
 		It("should namespace generated listeners, avoiding duplicates", func() {
@@ -194,12 +201,11 @@ var _ = Describe("Plugin", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(generatedListeners).To(HaveLen(2), "should generate a listener for each input route")
 
-			listener1Pipe := generatedListeners[0].GetAddress().GetPipe().GetPath()
-			listener2Pipe := generatedListeners[1].GetAddress().GetPipe().GetPath()
-			Expect(listener1Pipe).ToNot(BeEmpty(), "generated listener should be in-memory pipe to self")
-			Expect(listener2Pipe).ToNot(BeEmpty(), "generated listener should be in-memory pipe to self")
+			listener1Internal := generatedListeners[0].GetListenerSpecifier().(*envoy_config_listener_v3.Listener_InternalListener)
+			listener2Internal := generatedListeners[1].GetListenerSpecifier().(*envoy_config_listener_v3.Listener_InternalListener)
+			Expect(listener1Internal).ToNot(BeNil(), "generated listener should be internal listener")
+			Expect(listener2Internal).ToNot(BeNil(), "generated listener should be internal listener")
 
-			Expect(listener1Pipe).ToNot(Equal(listener2Pipe), "should not reuse the same pipe to same generated tcp listener")
 			Expect(generatedListeners[0].Name).ToNot(Equal(generatedListeners[1].Name), "should not have name collisions")
 
 			listener1TcpCfg := utils.MustAnyToMessage(generatedListeners[0].FilterChains[0].Filters[0].GetTypedConfig()).(*envoytcp.TcpProxy)
@@ -216,9 +222,6 @@ var _ = Describe("Plugin", func() {
 			generatedListeners[1].FilterChains[0].Filters[0].ConfigType = nil
 
 			Expect(generatedListeners[0]).To(matchers.MatchProto(generatedListeners[1]), "generated listeners should be identical, barring name, address, and tcp stats prefix")
-
 		})
-
 	})
-
 })
