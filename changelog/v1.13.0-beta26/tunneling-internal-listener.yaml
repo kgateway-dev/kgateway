@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: |
+    Alter tunneling plugin to use Envoy's [Internal Listener](https://www.envoyproxy.io/docs/envoy/latest/configuration/other_features/internal_listener.html), which was designed
+    for this purpose after our tunneling plugin was originally written.
