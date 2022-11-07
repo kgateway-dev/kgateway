@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	exec_utils "github.com/solo-io/go-utils/testutils/exec"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
@@ -78,7 +80,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 	})
 
 	Describe("Upgrading from a previous gloo version to current version", func() {
-		Context("Upgrading from LastPatchMostRecentMinorVersion to PR version of gloo", func() {
+		Context("When upgrading from LastPatchMostRecentMinorVersion to PR version of gloo", func() {
 			BeforeEach(func() {
 				installGloo(testHelper, LastPatchMostRecentMinorVersion.String(), strictValidation)
 			})
@@ -86,18 +88,18 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
 			It("helm updates the settings without errors", func() {
-				helmUpdateSettingsTest(ctx, crdDir, LastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
+				simpleUpgradeTest(ctx, crdDir, LastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
 			})
-
 			It("helm updates the validationServerGrpcMaxSizeBytes without errors", func() {
-				helmUpdateValidationServerGrpcMaxSizeBytesTest(ctx, crdDir, testHelper, chartUri, strictValidation)
+				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, strictValidation)
 			})
-
 			It("helm adds a second gateway-proxy in a separate namespace without errors", func() {
-				helmAddSecondGatewayProxySeparateNamespaceTest(ctx, crdDir, testHelper, chartUri, strictValidation)
+				updateValidationServerGrpcMaxSizeBytesTest(ctx, crdDir, testHelper, chartUri, strictValidation)
+			})
+			It("helm adds a second gateway-proxy in a separate namespace without errors", func() {
+				addSecondGatewayProxySeparateNamespaceTest(crdDir, testHelper, chartUri, strictValidation)
 			})
 		})
-
 		Context("When upgrading from CurrentPatchMostRecentMinorVersion to PR version of gloo", func() {
 			BeforeEach(func() {
 				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
@@ -106,22 +108,23 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
 			It("helm updates the settings without errors", func() {
-				helmUpdateSettingsTest(ctx, crdDir, CurrentPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
+				simpleUpgradeTest(ctx, crdDir, CurrentPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
 			})
-
 			It("helm updates the validationServerGrpcMaxSizeBytes without errors", func() {
-				//helmUpdateValidationServerGrpcMaxSizeBytesTest(ctx, crdDir, testHelper, chartUri, strictValidation)
+				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, strictValidation)
 			})
-
 			It("helm adds a second gateway-proxy in a separate namespace without errors", func() {
-				//helmAddSecondGatewayProxySeparateNamespaceTest(ctx, crdDir, testHelper, chartUri, strictValidation)
+				updateValidationServerGrpcMaxSizeBytesTest(ctx, crdDir, testHelper, chartUri, strictValidation)
+			})
+			It("helm adds a second gateway-proxy in a separate namespace without errors", func() {
+				addSecondGatewayProxySeparateNamespaceTest(crdDir, testHelper, chartUri, strictValidation)
 			})
 		})
 	})
 })
 
 // Repeated Test Code
-func helmUpdateSettingsTest(ctx context.Context, crdDir string, startingVersion string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
+func simpleUpgradeTest(ctx context.Context, crdDir string, startingVersion string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
 	By(fmt.Sprintf("should start with gloo version %s", startingVersion))
 	Expect(fmt.Sprintf("v%s", getGlooServerVersion(ctx, testHelper.InstallNamespace))).To(Equal(startingVersion))
 
@@ -132,7 +135,7 @@ func helmUpdateSettingsTest(ctx context.Context, crdDir string, startingVersion 
 	Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
 }
 
-func helmUpdateValidationServerGrpcMaxSizeBytesTest(ctx context.Context, crdDir string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
+func updateSettingsWithoutErrors(ctx context.Context, crdDir string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
 	By("should start with the settings.invalidConfigPolicy.invalidRouteResponseCode=404")
 	client := helpers.MustSettingsClient(ctx)
 	settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
@@ -150,13 +153,12 @@ func helmUpdateValidationServerGrpcMaxSizeBytesTest(ctx context.Context, crdDir 
 	Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(400)))
 }
 
-func helmAddSecondGatewayProxySeparateNamespaceTest(ctx context.Context, crdDir string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
-	// this is the default value from the 1.9.0 chart
+func updateValidationServerGrpcMaxSizeBytesTest(ctx context.Context, crdDir string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
 	By("should start with the gateway.validation.validationServerGrpcMaxSizeBytes=4000000 (4MB)")
 	client := helpers.MustSettingsClient(ctx)
 	settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 	Expect(err).To(BeNil())
-	//Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
+	Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
 
 	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, []string{
 		"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000",
@@ -166,6 +168,45 @@ func helmAddSecondGatewayProxySeparateNamespaceTest(ctx context.Context, crdDir 
 	settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 	Expect(err).To(BeNil())
 	Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(5000000)))
+}
+
+func addSecondGatewayProxySeparateNamespaceTest(crdDir string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
+	const externalNamespace = "other-ns"
+	requiredSettings := map[string]string{
+		"gatewayProxies.proxyExternal.disabled":              "false",
+		"gatewayProxies.proxyExternal.namespace":             externalNamespace,
+		"gatewayProxies.proxyExternal.service.type":          "NodePort",
+		"gatewayProxies.proxyExternal.service.httpPort":      "31500",
+		"gatewayProxies.proxyExternal.service.httpsPort":     "32500",
+		"gatewayProxies.proxyExternal.service.httpNodePort":  "31500",
+		"gatewayProxies.proxyExternal.service.httpsNodePort": "32500",
+	}
+
+	var settings []string
+	for key, val := range requiredSettings {
+		settings = append(settings, "--set")
+		settings = append(settings, strings.Join([]string{key, val}, "="))
+	}
+
+	runAndCleanCommand("kubectl", "create", "ns", externalNamespace)
+	defer runAndCleanCommand("kubectl", "delete", "ns", externalNamespace)
+
+	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, settings)
+
+	// Ensures deployment is created for both default namespace and external one
+	// Note- name of external deployments is kebab-case of gatewayProxies NAME helm value
+	Eventually(func() (string, error) {
+		return exec_utils.RunCommandOutput(testHelper.RootDir, false,
+			"kubectl", "get", "deployment", "-A")
+	}, "10s", "1s").Should(
+		And(ContainSubstring("gateway-proxy"),
+			ContainSubstring("proxy-external")))
+
+	// Ensures service account is created for the external namespace
+	Eventually(func() (string, error) {
+		return exec_utils.RunCommandOutput(testHelper.RootDir, false,
+			"kubectl", "get", "serviceaccount", "-n", externalNamespace)
+	}, "10s", "1s").Should(ContainSubstring("gateway-proxy"))
 }
 
 func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
