@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -297,7 +296,6 @@ func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, erro
 }
 
 func checkPods(opts *options.Options, namespaces []string) error {
-	fmt.Println(strings.Join(namespaces, ","))
 	printer.AppendCheck("Checking pods... ")
 	client, err := helpers.KubeClient()
 	if err != nil {
