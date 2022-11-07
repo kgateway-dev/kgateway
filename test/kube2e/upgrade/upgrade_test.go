@@ -5,7 +5,11 @@ import (
 	"context"
 	"fmt"
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	"io/ioutil"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -87,16 +91,13 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
-			It("helm updates the settings without errors", func() {
-				simpleUpgradeTest(ctx, crdDir, LastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
-			})
-			It("helm updates the validationServerGrpcMaxSizeBytes without errors", func() {
+			//It("Used for local testing to check base case upgrades", func() {
+			//	baseUpgradeTest(ctx, crdDir, LastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
+			//})
+			It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
 				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, strictValidation)
 			})
-			It("helm adds a second gateway-proxy in a separate namespace without errors", func() {
-				updateValidationServerGrpcMaxSizeBytesTest(ctx, crdDir, testHelper, chartUri, strictValidation)
-			})
-			It("helm adds a second gateway-proxy in a separate namespace without errors", func() {
+			It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
 				addSecondGatewayProxySeparateNamespaceTest(crdDir, testHelper, chartUri, strictValidation)
 			})
 		})
@@ -107,24 +108,79 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
-			It("helm updates the settings without errors", func() {
-				simpleUpgradeTest(ctx, crdDir, CurrentPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
-			})
-			It("helm updates the validationServerGrpcMaxSizeBytes without errors", func() {
+			It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
 				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, strictValidation)
 			})
-			It("helm adds a second gateway-proxy in a separate namespace without errors", func() {
-				updateValidationServerGrpcMaxSizeBytesTest(ctx, crdDir, testHelper, chartUri, strictValidation)
-			})
-			It("helm adds a second gateway-proxy in a separate namespace without errors", func() {
+			It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
 				addSecondGatewayProxySeparateNamespaceTest(crdDir, testHelper, chartUri, strictValidation)
+			})
+		})
+	})
+
+	Context("Validation webhook upgrade tests", func() {
+		var cfg *rest.Config
+		var err error
+		var kubeClientset kubernetes.Interface
+
+		BeforeEach(func() {
+			cfg, err = kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+			kubeClientset, err = kubernetes.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+			strictValidation = true
+		})
+
+		Context("When upgrading from LastPatchMostRecentMinorVersion to PR version of gloo", func() {
+			BeforeEach(func() {
+				installGloo(testHelper, LastPatchMostRecentMinorVersion.String(), strictValidation)
+			})
+			AfterEach(func() {
+				uninstallGloo(testHelper, ctx, cancel)
+			})
+			It("sets validation webhook caBundle on install and upgrade", func() {
+				updateValidationWebhookTests(ctx, crdDir, kubeClientset, testHelper, chartUri, false)
+			})
+		})
+
+		Context("When upgrading from CurrentPatchMostRecentMinorVersion to PR version of gloo", func() {
+			BeforeEach(func() {
+				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
+			})
+			AfterEach(func() {
+				uninstallGloo(testHelper, ctx, cancel)
+			})
+			It("sets validation webhook caBundle on install and upgrade", func() {
+				updateValidationWebhookTests(ctx, crdDir, kubeClientset, testHelper, chartUri, false)
 			})
 		})
 	})
 })
 
+func updateValidationWebhookTests(ctx context.Context, crdDir string, kubeClientset kubernetes.Interface, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
+	webhookConfigClient := kubeClientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
+	secretClient := kubeClientset.CoreV1().Secrets(testHelper.InstallNamespace)
+
+	By("the webhook caBundle should be the same as the secret's root ca value")
+	webhookConfig, err := webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	secret, err := secretClient.Get(ctx, "gateway-validation-certs", metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
+
+	// do an upgrade
+	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, nil)
+
+	By("the webhook caBundle and secret's root ca value should still match after upgrade")
+	webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	secret, err = secretClient.Get(ctx, "gateway-validation-certs", metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
+}
+
 // Repeated Test Code
-func simpleUpgradeTest(ctx context.Context, crdDir string, startingVersion string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
+// Based case test for local runs to help narrow down failures
+func baseUpgradeTest(ctx context.Context, crdDir string, startingVersion string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
 	By(fmt.Sprintf("should start with gloo version %s", startingVersion))
 	Expect(fmt.Sprintf("v%s", getGlooServerVersion(ctx, testHelper.InstallNamespace))).To(Equal(startingVersion))
 
@@ -145,28 +201,13 @@ func updateSettingsWithoutErrors(ctx context.Context, crdDir string, testHelper 
 	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, []string{
 		"--set", "settings.replaceInvalidRoutes=true",
 		"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400",
+		"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000",
 	})
 
 	By("should have updated to settings.invalidConfigPolicy.invalidRouteResponseCode=400")
 	settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 	Expect(err).To(BeNil())
 	Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(400)))
-}
-
-func updateValidationServerGrpcMaxSizeBytesTest(ctx context.Context, crdDir string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
-	By("should start with the gateway.validation.validationServerGrpcMaxSizeBytes=4000000 (4MB)")
-	client := helpers.MustSettingsClient(ctx)
-	settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-	Expect(err).To(BeNil())
-	Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
-
-	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, []string{
-		"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000",
-	})
-
-	By("should have updated to gateway.validation.validationServerGrpcMaxSizeBytes=5000000 (5MB)")
-	settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-	Expect(err).To(BeNil())
 	Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(5000000)))
 }
 
@@ -194,7 +235,7 @@ func addSecondGatewayProxySeparateNamespaceTest(crdDir string, testHelper *helpe
 	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, settings)
 
 	// Ensures deployment is created for both default namespace and external one
-	// Note- name of external deployments is kebab-case of gatewayProxies NAME helm value
+	// Note - name of external deployments is kebab-case of gatewayProxies NAME helm value
 	Eventually(func() (string, error) {
 		return exec_utils.RunCommandOutput(testHelper.RootDir, false,
 			"kubectl", "get", "deployment", "-A")
