@@ -37,12 +37,11 @@ const namespace = defaults.GlooSystem
 var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 	var (
-		crdDir               string
-		chartUri             string
-		currentPrVersionName string
-		ctx                  context.Context
-		cancel               context.CancelFunc
-		testHelper           *helper.SoloTestHelper
+		crdDir     string
+		chartUri   string
+		ctx        context.Context
+		cancel     context.CancelFunc
+		testHelper *helper.SoloTestHelper
 
 		// whether to set validation webhook's failurePolicy=Fail
 		strictValidation bool
@@ -57,7 +56,6 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 	// setup for all tests
 	BeforeEach(func() {
-		currentPrVersionName = "0.0.1-fork"
 		ctx, cancel = context.WithCancel(context.Background())
 
 		cwd, err := os.Getwd()
@@ -87,16 +85,16 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
-			FIt("helm updates the settings without errors", func() {
-				helmUpdateSettingsTest(ctx, crdDir, LastPatchMostRecentMinorVersion.String(), currentPrVersionName, testHelper, chartUri, strictValidation)
+			It("helm updates the settings without errors", func() {
+				helmUpdateSettingsTest(ctx, crdDir, LastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
 			})
 
 			It("helm updates the validationServerGrpcMaxSizeBytes without errors", func() {
-				//helmUpdateValidationServerGrpcMaxSizeBytesTest(ctx, crdDir, testHelper, chartUri, strictValidation)
+				helmUpdateValidationServerGrpcMaxSizeBytesTest(ctx, crdDir, testHelper, chartUri, strictValidation)
 			})
 
 			It("helm adds a second gateway-proxy in a separate namespace without errors", func() {
-				//helmAddSecondGatewayProxySeparateNamespaceTest(ctx, crdDir, testHelper, chartUri, strictValidation)
+				helmAddSecondGatewayProxySeparateNamespaceTest(ctx, crdDir, testHelper, chartUri, strictValidation)
 			})
 		})
 
@@ -108,7 +106,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
 			It("helm updates the settings without errors", func() {
-				helmUpdateSettingsTest(ctx, crdDir, CurrentPatchMostRecentMinorVersion.String(), currentPrVersionName, testHelper, chartUri, strictValidation)
+				helmUpdateSettingsTest(ctx, crdDir, CurrentPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
 			})
 
 			It("helm updates the validationServerGrpcMaxSizeBytes without errors", func() {
@@ -123,7 +121,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 })
 
 // Repeated Test Code
-func helmUpdateSettingsTest(ctx context.Context, crdDir string, startingVersion string, currentPrVersion string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
+func helmUpdateSettingsTest(ctx context.Context, crdDir string, startingVersion string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
 	By(fmt.Sprintf("should start with gloo version %s", startingVersion))
 	Expect(fmt.Sprintf("v%s", getGlooServerVersion(ctx, testHelper.InstallNamespace))).To(Equal(startingVersion))
 
@@ -131,7 +129,6 @@ func helmUpdateSettingsTest(ctx context.Context, crdDir string, startingVersion 
 	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, nil)
 
 	By("should have upgraded to the gloo version being tested")
-	fmt.Println(currentPrVersion)
 	Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
 }
 
@@ -177,9 +174,9 @@ func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 	Expect(len(glooVersion.GetServer())).To(Equal(1))
 	for _, container := range glooVersion.GetServer()[0].GetKubernetes().GetContainers() {
 		if v == "" {
-			v = container.Tag
+			v = container.OssTag
 		} else {
-			Expect(container.Tag).To(Equal(v))
+			Expect(container.OssTag).To(Equal(v))
 		}
 	}
 	return v
@@ -234,12 +231,10 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 func upgradeCrds(testHelper *helper.SoloTestHelper, crdDir string) {
 
 	// apply crds from the release we're upgrading to
-	fmt.Println("======== Upgrade CRDS =========")
 	fmt.Printf("Upgrade crds: kubectl apply -f %s\n", crdDir)
 	runAndCleanCommand("kubectl", "apply", "-f", crdDir)
 	// allow some time for the new crds to take effect
 	time.Sleep(time.Second * 10)
-	fmt.Println("===============================")
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, strictValidation bool, additionalArgs []string) {
