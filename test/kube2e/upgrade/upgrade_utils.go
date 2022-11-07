@@ -20,7 +20,7 @@ var (
 	FirstReleaseError = "First Release of Minor"
 )
 
-//Type used to sort Versions
+// Type used to sort Versions
 type ByVersion []*versionutils.Version
 
 func (a ByVersion) Len() int { return len(a) }
@@ -37,7 +37,7 @@ func main() {
 }
 
 func GetUpgradeVersions(ctx context.Context) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
-	currentMinorLatestPatchVersion, curMinorErr := GetLastReleaseOfCurrentMinor(ctx)
+	currentMinorLatestPatchVersion, curMinorErr := GetLastReleaseOfCurrentMinor()
 	if curMinorErr != nil {
 		if curMinorErr.Error() != FirstReleaseError {
 			return nil, nil, curMinorErr
@@ -50,7 +50,7 @@ func GetUpgradeVersions(ctx context.Context) (lastMinorLatestPatchVersion *versi
 	return lastMinorLatestPatchVersion, currentMinorLatestPatchVersion, curMinorErr
 }
 
-func GetLastReleaseOfCurrentMinor(ctx context.Context) (*versionutils.Version, error) {
+func GetLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
 	repo_name := "gloo"                    // pull out to const
 	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
 	fmt.Printf(filename)
