@@ -157,16 +157,16 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 // the purpose of doing this is to allow both the HTTP Connection Manager filter and TCP filter to run.
 // the HTTP Connection Manager runs to allow route-level matching on HTTP parameters (such as request path),
 // but then we forward the bytes as raw TCP to the HTTP Connect proxy (which can only be done on a TCP listener)
-func generateSelfCluster(encapsulatingClusterName, internalListenerName string, originalTransportSocket *envoy_config_core_v3.TransportSocket) *envoy_config_cluster_v3.Cluster {
+func generateSelfCluster(selfCluster, selfPipe string, originalTransportSocket *envoy_config_core_v3.TransportSocket) *envoy_config_cluster_v3.Cluster {
 	return &envoy_config_cluster_v3.Cluster{
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
 			Type: envoy_config_cluster_v3.Cluster_STATIC,
 		},
 		ConnectTimeout:  &duration.Duration{Seconds: 5},
-		Name:            encapsulatingClusterName,
+		Name:            selfCluster,
 		TransportSocket: originalTransportSocket,
 		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-			ClusterName: encapsulatingClusterName,
+			ClusterName: selfCluster,
 			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 				{
 					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
@@ -174,11 +174,9 @@ func generateSelfCluster(encapsulatingClusterName, internalListenerName string, 
 							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
 								Endpoint: &envoy_config_endpoint_v3.Endpoint{
 									Address: &envoy_config_core_v3.Address{
-										Address: &envoy_config_core_v3.Address_EnvoyInternalAddress{
-											EnvoyInternalAddress: &envoy_config_core_v3.EnvoyInternalAddress{
-												AddressNameSpecifier: &envoy_config_core_v3.EnvoyInternalAddress_ServerListenerName{
-													ServerListenerName: internalListenerName,
-												},
+										Address: &envoy_config_core_v3.Address_Pipe{
+											Pipe: &envoy_config_core_v3.Pipe{
+												Path: selfPipe,
 											},
 										},
 									},
@@ -204,10 +202,14 @@ func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string, 
 		return nil, err
 	}
 	return &envoy_config_listener_v3.Listener{
-		ListenerSpecifier: &envoy_config_listener_v3.Listener_InternalListener{
-			InternalListener: &envoy_config_listener_v3.Listener_InternalListenerConfig{},
+		Name: "solo_io_generated_self_listener_" + cluster,
+		Address: &envoy_config_core_v3.Address{
+			Address: &envoy_config_core_v3.Address_Pipe{
+				Pipe: &envoy_config_core_v3.Pipe{
+					Path: selfPipe,
+				},
+			},
 		},
-		Name: "internal_listener_" + cluster,
 		FilterChains: []*envoy_config_listener_v3.FilterChain{
 			{
 				Filters: []*envoy_config_listener_v3.Filter{
