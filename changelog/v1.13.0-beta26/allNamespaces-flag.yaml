@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: > 
+      Added an --allNamespaces flag to `glooctl check`, this flag enables checking all pods on all namespaces so long as
+      the pod has a 'gloo' label.
