@@ -746,7 +746,6 @@ docker-push: docker-push-local docker-push-non-arm
 
 .PHONY: docker-push-local
 docker-push-local: $(DOCKER_IMAGES)
-ifeq ($(CREATE_ASSETS), "true")
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
@@ -755,7 +754,6 @@ ifeq ($(CREATE_ASSETS), "true")
 	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
-endif
 
 .PHONY: docker-push-non-arm
 docker-push-non-arm:
