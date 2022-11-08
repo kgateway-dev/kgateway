@@ -450,6 +450,6 @@ type Check struct {
 	// The maximum length of time to wait before giving up on a secret request. A value of zero means no timeout.
 	SecretClientTimeout time.Duration
 
-	// namespaces to check (intersected with watched namespaces)
+	// Label selector for pod scanning
 	Selector string
 }
