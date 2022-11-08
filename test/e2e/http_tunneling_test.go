@@ -49,6 +49,7 @@ var _ = Describe("tunneling", func() {
 		up             *gloov1.Upstream
 		tuPort         uint32
 		tlsUpstream    bool
+		mtlsUpstream   bool
 		tlsHttpConnect bool
 		writeNamespace = defaults.GlooSystem
 	)
@@ -102,7 +103,7 @@ var _ = Describe("tunneling", func() {
 		// start http proxy and setup upstream that points to it
 		port := startHttpProxy(ctx, tlsHttpConnect)
 
-		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsUpstream)
+		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsUpstream, mtlsUpstream)
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
 
 		up = &gloov1.Upstream{
@@ -241,6 +242,19 @@ var _ = Describe("tunneling", func() {
 
 			It("should proxy encrypted bytes over plaintext HTTP Connect", func() {
 				// the request path here is [envoy] -- plaintext --> [local HTTP Connect proxy] -- encrypted --> TLS upstream
+				jsonStr := `{"value":"Hello, world!"}`
+				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
+			})
+		})
+
+		Context("with back mTLS", func() {
+			BeforeEach(func() {
+				tlsUpstream = true
+				mtlsUpstream = true
+			})
+
+			It("should proxy encrypted bytes over plaintext HTTP Connect", func() {
+				// the request path here is [envoy] -- plaintext --> [local HTTP Connect proxy] -- encrypted --> mTLS upstream
 				jsonStr := `{"value":"Hello, world!"}`
 				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
 			})

@@ -39,27 +39,27 @@ type ReceivedRequest struct {
 }
 
 func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
-	backendPort, responses := runTestServer(ctx, "", false)
+	backendPort, responses := runTestServer(ctx, "", false, false)
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
-func NewTestHttpUpstreamWithTls(ctx context.Context, addr string, tlsUpstream bool) *TestUpstream {
-	backendPort, responses := runTestServer(ctx, "", tlsUpstream)
+func NewTestHttpUpstreamWithTls(ctx context.Context, addr string, tlsUpstream, mtlsUpstream bool) *TestUpstream {
+	backendPort, responses := runTestServer(ctx, "", tlsUpstream, mtlsUpstream)
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
 func NewTestHttpUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
-	backendPort, responses := runTestServer(ctx, reply, false)
+	backendPort, responses := runTestServer(ctx, reply, false, false)
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
 func NewTestHttpUpstreamWithReplyAndHealthReply(ctx context.Context, addr, reply, healthReply string) *TestUpstream {
-	backendPort, responses := runTestServerWithHealthReply(ctx, reply, healthReply, false)
+	backendPort, responses := runTestServerWithHealthReply(ctx, reply, healthReply, false, false)
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
 func NewTestHttpsUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
-	backendPort, responses := runTestServer(ctx, reply, true)
+	backendPort, responses := runTestServer(ctx, reply, true, false)
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
@@ -134,11 +134,11 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 	}
 }
 
-func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-chan *ReceivedRequest) {
-	return runTestServerWithHealthReply(ctx, reply, "OK", serveTls)
+func runTestServer(ctx context.Context, reply string, serveTls, serveMtls bool) (uint32, <-chan *ReceivedRequest) {
+	return runTestServerWithHealthReply(ctx, reply, "OK", serveTls, serveMtls)
 }
 
-func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string, serveTls bool) (uint32, <-chan *ReceivedRequest) {
+func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string, serveTls, serveMtls bool) (uint32, <-chan *ReceivedRequest) {
 	bodyChan := make(chan *ReceivedRequest, 100)
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
 		var rr ReceivedRequest
@@ -191,13 +191,29 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 		defer GinkgoRecover()
 		h := &http.Server{Handler: mux}
 		if serveTls {
+			if serveMtls {
+				// Set up an mTLS cert iff we need it
+				_, _ = helpers.GetCerts(helpers.Params{
+					Hosts:            "gateway-proxy,knative-proxy,ingress-proxy",
+					IsCA:             true,
+					AdditionalUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+					SetGlobal:        true,
+				})
+			}
 			certs, err := tls.X509KeyPair([]byte(helpers.Certificate()), []byte(helpers.PrivateKey()))
 			if err != nil {
 				Expect(err).NotTo(HaveOccurred())
 			}
-			listener = tls.NewListener(listener, &tls.Config{
+			tlsConfig := &tls.Config{
 				Certificates: []tls.Certificate{certs},
-			})
+			}
+			if serveMtls {
+				certPool := x509.NewCertPool()
+				certPool.AppendCertsFromPEM([]byte(helpers.Certificate()))
+				tlsConfig.ClientCAs = certPool
+				tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+			}
+			listener = tls.NewListener(listener, tlsConfig)
 		}
 
 		go func() {
