@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/1299
+    description: > 
+       Added a --namespaces flag to `glooctl check` to restrict which watched namespaces to 
+      check.

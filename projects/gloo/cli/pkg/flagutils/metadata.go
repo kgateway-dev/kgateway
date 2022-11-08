@@ -22,8 +22,12 @@ func AddNamespaceFlag(set *pflag.FlagSet, strptr *string) {
 	set.StringVarP(strptr, "namespace", "n", DefaultNamespace, "namespace for reading or writing resources")
 }
 
+func AddNamespacesFlag(set *pflag.FlagSet, strarrptr *[]string) {
+	set.StringSliceVarP(strarrptr, "namespaces", "N", []string{}, "namespaces for reading resources")
+}
+
 func AddAllNamespacesFlag(set *pflag.FlagSet, boolptr *bool) {
-	set.BoolVar(boolptr, "allNamespaces", false, "check to scan all namespaces for pods with the `app:gloo` label")
+	set.BoolVarP(boolptr, "all-namespaces", "A", false, "check to scan all namespaces for pods with a 'gloo' label")
 }
 
 func AddExcludeCheckFlag(set *pflag.FlagSet, strarrptr *[]string) {

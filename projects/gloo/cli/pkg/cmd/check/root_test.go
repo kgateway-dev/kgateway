@@ -161,7 +161,7 @@ var _ = Describe("Root", func() {
 
 	Context("With a custom namespace", func() {
 
-		It("connection fails on incorrect namespace check", func() {
+		FIt("connection fails on incorrect namespace check", func() {
 
 			myNs := "my-namespace"
 			client := helpers.MustKubeClient()
@@ -193,6 +193,9 @@ var _ = Describe("Root", func() {
 
 			output, _ = testutils.GlooctlOut("check -x xds-metrics -n my-namespace")
 			Expect(output).To(ContainSubstring("No problems detected."))
+
+			output, _ = testutils.GlooctlOut("check -x xds-metrics -n my-namespace -N my-namespace,my-invalid-namespace")
+			Expect(output).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'my-namespace' namespace)"))
 
 		})
 	})

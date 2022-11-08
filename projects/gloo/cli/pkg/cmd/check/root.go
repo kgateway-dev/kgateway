@@ -87,7 +87,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	pflags := cmd.PersistentFlags()
 	flagutils.AddCheckOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
-	flagutils.AddAllNamespacesFlag(pflags, &opts.Check.AllNamespaces)
+	flagutils.AddNamespacesFlag(pflags, &opts.Check.Namespaces)
 	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
@@ -121,11 +121,25 @@ func CheckResources(opts *options.Options) error {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
+	// Intersect namespaces flag args and watched namespaces
+	if len(opts.Check.Namespaces) != 0 {
+		newNamespaces := []string{}
+		for _, flaggedNamespace := range opts.Check.Namespaces {
+			for _, watchedNamespace := range namespaces {
+				if flaggedNamespace == watchedNamespace {
+					newNamespaces = append(newNamespaces, watchedNamespace)
+				}
+			}
+		}
+		namespaces = newNamespaces
+		if len(newNamespaces) == 0 {
+			multiErr = multierror.Append(multiErr, eris.New("No namespaces specified are currently being watched (defaulting to '"+opts.Metadata.GetNamespace()+"' namespace)"))
+			namespaces = []string{opts.Metadata.GetNamespace()}
+		}
+	}
+
 	if included := doesNotContain(opts.Top.CheckName, "pods"); included {
 		checkPodsInNamespaces := namespaces
-		if !opts.Check.AllNamespaces {
-			checkPodsInNamespaces = []string{opts.Metadata.GetNamespace()}
-		}
 
 		err := checkPods(opts, checkPodsInNamespaces)
 		if err != nil {
@@ -303,54 +317,54 @@ func checkPods(opts *options.Options, namespaces []string) error {
 	}
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		pods, err := client.CoreV1().Pods(ns).List(opts.Top.Ctx, metav1.ListOptions{})
+		pods, err := client.CoreV1().Pods(ns).List(opts.Top.Ctx, metav1.ListOptions{
+			LabelSelector: "gloo",
+		})
 		if err != nil {
 			return err
 		}
 		for _, pod := range pods.Items {
 			// Don't check if were scanning multiple namespaces and land on a pod without the "gloo" label
-			if !(namespaces != nil && pod.GetLabels()["gloo"] == "") {
-				for _, condition := range pod.Status.Conditions {
-					var errorToPrint string
-					var message string
-					pod.GetLabels()
+			for _, condition := range pod.Status.Conditions {
+				var errorToPrint string
+				var message string
+				pod.GetLabels()
 
-					if condition.Message != "" {
-						message = fmt.Sprintf(" Message: %s", condition.Message)
+				if condition.Message != "" {
+					message = fmt.Sprintf(" Message: %s", condition.Message)
+				}
+
+				// if condition is not met and the pod is not completed
+				conditionNotMet := condition.Status != corev1.ConditionTrue && condition.Reason != "PodCompleted"
+
+				// possible condition types listed at https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
+				switch condition.Type {
+				case corev1.PodScheduled:
+					if conditionNotMet {
+						errorToPrint = fmt.Sprintf("Pod %s in namespace %s is not yet scheduled!%s", pod.Name, pod.Namespace, message)
 					}
-
-					// if condition is not met and the pod is not completed
-					conditionNotMet := condition.Status != corev1.ConditionTrue && condition.Reason != "PodCompleted"
-
-					// possible condition types listed at https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
-					switch condition.Type {
-					case corev1.PodScheduled:
-						if conditionNotMet {
-							errorToPrint = fmt.Sprintf("Pod %s in namespace %s is not yet scheduled!%s", pod.Name, pod.Namespace, message)
-						}
-					case corev1.PodReady:
-						if conditionNotMet {
-							errorToPrint = fmt.Sprintf("Pod %s in namespace %s is not ready!%s", pod.Name, pod.Namespace, message)
-						}
-					case corev1.PodInitialized:
-						if conditionNotMet {
-							errorToPrint = fmt.Sprintf("Pod %s in namespace %s is not yet initialized!%s", pod.Name, pod.Namespace, message)
-						}
-					case corev1.PodReasonUnschedulable:
-						if conditionNotMet {
-							errorToPrint = fmt.Sprintf("Pod %s in namespace %s is unschedulable!%s", pod.Name, pod.Namespace, message)
-						}
-					case corev1.ContainersReady:
-						if conditionNotMet {
-							errorToPrint = fmt.Sprintf("Not all containers in pod %s in namespace %s are ready!%s", pod.Name, pod.Namespace, message)
-						}
-					default:
-						fmt.Printf("Note: Unhandled pod condition %s", condition.Type)
+				case corev1.PodReady:
+					if conditionNotMet {
+						errorToPrint = fmt.Sprintf("Pod %s in namespace %s is not ready!%s", pod.Name, pod.Namespace, message)
 					}
-
-					if errorToPrint != "" {
-						multiErr = multierror.Append(multiErr, fmt.Errorf(errorToPrint))
+				case corev1.PodInitialized:
+					if conditionNotMet {
+						errorToPrint = fmt.Sprintf("Pod %s in namespace %s is not yet initialized!%s", pod.Name, pod.Namespace, message)
 					}
+				case corev1.PodReasonUnschedulable:
+					if conditionNotMet {
+						errorToPrint = fmt.Sprintf("Pod %s in namespace %s is unschedulable!%s", pod.Name, pod.Namespace, message)
+					}
+				case corev1.ContainersReady:
+					if conditionNotMet {
+						errorToPrint = fmt.Sprintf("Not all containers in pod %s in namespace %s are ready!%s", pod.Name, pod.Namespace, message)
+					}
+				default:
+					fmt.Printf("Note: Unhandled pod condition %s", condition.Type)
+				}
+
+				if errorToPrint != "" {
+					multiErr = multierror.Append(multiErr, fmt.Errorf(errorToPrint))
 				}
 			}
 		}
