@@ -17,10 +17,11 @@ glooctl check [flags]
 ### Options
 
 ```
-  -x, --exclude strings     check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, secrets, virtual-services, gateways, proxies, xds-metrics)
-  -h, --help                help for check
-  -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType   output format: (json, table) (default table)
+  -x, --exclude strings      check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, secrets, virtual-services, gateways, proxies, xds-metrics)
+  -h, --help                 help for check
+  -n, --namespace string     namespace for reading or writing resources (default "gloo-system")
+  -N, --namespaces strings   namespaces for reading resources
+  -o, --output OutputType    output format: (json, table) (default table)
 ```
 
 ### Options inherited from parent commands
