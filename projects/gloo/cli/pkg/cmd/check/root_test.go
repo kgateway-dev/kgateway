@@ -161,7 +161,7 @@ var _ = Describe("Root", func() {
 
 	Context("With a custom namespace", func() {
 
-		FIt("connection fails on incorrect namespace check", func() {
+		It("connection fails on incorrect namespace check", func() {
 
 			myNs := "my-namespace"
 			client := helpers.MustKubeClient()
