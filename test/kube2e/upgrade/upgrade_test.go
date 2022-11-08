@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -18,7 +19,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
 	"github.com/solo-io/skv2/codegen/util"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"

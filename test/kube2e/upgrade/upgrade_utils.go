@@ -31,11 +31,6 @@ func (a ByVersion) Less(i, j int) bool {
 }
 func (a ByVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
-func main() {
-	ctx := context.Background()
-	GetUpgradeVersions(ctx)
-}
-
 func GetUpgradeVersions(ctx context.Context) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
 	currentMinorLatestPatchVersion, curMinorErr := GetLastReleaseOfCurrentMinor()
 	if curMinorErr != nil {
