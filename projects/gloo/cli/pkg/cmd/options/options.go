@@ -451,5 +451,5 @@ type Check struct {
 	SecretClientTimeout time.Duration
 
 	// namespaces to check (intersected with watched namespaces)
-	Namespaces []string
+	Selector string
 }

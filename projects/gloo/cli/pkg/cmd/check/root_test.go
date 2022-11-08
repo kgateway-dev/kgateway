@@ -194,9 +194,9 @@ var _ = Describe("Root", func() {
 			output, _ = testutils.GlooctlOut("check -x xds-metrics -n my-namespace")
 			Expect(output).To(ContainSubstring("No problems detected."))
 
-			output, _ = testutils.GlooctlOut("check -x xds-metrics -n my-namespace -N my-namespace,my-invalid-namespace")
-			Expect(output).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'my-namespace' namespace)"))
-
+			output, _ = testutils.GlooctlOut("check -x xds-metrics -n my-namespace --namespace-selector not-gloo")
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (not-gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("No problems detected."))
 		})
 	})
 

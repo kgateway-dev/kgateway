@@ -87,7 +87,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	pflags := cmd.PersistentFlags()
 	flagutils.AddCheckOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
-	flagutils.AddNamespacesFlag(pflags, &opts.Check.Namespaces)
+	flagutils.AddNamespacesFlag(pflags, &opts.Check.Selector)
 	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
@@ -121,27 +121,8 @@ func CheckResources(opts *options.Options) error {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
-	// Intersect namespaces flag args and watched namespaces
-	if len(opts.Check.Namespaces) != 0 {
-		newNamespaces := []string{}
-		for _, flaggedNamespace := range opts.Check.Namespaces {
-			for _, watchedNamespace := range namespaces {
-				if flaggedNamespace == watchedNamespace {
-					newNamespaces = append(newNamespaces, watchedNamespace)
-				}
-			}
-		}
-		namespaces = newNamespaces
-		if len(newNamespaces) == 0 {
-			multiErr = multierror.Append(multiErr, eris.New("No namespaces specified are currently being watched (defaulting to '"+opts.Metadata.GetNamespace()+"' namespace)"))
-			namespaces = []string{opts.Metadata.GetNamespace()}
-		}
-	}
-
 	if included := doesNotContain(opts.Top.CheckName, "pods"); included {
-		checkPodsInNamespaces := namespaces
-
-		err := checkPods(opts, checkPodsInNamespaces)
+		err := checkPods(opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -316,14 +297,16 @@ func checkPods(opts *options.Options, namespaces []string) error {
 		return err
 	}
 	var multiErr *multierror.Error
+	podsScanned := false
 	for _, ns := range namespaces {
 		pods, err := client.CoreV1().Pods(ns).List(opts.Top.Ctx, metav1.ListOptions{
-			LabelSelector: "gloo",
+			LabelSelector: opts.Check.Selector,
 		})
 		if err != nil {
 			return err
 		}
 		for _, pod := range pods.Items {
+			podsScanned = true
 			// Don't check if were scanning multiple namespaces and land on a pod without the "gloo" label
 			for _, condition := range pod.Status.Conditions {
 				var errorToPrint string
@@ -374,6 +357,9 @@ func checkPods(opts *options.Options, namespaces []string) error {
 		return multiErr
 	}
 	printer.AppendStatus("pods", "OK")
+	if !podsScanned {
+		printer.AppendMessage("Warning: The provided label selector (" + opts.Check.Selector + ") applies to no pods")
+	}
 	return nil
 }
 
