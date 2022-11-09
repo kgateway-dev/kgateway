@@ -112,6 +112,13 @@ func CheckResources(opts *options.Options) error {
 		}
 	}
 
+	if included := doesNotContain(opts.Top.CheckName, "pods"); included {
+		err := checkPods(opts)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
+	}
+
 	settings, err := getSettings(opts)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
@@ -120,13 +127,6 @@ func CheckResources(opts *options.Options) error {
 	namespaces, err := getNamespaces(opts.Top.Ctx, settings)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
-	}
-
-	if included := doesNotContain(opts.Top.CheckName, "pods"); included {
-		err := checkPods(opts)
-		if err != nil {
-			multiErr = multierror.Append(multiErr, err)
-		}
 	}
 
 	// Intersect resource-namespaces flag args and watched namespaces
