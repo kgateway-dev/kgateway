@@ -88,7 +88,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	pflags := cmd.PersistentFlags()
 	flagutils.AddCheckOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
-	flagutils.AddNamespaceSelectorFlag(pflags, &opts.Check.Selector)
+	flagutils.AddNamespaceSelectorFlag(pflags, &opts.Top.Selector)
 	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
@@ -301,7 +301,7 @@ func checkPods(opts *options.Options, namespaces []string) error {
 	podsScanned := false
 	for _, ns := range namespaces {
 		pods, err := client.CoreV1().Pods(ns).List(opts.Top.Ctx, metav1.ListOptions{
-			LabelSelector: opts.Check.Selector,
+			LabelSelector: opts.Top.Selector,
 		})
 		if err != nil {
 			return err
@@ -358,7 +358,7 @@ func checkPods(opts *options.Options, namespaces []string) error {
 	}
 	printer.AppendStatus("pods", "OK")
 	if !podsScanned {
-		printer.AppendMessage("Warning: The provided label selector (" + opts.Check.Selector + ") applies to no pods")
+		printer.AppendMessage("Warning: The provided label selector (" + opts.Top.Selector + ") applies to no pods")
 	}
 	return nil
 }

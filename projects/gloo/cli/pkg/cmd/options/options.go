@@ -46,6 +46,7 @@ type Top struct {
 	ErrorsOnly     bool
 	ConfigFilePath string
 	Consul         Consul // use consul as config backend
+	Selector       string // label selector for pod scanning
 }
 
 type HelmInstall struct {
@@ -449,7 +450,4 @@ type Register struct {
 type Check struct {
 	// The maximum length of time to wait before giving up on a secret request. A value of zero means no timeout.
 	SecretClientTimeout time.Duration
-
-	// Label selector for pod scanning
-	Selector string
 }
