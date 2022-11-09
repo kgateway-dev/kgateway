@@ -31,29 +31,29 @@ func (a ByVersion) Less(i, j int) bool {
 }
 func (a ByVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
-func GetUpgradeVersions(ctx context.Context) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
-	currentMinorLatestPatchVersion, curMinorErr := GetLastReleaseOfCurrentMinor()
+func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
+	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor(repoName)
 	if curMinorErr != nil {
 		if curMinorErr.Error() != FirstReleaseError {
 			return nil, nil, curMinorErr
 		}
 	}
-	lastMinorLatestPatchVersion, lastMinorErr := GetLatestReleasedVersion(ctx, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
+	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
 	if lastMinorErr != nil {
 		return nil, nil, lastMinorErr
 	}
 	return lastMinorLatestPatchVersion, currentMinorLatestPatchVersion, curMinorErr
 }
 
-func GetLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
-	repo_name := "gloo"                    // pull out to const
+func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error) {
+	// pull out to const
 	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
 	fmt.Printf(filename)
 	fParts := strings.Split(filename, string(os.PathSeparator))
 	splitIdx := 0
 	//we can end up in a situation where the path contains the repo_name twice when running in ci - keep going until we find the last use ex: /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
 	for idx, dir := range fParts {
-		if dir == repo_name {
+		if dir == repoName {
 			splitIdx = idx
 		}
 	}
@@ -85,7 +85,7 @@ func GetLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
 	return versions[len(versions)-2], nil
 }
 
-func GetLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion int) (*versionutils.Version, error) {
+func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion int) (*versionutils.Version, error) {
 	client, err := githubutils.GetClient(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create github client")
