@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -105,6 +106,11 @@ var _ = Describe("tunneling", func() {
 
 		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsUpstream, mtlsUpstream)
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
+		go func() {
+			for rr := range tu.C {
+				fmt.Fprintln(GinkgoWriter, "test server received request\n", rr)
+			}
+		}()
 
 		up = &gloov1.Upstream{
 			Metadata: &core.Metadata{
@@ -199,6 +205,13 @@ var _ = Describe("tunneling", func() {
 				},
 			}
 
+			// set mTLS certs to be used by Envoy so we can talk to mTLS test server
+			if mtlsUpstream {
+				secret.GetTls().CertChain = gloohelpers.MtlsCertificate()
+				secret.GetTls().PrivateKey = gloohelpers.MtlsPrivateKey()
+				secret.GetTls().RootCa = gloohelpers.MtlsCertificate()
+			}
+
 			_, err := testClients.SecretClient.Write(secret, clients.WriteOpts{OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -216,6 +229,7 @@ var _ = Describe("tunneling", func() {
 				up.HttpConnectSslConfig = sslCfg
 			}
 			_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			log.Println(up.String())
 			Expect(err).NotTo(HaveOccurred())
 
 			checkProxy()

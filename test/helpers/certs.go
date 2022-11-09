@@ -166,15 +166,26 @@ func GetCerts(params Params) (string, string) {
 }
 
 var (
-	getCerts sync.Once
-	cert     string
-	privKey  string
+	getCerts     sync.Once
+	getMtlsCerts sync.Once
+	mtlsCert     string
+	mtlsPrivKey  string
+	cert         string
+	privKey      string
 )
 
 func gencerts() {
 	cert, privKey = GetCerts(Params{
 		Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 		IsCA:  true,
+	})
+}
+
+func genmtlscerts() {
+	mtlsCert, mtlsPrivKey = GetCerts(Params{
+		Hosts:            "gateway-proxy,knative-proxy,ingress-proxy",
+		IsCA:             true,
+		AdditionalUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	})
 }
 
@@ -186,6 +197,16 @@ func Certificate() string {
 func PrivateKey() string {
 	getCerts.Do(gencerts)
 	return privKey
+}
+
+func MtlsCertificate() string {
+	getMtlsCerts.Do(genmtlscerts)
+	return mtlsCert
+}
+
+func MtlsPrivateKey() string {
+	getMtlsCerts.Do(genmtlscerts)
+	return mtlsPrivKey
 }
 
 func GetKubeSecret(name, namespace string) *kubev1.Secret {
