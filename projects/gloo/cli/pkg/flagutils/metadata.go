@@ -27,7 +27,7 @@ func AddPodSelectorFlag(set *pflag.FlagSet, strptr *string) {
 }
 
 func AddResourceNamespaceFlag(set *pflag.FlagSet, strptr *[]string) {
-	set.StringArrayVarP(strptr, "resource-namespaces", "r", []string{}, "Label selector for pod scanning")
+	set.StringArrayVarP(strptr, "resource-namespaces", "r", []string{}, "Namespaces to scan resources in")
 }
 
 func AddExcludeCheckFlag(set *pflag.FlagSet, strarrptr *[]string) {
