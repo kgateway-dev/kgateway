@@ -45,8 +45,9 @@ type Top struct {
 	Zip            bool
 	ErrorsOnly     bool
 	ConfigFilePath string
-	Consul         Consul // use consul as config backend
-	Selector       string // label selector for pod scanning
+	Consul         Consul   // use consul as config backend
+	Selector       string   // label selector for pod scanning
+	Namespaces     []string // namespaces to check
 }
 
 type HelmInstall struct {
