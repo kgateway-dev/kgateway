@@ -8,7 +8,6 @@ import (
 	"time"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 
 	"github.com/hashicorp/go-multierror"
@@ -104,6 +103,15 @@ func CheckResources(opts *options.Options) error {
 		return multiErr
 	}
 
+	var deployments *appsv1.DeploymentList
+	deploymentsIncluded := doesNotContain(opts.Top.CheckName, "deployments")
+	if deploymentsIncluded {
+		deployments, err = getAndCheckDeployments(opts)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
+	}
+
 	settings, err := getSettings(opts)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
@@ -112,15 +120,6 @@ func CheckResources(opts *options.Options) error {
 	namespaces, err := getNamespaces(opts.Top.Ctx, settings)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
-	}
-
-	var deployments *appsv1.DeploymentList
-	deploymentsIncluded := doesNotContain(opts.Top.CheckName, "deployments")
-	if deploymentsIncluded {
-		deployments, err = getAndCheckDeployments(opts)
-		if err != nil {
-			multiErr = multierror.Append(multiErr, err)
-		}
 	}
 
 	if included := doesNotContain(opts.Top.CheckName, "pods"); included {
@@ -315,7 +314,6 @@ func checkPods(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
-	var multiErr *multierror.Error
 	podsScanned := false
 	pods, err := client.CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{
 		LabelSelector: opts.Top.Selector,
@@ -323,9 +321,9 @@ func checkPods(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
+	var multiErr *multierror.Error
 	for _, pod := range pods.Items {
 		podsScanned = true
-		// Don't check if were scanning multiple namespaces and land on a pod without the "gloo" label
 		for _, condition := range pod.Status.Conditions {
 			var errorToPrint string
 			var message string
