@@ -48,7 +48,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	//At this point we know that we are passing the Http2 settings - check to make sure we aren't incorrectly passing http1 at the same time
 	if in.GetProtocolSelection() == v1.Upstream_USE_CONFIGURED_PROTOCOL {
-		if in.GetConnectionConfig() != nil {
+		if in.GetConnectionConfig().GetHttp1ProtocolOptions() != nil {
 			return errors.Errorf(
 				"Both HTTP1 and HTTP2 options may only be configured with non-default 'Upstream_USE_DOWNSTREAM_PROTOCOL' specified for Protocol Selection")
 		}
