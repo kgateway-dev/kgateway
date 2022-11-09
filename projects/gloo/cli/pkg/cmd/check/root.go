@@ -311,7 +311,6 @@ func checkPods(opts *options.Options, namespaces []string) error {
 			for _, condition := range pod.Status.Conditions {
 				var errorToPrint string
 				var message string
-				pod.GetLabels()
 
 				if condition.Message != "" {
 					message = fmt.Sprintf(" Message: %s", condition.Message)
