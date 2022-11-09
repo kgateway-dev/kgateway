@@ -23,7 +23,7 @@ func AddNamespaceFlag(set *pflag.FlagSet, strptr *string) {
 }
 
 func AddNamespaceSelectorFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVarP(strptr, "namespace-selector", "l", "gloo", "Label selector for pod scanning (default: gloo)")
+	set.StringVarP(strptr, "namespace-selector", "l", "gloo", "Label selector for pod scanning")
 }
 
 func AddExcludeCheckFlag(set *pflag.FlagSet, strarrptr *[]string) {
