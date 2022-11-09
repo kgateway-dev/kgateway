@@ -2,5 +2,4 @@ changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/1299
     description: > 
-      Added a --namespaces flag to `glooctl check` to restrict which watched namespaces to 
-      check.
+      Added a --namespace-selector flag to `glooctl check` to apply a label selector to gloo pod checking.
