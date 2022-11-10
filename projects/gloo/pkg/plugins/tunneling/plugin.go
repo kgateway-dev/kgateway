@@ -143,7 +143,7 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 						return nil, nil, nil, nil, err
 					}
 					generatedListeners = append(generatedListeners, forwardingTcpListener)
-					processedClusters[cluster] = struct{}{}
+					processedClusters.Insert(cluster)
 				}
 			}
 		}
