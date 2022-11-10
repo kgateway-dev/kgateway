@@ -41,7 +41,7 @@ const versionBeforeGlooGatewayMerge = "1.11.0"
 
 const namespace = defaults.GlooSystem
 
-var _ = Describe("Kube2e: helm", func() {
+var _ = Describe("Kube2e: pinned version upgrade tests", func() {
 
 	var (
 		crdDir   string
