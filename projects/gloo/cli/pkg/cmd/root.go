@@ -39,8 +39,8 @@ func App(opts *options.Options, preRunFuncs []RunnableCommand, postRunFuncs []Ru
 
 	app := &cobra.Command{
 		Use:   "glooctl",
-		Short: "CLI for GlooToBranchVersion",
-		Long: `glooctl is the unified CLI for GlooToBranchVersion.
+		Short: "CLI for Gloo",
+		Long: `glooctl is the unified CLI for Gloo.
 	Find more information at https://solo.io`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// persistent pre run is be called after flag parsing
