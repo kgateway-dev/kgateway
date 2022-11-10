@@ -10,7 +10,7 @@ import (
 	gatewayv1kube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
+	"github.com/solo-io/gloo/test/kube2e/upgrades"
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
@@ -84,7 +84,7 @@ var _ = Describe("Kube2e: pinned version upgrade tests", func() {
 	})
 
 	AfterEach(func() {
-		upgrade.UninstallGloo(testHelper, ctx, cancel)
+		upgrades.UninstallGloo(testHelper, ctx, cancel)
 	})
 
 	Context("upgrades", func() {
@@ -93,11 +93,11 @@ var _ = Describe("Kube2e: pinned version upgrade tests", func() {
 		})
 
 		It("uses helm to upgrade to this gloo version and settings without errors", func() {
-			upgrade.UpdateSettingsWithoutErrors(ctx, testHelper, crdDir, earliestVersionWithV1CRDs, chartUri, strictValidation)
+			upgrades.UpdateSettingsWithoutErrors(ctx, testHelper, crdDir, earliestVersionWithV1CRDs, chartUri, strictValidation)
 		})
 
 		It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
-			upgrade.AddSecondGatewayProxySeparateNamespaceTest(testHelper, crdDir, chartUri, strictValidation)
+			upgrades.AddSecondGatewayProxySeparateNamespaceTest(testHelper, crdDir, chartUri, strictValidation)
 		})
 	})
 
@@ -116,7 +116,7 @@ var _ = Describe("Kube2e: pinned version upgrade tests", func() {
 		})
 
 		It("sets validation webhook caBundle on install and upgrade", func() {
-			upgrade.UpdateValidationWebhookTests(ctx, crdDir, kubeClientset, testHelper, chartUri, false)
+			upgrades.UpdateValidationWebhookTests(ctx, crdDir, kubeClientset, testHelper, chartUri, false)
 		})
 
 		// Below are tests with different combinations of upgrades with failurePolicy=Ignore/Fail.
@@ -150,7 +150,7 @@ var _ = Describe("Kube2e: pinned version upgrade tests", func() {
 				if newFailurePolicy == admission_v1.Fail {
 					newStrictValue = true
 				}
-				upgrade.GlooToBranchVersion(testHelper, chartUri, crdDir, newStrictValue, []string{})
+				upgrades.GlooToBranchVersion(testHelper, chartUri, crdDir, newStrictValue, []string{})
 
 				By(fmt.Sprintf("should have updated to gateway.validation.failurePolicy=%v", newFailurePolicy))
 				webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
@@ -255,7 +255,7 @@ var _ = Describe("Kube2e: pinned version upgrade tests", func() {
 			// Apply the Settings CRD to ensure it is the most up to date version
 			// this ensures that any new fields that have been added are included in the CRD validation schemas
 			settingsCrdFilePath := filepath.Join(crdDir, "gloo.solo.io_v1_Settings.yaml")
-			upgrade.RunAndCleanCommand("kubectl", "apply", "-f", settingsCrdFilePath)
+			upgrades.RunAndCleanCommand("kubectl", "apply", "-f", settingsCrdFilePath)
 		})
 
 		It("works using kubectl apply", func() {
@@ -309,7 +309,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 	// construct helm args
 	var args = []string{"install", testHelper.HelmChartName}
 	if fromRelease != "" {
-		upgrade.RunAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
+		upgrades.RunAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
 			"https://storage.googleapis.com/solo-public-helm", "--force-update")
 		args = append(args, "gloo/gloo",
 			"--version", fmt.Sprintf("v%s", fromRelease))
@@ -320,12 +320,12 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 		"--create-namespace",
 		"--values", valueOverrideFile)
 	if strictValidation {
-		args = append(args, upgrade.StrictValidationArgs...)
+		args = append(args, upgrades.StrictValidationArgs...)
 	}
 
 	fmt.Printf("running helm with args: %v\n", args)
-	upgrade.RunAndCleanCommand("helm", args...)
+	upgrades.RunAndCleanCommand("helm", args...)
 
 	// Check that everything is OK
-	upgrade.CheckGlooOssHealthy(testHelper)
+	upgrades.CheckGlooOssHealthy(testHelper)
 }
