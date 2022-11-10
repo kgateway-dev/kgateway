@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 var (
@@ -50,7 +51,7 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 	upstreams := params.Snapshot.Upstreams
 
 	// keep track of clusters we've seen in case of multiple routes to same cluster
-	processedClusters := make(map[string]struct{})
+	processedClusters := sets.NewString()
 
 	// find all the route config that points to upstreams with tunneling
 	for _, rtConfig := range inRouteConfigurations {
@@ -97,8 +98,8 @@ func (p *plugin) GeneratedResources(params plugins.Params,
 					// update the old cluster to route to ourselves first
 					rtAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{Cluster: selfCluster}
 
-					// we only want to generate a new encapsulating cluster and internal listener if we have not done so already
-					if _, found := processedClusters[cluster]; found {
+					// we only want to generate a new encapsulating cluster and pipe to ourselves if we have not done so already
+					if processedClusters.Has(cluster) {
 						continue
 					}
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
