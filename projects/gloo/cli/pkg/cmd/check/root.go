@@ -314,7 +314,6 @@ func checkPods(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
-	podsScanned := false
 	pods, err := client.CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{
 		LabelSelector: opts.Top.Selector,
 	})
@@ -323,7 +322,6 @@ func checkPods(opts *options.Options) error {
 	}
 	var multiErr *multierror.Error
 	for _, pod := range pods.Items {
-		podsScanned = true
 		for _, condition := range pod.Status.Conditions {
 			var errorToPrint string
 			var message string
@@ -370,9 +368,10 @@ func checkPods(opts *options.Options) error {
 		printer.AppendStatus("pods", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printer.AppendStatus("pods", "OK")
-	if !podsScanned {
+	if len(pods.Items) == 0 {
 		printer.AppendMessage("Warning: The provided label selector (" + opts.Top.Selector + ") applies to no pods")
+	} else {
+		printer.AppendStatus("pods", "OK")
 	}
 	return nil
 }
