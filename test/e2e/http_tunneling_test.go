@@ -40,7 +40,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("tunneling", func() {
+var _ = FDescribe("tunneling", func() {
 
 	var (
 		ctx            context.Context
@@ -64,7 +64,9 @@ var _ = Describe("tunneling", func() {
 
 	checkVirtualService := func(testVs *gatewayv1.VirtualService) {
 		Eventually(func() (*gatewayv1.VirtualService, error) {
-			return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
+			var err error
+			vs, err = testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
+			return vs, err
 		}, "5s", "0.1s").ShouldNot(BeNil())
 	}
 
@@ -127,25 +129,7 @@ var _ = Describe("tunneling", func() {
 
 		// write a virtual service so we have a proxy to our test upstream
 		vs = getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-		vs.GetVirtualHost().Routes = append(vs.GetVirtualHost().Routes, &gatewayv1.Route{
-			Matchers: []*matchers.Matcher{
-				{
-					PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"},
-				},
-			},
-			Action: &gatewayv1.Route_RouteAction{
-				RouteAction: &gloov1.RouteAction{
-					Destination: &gloov1.RouteAction_Single{
-						Single: &gloov1.Destination{
-							DestinationType: &gloov1.Destination_Upstream{
-								Upstream: up.Metadata.Ref(),
-							},
-						},
-					},
-				},
-			},
-		})
-		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+		vs, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 		checkVirtualService(vs)
 	})
@@ -265,10 +249,36 @@ var _ = Describe("tunneling", func() {
 				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
 			})
 
-			It("should allow multiple routes to TLS upstream", func() {
-				// the request path here is [envoy] -- plaintext --> [local HTTP Connect proxy] -- encrypted --> TLS upstream
-				jsonStr := `{"value":"Hello, world!"}`
-				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
+			Context("with multiple routes to one upstream", func() {
+				JustBeforeEach(func() {
+					vs.GetVirtualHost().Routes = append(vs.GetVirtualHost().Routes, &gatewayv1.Route{
+						Matchers: []*matchers.Matcher{
+							{
+								PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"},
+							},
+						},
+						Action: &gatewayv1.Route_RouteAction{
+							RouteAction: &gloov1.RouteAction{
+								Destination: &gloov1.RouteAction_Single{
+									Single: &gloov1.Destination{
+										DestinationType: &gloov1.Destination_Upstream{
+											Upstream: up.Metadata.Ref(),
+										},
+									},
+								},
+							},
+						},
+					})
+					err := testClients.VirtualServiceClient.Delete(vs.GetMetadata().Namespace, vs.GetMetadata().Name, clients.DeleteOpts{})
+					vs, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
+					checkVirtualService(vs)
+				})
+				It("should allow multiple routes to TLS upstream", func() {
+					// the request path here is [envoy] -- plaintext --> [local HTTP Connect proxy] -- encrypted --> TLS upstream
+					jsonStr := `{"value":"Hello, world!"}`
+					expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
+				})
 			})
 		})
 
