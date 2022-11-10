@@ -710,7 +710,7 @@ docker-push-local-arm: docker docker-push
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker-build`
 # to be used for local testing.
-# docker-push is intended to be run by CI
+# docker-push-non-arm is intended to be run on CI only, where as docker-push-local is intended for local builds. Primarily used for arm support.
 .PHONY: docker-push
 docker-push: $(DOCKER_IMAGES)
 ifeq ($(CREATE_ASSETS), "true")
