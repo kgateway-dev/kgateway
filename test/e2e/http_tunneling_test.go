@@ -265,7 +265,7 @@ var _ = Describe("tunneling", func() {
 				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
 			})
 
-			FIt("should allow multiple routes to TLS upstream", func() {
+			It("should allow multiple routes to TLS upstream", func() {
 				// the request path here is [envoy] -- plaintext --> [local HTTP Connect proxy] -- encrypted --> TLS upstream
 				jsonStr := `{"value":"Hello, world!"}`
 				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
