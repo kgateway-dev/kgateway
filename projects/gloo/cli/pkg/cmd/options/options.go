@@ -46,8 +46,8 @@ type Top struct {
 	ErrorsOnly     bool
 	ConfigFilePath string
 	Consul         Consul   // use consul as config backend
-	Selector       string   // label selector for pod scanning
-	Namespaces     []string // namespaces to check
+	PodSelector       string   // label selector for pod scanning
+	ResourceNamespaces     []string // namespaces in which to check custom resources
 }
 
 type HelmInstall struct {
