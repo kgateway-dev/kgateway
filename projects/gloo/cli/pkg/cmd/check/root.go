@@ -87,8 +87,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	pflags := cmd.PersistentFlags()
 	flagutils.AddCheckOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
-	flagutils.AddPodSelectorFlag(pflags, &opts.Top.Selector)
-	flagutils.AddResourceNamespaceFlag(pflags, &opts.Top.Namespaces)
+	flagutils.AddPodSelectorFlag(pflags, &opts.Top.PodSelector)
+	flagutils.AddResourceNamespaceFlag(pflags, &opts.Top.ResourceNamespaces)
 	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
@@ -130,9 +130,9 @@ func CheckResources(opts *options.Options) error {
 	}
 
 	// Intersect resource-namespaces flag args and watched namespaces
-	if len(opts.Top.Namespaces) != 0 {
+	if len(opts.Top.ResourceNamespaces) != 0 {
 		newNamespaces := []string{}
-		for _, flaggedNamespace := range opts.Top.Namespaces {
+		for _, flaggedNamespace := range opts.Top.ResourceNamespaces {
 			for _, watchedNamespace := range namespaces {
 				if flaggedNamespace == watchedNamespace {
 					newNamespaces = append(newNamespaces, watchedNamespace)
@@ -315,7 +315,7 @@ func checkPods(opts *options.Options) error {
 		return err
 	}
 	pods, err := client.CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{
-		LabelSelector: opts.Top.Selector,
+		LabelSelector: opts.Top.PodSelector,
 	})
 	if err != nil {
 		return err
@@ -369,7 +369,7 @@ func checkPods(opts *options.Options) error {
 		return multiErr
 	}
 	if len(pods.Items) == 0 {
-		printer.AppendMessage("Warning: The provided label selector (" + opts.Top.Selector + ") applies to no pods")
+		printer.AppendMessage("Warning: The provided label selector (" + opts.Top.PodSelector + ") applies to no pods")
 	} else {
 		printer.AppendStatus("pods", "OK")
 	}
