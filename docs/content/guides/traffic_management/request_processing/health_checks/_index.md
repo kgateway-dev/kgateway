@@ -64,7 +64,7 @@ spec:
 {{% /tab %}} 
    {{< /tabs >}}
 
-3. To test the health check, drain the Envoy connections by sending an `HTTP POST` to the Envoy admin port on `<envoy-ip>:<admin-addr>/healthcheck/fail`. This port defaults to `19000`.
+3. To test the health check, drain the Envoy connections by sending an `HTTP POST` request to the Envoy admin port on `<envoy-ip>:<admin-addr>/healthcheck/fail`. This port defaults to `19000`.
 4. Send a request to the health check path. Because Envoy is in a draining state, the `503 Service Unavailable` message is returned.
    ```shell
    curl $(glooctl proxy url)/<path>
