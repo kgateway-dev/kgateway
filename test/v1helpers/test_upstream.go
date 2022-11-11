@@ -143,13 +143,6 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
 		var rr ReceivedRequest
 		rr.Method = r.Method
-		if r.TLS != nil {
-			fmt.Fprintf(GinkgoWriter, "handshake complete %v\n", r.TLS.HandshakeComplete)
-			fmt.Fprintf(GinkgoWriter, "tls version %v\n", r.TLS.Version)
-			fmt.Fprintf(GinkgoWriter, "cipher suite %v\n", r.TLS.CipherSuite)
-			fmt.Fprintf(GinkgoWriter, "negotiated protocol %v\n", r.TLS.NegotiatedProtocol)
-			fmt.Fprintf(GinkgoWriter, "peer certificates %v\n", r.TLS.PeerCertificates)
-		}
 
 		var body []byte
 		if r.Body != nil {
@@ -199,12 +192,12 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 		h := &http.Server{Handler: mux}
 		if serveTls {
 			fmt.Fprintln(GinkgoWriter, "test server serving tls")
-			certF, keyF := helpers.Certificate, helpers.PrivateKey
+			certGenFunc, keyGenFunc := helpers.Certificate, helpers.PrivateKey
 			if serveMtls {
 				fmt.Fprintln(GinkgoWriter, "test server serving mtls")
-				certF, keyF = helpers.MtlsCertificate, helpers.MtlsPrivateKey
+				certGenFunc, keyGenFunc = helpers.MtlsCertificate, helpers.MtlsPrivateKey
 			}
-			cert, key := certF(), keyF()
+			cert, key := certGenFunc(), keyGenFunc()
 			certs, err := tls.X509KeyPair([]byte(cert), []byte(key))
 			if err != nil {
 				Expect(err).NotTo(HaveOccurred())

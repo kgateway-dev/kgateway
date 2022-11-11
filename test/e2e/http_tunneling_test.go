@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -229,7 +228,6 @@ var _ = Describe("tunneling", func() {
 				up.HttpConnectSslConfig = sslCfg
 			}
 			_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			log.Println(up.String())
 			Expect(err).NotTo(HaveOccurred())
 
 			checkProxy()

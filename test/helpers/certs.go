@@ -63,7 +63,6 @@ type Params struct {
 	RsaBits          int                // Size of RSA key to generate. Ignored if EcdsaCurve is set
 	EcdsaCurve       string             // ECDSA curve to use to generate a key. Valid values are P224, P256 (recommended), P384, P521
 	AdditionalUsages []x509.ExtKeyUsage // Usages to define in addition to default x509.ExtKeyUsageServerAuth
-	SetGlobal        bool               // Whether to set the global cert and key for this helper package
 }
 
 func GetCerts(params Params) (string, string) {
@@ -155,13 +154,6 @@ func GetCerts(params Params) (string, string) {
 	err = pem.Encode(&keyOut, pemBlockForKey(priv))
 	Expect(err).NotTo(HaveOccurred())
 
-	if params.SetGlobal {
-		// trigger the sync.Once when called with SetGlobal so we don't overwrite
-		// with calls to Certificate() and PrivateKey()
-		getCerts.Do(func() {})
-		cert = certOut.String()
-		privKey = keyOut.String()
-	}
 	return certOut.String(), keyOut.String()
 }
 
