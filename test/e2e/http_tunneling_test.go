@@ -69,6 +69,7 @@ var _ = Describe("tunneling", func() {
 
 	BeforeEach(func() {
 		tlsUpstream = false
+		mtlsUpstream = false
 		tlsHttpConnect = false
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
