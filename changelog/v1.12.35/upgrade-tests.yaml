@@ -1,5 +1,5 @@
 changelog:
   - type: NON_USER_FACING
-    description: Adding in upgrade tests that will run on each PR
+    description: Adding in upgrade tests that will run on each PR + combine some of the existing helm tests
     issueLink: https://github.com/solo-io/solo-projects/issues/4189
     resolvesIssue: false
