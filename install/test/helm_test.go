@@ -337,6 +337,120 @@ var _ = Describe("Helm Test", func() {
 						"What happened to the clusteringress-proxy deployment?", resourcesTested)
 				})
 
+				Context("should be able to set custom labels and annotations on jobs", func() {
+					// creates a template from the specified valuesArgs, then confirms the jobs with the specified names
+					// have the expected labels and annotations
+					testJobLabelsAndAnnotations := func(valuesArgs []string, jobNames []string, expectedLabels map[string]string, expectedAnnotations map[string]string) {
+						// create the chart with the specified values args
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: valuesArgs,
+						})
+
+						// convert the job names we expect to be affected into a map, for easy lookup
+						expectedNames := map[string]bool{}
+						for _, name := range jobNames {
+							expectedNames[name] = true
+						}
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							// get jobs with the expected names
+							return resource.GetKind() == "Job" && expectedNames[resource.GetName()]
+						}).ExpectAll(func(job *unstructured.Unstructured) {
+							// convert the job to a structured object
+							jobObject, err := kuberesource.ConvertUnstructured(job)
+							ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Job %+v should be able to convert from unstructured", job))
+							structuredJob, ok := jobObject.(*jobsv1.Job)
+							ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Job %+v should be able to cast to a structured job", job))
+
+							// check the labels
+							jobLabels := structuredJob.Spec.Template.Labels
+							var foundTestValue = false
+							for label, expectedValue := range expectedLabels {
+								ExpectWithOffset(1, jobLabels[label]).To(Equal(expectedValue), fmt.Sprintf("Job %s expected test label to have"+
+									" value %s. Found value %s", job.GetName(), expectedValue, jobLabels[label]))
+								foundTestValue = true
+							}
+							ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in job %s", job.GetName()))
+
+							// check the annotations
+							jobAnnotations := structuredJob.Spec.Template.Annotations
+							foundTestValue = false
+							for label, expectedValue := range expectedAnnotations {
+								ExpectWithOffset(1, jobAnnotations[label]).To(Equal(expectedValue), fmt.Sprintf("Job %s expected test annotation to have"+
+									" value %s. Found value %s", job.GetName(), expectedValue, jobAnnotations[label]))
+								foundTestValue = true
+							}
+							ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test annotation 'foo2' in job %s", job.GetName()))
+						})
+					}
+
+					It("should be able to set custom labels and annotations on certGenJob", func() {
+						values := []string{
+							"gateway.certGenJob.extraPodLabels.foo=bar",
+							"gateway.certGenJob.extraPodAnnotations.foo2=baz",
+						}
+						jobNames := []string{
+							"gloo-mtls-certgen-cronjob",
+							"gloo-mtls-certgen",
+							"gateway-certgen",
+						}
+
+						expectedLabels := map[string]string{
+							"foo": "bar",
+						}
+
+						expectedAnnotations := map[string]string{
+							"foo2": "baz",
+						}
+
+						testJobLabelsAndAnnotations(values, jobNames, expectedLabels, expectedAnnotations)
+
+					})
+
+					It("should be able to set custom labels and annotations on cleanupJob", func() {
+						values := []string{
+							"gateway.cleanupJob.extraPodLabels.foo=bar",
+							"gateway.cleanupJob.extraPodAnnotations.foo2=baz",
+						}
+
+						jobNames := []string{
+							"gloo-resource-cleanup",
+						}
+
+						expectedLabels := map[string]string{
+							"foo": "bar",
+						}
+
+						expectedAnnotations := map[string]string{
+							"foo2": "baz",
+						}
+
+						testJobLabelsAndAnnotations(values, jobNames, expectedLabels, expectedAnnotations)
+					})
+
+					It("should be able to set custom labels and annotations on rolloutJob", func() {
+						values := []string{
+							"gateway.rolloutJob.extraPodLabels.foo=bar",
+							"gateway.rolloutJob.extraPodAnnotations.foo2=baz",
+						}
+
+						jobNames := []string{
+							"gloo-resource-rollout",
+							"gloo-resource-migration",
+						}
+
+						expectedLabels := map[string]string{
+							"foo": "bar",
+						}
+
+						expectedAnnotations := map[string]string{
+							"foo2": "baz",
+						}
+
+						testJobLabelsAndAnnotations(values, jobNames, expectedLabels, expectedAnnotations)
+					})
+				})
+
 				It("should set route prefix_rewrite in clusteringress-envoy-config from global.glooStats", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
