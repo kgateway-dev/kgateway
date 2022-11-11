@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: combine some of the existing helm tests
+    issueLink: https://github.com/solo-io/solo-projects/issues/4246
+    resolvesIssue: false
