@@ -22,7 +22,7 @@ glooctl check [flags]
   -n, --namespace string                  namespace for reading or writing resources (default "gloo-system")
   -o, --output OutputType                 output format: (json, table) (default table)
   -p, --pod-selector string               Label selector for pod scanning (default "gloo")
-  -r, --resource-namespaces stringArray   Namespaces to scan resources in
+  -r, --resource-namespaces stringArray   Namespaces in which to scan gloo custom resources. If not provided, all watched namespaces (as specified in settings) will be scanned.n
 ```
 
 ### Options inherited from parent commands

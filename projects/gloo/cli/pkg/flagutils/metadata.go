@@ -27,7 +27,7 @@ func AddPodSelectorFlag(set *pflag.FlagSet, strptr *string) {
 }
 
 func AddResourceNamespaceFlag(set *pflag.FlagSet, strptr *[]string) {
-	set.StringArrayVarP(strptr, "resource-namespaces", "r", []string{}, "Namespaces to scan resources in")
+	set.StringArrayVarP(strptr, "resource-namespaces", "r", []string{}, "Namespaces in which to scan gloo custom resources. If not provided, all watched namespaces (as specified in settings) will be scanned.n")
 }
 
 func AddExcludeCheckFlag(set *pflag.FlagSet, strarrptr *[]string) {
