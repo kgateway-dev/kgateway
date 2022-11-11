@@ -7,6 +7,7 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -137,6 +138,44 @@ var _ = Describe("Plugin", func() {
 		Expect(typedTcpConfig.GetCluster()).To(Equal(originalCluster), "should forward to original destination")
 	})
 
+	Context("UpstreamTlsContext", func() {
+		BeforeEach(func() {
+			// add an UpstreamTlsContext
+			cfg, err := utils.MessageToAny(&envoyauth.UpstreamTlsContext{
+				CommonTlsContext: &envoyauth.CommonTlsContext{},
+				Sni:              httpProxyHostname,
+			})
+			Expect(err).ToNot(HaveOccurred())
+			inClusters[0].TransportSocket = &envoy_config_core_v3.TransportSocket{
+				Name: "",
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+					TypedConfig: cfg,
+				},
+			}
+
+			inRoute := inRouteConfigurations[0].VirtualHosts[0].Routes[0]
+
+			// update route input with duplicate route, the duplicate points to the same upstream as existing
+			dupRoute := proto.Clone(inRoute).(*envoy_config_route_v3.Route)
+			dupRoute.Name = dupRoute.Name + "-duplicate"
+			dupRoute.Action = &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{
+					ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
+						Cluster: translator.UpstreamToClusterName(us.Metadata.Ref()),
+					},
+				},
+			}
+			inRouteConfigurations[0].VirtualHosts[0].Routes = append(inRouteConfigurations[0].VirtualHosts[0].Routes, dupRoute)
+		})
+
+		It("should allow multiple routes to same upstream", func() {
+			p := tunneling.NewPlugin()
+			generatedClusters, _, _, _, err := p.GeneratedResources(params, inClusters, nil, inRouteConfigurations, nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(generatedClusters).To(HaveLen(1), "should generate a single cluster for the upstream")
+			Expect(generatedClusters[0].GetTransportSocket()).ToNot(BeNil())
+		})
+	})
 	Context("multiple routes and clusters", func() {
 
 		BeforeEach(func() {
