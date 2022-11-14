@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -49,7 +48,6 @@ var _ = Describe("tunneling", func() {
 		up             *gloov1.Upstream
 		tuPort         uint32
 		tlsUpstream    bool
-		tlsHttpConnect bool
 		writeNamespace = defaults.GlooSystem
 	)
 
@@ -68,7 +66,6 @@ var _ = Describe("tunneling", func() {
 
 	BeforeEach(func() {
 		tlsUpstream = false
-		tlsHttpConnect = false
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -100,7 +97,7 @@ var _ = Describe("tunneling", func() {
 
 	JustBeforeEach(func() {
 		// start http proxy and setup upstream that points to it
-		port := startHttpProxy(ctx, tlsHttpConnect)
+		port := startHttpProxy(ctx)
 
 		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsUpstream)
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
@@ -232,7 +229,7 @@ var _ = Describe("tunneling", func() {
 	})
 })
 
-func startHttpProxy(ctx context.Context, useTLS bool) int {
+func startHttpProxy(ctx context.Context) int {
 	listener, err := net.Listen("tcp", ":0")
 	Expect(err).ToNot(HaveOccurred())
 
@@ -245,28 +242,13 @@ func startHttpProxy(ctx context.Context, useTLS bool) int {
 
 	fmt.Fprintln(GinkgoWriter, "go proxy addr", addr)
 
-	go func(useTLS bool) {
+	go func() {
 		defer GinkgoRecover()
 		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy)}
-		if useTLS {
-			cert := []byte(gloohelpers.Certificate())
-			key := []byte(gloohelpers.PrivateKey())
-			cer, err := tls.X509KeyPair(cert, key)
-			Expect(err).NotTo(HaveOccurred())
-
-			tlsCfg := &tls.Config{
-				GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
-					return &cer, nil
-				},
-			}
-			tlsListener := tls.NewListener(listener, tlsCfg)
-			server.Serve(tlsListener)
-		} else {
-			server.Serve(listener)
-		}
+		server.Serve(listener)
 		<-ctx.Done()
 		server.Close()
-	}(useTLS)
+	}()
 
 	return port
 }
