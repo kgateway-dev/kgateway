@@ -1,15 +1,23 @@
 package e2e_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
+	"syscall"
 	"time"
+
+	"github.com/onsi/gomega/types"
 
 	"github.com/solo-io/gloo/test/v1helpers"
 
@@ -34,14 +42,14 @@ import (
 var _ = Describe("tunneling", func() {
 
 	var (
-		ctx           context.Context
-		cancel        context.CancelFunc
-		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
-		up            *gloov1.Upstream
-		tuPort        uint32
-		sslPort       uint32
-
+		ctx            context.Context
+		cancel         context.CancelFunc
+		testClients    services.TestClients
+		envoyInstance  *services.EnvoyInstance
+		up             *gloov1.Upstream
+		tuPort         uint32
+		tlsUpstream    bool
+		tlsHttpConnect bool
 		writeNamespace = defaults.GlooSystem
 	)
 
@@ -59,6 +67,8 @@ var _ = Describe("tunneling", func() {
 	}
 
 	BeforeEach(func() {
+		tlsUpstream = false
+		tlsHttpConnect = false
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -86,11 +96,13 @@ var _ = Describe("tunneling", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
+	})
 
+	JustBeforeEach(func() {
 		// start http proxy and setup upstream that points to it
-		port := startHttpProxy(ctx)
+		port := startHttpProxy(ctx, tlsHttpConnect)
 
-		tu := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsUpstream)
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
 
 		up = &gloov1.Upstream{
@@ -110,19 +122,11 @@ var _ = Describe("tunneling", func() {
 			},
 			HttpProxyHostname: &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tuPort)}, // enable HTTP tunneling,
 		}
-	})
-
-	JustBeforeEach(func() {
-
-		_, err := testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
 
 		// write a virtual service so we have a proxy to our test upstream
 		testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-		_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+		_, err := testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
-
-		checkProxy()
 		checkVirtualService(testVs)
 	})
 
@@ -131,49 +135,54 @@ var _ = Describe("tunneling", func() {
 		cancel()
 	})
 
-	testRequest := func(jsonStr string) string {
-		By("Make request")
-		responseBody := ""
-		EventuallyWithOffset(1, func() error {
+	expectResponseBodyOnRequest := func(requestJsonBody string, expectedResponseStatusCode int, expectedResponseBodyMatcher types.GomegaMatcher) {
+		EventuallyWithOffset(1, func() (string, error) {
 			var client http.Client
 			scheme := "http"
-			var json = []byte(jsonStr)
+			var json = []byte(requestJsonBody)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
 			if err != nil {
-				return err
+				return "", err
 			}
 			res, err := client.Do(req)
 			if err != nil {
-				return err
+				return "", err
 			}
-			if res.StatusCode != http.StatusOK {
-				return fmt.Errorf("not ok")
+			if res.StatusCode != expectedResponseStatusCode {
+				return "", fmt.Errorf("not ok")
 			}
 			p := new(bytes.Buffer)
 			if _, err := io.Copy(p, res.Body); err != nil {
-				return err
+				return "", err
 			}
 			defer res.Body.Close()
-			responseBody = p.String()
-			return nil
-		}, "10s", ".1s").Should(BeNil())
-		return responseBody
+			return p.String(), nil
+		}, "10s", "0.5s").Should(expectedResponseBodyMatcher)
 	}
 
-	It("should proxy http", func() {
-		// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test upstream
-		// and back. The HTTP proxy is sending unencrypted HTTP bytes over
-		// TCP to the test upstream (an echo server)
-		jsonStr := `{"value":"Hello, world!"}`
-		testReq := testRequest(jsonStr)
-		Expect(testReq).Should(ContainSubstring(jsonStr))
+	Context("plaintext", func() {
+
+		JustBeforeEach(func() {
+			_, err := testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			checkProxy()
+		})
+
+		It("should proxy http", func() {
+			// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test upstream
+			// and back. The HTTP proxy is sending unencrypted HTTP bytes over
+			// TCP to the test upstream (an echo server)
+			jsonStr := `{"value":"Hello, world!"}`
+			expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
+		})
 	})
 
-	Context("with SSL", func() {
+	Context("with TLS", func() {
 
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 
 			secret := &gloov1.Secret{
 				Metadata: &core.Metadata{
@@ -192,29 +201,38 @@ var _ = Describe("tunneling", func() {
 			_, err := testClients.SecretClient.Write(secret, clients.WriteOpts{OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 
-			up.SslConfig = &gloov1.UpstreamSslConfig{
+			sslCfg := &gloov1.UpstreamSslConfig{
 				SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{Name: "secret", Namespace: "default"},
 				},
 			}
-			sslPort = v1helpers.StartSslProxy(ctx, tuPort)
-			up.HttpProxyHostname = &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), sslPort)} // enable HTTP tunneling,
+
+			if tlsUpstream {
+				up.SslConfig = sslCfg
+			}
+			up.HttpProxyHostname = &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tuPort)} // enable HTTP tunneling,
+			_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			checkProxy()
 		})
 
-		It("should proxy HTTPS", func() {
-			// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> local SSL proxy -> test upstream
-			// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
-			// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
-			jsonStr := `{"value":"Hello, world!"}`
-			testReq := testRequest(jsonStr)
-			Expect(testReq).Should(ContainSubstring(jsonStr))
+		Context("with back TLS", func() {
+
+			BeforeEach(func() {
+				tlsUpstream = true
+			})
+
+			It("should proxy encrypted bytes over plaintext HTTP Connect", func() {
+				// the request path here is [envoy] -- plaintext --> [local HTTP Connect proxy] -- encrypted --> TLS upstream
+				jsonStr := `{"value":"Hello, world!"}`
+				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
+			})
 		})
 	})
-
 })
 
-func startHttpProxy(ctx context.Context) int {
-
+func startHttpProxy(ctx context.Context, useTLS bool) int {
 	listener, err := net.Listen("tcp", ":0")
 	Expect(err).ToNot(HaveOccurred())
 
@@ -227,15 +245,38 @@ func startHttpProxy(ctx context.Context) int {
 
 	fmt.Fprintln(GinkgoWriter, "go proxy addr", addr)
 
-	go func() {
+	go func(useTLS bool) {
 		defer GinkgoRecover()
 		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy)}
-		server.Serve(listener)
+		if useTLS {
+			cert := []byte(gloohelpers.Certificate())
+			key := []byte(gloohelpers.PrivateKey())
+			cer, err := tls.X509KeyPair(cert, key)
+			Expect(err).NotTo(HaveOccurred())
+
+			tlsCfg := &tls.Config{
+				GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
+					return &cer, nil
+				},
+			}
+			tlsListener := tls.NewListener(listener, tlsCfg)
+			server.Serve(tlsListener)
+		} else {
+			server.Serve(listener)
+		}
 		<-ctx.Done()
 		server.Close()
-	}()
+	}(useTLS)
 
 	return port
+}
+
+func isEof(r *bufio.Reader) bool {
+	_, err := r.Peek(1)
+	if errors.Is(err, io.EOF) {
+		return true
+	}
+	return false
 }
 
 func connectProxy(w http.ResponseWriter, r *http.Request) {
@@ -244,16 +285,33 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.TLS != nil {
+		fmt.Fprintf(GinkgoWriter, "handshake complete %v\n", r.TLS.HandshakeComplete)
+		fmt.Fprintf(GinkgoWriter, "tls version %v\n", r.TLS.Version)
+		fmt.Fprintf(GinkgoWriter, "cipher suite %v\n", r.TLS.CipherSuite)
+		fmt.Fprintf(GinkgoWriter, "negotiated protocol %v\n", r.TLS.NegotiatedProtocol)
+	}
+
+	if proxyAuth := r.Header.Get("Proxy-Authorization"); proxyAuth != "" {
+		fmt.Fprintf(GinkgoWriter, "proxy authorization: %s\n", proxyAuth)
+		if username, password := parseBasicAuth(proxyAuth); username != "test" || password != "secret" {
+			w.WriteHeader(http.StatusProxyAuthRequired)
+			return
+		}
+	}
+
 	hij, ok := w.(http.Hijacker)
 	if !ok {
 		Fail("no hijacker")
 	}
 	host := r.URL.Host
+
 	targetConn, err := net.Dial("tcp", host)
 	if err != nil {
 		http.Error(w, "can't connect", 500)
 		return
 	}
+	defer targetConn.Close()
 
 	conn, buf, err := hij.Hijack()
 	if err != nil {
@@ -262,22 +320,78 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	fmt.Fprintf(GinkgoWriter, "Accepting CONNECT to %s\n", host)
+	// note to devs! will only work with HTTP 1.1 request from envoy!
 	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 
-	// no just copy:
+	// now just copy:
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	go func() {
-		io.Copy(buf, targetConn)
-		buf.Flush()
+		defer GinkgoRecover()
+		for {
+			// read bytes from buf.Reader until EOF
+			bts := []byte{1}
+			_, err := targetConn.Read(bts)
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			Expect(err).NotTo(HaveOccurred())
+			_, err = conn.Write(bts)
+			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, syscall.EPIPE) {
+				fmt.Fprintf(GinkgoWriter, "error writing from upstream to envoy %v\n", err)
+				Fail("error writing from upstream to envoy")
+			}
+		}
+		err = buf.Flush()
+		Expect(err).NotTo(HaveOccurred())
 		wg.Done()
 	}()
 	go func() {
-		io.Copy(targetConn, buf)
+		defer GinkgoRecover()
+		for !isEof(buf.Reader) {
+			// read bytes from buf.Reader until EOF
+			bts := []byte{1}
+			_, err := buf.Read(bts)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = targetConn.Write(bts)
+			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, syscall.EPIPE) {
+				fmt.Fprintf(GinkgoWriter, "error writing from envoy to upstream %v\n", err)
+				Fail("error writing from envoy to upstream")
+			}
+		}
 		wg.Done()
 	}()
 
 	wg.Wait()
 	fmt.Fprintf(GinkgoWriter, "done proxying\n")
+}
+
+func parseBasicAuth(auth string) (string, string) {
+	const basicPrefix = "Basic "
+	if !strings.HasPrefix(auth, basicPrefix) {
+		return "", ""
+	}
+	decodedAuth, err := base64.StdEncoding.DecodeString(auth[len(basicPrefix):])
+	if err != nil {
+		return "", ""
+	}
+	decodedAuthString := string(decodedAuth)
+	username, password, ok := strCut(decodedAuthString, ":")
+	if !ok {
+		return "", ""
+	}
+	return username, password
+}
+
+// COPIED FROM strings.Cut ADDED IN GO 1.18
+// Cut slices s around the first instance of sep,
+// returning the text before and after sep.
+// The found result reports whether sep appears in s.
+// If sep does not appear in s, cut returns s, "", false.
+func strCut(s, sep string) (before, after string, found bool) {
+	if i := strings.Index(s, sep); i >= 0 {
+		return s[:i], s[i+len(sep):], true
+	}
+	return s, "", false
 }
