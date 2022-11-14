@@ -713,7 +713,6 @@ docker-push-local-arm: docker docker-push
 # docker-push-non-arm is intended to be run on CI only, where as docker-push-local is intended for local builds. Primarily used for arm support.
 .PHONY: docker-push
 docker-push: $(DOCKER_IMAGES)
-ifeq ($(CREATE_ASSETS), "true")
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
@@ -723,7 +722,6 @@ ifeq ($(CREATE_ASSETS), "true")
 	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
-endif
 
 .PHONY: docker-push-extended
 docker-push-extended:
