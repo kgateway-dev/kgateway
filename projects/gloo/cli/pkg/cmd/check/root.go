@@ -87,6 +87,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	pflags := cmd.PersistentFlags()
 	flagutils.AddCheckOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
+	flagutils.AddPodSelectorFlag(pflags, &opts.Top.PodSelector)
+	flagutils.AddResourceNamespaceFlag(pflags, &opts.Top.ResourceNamespaces)
 	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
@@ -125,6 +127,23 @@ func CheckResources(opts *options.Options) error {
 	namespaces, err := getNamespaces(opts.Top.Ctx, settings)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
+	}
+
+	// Intersect resource-namespaces flag args and watched namespaces
+	if len(opts.Top.ResourceNamespaces) != 0 {
+		newNamespaces := []string{}
+		for _, flaggedNamespace := range opts.Top.ResourceNamespaces {
+			for _, watchedNamespace := range namespaces {
+				if flaggedNamespace == watchedNamespace {
+					newNamespaces = append(newNamespaces, watchedNamespace)
+				}
+			}
+		}
+		namespaces = newNamespaces
+		if len(newNamespaces) == 0 {
+			multiErr = multierror.Append(multiErr, eris.New("No namespaces specified are currently being watched (defaulting to '"+opts.Metadata.GetNamespace()+"' namespace)"))
+			namespaces = []string{opts.Metadata.GetNamespace()}
+		}
 	}
 
 	var knownUpstreams []string
@@ -295,7 +314,9 @@ func checkPods(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
-	pods, err := client.CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{})
+	pods, err := client.CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{
+		LabelSelector: opts.Top.PodSelector,
+	})
 	if err != nil {
 		return err
 	}
@@ -347,7 +368,11 @@ func checkPods(opts *options.Options) error {
 		printer.AppendStatus("pods", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printer.AppendStatus("pods", "OK")
+	if len(pods.Items) == 0 {
+		printer.AppendMessage("Warning: The provided label selector (" + opts.Top.PodSelector + ") applies to no pods")
+	} else {
+		printer.AppendStatus("pods", "OK")
+	}
 	return nil
 }
 

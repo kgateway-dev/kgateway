@@ -22,6 +22,14 @@ func AddNamespaceFlag(set *pflag.FlagSet, strptr *string) {
 	set.StringVarP(strptr, "namespace", "n", DefaultNamespace, "namespace for reading or writing resources")
 }
 
+func AddPodSelectorFlag(set *pflag.FlagSet, strptr *string) {
+	set.StringVarP(strptr, "pod-selector", "p", "gloo", "Label selector for pod scanning")
+}
+
+func AddResourceNamespaceFlag(set *pflag.FlagSet, strptr *[]string) {
+	set.StringArrayVarP(strptr, "resource-namespaces", "r", []string{}, "Namespaces in which to scan gloo custom resources. If not provided, all watched namespaces (as specified in settings) will be scanned.")
+}
+
 func AddExcludeCheckFlag(set *pflag.FlagSet, strarrptr *[]string) {
 	set.StringSliceVarP(strarrptr, "exclude", "x", []string{}, "check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, secrets, virtual-services, gateways, proxies, xds-metrics)")
 }

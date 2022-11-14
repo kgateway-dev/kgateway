@@ -71,7 +71,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -192,8 +192,16 @@ var _ = Describe("Root", func() {
 			Expect(output).To(ContainSubstring("namespaces \"gloo-system\" not found"))
 
 			output, _ = testutils.GlooctlOut("check -x xds-metrics -n my-namespace")
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("No problems detected."))
 
+			output, _ = testutils.GlooctlOut("check -x xds-metrics -n my-namespace -p not-gloo")
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (not-gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("No problems detected."))
+
+			output, _ = testutils.GlooctlOut("check -x xds-metrics -n my-namespace -r not-gloo-system")
+			Expect(output).To(ContainSubstring("1 error occurred:"))
+			Expect(output).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'my-namespace' namespace)"))
 		})
 	})
 
@@ -232,7 +240,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).NotTo(ContainSubstring("Checking deployments..."))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -264,7 +272,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).NotTo(ContainSubstring("Checking upstreams..."))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -280,7 +288,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).NotTo(ContainSubstring("Checking upstream groups..."))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -296,7 +304,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).NotTo(ContainSubstring("Checking auth configs..."))
@@ -312,7 +320,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -328,7 +336,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -344,7 +352,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -360,7 +368,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -376,7 +384,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
