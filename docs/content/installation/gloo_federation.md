@@ -48,11 +48,8 @@ helm repo add gloo-fed https://storage.googleapis.com/gloo-fed-helm
 # Update your repos 
 helm repo update
 
-# Create the gloo-system namespace
-kubectl create namespace gloo-system
-
 # Install using helm
-helm install -n gloo-system gloo-fed gloo-fed/gloo-fed --set license_key=<LICENSE_KEY>
+helm install -n gloo-system --create-namespace gloo-fed gloo-fed/gloo-fed --set license_key=<LICENSE_KEY>
 ```
 
 Make sure to change the placeholder `<LICENSE_KEY>` to the license key you have procured for Gloo Edge Federation.
