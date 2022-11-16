@@ -13,8 +13,7 @@ option (extproto.equal_all) = true;
 
 
 
-// LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream 
-// endpoints.
+// LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream endpoints.
 message LoadBalancerConfig {
     // Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts
     // reaches this percentage, envoy disregards health information.
@@ -53,7 +52,7 @@ message LoadBalancerConfig {
     }
 
     oneof type {
-        // Use round robin for load balancing.
+        // Use round robin for load balancing. Round robin is the default load balancing method.
         RoundRobin round_robin = 3;
         // Use least request for load balancing.
         LeastRequest least_request = 4;
