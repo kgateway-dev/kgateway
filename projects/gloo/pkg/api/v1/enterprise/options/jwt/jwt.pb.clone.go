@@ -15,6 +15,8 @@ import (
 
 	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
 
+	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_jwt_authn_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/jwt_authn/v3"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -160,6 +162,12 @@ func (m *Provider) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	if h, ok := interface{}(m.GetClockSkewSeconds()).(clone.Cloner); ok {
+		target.ClockSkewSeconds = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.ClockSkewSeconds = proto.Clone(m.GetClockSkewSeconds()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
 	return target
