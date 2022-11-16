@@ -13,7 +13,7 @@ option (extproto.equal_all) = true;
 
 
 
-// LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream endpoints.
+// LoadBalancerConfig is the settings for the load balancer used to send requests to the Upstream endpoints.
 message LoadBalancerConfig {
     // Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts
     // reaches this percentage, envoy disregards health information.

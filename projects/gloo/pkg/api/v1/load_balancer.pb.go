@@ -25,7 +25,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream endpoints.
+// LoadBalancerConfig is the settings for the load balancer used to send requests to the Upstream endpoints.
 type LoadBalancerConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -32,7 +32,7 @@ weight: 5
 ### LoadBalancerConfig
 
  
-LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream endpoints.
+LoadBalancerConfig is the settings for the load balancer used to send requests to the Upstream endpoints.
 
 ```yaml
 "healthyPanicThreshold": .google.protobuf.DoubleValue

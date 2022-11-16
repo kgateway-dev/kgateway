@@ -61,7 +61,7 @@ message Upstream {
     // will be used.
     CircuitBreakerConfig circuit_breakers = 5;
 
-    // Settings for the load balancer that sends request to the Upstream. The load balancing method is set to round robin by default.
+    // Settings for the load balancer that sends requests to the Upstream. The load balancing method is set to round robin by default.
     LoadBalancerConfig load_balancer_config = 6;
 
     repeated .solo.io.envoy.api.v2.core.HealthCheck health_checks = 8;
