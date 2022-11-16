@@ -1,0 +1,26 @@
+name: Nightly
+on:
+  #cron
+jobs:
+  prepare_env:
+    name: Prepare Environment
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Cancel Previous Actions
+      uses: styfle/cancel-workflow-action@0.4.1
+      with:
+        access_token: ${{ github.token }}
+  regression_tests:
+    name: k8s regression tests
+    needs: prepare_env
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # knative support has been deprecated: https://github.com/solo-io/gloo/issues/5707
+        # We have removed it from our CI regression tests
+        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
+        xds-relay: [ 'false' ]
+        include:
+          - kube-e2e-test-type: 'gateway'
+            xds-relay: 'true'

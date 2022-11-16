@@ -54,16 +54,24 @@ var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 	ctx, cancel = context.WithCancel(context.Background())
-
-	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-		defaults.RootDir = filepath.Join(cwd, "../../..")
-		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = namespace
-		defaults.Verbose = true
-		return defaults
-	})
-	Expect(err).NotTo(HaveOccurred())
-
+	if version := os.Getenv("RELEASED_VERSION"); version != "" {
+		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+			defaults.InstallNamespace = namespace
+			defaults.ReleasedVersion = os.Getenv(version)
+			defaults.Verbose = true
+			return defaults
+		})
+		Expect(err).NotTo(HaveOccurred())
+	} else {
+		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.HelmChartName = "gloo"
+			defaults.InstallNamespace = namespace
+			defaults.Verbose = true
+			return defaults
+		})
+		Expect(err).NotTo(HaveOccurred())
+	}
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
 	// Define helm overrides
