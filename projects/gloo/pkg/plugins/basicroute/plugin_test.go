@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
@@ -292,8 +293,7 @@ var _ = Describe("max stream duration", func() {
 	})
 })
 
-var _ = Describe("retries", func() {
-
+var _ = Describe("retries empty backoff", func() {
 	var (
 		retryPolicy         *retries.RetryPolicy
 		expectedRetryPolicy *envoy_config_route_v3.RetryPolicy
@@ -346,6 +346,125 @@ var _ = Describe("retries", func() {
 	})
 })
 
+var _ = Describe("retries with base interval", func() {
+	var (
+		retryPolicy         *retries.RetryPolicy
+		expectedRetryPolicy *envoy_config_route_v3.RetryPolicy
+	)
+
+	BeforeEach(func() {
+		t := prototime.DurationToProto(time.Minute)
+		retryPolicy = &retries.RetryPolicy{
+			RetryOn:       "if at first you don't succeed",
+			NumRetries:    5,
+			PerTryTimeout: t,
+			RetryBackOff: &retries.RetryBackOff{
+				BaseInterval: durationpb.New(999999999),
+			},
+		}
+		expectedRetryPolicy = &envoy_config_route_v3.RetryPolicy{
+			RetryOn: "if at first you don't succeed",
+			NumRetries: &wrappers.UInt32Value{
+				Value: 5,
+			},
+			PerTryTimeout: t,
+			RetryBackOff: &envoy_config_route_v3.RetryPolicy_RetryBackOff{
+				BaseInterval: durationpb.New(999999999),
+			},
+		}
+	})
+
+	It("works", func() {
+		plugin := NewPlugin()
+		routeAction := &envoy_config_route_v3.RouteAction{}
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: routeAction,
+			},
+		}
+		err := plugin.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				Retries: retryPolicy,
+			},
+			Action: &v1.Route_RouteAction{},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.RetryPolicy).To(Equal(expectedRetryPolicy))
+	})
+
+	It("works on vhost", func() {
+		plugin := NewPlugin()
+		out := &envoy_config_route_v3.VirtualHost{}
+		err := plugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+			Options: &v1.VirtualHostOptions{
+				Retries: retryPolicy,
+			},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.RetryPolicy).To(Equal(expectedRetryPolicy))
+	})
+})
+
+var _ = Describe("retries with both intervals", func() {
+	var (
+		retryPolicy         *retries.RetryPolicy
+		expectedRetryPolicy *envoy_config_route_v3.RetryPolicy
+	)
+
+	BeforeEach(func() {
+		t := prototime.DurationToProto(time.Minute)
+		retryPolicy = &retries.RetryPolicy{
+			RetryOn:       "if at first you don't succeed",
+			NumRetries:    5,
+			PerTryTimeout: t,
+			RetryBackOff: &retries.RetryBackOff{
+				MaxInterval:  durationpb.New(12000000),
+				BaseInterval: durationpb.New(11000000),
+			},
+		}
+		expectedRetryPolicy = &envoy_config_route_v3.RetryPolicy{
+			RetryOn: "if at first you don't succeed",
+			NumRetries: &wrappers.UInt32Value{
+				Value: 5,
+			},
+			PerTryTimeout: t,
+			RetryBackOff: &envoy_config_route_v3.RetryPolicy_RetryBackOff{
+				MaxInterval:  durationpb.New(12000000),
+				BaseInterval: durationpb.New(11000000),
+			},
+		}
+	})
+
+	It("works", func() {
+		plugin := NewPlugin()
+		routeAction := &envoy_config_route_v3.RouteAction{}
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: routeAction,
+			},
+		}
+		err := plugin.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				Retries: retryPolicy,
+			},
+			Action: &v1.Route_RouteAction{},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.RetryPolicy).To(Equal(expectedRetryPolicy))
+	})
+
+	It("works on vhost", func() {
+		plugin := NewPlugin()
+		out := &envoy_config_route_v3.VirtualHost{}
+		err := plugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+			Options: &v1.VirtualHostOptions{
+				Retries: retryPolicy,
+			},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.RetryPolicy).To(Equal(expectedRetryPolicy))
+	})
+})
 var _ = Describe("host rewrite", func() {
 	It("rewrites using provided string", func() {
 
