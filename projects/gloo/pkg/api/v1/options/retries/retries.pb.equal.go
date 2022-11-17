@@ -26,6 +26,50 @@ var (
 )
 
 // Equal function
+func (m *RetryBackOff) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RetryBackOff)
+	if !ok {
+		that2, ok := that.(RetryBackOff)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetBaseInterval()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetBaseInterval()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetBaseInterval(), target.GetBaseInterval()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetMaxInterval()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxInterval()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxInterval(), target.GetMaxInterval()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *RetryPolicy) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -60,6 +104,16 @@ func (m *RetryPolicy) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetPerTryTimeout(), target.GetPerTryTimeout()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetRetryBackOff()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRetryBackOff()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRetryBackOff(), target.GetRetryBackOff()) {
 			return false
 		}
 	}

@@ -1,6 +1,8 @@
 package basicroute
 
 import (
+	"fmt"
+
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
@@ -169,7 +171,11 @@ func applyRetries(in *v1.Route, out *envoy_config_route_v3.Route) error {
 			"had nil route", in.GetAction())
 	}
 
-	routeAction.Route.RetryPolicy = convertPolicy(policy)
+	var err error
+	routeAction.Route.RetryPolicy, err = convertPolicy(policy)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -236,13 +242,17 @@ func applyUpgrades(in *v1.Route, out *envoy_config_route_v3.Route) error {
 }
 
 func applyRetriesVhost(in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost) error {
-	out.RetryPolicy = convertPolicy(in.GetOptions().GetRetries())
+	var err error
+	out.RetryPolicy, err = convertPolicy(in.GetOptions().GetRetries())
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func convertPolicy(policy *retries.RetryPolicy) *envoy_config_route_v3.RetryPolicy {
+func convertPolicy(policy *retries.RetryPolicy) (*envoy_config_route_v3.RetryPolicy, error) {
 	if policy == nil {
-		return nil
+		return nil, nil
 	}
 
 	numRetries := policy.GetNumRetries()
@@ -250,9 +260,65 @@ func convertPolicy(policy *retries.RetryPolicy) *envoy_config_route_v3.RetryPoli
 		numRetries = 1
 	}
 
+	v3RetryPolicyBackOff := &envoy_config_route_v3.RetryPolicy_RetryBackOff{}
+
+	// Let's make some checks
+	if retryPolicyInterval := policy.GetRetryBackOff(); retryPolicyInterval != nil {
+
+		baseInterval := retryPolicyInterval.GetBaseInterval()
+		maxInterval := retryPolicyInterval.GetMaxInterval()
+
+		// Is the max interval larger than or equal to the base interval?
+		if baseInterval != nil && maxInterval != nil {
+			if baseInterval.AsDuration().Milliseconds() > maxInterval.AsDuration().Milliseconds() {
+				return nil,
+					fmt.Errorf("base interval: %d is > max interval: %d",
+						baseInterval.AsDuration().Milliseconds(),
+						maxInterval.AsDuration().Milliseconds())
+			}
+		}
+
+		// Check if the max interval is defined without the base interval
+		if maxInterval != nil && baseInterval == nil {
+			return nil, fmt.Errorf("max interval was defined, but the base interval was not")
+		}
+
+		// Check if the base interval is defined
+		if baseInterval != nil {
+
+			// If the base interval is defined, check that it's greater than zero milliseconds
+			if dur := baseInterval.AsDuration().Milliseconds(); dur <= 0 {
+				return nil,
+					errors.Errorf("base interval for retry backoff was <= than 0 | you provided: %d", dur)
+			} else {
+				v3RetryPolicyBackOff.BaseInterval = baseInterval
+			}
+		}
+
+		// Check if the max interval is defined
+		if maxInterval != nil {
+
+			// If the max interval is defined, check that it's greater than zero
+			if dur := maxInterval.AsDuration().Milliseconds(); dur <= 0 {
+				return nil,
+					errors.Errorf("max interval for retry backoff was <= than 0 | you provided: %d", dur)
+			} else {
+				v3RetryPolicyBackOff.MaxInterval = maxInterval
+			}
+		}
+
+		// If max and/or/both base intervals are defined, return a RetryPolicy object that contains them
+		return &envoy_config_route_v3.RetryPolicy{
+			RetryOn:       policy.GetRetryOn(),
+			NumRetries:    &wrappers.UInt32Value{Value: numRetries},
+			PerTryTimeout: policy.GetPerTryTimeout(),
+			RetryBackOff:  v3RetryPolicyBackOff,
+		}, nil
+	}
+
 	return &envoy_config_route_v3.RetryPolicy{
 		RetryOn:       policy.GetRetryOn(),
 		NumRetries:    &wrappers.UInt32Value{Value: numRetries},
 		PerTryTimeout: policy.GetPerTryTimeout(),
-	}
+	}, nil
 }

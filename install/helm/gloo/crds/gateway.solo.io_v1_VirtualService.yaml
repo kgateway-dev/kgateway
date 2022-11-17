@@ -1214,6 +1214,13 @@ spec:
                             type: integer
                           perTryTimeout:
                             type: string
+                          retryBackOff:
+                            properties:
+                              baseInterval:
+                                type: string
+                              maxInterval:
+                                type: string
+                            type: object
                           retryOn:
                             type: string
                         type: object
@@ -3224,6 +3231,13 @@ spec:
                                   type: integer
                                 perTryTimeout:
                                   type: string
+                                retryBackOff:
+                                  properties:
+                                    baseInterval:
+                                      type: string
+                                    maxInterval:
+                                      type: string
+                                  type: object
                                 retryOn:
                                   type: string
                               type: object

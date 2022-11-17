@@ -28,6 +28,29 @@ var (
 )
 
 // Clone function
+func (m *RetryBackOff) Clone() proto.Message {
+	var target *RetryBackOff
+	if m == nil {
+		return target
+	}
+	target = &RetryBackOff{}
+
+	if h, ok := interface{}(m.GetBaseInterval()).(clone.Cloner); ok {
+		target.BaseInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.BaseInterval = proto.Clone(m.GetBaseInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetMaxInterval()).(clone.Cloner); ok {
+		target.MaxInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.MaxInterval = proto.Clone(m.GetMaxInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *RetryPolicy) Clone() proto.Message {
 	var target *RetryPolicy
 	if m == nil {
@@ -43,6 +66,12 @@ func (m *RetryPolicy) Clone() proto.Message {
 		target.PerTryTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
 	} else {
 		target.PerTryTimeout = proto.Clone(m.GetPerTryTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetRetryBackOff()).(clone.Cloner); ok {
+		target.RetryBackOff = h.Clone().(*RetryBackOff)
+	} else {
+		target.RetryBackOff = proto.Clone(m.GetRetryBackOff()).(*RetryBackOff)
 	}
 
 	return target
