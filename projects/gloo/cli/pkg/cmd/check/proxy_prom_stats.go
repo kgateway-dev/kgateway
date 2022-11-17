@@ -3,6 +3,8 @@ package check
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
+	"github.com/rotisserie/eris"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -21,14 +23,22 @@ const promStatsPath = "/stats/prometheus"
 const metricsUpdateInterval = time.Millisecond * 250
 
 func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) error {
+	var multiErr *multierror.Error
+	gatewayProxyDeploymentsFound := false
 	for _, deployment := range deployments.Items {
-		if deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
+		gatewayProxyDeploymentsFound = gatewayProxyDeploymentsFound || deployment.Labels["gloo"] == "gateway-proxy"
+		if *deployment.Spec.Replicas == 0 {
+			multiErr = multierror.Append(multiErr, eris.New(deployment.Name+" has zero replicas"))
+		} else if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
 			if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
 				return err
 			}
 		}
 	}
-	return nil
+	if !gatewayProxyDeploymentsFound {
+		return eris.Errorf("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster")
+	}
+	return multiErr.ErrorOrNil()
 }
 
 func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentName string) error {
