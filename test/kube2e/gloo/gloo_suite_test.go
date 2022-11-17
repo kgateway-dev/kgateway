@@ -54,10 +54,10 @@ var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 	ctx, cancel = context.WithCancel(context.Background())
-	if version := os.Getenv("RELEASED_VERSION"); version != "" {
+	if useVersion := kube2e.GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
 		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.InstallNamespace = namespace
-			defaults.ReleasedVersion = os.Getenv(version)
+			defaults.ReleasedVersion = os.Getenv(useVersion)
 			defaults.Verbose = true
 			return defaults
 		})

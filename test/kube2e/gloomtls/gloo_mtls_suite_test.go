@@ -58,14 +58,23 @@ var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
-	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-		defaults.RootDir = filepath.Join(cwd, "../../..")
-		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = namespace
-		return defaults
-	})
-	Expect(err).NotTo(HaveOccurred())
-
+	if useVersion := kube2e.GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
+		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.ReleasedVersion = useVersion
+			defaults.InstallNamespace = namespace
+			return defaults
+		})
+		Expect(err).NotTo(HaveOccurred())
+	} else {
+		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.HelmChartName = "gloo"
+			defaults.InstallNamespace = namespace
+			return defaults
+		})
+		Expect(err).NotTo(HaveOccurred())
+	}
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
 	// Install Gloo

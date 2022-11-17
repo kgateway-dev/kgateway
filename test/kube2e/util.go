@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -303,6 +304,21 @@ func GetSimpleTestRunnerHttpResponse() string {
 	} else {
 		return SimpleTestRunnerHttpResponse
 	}
+}
+
+// For nightly runs, we want to install a released version rathher than using a locally built chart
+// To do this, set the environment variable RELEASED_VERSION with either a version name or "LATEST" to get the last release
+func GetTestReleasedVersion(ctx context.Context, repoName string) string {
+	var useVersion string
+	if useVersion = os.Getenv("RELEASED_VERSION"); useVersion != "" {
+		if useVersion == "LATEST" {
+			_, current, err := upgrade.GetUpgradeVersions(ctx, repoName)
+			fmt.Println("found latest version %v", current)
+			Expect(err).NotTo(HaveOccurred())
+			useVersion = current.String()
+		}
+	}
+	return useVersion
 }
 
 const SimpleTestRunnerHttpResponse = `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><html>
