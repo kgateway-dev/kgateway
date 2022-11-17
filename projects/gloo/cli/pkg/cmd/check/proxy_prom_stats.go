@@ -3,14 +3,15 @@ package check
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/go-multierror"
-	"github.com/rotisserie/eris"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-multierror"
+	"github.com/rotisserie/eris"
 
 	v1 "k8s.io/api/apps/v1"
 
