@@ -25,8 +25,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream
-// endpoints.
+// LoadBalancerConfig is the settings for the load balancer used to send requests to the Upstream endpoints.
 type LoadBalancerConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -159,7 +158,7 @@ type isLoadBalancerConfig_Type interface {
 }
 
 type LoadBalancerConfig_RoundRobin_ struct {
-	// Use round robin for load balancing.
+	// Use round robin for load balancing. Round robin is the default load balancing method.
 	RoundRobin *LoadBalancerConfig_RoundRobin `protobuf:"bytes,3,opt,name=round_robin,json=roundRobin,proto3,oneof"`
 }
 
