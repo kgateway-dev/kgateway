@@ -880,7 +880,7 @@ func checkProxies(opts *options.Options, namespaces []string, glooNamespace stri
 	}
 	printer.AppendStatus("proxies", "OK")
 	if warnings != "" {
-		printer.AppendCheck(warnings)
+		printer.AppendCheck(warnings + "\n")
 	}
 	return nil
 }

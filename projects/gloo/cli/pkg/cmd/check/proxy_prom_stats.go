@@ -23,21 +23,24 @@ const promStatsPath = "/stats/prometheus"
 const metricsUpdateInterval = time.Millisecond * 250
 
 func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (error, string) {
-	gatewayProxyDeploymentsFound, warnings := false, ""
+	gatewayProxyDeploymentsFound, warnings := 0, []string{}
 	for _, deployment := range deployments.Items {
-		gatewayProxyDeploymentsFound = gatewayProxyDeploymentsFound || deployment.Labels["gloo"] == "gateway-proxy"
+		if deployment.Labels["gloo"] == "gateway-proxy" {
+			gatewayProxyDeploymentsFound++
+		}
 		if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
 			if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas == 0 {
-				warnings += "Warning: " + deployment.Name + " has zero replicas\n"
+				warnings = append(warnings, "Warning: "+deployment.Name+" has zero replicas")
 			} else if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
-				return err, warnings
+				return err, strings.Join(warnings, "\n")
 			}
 		}
 	}
-	if !gatewayProxyDeploymentsFound {
-		return eris.Errorf("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"), warnings
+	// If no deployments exist || If no deployment pods exist
+	if gatewayProxyDeploymentsFound == 0 {
+		return eris.Errorf("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"), strings.Join(warnings, "\n")
 	}
-	return nil, warnings
+	return nil, strings.Join(warnings, "\n")
 }
 
 func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentName string) error {

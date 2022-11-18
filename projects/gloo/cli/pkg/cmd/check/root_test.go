@@ -96,6 +96,38 @@ var _ = Describe("Root", func() {
 			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
 			Expect(output).To(ContainSubstring("Checking gateways... OK"))
 			Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			Expect(output).To(ContainSubstring("Warning: gateway-proxy has zero replicas"))
+		})
+
+		It("fails if no gateway-proxy deployment", func() {
+
+			client := helpers.MustKubeClient()
+			client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaults.GlooSystem,
+				},
+			}, metav1.CreateOptions{})
+
+			appName := "default"
+			client.AppsV1().Deployments("gloo-system").Create(ctx, &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      appName,
+					Namespace: "gloo-system",
+				},
+				Spec: appsv1.DeploymentSpec{},
+			}, metav1.CreateOptions{})
+
+			helpers.MustNamespacedSettingsClient(ctx, "gloo-system").Write(&v1.Settings{
+				Metadata: &core.Metadata{
+					Name:      "default",
+					Namespace: "gloo-system",
+				},
+			}, clients.WriteOpts{})
+
+			output, err := testutils.GlooctlOut("check -x xds-metrics")
+			Expect(err).To(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"))
 		})
 
 		It("reports multiple errors at one time", func() {
