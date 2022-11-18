@@ -104,8 +104,7 @@ For our example, we would Replace the `{{ . }}` with `v0.10.0`.
 Save the file and then run the following commands to install the Gloo Edge components.
 
 ```shell
-kubectl create namespace gloo-system
-helm install gloo gloo/gloo --namespace gloo-system -f values.yaml
+helm install gloo gloo/gloo --namespace gloo-system --create-namespace -f values.yaml
 ```
 
 Gloo Edge can be installed to a namespace of your choosing with the `--namespace` flag.
@@ -117,8 +116,7 @@ Instead of creating a `values.yaml` file, you can simply define the settings in-
 Run the following commands to install the Gloo Edge components with version `v0.10.0` of Knative.
 
 ```shell
-kubectl create namespace gloo-system
-helm install gloo gloo/gloo --namespace gloo-system \
+helm install gloo gloo/gloo --namespace gloo-system --create-namespace \
   --set gateway.enabled=false,settings.integrations.knative.enabled=true,settings.integrations.knative.version=v0.10.0
 ```
 
