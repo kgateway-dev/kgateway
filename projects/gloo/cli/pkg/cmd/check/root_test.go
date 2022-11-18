@@ -87,7 +87,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
