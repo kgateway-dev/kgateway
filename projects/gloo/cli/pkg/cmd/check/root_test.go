@@ -62,7 +62,7 @@ var _ = Describe("Root", func() {
 			replicas := int32(0)
 			client.AppsV1().Deployments("gloo-system").Create(ctx, &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "gateway-proxy",
+					Name:      "other-gateway-proxy",
 					Namespace: "gloo-system",
 					Labels:    map[string]string{"gloo": "gateway-proxy"},
 				},
@@ -232,7 +232,7 @@ var _ = Describe("Root", func() {
 			client.AppsV1().Deployments(myNs).Create(ctx, &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: myNs,
-					Name:      "other-gwProxy",
+					Name:      "gateway-proxy",
 					Labels:    map[string]string{"gloo": "gateway-proxy"},
 				},
 				Spec: appsv1.DeploymentSpec{
