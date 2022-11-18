@@ -368,9 +368,10 @@ func checkPods(opts *options.Options) error {
 		printer.AppendStatus("pods", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printer.AppendStatus("pods", "OK")
 	if len(pods.Items) == 0 {
 		printer.AppendMessage("Warning: The provided label selector (" + opts.Top.PodSelector + ") applies to no pods")
+	} else {
+		printer.AppendStatus("pods", "OK")
 	}
 	return nil
 }
