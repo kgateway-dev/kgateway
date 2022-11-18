@@ -51,8 +51,7 @@ ingress:
 Then install Gloo Edge using the following command:
 
 ```shell
-kubectl create namespace gloo-system
-helm install gloo gloo/gloo --namespace gloo-system -f values.yaml
+helm install gloo gloo/gloo --namespace gloo-system --create-namespace -f values.yaml
 ```
 
 Gloo Edge can be installed to a namespace of your choosing with the `--namespace` flag.
@@ -64,8 +63,7 @@ Instead of creating a `values.yaml` file, you can simply define the settings in-
 Run the following commands to install the Gloo Edge ingress controller.
 
 ```shell
-kubectl create namespace gloo-system
-helm install gloo gloo/gloo --namespace gloo-system \
+helm install gloo gloo/gloo --namespace gloo-system --create-namespace \
   --set gateway.enabled=false,ingress.enabled=true
 ```
 
