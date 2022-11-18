@@ -26,7 +26,7 @@ func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployment
 	gatewayProxyDeploymentsFound, warnings := false, ""
 	for _, deployment := range deployments.Items {
 		gatewayProxyDeploymentsFound = gatewayProxyDeploymentsFound || deployment.Labels["gloo"] == "gateway-proxy"
-		if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
+		if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
 			if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas == 0 {
 				warnings += "Warning: " + deployment.Name + " has zero replicas\n"
 			} else if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
