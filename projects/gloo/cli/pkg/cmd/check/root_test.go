@@ -2,11 +2,9 @@ package check_test
 
 import (
 	"context"
-
-	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	v12 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
@@ -59,6 +57,23 @@ var _ = Describe("Root", func() {
 				},
 				Spec: appsv1.DeploymentSpec{},
 			}, metav1.CreateOptions{})
+
+			replicas := int32(0)
+			client.AppsV1().Deployments("gloo-system").Create(ctx, &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-proxy",
+					Namespace: "gloo-system",
+					Labels:    map[string]string{"gloo": "gateway-proxy"},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Replicas: &replicas,
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"gloo": "gateway-proxy"},
+					},
+				},
+			},
+				metav1.CreateOptions{},
+			)
 
 			helpers.MustNamespacedSettingsClient(ctx, "gloo-system").Write(&v1.Settings{
 				Metadata: &core.Metadata{
@@ -159,9 +174,8 @@ var _ = Describe("Root", func() {
 
 	})
 
-	FContext("With a custom namespace", func() {
-
-		FIt("connection fails on incorrect namespace check", func() {
+	Context("With a custom namespace", func() {
+		It("connection fails on incorrect namespace check", func() {
 
 			myNs := "my-namespace"
 			client := helpers.MustKubeClient()
@@ -180,8 +194,7 @@ var _ = Describe("Root", func() {
 				Spec: appsv1.DeploymentSpec{},
 			}, metav1.CreateOptions{})
 
-			var replicas int32
-			replicas = 1
+			replicas := int32(0)
 			client.AppsV1().Deployments(myNs).Create(ctx, &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: myNs,
@@ -192,11 +205,6 @@ var _ = Describe("Root", func() {
 					Replicas: &replicas,
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{"gloo": "gateway-proxy"},
-					},
-					Template: corev1.PodTemplateSpec{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{"gloo": "gateway-proxy"},
-						},
 					},
 				},
 			},
@@ -249,6 +257,23 @@ var _ = Describe("Root", func() {
 			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
+			replicas := int32(0)
+			client.AppsV1().Deployments("gloo-system").Create(ctx, &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-proxy",
+					Namespace: "gloo-system",
+					Labels:    map[string]string{"gloo": "gateway-proxy"},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Replicas: &replicas,
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"gloo": "gateway-proxy"},
+					},
+				},
+			},
+				metav1.CreateOptions{},
+			)
+
 			_, err = helpers.MustNamespacedSettingsClient(ctx, "gloo-system").Write(&v1.Settings{
 				Metadata: &core.Metadata{
 					Name:      "default",
@@ -263,7 +288,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).NotTo(ContainSubstring("Checking deployments..."))
-			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -295,7 +320,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).NotTo(ContainSubstring("Checking upstreams..."))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -311,7 +336,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).NotTo(ContainSubstring("Checking upstream groups..."))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -327,7 +352,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).NotTo(ContainSubstring("Checking auth configs..."))
@@ -343,7 +368,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -359,7 +384,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -375,7 +400,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -391,7 +416,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -407,7 +432,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... Warning: The provided label selector (gloo) applies to no pods"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 			Expect(output).To(ContainSubstring("Checking auth configs... OK"))

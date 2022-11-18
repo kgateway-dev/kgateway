@@ -368,10 +368,9 @@ func checkPods(opts *options.Options) error {
 		printer.AppendStatus("pods", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
+	printer.AppendStatus("pods", "OK")
 	if len(pods.Items) == 0 {
 		printer.AppendMessage("Warning: The provided label selector (" + opts.Top.PodSelector + ") applies to no pods")
-	} else {
-		printer.AppendStatus("pods", "OK")
 	}
 	return nil
 }
@@ -869,16 +868,18 @@ func checkProxies(opts *options.Options, namespaces []string, glooNamespace stri
 			}
 		}
 	}
-
-	if err := checkProxiesPromStats(opts.Top.Ctx, glooNamespace, deployments); err != nil {
+	err, warnings := checkProxiesPromStats(opts.Top.Ctx, glooNamespace, deployments)
+	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
-
 	if multiErr != nil {
 		printer.AppendStatus("proxies", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
 	printer.AppendStatus("proxies", "OK")
+	if warnings != "" {
+		printer.AppendCheck(warnings)
+	}
 	return nil
 }
 
