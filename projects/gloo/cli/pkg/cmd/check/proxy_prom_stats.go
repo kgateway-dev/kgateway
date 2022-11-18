@@ -28,10 +28,10 @@ func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployment
 	gatewayProxyDeploymentsFound := false
 	for _, deployment := range deployments.Items {
 		gatewayProxyDeploymentsFound = gatewayProxyDeploymentsFound || deployment.Labels["gloo"] == "gateway-proxy"
-		if *deployment.Spec.Replicas == 0 {
-			multiErr = multierror.Append(multiErr, eris.New(deployment.Name+" has zero replicas"))
-		} else if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
-			if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
+		if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
+			if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas == 0 {
+				multiErr = multierror.Append(multiErr, eris.New(deployment.Name+" has zero replicas"))
+			} else if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
 				return err
 			}
 		}

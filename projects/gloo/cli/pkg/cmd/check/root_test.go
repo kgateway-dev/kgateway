@@ -159,9 +159,9 @@ var _ = Describe("Root", func() {
 
 	})
 
-	Context("With a custom namespace", func() {
+	FContext("With a custom namespace", func() {
 
-		It("connection fails on incorrect namespace check", func() {
+		FIt("connection fails on incorrect namespace check", func() {
 
 			myNs := "my-namespace"
 			client := helpers.MustKubeClient()
@@ -179,6 +179,29 @@ var _ = Describe("Root", func() {
 				},
 				Spec: appsv1.DeploymentSpec{},
 			}, metav1.CreateOptions{})
+
+			var replicas int32
+			replicas = 1
+			client.AppsV1().Deployments(myNs).Create(ctx, &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: myNs,
+					Name:      "gateway-proxy",
+					Labels:    map[string]string{"gloo": "gateway-proxy"},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Replicas: &replicas,
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"gloo": "gateway-proxy"},
+					},
+					Template: corev1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{"gloo": "gateway-proxy"},
+						},
+					},
+				},
+			},
+				metav1.CreateOptions{},
+			)
 
 			helpers.MustNamespacedSettingsClient(ctx, myNs).Write(&v1.Settings{
 				Metadata: &core.Metadata{
