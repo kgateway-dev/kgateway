@@ -175,6 +175,7 @@ var _ = Describe("Root", func() {
 	})
 
 	Context("With a custom namespace", func() {
+
 		It("connection fails on incorrect namespace check", func() {
 
 			myNs := "my-namespace"
