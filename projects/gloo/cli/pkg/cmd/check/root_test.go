@@ -232,7 +232,7 @@ var _ = Describe("Root", func() {
 			client.AppsV1().Deployments(myNs).Create(ctx, &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: myNs,
-					Name:      "gateway-proxy",
+					Name:      "other-gwProxy",
 					Labels:    map[string]string{"gloo": "gateway-proxy"},
 				},
 				Spec: appsv1.DeploymentSpec{
