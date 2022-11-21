@@ -68,15 +68,24 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 		cwd, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
-		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.RootDir = filepath.Join(cwd, "../../..")
-			defaults.HelmChartName = "gloo"
-			defaults.InstallNamespace = namespace
-			defaults.Verbose = true
-			return defaults
-		})
-		Expect(err).NotTo(HaveOccurred())
-
+		if useVersion := kube2e.GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
+			testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+				defaults.InstallNamespace = namespace
+				defaults.ReleasedVersion = os.Getenv(useVersion)
+				defaults.Verbose = true
+				return defaults
+			})
+			Expect(err).NotTo(HaveOccurred())
+		} else {
+			testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+				defaults.RootDir = filepath.Join(cwd, "../../..")
+				defaults.HelmChartName = "gloo"
+				defaults.InstallNamespace = namespace
+				defaults.Verbose = true
+				return defaults
+			})
+			Expect(err).NotTo(HaveOccurred())
+		}
 		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 		strictValidation = false

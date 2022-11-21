@@ -2,7 +2,6 @@ package gateway_test
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -68,7 +67,6 @@ func StartTestHelper() {
 	Expect(err).NotTo(HaveOccurred())
 
 	if useVersion := kube2e.GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
-		fmt.Println("installing released version ", useVersion)
 		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = filepath.Join(cwd, "../../..")
 			defaults.ReleasedVersion = useVersion
