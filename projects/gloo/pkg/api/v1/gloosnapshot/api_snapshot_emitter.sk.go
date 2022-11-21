@@ -886,16 +886,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		}
 		sync := func() {
 			currentHash, err := currentSnapshot.Hash(nil)
-			logger := contextutils.LoggerFrom(ctx)
 			// this should never happen, so panic if it does
 			if err != nil {
-				logger.Panicw("error while hashing, this should never happen", zap.Error(err))
+				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
 			if previousHash == currentHash {
-				logger.Infof("the hases are equal")
 				return
 			}
-			logger.Infof("sending the new snapshot")
 
 			sentSnapshot := currentSnapshot.Clone()
 			select {

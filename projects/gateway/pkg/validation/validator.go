@@ -167,8 +167,6 @@ func (v *validator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) erro
 			utils2.MeasureZero(ctx, mValidConfig)
 		}
 	}
-	contextutils.LoggerFrom(ctx).Info("the snapshot has been changed")
-	contextutils.LoggerFrom(ctx).Info("the number of virtual services %d", len(snap.VirtualServices))
 	v.latestSnapshotErr = errs
 	v.latestSnapshot = &snapCopy
 
