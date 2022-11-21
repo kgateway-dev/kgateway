@@ -4,7 +4,6 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -51,27 +50,10 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred())
 	ctx, cancel = context.WithCancel(context.Background())
-	if useVersion := kube2e.GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
-		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.InstallNamespace = namespace
-			defaults.ReleasedVersion = os.Getenv(useVersion)
-			defaults.Verbose = true
-			return defaults
-		})
-		Expect(err).NotTo(HaveOccurred())
-	} else {
-		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.RootDir = filepath.Join(cwd, "../../..")
-			defaults.HelmChartName = "gloo"
-			defaults.InstallNamespace = namespace
-			defaults.Verbose = true
-			return defaults
-		})
-		Expect(err).NotTo(HaveOccurred())
-	}
+	var err error
+	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
+	Expect(err).NotTo(HaveOccurred())
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
 	// Define helm overrides

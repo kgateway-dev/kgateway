@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
 	"time"
+
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
 
 	"github.com/solo-io/gloo/test/helpers"
 
@@ -313,11 +315,34 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 	if useVersion = os.Getenv("RELEASED_VERSION"); useVersion != "" {
 		if useVersion == "LATEST" {
 			_, current, err := upgrade.GetUpgradeVersions(ctx, repoName)
+			fmt.Println("found latest version %v", current)
 			Expect(err).NotTo(HaveOccurred())
 			useVersion = current.String()
 		}
 	}
 	return useVersion
+}
+func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelper, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	if useVersion := GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
+		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+			defaults.InstallNamespace = namespace
+			defaults.ReleasedVersion = os.Getenv(useVersion)
+			defaults.Verbose = true
+			return defaults
+		})
+	} else {
+		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.HelmChartName = "gloo"
+			defaults.InstallNamespace = namespace
+			defaults.Verbose = true
+			return defaults
+		})
+	}
 }
 
 const SimpleTestRunnerHttpResponse = `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><html>

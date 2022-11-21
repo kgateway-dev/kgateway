@@ -4,7 +4,6 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -63,28 +62,9 @@ var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
 
 func StartTestHelper() {
-	cwd, err := os.Getwd()
+	var err error
+	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
-
-	if useVersion := kube2e.GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
-		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.RootDir = filepath.Join(cwd, "../../..")
-			defaults.ReleasedVersion = useVersion
-			defaults.InstallNamespace = namespace
-			defaults.Verbose = true
-			return defaults
-		})
-		Expect(err).NotTo(HaveOccurred())
-	} else {
-		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.RootDir = filepath.Join(cwd, "../../..")
-			defaults.HelmChartName = "gloo"
-			defaults.InstallNamespace = namespace
-			defaults.Verbose = true
-			return defaults
-		})
-		Expect(err).NotTo(HaveOccurred())
-	}
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
 	// install xds-relay if needed

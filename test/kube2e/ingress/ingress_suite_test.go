@@ -3,12 +3,12 @@ package ingress_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/kube2e"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/go-utils/log"
 
@@ -43,28 +43,11 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred())
 	ctx, cancel = context.WithCancel(context.Background())
-
+	var err error
 	randomNumber := time.Now().Unix() % 10000
-	if useVersion := kube2e.GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
-		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.RootDir = filepath.Join(cwd, "../../..")
-			defaults.ReleasedVersion = useVersion
-			defaults.InstallNamespace = "ingress-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
-			return defaults
-		})
-		Expect(err).NotTo(HaveOccurred())
-	} else {
-		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.RootDir = filepath.Join(cwd, "../../..")
-			defaults.HelmChartName = "gloo"
-			defaults.InstallNamespace = "ingress-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
-			return defaults
-		})
-		Expect(err).NotTo(HaveOccurred())
-	}
+	testHelper, err = kube2e.GetTestHelper(ctx, "ingress-test-"+fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode()))
+	Expect(err).NotTo(HaveOccurred())
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
