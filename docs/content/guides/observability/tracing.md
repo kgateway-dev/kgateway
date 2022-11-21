@@ -144,8 +144,7 @@ Use the Gloo Edge installation Helm chart template to configure the Zipkin traci
    
 2. Install Gloo Edge with your Zipkin configuration.   
    ```shell
-   kubectl create namespace gloo-system
-   helm install gloo gloo/gloo --namespace gloo-system -f values.yaml
+   helm install gloo gloo/gloo --namespace gloo-system --create-namespace -f values.yaml
    ```
 
 **Option 2: Update the Envoy configmap directly**

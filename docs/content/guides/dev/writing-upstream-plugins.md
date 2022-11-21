@@ -1,27 +1,32 @@
 ---
-title: "Service Discovery Plugins for Gloo Edge"
+title: "Service discovery plugins for Gloo Edge"
 
 weight: 5
 ---
 
 ## Intro
 
-Gloo Edge uses the [v1.Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk" %}}) config object to define routable destinations for Gloo Edge. These are converted inside Gloo Edge
+Gloo Edge uses the [v1.Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk" %}}) config object to define routable destinations for Gloo Edge. These are converted inside Gloo Edge.
 
-This tutorial will show how we can add an *Upstream Plugin* to Gloo Edge to extend Gloo Edge with service discovery data.
-
-Rather than provide a trivial example, we'll use VM instances on Google Compute Engine as our Upstream. A single endpoint will represent a single VM instance, and an Upstream will group them by their VM Labels.
+In this tutorial, you learn how to write an Upstream plugin for virtual machines (VM) that are hosted on Google Compute Engine, and to add the plugin to Gloo Edge to enable service discovery. A single endpoint represents a single VM, and the Upstream groups these instances by using the labels that are assigned to the VMs. 
 
 Note that *any* backend store of service addresses can be plugged into Gloo Edge in this way. 
 
-It will be the job of our plugin to connect to the external source of truth (in this case, the Google Compute Engine API) and convert it to configuration which Gloo Edge can then supply to Envoy for routing. 
+The Upstream plugin connects to the external source of truth (in this case, the Google Compute Engine API) and converts the information into configuration that Gloo Edge can understand and supply to Envoy for routing. 
 
 To see the completed code for this tutorial:
 
-* [gce.proto](../gce.proto): API definitions for our plugin.
-* [plugins.proto](../plugins.proto): The Gloo Edge Core API with our plugin API added to it.
+* [gce.proto](../gce.proto): The API definitions for the plugin.
+* [plugins.proto](../plugins.proto): The Gloo Edge Core API that includes the plugin API.
 * [plugin.go](../plugin.go): The actual code for the plugin.
-* [registry.go](../registry.go): The Gloo Edge Plugin Registry with our plugin added to it.
+* [registry.go](../registry.go): The Gloo Edge Plugin Registry that includes the plugin.
+
+
+{{% notice tip %}}
+Want to see and try out a dummy example instead? Check out this [branch](https://github.com/mwieczorek/gloo/tree/dummy) to find sample code that you can use as a basis to create Upstream plugins for your own use case. 
+{{% /notice %}}
+
+
 
 ## Environment Setup
 
@@ -30,10 +35,9 @@ include the **Enabling Code Generation** section of that tutorial.
 
 ## Upstream Plugin
 
-For Gloo Edge, an upstream represents a single service backed by one or more *endpoints* (where each endpoint is an IP or Hostname plus port) that accepts TCP or HTTP traffic. Upstreams can provide their endpoints to Gloo Edge hard-coded inside their YAML spec, as with the `static` Upstream type. Alternatively, Upstreams can provide information to Gloo Edge so that 
-a corresponding Gloo Edge plugin can perform Endpoint Discovery (EDS).  
+For Gloo Edge, an upstream represents a single service backed by one or more *endpoints* (where each endpoint is an IP or hostname plus port) that accepts TCP or HTTP traffic. Upstreams can provide their endpoints to Gloo Edge hard-coded inside their YAML spec, as with the `static` Upstream type. Alternatively, Upstreams can provide information to Gloo Edge so that a corresponding Gloo Edge plugin can perform Endpoint Discovery (EDS).  
 
-This tutorial will cover an EDS-style plugin, where the user will provide a Google Compute Engine (GCE) Upstream to Gloo Edge, and our plugin will retrieve each endpoint for that upstream.
+This tutorial shows how to create an EDS-style plugin, where you provide a Google Compute Engine (GCE) Upstream to Gloo Edge, and the plugin retrieves each endpoint for that Upstream.
 
 Let's begin.
 
@@ -107,7 +111,7 @@ You can view the complete `gce.proto` here: [gce.proto](../gce.proto).
 
 
 Now we need to add the new GCE `UpstreamSpec` to Gloo Edge's list of Upstream Types. This can be found in 
-the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file at the API root (projects/gloo/api/v1)/
+the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file at the API root (projects/gloo/api/v1)/. 
 
 First, we'll add an import to the top of the file
 
@@ -414,7 +418,7 @@ The declaration for our function reads as follows:
 
 ```go
 // one call results in a list of endpoints for our upstreams
-func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.UpstreamList) (v1.EndpointList, error) {
+func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.UpstreamList, writeNamespace string) (v1.EndpointList, error) {
 	//...
 }
 ```
@@ -424,7 +428,7 @@ func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.
 {{< highlight go "hl_lines=9-14 17-24" >}}
 
 // one call results in a list of endpoints for our upstreams
-func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.UpstreamList) (v1.EndpointList, error) {
+func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.UpstreamList, writeNamespace string) (v1.EndpointList, error) {
 
 	// initialize a new list of endpoints
 	var result v1.EndpointList
@@ -491,7 +495,7 @@ We'll use this function to filter instances in `getLatestEndpoints`:
 {{< highlight go "hl_lines=26-33" >}}
 
 // one call results in a list of endpoints for our upstreams
-func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.UpstreamList) (v1.EndpointList, error) {
+func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.UpstreamList, writeNamespace string) (v1.EndpointList, error) {
 
 	// initialize a new list of endpoints
 	var result v1.EndpointList
@@ -539,7 +543,7 @@ We must also filter instances that don't have an IP address:
 {{< highlight go "hl_lines=35-38" >}}
 
 // one call results in a list of endpoints for our upstreams
-func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.UpstreamList) (v1.EndpointList, error) {
+func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.UpstreamList, writeNamespace string) (v1.EndpointList, error) {
 
 	// initialize a new list of endpoints
 	var result v1.EndpointList
@@ -593,7 +597,7 @@ Finally, we must convert the instance to an endpoint and append it to our list:
 {{< highlight go "hl_lines=40-61 63-64" >}}
 
 // one call results in a list of endpoints for our upstreams
-func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.UpstreamList) (v1.EndpointList, error) {
+func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.UpstreamList, writeNamespace string) (v1.EndpointList, error) {
 
 	// initialize a new list of endpoints
 	var result v1.EndpointList
@@ -643,7 +647,7 @@ func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.
 
 			endpointForInstance := &v1.Endpoint{
 				Metadata: core.Metadata{
-					Namespace: us.Metadata.Namespace,
+					Namespace: writeNamespace,
 					Name:      instance.Name,
 					Labels:    instance.Labels,
 				},
@@ -733,7 +737,7 @@ func (*plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstrea
 				// context was cancelled, stop polling
 				return
 			default:
-				endpoints, err := getLatestEndpoints(instancesClient, upstreamsToTrack)
+				endpoints, err := getLatestEndpoints(instancesClient, upstreamsToTrack, writeNamespace)
 				if err != nil {
 					// send the error to Gloo Edge for logging
 					errorsDuringUpdate <- err
