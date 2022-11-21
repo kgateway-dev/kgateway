@@ -35,7 +35,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err).NotTo(HaveOccurred(), "should be able to install petstore")
 
 			// Add the gloo route to petstore
-			err = runGlooctlCommand("add", "route", "--name", "petstore", "--namespace", testHelper.InstallNamespace, "--path-prefix", "/", "--dest-name", "default-petstore-8080", "--dest-namespace", testHelper.InstallNamespace)
+			_, err = runGlooctlCommand("add", "route", "--name", "petstore", "--namespace", testHelper.InstallNamespace, "--path-prefix", "/", "--dest-name", "default-petstore-8080", "--dest-namespace", testHelper.InstallNamespace)
 			Expect(err).NotTo(HaveOccurred(), "should be able to add gloo route to petstore")
 
 			// Enable Istio Injection on default namespace
@@ -114,13 +114,13 @@ var _ = Describe("Kube2e: glooctl", func() {
 			It("works on gateway-pod", func() {
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
 
-				err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
+				_, err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio inject' without errors")
 
 				ExpectIstioInjected()
 
 				// Enable sslConfig on the upstream
-				err = runGlooctlCommand("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
+				_, err = runGlooctlCommand("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls on the petstore upstream via sslConfig")
 
 				// Enable mTLS mode for the petstore app
@@ -131,7 +131,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 
 			AfterEach(func() {
-				err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
+				_, err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
 
 				ExpectIstioUninjected()
@@ -144,12 +144,12 @@ var _ = Describe("Kube2e: glooctl", func() {
 			BeforeEach(func() {
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 10*time.Second, 1*time.Second)
 
-				err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
+				_, err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio inject' without errors")
 
 				ExpectIstioInjected()
 
-				err = runGlooctlCommand("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
+				_, err = runGlooctlCommand("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls on the petstore upstream via sslConfig")
 
 				err = toggleStictModePetstore(true)
@@ -161,7 +161,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 			AfterEach(func() {
 				// Tests may have already successfully run uninject, so we can ignore the error
-				_ = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
+				_, _ = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
 
 				ExpectIstioUninjected()
 			})
@@ -175,7 +175,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", testHelper.InstallNamespace, "upstream", "default-petstore-8080")
 				Expect(err).NotTo(HaveOccurred(), "should be able to delete the petstore upstream")
 
-				err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace)
+				_, err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
 
 				ExpectIstioUninjected()
@@ -185,7 +185,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 
 			It("fails when upstreams contain sds configuration and --include-upstreams=false", func() {
-				err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace)
+				_, err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).To(HaveOccurred(), "should not be able to run 'glooctl istio uninject' without errors")
 			})
 
@@ -194,7 +194,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				err = toggleStictModePetstore(false)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls permissive mode on the petstore app")
 
-				err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
+				_, err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
 				Expect(err).NotTo(HaveOccurred(), "should not be able to run 'glooctl istio uninject' without errors")
 
 				ExpectIstioUninjected()
@@ -204,15 +204,32 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 		})
 
+		Context("check", func() {
+			FIt("all checks pass with OK status", func() {
+				output, err := runGlooctlCommand("check", "-x", "xds-metrics")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			})
+		})
 	})
 
 })
 
-func runGlooctlCommand(args ...string) error {
+func runGlooctlCommand(args ...string) (string, error) {
 	glooctlCommand := []string{filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName)}
 	glooctlCommand = append(glooctlCommand, args...)
 	// execute the command with verbose output
-	return exec.RunCommand(testHelper.RootDir, true, glooctlCommand...)
+	return exec.RunCommandOutput(testHelper.RootDir, true, glooctlCommand...)
 }
 
 func toggleStictModePetstore(strictModeEnabled bool) error {
