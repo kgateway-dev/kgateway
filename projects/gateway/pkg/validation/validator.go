@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -12,17 +13,20 @@ import (
 	"github.com/rotisserie/eris"
 	errors "github.com/rotisserie/eris"
 	utils2 "github.com/solo-io/gloo/pkg/utils"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	syncerValidation "github.com/solo-io/gloo/projects/gloo/pkg/syncer/validation"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	gloovalidation "github.com/solo-io/gloo/projects/gloo/pkg/validation"
 	"github.com/solo-io/go-utils/contextutils"
+	kubeCRDV1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	skProtoUtils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
+
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -30,19 +34,6 @@ import (
 )
 
 const GatewayGroup = "gateway.solo.io"
-
-// GvkSupportedValidationGatewayResources the current group of resources that can be validated
-var GvkSupportedValidationGatewayResources = map[schema.GroupVersionKind]bool{
-	v1.GatewayGVK:        true,
-	v1.VirtualServiceGVK: true,
-	v1.RouteTableGVK:     true,
-}
-
-// GvkSupportedDeleteGatewayResources the current group of resources that can be validated
-var GvkSupportedDeleteGatewayResources = map[schema.GroupVersionKind]bool{
-	v1.VirtualServiceGVK: true,
-	v1.RouteTableGVK:     true,
-}
 
 type Reports struct {
 	Proxies      []*gloov1.Proxy
@@ -60,13 +51,14 @@ type ProxyReports []*validation.ProxyReport
 type UpstreamReports []*validation.ResourceReport
 
 var (
-	NotReadyErr             = errors.Errorf("validation is not yet available. Waiting for first snapshot")
-	HasNotReceivedFirstSync = eris.New("proxy validation called before the validation server received its first sync of resources")
-	unmarshalErrMsg         = "could not unmarshal raw object"
-	couldNotRenderProxy     = "could not render proxy"
-	failedGlooValidation    = "failed gloo validation"
-	failedResourceReports   = "failed resource reports from gloo validation"
-	WrappedUnmarshalErr     = func(err error) error {
+	NotReadyErr                    = errors.Errorf("validation is not yet available. Waiting for first snapshot")
+	HasNotReceivedFirstSync        = eris.New("proxy validation called before the validation server received its first sync of resources")
+	unmarshalErrMsg                = "could not unmarshal raw object"
+	couldNotRenderProxy            = "could not render proxy"
+	failedGlooValidation           = "failed gloo validation"
+	failedResourceReports          = "failed gloo validation resource reports"
+	failedExtensionResourceReports = "failed extension resource reports"
+	WrappedUnmarshalErr            = func(err error) error {
 		return errors.Wrapf(err, unmarshalErrMsg)
 	}
 
@@ -81,14 +73,6 @@ var (
 
 	mValidConfig = utils2.MakeGauge("validation.gateway.solo.io/valid_config",
 		"A boolean indicating whether gloo config is valid")
-
-	groupIsNotSupported = func(resource resources.Resource, gvk schema.GroupVersionKind) error {
-		return errors.Errorf("failed validating the resoruce [%T] because the group [%s] kind [%s] is not supported", resource, gvk.Group, gvk.Kind)
-	}
-
-	glooFailedResourceValidation = func(err error, resource resources.Resource) error {
-		return errors.Wrapf(err, "failed to validate resource [%T] with Gloo validation server", resource)
-	}
 )
 
 const (
@@ -106,10 +90,6 @@ type Validator interface {
 	ValidateModifiedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) (*Reports, error)
 	// ValidateDeletedGvk validate the deletion of a resource.
 	ValidateDeletedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) error
-	// ModificationIsSupported returns whether a resource is supported
-	ModificationIsSupported(gvk schema.GroupVersionKind) bool
-	// DeletionIsSupported returns whether a deletion of a resource is supported
-	DeletionIsSupported(gvk schema.GroupVersionKind) bool
 }
 
 type GlooValidatorFunc = func(ctx context.Context, proxy *gloov1.Proxy,
@@ -122,9 +102,9 @@ type validator struct {
 	latestSnapshotErr error
 	translator        translator.Translator
 	// This function replaces a grpc client from when gloo and gateway pods were separate.
-	glooValidator                GlooValidatorFunc
-	ignoreProxyValidationFailure bool
-	allowWarnings                bool
+	glooValidator      GlooValidatorFunc
+	extensionValidator syncerValidation.Validator
+	allowWarnings      bool
 }
 
 type validationOptions struct {
@@ -137,31 +117,18 @@ type validationOptions struct {
 }
 
 type ValidatorConfig struct {
-	translator                   translator.Translator
-	glooValidator                GlooValidatorFunc
-	ignoreProxyValidationFailure bool
-	allowWarnings                bool
-}
-
-func NewValidatorConfig(
-	translator translator.Translator,
-	glooValidator GlooValidatorFunc,
-	ignoreProxyValidationFailure, allowWarnings bool,
-) ValidatorConfig {
-	return ValidatorConfig{
-		glooValidator:                glooValidator,
-		translator:                   translator,
-		ignoreProxyValidationFailure: ignoreProxyValidationFailure,
-		allowWarnings:                allowWarnings,
-	}
+	Translator         translator.Translator
+	GlooValidator      GlooValidatorFunc
+	ExtensionValidator syncerValidation.Validator
+	AllowWarnings      bool
 }
 
 func NewValidator(cfg ValidatorConfig) *validator {
 	return &validator{
-		glooValidator:                cfg.glooValidator,
-		translator:                   cfg.translator,
-		ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure,
-		allowWarnings:                cfg.allowWarnings,
+		glooValidator:      cfg.GlooValidator,
+		extensionValidator: cfg.ExtensionValidator,
+		translator:         cfg.Translator,
+		allowWarnings:      cfg.AllowWarnings,
 	}
 }
 
@@ -200,7 +167,6 @@ func (v *validator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) erro
 			utils2.MeasureZero(ctx, mValidConfig)
 		}
 	}
-
 	v.latestSnapshotErr = errs
 	v.latestSnapshot = &snapCopy
 
@@ -209,27 +175,6 @@ func (v *validator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) erro
 	}
 
 	return nil
-}
-
-func (v *validator) ModificationIsSupported(gvk schema.GroupVersionKind) bool {
-	// note ModificationIsSupported does not currently support Secrets.  This is
-	// because it is only supported if deleting.
-	_, supported := GvkSupportedValidationGatewayResources[gvk]
-	if !supported {
-		_, supported := gloovalidation.GvkToSupportedGlooResources[gvk]
-		return supported
-	}
-	return supported
-}
-
-// DeletionIsSupported checks whether the deletion of a particular resources is supported.
-func (v *validator) DeletionIsSupported(gvk schema.GroupVersionKind) bool {
-	_, supported := GvkSupportedDeleteGatewayResources[gvk]
-	if !supported {
-		_, supported = gloovalidation.GvkToSupportedDeleteGlooResources[gvk]
-		return supported
-	}
-	return supported
 }
 
 func (v *validator) gatewayUpdate(snap *gloov1snap.ApiSnapshot) bool {
@@ -338,11 +283,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, opts.Delete)
 		if err != nil {
 			err = errors.Wrapf(err, failedGlooValidation)
-			if v.ignoreProxyValidationFailure {
-				contextutils.LoggerFrom(ctx).Error(err)
-			} else {
-				errs = multierr.Append(errs, err)
-			}
+			errs = multierr.Append(errs, err)
 			continue
 		}
 
@@ -366,11 +307,19 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 			continue
 		}
 
-		_, err = v.getReportsFromGlooValidation(glooReports)
+		err = v.getErrorsFromGlooValidation(glooReports)
 		if err != nil {
 			err = errors.Wrapf(err, failedResourceReports)
 			errs = multierr.Append(errs, err)
 			continue
+		}
+	}
+
+	extensionReports := v.extensionValidator.Validate(ctx, snapshotClone)
+	if len(extensionReports) > 0 {
+		if err = v.getErrorsFromResourceReports(extensionReports); err != nil {
+			err = errors.Wrapf(err, failedExtensionResourceReports)
+			errs = multierr.Append(errs, err)
 		}
 	}
 
@@ -409,14 +358,8 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 // ValidateDeletedGvk will validate a deletion of a resource, as long as it is supported, against the Gateway and Gloo Translations.
 func (v *validator) ValidateDeletedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) error {
-	_, supportedGatewayResource := GvkSupportedDeleteGatewayResources[gvk]
-	_, supportedGlooResource := gloovalidation.GvkToSupportedDeleteGlooResources[gvk]
-	if supportedGatewayResource || supportedGlooResource {
-		_, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Delete: true, DryRun: dryRun, AcquireLock: true})
-		return err
-	}
-	contextutils.LoggerFrom(ctx).Debugf("unsupported validation for resource delete ref namespace [%s] name [%s] group [%s] kind [%s]", resource.GetMetadata().GetNamespace(), resource.GetMetadata().GetName(), gvk.Group, gvk.Kind)
-	return nil
+	_, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Delete: true, DryRun: dryRun, AcquireLock: true})
+	return err
 }
 
 // ValidateModifiedGvk will validate a resource, as long as it is supported, against the Gateway and Gloo translations.
@@ -427,14 +370,11 @@ func (v *validator) ValidateModifiedGvk(ctx context.Context, gvk schema.GroupVer
 
 func (v *validator) validateModifiedResource(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun, acquireLock bool) (*Reports, error) {
 	var reports *Reports
-	if v.ModificationIsSupported(gvk) {
-		reports, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Gvk: gvk, Delete: false, DryRun: dryRun, AcquireLock: acquireLock})
-		if err != nil {
-			return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", resource)}}
-		}
-		return reports, nil
+	reports, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Gvk: gvk, Delete: false, DryRun: dryRun, AcquireLock: acquireLock})
+	if err != nil {
+		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", resource)}}
 	}
-	return reports, &multierror.Error{Errors: []error{groupIsNotSupported(resource, gvk)}}
+	return reports, nil
 }
 
 func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (
@@ -496,9 +436,9 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 		return &Reports{ProxyReports: &ProxyReports{}}, err
 	}
 
-	if newResourceFunc, hit := gloosnapshot.ApiGvkToHashableResource[itemGvk]; hit && v.ModificationIsSupported(itemGvk) {
+	if newResourceFunc, hit := gloosnapshot.ApiGvkToHashableResource[itemGvk]; hit {
 		resource := newResourceFunc()
-		if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, resource); unmarshalErr != nil {
+		if unmarshalErr := UnmarshalResource(jsonBytes, resource); unmarshalErr != nil {
 			return &Reports{ProxyReports: &ProxyReports{}}, WrappedUnmarshalErr(unmarshalErr)
 		}
 		return v.validateModifiedResource(ctx, itemGvk, resource, false, false)
@@ -533,48 +473,15 @@ func (v *validator) validateResource(opts *validationOptions) (*Reports, error) 
 	}
 }
 
-func GetDelegateRef(delegate *v1.DelegateAction) *core.ResourceRef {
-	// handle deprecated route table resource reference format
-	// TODO(marco): remove when we remove the deprecated fields from the API
-	if delegate.GetNamespace() != "" || delegate.GetName() != "" {
-		return &core.ResourceRef{
-			Namespace: delegate.GetNamespace(),
-			Name:      delegate.GetName(),
-		}
-	} else if delegate.GetRef() != nil {
-		return delegate.GetRef()
-	}
-	return nil
-}
-
-// Converts the GlooValidationService into Reports.
-func (v *validator) getReportsFromGlooValidation(reports []*gloovalidation.GlooValidationReport) (
-	*Reports,
-	error,
-) {
-	var (
-		errs         error
-		proxyReports ProxyReports
-		proxies      []*gloov1.Proxy
-	)
+// getErrorsFromGlooValidation returns an error comprising of the gloo reports. The errors will include warnings if
+// allowWarnings is not set.
+func (v *validator) getErrorsFromGlooValidation(reports []*gloovalidation.GlooValidationReport) error {
+	var errs error
 	for _, report := range reports {
-		// for resorce, resourceReport
-		for resource, reRpt := range report.ResourceReports {
-			if err := resourceReportToMultiErr(reRpt.Errors); err != nil {
-				errs = multierr.Append(errs, glooFailedResourceValidation(err, resource))
-			}
-			if warnings := reRpt.Warnings; !v.allowWarnings && len(warnings) > 0 {
-				for _, warning := range warnings {
-					errs = multierr.Append(errs, errors.New(warning))
-				}
-			}
-		}
-		// Append proxies and proxy reports
-		if report.Proxy != nil {
-			proxies = append(proxies, report.Proxy)
+		if err := v.getErrorsFromResourceReports(report.ResourceReports); err != nil {
+			errs = multierr.Append(errs, err)
 		}
 		if proxyReport := report.ProxyReport; proxyReport != nil {
-			proxyReports = append(proxyReports, report.ProxyReport)
 			if err := validationutils.GetProxyError(proxyReport); err != nil {
 				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
 			}
@@ -585,31 +492,30 @@ func (v *validator) getReportsFromGlooValidation(reports []*gloovalidation.GlooV
 			}
 		}
 	}
-	return &Reports{
-		ProxyReports: &proxyReports,
-		Proxies:      proxies,
-	}, errs
+	return errs
 }
 
-func resourceReportToMultiErr(err error) error {
-	var multiErr error
-	for _, errStr := range getErrors(err) {
-		multiErr = multierr.Append(multiErr, errors.New(errStr))
+func (v *validator) getErrorsFromResourceReports(reports reporter.ResourceReports) error {
+	if !v.allowWarnings {
+		return reports.ValidateStrict()
 	}
-	return multiErr
+	return reports.Validate()
 }
 
-func getErrors(err error) []string {
-	if err == nil {
-		return []string{}
+// UnmarshalResource is the same as the solo-kit pkg/utils/protoutils.Unmarshal() except it does not set the status of the resource
+// since validation does not write the resources, this is ok. Validation will only store the state of a resource
+// to the copy of the snapshot.
+func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
+	var resourceCrd kubeCRDV1.Resource
+	if err := json.Unmarshal(kubeJson, &resourceCrd); err != nil {
+		return errors.Wrapf(err, "unmarshalling from raw json")
 	}
-	switch err := err.(type) {
-	case *multierror.Error:
-		var errorStrings []string
-		for _, e := range err.Errors {
-			errorStrings = append(errorStrings, e.Error())
+	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta, true))
+
+	if resourceCrd.Spec != nil {
+		if err := skProtoUtils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
+			return errors.Wrapf(err, "parsing resource from crd spec %v in namespace %v into %T", resourceCrd.Name, resourceCrd.Namespace, resource)
 		}
-		return errorStrings
 	}
-	return []string{err.Error()}
+	return nil
 }

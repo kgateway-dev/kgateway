@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Validation webhook will now validate Rate Limit Configs.
+      The `IgnoreProxyValidationFailure` flag is now deprecated.
+    issueLink: https://github.com/solo-io/gloo/issues/6777
+    resolvesIssue: false

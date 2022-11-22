@@ -29,6 +29,7 @@ import (
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	syncerValidation "github.com/solo-io/gloo/projects/gloo/pkg/syncer/validation"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -724,16 +725,22 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		ConfigStatusMetricOpts:         nil,
 		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
 	}
-	var (
-		ignoreProxyValidationFailure bool
-		allowWarnings                bool
-	)
-	if gwOpts.Validation != nil && opts.GatewayControllerEnabled {
-		ignoreProxyValidationFailure = gwOpts.Validation.IgnoreProxyValidationFailure
-		allowWarnings = gwOpts.Validation.AllowWarnings
-	}
 
 	resourceHasher := translator.EnvoyCacheResourcesListToFnvHash
+
+	// Set up the syncer extensions
+	syncerExtensionParams := syncer.TranslatorSyncerExtensionParams{
+		RateLimitServiceSettings: &ratelimit.ServiceSettings{
+			Descriptors:    opts.Settings.GetRatelimit().GetDescriptors(),
+			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),
+		},
+		Hasher: resourceHasher,
+	}
+	var syncerExtensions []syncer.TranslatorSyncerExtension
+	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
+		syncerExtension := syncerExtensionFactory(watchOpts.Ctx, syncerExtensionParams)
+		syncerExtensions = append(syncerExtensions, syncerExtension)
+	}
 
 	sharedTranslator := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
@@ -741,11 +748,19 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	xdsSanitizer := sanitizer.XdsSanitizers{
+	xdsSanitizers := sanitizer.XdsSanitizers{
 		sanitizer.NewUpstreamRemovingSanitizer(),
 		routeReplacingSanitizer,
 	}
-	validator := validation.NewValidator(watchOpts.Ctx, sharedTranslator, xdsSanitizer)
+
+	vc := validation.ValidatorConfig{
+		Ctx: watchOpts.Ctx,
+		GlooValidatorConfig: validation.GlooValidatorConfig{
+			XdsSanitizer: xdsSanitizers,
+			Translator:   sharedTranslator,
+		},
+	}
+	validator := validation.NewValidator(vc)
 	if opts.ValidationServer.Server != nil {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}
@@ -772,32 +787,35 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		logger.Debugf("Gateway translation is disabled. Proxies are provided from another source")
 	}
 
-	gwValidationSyncer := gwvalidation.NewValidator(gwvalidation.NewValidatorConfig(
-		gatewayTranslator,
-		validator.ValidateGloo,
-		ignoreProxyValidationFailure,
-		allowWarnings,
-	))
+	// filter the list of extensions to only include the rate limit extension for validation
+	syncerValidatorExtensions := []syncer.TranslatorSyncerExtension{}
+	for _, ext := range syncerExtensions {
+		// currently only supporting ratelimit extension in validation
+		if ext.ID() == ratelimitExt.ServerRole {
+			syncerValidatorExtensions = append(syncerValidatorExtensions, ext)
+		}
+	}
+	// create a validator to validate extensions
+	extensionValidator := syncerValidation.NewValidator(syncerValidatorExtensions, opts.Settings)
 
-	// Set up the syncer extensions
-	syncerExtensionParams := syncer.TranslatorSyncerExtensionParams{
-		RateLimitServiceSettings: ratelimit.ServiceSettings{
-			Descriptors:    opts.Settings.GetRatelimit().GetDescriptors(),
-			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),
-		},
-		Hasher: resourceHasher,
+	validationConfig := gwvalidation.ValidatorConfig{
+		Translator:         gatewayTranslator,
+		GlooValidator:      validator.ValidateGloo,
+		ExtensionValidator: extensionValidator,
 	}
-	var syncerExtensions []syncer.TranslatorSyncerExtension
-	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
-		syncerExtension := syncerExtensionFactory(watchOpts.Ctx, syncerExtensionParams)
-		syncerExtensions = append(syncerExtensions, syncerExtension)
+	if gwOpts.Validation != nil {
+		valOpts := gwOpts.Validation
+		if opts.GatewayControllerEnabled {
+			validationConfig.AllowWarnings = valOpts.AllowWarnings
+		}
 	}
+	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
 	translationSync := syncer.NewTranslatorSyncer(
 		opts.WatchOpts.Ctx,
 		sharedTranslator,
 		opts.ControlPlane.SnapshotCache,
-		xdsSanitizer,
+		xdsSanitizers,
 		rpt,
 		opts.DevMode,
 		syncerExtensions,
@@ -1106,7 +1124,6 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 			ValidatingWebhookPort:        gwdefaults.ValidationWebhookBindPort,
 			ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
 			ValidatingWebhookKeyPath:     validationCfg.GetValidationWebhookTlsKey(),
-			IgnoreProxyValidationFailure: validationCfg.GetIgnoreGlooValidationFailure(),
 			AlwaysAcceptResources:        alwaysAcceptResources,
 			AllowWarnings:                allowWarnings,
 			WarnOnRouteShortCircuiting:   validationCfg.GetWarnRouteShortCircuiting().GetValue(),
