@@ -1,7 +1,7 @@
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: reject-me-too
+  name: partially-valid
   namespace: default
 spec:
   virtualHost:
