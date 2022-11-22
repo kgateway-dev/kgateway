@@ -92,6 +92,7 @@ steps:
       GITHUB_TOKEN: ${{ github.token }}
       ACK_GINKGO_RC: true
       ACK_GINKGO_DEPRECATIONS: 1.16.5
+      RELEASED_VERSION: "LATEST"
     run: |
       make run-ci-regression-tests
   - uses: testspace-com/setup-testspace@v1
