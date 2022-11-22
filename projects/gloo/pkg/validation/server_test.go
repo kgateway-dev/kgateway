@@ -45,6 +45,7 @@ var _ = Describe("Validation Server", func() {
 		params            plugins.Params
 		registeredPlugins []plugins.Plugin
 		xdsSanitizer      sanitizer.XdsSanitizers
+		vc                ValidatorConfig
 	)
 
 	BeforeEach(func() {
@@ -81,6 +82,13 @@ var _ = Describe("Validation Server", func() {
 		pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 
 		translator = NewTranslatorWithHasher(utils.NewSslConfigTranslator(), settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)
+		vc = ValidatorConfig{
+			Ctx: context.TODO(),
+			GlooValidatorConfig: GlooValidatorConfig{
+				XdsSanitizer: xdsSanitizer,
+				Translator:   translator,
+			},
+		}
 	})
 
 	Context("proxy validation", func() {
@@ -89,7 +97,7 @@ var _ = Describe("Validation Server", func() {
 		Context("validates the requested proxy", func() {
 			It("works with Validate", func() {
 				proxy := params.Snapshot.Proxies[0]
-				s := NewValidator(context.TODO(), translator, xdsSanitizer)
+				s := NewValidator(vc)
 				_ = s.Sync(context.TODO(), params.Snapshot)
 				rpt, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{Proxy: proxy})
 				Expect(err).NotTo(HaveOccurred())
@@ -105,7 +113,7 @@ var _ = Describe("Validation Server", func() {
 			})
 			It("works with Validate Gloo", func() {
 				proxy := params.Snapshot.Proxies[0]
-				s := NewValidator(context.TODO(), translator, xdsSanitizer)
+				s := NewValidator(vc)
 				_ = s.Sync(context.TODO(), params.Snapshot)
 				rpt, err := s.ValidateGloo(context.TODO(), proxy, nil, false)
 				Expect(err).NotTo(HaveOccurred())
@@ -133,7 +141,7 @@ var _ = Describe("Validation Server", func() {
 				proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()[0].Action = errorRouteAction
 				proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()[0].Action = errorRouteAction
 
-				s = NewValidator(context.TODO(), translator, xdsSanitizer)
+				s = NewValidator(vc)
 				_ = s.Sync(context.TODO(), params.Snapshot)
 			})
 
@@ -177,7 +185,7 @@ var _ = Describe("Validation Server", func() {
 				}
 				params.Snapshot.Proxies = v1.ProxyList{proxy1, proxy2}
 
-				s = NewValidator(context.TODO(), translator, xdsSanitizer)
+				s = NewValidator(vc)
 				_ = s.Sync(context.TODO(), params.Snapshot)
 			})
 
@@ -230,7 +238,7 @@ var _ = Describe("Validation Server", func() {
 
 			JustBeforeEach(func() {
 				params.Snapshot.Upstreams = v1.UpstreamList{}
-				s = NewValidator(context.TODO(), translator, xdsSanitizer)
+				s = NewValidator(vc)
 				_ = s.Sync(context.TODO(), params.Snapshot)
 				upstream = v1.Upstream{
 					Metadata: &core.Metadata{Name: "other-upstream", Namespace: "other-namespace"},
@@ -270,7 +278,7 @@ var _ = Describe("Validation Server", func() {
 				upstream = v1.Upstream{
 					Metadata: &core.Metadata{Name: "unused-upstream", Namespace: "gloo-system"},
 				}
-				s = NewValidator(context.TODO(), translator, xdsSanitizer)
+				s = NewValidator(vc)
 			})
 
 			validateProxyReport := func(proxyReport *validationgrpc.ProxyReport) {
@@ -312,7 +320,7 @@ var _ = Describe("Validation Server", func() {
 				upstream = v1.Upstream{
 					Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
 				}
-				s = NewValidator(context.TODO(), translator, xdsSanitizer)
+				s = NewValidator(vc)
 				_ = s.Sync(context.TODO(), params.Snapshot)
 			})
 
@@ -350,7 +358,7 @@ var _ = Describe("Validation Server", func() {
 			var secret v1.Secret
 
 			JustBeforeEach(func() {
-				s = NewValidator(context.TODO(), translator, xdsSanitizer)
+				s = NewValidator(vc)
 				_ = s.Sync(context.TODO(), params.Snapshot)
 				secret = v1.Secret{
 					Metadata: &core.Metadata{Name: "unused-secret", Namespace: "gloo-system"},
@@ -392,7 +400,7 @@ var _ = Describe("Validation Server", func() {
 			var secret v1.Secret
 
 			JustBeforeEach(func() {
-				s = NewValidator(context.TODO(), translator, xdsSanitizer)
+				s = NewValidator(vc)
 				_ = s.Sync(context.TODO(), params.Snapshot)
 				secret = v1.Secret{
 					Metadata: &core.Metadata{Name: "secret", Namespace: "gloo-system"},
@@ -461,7 +469,7 @@ var _ = Describe("Validation Server", func() {
 
 			srv = grpc.NewServer()
 
-			v = NewValidator(context.TODO(), nil, xdsSanitizer)
+			v = NewValidator(vc)
 
 			server := NewValidationServer()
 			server.SetValidator(v)
