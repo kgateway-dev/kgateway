@@ -2075,29 +2075,6 @@ spec:
 `,
 							expectedErr: "The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only",
 						},
-						// 						{
-						// 							resourceYaml: `
-						// apiVersion: enterprise.gloo.solo.io/v1
-						// kind: AuthConfig
-						// metadata:
-						//   name: auth-only-works-in-enterprise
-						//   namespace: gloo-system
-						// spec:
-						//   configs:
-						//   - oauth2:
-						//       oidcAuthorizationCode:
-						//         appUrl: https://localhost
-						//         callbackPath: /callback
-						//         clientId: someClientId
-						//         clientSecretRef:
-						//           name: auth0-client-secret
-						//           namespace: gloo-system
-						//         issuerUrl: https://some-url.com/
-						//         scopes:
-						//         - email
-						// `,
-						// 							expectedErr: "The Gloo Advanced Extauth API is an enterprise-only feature, please upgrade or use the Envoy Extauth API instead",
-						// 						},
 					}
 
 					for _, tc := range testCases {
