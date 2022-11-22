@@ -205,7 +205,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 		})
 
-		Context("check", func() {
+		FContext("check", func() {
 			BeforeEach(func() {
 				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", "https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml")
 				Expect(err).NotTo(HaveOccurred(), "should be able to install petstore")
@@ -406,16 +406,16 @@ var _ = Describe("Kube2e: glooctl", func() {
 				_, err = runGlooctlCommand("check")
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("Error: 5 errors occurred"))
-				Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': default partially-valid (Reason: 2 errors occurred:"))
+				Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': default reject-me-too (Reason: 2 errors occurred:"))
 				Expect(err.Error()).To(ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [gloo-system.reject-me]"))
-				Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.partially-valid gloo-system.petstore gloo-system.reject-me]"))
+				Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.petstore gloo-system.reject-me]"))
 
 				Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': gloo-system petstore (Reason: 1 error occurred:"))
-				Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.partially-valid gloo-system.petstore gloo-system.reject-me]"))
+				Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.petstore gloo-system.reject-me]"))
 
 				Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': gloo-system reject-me (Reason: 2 errors occurred:"))
-				Expect(err.Error()).To(ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [default.partially-valid]"))
-				Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.partially-valid gloo-system.petstore gloo-system.reject-me]"))
+				Expect(err.Error()).To(ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [default.reject-me-too]"))
+				Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.petstore gloo-system.reject-me]"))
 
 				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", "gloo-system", "virtualservice", "reject-me")
 				Expect(err).NotTo(HaveOccurred())
