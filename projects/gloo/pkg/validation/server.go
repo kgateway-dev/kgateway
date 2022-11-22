@@ -11,7 +11,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
@@ -30,25 +29,29 @@ type Validator interface {
 	ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource resources.Resource, delete bool) ([]*GlooValidationReport, error)
 }
 
+// ValidatorConfig is used to configure the validator
+type ValidatorConfig struct {
+	Ctx                 context.Context
+	GlooValidatorConfig GlooValidatorConfig
+}
+
 type validator struct {
 	// note to devs: this can be called in parallel by the validation webhook and main translation loops at the same time
 	// any stateful fields should be protected by a mutex or themselves be synchronized (like the xds sanitizer / translator)
 	lock           sync.RWMutex
 	latestSnapshot *v1snap.ApiSnapshot
-	glooValidator  GlooValidator
+	validator      GlooValidator
 	translator     translator.Translator
 	notifyResync   map[*validation.NotifyOnResyncRequest]chan struct{}
 	ctx            context.Context
-	xdsSanitizer   sanitizer.XdsSanitizers
 }
 
-func NewValidator(ctx context.Context, translator translator.Translator, xdsSanitizer sanitizer.XdsSanitizers) *validator {
+func NewValidator(config ValidatorConfig) *validator {
 	return &validator{
-		translator:    translator,
-		glooValidator: NewGlooValidator(translator, xdsSanitizer),
-		notifyResync:  make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1),
-		ctx:           ctx,
-		xdsSanitizer:  xdsSanitizer,
+		translator:   config.GlooValidatorConfig.Translator,
+		validator:    NewGlooValidator(config.GlooValidatorConfig),
+		notifyResync: make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1),
+		ctx:          config.Ctx,
 	}
 }
 
@@ -185,7 +188,7 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	applyRequestToSnapshot(&snapCopy, req)
 	contextutils.LoggerFrom(ctx).Infof("received proxy validation request")
 
-	reports := s.glooValidator.Validate(ctx, req.GetProxy(), &snapCopy, false)
+	reports := s.validator.Validate(ctx, req.GetProxy(), &snapCopy, false)
 
 	var validationReports []*validation.ValidationReport
 	// convert the reports for the gRPC response
@@ -221,7 +224,8 @@ func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource 
 			}
 		}
 	}
-	return s.glooValidator.Validate(ctx, proxy, &snapCopy, delete), nil
+
+	return s.validator.Validate(ctx, proxy, &snapCopy, delete), nil
 }
 
 // updates the given snapshot with the resources from the request
