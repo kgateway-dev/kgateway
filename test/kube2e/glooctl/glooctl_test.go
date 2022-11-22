@@ -1,9 +1,10 @@
 package glooctl_test
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"path/filepath"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils/exec"
