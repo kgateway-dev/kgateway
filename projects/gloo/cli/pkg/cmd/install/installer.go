@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
+	"go.uber.org/zap"
 	"io"
 	"os"
 	"path"
@@ -173,9 +176,30 @@ func (i *installer) installFromConfig(installerConfig *InstallerConfig) error {
 		if err := i.printReleaseManifest(rel); err != nil {
 			return err
 		}
+	} else {
+		// If this is not a DryRun, we need to wait for CRDs to be accepted before proceeding
+		if err := i.waitForCrdsToBeRegistered(installerConfig.Ctx); err != nil {
+			return err
+		}
 	}
 
 	postInstallMessage(installerConfig.InstallCliArgs, installerConfig.Mode)
+
+	return nil
+}
+
+func (i *installer) waitForCrdsToBeRegistered(ctx context.Context) error {
+	requiredCrds := []string{
+		"settings.gloo.solo.io",
+	}
+	apiExts := helpers.MustApiExtsClient()
+	logger := contextutils.LoggerFrom(ctx)
+	for _, crdName := range requiredCrds {
+		logger.Debugw("waiting for crd to be registered", zap.String("crd", crdName))
+		if err := kubeutils.WaitForCrdActive(ctx, apiExts, crdName); err != nil {
+			return eris.Wrapf(err, "waiting for crd %v to become registered", crdName)
+		}
+	}
 
 	return nil
 }

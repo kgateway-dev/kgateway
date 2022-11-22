@@ -20,13 +20,17 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			extraValues := map[string]interface{}{
-				"license_key":      opts.Install.LicenseKey,
-				"gloo-fed.enabled": opts.Install.WithGlooFed,
-			}
 			if opts.Install.LicenseKey == "" {
 				return eris.New("No license key provided, please re-run the install with the following flag `--license-key=<YOUR-LICENSE-KEY>")
 			}
+
+			extraValues := map[string]interface{}{
+				"license_key": opts.Install.LicenseKey,
+			}
+			if opts.Install.WithGlooFed {
+				extraValues["gloo-fed.enabled"] = true
+			}
+
 			mode := Enterprise
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
