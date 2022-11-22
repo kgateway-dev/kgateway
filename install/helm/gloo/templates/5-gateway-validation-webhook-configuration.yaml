@@ -27,7 +27,13 @@ webhooks:
   - operations: [ "CREATE", "UPDATE", "DELETE" ]
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
-    resources: ["*"]
+    resources: ["virtualservices", "routetables"]
+  - operations: [ "CREATE", "UPDATE"]
+{{/* gateway deletions are not supported at the moment. Since we have no longer use resource flags to support 
+specific resources, we will manage the resources that the webhook receives via the helm configurations*/}}
+    apiGroups: ["gateway.solo.io"]
+    apiVersions: ["v1"]
+    resources: ["gateways"]
   - operations: [ "CREATE", "UPDATE", "DELETE" ]
     apiGroups: ["gloo.solo.io"]
     apiVersions: ["v1"]
@@ -36,6 +42,10 @@ webhooks:
     apiGroups: ["gloo.solo.io"]
     apiVersions: ["v1"]
     resources: ["secrets"]
+  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+    apiGroups: ["ratelimit.solo.io"]
+    apiVersions: ["v1alpha1"]
+    resources: ["ratelimitconfigs"]
   sideEffects: None
   matchPolicy: Exact
   admissionReviewVersions:
