@@ -418,7 +418,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", "gloo-system", "virtualservice", "reject-me")
 				Expect(err).NotTo(HaveOccurred())
-				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", "default", "virtualservice", "partially-valid")
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", "default", "virtualservice", "reject-me-too")
 				Expect(err).NotTo(HaveOccurred())
 			})
 
