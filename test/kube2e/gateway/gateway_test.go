@@ -27,7 +27,6 @@ import (
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/golang/protobuf/ptypes/empty"
@@ -76,6 +75,49 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		glooResources *gloosnapshot.ApiSnapshot
 	)
+
+	verifyValidationWorks := func() {
+		// Validation of Gloo resources requires that a Proxy resource exist
+		// Therefore, before the tests start, we must attempt updates that should be rejected
+		// They will only be rejected once a Proxy exists in the ApiSnapshot
+
+		placeholderUs := &gloov1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "",
+				Namespace: testHelper.InstallNamespace,
+			},
+			UpstreamType: &gloov1.Upstream_Static{
+				Static: &static.UpstreamSpec{
+					Hosts: []*static.Host{{
+						Addr: "~",
+					}},
+				},
+			},
+		}
+		attempt := 0
+		Eventually(func(g Gomega) bool {
+			placeholderUs.Metadata.Name = fmt.Sprintf("invalid-placeholder-us-%d", attempt)
+
+			_, err := resourceClientset.UpstreamClient().Write(placeholderUs, clients.WriteOpts{Ctx: ctx})
+			if err != nil {
+				serr := err.Error()
+				g.Expect(serr).Should(ContainSubstring("admission webhook"))
+				g.Expect(serr).Should(ContainSubstring("port cannot be empty for host"))
+				// We have successfully rejected an invalid upstream
+				// This means that the webhook is fully warmed, and contains a Snapshot with a Proxy
+				return true
+			}
+
+			err = resourceClientset.UpstreamClient().Delete(
+				placeholderUs.GetMetadata().GetNamespace(),
+				placeholderUs.GetMetadata().GetName(),
+				clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
+			g.Expect(err).NotTo(HaveOccurred())
+
+			attempt += 1
+			return false
+		}, time.Second*15, time.Second*1).Should(BeTrue())
+	}
 
 	BeforeEach(func() {
 		// Create a VirtualService routing directly to the testrunner kubernetes service
@@ -1252,60 +1294,67 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 	})
 
-	Context("tests with RateLimitConfigs", func() {
-
-		var rateLimitConfig *v1alpha1skv1.RateLimitConfig
+	Context("validation will always accept resources", func() {
 
 		BeforeEach(func() {
-			rateLimitConfig = &v1alpha1skv1.RateLimitConfig{
-				RateLimitConfig: ratelimit2.RateLimitConfig{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testrlc",
-						Namespace: testHelper.InstallNamespace,
-					},
-					Spec: rlv1alpha1.RateLimitConfigSpec{
-						ConfigType: &rlv1alpha1.RateLimitConfigSpec_Raw_{
-							Raw: &rlv1alpha1.RateLimitConfigSpec_Raw{
-								Descriptors: []*rlv1alpha1.Descriptor{{
-									Key:   "generic_key",
-									Value: "foo",
-									RateLimit: &rlv1alpha1.RateLimit{
-										Unit:            rlv1alpha1.RateLimit_MINUTE,
-										RequestsPerUnit: 1,
-									},
-								}},
-								RateLimits: []*rlv1alpha1.RateLimitActions{{
-									Actions: []*rlv1alpha1.Action{{
-										ActionSpecifier: &rlv1alpha1.Action_GenericKey_{
-											GenericKey: &rlv1alpha1.Action_GenericKey{
-												DescriptorValue: "foo",
-											},
+			kube2e.UpdateAlwaysAcceptSetting(ctx, true, testHelper.InstallNamespace)
+		})
+
+		AfterEach(func() {
+			kube2e.UpdateAlwaysAcceptSetting(ctx, false, testHelper.InstallNamespace)
+		})
+
+		Context("tests with RateLimitConfigs", func() {
+
+			var rateLimitConfig *v1alpha1skv1.RateLimitConfig
+
+			BeforeEach(func() {
+				rateLimitConfig = &v1alpha1skv1.RateLimitConfig{
+					RateLimitConfig: ratelimit2.RateLimitConfig{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testrlc",
+							Namespace: testHelper.InstallNamespace,
+						},
+						Spec: rlv1alpha1.RateLimitConfigSpec{
+							ConfigType: &rlv1alpha1.RateLimitConfigSpec_Raw_{
+								Raw: &rlv1alpha1.RateLimitConfigSpec_Raw{
+									Descriptors: []*rlv1alpha1.Descriptor{{
+										Key:   "generic_key",
+										Value: "foo",
+										RateLimit: &rlv1alpha1.RateLimit{
+											Unit:            rlv1alpha1.RateLimit_MINUTE,
+											RequestsPerUnit: 1,
 										},
 									}},
-								}},
+									RateLimits: []*rlv1alpha1.RateLimitActions{{
+										Actions: []*rlv1alpha1.Action{{
+											ActionSpecifier: &rlv1alpha1.Action_GenericKey_{
+												GenericKey: &rlv1alpha1.Action_GenericKey{
+													DescriptorValue: "foo",
+												},
+											},
+										}},
+									}},
+								},
 							},
 						},
 					},
-				},
-			}
-			glooResources.Ratelimitconfigs = v1alpha1skv1.RateLimitConfigList{rateLimitConfig}
-		})
+				}
+				glooResources.Ratelimitconfigs = v1alpha1skv1.RateLimitConfigList{rateLimitConfig}
+			})
 
-		It("correctly sets a status to a RateLimitConfig", func() {
-			// demand that a created ratelimit config _has_ a rejected status.
-			Eventually(func() error {
-				rlc, err := resourceClientset.RateLimitConfigClient().Read(rateLimitConfig.GetMetadata().GetNamespace(), rateLimitConfig.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
-				if err != nil {
-					return err
-				}
-				if rlc.Status.State != v1alpha1.RateLimitConfigStatus_REJECTED {
-					return errors.Errorf("expected rejected status, got %v", rlc.Status.State)
-				}
-				if !strings.Contains(rlc.Status.Message, "enterprise-only") {
-					return errors.Errorf("expected enterprise-only message in status, got %v", rlc.Status.Message)
-				}
-				return nil
-			}, "15s", "0.5s").ShouldNot(HaveOccurred())
+			It("correctly sets a status to a RateLimitConfig", func() {
+				// demand that a created ratelimit config _has_ a rejected status.
+				Eventually(func(g Gomega) error {
+					rlc, err := resourceClientset.RateLimitConfigClient().Read(rateLimitConfig.GetMetadata().GetNamespace(), rateLimitConfig.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+					if err != nil {
+						return err
+					}
+					g.Expect(rlc.Status.State).To(Equal(v1alpha1.RateLimitConfigStatus_REJECTED))
+					g.Expect(rlc.Status.Message).Should(ContainSubstring("enterprise-only"))
+					return nil
+				}, "15s", "0.5s").ShouldNot(HaveOccurred())
+			})
 		})
 	})
 
@@ -1898,7 +1947,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 	})
 
-	Context("tests for the validation server", func() {
+	Context("tests for the validation", func() {
 
 		Context("rejects bad resources", func() {
 
@@ -2004,6 +2053,28 @@ spec:
 `,
 							expectedErr: gwtranslator.MissingGatewayTypeErr.Error(),
 						},
+						{
+							resourceYaml: `
+apiVersion: ratelimit.solo.io/v1alpha1
+kind: RateLimitConfig
+metadata:
+  name: rlc
+  namespace: gloo-system
+spec:
+  raw:
+    descriptors:
+      - key: foo
+        value: foo
+        rateLimit:
+          requestsPerUnit: 1
+          unit: MINUTE
+    rateLimits:
+      - actions:
+        - genericKey:
+            descriptorValue: bar
+`,
+							expectedErr: "The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only",
+						},
 					}
 
 					for _, tc := range testCases {
@@ -2032,43 +2103,7 @@ spec:
 				})
 
 				JustBeforeEach(func() {
-					// Validation of Gloo resources requires that a Proxy resource exist
-					// Therefore, before the tests start, we must attempt updates that should be rejected
-					// They will only be rejected once a Proxy exists in the ApiSnapshot
-
-					placeholderUs := &gloov1.Upstream{
-						Metadata: &core.Metadata{
-							Name:      "",
-							Namespace: testHelper.InstallNamespace,
-						},
-						UpstreamType: &gloov1.Upstream_Static{
-							Static: &static.UpstreamSpec{
-								Hosts: []*static.Host{{
-									Addr: "~",
-								}},
-							},
-						},
-					}
-					attempt := 0
-					Eventually(func(g Gomega) bool {
-						placeholderUs.Metadata.Name = fmt.Sprintf("invalid-placeholder-us-%d", attempt)
-
-						_, err := resourceClientset.UpstreamClient().Write(placeholderUs, clients.WriteOpts{Ctx: ctx})
-						if err != nil {
-							// We have successfully rejected an invalid upstream
-							// This means that the webhook is fully warmed, and contains a Snapshot with a Proxy
-							return true
-						}
-
-						err = resourceClientset.UpstreamClient().Delete(
-							placeholderUs.GetMetadata().GetNamespace(),
-							placeholderUs.GetMetadata().GetName(),
-							clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-						g.Expect(err).NotTo(HaveOccurred())
-
-						attempt += 1
-						return false
-					}, time.Second*15, time.Second*1).Should(BeTrue())
+					verifyValidationWorks()
 				})
 
 				It("rejects bad resources", func() {
@@ -2086,14 +2121,12 @@ spec:
 `,
 						expectedErr: "addr cannot be empty for host\n",
 					}}
-
 					for _, tc := range testCases {
 						testValidation(tc.resourceYaml, tc.expectedErr)
 					}
 				})
 
 			})
-
 		})
 
 		It("rejects invalid inja template in transformation", func() {

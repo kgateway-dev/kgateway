@@ -10,14 +10,16 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	syncerValidation "github.com/solo-io/gloo/projects/gloo/pkg/syncer/validation"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	gloovalidation "github.com/solo-io/gloo/projects/gloo/pkg/validation"
+
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -44,12 +46,18 @@ var _ = Describe("Validator", func() {
 			WriteNamespace: ns,
 		})
 
-		v = NewValidator(NewValidatorConfig(t, gv, false, false))
+		extensionValidator := syncerValidation.NewValidator([]syncer.TranslatorSyncerExtension{}, nil)
+		v = NewValidator(ValidatorConfig{
+			Translator:         t,
+			GlooValidator:      gv,
+			ExtensionValidator: extensionValidator,
+			AllowWarnings:      false,
+		})
 		mValidConfig = utils.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
 	})
 
 	It("returns error before sync called", func() {
-		_, err := v.ValidateModifiedGvk(context.TODO(), gatewayv1.GatewayGVK, nil, false)
+		_, err := v.ValidateModifiedGvk(context.TODO(), v1.GatewayGVK, nil, false)
 		Expect(err).To(testutils.HaveInErrorChain(NotReadyErr))
 		err = v.Sync(context.Background(), &gloov1snap.ApiSnapshot{})
 		Expect(err).NotTo(HaveOccurred())
@@ -67,16 +75,16 @@ var _ = Describe("Validator", func() {
 
 	It("has mValidConfig=0 after Sync is called with invalid snapshot", func() {
 		snap := samples.SimpleGlooSnapshot(ns)
-		snap.Gateways.Each(func(element *gatewayv1.Gateway) {
-			http, ok := element.GatewayType.(*gatewayv1.Gateway_HttpGateway)
+		snap.Gateways.Each(func(element *v1.Gateway) {
+			http, ok := element.GatewayType.(*v1.Gateway_HttpGateway)
 			if !ok {
 				return
 			}
-			http.HttpGateway.VirtualServiceExpressions = &gatewayv1.VirtualServiceSelectorExpressions{
-				Expressions: []*gatewayv1.VirtualServiceSelectorExpressions_Expression{
+			http.HttpGateway.VirtualServiceExpressions = &v1.VirtualServiceSelectorExpressions{
+				Expressions: []*v1.VirtualServiceSelectorExpressions_Expression{
 					{
 						Key:      "a",
-						Operator: gatewayv1.VirtualServiceSelectorExpressions_Expression_Equals,
+						Operator: v1.VirtualServiceSelectorExpressions_Expression_Equals,
 						Values:   []string{"b", "c"},
 					},
 				},
@@ -349,10 +357,10 @@ var _ = Describe("Validator", func() {
 
 		Context("route table rejected", func() {
 			It("rejects the rt", func() {
-				badRoute := &gatewayv1.Route{
-					Action: &gatewayv1.Route_DelegateAction{
-						DelegateAction: &gatewayv1.DelegateAction{
-							DelegationType: &gatewayv1.DelegateAction_Ref{
+				badRoute := &v1.Route{
+					Action: &v1.Route_DelegateAction{
+						DelegateAction: &v1.DelegateAction{
+							DelegationType: &v1.DelegateAction_Ref{
 								Ref: &core.ResourceRef{
 									Name:      "invalid",
 									Namespace: "name",
@@ -365,7 +373,7 @@ var _ = Describe("Validator", func() {
 				// validate proxy should never be called
 				v.glooValidator = nil
 				snap := samples.GlooSnapshotWithDelegates(ns)
-				rt := snap.RouteTables[0].DeepCopyObject().(*gatewayv1.RouteTable)
+				rt := snap.RouteTables[0].DeepCopyObject().(*v1.RouteTable)
 				rt.Routes = append(rt.Routes, badRoute)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
@@ -487,11 +495,11 @@ var _ = Describe("Validator", func() {
 			It("accepts the vs", func() {
 				v.glooValidator = ValidateAccept
 				snap := samples.SimpleGlooSnapshot(ns)
-				snap.Gateways.Each(func(element *gatewayv1.Gateway) {
+				snap.Gateways.Each(func(element *v1.Gateway) {
 					switch gatewayType := element.GetGatewayType().(type) {
-					case *gatewayv1.Gateway_HttpGateway:
+					case *v1.Gateway_HttpGateway:
 						gatewayType.HttpGateway.VirtualServiceSelector = map[string]string{"nobody": "hastheselabels"}
-					case *gatewayv1.Gateway_HybridGateway:
+					case *v1.Gateway_HybridGateway:
 						for _, matchedGateway := range gatewayType.HybridGateway.GetMatchedGateways() {
 							if httpGateway := matchedGateway.GetHttpGateway(); httpGateway != nil {
 								httpGateway.VirtualServiceSelector = map[string]string{"nobody": "hastheselabels"}
@@ -510,16 +518,16 @@ var _ = Describe("Validator", func() {
 			It("rejects the vs", func() {
 				v.glooValidator = ValidateFail
 				snap := samples.SimpleGlooSnapshot(ns)
-				snap.Gateways.Each(func(element *gatewayv1.Gateway) {
-					http, ok := element.GatewayType.(*gatewayv1.Gateway_HttpGateway)
+				snap.Gateways.Each(func(element *v1.Gateway) {
+					http, ok := element.GatewayType.(*v1.Gateway_HttpGateway)
 					if !ok {
 						return
 					}
-					http.HttpGateway.VirtualServiceExpressions = &gatewayv1.VirtualServiceSelectorExpressions{
-						Expressions: []*gatewayv1.VirtualServiceSelectorExpressions_Expression{
+					http.HttpGateway.VirtualServiceExpressions = &v1.VirtualServiceSelectorExpressions{
+						Expressions: []*v1.VirtualServiceSelectorExpressions_Expression{
 							{
 								Key:      "a",
-								Operator: gatewayv1.VirtualServiceSelectorExpressions_Expression_Equals,
+								Operator: v1.VirtualServiceSelectorExpressions_Expression_Equals,
 								Values:   []string{"b", "c"},
 							},
 						},
@@ -532,11 +540,11 @@ var _ = Describe("Validator", func() {
 		})
 		Context("virtual service rejected", func() {
 			It("rejects the vs", func() {
-				badRoute := &gatewayv1.Route{
-					Action: &gatewayv1.Route_DelegateAction{
+				badRoute := &v1.Route{
+					Action: &v1.Route_DelegateAction{
 
-						DelegateAction: &gatewayv1.DelegateAction{
-							DelegationType: &gatewayv1.DelegateAction_Ref{
+						DelegateAction: &v1.DelegateAction{
+							DelegationType: &v1.DelegateAction_Ref{
 								Ref: &core.ResourceRef{
 									Name:      "invalid",
 									Namespace: "name",
@@ -549,7 +557,7 @@ var _ = Describe("Validator", func() {
 				// validate proxy should never be called
 				v.glooValidator = nil
 				snap := samples.SimpleGlooSnapshot(ns)
-				vs := snap.VirtualServices[0].DeepCopyObject().(*gatewayv1.VirtualService)
+				vs := snap.VirtualServices[0].DeepCopyObject().(*v1.VirtualService)
 				vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, badRoute)
 
 				err := v.Sync(context.TODO(), snap)
@@ -662,7 +670,7 @@ var _ = Describe("Validator", func() {
 				// create a virtual service to validate, should pass validation as a prior one should
 				// already be in the validation snapshot cache with a different domain
 				samples.AddVsToSnap(snap, us.GetMetadata().Ref(), "ns")
-				vs2 := &gatewayv1.VirtualService{}
+				vs2 := &v1.VirtualService{}
 				snap.VirtualServices[1].DeepCopyInto(vs2)
 				vs2.Metadata.Name = "vs2"
 
@@ -672,7 +680,7 @@ var _ = Describe("Validator", func() {
 
 				// create another virtual service to validate, should fail validation as a prior one should
 				// already be in the validation snapshot cache with the same domain (as dry-run before was false)
-				vs3 := &gatewayv1.VirtualService{}
+				vs3 := &v1.VirtualService{}
 				snap.VirtualServices[1].DeepCopyInto(vs3)
 				vs3.Metadata.Name = "vs3"
 
@@ -693,7 +701,7 @@ var _ = Describe("Validator", func() {
 				samples.AddVsToSnap(snap, us.GetMetadata().Ref(), "ns")
 				// create a virtual service to validate, should pass validation as a prior one should
 				// already be in the validation snapshot cache with a different domain
-				vs2 := &gatewayv1.VirtualService{}
+				vs2 := &v1.VirtualService{}
 				snap.VirtualServices[1].DeepCopyInto(vs2)
 				vs2.Metadata.Name = "vs2"
 
@@ -703,7 +711,7 @@ var _ = Describe("Validator", func() {
 
 				// create another virtual service to validate, should pass validation as a prior one should not
 				// already be in the validation snapshot cache (as dry-run was true)
-				vs3 := &gatewayv1.VirtualService{}
+				vs3 := &v1.VirtualService{}
 				snap.VirtualServices[1].DeepCopyInto(vs3)
 				vs3.Metadata.Name = "vs3"
 
@@ -720,18 +728,18 @@ var _ = Describe("Validator", func() {
 				v.glooValidator = ValidateAccept
 				snap := samples.SimpleGlooSnapshot(ns)
 				ref := snap.VirtualServices[0].Metadata.Ref()
-				snap.Gateways.Each(func(element *gatewayv1.Gateway) {
+				snap.Gateways.Each(func(element *v1.Gateway) {
 					switch gatewayType := element.GetGatewayType().(type) {
-					case *gatewayv1.Gateway_HttpGateway:
+					case *v1.Gateway_HttpGateway:
 						gatewayType.HttpGateway.VirtualServices = []*core.ResourceRef{ref}
-					case *gatewayv1.Gateway_HybridGateway:
+					case *v1.Gateway_HybridGateway:
 						for _, matchedGateway := range gatewayType.HybridGateway.GetMatchedGateways() {
 							if httpGateway := matchedGateway.GetHttpGateway(); httpGateway != nil {
 								httpGateway.VirtualServices = []*core.ResourceRef{ref}
 							}
 						}
 					}
-					http, ok := element.GatewayType.(*gatewayv1.Gateway_HttpGateway)
+					http, ok := element.GatewayType.(*v1.Gateway_HttpGateway)
 					if !ok {
 						return
 					}
@@ -833,9 +841,9 @@ var _ = Describe("Validator", func() {
 				// validate proxy should never be called
 				v.glooValidator = nil
 				snap := samples.SimpleGlooSnapshot(ns)
-				gw := snap.Gateways[0].DeepCopyObject().(*gatewayv1.Gateway)
+				gw := snap.Gateways[0].DeepCopyObject().(*v1.Gateway)
 
-				gw.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.VirtualServices = append(gw.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.VirtualServices, badRef)
+				gw.GatewayType.(*v1.Gateway_HttpGateway).HttpGateway.VirtualServices = append(gw.GatewayType.(*v1.Gateway_HttpGateway).HttpGateway.VirtualServices, badRef)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				reports, err := v.ValidateModifiedGvk(context.TODO(), v1.GatewayGVK, gw, false)
@@ -849,11 +857,11 @@ var _ = Describe("Validator", func() {
 
 	Context("validating a list of virtual services", func() {
 
-		toUnstructuredList := func(vss ...*gatewayv1.VirtualService) *unstructured.UnstructuredList {
+		toUnstructuredList := func(vss ...*v1.VirtualService) *unstructured.UnstructuredList {
 
 			var objs []unstructured.Unstructured
 			for _, vs := range vss {
-				kubeRes, _ := gatewayv1.VirtualServiceCrd.KubeResource(vs)
+				kubeRes, _ := v1.VirtualServiceCrd.KubeResource(vs)
 				bytes, err := json.Marshal(kubeRes)
 				Expect(err).ToNot(HaveOccurred())
 				mapFromVs := map[string]interface{}{}
@@ -913,11 +921,11 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGlooSnapshot(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				vs1 := &gatewayv1.VirtualService{}
+				vs1 := &v1.VirtualService{}
 				snap.VirtualServices[0].DeepCopyInto(vs1)
 				vs1.Metadata.Name = "vs1"
 				vs1.VirtualHost.Domains = []string{"example.vs1.com"}
-				vs2 := &gatewayv1.VirtualService{}
+				vs2 := &v1.VirtualService{}
 				snap.VirtualServices[0].DeepCopyInto(vs2)
 				vs2.Metadata.Name = "vs2"
 				vs2.VirtualHost.Domains = []string{"example.vs2.com"}
@@ -933,11 +941,11 @@ var _ = Describe("Validator", func() {
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 
-				vs1 := &gatewayv1.VirtualService{}
+				vs1 := &v1.VirtualService{}
 				snap.VirtualServices[0].DeepCopyInto(vs1)
 				vs1.Metadata.Name = "vs1"
 
-				vs2 := &gatewayv1.VirtualService{}
+				vs2 := &v1.VirtualService{}
 				snap.VirtualServices[0].DeepCopyInto(vs2)
 				vs2.Metadata.Name = "vs2"
 
@@ -996,11 +1004,11 @@ var _ = Describe("Validator", func() {
 
 		Context("virtual service list rejected", func() {
 			It("rejects the vs list", func() {
-				badRoute := &gatewayv1.Route{
-					Action: &gatewayv1.Route_DelegateAction{
+				badRoute := &v1.Route{
+					Action: &v1.Route_DelegateAction{
 
-						DelegateAction: &gatewayv1.DelegateAction{
-							DelegationType: &gatewayv1.DelegateAction_Ref{
+						DelegateAction: &v1.DelegateAction{
+							DelegationType: &v1.DelegateAction_Ref{
 								Ref: &core.ResourceRef{
 									Name:      "invalid",
 									Namespace: "name",
@@ -1013,7 +1021,7 @@ var _ = Describe("Validator", func() {
 				// validate proxy should never be called
 				v.glooValidator = nil
 				snap := samples.SimpleGlooSnapshot(ns)
-				vs := snap.VirtualServices[0].DeepCopyObject().(*gatewayv1.VirtualService)
+				vs := snap.VirtualServices[0].DeepCopyObject().(*v1.VirtualService)
 				vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, badRoute)
 				vsList := toUnstructuredList(vs)
 
@@ -1038,7 +1046,7 @@ var _ = Describe("Validator", func() {
 				// already be in the validation snapshot cache with a different domain
 				samples.AddVsToSnap(snap, us.GetMetadata().Ref(), "ns")
 
-				vs2 := &gatewayv1.VirtualService{}
+				vs2 := &v1.VirtualService{}
 				snap.VirtualServices[1].DeepCopyInto(vs2)
 				vs2.Metadata.Name = "vs2"
 
@@ -1048,7 +1056,7 @@ var _ = Describe("Validator", func() {
 
 				// create another virtual service to validate, should fail validation as a prior one should
 				// already be in the validation snapshot cache with the same domain (as dry-run before was false)
-				vs3 := &gatewayv1.VirtualService{}
+				vs3 := &v1.VirtualService{}
 				snap.VirtualServices[1].DeepCopyInto(vs3)
 				vs3.Metadata.Name = "vs3"
 
@@ -1069,7 +1077,7 @@ var _ = Describe("Validator", func() {
 				samples.AddVsToSnap(snap, us.GetMetadata().Ref(), "ns")
 				// create a virtual service to validate, should pass validation as a prior one should
 				// already be in the validation snapshot cache with a different domain
-				vs2 := &gatewayv1.VirtualService{}
+				vs2 := &v1.VirtualService{}
 				snap.VirtualServices[1].DeepCopyInto(vs2)
 				vs2.Metadata.Name = "vs2"
 
@@ -1079,7 +1087,7 @@ var _ = Describe("Validator", func() {
 
 				// create another virtual service to validate, should pass validation as a prior one should not
 				// already be in the validation snapshot cache (as dry-run was true)
-				vs3 := &gatewayv1.VirtualService{}
+				vs3 := &v1.VirtualService{}
 				snap.VirtualServices[1].DeepCopyInto(vs3)
 				vs3.Metadata.Name = "vs3"
 
@@ -1104,9 +1112,9 @@ var _ = Describe("Validator", func() {
 			numberOfWorkers = 100
 		})
 
-		ValidateModifiedGvkWorker := func(vsToDuplicate *gatewayv1.VirtualService, name string) error {
+		ValidateModifiedGvkWorker := func(vsToDuplicate *v1.VirtualService, name string) error {
 			// duplicate the vs with a different name
-			workerVirtualService := &gatewayv1.VirtualService{}
+			workerVirtualService := &v1.VirtualService{}
 			vsToDuplicate.DeepCopyInto(workerVirtualService)
 			workerVirtualService.Metadata.Name = "vs2-" + name
 			_, err := v.ValidateModifiedGvk(context.TODO(), v1.VirtualServiceGVK, workerVirtualService, false)

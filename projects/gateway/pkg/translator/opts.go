@@ -32,7 +32,6 @@ type ValidationOpts struct {
 	ValidatingWebhookPort        int
 	ValidatingWebhookCertPath    string
 	ValidatingWebhookKeyPath     string
-	IgnoreProxyValidationFailure bool
 	AlwaysAcceptResources        bool
 	AllowWarnings                bool
 	WarnOnRouteShortCircuiting   bool
