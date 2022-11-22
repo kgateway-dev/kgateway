@@ -518,14 +518,6 @@ func (v *mockValidator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) 
 	return v.fSync(ctx, snap)
 }
 
-func (v *mockValidator) ModificationIsSupported(gvk schema.GroupVersionKind) bool {
-	return true
-}
-
-func (v *mockValidator) DeletionIsSupported(gvk schema.GroupVersionKind) bool {
-	return true
-}
-
 func (v *mockValidator) ValidateDeletedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) error {
 	if v.fValidateDeleteGvk == nil {
 		return nil

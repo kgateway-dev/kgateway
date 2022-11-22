@@ -20,8 +20,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-
 	"github.com/solo-io/gloo/pkg/utils"
 
 	"go.opencensus.io/stats"
@@ -397,9 +395,16 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 	if gvk == ListGVK {
 		return wh.validateList(ctx, admissionRequest.Object.Raw, dryRun)
 	}
+
+	if _, hit := gloosnapshot.ApiGvkToHashableResource[gvk]; !hit {
+		contextutils.LoggerFrom(ctx).Debugf("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
+		return &validation.Reports{}, nil
+	}
+
 	if isDelete {
 		return wh.deleteRef(ctx, gvk, ref, admissionRequest)
 	}
+
 	return wh.validateGvk(ctx, gvk, ref, admissionRequest)
 }
 
@@ -420,11 +425,6 @@ func (wh *gatewayValidationWebhook) deleteRef(ctx context.Context, gvk schema.Gr
 
 func (wh *gatewayValidationWebhook) validateGvk(ctx context.Context, gvk schema.GroupVersionKind, ref *core.ResourceRef, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
 	var reports *validation.Reports
-	if !wh.validator.ModificationIsSupported(gvk) {
-		contextutils.LoggerFrom(ctx).Debugf("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
-		return &validation.Reports{}, nil
-	}
-
 	newResourceFunc := gloosnapshot.ApiGvkToHashableResource[gvk]
 
 	newResource := newResourceFunc()
@@ -464,7 +464,7 @@ func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []
 func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest, resource, oldResource resources.HashableResource) (bool, error) {
 	logger := contextutils.LoggerFrom(ctx)
 
-	if err := protoutils.UnmarshalResource(admissionRequest.Object.Raw, resource); err != nil {
+	if err := validation.UnmarshalResource(admissionRequest.Object.Raw, resource); err != nil {
 		return false, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
 	if skipValidationCheck(resource.GetMetadata().GetAnnotations()) {
@@ -478,7 +478,7 @@ func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, 
 
 	// For update requests, we check to see if this is a status update
 	// If it is, we do not need to validate the resource
-	if err := protoutils.UnmarshalResource(admissionRequest.OldObject.Raw, oldResource); err != nil {
+	if err := validation.UnmarshalResource(admissionRequest.OldObject.Raw, oldResource); err != nil {
 		return false, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
 

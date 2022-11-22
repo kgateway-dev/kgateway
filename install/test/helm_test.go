@@ -3897,7 +3897,11 @@ webhooks:
      - operations: [ "CREATE", "UPDATE", "DELETE" ]
        apiGroups: ["gateway.solo.io"]
        apiVersions: ["v1"]
-       resources: ["*"]
+       resources: ["virtualservices", "routetables"]
+     - operations: [ "CREATE", "UPDATE"]
+       apiGroups: ["gateway.solo.io"]
+       apiVersions: ["v1"]
+       resources: ["gateways"]
      - operations: [ "CREATE", "UPDATE", "DELETE" ]
        apiGroups: ["gloo.solo.io"]
        apiVersions: ["v1"]
@@ -3906,12 +3910,15 @@ webhooks:
        apiGroups: ["gloo.solo.io"]
        apiVersions: ["v1"]
        resources: ["secrets"]
+     - operations: [ "CREATE", "UPDATE", "DELETE" ]
+       apiGroups: ["ratelimit.solo.io"]
+       apiVersions: ["v1alpha1"]
+       resources: ["ratelimitconfigs"]
    sideEffects: None
    matchPolicy: Exact
    admissionReviewVersions:
      - v1beta1
    failurePolicy: Ignore
-
 `)
 						prepareMakefile(namespace, helmValues{})
 						testManifest.ExpectUnstructured(vwc.GetKind(), vwc.GetNamespace(), vwc.GetName()).To(BeEquivalentTo(vwc))
