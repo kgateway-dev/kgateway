@@ -1,6 +1,7 @@
 package glooctl_test
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"path/filepath"
 	"time"
 
@@ -30,8 +31,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		)
 
 		BeforeEach(func() {
-			// Install Petstore
-			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", "https://raw.githubusercontent.com/solo-io/gloo/v1.4.12/example/petstore/petstore.yaml")
+			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", "https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml")
 			Expect(err).NotTo(HaveOccurred(), "should be able to install petstore")
 
 			// Add the gloo route to petstore
@@ -205,12 +205,20 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		Context("check", func() {
-			FIt("all checks pass with OK status", func() {
+			BeforeEach(func() {
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", "https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml")
+				Expect(err).NotTo(HaveOccurred(), "should be able to install petstore")
+
+				// Add the gloo route to petstore
+				_, err = runGlooctlCommand("add", "route", "--name", "petstore", "--namespace", testHelper.InstallNamespace, "--path-prefix", "/", "--dest-name", "default-petstore-8080", "--dest-namespace", testHelper.InstallNamespace)
+				Expect(err).NotTo(HaveOccurred(), "should be able to add gloo route to petstore")
+			})
+
+			It("all checks pass with OK status", func() {
 				output, err := runGlooctlCommand("check", "-x", "xds-metrics")
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(output).To(ContainSubstring("Checking deployments... OK"))
-				Expect(output).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
 				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
 				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
@@ -219,6 +227,218 @@ var _ = Describe("Kube2e: glooctl", func() {
 				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
 				Expect(output).To(ContainSubstring("Checking gateways... OK"))
 				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			})
+
+			It("can exclude deployments", func() {
+				output, err := testutils.GlooctlOut("check -x xds-metrics,deployments")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).NotTo(ContainSubstring("Checking deployments..."))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... Skipping proxies because deployments were excluded"))
+			})
+
+			It("can exclude pods", func() {
+				output, err := testutils.GlooctlOut("check -x xds-metrics,pods")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).NotTo(ContainSubstring("Checking pods..."))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			})
+
+			It("can exclude upstreams", func() {
+				output, err := testutils.GlooctlOut("check -x xds-metrics,upstreams,virtual-services")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).NotTo(ContainSubstring("Checking upstreams..."))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			})
+
+			It("can exclude upstreamgroups", func() {
+				output, err := testutils.GlooctlOut("check -x xds-metrics,upstreamgroup")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).NotTo(ContainSubstring("Checking upstream groups..."))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			})
+
+			It("can exclude auth-configs", func() {
+				output, err := testutils.GlooctlOut("check -x xds-metrics,auth-configs")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).NotTo(ContainSubstring("Checking auth configs..."))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			})
+
+			It("can exclude rate-limit-configs", func() {
+				output, err := testutils.GlooctlOut("check -x xds-metrics,rate-limit-configs")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).NotTo(ContainSubstring("Checking rate limit configs..."))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			})
+
+			It("can exclude secrets", func() {
+				output, err := testutils.GlooctlOut("check -x xds-metrics,secrets")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).NotTo(ContainSubstring("Checking secrets..."))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			})
+
+			It("can exclude virtual-services", func() {
+				output, err := testutils.GlooctlOut("check -x xds-metrics,virtual-services")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).NotTo(ContainSubstring("Checking virtual services..."))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			})
+
+			It("can exclude gateways", func() {
+				output, err := testutils.GlooctlOut("check -x xds-metrics,gateways")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).NotTo(ContainSubstring("Checking gateways..."))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			})
+
+			It("can exclude proxies", func() {
+				output, err := testutils.GlooctlOut("check -x xds-metrics,proxies")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).NotTo(ContainSubstring("Checking proxies..."))
+			})
+
+			It("fails if no gateway proxy deployments", func() {
+				err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "gateway-proxy", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
+				_, err = runGlooctlCommand("check", "-x", "xds-metrics")
+				Expect(err.Error()).To(ContainSubstring("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"))
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
+
+			})
+
+			It("reports multiple errors at one time", func() {
+				err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", testHelper.RootDir+"/test/kube2e/glooctl/reject-me.yaml")
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", testHelper.RootDir+"/test/kube2e/glooctl/reject-me-too.yaml")
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = runGlooctlCommand("check")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Error: 5 errors occurred"))
+				Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': default partially-valid (Reason: 2 errors occurred:"))
+				Expect(err.Error()).To(ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [gloo-system.reject-me]"))
+				Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.partially-valid gloo-system.petstore gloo-system.reject-me]"))
+
+				Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': gloo-system petstore (Reason: 1 error occurred:"))
+				Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.partially-valid gloo-system.petstore gloo-system.reject-me]"))
+
+				Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': gloo-system reject-me (Reason: 2 errors occurred:"))
+				Expect(err.Error()).To(ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [default.partially-valid]"))
+				Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.partially-valid gloo-system.petstore gloo-system.reject-me]"))
+
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", "gloo-system", "virtualservice", "reject-me")
+				Expect(err).NotTo(HaveOccurred())
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", "default", "virtualservice", "partially-valid")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("connection fails on incorrect namespace check", func() {
+				_, err = runGlooctlCommand("check", "check", "-n", "not-gloo-sysyem")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Could not communicate with kubernetes cluster: namespaces \"not-gloo-sysyem\" not found"))
+
+				_, err = runGlooctlCommand("check", "-n", "default")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
+
+				output, err := runGlooctlCommand("check", "-p", "not-gloo")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(output).To(ContainSubstring("Warning: The provided label selector (not-gloo) applies to no pods"))
+				Expect(output).To(ContainSubstring("No problems detected."))
+
+				_, err = runGlooctlCommand("check", "-r", "not-gloo-system")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'gloo-system' namespace)"))
 			})
 		})
 	})

@@ -36,8 +36,8 @@ func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployment
 			}
 		}
 	}
-	if gatewayProxyDeploymentsFound == 0 {
-		return eris.Errorf("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"), strings.Join(warnings, "\n")
+	if gatewayProxyDeploymentsFound == 0 || gatewayProxyDeploymentsFound == len(warnings) {
+		return eris.New("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"), strings.Join(warnings, "\n")
 	}
 	return nil, strings.Join(warnings, "\n")
 }
