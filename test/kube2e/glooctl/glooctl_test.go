@@ -1,6 +1,7 @@
 package glooctl_test
 
 import (
+	"github.com/solo-io/gloo/test/kube2e"
 	"path/filepath"
 	"time"
 
@@ -205,7 +206,13 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 		})
 	})
-	FContext("check", func() {
+	Context("check", func() {
+
+		BeforeEach(func() {
+			// Check that everything is OK
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+		})
+
 		It("all checks pass with OK status", func() {
 			output, err := runGlooctlCommand("check", "-x", "xds-metrics")
 			Expect(err).NotTo(HaveOccurred())
@@ -394,6 +401,9 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "public-gw", "-n", "gloo-system")
 			Expect(err).ToNot(HaveOccurred())
+
+			// Check that everything is OK
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 		})
 
 		It("warns if a given gateway proxy deployment has zero replcias", func() {
@@ -419,6 +429,9 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
 			Expect(err).ToNot(HaveOccurred())
+
+			// Check that everything is OK
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 		})
 
 		It("reports multiple errors at one time", func() {
