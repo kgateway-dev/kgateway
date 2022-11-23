@@ -25,10 +25,8 @@ const metricsUpdateInterval = time.Millisecond * 250
 func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (error, string) {
 	gatewayProxyDeploymentsFound, warnings := 0, []string{}
 	for _, deployment := range deployments.Items {
-		if deployment.Labels["gloo"] == "gateway-proxy" {
-			gatewayProxyDeploymentsFound++
-		}
 		if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
+			gatewayProxyDeploymentsFound++
 			if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas == 0 {
 				warnings = append(warnings, "Warning: "+deployment.Name+" has zero replicas")
 			} else if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {

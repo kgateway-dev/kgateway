@@ -392,10 +392,42 @@ var _ = Describe("Kube2e: glooctl", func() {
 			It("fails if no gateway proxy deployments", func() {
 				err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "gateway-proxy", "-n", "gloo-system")
 				Expect(err).ToNot(HaveOccurred())
-				_, err = runGlooctlCommand("check", "-x", "xds-metrics")
-				Expect(err.Error()).To(ContainSubstring("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"))
-				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "public-gw", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
 
+				_, err = runGlooctlCommand("check", "-x", "xds-metrics")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"))
+
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "public-gw", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("warns if a given gateway proxy deployment has zero replcias", func() {
+				err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "gateway-proxy", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
+
+				output, err := runGlooctlCommand("check", "-x", "xds-metrics")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking VirtualHostOptions... OK"))
+				Expect(output).To(ContainSubstring("Checking RouteOptions... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+				Expect(output).To(ContainSubstring("Warning: gateway-proxy has zero replicas"))
+				Expect(output).To(ContainSubstring("No problems detected."))
+
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("reports multiple errors at one time", func() {
