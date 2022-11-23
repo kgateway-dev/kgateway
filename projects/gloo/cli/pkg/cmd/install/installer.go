@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/k8s-utils/kubeutils"
-	"go.uber.org/zap"
 	"io"
 	"os"
 	"path"
 	"reflect"
 	"strings"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
+	"go.uber.org/zap"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/install/helm/gloo/generate"

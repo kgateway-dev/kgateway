@@ -144,6 +144,7 @@ rules:
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
 			Mode:           mode,
+			Ctx:            ctx,
 		})
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 		Expect(dryRunOutputBuffer.String()).To(BeEmpty())
