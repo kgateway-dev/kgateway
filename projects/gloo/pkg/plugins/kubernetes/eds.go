@@ -317,7 +317,7 @@ func filterEndpoints(
 				continue
 			}
 			for _, subset := range eps.Subsets {
-				port := findFirstPortInEndpointSubsets(subset, singlePortService, kubeServicePort)
+				port := findFirstPortInEndpointSubsets(subset, singlePortService, kubeServicePort, istioIntegrationEnabled)
 				if port == 0 {
 					warnsToLog = append(warnsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.GetServicePort(), spec.GetServiceName(), subset))
 					continue
@@ -325,6 +325,7 @@ func filterEndpoints(
 
 				if istioIntegrationEnabled {
 					hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
+					// todo - could also just not `findFirstPortInEndpointSubsets` and use `kubeServicePort` here
 					key := Epkey{hostname, port, spec.GetServiceName(), spec.GetServiceNamespace(), usRef}
 					copyRef := *usRef
 					endpointsMap[key] = append(endpointsMap[key], &copyRef)
@@ -375,12 +376,16 @@ func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.Upstr
 	return warnings
 }
 
-func findFirstPortInEndpointSubsets(subset kubev1.EndpointSubset, singlePortService bool, kubeServicePort *kubev1.ServicePort) uint32 {
+func findFirstPortInEndpointSubsets(subset kubev1.EndpointSubset, singlePortService bool, kubeServicePort *kubev1.ServicePort, istioIntegrationEnabled bool) uint32 {
 	var port uint32
 	for _, p := range subset.Ports {
 		// if the endpoint port is not named, it implies that
 		// the kube service only has a single unnamed port as well.
 		switch {
+		case istioIntegrationEnabled:
+			// [test] For Istio hardcode to use the service port... see what happens
+			port = uint32(kubeServicePort.Port)
+			break
 		case singlePortService:
 			port = uint32(p.Port)
 		case p.Name == kubeServicePort.Name:
@@ -435,7 +440,7 @@ func generateFilteredEndpointList(
 }
 
 func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, address string, port uint32, labels map[string]string) *v1.Endpoint {
-	ep := &v1.Endpoint{
+	return &v1.Endpoint{
 		Metadata: &core.Metadata{
 			Namespace: namespace,
 			Name:      name,
@@ -445,9 +450,7 @@ func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, addre
 		Address:   address,
 		Port:      port,
 		// TODO: add locality info
-
 	}
-	return ep
 }
 
 func getServiceForHostname(hostname string, serviceName, serviceNamespace string, services []*kubev1.Service) (*kubev1.Service, error) {
