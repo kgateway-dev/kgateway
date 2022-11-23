@@ -205,7 +205,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 		})
 
-		FContext("check", func() {
+		Context("check", func() {
 			BeforeEach(func() {
 				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", "https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml")
 				Expect(err).NotTo(HaveOccurred(), "should be able to install petstore")
