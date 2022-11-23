@@ -65,18 +65,9 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 	// setup for all tests
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-
-		cwd, err := os.Getwd()
+		var err error
+		testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 		Expect(err).NotTo(HaveOccurred())
-		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.RootDir = filepath.Join(cwd, "../../..")
-			defaults.HelmChartName = "gloo"
-			defaults.InstallNamespace = namespace
-			defaults.Verbose = true
-			return defaults
-		})
-		Expect(err).NotTo(HaveOccurred())
-
 		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 		strictValidation = false

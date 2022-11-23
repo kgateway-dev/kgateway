@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Workflow for nightly runs.
+  - type: NEW_FEATURE
+    description: Allow regression tests to be run against released versions of gloo in addition to local builds.
+    issueLink: https://github.com/solo-io/solo-projects/issues/4191
+    resolvesIssue: false

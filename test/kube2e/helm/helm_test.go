@@ -83,8 +83,8 @@ var _ = Describe("Kube2e: helm", func() {
 
 		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
-
-		fromRelease = ""
+		// the version we upgrade to - this can be stored in an environment variable, the latest released version or a version built locally
+		fromRelease = kube2e.GetTestReleasedVersion(ctx, "gloo")
 		strictValidation = false
 	})
 
