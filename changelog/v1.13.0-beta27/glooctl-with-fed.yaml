@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6022
+    resolvesIssue: false
+    description: >-
+      Ensure that with the `--with-gloo-fed=false` flag, glooctl does not install Gloo Federation.
