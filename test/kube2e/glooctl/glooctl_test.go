@@ -401,9 +401,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "public-gw", "-n", "gloo-system")
 			Expect(err).ToNot(HaveOccurred())
-
-			// Check that everything is OK
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 		})
 
 		It("warns if a given gateway proxy deployment has zero replcias", func() {
@@ -429,9 +426,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
 			Expect(err).ToNot(HaveOccurred())
-
-			// Check that everything is OK
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 		})
 
 		It("reports multiple errors at one time", func() {
@@ -441,17 +435,14 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 			_, err = runGlooctlCommand("check")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Error: 5 errors occurred"))
+			Expect(err.Error()).To(ContainSubstring("Error: 4 errors occurred"))
 			Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': default reject-me-too (Reason: 2 errors occurred:"))
 			Expect(err.Error()).To(ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [gloo-system.reject-me]"))
-			Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.petstore gloo-system.reject-me]"))
-
-			Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': gloo-system petstore (Reason: 1 error occurred:"))
-			Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.petstore gloo-system.reject-me]"))
+			Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.reject-me]"))
 
 			Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': gloo-system reject-me (Reason: 2 errors occurred:"))
 			Expect(err.Error()).To(ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [default.reject-me-too]"))
-			Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.petstore gloo-system.reject-me]"))
+			Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.reject-me]"))
 
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", "gloo-system", "virtualservice", "reject-me")
 			Expect(err).NotTo(HaveOccurred())
