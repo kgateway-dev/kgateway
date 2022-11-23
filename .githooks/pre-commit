@@ -1,9 +1,9 @@
 #!/bin/sh
 
-#echo "Checking commit for JSON web tokens..."
-#echo "Note: This fails without python3. Comment out .githooks/pre-commit to disable this hook."
-#if test -e /dev/tty ; then
-#exec < /dev/tty ./.githooks/pre-commit-python.py
-#fi
+echo "Checking commit for JSON web tokens..."
+echo "Note: This fails without python3. Comment out .githooks/pre-commit to disable this hook."
+if test -e /dev/tty ; then
+exec < /dev/tty ./.githooks/pre-commit-python.py
+fi
 
-#exec ./.githooks/pre-commit-python.py
+exec ./.githooks/pre-commit-python.py
