@@ -725,6 +725,7 @@ docker: docker-local docker-non-arm
 docker-local: discovery-docker gloo-docker  \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker kubectl-docker
+		touch $@
 
 .PHONY: docker-non-arm
 ifeq ($(UNAME_M), arm64)
