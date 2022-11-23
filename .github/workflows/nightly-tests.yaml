@@ -1,6 +1,7 @@
 name: Nightly
 on:
   schedule:
+    # run Monday-Friday mornings (midnight utc)
     - cron: "0 0 * * 1-5"
 jobs:
   prepare_env:
@@ -22,9 +23,11 @@ jobs:
         # We have removed it from our CI regression tests
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
         xds-relay: [ 'false' ]
-        include:
-          - kube-e2e-test-type: 'gateway'
-            xds-relay: 'true'
+        # These tests are known to be flaky and are not currently required. They're currently not included in the nightly PoC
+        # so we can see the normal success case
+        #include:
+        #  - kube-e2e-test-type: 'gateway'
+        #    xds-relay: 'true'
 steps:
   - name: Cancel Previous Actions
     uses: styfle/cancel-workflow-action@0.4.1
