@@ -635,11 +635,13 @@ message GatewayOptions {
         // Path to TLS Private Key for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.key`.
         string validation_webhook_tls_key = 4;
 
+        // Deprecated: the Gateway and the Gloo pods are now merged together, there are no longer
+        // requests made to a Gloo Validation server.
         // When Gateway cannot communicate with Gloo (e.g. Gloo is offline)
         // resources will be rejected by default.
         // Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting
         // resources due to network errors.
-        bool ignore_gloo_validation_failure = 5;
+        bool ignore_gloo_validation_failure = 5 [deprecated = true];
 
         // Always accept resources even if validation produced an error.
         // Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat.

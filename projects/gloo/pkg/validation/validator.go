@@ -10,38 +10,33 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
 const GlooGroup = "gloo.solo.io"
 
-var GvkToSupportedDeleteGlooResources = map[schema.GroupVersionKind]bool{
-	gloov1.UpstreamGVK: true,
-	gloov1.SecretGVK:   true,
-}
-
-var GvkToSupportedGlooResources = map[schema.GroupVersionKind]bool{
-	gloov1.UpstreamGVK: true,
-}
-
 // GlooValidator is used to validate solo.io.gloo resources
 type GlooValidator interface {
 	Validate(ctx context.Context, proxy *gloov1.Proxy, snapshot *gloosnapshot.ApiSnapshot, delete bool) []*GlooValidationReport
 }
 
+type GlooValidatorConfig struct {
+	Translator   gloo_translator.Translator
+	XdsSanitizer sanitizer.XdsSanitizer
+}
+
 // NewGlooValidator will create a new GlooValidator
-func NewGlooValidator(glooTranslator gloo_translator.Translator, xdsSanitizer sanitizer.XdsSanitizer) GlooValidator {
+func NewGlooValidator(config GlooValidatorConfig) GlooValidator {
 	return glooValidator{
-		glooTranslator: glooTranslator,
-		xdsSanitizer:   xdsSanitizer,
+		translator:   config.Translator,
+		xdsSanitizer: config.XdsSanitizer,
 	}
 }
 
 type glooValidator struct {
-	glooTranslator gloo_translator.Translator
-	xdsSanitizer   sanitizer.XdsSanitizer
+	translator   gloo_translator.Translator
+	xdsSanitizer sanitizer.XdsSanitizer
 }
 
 type GlooValidationReport struct {
@@ -79,7 +74,7 @@ func (gv glooValidator) Validate(ctx context.Context, proxy *gloov1.Proxy, snaps
 	// Validation with gateway occurs in /projects/gateway/pkg/validation/validator.go, where validation for the Gloo
 	// resources occurs in the following for loop.
 	for _, proxy := range proxiesToValidate {
-		xdsSnapshot, resourceReports, proxyReport := gv.glooTranslator.Translate(params, proxy)
+		xdsSnapshot, resourceReports, proxyReport := gv.translator.Translate(params, proxy)
 
 		// Sanitize routes before sending report to gateway
 		gv.xdsSanitizer.SanitizeSnapshot(ctx, snapshot, xdsSnapshot, resourceReports)
