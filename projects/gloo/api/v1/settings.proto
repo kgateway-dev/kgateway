@@ -533,6 +533,11 @@ message GlooOptions {
         // Does not affect the default filewatch for service account only augments it.
         // Defaults to not refreshing on time period. Suggested is 15 minutes.
         google.protobuf.Duration credential_refresh_delay = 4;
+
+        // Sets the unsafe behavior where a route can specify a lambda upstream
+        // but not set the function to target. If will use the first function.
+        // Defaults to false.
+        google.protobuf.BoolValue fallback_first_to_function = 5;
     }
 
     AWSOptions aws_options = 5;

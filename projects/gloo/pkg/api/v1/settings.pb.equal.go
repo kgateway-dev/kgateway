@@ -1658,6 +1658,16 @@ func (m *GlooOptions_AWSOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetFallbackFirstToFunction()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFallbackFirstToFunction()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetFallbackFirstToFunction(), target.GetFallbackFirstToFunction()) {
+			return false
+		}
+	}
+
 	switch m.CredentialsFetcher.(type) {
 
 	case *GlooOptions_AWSOptions_EnableCredentialsDiscovey:

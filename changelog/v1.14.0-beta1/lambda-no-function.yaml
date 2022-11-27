@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Add option that allows usage of lambda upstreams without specifying a function.
+      Affects custom extensions of the lambda extension built in go that use gloo as a library.

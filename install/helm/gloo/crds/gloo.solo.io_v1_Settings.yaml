@@ -349,6 +349,9 @@ spec:
                         type: string
                       enableCredentialsDiscovey:
                         type: boolean
+                      fallbackFirstToFunction:
+                        nullable: true
+                        type: boolean
                       propagateOriginalRouting:
                         nullable: true
                         type: boolean

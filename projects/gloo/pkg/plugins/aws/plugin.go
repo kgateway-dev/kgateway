@@ -45,7 +45,8 @@ const (
 
 // PerRouteConfigGenerator defines how to build the Per Route Configuration for a Lambda upstream
 // This enables the open source and enterprise definitions to differ, but still share the same core plugin functionality
-type PerRouteConfigGenerator func(destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error)
+type PerRouteConfigGenerator func(options *v1.GlooOptions_AWSOptions,
+	destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error)
 
 var (
 	pluginStage          = plugins.DuringStage(plugins.OutAuthStage)
@@ -184,7 +185,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				return nil, err
 			}
 			// should be aws upstream
-			return p.perRouteConfigGenerator(awsDestinationSpec.Aws, lambdaSpec)
+			return p.perRouteConfigGenerator(p.settings, awsDestinationSpec.Aws, lambdaSpec)
 		},
 	)
 
@@ -319,37 +320,62 @@ func (p *Plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 	return filters, nil
 }
 
-func GenerateAWSLambdaRouteConfig(destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error) {
+// GenerateAWSLambdaRouteConfig is an overridable way to handle destination logic for lambdas.
+// Passed in at plugin creation as it fulfills PerRouteConfigGenerator interface
+func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error) {
 	logicalName := destination.GetLogicalName()
-	for _, lambdaFunc := range upstream.GetLambdaFunctions() {
-		if lambdaFunc.GetLogicalName() == logicalName {
-			functionName := lambdaFunc.GetLambdaFunctionName()
-			if upstream.GetAwsAccountId() != "" {
-				awsRegion := upstream.GetRegion()
-				if awsRegion == "" {
-					awsRegion = os.Getenv("AWS_REGION")
-				}
-				// eg arn:aws:lambda:us-east-2:986112284769:function:simplerhello
-				functionName = fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s",
-					awsRegion, upstream.GetAwsAccountId(), functionName)
-			}
+	if len(upstream.GetLambdaFunctions()) == 0 {
+		return nil, errors.Errorf("lambda points to upstream with no functions %v", logicalName)
+	}
 
-			lambdaRouteFunc := &AWSLambdaPerRoute{
-				Async: destination.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
-				// we need to query escape per AWS spec:
-				// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-				Qualifier:   url.QueryEscape(lambdaFunc.GetQualifier()),
-				Name:        url.QueryEscape(functionName),
-				UnwrapAsAlb: destination.GetUnwrapAsAlb(),
-
-				// TransformerConfig is intentionally not included as that is an enterprise only feature
-				TransformerConfig: nil,
-			}
-
-			return lambdaRouteFunc, nil
+	// Validate whether there is a function that conforms to our request
+	var lambdaFunc *aws.LambdaFunctionSpec
+	for _, candidateLambdaFunc := range upstream.GetLambdaFunctions() {
+		if candidateLambdaFunc.GetLogicalName() == logicalName {
+			lambdaFunc = candidateLambdaFunc
+			break
 		}
 	}
-	return nil, errors.Errorf("unknown lambda function %v", logicalName)
+
+	if lambdaFunc == nil {
+		// pull from options to see if we allow not setting the function on a route
+		tryFallback := options.GetFallbackFirstToFunction().GetValue()
+		if !tryFallback {
+			return nil, errors.Errorf("unknown lambda function %v", logicalName)
+		}
+		// Check at the start of the function to make sure that there exists at least one function.
+		lambdaFunc = upstream.GetLambdaFunctions()[0]
+	}
+
+	functionName := lambdaFunc.GetLambdaFunctionName()
+
+	// Update the information to further format the function definition if requested
+	// Used for resource based access.
+	if upstream.GetAwsAccountId() != "" {
+		awsRegion := upstream.GetRegion()
+		if awsRegion == "" {
+			awsRegion = os.Getenv("AWS_REGION")
+		}
+		// eg arn:aws:lambda:us-east-2:986112284769:function:simplerhello
+		functionName = fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s",
+			awsRegion, upstream.GetAwsAccountId(), functionName)
+	}
+
+	// Convert the function that has been retrieved into a useable routefunction
+	lambdaRouteFunc := &AWSLambdaPerRoute{
+		Async: destination.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
+		// we need to query escape per AWS spec:
+		// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
+		Qualifier:   url.QueryEscape(lambdaFunc.GetQualifier()),
+		Name:        url.QueryEscape(functionName),
+		UnwrapAsAlb: destination.GetUnwrapAsAlb(),
+
+		// TransformerConfig is intentionally not included as that is an enterprise only feature
+		TransformerConfig: nil,
+	}
+
+	return lambdaRouteFunc, nil
+
 }
 
 // deriveStaticSecret from ingest if we are using a kubernetes secretref

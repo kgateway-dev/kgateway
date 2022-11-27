@@ -956,6 +956,12 @@ func (m *GlooOptions_AWSOptions) Clone() proto.Message {
 		target.CredentialRefreshDelay = proto.Clone(m.GetCredentialRefreshDelay()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
+	if h, ok := interface{}(m.GetFallbackFirstToFunction()).(clone.Cloner); ok {
+		target.FallbackFirstToFunction = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.FallbackFirstToFunction = proto.Clone(m.GetFallbackFirstToFunction()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	switch m.CredentialsFetcher.(type) {
 
 	case *GlooOptions_AWSOptions_EnableCredentialsDiscovey:
