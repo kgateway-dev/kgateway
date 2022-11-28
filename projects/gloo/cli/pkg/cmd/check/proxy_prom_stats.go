@@ -3,13 +3,14 @@ package check
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/go-multierror"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-multierror"
 
 	"github.com/rotisserie/eris"
 
