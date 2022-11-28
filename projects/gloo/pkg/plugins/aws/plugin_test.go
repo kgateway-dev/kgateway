@@ -298,7 +298,7 @@ var _ = Describe("Plugin", func() {
 		})
 	})
 
-	FContext("routes with params", func() {
+	Context("routes with params", func() {
 		// setup similar to the routes context but should exercise special params.
 		var destination *v1.Destination
 		var curParams plugins.Params
@@ -308,7 +308,6 @@ var _ = Describe("Plugin", func() {
 		})
 		// Force a cleanup to make it less likely to have pollution via programming error
 		JustAfterEach(func() {
-			destination = nil
 			initParams.Settings = defaultSettings
 		})
 		It("should not process with no spec", func() {
@@ -334,7 +333,6 @@ var _ = Describe("Plugin", func() {
 			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(curParams, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
 			destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
-			destination.DestinationSpec = nil
 
 			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
