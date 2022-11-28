@@ -81,6 +81,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				printer.PrintChecks(new(bytes.Buffer))
 			}
 
+			opts.Top.Cancel()
 			return nil
 		},
 	}

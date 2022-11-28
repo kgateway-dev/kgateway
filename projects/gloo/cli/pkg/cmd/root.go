@@ -88,9 +88,11 @@ func App(opts *options.Options, preRunFuncs []RunnableCommand, postRunFuncs []Ru
 }
 
 func GlooCli() *cobra.Command {
+	contextWithCancel, cancel := context.WithCancel(context.Background())
 	opts := &options.Options{
 		Top: options.Top{
-			Ctx: context.Background(),
+			Ctx:    contextWithCancel,
+			Cancel: cancel,
 		},
 	}
 
