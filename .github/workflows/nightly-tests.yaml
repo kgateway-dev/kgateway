@@ -23,12 +23,6 @@ jobs:
         # knative support has been deprecated: https://github.com/solo-io/gloo/issues/5707
         # We have removed it from our CI regression tests
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
-        xds-relay: [ 'false' ]
-        # These tests are known to be flaky and are not currently required. They're currently not included in the nightly PoC
-        # so we can see the normal success case
-        #include:
-        #  - kube-e2e-test-type: 'gateway'
-        #    xds-relay: 'true'
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.4.1
@@ -92,7 +86,6 @@ jobs:
     - name: Testing - kube e2e regression tests
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
-        USE_XDS_RELAY: ${{ matrix.xds-relay }}
         GITHUB_TOKEN: ${{ github.token }}
         ACK_GINKGO_RC: true
         ACK_GINKGO_DEPRECATIONS: 1.16.5
