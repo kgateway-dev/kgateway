@@ -3,6 +3,7 @@ on:
   schedule:
     # run Monday-Friday mornings (midnight UTC)
     - cron: "0 0 * * 1-5"
+  workflow_dispatch:
 jobs:
   prepare_env:
     name: Prepare Environment

@@ -46,7 +46,7 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.0
 	github.com/solo-io/go-utils v0.22.4
-	github.com/solo-io/k8s-utils v0.1.1
+	github.com/solo-io/k8s-utils v0.1.3-0.20221128211153-1f74af84eb8d
 	github.com/solo-io/protoc-gen-ext v0.0.17
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.21.6
