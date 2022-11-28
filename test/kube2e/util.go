@@ -315,7 +315,6 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 	if useVersion = os.Getenv("RELEASED_VERSION"); useVersion != "" {
 		if useVersion == "LATEST" {
 			_, current, err := upgrade.GetUpgradeVersions(ctx, repoName)
-			fmt.Println("found latest version %v", current)
 			Expect(err).NotTo(HaveOccurred())
 			useVersion = current.String()
 		}

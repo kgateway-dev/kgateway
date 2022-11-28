@@ -38,7 +38,6 @@ func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPa
 			return nil, nil, curMinorErr
 		}
 	}
-	return nil, currentMinorLatestPatchVersion, nil
 	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
 	if lastMinorErr != nil {
 		return nil, nil, lastMinorErr
