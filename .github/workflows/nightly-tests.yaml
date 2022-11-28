@@ -4,6 +4,8 @@ on:
     # run Monday-Friday mornings (midnight UTC)
     - cron: "0 0 * * 1-5"
   workflow_dispatch:
+  #TODO seeing if I can test without merging by adding this temporarily
+  pull_request:
 jobs:
   prepare_env:
     name: Prepare Environment
