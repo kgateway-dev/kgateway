@@ -311,28 +311,32 @@ func filterEndpoints(
 			errorsToLog = append(errorsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v", usRef.Key(), spec.GetServicePort(), spec.GetServiceName()))
 			continue
 		}
+
+		// todo - was there a reason we used to use the endpoint's port previously?
+		//   should we _only_ do this if a targetPort has been set, else do the original endpoint port setup?
+		// Istio uses the service's port for routing requests
+		if istioIntegrationEnabled {
+			hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
+			key := Epkey{hostname, uint32(kubeServicePort.Port), spec.GetServiceName(), spec.GetServiceNamespace(), usRef}
+			copyRef := *usRef
+			endpointsMap[key] = append(endpointsMap[key], &copyRef)
+			continue
+		}
+
 		// find each matching endpoint
 		for _, eps := range kubeEndpoints {
 			if eps.Namespace != spec.GetServiceNamespace() || eps.Name != spec.GetServiceName() {
 				continue
 			}
 			for _, subset := range eps.Subsets {
-				port := findFirstPortInEndpointSubsets(subset, singlePortService, kubeServicePort, istioIntegrationEnabled)
+				port := findFirstPortInEndpointSubsets(subset, singlePortService, kubeServicePort)
 				if port == 0 {
 					warnsToLog = append(warnsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.GetServicePort(), spec.GetServiceName(), subset))
 					continue
 				}
 
-				if istioIntegrationEnabled {
-					hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
-					// todo - could also just not `findFirstPortInEndpointSubsets` and use `kubeServicePort` here
-					key := Epkey{hostname, port, spec.GetServiceName(), spec.GetServiceNamespace(), usRef}
-					copyRef := *usRef
-					endpointsMap[key] = append(endpointsMap[key], &copyRef)
-				} else {
-					warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap)
-					warnsToLog = append(warnsToLog, warnings...)
-				}
+				warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap)
+				warnsToLog = append(warnsToLog, warnings...)
 			}
 		}
 	}
@@ -376,16 +380,12 @@ func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.Upstr
 	return warnings
 }
 
-func findFirstPortInEndpointSubsets(subset kubev1.EndpointSubset, singlePortService bool, kubeServicePort *kubev1.ServicePort, istioIntegrationEnabled bool) uint32 {
+func findFirstPortInEndpointSubsets(subset kubev1.EndpointSubset, singlePortService bool, kubeServicePort *kubev1.ServicePort) uint32 {
 	var port uint32
 	for _, p := range subset.Ports {
 		// if the endpoint port is not named, it implies that
 		// the kube service only has a single unnamed port as well.
 		switch {
-		case istioIntegrationEnabled:
-			// [test] For Istio hardcode to use the service port... see what happens
-			port = uint32(kubeServicePort.Port)
-			break
 		case singlePortService:
 			port = uint32(p.Port)
 		case p.Name == kubeServicePort.Name:
