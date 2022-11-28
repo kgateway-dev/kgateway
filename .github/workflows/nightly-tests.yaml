@@ -115,6 +115,7 @@ jobs:
         kubectl get configmaps -A
     - name: Send Message
       id: message-on-result
+      if: ${{ always() }}
       shell: bash
       run: |
         curl -X POST https://slack.com/api/chat.postMessage\
