@@ -81,7 +81,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				printer.PrintChecks(new(bytes.Buffer))
 			}
 
-			opts.Top.Cancel()
 			return nil
 		},
 	}
@@ -97,8 +96,9 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 func CheckResources(opts *options.Options) error {
 	var multiErr *multierror.Error
-
-	err := checkConnection(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	ctx, cancel := context.WithCancel(opts.Top.Ctx)
+	defer cancel()
+	err := checkConnection(ctx, opts.Metadata.GetNamespace())
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 		return multiErr
@@ -125,7 +125,7 @@ func CheckResources(opts *options.Options) error {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
-	namespaces, err := getNamespaces(opts.Top.Ctx, settings)
+	namespaces, err := getNamespaces(ctx, settings)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}

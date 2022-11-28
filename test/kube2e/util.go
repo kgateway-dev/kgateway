@@ -55,10 +55,10 @@ func MustKubeClient() kubernetes.Interface {
 	return kubeClient
 }
 
-// Check that everything is OK by running `glooctl check`
+// GlooctlCheckEventuallyHealthy will run up until proved timeoutInterval or until gloo is reported as healthy
 func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper, timeoutInterval string) {
-	contextWithCancel, cancel := context.WithCancel(context.Background())
 	EventuallyWithOffset(offset, func() error {
+		contextWithCancel, cancel := context.WithCancel(context.Background())
 		opts := &options.Options{
 			Metadata: core.Metadata{
 				Namespace: testHelper.InstallNamespace,
@@ -68,10 +68,10 @@ func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper
 			},
 		}
 		err := check.CheckResources(opts)
+		cancel()
 		if err != nil {
 			return errors.Wrap(err, "glooctl check detected a problem with the installation")
 		}
-		cancel()
 		return nil
 	}, timeoutInterval, "5s").Should(BeNil())
 }
