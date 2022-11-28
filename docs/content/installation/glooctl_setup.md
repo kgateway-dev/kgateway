@@ -42,7 +42,7 @@ You can verify the `glooctl` CLI is installed and running the appropriate versio
 glooctl version
 ```
 
-In the output, the **Client** is your local version. The **Server** is the version that runs in your cluster, and is `undefined` if you did not install Gloo Edge yet!
+In the output, the **Client** is your local version. The **Server** is the version that runs in your cluster, and is `undefined` if you did not install Gloo Edge yet.
 
 ```shell
 Client: {"version":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}"}
