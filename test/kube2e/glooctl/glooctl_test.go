@@ -1,9 +1,10 @@
 package glooctl_test
 
 import (
-	"github.com/solo-io/gloo/test/kube2e"
 	"path/filepath"
 	"time"
+
+	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 
