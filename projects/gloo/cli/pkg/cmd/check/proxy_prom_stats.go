@@ -3,6 +3,7 @@ package check
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -22,22 +23,23 @@ const promStatsPath = "/stats/prometheus"
 
 const metricsUpdateInterval = time.Millisecond * 250
 
-func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (error, string) {
-	gatewayProxyDeploymentsFound, warnings := 0, []string{}
+func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (error, *multierror.Error) {
+	gatewayProxyDeploymentsFound := 0
+	var multiWarn *multierror.Error
 	for _, deployment := range deployments.Items {
 		if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
 			gatewayProxyDeploymentsFound++
 			if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas == 0 {
-				warnings = append(warnings, "Warning: "+deployment.Name+" has zero replicas")
+				multiWarn = multierror.Append(multiWarn, eris.New("Warning: "+deployment.Name+" has zero replicas"))
 			} else if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
-				return err, strings.Join(warnings, "\n")
+				return err, multiWarn
 			}
 		}
 	}
-	if gatewayProxyDeploymentsFound == 0 || gatewayProxyDeploymentsFound == len(warnings) {
-		return eris.New("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"), strings.Join(warnings, "\n")
+	if gatewayProxyDeploymentsFound == 0 || (multiWarn != nil && gatewayProxyDeploymentsFound == len(multiWarn.Errors)) {
+		return eris.New("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"), multiWarn
 	}
-	return nil, strings.Join(warnings, "\n")
+	return nil, multiWarn
 }
 
 func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentName string) error {
