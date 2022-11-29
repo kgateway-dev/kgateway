@@ -13,7 +13,7 @@ Gloo Edge Federation is an enterprise feature of Gloo Edge. You will need at lea
 
 You should also have `glooctl` and `kubectl` installed. The `glooctl` version should be the most recent release, as the federation features were added in version 1.5. 
 
-You will also need a license key to install Gloo Edge Federation. The key can be procured by visiting the [Solo.io website](https://solo.io).
+You also need a license key to install Gloo Edge Federation. To request a license, [contact Sales](https://www.solo.io/company/contact/).
 
 ## Installation
 
