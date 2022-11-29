@@ -31,12 +31,11 @@ spec:
         {{ $key | quote }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      {{- if .Values.gateway.certGenJob.extraPodAnnotations }}
       annotations:
+        linkerd.io/inject: disabled
         {{- range $key, $value := .Values.gateway.certGenJob.extraPodAnnotations }}
         {{ $key | quote }}: {{ $value | quote }}
         {{- end }}
-      {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: certgen
