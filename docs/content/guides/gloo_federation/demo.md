@@ -39,187 +39,222 @@ That command performs the following actions:
 
 After the demo environment provisions, explore the environment in the following sections.
 
-## Exploring the demo environment
+## Explore the demo environment
 
 The local demo environment is a sandbox for you to explore the functionality of Gloo Edge Federation. Let's take a look at what is deployed.
 
 ### Kubernetes clusters and Gloo Edge installations
 
-You can view the clusters by running the following command:
+1. View the local and remote kind clusters.
 
-```
-kind get clusters
-```
+   ```
+   kind get clusters
+   ```
+   Example output:
+   ```
+   local
+   remote
+   ```
+2. Verify that you have `kubectl` config contexts for `kind-local` and `kind-remote`. By default, your `kubectl` context is set to `kind-local` for the local cluster by default.
+   ```
+   kubectl config get-contexts 
+   ```
+   Example output:
+   ```
+   CURRENT   NAME        CLUSTER     AUTHINFO                               
+   *         kind-local  kind-local  kind-local
+             kind-remote kind-remote kind-remote  
+   ```
+3. Verify that the Gloo Edge components are running on each cluster.
 
-```
-local
-remote
-```
+   ```
+   kubectl get deployment -l app=gloo -n gloo-system --context kind-local
+   kubectl get deployment -l app=gloo -n gloo-system --context kind-remote
+   ```
+   Example output:
+   ```
+   NAME            READY   UP-TO-DATE   AVAILABLE   AGE
+   discovery       1/1     1            1           18m
+   extauth         1/1     1            1           18m
+   gateway         1/1     1            1           18m
+   gateway-proxy   1/1     1            1           18m
+   gloo            1/1     1            1           18m
+   observability   1/1     1            1           18m
+   rate-limit      1/1     1            1           18m
+   redis           1/1     1            1           18m
+   NAME            READY   UP-TO-DATE   AVAILABLE   AGE
+   discovery       1/1     1            1           17m
+   gateway         1/1     1            1           17m
+   gateway-proxy   1/1     1            1           17m
+   gloo            1/1     1            1           17m
+   ```
+4. Verify the Gloo Edge Federation installation is running in the local cluster.
 
-You will have two new kubectl contexts, `kind-local` and `kind-remote`. Your kubectl context will be set to `kind-local` for the local cluster by default.
+   ```
+   kubectl get deployment -l app=gloo-fed -n gloo-system --context kind-local
+   ```
+   Example output:
+   ```
+   NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+   gloo-fed           1/1     1            1           24m
+   gloo-fed-console   1/1     1            1           24m
+   ```
 
-You can verify the Gloo Edge installation on each cluster by running the following command:
+### Cluster registration
 
-```
-kubectl get deployment -n gloo-system --context kind-local
-kubectl get deployment -n gloo-system --context kind-remote
-```
+For Gloo Edge to be federated, each Kubernetes cluster that runs Gloo Edge Enterprise must be registered. After a cluster is registered, Gloo Edge Federation automatically discovers all instances of Gloo Edge on the cluster. The `glooctl federation demo` command registered the clusters for you. 
 
-```
-NAME            READY   UP-TO-DATE   AVAILABLE   AGE
-discovery       1/1     1            1           8m45s
-gateway         1/1     1            1           8m45s
-gateway-proxy   1/1     1            1           8m45s
-gloo            1/1     1            1           8m45s
-rate-limit      1/1     1            1           8m45s
-redis           1/1     1            1           8m45s
-```
+1. Verify that Gloo Edge Federation automatically discovered each instance of Gloo on the registered clusters. The discovered instances are stored in a Custom Resource of type `glooinstances.fed.solo.io` in the `gloo-system` namespace. The naming of each resource follows the convention `clustername-gloo-namespace`. 
 
-You can verify the Gloo Edge Federation installation by running the following command:
+   ```
+   kubectl get glooinstances -n gloo-system --context kind-local
+   ```
+   Example output:
+   ```
+   NAME                      AGE
+   kind-local-gloo-system    4m33s
+   kind-remote-gloo-system   4m1s
+   ```
+2. Check that Gloo Edge Federation automatically the necessary credentials for the remote cluster. These credentials include the service account, cluster role, and cluster role binding in the remote cluster, as well as a secret to store the access credentials to the remote cluster in the local cluster.
+   ```
+   kubectl get serviceaccount kind-remote -n gloo-system --context kind-remote
+   kubectl get clusterrole gloo-federation-controller --context kind-remote
+   kubectl get clusterrolebinding kind-remote-gloo-federation-controller-clusterrole-binding --context kind-remote
+   ```
+3. Verify that the remote cluster credentials are stored as a secret in the local cluster. The secret name is the same as the cluster-name that was specified when registering the cluster.
+   ```
+   kubectl get secret -n gloo-system kind-remote --context kind-local
+   ```
+   Example output:
+   ```
+   NAME          TYPE                 DATA   AGE
+   kind-remote   solo.io/kubeconfig   1      2m53s
+   ```
 
-```
-kubectl get deployment -n gloo-system --context kind-local
-```
+### Federated configuration
 
-```
-NAME               READY   UP-TO-DATE   AVAILABLE   AGE
-gloo-fed           1/1     1            1           24m
-gloo-fed-console   1/1     1            1           24m
-```
+Gloo Edge Federation lets you create consistent configurations across multiple Gloo Edge instances. You can configure Gloo resources such as Upstreams, UpstreamGroups, and Virtual Services. Then, Gloo creates federated versions with separate Custom Resource Definitions, like FederatedUpstream and FederatedVirtualService. The federated versions target one or more clusters and a namespace within each cluster.
 
-## Cluster registration
+In the demo environment, two Kubernetes services are deployed: a federated `echo-blue` service in the local cluster and an unfederated `echo-green` service in the remote cluster.
 
-Kubernetes clusters running Gloo Edge Enterprise must be registered with Gloo Edge Federation to be managed. Once registered, Gloo Edge Federation will automatically discover all instances of Gloo Edge running on the cluster. The `glooctl federation demo` command took care of the registration process for us. The registration creates a service account, cluster role, and cluster role binding on the target cluster, and stores the access credentials in a Kubernetes secret resource in the admin cluster.
+1. Check the FederatedUpstream for the `echo-blue` service on the local cluster.
+   ```
+   kubectl get FederatedUpstream -n gloo-system
+   ```
+   Example output:
+   ```
+   NAME                   AGE
+   default-service-blue   13m
+   ```
+2. Verify that a matching Upstream for the FederatedUpstream is in each cluster specified by the Custom Resource. In this case, the matching Upstream is only in the local cluster.
 
-Credentials for the target cluster are stored in a secret in the gloo-system namespace. The secret name will be the same as the `cluster-name` specified when registering the cluster. Let's take a look at the secret for the remote cluster.
+   ```
+   kubectl get Upstream -n gloo-system default-service-blue-10000
+   ```
+   Example output:
+   ```
+   NAME                         AGE
+   default-service-blue-10000   18m
+   ```
+3. Verify that the a matching FederatedVirtualService provides a simple route to the matching Upstream of the FederatedUpstream.
 
-```
-kubectl get secret -n gloo-system kind-remote
-```
+   ```
+   kubectl get FederatedVirtualService -n gloo-system
+   ```
+   Example output:
+   ```
+   NAME           AGE
+   simple-route   16m
+   ```
+4. Verify that a matching VirtualService for the FederatedVirtualService is in the cluster, similar to how the FederatedUpstream created a matching Upstream.
 
-```
-NAME          TYPE                 DATA   AGE
-kind-remote   solo.io/kubeconfig   1      2m53s
-```
+   ```
+   kubectl get VirtualService -n gloo-system
+   ```
+   Example output:
+   ```
+   NAME           AGE
+   simple-route   10m
+   ```
 
-In the target cluster, Gloo Edge Federation has created a service account, cluster role, and role binding. They can be viewed by running the following commands:
-
-```
-kubectl get serviceaccount kind-remote -n gloo-system --context kind-remote
-kubectl get clusterrole gloo-federation-controller --context kind-remote
-kubectl get clusterrolebinding kind-remote-gloo-federation-controller-clusterrole-binding --context kind-remote
-```
-
-Once a cluster has been registered, Gloo Edge Federation will automatically discover all instances of Gloo Edge within the cluster. The discovered instances are stored in a Custom Resource of type glooinstances.fed.solo.io in the gloo-system namespace. The naming of each resource will follow the convention `clustername-gloo-namespace`. 
-
-You can view the discovered instances by running the following:
-
-```
-kubectl get glooinstances -n gloo-system
-```
-
-```
-NAME                      AGE
-kind-local-gloo-system    4m33s
-kind-remote-gloo-system   4m1s
-```
-
-### Federated Configuration
-
-Gloo Edge Federation enables you to create consistent configurations across multiple Gloo Edge instances. The resources being configured could be resources such as Upstreams, UpstreamGroups, Virtual Services. Gloo Edge Federation has federated versions as Custom Resource Definitions, like FederatedUpstream and FederatedVirtualService. The federated versions target one or more clusters and a namespace within each cluster.
-
-In the demo environment two Kubernetes services have been deployed, echo-blue in the local cluster and echo-green in the remote cluster. A FederatedUpstream resource has been created for the echo-blue service on the local cluster. We can view the FederatedUpstream by running the following:
-
-```
-kubectl get FederatedUpstream -n gloo-system
-```
-
-```
-NAME                   AGE
-default-service-blue   13m
-```
-
-There will be a matching Upstream for the FederatedUpstream in each cluster specified by the Custom Resource. We can see the matching Upstream in the local cluster by running the following:
-
-```
-kubectl get Upstream -n gloo-system default-service-blue-10000
-```
-
-```
-NAME                         AGE
-default-service-blue-10000   18m
-```
-
-The FederatedUpstream is associated with a FederatedVirtualService that provides a simple route to the Upstream. We can view the FederatedVirtualService by running the following:
-
-```
-kubectl get FederatedVirtualService -n gloo-system
-```
-
-```
-NAME           AGE
-simple-route   16m
-```
-
-Just like the FederatedUpstream, the FederatedVirtualService will create a VirtualService in each targeted cluster. We can view the VirtualService by running the following:
-
-```
-kubectl get VirtualService -n gloo-system
-```
-
-```
-NAME           AGE
-simple-route   10m
-```
-
-We will use these federated resources as part of the service failover configuration.
+You can use these federated resources to configure service failover across federated Gloo Edge instances.
 
 ### Service failover
 
-When an Upstream fails or becomes unhealthy, Gloo Edge Federation can automatically shift traffic over to a different Gloo Edge instance and Upstream. The demo environment has two Kubernetes services, one running in the default namespace of each cluster. The echo-blue service is running in the local cluster and the echo-green service is running in the remote cluster. 
+When an Upstream fails or becomes unhealthy, Gloo Edge Federation can automatically shift traffic over to a different Gloo Edge instance and Upstream. The demo environment has two Kubernetes services, one running in the default namespace of each cluster. The `echo-blue` service is running in the local cluster and the `echo-green` service is running in the remote cluster. 
 
-We can create a FailoverScheme in Gloo Edge Federation that specifies the echo-blue service as the primary and echo-green as a failover target. There can be multiple failover targets in different clusters and namespaces with different priorities.
+1. Review the FailoverScheme that configures the `echo-blue` service as the primary service and `echo-green` as a failover target. In the FailoverScheme, you can also configure multiple failover targets in different clusters and namespaces with different priorities. For more information, see the [Service Failover guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/service_failover/" %}}).
 
-We can view the FailoverScheme by running the following:
+   ```
+   kubectl get FailoverScheme -n gloo-system -o yaml
+   ```
+   {{< highlight yaml "hl_lines=17-27" >}}
+apiVersion: v1
+items:
+- apiVersion: fed.solo.io/v1
+  kind: FailoverScheme
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"fed.solo.io/v1","kind":"FailoverScheme","metadata":{"annotations":{},"name":"failover-test-scheme","namespace":"gloo-system"},"spec":{"failoverGroups":[{"priorityGroup":[{"cluster":"kind-remote","upstreams":[{"name":"default-service-green-10000","namespace":"gloo-system"}]}]}],"primary":{"clusterName":"kind-local","name":"default-service-blue-10000","namespace":"gloo-system"}}}
+    creationTimestamp: "2022-11-29T16:37:40Z"
+    finalizers:
+    - fed.solo.io/finalizer
+    generation: 1
+    name: failover-test-scheme
+    namespace: gloo-system
+    resourceVersion: "19570"
+    uid: c0b4a5fb-3b64-46a0-958f-f2ff035c50ed
+  spec:
+    failoverGroups:
+    - priorityGroup:
+      - cluster: kind-remote
+        upstreams:
+        - name: default-service-green-10000
+          namespace: gloo-system
+    primary:
+      clusterName: kind-local
+      name: default-service-blue-10000
+      namespace: gloo-system
+kind: List
+metadata:
+  resourceVersion: ""
+   {{< /highlight >}}
+1. Start the gateway service locally so that you test failover across services.
+   ```
+   kubectl port-forward -n gloo-system svc/gateway-proxy 8080:80
+   ```
+2. In a new tab in your terminal, verify that you can contact the `echo-blue` service.
+   ```
+   curl localhost:8080/
+   ```
+   Example output:
+   ```
+   "blue-pod"
+   ```
+3. Try out the service failover by first contacting the echo-blue service.
+4. In a new tab in your terminal, start the `echo-blue` deployment.
+   ```
+   kubectl port-forward deploy/echo-blue-deployment 19000
+   ```
+5. In the previous tab in your terminal, update the `echo-blue` deployment to simulate a failure.
+   ```
+   curl -X POST  localhost:19000/healthcheck/fail
+   ```
+   Example output:
+   ```
+   OK
+   ```
+6. Repeat your previous request to contact the service. Instead of the blue pod, you see the green pod.
+   ```
+   curl localhost:8080/
+   ```
+   Example output:
+   ```
+   "green-pod"
+   ```
 
-```
-kubectl get FailoverScheme -n gloo-system
-```
-
-```
-NAME                   AGE
-failover-test-scheme   21m
-```
-
-There's a bit more to the setup, which you can read about it in the [Service Failover guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/service_failover/" %}}).
-
-We can try out the service failover by first trying to contact the echo-blue service, then forcing a failure, and validating the echo-green service takes over. You will need two terminals running for this. The first terminal will run port forward commands and the second will interact with the services.
-
-```
-# Curl the route to reach the blue pod. You should see a return value of "blue-pod".
-
-## First terminal
-kubectl port-forward -n gloo-system svc/gateway-proxy 8080:80
-
-## Second terminal
-curl localhost:8080/
-
-# Force the health check to fail
-
-## First terminal
-kubectl port-forward deploy/echo-blue-deployment 19000
-
-## Second terminal
-curl -X POST  localhost:19000/healthcheck/fail
-
-# See that the green pod is now being reached, with the curl command returning "green-pod".
-
-## First terminal
-kubectl port-forward -n gloo-system svc/gateway-proxy 8080:80
-
-## Second terminal
-curl localhost:8080/
-```
+Good job! You set up and verified failover across federated Gloo services.
 
 ## Cleanup
 
