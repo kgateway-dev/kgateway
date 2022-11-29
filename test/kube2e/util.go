@@ -55,7 +55,7 @@ func MustKubeClient() kubernetes.Interface {
 	return kubeClient
 }
 
-// Check that everything is OK by running `glooctl check`
+// GlooctlCheckEventuallyHealthy will run up until proved timeoutInterval or until gloo is reported as healthy
 func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper, timeoutInterval string) {
 	EventuallyWithOffset(offset, func() error {
 		opts := &options.Options{
