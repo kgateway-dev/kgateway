@@ -340,6 +340,36 @@ var _ = Describe("Plugin", func() {
 		})
 	})
 
+	Context("route with defaults", func() {
+
+		It("should apply response transform override", func() {
+			upstream.GetAws().DefaultDestinationSettings = &aws.DestinationSpec{ResponseTransformation: true}
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			// destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
+
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = false
+
+			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
+		})
+		It("empty response override should not override route level", func() {
+			upstream.GetAws().DefaultDestinationSettings = &aws.DestinationSpec{ResponseTransformation: false}
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+
+			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
+		})
+
+	})
+
 	Context("routes", func() {
 
 		var destination *v1.Destination

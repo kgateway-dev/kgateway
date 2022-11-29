@@ -27,6 +27,24 @@ spec:
                 properties:
                   awsAccountId:
                     type: string
+                  defaultDestinationSettings:
+                    properties:
+                      invocationStyle:
+                        type: string
+                        x-kubernetes-int-or-string: true
+                      logicalName:
+                        type: string
+                      requestTransformation:
+                        type: boolean
+                      responseTransformation:
+                        type: boolean
+                      unwrapAsAlb:
+                        type: boolean
+                      unwrapAsApiGateway:
+                        type: boolean
+                      wrapAsApiGateway:
+                        type: boolean
+                    type: object
                   disableRoleChaining:
                     type: boolean
                   lambdaFunctions:

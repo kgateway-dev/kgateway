@@ -89,6 +89,16 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetDefaultDestinationSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDefaultDestinationSettings()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDefaultDestinationSettings(), target.GetDefaultDestinationSettings()) {
+			return false
+		}
+	}
+
 	return true
 }
 

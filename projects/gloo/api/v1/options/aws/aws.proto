@@ -42,6 +42,9 @@ message UpstreamSpec {
    
     // Optional override to disable role chaining;
     bool disable_role_chaining = 6;
+    
+    // Default Destination settings. Will override any settings on normal destinations with any non-empty defaults.
+    DestinationSpec default_destination_settings = 7;
 }
 
 // Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda functions:

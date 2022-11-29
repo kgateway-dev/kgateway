@@ -40,6 +40,7 @@ in a particular region
 "roleArn": string
 "awsAccountId": string
 "disableRoleChaining": bool
+"defaultDestinationSettings": .aws.options.gloo.solo.io.DestinationSpec
 
 ```
 
@@ -51,6 +52,7 @@ in a particular region
 | `roleArn` | `string` | (Optional): role_arn to use when assuming a role for a given request via STS. If set this role_arn will override the value found in AWS_ROLE_ARN This option will only be respected if STS credentials are enabled. To enable STS credential fetching see Settings.Gloo.AwsOptions in settings.proto. |
 | `awsAccountId` | `string` | (Optional): The AWS Account ID to use while calling if using resource based access. |
 | `disableRoleChaining` | `bool` | Optional override to disable role chaining;. |
+| `defaultDestinationSettings` | [.aws.options.gloo.solo.io.DestinationSpec](../aws.proto.sk/#destinationspec) | Default Destination settings. Will override any settings on normal destinations with any non-empty defaults. |
 
 
 

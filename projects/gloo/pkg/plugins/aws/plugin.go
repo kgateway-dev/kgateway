@@ -15,6 +15,7 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
+	"github.com/imdario/mergo"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -323,6 +324,9 @@ func (p *Plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 // GenerateAWSLambdaRouteConfig is an overridable way to handle destination logic for lambdas.
 // Passed in at plugin creation as it fulfills PerRouteConfigGenerator interface
 func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error) {
+
+	mergo.Merge(destination, upstream.DefaultDestinationSettings)
+
 	logicalName := destination.GetLogicalName()
 	if len(upstream.GetLambdaFunctions()) == 0 {
 		return nil, errors.Errorf("lambda points to upstream with no functions %v", logicalName)
