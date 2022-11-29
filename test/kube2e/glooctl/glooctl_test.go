@@ -434,7 +434,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 			_, err = runGlooctlCommand("check")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Error: 4 errors occurred"))
 			Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': default reject-me-too (Reason: 2 errors occurred:"))
 			Expect(err.Error()).To(ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [gloo-system.reject-me]"))
 			Expect(err.Error()).To(ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.reject-me]"))
