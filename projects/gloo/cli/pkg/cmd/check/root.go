@@ -218,7 +218,7 @@ func CheckResources(opts *options.Options) error {
 	}
 
 	if included := doesNotContain(opts.Top.CheckName, "xds-metrics"); included {
-		err = checkXdsMetrics(opts, opts.Metadata.GetNamespace(), deployments)
+		err = checkXdsMetrics(ctx, opts, opts.Metadata.GetNamespace(), deployments)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}

@@ -6,8 +6,6 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
@@ -230,7 +228,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude deployments", func() {
-			output, err := testutils.GlooctlOut("check -x xds-metrics,deployments")
+			output, err := runGlooctlCommand("check", "-x", "xds-metrics,deployments")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).NotTo(ContainSubstring("Checking deployments..."))
@@ -246,7 +244,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude pods", func() {
-			output, err := testutils.GlooctlOut("check -x xds-metrics,pods")
+			output, err := runGlooctlCommand("check", "-x", "xds-metrics,pods")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -262,7 +260,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude upstreams", func() {
-			output, err := testutils.GlooctlOut("check -x xds-metrics,upstreams,virtual-services")
+			output, err := runGlooctlCommand("check", "-x", "xds-metrics,upstreams,virtual-services")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -277,7 +275,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude upstreamgroups", func() {
-			output, err := testutils.GlooctlOut("check -x xds-metrics,upstreamgroup")
+			output, err := runGlooctlCommand("check", "-x", "xds-metrics,upstreamgroup")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -293,7 +291,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude auth-configs", func() {
-			output, err := testutils.GlooctlOut("check -x xds-metrics,auth-configs")
+			output, err := runGlooctlCommand("check", "-x", "xds-metrics,auth-configs")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -309,7 +307,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude rate-limit-configs", func() {
-			output, err := testutils.GlooctlOut("check -x xds-metrics,rate-limit-configs")
+			output, err := runGlooctlCommand("check", "-x", "xds-metrics,rate-limit-configs")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -325,7 +323,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude secrets", func() {
-			output, err := testutils.GlooctlOut("check -x xds-metrics,secrets")
+			output, err := runGlooctlCommand("check", "-x", "xds-metrics,secrets")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -341,7 +339,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude virtual-services", func() {
-			output, err := testutils.GlooctlOut("check -x xds-metrics,virtual-services")
+			output, err := runGlooctlCommand("check", "-x", "xds-metrics,virtual-services")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -357,7 +355,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude gateways", func() {
-			output, err := testutils.GlooctlOut("check -x xds-metrics,gateways")
+			output, err := runGlooctlCommand("check", "-x", "xds-metrics,gateways")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -373,7 +371,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude proxies", func() {
-			output, err := testutils.GlooctlOut("check -x xds-metrics,proxies")
+			output, err := runGlooctlCommand("check", "-x", "xds-metrics,proxies")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -472,6 +470,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 	})
 })
 
+// runGlooctlCommand take a set of arguments for glooctl and then executes local glooctl with these arguments
 func runGlooctlCommand(args ...string) (string, error) {
 	glooctlCommand := []string{filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName)}
 	glooctlCommand = append(glooctlCommand, args...)
