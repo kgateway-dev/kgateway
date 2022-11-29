@@ -21,39 +21,39 @@ The presence of `xds-relay` intermediary pods serve two purposes. First, it sepa
    ```
 
 2. Optional: Modify the default values for the `xds-relay` chart, such as to add resource requests and limits.
-```yaml
-deployment:
-  replicas: 3
-  image:
-    pullPolicy: IfNotPresent
-    registry: gcr.io/gloo-edge
-    repository: xds-relay
-    tag: %version%
-# might want to set resources for prod deploy, e.g.:
-#  resources:
-#    requests:
-#      cpu: 125m
-#      memory: 256Mi
-service:
-  port: 9991
-bootstrap:
-  cache:
-    # zero means no limit
-    ttl: 0s
-    # zero means no limit
-    maxEntries: 0
-  originServer:
-    address: gloo.gloo-system.svc.cluster.local
-    port: 9977
-    streamTimeout: 5s
-  logging:
-    level: INFO
-# might want to add extra, non-default identifiers
-#extraLabels:
-#  k: v
-#extraTemplateAnnotations:
-#  k: v
-```
+   ```yaml
+   deployment:
+     replicas: 3
+     image:
+       pullPolicy: IfNotPresent
+       registry: gcr.io/gloo-edge
+       repository: xds-relay
+       tag: %version%
+   # might want to set resources for prod deploy, e.g.:
+   #  resources:
+   #    requests:
+   #      cpu: 125m
+   #      memory: 256Mi
+   service:
+     port: 9991
+   bootstrap:
+     cache:
+       # zero means no limit
+       ttl: 0s
+       # zero means no limit
+       maxEntries: 0
+     originServer:
+       address: gloo.gloo-system.svc.cluster.local
+       port: 9977
+       streamTimeout: 5s
+     logging:
+       level: INFO
+   # might want to add extra, non-default identifiers
+   #extraLabels:
+   #  k: v
+   #extraTemplateAnnotations:
+   #  k: v
+   ```
 
 3. [Install Gloo Edge]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}) with the following Helm values to point each Envoy proxy (envoy) to `xds-relay`.
 ```yaml
