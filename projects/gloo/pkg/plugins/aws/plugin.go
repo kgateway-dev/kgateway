@@ -325,6 +325,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 // Passed in at plugin creation as it fulfills PerRouteConfigGenerator interface
 func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error) {
 
+	// merge the non-default values (trues and non-zeros) from default onto destination
 	mergo.Merge(destination, upstream.GetDefaultDestinationSettings())
 
 	logicalName := destination.GetLogicalName()
