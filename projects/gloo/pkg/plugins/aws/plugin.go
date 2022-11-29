@@ -406,6 +406,7 @@ func deriveStaticSecret(params plugins.Params, secretRef *core.ResourceRef) (acc
 	secret = awsSecrets.Aws.GetSecretKey()
 	session = awsSecrets.Aws.GetSessionToken()
 	if access == "" || !utf8.Valid([]byte(access)) {
+		// err is nil here but this is still safe
 		err = multierror.Append(err, errors.Errorf("access_key is not a valid string"))
 	}
 	if secret == "" || !utf8.Valid([]byte(secret)) {
