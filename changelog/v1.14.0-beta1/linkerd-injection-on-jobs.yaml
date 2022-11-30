@@ -1,5 +1,5 @@
 changelog:
-  - type: NON_USER_FACING
+  - type: HELM
     issueLink: https://github.com/solo-io/gloo/issues/7488
     resolvesIssue: true
     description: >-
