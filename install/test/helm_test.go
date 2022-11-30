@@ -843,6 +843,31 @@ var _ = Describe("Helm Test", func() {
 				})
 			})
 
+			Context("gloo with linkerd settings", func() {
+				var (
+					linkerdInjectionLabel = "linkerd.io/inject"
+				)
+				It("linkerd injection should always be disabled in job pod templates when linkerd is enabled", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"settings.linkerd=true",
+						},
+					})
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Job"
+					}).ExpectAll(func(job *unstructured.Unstructured) {
+						jobObj, err := kuberesource.ConvertUnstructured(job)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Job %+v should be able to convert from unstructured", job))
+						structuredJob, ok := jobObj.(*jobsv1.Job)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %+v should be able to cast to a structured job", job))
+
+						val, ok := structuredJob.Spec.Template.ObjectMeta.Annotations[linkerdInjectionLabel]
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %s should contain an linkerd injection annotation", job.GetName()))
+						Expect(val).To(Equal("disabled"), fmt.Sprintf("Job %s should have an linkerd annotation with value of 'false'", job.GetName()))
+					})
+				})
+			})
+
 			Context("gloo with istio sds settings", func() {
 				var (
 					IstioInjectionLabel          = "sidecar.istio.io/inject"
