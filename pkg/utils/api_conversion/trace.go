@@ -36,18 +36,6 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytracegloo.ZipkinConfig, c
 }
 
 func ToEnvoyOpenCensusConfiguration(glooOpenCensusConfig *envoytracegloo.OpenCensusConfig) (*envoytrace.OpenCensusConfig, error) {
-	grpcService := glooOpenCensusConfig.GetOcagentGrpcService()
-	grpcClusterName := grpcService.GetName()
-	if grpcService.GetNamespace() != "" {
-		grpcClusterName = fmt.Sprintf("%s_%s", grpcService.GetName(), grpcService.GetNamespace())
-	}
-	envoyGrpcService := envoycore.GrpcService{
-		TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-			EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-				ClusterName: grpcClusterName,
-			},
-		},
-	}
 
 	envoyOpenCensusConfig := &envoytrace.OpenCensusConfig{
 		TraceConfig: &v1.TraceConfig{
@@ -59,12 +47,33 @@ func ToEnvoyOpenCensusConfiguration(glooOpenCensusConfig *envoytracegloo.OpenCen
 		},
 		OcagentExporterEnabled: glooOpenCensusConfig.GetOcagentExporterEnabled(),
 		OcagentAddress:         glooOpenCensusConfig.GetOcagentAddress(),
-		OcagentGrpcService:     &envoyGrpcService,
+		OcagentGrpcService:     nil,
 		IncomingTraceContext:   translateTraceContext(glooOpenCensusConfig.GetIncomingTraceContext()),
 		OutgoingTraceContext:   translateTraceContext(glooOpenCensusConfig.GetOutgoingTraceContext()),
 	}
 
-	glooTraceConfig := glooOpenCensusConfig.GetTraceConfig()
+	translateTraceConfig(glooOpenCensusConfig.GetTraceConfig(), envoyOpenCensusConfig.GetTraceConfig())
+
+	if len(glooOpenCensusConfig.GetOcagentAddress()) == 0 {
+		grpcService := glooOpenCensusConfig.GetOcagentGrpcService()
+		grpcClusterName := grpcService.GetName()
+		if grpcService.GetNamespace() != "" {
+			grpcClusterName = fmt.Sprintf("%s_%s", grpcService.GetName(), grpcService.GetNamespace())
+		}
+		envoyGrpcService := envoycore.GrpcService{
+			TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+					ClusterName: grpcClusterName,
+				},
+			},
+		}
+		envoyOpenCensusConfig.OcagentGrpcService = &envoyGrpcService
+	}
+
+	return envoyOpenCensusConfig, nil
+}
+
+func translateTraceConfig(glooTraceConfig *envoytracegloo.TraceConfig, envoyTraceConfig *v1.TraceConfig) {
 	switch glooTraceConfig.GetSampler().(type) {
 	case *envoytracegloo.TraceConfig_ConstantSampler:
 		var decision v1.ConstantSampler_ConstantDecision
@@ -76,24 +85,22 @@ func ToEnvoyOpenCensusConfiguration(glooOpenCensusConfig *envoytracegloo.OpenCen
 		case envoytracegloo.ConstantSampler_ALWAYS_PARENT:
 			decision = v1.ConstantSampler_ALWAYS_PARENT
 		}
-		envoyOpenCensusConfig.GetTraceConfig().Sampler = &v1.TraceConfig_ConstantSampler{
+		envoyTraceConfig.Sampler = &v1.TraceConfig_ConstantSampler{
 			ConstantSampler: &v1.ConstantSampler{
 				Decision: decision,
 			},
 		}
 	case *envoytracegloo.TraceConfig_ProbabilitySampler:
-		envoyOpenCensusConfig.GetTraceConfig().Sampler = &v1.TraceConfig_ProbabilitySampler{
+		envoyTraceConfig.Sampler = &v1.TraceConfig_ProbabilitySampler{
 			ProbabilitySampler: &v1.ProbabilitySampler{
 				SamplingProbability: glooTraceConfig.GetProbabilitySampler().GetSamplingProbability(),
 			},
 		}
 	case *envoytracegloo.TraceConfig_RateLimitingSampler:
-		envoyOpenCensusConfig.GetTraceConfig().Sampler = &v1.TraceConfig_RateLimitingSampler{RateLimitingSampler: &v1.RateLimitingSampler{
+		envoyTraceConfig.Sampler = &v1.TraceConfig_RateLimitingSampler{RateLimitingSampler: &v1.RateLimitingSampler{
 			Qps: glooTraceConfig.GetRateLimitingSampler().GetQps(),
 		}}
 	}
-
-	return envoyOpenCensusConfig, nil
 }
 
 func translateTraceContext(glooTraceContexts []envoytracegloo.OpenCensusConfig_TraceContext) []envoytrace.OpenCensusConfig_TraceContext {
