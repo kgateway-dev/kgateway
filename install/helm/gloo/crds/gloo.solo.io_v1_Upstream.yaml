@@ -27,7 +27,7 @@ spec:
                 properties:
                   awsAccountId:
                     type: string
-                  defaultDestinationSettings:
+                  destinationOverrides:
                     properties:
                       invocationStyle:
                         type: string

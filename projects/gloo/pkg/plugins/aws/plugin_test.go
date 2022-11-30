@@ -325,7 +325,7 @@ var _ = Describe("Plugin", func() {
 			initParams.Settings = &v1.Settings{
 				Gloo: &v1.GlooOptions{
 					AwsOptions: &v1.GlooOptions_AWSOptions{
-						FallbackFirstToFunction: &wrapperspb.BoolValue{Value: true},
+						FallbackToFirstFunction: &wrapperspb.BoolValue{Value: true},
 					},
 				},
 			}
@@ -343,7 +343,7 @@ var _ = Describe("Plugin", func() {
 	Context("route with defaults", func() {
 
 		It("should apply response transform override", func() {
-			upstream.GetAws().DefaultDestinationSettings = &aws.DestinationSpec{ResponseTransformation: true}
+			upstream.GetAws().DestinationOverrides = &aws.DestinationSpec{ResponseTransformation: true}
 			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
 			// destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
@@ -356,7 +356,7 @@ var _ = Describe("Plugin", func() {
 			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
 		})
 		It("empty response override should not override route level", func() {
-			upstream.GetAws().DefaultDestinationSettings = &aws.DestinationSpec{ResponseTransformation: false}
+			upstream.GetAws().DestinationOverrides = &aws.DestinationSpec{ResponseTransformation: false}
 			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
 

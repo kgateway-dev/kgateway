@@ -2449,9 +2449,9 @@ type GlooOptions_AWSOptions struct {
 	// Defaults to not refreshing on time period. Suggested is 15 minutes.
 	CredentialRefreshDelay *duration.Duration `protobuf:"bytes,4,opt,name=credential_refresh_delay,json=credentialRefreshDelay,proto3" json:"credential_refresh_delay,omitempty"`
 	// Sets the unsafe behavior where a route can specify a lambda upstream
-	// but not set the function to target. If will use the first function.
-	// If discovery is enabled the first function is the first function name alphabetically
-	// from the last discovery run.
+	// but not set the function to target. It will use the first function which
+	// if discovery is enabled the first function is the first function name alphabetically
+	// from the last discovery run. This means that the lambda being pointed to could change.
 	// Defaults to false.
 	FallbackToFirstFunction *wrappers.BoolValue `protobuf:"bytes,5,opt,name=fallback_to_first_function,json=fallbackToFirstFunction,proto3" json:"fallback_to_first_function,omitempty"`
 }

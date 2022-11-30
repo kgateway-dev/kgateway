@@ -326,8 +326,8 @@ func (p *Plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error) {
 
 	// merge the non-default values (trues and non-zeros) from default onto destination
-	if destination != nil && upstream.GetDefaultDestinationSettings() != nil {
-		mergo.Merge(destination, upstream.GetDefaultDestinationSettings())
+	if destination != nil && upstream.GetDestinationOverrides() != nil {
+		mergo.Merge(destination, upstream.GetDestinationOverrides())
 	}
 
 	logicalName := destination.GetLogicalName()

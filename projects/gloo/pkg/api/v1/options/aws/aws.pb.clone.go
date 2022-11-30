@@ -62,10 +62,10 @@ func (m *UpstreamSpec) Clone() proto.Message {
 
 	target.DisableRoleChaining = m.GetDisableRoleChaining()
 
-	if h, ok := interface{}(m.GetDefaultDestinationSettings()).(clone.Cloner); ok {
-		target.DefaultDestinationSettings = h.Clone().(*DestinationSpec)
+	if h, ok := interface{}(m.GetDestinationOverrides()).(clone.Cloner); ok {
+		target.DestinationOverrides = h.Clone().(*DestinationSpec)
 	} else {
-		target.DefaultDestinationSettings = proto.Clone(m.GetDefaultDestinationSettings()).(*DestinationSpec)
+		target.DestinationOverrides = proto.Clone(m.GetDestinationOverrides()).(*DestinationSpec)
 	}
 
 	return target

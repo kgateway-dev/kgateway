@@ -535,9 +535,9 @@ message GlooOptions {
         google.protobuf.Duration credential_refresh_delay = 4;
 
         // Sets the unsafe behavior where a route can specify a lambda upstream
-        // but not set the function to target. If will use the first function.
-        // If discovery is enabled the first function is the first function name alphabetically
-        // from the last discovery run.
+        // but not set the function to target. It will use the first function which 
+        // if discovery is enabled the first function is the first function name alphabetically
+        // from the last discovery run. This means that the lambda being pointed to could change.
         // Defaults to false.
         google.protobuf.BoolValue fallback_to_first_function = 5;
     }
