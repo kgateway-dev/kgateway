@@ -116,4 +116,4 @@ jobs:
         curl -X POST https://slack.com/api/chat.postMessage\
               -H "Content-Type: application/json; charset=utf-8"\
               -H "Authorization: Bearer ${{ secrets.SLACKBOT_BEARER }}"\
-              -d '{"channel":"edge-nightly-results","text":"The <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|regression tests> nightly run has completed. Result: ${{ job.status }}"}'
+              -d '{"channel":"C04CJMXAH7A","text":"The <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|regression tests> nightly run has completed. Result: ${{ job.status }}"}'
