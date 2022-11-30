@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      when settings.linkerd=true on Helm releases, linkerd injection will been disabled on all jobs to ensure the resulting pods are executed and terminated correctly
