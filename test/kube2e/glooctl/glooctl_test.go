@@ -402,7 +402,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("warns if a given gateway proxy deployment has zero replcias", func() {
+		It("warns if a given gateway proxy deployment has zero replicas", func() {
 			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "gateway-proxy", "-n", "gloo-system")
 			Expect(err).ToNot(HaveOccurred())
 
