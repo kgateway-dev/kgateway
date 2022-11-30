@@ -394,7 +394,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 			_, err = runGlooctlCommand("check", "-x", "xds-metrics")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"))
+			Expect(err.Error()).To(ContainSubstring("Gloo installation is incomplete: no active gateway-proxy pods exist in cluster"))
 
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
 			Expect(err).ToNot(HaveOccurred())
@@ -420,7 +420,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
 			Expect(output).To(ContainSubstring("Checking gateways... OK"))
 			Expect(output).To(ContainSubstring("Checking proxies... OK"))
-			Expect(output).To(ContainSubstring("Warning: gateway-proxy has zero replicas"))
+			Expect(output).To(ContainSubstring("Warning: gloo-system:gateway-proxy has zero replicas"))
 			Expect(output).To(ContainSubstring("No problems detected."))
 
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")

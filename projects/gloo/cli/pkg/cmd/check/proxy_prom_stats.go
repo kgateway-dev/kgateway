@@ -30,15 +30,15 @@ func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployment
 	for _, deployment := range deployments.Items {
 		if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
 			gatewayProxyDeploymentsFound++
-			if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas == 0 {
-				multiWarn = multierror.Append(multiWarn, eris.New("Warning: "+deployment.Name+" has zero replicas"))
+			if *deployment.Spec.Replicas == 0 {
+				multiWarn = multierror.Append(multiWarn, eris.New("Warning: "+deployment.Namespace+":"+deployment.Name+" has zero replicas"))
 			} else if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
 				return err, multiWarn
 			}
 		}
 	}
 	if gatewayProxyDeploymentsFound == 0 || (multiWarn != nil && gatewayProxyDeploymentsFound == len(multiWarn.Errors)) {
-		return eris.New("Gloo installation is incomplete: no gateway-proxy deployments exist in cluster"), multiWarn
+		return eris.New("Gloo installation is incomplete: no active gateway-proxy pods exist in cluster"), multiWarn
 	}
 	return nil, multiWarn
 }
