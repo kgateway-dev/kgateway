@@ -43,7 +43,8 @@ message UpstreamSpec {
     // Optional override to disable role chaining;
     bool disable_role_chaining = 6;
     
-    // Destination overrides which will override any settings on specified destinations with any non-default settings specified.
+    // Specifies AWS DestinationSpec configuration overrides for any route targeting this upstream.
+    // Note that the route in question must have an AWS DestinationSpec to be affected and this will only set things that are non-falsey as overrides.
     DestinationSpec destination_overrides = 7;
 }
 

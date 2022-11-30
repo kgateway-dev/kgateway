@@ -100,7 +100,8 @@ type UpstreamSpec struct {
 	AwsAccountId string `protobuf:"bytes,5,opt,name=aws_account_id,json=awsAccountId,proto3" json:"aws_account_id,omitempty"`
 	// Optional override to disable role chaining;
 	DisableRoleChaining bool `protobuf:"varint,6,opt,name=disable_role_chaining,json=disableRoleChaining,proto3" json:"disable_role_chaining,omitempty"`
-	// Destination overrides which will override any settings on specified destinations with any non-default settings specified.
+	// Specifies AWS DestinationSpec configuration overrides for any route targeting this upstream.
+	// Note that the route in question must have an AWS DestinationSpec to be affected and this will only set things that are non-falsey as overrides.
 	DestinationOverrides *DestinationSpec `protobuf:"bytes,7,opt,name=destination_overrides,json=destinationOverrides,proto3" json:"destination_overrides,omitempty"`
 }
 
