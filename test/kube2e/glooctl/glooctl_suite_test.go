@@ -80,8 +80,28 @@ func getHelmValuesOverrideFile() (filename string, cleanup func()) {
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html
 	_, err = values.Write([]byte(`
 gatewayProxies:
+  publicGw: # Proxy name for public access (Internet facing)
+    disabled: false # overwrite the "default" value in the merge step
+    kind:
+      deployment:
+        replicas: 2
+    service:
+      kubeResourceOverride: # workaround for https://github.com/solo-io/gloo/issues/5297
+        spec:
+          ports:
+            - port: 443
+              protocol: TCP
+              name: https
+              targetPort: 8443
+          type: LoadBalancer
+    gatewaySettings:
+      customHttpsGateway: # using the default HTTPS Gateway
+        virtualServiceSelector:
+          gateway-type: public # label set on the VirtualService
+      disableHttpGateway: true # disable the default HTTP Gateway
   gatewayProxy:
     healthyPanicThreshold: 0
+    disabled: false # disable the default gateway-proxy deployment and its 2 default Gateway CRs
 `))
 	Expect(err).NotTo(HaveOccurred())
 
