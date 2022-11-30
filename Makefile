@@ -50,7 +50,7 @@ UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_SSH ?= ssh://git@github.com/solo-io/gloo.git
 ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)" "$(UPSTREAM_ORIGIN_URL_SSH)"),)
-	VERSION := 0.0.1-fork
+	VERSION ?= 0.0.1-fork
 	CREATE_TEST_ASSETS := "false"
 endif
 
@@ -827,6 +827,10 @@ publish-security-scan:
 	# generate_docs.go
 	gsutil cp -r $(SCAN_DIR)/gloo/markdown_results/** gs://$(SCAN_BUCKET)/gloo
 	gsutil cp -r $(SCAN_DIR)/solo-projects/markdown_results/** gs://$(SCAN_BUCKET)/solo-projects
+
+.PHONY: scan-version
+scan-version: ## Scan all Gloo images with the tag matching {VERSION} env variable
+	PATH=$(DEPSGOBIN):$$PATH go run ./hack/trivy/cli/main.go scan -v "$(VERSION)"
 
 #----------------------------------------------------------------------------------
 # Third Party License Management

@@ -4,12 +4,19 @@ Trivy is a security scanning tool which we use to scan our images for vulnerabil
 
 ## Scanning Images Locally
 ### Scan a single image
-You can run a trivy scan identical to CI on your own command line by installing trivy and running
+You can run a trivy scan identical to CI on your own command line by installing Trivy and running
 ```shell
 trivy image --severity HIGH,CRITICAL quay.io/solo-io/<IMAGE>:<VERSION>
 ```
 
-### Scan a collection of images
+### Scan a single version
+You can scan all Gloo Edge images with a specific version by running
+```shell
+VERSION=<VERSION> make scan-version
+```
+
+## Generating Scan Result Documentation Locally
+### Scan open source images
 Using our scanner, we can run scans against groups of images. To filter which version to scan, we use:
 ```shell
 VERSION_CONSTRAINT=">v1.8.0, <v1.9.0" go run generate_docs.go run-security-scan -r gloo
