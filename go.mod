@@ -7,6 +7,8 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.34.9
+	github.com/bshuster-repo/logrus-logstash-hook v1.0.0 // indirect
+	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/envoyproxy/go-control-plane v0.10.3
 	github.com/envoyproxy/protoc-gen-validate v0.6.7
@@ -113,7 +115,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/bugsnag/bugsnag-go v1.5.0 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/chai2010/gettext-go v0.0.0-20160711120539-c6fed771bfd5 // indirect
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect

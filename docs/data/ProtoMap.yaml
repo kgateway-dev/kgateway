@@ -1589,8 +1589,23 @@ apis:
   solo.io.envoy.config.route.v3.WeightedCluster:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto.sk/#WeightedCluster
     package: solo.io.envoy.config.route.v3
+  solo.io.envoy.config.trace.v3.ConstantSampler:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#ConstantSampler
+    package: solo.io.envoy.config.trace.v3
   solo.io.envoy.config.trace.v3.DatadogConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto.sk/#DatadogConfig
+    package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.OpenCensusConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#OpenCensusConfig
+    package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.ProbabilitySampler:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#ProbabilitySampler
+    package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.RateLimitingSampler:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#RateLimitingSampler
+    package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.TraceConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#TraceConfig
     package: solo.io.envoy.config.trace.v3
   solo.io.envoy.config.trace.v3.ZipkinConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto.sk/#ZipkinConfig

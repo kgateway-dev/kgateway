@@ -394,6 +394,39 @@ var _ = Describe("Plugin", func() {
 			})
 		})
 
+		FDescribe("when opencensus provider config", func() {
+			It("translates the plugin correctly", func() {
+
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_OpenCensusConfig{
+							OpenCensusConfig: &envoytrace_gloo.OpenCensusConfig{
+								TraceConfig: &envoytrace_gloo.TraceConfig{
+									Sampler: &envoytrace_gloo.TraceConfig_ConstantSampler{
+										ConstantSampler: &envoytrace_gloo.ConstantSampler{
+											Decision: envoytrace_gloo.ConstantSampler_ALWAYS_ON,
+										},
+									},
+									MaxNumberOfAttributes:    0,
+									MaxNumberOfAnnotations:   0,
+									MaxNumberOfMessageEvents: 0,
+									MaxNumberOfLinks:         0,
+								},
+								OcagentExporterEnabled: false,
+								OcagentAddress:         "",
+								OcagentGrpcService:     nil,
+								IncomingTraceContext:   nil,
+								OutgoingTraceContext:   nil,
+							},
+						},
+					},
+				}
+				err := processHcmNetworkFilter(cfg)
+				Expect(err).To(BeNil())
+			})
+		})
+
 	})
 
 	It("should update routes properly", func() {
