@@ -23,6 +23,8 @@ glooctl create virtualservice [flags]
       --domains strings               comma separated list of domains
       --enable-rate-limiting          enable rate limiting features for this virtual service
   -h, --help                          help for virtualservice
+      --name string                   name of the resource to read or write
+  -n, --namespace string              namespace for reading or writing resources (default "gloo-system")
       --rate-limit-requests uint32    requests per unit of time (default 100)
       --rate-limit-time-unit string   unit of time over which to apply the rate limit (default "MINUTE")
 ```
@@ -40,8 +42,6 @@ glooctl create virtualservice [flags]
       --dry-run                    print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive                use interactive mode
       --kubeconfig string          kubeconfig to use, if not standard one
-      --name string                name of the resource to read or write
-  -n, --namespace string           namespace for reading or writing resources (default "gloo-system")
   -o, --output OutputType          output format: (yaml, json, table, kube-yaml, wide) (default table)
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
 ```
