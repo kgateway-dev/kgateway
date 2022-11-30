@@ -346,7 +346,8 @@ func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destinatio
 
 	if lambdaFunc == nil {
 		// pull from options to see if we allow not setting the function on a route
-		tryFallback := options.GetFallbackFirstToFunction().GetValue()
+		// this is dangerous due to name ordering when discovery is on https://github.com/solo-io/gloo/tree/master/projects/discovery/pkg/fds/discoveries/aws/aws.go#L75
+		tryFallback := options.GetFallbackToFirstFunction().GetValue()
 		if !tryFallback {
 			return nil, errors.Errorf("unknown lambda function %v", logicalName)
 		}
@@ -386,7 +387,6 @@ func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destinatio
 }
 
 // deriveStaticSecret from ingest if we are using a kubernetes secretref
-// TODO(nfuden): find a way to pull out params from this.
 // Named returns with the derived string contents or an error due to retrieval or format.
 func deriveStaticSecret(params plugins.Params, secretRef *core.ResourceRef) (access, session, secret string, err error) {
 	glooSecret, err := params.Snapshot.Secrets.Find(secretRef.Strings())

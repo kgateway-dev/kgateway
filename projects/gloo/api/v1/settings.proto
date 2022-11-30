@@ -536,8 +536,10 @@ message GlooOptions {
 
         // Sets the unsafe behavior where a route can specify a lambda upstream
         // but not set the function to target. If will use the first function.
+        // If discovery is enabled the first function is the first function name alphabetically
+        // from the last discovery run.
         // Defaults to false.
-        google.protobuf.BoolValue fallback_first_to_function = 5;
+        google.protobuf.BoolValue fallback_to_first_function = 5;
     }
 
     AWSOptions aws_options = 5;

@@ -43,7 +43,7 @@ message UpstreamSpec {
     // Optional override to disable role chaining;
     bool disable_role_chaining = 6;
     
-    // Default Destination settings. Will override any settings on normal destinations with any non-empty defaults.
+    // Default Destination settings. Will override any settings on specified destinations with any non-default settings specified.
     DestinationSpec default_destination_settings = 7;
 }
 

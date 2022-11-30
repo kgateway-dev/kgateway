@@ -100,7 +100,7 @@ type UpstreamSpec struct {
 	AwsAccountId string `protobuf:"bytes,5,opt,name=aws_account_id,json=awsAccountId,proto3" json:"aws_account_id,omitempty"`
 	// Optional override to disable role chaining;
 	DisableRoleChaining bool `protobuf:"varint,6,opt,name=disable_role_chaining,json=disableRoleChaining,proto3" json:"disable_role_chaining,omitempty"`
-	// Default Destination settings. Will override any settings on normal destinations with any non-empty defaults.
+	// Default Destination settings. Will override any settings on specified destinations with any non-default settings specified.
 	DefaultDestinationSettings *DestinationSpec `protobuf:"bytes,7,opt,name=default_destination_settings,json=defaultDestinationSettings,proto3" json:"default_destination_settings,omitempty"`
 }
 

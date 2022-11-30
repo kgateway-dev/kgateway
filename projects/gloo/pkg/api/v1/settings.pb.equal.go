@@ -1658,12 +1658,12 @@ func (m *GlooOptions_AWSOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetFallbackFirstToFunction()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetFallbackFirstToFunction()) {
+	if h, ok := interface{}(m.GetFallbackToFirstFunction()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFallbackToFirstFunction()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetFallbackFirstToFunction(), target.GetFallbackFirstToFunction()) {
+		if !proto.Equal(m.GetFallbackToFirstFunction(), target.GetFallbackToFirstFunction()) {
 			return false
 		}
 	}
