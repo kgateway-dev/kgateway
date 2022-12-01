@@ -10,7 +10,7 @@ trivy image --severity HIGH,CRITICAL quay.io/solo-io/<IMAGE>:<VERSION>
 ```
 
 ### Scan a single version
-You can scan all Gloo Edge images with a specific version by running
+You can scan all Gloo Edge images for a specific version by running
 ```shell
 VERSION=<VERSION> make scan-version
 ```
