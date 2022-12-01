@@ -16,13 +16,13 @@ You can upgrade your Gloo Edge Open Source, Gloo Edge Enterprise, and Gloo Edge 
 3. Set the target version that you want to upgrade to as an environment variable. To find available versions, check the [changelog]({{< versioned_link_path fromRoot="/reference/changelog/" >}}). The following commands include the latest versions for each of the following Gloo Edge installation options.
    {{< tabs >}} 
 {{< tab name="Open Source" codelang="shell" >}}
-export TARGET_VERSION={{< readfile file="static/content/version_geoss_latest" markdown="true">}}
+export TARGET_VERSION={{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
 {{< /tab >}}
 {{< tab name="Enterprise" codelang="shell" >}}
-export TARGET_VERSION={{< readfile file="static/content/version_gee_latest" markdown="true">}}
+export TARGET_VERSION={{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
 {{< /tab >}} 
 {{< tab name="Federation" codelang="shell" >}}
-export TARGET_VERSION={{< readfile file="static/content/version_gee_latest" markdown="true">}}
+export TARGET_VERSION={{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
 {{< /tab >}} 
    {{< /tabs >}}
 4. Upgrade your `glooctl` CLI to the version that you want to upgrade to.
