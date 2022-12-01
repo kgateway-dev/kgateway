@@ -30,8 +30,9 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
 2. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure. For Gloo Edge Enterprise, you might also review the open source changelogs because most of the proto definitions are open source. For more information, see the following enterprise-only section on understanding the open source dependencies.
    * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
-3. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version 1.11 from 1.9 or older, you must upgrade incrementally. For example, you must first upgrade from 1.9 to 1.10, and then upgrade from 1.10 to 1.11.
+3. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version 1.13 from 1.11 or older, you must upgrade incrementally. For example, you must first upgrade from 1.11 to 1.12, and then upgrade from 1.12 to 1.13.
 4. Review the version-specific upgrade docs.
+   * [1.13.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.13/" >}})
    * [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
    * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
    * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
@@ -138,10 +139,11 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
 ## Step 3: Apply minor version-specific changes
 
 Each minor version might add custom resource definitions (CRDs) that Helm upgrades cannot handle seamlessly. Review the minor version-specific upgrading docs, which might include steps for installing new CRDs and removing outdated CRDs.
-   * [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
-   * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
-   * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
-   * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
+* [1.13.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.13/" >}})
+* [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
+* [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
+* [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
+* [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
 
 ## Step 4: Upgrade Gloo Edge
 
@@ -176,39 +178,39 @@ The following steps assume that you already installed Gloo Edge as a Helm releas
 
 1. Upgrade the Helm release.
 
-   **Gloo Edge Open Source example:**
-   ```shell script
-   helm repo update
-   helm upgrade -n gloo-system gloo gloo/gloo --version=v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
-   ```
+   * **Gloo Edge Open Source example:**
+     ```shell script
+     helm repo update
+     helm upgrade -n gloo-system gloo gloo/gloo --version=v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
+     ```
 
-   Example output:
-   ```
-   Release "gloo" has been upgraded. Happy Helming!
-   NAME: gloo
-   LAST DEPLOYED: Thu Dec 12 12:22:16 2019
-   NAMESPACE: gloo-system
-   STATUS: deployed
-   REVISION: 2
-   TEST SUITE: None
-   ```
+     Example output:
+     ```
+     Release "gloo" has been upgraded. Happy Helming!
+     NAME: gloo
+     LAST DEPLOYED: Thu Dec 12 12:22:16 2019
+     NAMESPACE: gloo-system
+     STATUS: deployed
+     REVISION: 2
+     TEST SUITE: None
+     ```
 
-   **Gloo Edge Enterprise example:**
-   ```shell script
-   helm repo update
-   helm upgrade -n gloo-system gloo glooe/gloo-ee --version=v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   ```
+   * **Gloo Edge Enterprise example:**
+     ```shell script
+     helm repo update
+     helm upgrade -n gloo-system gloo glooe/gloo-ee --version=v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+     ```
 
-   Example output:
-   ```
-   Release "gloo" has been upgraded. Happy Helming!
-   NAME: gloo
-   LAST DEPLOYED: Thu Dec 12 12:22:16 2019
-   NAMESPACE: gloo-system
-   STATUS: deployed
-   REVISION: 2
-   TEST SUITE: None
-   ```
+     Example output:
+     ```
+     Release "glooe" has been upgraded. Happy Helming!
+     NAME: glooe
+     LAST DEPLOYED: Thu Dec 12 12:22:16 2019
+     NAMESPACE: gloo-system
+     STATUS: deployed
+     REVISION: 2
+     TEST SUITE: None
+     ```
 
 2. Verify that Gloo Edge runs the upgraded version.
    ```shell script
