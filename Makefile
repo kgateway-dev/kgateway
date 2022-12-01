@@ -830,7 +830,10 @@ publish-security-scan:
 
 .PHONY: scan-version
 scan-version: ## Scan all Gloo images with the tag matching {VERSION} env variable
-	PATH=$(DEPSGOBIN):$$PATH go run ./hack/trivy/cli/main.go scan -v "$(VERSION)"
+	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go run github.com/solo-io/go-utils/securityscanutils/cli scan-version \
+		-r $(IMAGE_REPO)\
+		-t $(VERSION)\
+		--images gloo,gloo-envoy-wrapper,discovery,ingress,sds,certgen,access-logger,kubectl
 
 #----------------------------------------------------------------------------------
 # Third Party License Management
