@@ -205,7 +205,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 		})
 	})
-	Context("check", func() {
+	FContext("check", func() {
 
 		BeforeEach(func() {
 			// Check that everything is OK
@@ -384,6 +384,24 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
 			Expect(output).To(ContainSubstring("Checking gateways... OK"))
 			Expect(output).NotTo(ContainSubstring("Checking proxies..."))
+		})
+
+		It("can run a read only check", func() {
+			output, err := runGlooctlCommand("check", "--read-only")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking deployments... OK"))
+			Expect(output).To(ContainSubstring("Checking pods... OK"))
+			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+			Expect(output).To(ContainSubstring("Checking secrets... OK"))
+			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+			Expect(output).To(ContainSubstring("Checking gateways... OK"))
+			Expect(output).To(ContainSubstring("Checking proxies... OK"))
+			Expect(output).To(ContainSubstring("Warning: checking proxies with port forwarding is disabled"))
+			Expect(output).To(ContainSubstring("Warning: checking xds with port forwarding is disabled"))
 		})
 
 		It("fails if no gateway proxy deployments", func() {

@@ -451,4 +451,7 @@ type Register struct {
 type Check struct {
 	// The maximum length of time to wait before giving up on a secret request. A value of zero means no timeout.
 	SecretClientTimeout time.Duration
+
+	// Makes check read only by skipping any checks that create resources in the cluster
+	ReadOnly bool
 }

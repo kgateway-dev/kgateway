@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/rotisserie/eris"
@@ -24,7 +26,7 @@ const promStatsPath = "/stats/prometheus"
 
 const metricsUpdateInterval = time.Millisecond * 250
 
-func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (error, *multierror.Error) {
+func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNamespace string, deployments *v1.DeploymentList) (error, *multierror.Error) {
 	gatewayProxyDeploymentsFound := 0
 	var multiWarn *multierror.Error
 	for _, deployment := range deployments.Items {
@@ -32,8 +34,13 @@ func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployment
 			gatewayProxyDeploymentsFound++
 			if *deployment.Spec.Replicas == 0 {
 				multiWarn = multierror.Append(multiWarn, eris.New("Warning: "+deployment.Namespace+":"+deployment.Name+" has zero replicas"))
-			} else if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
-				return err, multiWarn
+			} else if !opts.Check.ReadOnly {
+				if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
+					return err, multiWarn
+				}
+			} else {
+				multiWarn = multierror.Append(multiWarn, eris.New("Warning: checking proxies with port forwarding is disabled"))
+				return nil, multiWarn
 			}
 		}
 	}

@@ -33,3 +33,7 @@ func AddResourceNamespaceFlag(set *pflag.FlagSet, strptr *[]string) {
 func AddExcludeCheckFlag(set *pflag.FlagSet, strarrptr *[]string) {
 	set.StringSliceVarP(strarrptr, "exclude", "x", []string{}, "check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, secrets, virtual-services, gateways, proxies, xds-metrics)")
 }
+
+func AddReadOnlyFlag(set *pflag.FlagSet, readOnly *bool) {
+	set.BoolVarP(readOnly, "read-only", "", false, "only do checks that dont require creating resources (i.e. port forwards)")
+}

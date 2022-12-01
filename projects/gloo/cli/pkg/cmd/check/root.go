@@ -90,6 +90,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddPodSelectorFlag(pflags, &opts.Top.PodSelector)
 	flagutils.AddResourceNamespaceFlag(pflags, &opts.Top.ResourceNamespaces)
 	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
+	flagutils.AddReadOnlyFlag(pflags, &opts.Check.ReadOnly)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
@@ -871,18 +872,21 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 			}
 		}
 	}
-	err, warnings := checkProxiesPromStats(ctx, glooNamespace, deployments)
+	err, warnings := checkProxiesPromStats(ctx, opts, glooNamespace, deployments)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
-
 	if multiErr != nil {
 		printer.AppendStatus("proxies", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
 	printer.AppendStatus("proxies", "OK")
 	if warnings != nil && warnings.Len() != 0 {
-		printer.AppendCheck(warnings.Error() + "\n")
+		accumulatedWarning := ""
+		for _, warning := range warnings.Errors {
+			accumulatedWarning += warning.Error() + "\n"
+		}
+		printer.AppendCheck(accumulatedWarning)
 	}
 	return nil
 }
