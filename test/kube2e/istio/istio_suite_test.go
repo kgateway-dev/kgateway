@@ -30,9 +30,11 @@ const (
 	istioNamespace = "istio-system"
 	// `constants.IstioIngressNamespace` returns "istio-system", but guides state it should be "istio-ingress"
 	// https://istio.io/latest/docs/setup/install/helm/
-	ingressNamespace = "istio-ingress"
-	AppNamespace     = "httpbin"
-	AppPort          = 80
+	ingressNamespace    = "istio-ingress"
+	AppServiceNamespace = "default"
+	AppServiceName      = "httpbin"
+	AppNamespace        = "httpbin"
+	AppPort             = 80
 )
 
 func TestIstio(t *testing.T) {

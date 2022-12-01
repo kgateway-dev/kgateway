@@ -1,11 +1,18 @@
 package istio_test
 
 import (
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/test/helpers"
 	kubeService "github.com/solo-io/solo-kit/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -129,72 +136,77 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 	//})
 
 	FContext("test service + vs + upstream setup", func() {
-		service := corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:   "httpbin",
-				Labels: map[string]string{"app": "httpbin", "service": "httpbin"},
-			},
-			Spec: corev1.ServiceSpec{
-				Ports: []corev1.ServicePort{
-					{
-						Name:       "http",
-						Port:       80,
-						TargetPort: intstr.FromInt(8000),
-					},
+		It("something", func() {
+			service := corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      AppServiceName,
+					Namespace: AppServiceNamespace,
+					Labels:    map[string]string{"app": "httpbin", "service": "httpbin"},
 				},
-				Selector: map[string]string{"app": "httpbin"},
-			},
-		}
-		var err error
-		_, err = resourceClientSet.ServiceClient().Write(
-			&kubernetes.Service{Service: kubeService.Service{Service: service}},
-			clients.WriteOpts{},
-		)
-		Expect(err).NotTo(HaveOccurred())
-		//Eventually(func() error {
-		//	_, err := resourceClientSet.ServiceClient().Read("default", "httpbin", clients.ReadOpts{})
-		//	return err
-		//}, "5s", "1s").Should(BeNil())
-		//Eventually(func() error {
-		//	_, err := resourceClientSet.UpstreamClient().Read("default", "default-httpbin-80", clients.ReadOpts{})
-		//	return err
-		//}, "5s", "1s").Should(BeNil())
-		//
-		//virtualService := &v1.VirtualService{
-		//	Metadata: &core.Metadata{
-		//		Name:      "httpbin-vs",
-		//		Namespace: "gloo-system",
-		//	},
-		//	VirtualHost: &v1.VirtualHost{
-		//		Domains: []string{"httpbin.local"},
-		//		Routes: []*v1.Route{{
-		//			Action: &v1.Route_RouteAction{
-		//				RouteAction: &gloov1.RouteAction{
-		//					Destination: &gloov1.RouteAction_Single{
-		//						Single: &gloov1.Destination{
-		//							DestinationType: &gloov1.Destination_Upstream{
-		//								Upstream: &core.ResourceRef{
-		//									Name: fmt.Sprintf("default-httpbin-80"),
-		//								},
-		//							},
-		//						},
-		//					},
-		//				},
-		//			},
-		//			Matchers: []*matchers.Matcher{
-		//				{
-		//					PathSpecifier: &matchers.Matcher_Prefix{
-		//						Prefix: "/",
-		//					},
-		//				},
-		//			},
-		//		}},
-		//	},
-		//}
-		//_, err = resourceClientSet.VirtualServiceClient().Write(virtualService, clients.WriteOpts{})
-		//Eventually(func() error {
-		//	_, err := resourceClientSet.VirtualServiceClient().Read("gloo-system", "httpbin-vs", clients.ReadOpts{})
-		//	return err
-		//}, "5s", "1s").Should(BeNil())
+				Spec: corev1.ServiceSpec{
+					Ports: []corev1.ServicePort{
+						{
+							Name:       "http",
+							Port:       80,                   // todo configurable for tests
+							TargetPort: intstr.FromInt(8000), // todo configurable for tests
+						},
+					},
+					Selector: map[string]string{"app": "httpbin"},
+				},
+			}
+			var err error
+			_, err = resourceClientSet.ServiceClient().Write(
+				&kubernetes.Service{Service: kubeService.Service{Service: service}},
+				clients.WriteOpts{},
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() error {
+				_, err := resourceClientSet.ServiceClient().Read(AppServiceNamespace, AppServiceName, clients.ReadOpts{})
+				return err
+			}, "5s", "1s").Should(BeNil())
+			// the upstream should be created by discovery service
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				upstreamName := fmt.Sprintf("%s-%s-%d", AppServiceNamespace, AppServiceName, 80)
+				return resourceClientSet.UpstreamClient().Read("gloo-system", upstreamName, clients.ReadOpts{})
+			})
+			// it works so far... (need to do a beforeEach/afterEach to delete the created stuff automatically)
+
+			virtualService := &v1.VirtualService{
+				Metadata: &core.Metadata{
+					Name:      "httpbin-vs",
+					Namespace: "gloo-system",
+				},
+				VirtualHost: &v1.VirtualHost{
+					Domains: []string{"httpbin.local"},
+					Routes: []*v1.Route{{
+						Action: &v1.Route_RouteAction{
+							RouteAction: &gloov1.RouteAction{
+								Destination: &gloov1.RouteAction_Single{
+									Single: &gloov1.Destination{
+										DestinationType: &gloov1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Name: fmt.Sprintf("%s-%s-%d", AppServiceNamespace, AppServiceName, 80),
+											},
+										},
+									},
+								},
+							},
+						},
+						Matchers: []*matchers.Matcher{
+							{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: "/",
+								},
+							},
+						},
+					}},
+				},
+			}
+			_, err = resourceClientSet.VirtualServiceClient().Write(virtualService, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				return resourceClientSet.VirtualServiceClient().Read("gloo-system", "httpbin-vs", clients.ReadOpts{})
+			})
+		})
 	})
 })
