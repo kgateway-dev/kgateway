@@ -1,0 +1,15 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang
+    dependencyRepo:  x/mod
+    dependencyTag: v0.7.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang
+    dependencyRepo: x/sync
+    dependencyTag: v0.1.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang
+    dependencyRepo: x/tools
+    dependencyTag: v0.3.0
+  - type: NON_USER_FACING
+    description: Upgrade dependencies to resolve CVEs.
