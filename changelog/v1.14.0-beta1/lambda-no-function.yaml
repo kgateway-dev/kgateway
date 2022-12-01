@@ -1,0 +1,12 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Add option that allows usage of lambda upstreams without specifying a function.
+      Affects custom extensions of the lambda extension built in go that use gloo as a library.
+      This is purely a work around for current Gloo Portal behavior and likely should not be opted into otherwise.
+    issueLink: https://github.com/solo-io/solo-projects/issues/4274
+    resolvesIssue: false
+  - type: NEW_FEATURE
+    description: Aws lambda set upstream level defaults to override route destinations.
+    issueLink: https://github.com/solo-io/solo-projects/issues/4274
+    resolvesIssue: false
