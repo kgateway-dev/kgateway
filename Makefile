@@ -50,7 +50,7 @@ UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_SSH ?= ssh://git@github.com/solo-io/gloo.git
 ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)" "$(UPSTREAM_ORIGIN_URL_SSH)"),)
-	VERSION := 0.0.1-fork
+	VERSION ?= 0.0.1-fork
 	CREATE_TEST_ASSETS := "false"
 endif
 
