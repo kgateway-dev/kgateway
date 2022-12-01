@@ -34,13 +34,13 @@ func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNames
 			gatewayProxyDeploymentsFound++
 			if *deployment.Spec.Replicas == 0 {
 				multiWarn = multierror.Append(multiWarn, eris.New("Warning: "+deployment.Namespace+":"+deployment.Name+" has zero replicas"))
-			} else if !opts.Check.ReadOnly {
+			} else if opts.Check.ReadOnly {
+				multiWarn = multierror.Append(multiWarn, eris.New("Warning: checking proxies with port forwarding is disabled"))
+				return nil, multiWarn
+			} else {
 				if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
 					return err, multiWarn
 				}
-			} else {
-				multiWarn = multierror.Append(multiWarn, eris.New("Warning: checking proxies with port forwarding is disabled"))
-				return nil, multiWarn
 			}
 		}
 	}
