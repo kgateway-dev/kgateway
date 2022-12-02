@@ -28,7 +28,7 @@ glooctl create secret [flags]
       --vault-root-key string          key prefix for Vault key-value storage inside a storage engine. (default "gloo")
       --vault-tls-insecure             Insecure enables or disables SSL verification.Use with --use-vault
       --vault-tls-server-name string   TLSServerName, if set, is used to set the SNI host when connecting via TLS.Use with --use-vault
-      --vault-token string             The root token to authenticate with a Vault server.Use with --use-vault
+      --vault-token string             The root token to authenticate with a Vault server. Use with --use-vault
 ```
 
 ### Options inherited from parent commands

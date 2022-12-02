@@ -76,7 +76,7 @@ func AddVaultSecretFlags(set *pflag.FlagSet, vault *options.Vault) {
 
 	set.StringVar(&config.Address, "vault-address", config.Address, "address of the Vault server. This should be a complete URL such as \"http://vault.example.com\". "+
 		"Use with --use-vault")
-	set.StringVar(&token, "vault-token", "", "The root token to authenticate with a Vault server."+
+	set.StringVar(&token, "vault-token", "", "The root token to authenticate with a Vault server. "+
 		"Use with --use-vault")
 
 	set.StringVar(&tlsCfg.CACert, "vault-ca-cert", "", "CACert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate."+
