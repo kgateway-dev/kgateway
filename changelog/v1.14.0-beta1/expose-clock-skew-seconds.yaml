@@ -1,4 +1,5 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/gloo/issues/7398
     description: Expose clock skew seconds on JWT Provider
+    resolvesIssue: false 
