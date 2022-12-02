@@ -312,8 +312,6 @@ func filterEndpoints(
 			continue
 		}
 
-		// todo - was there a reason we used to use the endpoint's port previously?
-		//   should we _only_ do this if a targetPort has been set, else do the original endpoint port setup?
 		// Istio uses the service's port for routing requests
 		if istioIntegrationEnabled {
 			hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
