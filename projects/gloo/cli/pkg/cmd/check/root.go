@@ -876,6 +876,7 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
+
 	if multiErr != nil {
 		printer.AppendStatus("proxies", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr

@@ -113,6 +113,6 @@ func checkXdsMetrics(ctx context.Context, opts *options.Options, glooNamespace s
 			printer.AppendStatus("rate limit server", "OK")
 		}
 	}
-	
+
 	return nil
 }
