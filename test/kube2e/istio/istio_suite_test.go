@@ -31,7 +31,7 @@ const (
 	// `constants.IstioIngressNamespace` returns "istio-system", but guides state it should be "istio-ingress"
 	// https://istio.io/latest/docs/setup/install/helm/
 	ingressNamespace    = "istio-ingress"
-	AppServiceNamespace = "default"
+	AppServiceNamespace = "httpbin"
 	AppServiceName      = "httpbin"
 	AppNamespace        = "httpbin"
 	AppPort             = 80
@@ -212,6 +212,16 @@ func uninstallIstio() {
 	_ = testutils.Kubectl("delete", "namespace", istioNamespace)
 	EventuallyWithOffset(1, func() error {
 		return testutils.Kubectl("get", "namespace", istioNamespace)
+	}, "60s", "1s").Should(HaveOccurred())
+
+	_ = testutils.Kubectl("delete", "namespace", AppNamespace)
+	EventuallyWithOffset(1, func() error {
+		return testutils.Kubectl("get", "namespace", AppNamespace)
+	}, "60s", "1s").Should(HaveOccurred())
+
+	_ = testutils.Kubectl("delete", "deployment/httpbin")
+	EventuallyWithOffset(1, func() error {
+		return testutils.Kubectl("get", "deployment/httpbin")
 	}, "60s", "1s").Should(HaveOccurred())
 }
 
