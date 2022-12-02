@@ -57,7 +57,7 @@ Envoy receives dynamic configuration via the [xDS protocol](https://www.envoypro
 
 ## Debug
 
-It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior. [hack/envoy.yaml](./hack/envoy.yaml) provides example bootstrap that can be used. If you built an image with changes, be sure to update container parameter in the command with the new image address output in the build step.
+It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior. [hack/envoy.yaml](./hack/envoy.yaml) provides example bootstrap that can be used. If you built an image you want to use, be sure to update container parameter in the command with the new image address output in the build step.
 
 ```shell
 docker run --rm -ti -p 8000:8000 -p 19000:19000 -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro -l trace gcr.io/gloo-edge/gloo-envoy-wrapper:1.11.11
