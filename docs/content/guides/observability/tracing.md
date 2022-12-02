@@ -43,7 +43,7 @@ Set up Zipkin tracing in a [local Kind cluster]({{< versioned_link_path fromRoot
    docker run --network=kind -itd --name zipkin -p 9411:9411 openzipkin/zipkin
    ```
 
-2. Verify that both `zipkin` and `zipkin-tracing-control-plane` are in your local Kind cluster network.
+2. Verify that both `zipkin` and `zipkin-tracing-control-plane` are in your local Kind cluster network, and note the IP address that was assigned to your Zipkin container without the CIDR. In this example, the Zipkin container is assigned the `172.18.0.2` IP address.
    ```shell
    docker network inspect kind
    ```
@@ -102,7 +102,7 @@ Set up Zipkin tracing in a [local Kind cluster]({{< versioned_link_path fromRoot
    ]
    {{< /highlight >}}
 
-3. Configure the Zipkin [tracing cluster](#cluster) with the IP address that was assigned in the previous step. In this example, the Zipkin cluster is assigned the `172.18.0.2` IP address.
+3. Configure the Zipkin [tracing cluster](#cluster) with the IP address that was assigned in the previous step. 
 4. Port-forward the Zipkin service so that you can access Zipkin on your local machine. 
    ```shell
    kubectl port-forward svc/zipkin 9411:9411
@@ -121,7 +121,7 @@ Zipkin uses a dedicated tracing cluster where tracing information is sent to. Th
 
 Use the Gloo Edge installation Helm chart template to configure the Zipkin tracing platform. Gloo Edge automatically determines the updates that must be made to apply the Zipkin configuration in your Envoy proxies. 
 
-1. Create a `values.yaml` file and add your Zipkin configuration. In the following example, the Zipkin cluster is called `zipkin`.
+1. Create a `values.yaml` file and add your Zipkin configuration. Set the name of your Zipkin cluster in the `cluster_name` field, and the IP address that was assigned to your Zipkin container and that you retrieved earlier in the `address` field. The following example uses `zipkin` as the name for the Zipkin cluster.  
 
    {{< highlight yaml "hl_lines=4-16" >}}
    gatewayProxies: 
@@ -138,7 +138,7 @@ Use the Gloo Edge installation Helm chart template to configure the Zipkin traci
                  - endpoint:
                      address:
                        socket_address:
-                         address: zipkin
+                         address: <zipkin-container-IP>
                          port_value: 9411
    {{< /highlight >}}
    
@@ -157,7 +157,7 @@ Add the Envoy code that you want to apply to a Kubernetes configmap and restart 
    kubectl edit configmap -n gloo-system gateway-proxy-envoy-config
    ```
    
-2. Enter the Zipkin tracing changes.
+2. Create a configmap that holds your Zipkin configuration. Enter the name of your Zipkin cluster in the `cluster_name` field, and the IP address that was assigned to your Zipkin container and that you retrieved earlier in the `address` field. The following example uses `zipkin` as the name for the Zipkin cluster.
 
    {{< highlight yaml "hl_lines=25-36">}}
    apiVersion: v1
@@ -194,7 +194,7 @@ Add the Envoy code that you want to apply to a Kubernetes configmap and restart 
                  - endpoint:
                      address:
                        socket_address:
-                         address: zipkin
+                         address: <zipking-container-IP>
                          port_value: 9411
    {{< /highlight >}}
 
@@ -319,14 +319,9 @@ The following steps show how to add the name to the virtual service in Gloo Edge
 
 1. Send a request to your app. 
    ```shell
-   curl $(glooctl proxy url)/abc
-   ```
-   
-2. Port-forward the Zipkin service so that you can access Zipkin on your local machine. 
-   ```shell
-   kubectl port-forward svc/zipkin 9411:9411
+   curl localhost:31500/abc
    ```
 
-5. [Open Zipkin on your local machine](http://localhost:9411) and review the traces. 
+2. [Open Zipkin on your local machine](http://localhost:9411) and review the traces. 
 
 
