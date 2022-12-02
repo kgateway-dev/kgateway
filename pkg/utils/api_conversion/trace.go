@@ -1,8 +1,7 @@
 package api_conversion
 
 import (
-	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoytracegloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 )
@@ -33,92 +32,20 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytracegloo.ZipkinConfig, c
 	return envoyZipkinConfig, nil
 }
 
-func ToEnvoyOpenCensusConfiguration(glooOpenCensusConfig *envoytracegloo.OpenCensusConfig) (*envoytrace.OpenCensusConfig, error) {
-
-	envoyOpenCensusConfig := &envoytrace.OpenCensusConfig{
-		TraceConfig: &v1.TraceConfig{
-			Sampler:                  nil,
-			MaxNumberOfAttributes:    glooOpenCensusConfig.GetTraceConfig().GetMaxNumberOfAttributes(),
-			MaxNumberOfAnnotations:   glooOpenCensusConfig.GetTraceConfig().GetMaxNumberOfAnnotations(),
-			MaxNumberOfMessageEvents: glooOpenCensusConfig.GetTraceConfig().GetMaxNumberOfMessageEvents(),
-			MaxNumberOfLinks:         glooOpenCensusConfig.GetTraceConfig().GetMaxNumberOfLinks(),
-		},
-		OcagentExporterEnabled: glooOpenCensusConfig.GetOcagentExporterEnabled(),
-		IncomingTraceContext:   translateTraceContext(glooOpenCensusConfig.GetIncomingTraceContext()),
-		OutgoingTraceContext:   translateTraceContext(glooOpenCensusConfig.GetOutgoingTraceContext()),
-	}
-
-	switch glooOpenCensusConfig.GetOcagentAddress().(type) {
-	case *envoytracegloo.OpenCensusConfig_HttpAddress:
-		envoyOpenCensusConfig.OcagentAddress = glooOpenCensusConfig.GetHttpAddress()
-	case *envoytracegloo.OpenCensusConfig_GrpcAddress:
-		grpcAddress := glooOpenCensusConfig.GetGrpcAddress()
-		envoyOpenCensusConfig.OcagentGrpcService = &envoycore.GrpcService{
-			TargetSpecifier: &envoycore.GrpcService_GoogleGrpc_{
-				GoogleGrpc: &envoycore.GrpcService_GoogleGrpc{
-					TargetUri:  grpcAddress.GetTargetUri(),
-					StatPrefix: grpcAddress.GetStatPrefix(),
+func ToEnvoyOpenCensusConfiguration(glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName string) (*envoytrace.OpenTelemetryConfig, error) {
+	envoyOpenTelemetryConfig := &envoytrace.OpenTelemetryConfig{
+		GrpcService: &envoy_config_core_v3.GrpcService{
+			TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
+					ClusterName: clusterName,
 				},
 			},
-		}
+		},
 	}
 
-	translateTraceConfig(glooOpenCensusConfig.GetTraceConfig(), envoyOpenCensusConfig.GetTraceConfig())
+	return envoyOpenTelemetryConfig, nil
 
-	return envoyOpenCensusConfig, nil
 }
-
-func translateTraceConfig(glooTraceConfig *envoytracegloo.TraceConfig, envoyTraceConfig *v1.TraceConfig) {
-	switch glooTraceConfig.GetSampler().(type) {
-	case *envoytracegloo.TraceConfig_ConstantSampler:
-		var decision v1.ConstantSampler_ConstantDecision
-		switch glooTraceConfig.GetConstantSampler().GetDecision() {
-		case envoytracegloo.ConstantSampler_ALWAYS_ON:
-			decision = v1.ConstantSampler_ALWAYS_ON
-		case envoytracegloo.ConstantSampler_ALWAYS_OFF:
-			decision = v1.ConstantSampler_ALWAYS_OFF
-		case envoytracegloo.ConstantSampler_ALWAYS_PARENT:
-			decision = v1.ConstantSampler_ALWAYS_PARENT
-		}
-		envoyTraceConfig.Sampler = &v1.TraceConfig_ConstantSampler{
-			ConstantSampler: &v1.ConstantSampler{
-				Decision: decision,
-			},
-		}
-	case *envoytracegloo.TraceConfig_ProbabilitySampler:
-		envoyTraceConfig.Sampler = &v1.TraceConfig_ProbabilitySampler{
-			ProbabilitySampler: &v1.ProbabilitySampler{
-				SamplingProbability: glooTraceConfig.GetProbabilitySampler().GetSamplingProbability(),
-			},
-		}
-	case *envoytracegloo.TraceConfig_RateLimitingSampler:
-		envoyTraceConfig.Sampler = &v1.TraceConfig_RateLimitingSampler{RateLimitingSampler: &v1.RateLimitingSampler{
-			Qps: glooTraceConfig.GetRateLimitingSampler().GetQps(),
-		}}
-	}
-}
-
-func translateTraceContext(glooTraceContexts []envoytracegloo.OpenCensusConfig_TraceContext) []envoytrace.OpenCensusConfig_TraceContext {
-	result := make([]envoytrace.OpenCensusConfig_TraceContext, 0, len(glooTraceContexts))
-	for i, glooTraceContext := range glooTraceContexts {
-		var envoyTraceContext envoytrace.OpenCensusConfig_TraceContext
-		switch glooTraceContext {
-		case envoytracegloo.OpenCensusConfig_NONE:
-			envoyTraceContext = envoytrace.OpenCensusConfig_NONE
-		case envoytracegloo.OpenCensusConfig_TRACE_CONTEXT:
-			envoyTraceContext = envoytrace.OpenCensusConfig_TRACE_CONTEXT
-		case envoytracegloo.OpenCensusConfig_GRPC_TRACE_BIN:
-			envoyTraceContext = envoytrace.OpenCensusConfig_GRPC_TRACE_BIN
-		case envoytracegloo.OpenCensusConfig_CLOUD_TRACE_CONTEXT:
-			envoyTraceContext = envoytrace.OpenCensusConfig_CLOUD_TRACE_CONTEXT
-		case envoytracegloo.OpenCensusConfig_B3:
-			envoyTraceContext = envoytrace.OpenCensusConfig_B3
-		}
-		result[i] = envoyTraceContext
-	}
-	return result
-}
-
 func ToEnvoyZipkinCollectorEndpointVersion(version envoytracegloo.ZipkinConfig_CollectorEndpointVersion) envoytrace.ZipkinConfig_CollectorEndpointVersion {
 	switch str := version.String(); str {
 	case envoytracegloo.ZipkinConfig_CollectorEndpointVersion_name[int32(envoytracegloo.ZipkinConfig_HTTP_JSON)]:

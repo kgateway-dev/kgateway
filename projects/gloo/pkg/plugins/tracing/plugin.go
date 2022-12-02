@@ -145,8 +145,8 @@ func processEnvoyTracingProvider(
 	case *tracing.ListenerTracingSettings_DatadogConfig:
 		return processEnvoyDatadogTracing(snapshot, typed)
 
-	case *tracing.ListenerTracingSettings_OpenCensusConfig:
-		return processEnvoyOpenCensusTracing(snapshot, typed)
+	case *tracing.ListenerTracingSettings_OpenTelemetryConfig:
+		return processEnvoyOpenTelemetryTracing(snapshot, typed)
 
 	default:
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", typed)
@@ -227,11 +227,26 @@ func processEnvoyDatadogTracing(
 	}, nil
 }
 
-func processEnvoyOpenCensusTracing(
+func processEnvoyOpenTelemetryTracing(
 	snapshot *v1snap.ApiSnapshot,
-	openCensusTracingSettings *tracing.ListenerTracingSettings_OpenCensusConfig,
+	openTelemetryTracingSettings *tracing.ListenerTracingSettings_OpenTelemetryConfig,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
-	envoyConfig, err := api_conversion.ToEnvoyOpenCensusConfiguration(openCensusTracingSettings.OpenCensusConfig)
+	var collectorClusterName string
+
+	switch collectorCluster := openTelemetryTracingSettings.OpenTelemetryConfig.GetCollectorCluster().(type) {
+	case *v3.OpenTelemetryConfig_CollectorUpstreamRef:
+		// Support upstreams as the collector cluster
+		var err error
+		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef)
+		if err != nil {
+			return nil, err
+		}
+	case *v3.OpenTelemetryConfig_ClusterName:
+		// Support static clusters as the collector cluster
+		collectorClusterName = collectorCluster.ClusterName
+	}
+
+	envoyConfig, err := api_conversion.ToEnvoyOpenCensusConfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +257,7 @@ func processEnvoyOpenCensusTracing(
 	}
 
 	return &envoy_config_trace_v3.Tracing_Http{
-		Name: "envoy.tracers.opencensus",
+		Name: "envoy.tracers.opentelemetry",
 		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
 			TypedConfig: marshalledEnvoyConfig,
 		},

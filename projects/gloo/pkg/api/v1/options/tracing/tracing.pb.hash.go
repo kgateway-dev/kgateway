@@ -196,20 +196,20 @@ func (m *ListenerTracingSettings) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *ListenerTracingSettings_OpenCensusConfig:
+	case *ListenerTracingSettings_OpenTelemetryConfig:
 
-		if h, ok := interface{}(m.GetOpenCensusConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("OpenCensusConfig")); err != nil {
+		if h, ok := interface{}(m.GetOpenTelemetryConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("OpenTelemetryConfig")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetOpenCensusConfig(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetOpenTelemetryConfig(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("OpenCensusConfig")); err != nil {
+				if _, err = hasher.Write([]byte("OpenTelemetryConfig")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

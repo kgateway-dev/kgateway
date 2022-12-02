@@ -149,17 +149,17 @@ func (m *ListenerTracingSettings) Equal(that interface{}) bool {
 			}
 		}
 
-	case *ListenerTracingSettings_OpenCensusConfig:
-		if _, ok := target.ProviderConfig.(*ListenerTracingSettings_OpenCensusConfig); !ok {
+	case *ListenerTracingSettings_OpenTelemetryConfig:
+		if _, ok := target.ProviderConfig.(*ListenerTracingSettings_OpenTelemetryConfig); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetOpenCensusConfig()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetOpenCensusConfig()) {
+		if h, ok := interface{}(m.GetOpenTelemetryConfig()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOpenTelemetryConfig()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetOpenCensusConfig(), target.GetOpenCensusConfig()) {
+			if !proto.Equal(m.GetOpenTelemetryConfig(), target.GetOpenTelemetryConfig()) {
 				return false
 			}
 		}

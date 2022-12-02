@@ -114,15 +114,15 @@ func (m *ListenerTracingSettings) Clone() proto.Message {
 			}
 		}
 
-	case *ListenerTracingSettings_OpenCensusConfig:
+	case *ListenerTracingSettings_OpenTelemetryConfig:
 
-		if h, ok := interface{}(m.GetOpenCensusConfig()).(clone.Cloner); ok {
-			target.ProviderConfig = &ListenerTracingSettings_OpenCensusConfig{
-				OpenCensusConfig: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.OpenCensusConfig),
+		if h, ok := interface{}(m.GetOpenTelemetryConfig()).(clone.Cloner); ok {
+			target.ProviderConfig = &ListenerTracingSettings_OpenTelemetryConfig{
+				OpenTelemetryConfig: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.OpenTelemetryConfig),
 			}
 		} else {
-			target.ProviderConfig = &ListenerTracingSettings_OpenCensusConfig{
-				OpenCensusConfig: proto.Clone(m.GetOpenCensusConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.OpenCensusConfig),
+			target.ProviderConfig = &ListenerTracingSettings_OpenTelemetryConfig{
+				OpenTelemetryConfig: proto.Clone(m.GetOpenTelemetryConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.OpenTelemetryConfig),
 			}
 		}
 
