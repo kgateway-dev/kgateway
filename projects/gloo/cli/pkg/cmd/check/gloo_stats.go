@@ -79,6 +79,10 @@ func checkXdsMetrics(ctx context.Context, opts *options.Options, glooNamespace s
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.GlooAdminPort))
 	// stats is the string containing all stats from /stats/prometheus
+	if opts.Top.ReadOnly {
+		printer.AppendCheck("Warning: checking xds with port forwarding is disabled\n")
+		return nil
+	}
 	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+glooDeployment,
 		localPort, adminPort, false, glooStatsPath)
 	if err != nil {

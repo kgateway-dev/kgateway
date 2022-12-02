@@ -11,6 +11,7 @@ option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
+import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
 message JwtStagedVhostExtension {
@@ -62,6 +63,9 @@ message Provider {
 
     // What claims should be copied to upstream headers.
     repeated ClaimToHeader claims_to_headers = 6;
+
+    // Optional: ClockSkewSeconds is used to verify time constraints, such as `exp` and `npf`. Default is 60s
+    google.protobuf.UInt32Value clock_skew_seconds = 8;
 }
 
 message Jwks {

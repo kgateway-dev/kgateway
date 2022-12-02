@@ -48,6 +48,7 @@ type Top struct {
 	Consul             Consul   // use consul as config backend
 	PodSelector        string   // label selector for pod scanning
 	ResourceNamespaces []string // namespaces in which to check custom resources
+	ReadOnly           bool     // Makes check read only by skipping any checks that create resources in the cluster
 }
 
 type HelmInstall struct {
