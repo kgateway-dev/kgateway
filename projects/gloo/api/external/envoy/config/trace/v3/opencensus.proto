@@ -8,24 +8,24 @@ import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
 option java_package = "io.envoyproxy.solo.io.envoy.config.trace.v3";
-option java_outer_classname = "OpenCensusProto";
+option java_outer_classname = "OpenTelemetryProto";
 option java_multiple_files = true;
-option (solo.io.udpa.annotations.file_migrate).move_to_package = "envoy.extensions.tracers.opencensus.v4alpha";
+option (solo.io.udpa.annotations.file_migrate).move_to_package = "envoy.extensions.tracers.opentelemetry.v4alpha";
 option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
-// [#protodoc-title: OpenCensus tracer]
+// [#protodoc-title: OpenTelemetry tracer]
 
-// Configuration for the OpenCensus tracer.
-// [#extension: envoy.tracers.opencensus]
-message OpenCensusConfig {
+// Configuration for the OpenTelemetry tracer.
+// [#extension: envoy.tracers.opentelemetry]
+message OpenTelemetryConfig {
   option (solo.io.udpa.annotations.versioning).previous_message_type =
-      "envoy.config.trace.v2.OpenCensusConfig";
+      "envoy.config.trace.v2.OpenTelemetryConfig";
 
   // Configuration of when to submit traces to the collector.
-  // See https://github.com/census-instrumentation/opencensus-proto/blob/3619b5dda8bff26ff1974714c24de8f6d4953811/src/opencensus/proto/trace/v1/trace_config.proto#L29 for full documentation
+  // See https://github.com/telemetry-instrumentation/opentelemetry-proto/blob/3619b5dda8bff26ff1974714c24de8f6d4953811/src/opentelemetry/proto/trace/v1/trace_config.proto#L29 for full documentation
   TraceConfig trace_config = 1;
 
-  // Enables the OpenCensus agent if set to true. ocagent_address or
+  // Enables the OpenTelemetry agent if set to true. ocagent_address or
   // ocagent_grpc_service must also be set
   bool ocagent_exporter_enabled = 2;
 
