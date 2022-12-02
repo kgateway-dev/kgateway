@@ -90,7 +90,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddPodSelectorFlag(pflags, &opts.Top.PodSelector)
 	flagutils.AddResourceNamespaceFlag(pflags, &opts.Top.ResourceNamespaces)
 	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
-	flagutils.AddReadOnlyFlag(pflags, &opts.Check.ReadOnly)
+	flagutils.AddReadOnlyFlag(pflags, &opts.Top.ReadOnly)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

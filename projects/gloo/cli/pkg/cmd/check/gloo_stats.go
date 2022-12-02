@@ -79,35 +79,35 @@ func checkXdsMetrics(ctx context.Context, opts *options.Options, glooNamespace s
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.GlooAdminPort))
 	// stats is the string containing all stats from /stats/prometheus
-	if opts.Check.ReadOnly {
+	if opts.Top.ReadOnly {
 		printer.AppendCheck("Warning: checking xds with port forwarding is disabled\n")
-	} else {
-		stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+glooDeployment,
-			localPort, adminPort, false, glooStatsPath)
-		if err != nil {
-			return err
-		}
-		if portFwdCmd.Process != nil {
-			defer portFwdCmd.Process.Release()
-			defer portFwdCmd.Process.Kill()
-		}
-		if strings.TrimSpace(stats) == "" {
-			err := fmt.Sprint(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+glooDeployment+" deployment")
-			fmt.Println(err)
-			return fmt.Errorf(err)
-		}
-		if !ResourcesSyncedOverXds(stats, glooDeployment) {
-			fmt.Println(errMessage)
-			return fmt.Errorf(errMessage)
-		}
-		for _, deployment := range deployments.Items {
-			if deployment.Name == rateLimitDeployment {
-				printer.AppendCheck("Checking rate limit server... ")
-				if !RateLimitIsConnected(stats) {
-					return fmt.Errorf("rate limit server is not connected")
-				}
-				printer.AppendStatus("rate limit server", "OK")
+		return nil
+	}
+	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+glooDeployment,
+		localPort, adminPort, false, glooStatsPath)
+	if err != nil {
+		return err
+	}
+	if portFwdCmd.Process != nil {
+		defer portFwdCmd.Process.Release()
+		defer portFwdCmd.Process.Kill()
+	}
+	if strings.TrimSpace(stats) == "" {
+		err := fmt.Sprint(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+glooDeployment+" deployment")
+		fmt.Println(err)
+		return fmt.Errorf(err)
+	}
+	if !ResourcesSyncedOverXds(stats, glooDeployment) {
+		fmt.Println(errMessage)
+		return fmt.Errorf(errMessage)
+	}
+	for _, deployment := range deployments.Items {
+		if deployment.Name == rateLimitDeployment {
+			printer.AppendCheck("Checking rate limit server... ")
+			if !RateLimitIsConnected(stats) {
+				return fmt.Errorf("rate limit server is not connected")
 			}
+			printer.AppendStatus("rate limit server", "OK")
 		}
 	}
 	return nil

@@ -29,25 +29,26 @@ const metricsUpdateInterval = time.Millisecond * 250
 func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNamespace string, deployments *v1.DeploymentList) (error, *multierror.Error) {
 	gatewayProxyDeploymentsFound := 0
 	var multiWarn *multierror.Error
+	var readOnlyErr error
 	for _, deployment := range deployments.Items {
 		if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
 			gatewayProxyDeploymentsFound++
 			if *deployment.Spec.Replicas == 0 {
 				multiWarn = multierror.Append(multiWarn, eris.New("Warning: "+deployment.Namespace+":"+deployment.Name+" has zero replicas"))
-			} else if opts.Check.ReadOnly {
-				multiWarn = multierror.Append(multiWarn, eris.New("Warning: checking proxies with port forwarding is disabled"))
-				return nil, multiWarn
+			} else if opts.Top.ReadOnly {
+				readOnlyErr = multierror.Append(multiWarn, eris.New("Warning: checking proxies with port forwarding is disabled"))
 			} else {
 				if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
-					return err, multiWarn
+					return err, multierror.Append(multiWarn, readOnlyErr)
 				}
 			}
 		}
 	}
+	//multiWarn =
 	if gatewayProxyDeploymentsFound == 0 || (multiWarn != nil && gatewayProxyDeploymentsFound == len(multiWarn.Errors)) {
-		return eris.New("Gloo installation is incomplete: no active gateway-proxy pods exist in cluster"), multiWarn
+		return eris.New("Gloo installation is incomplete: no active gateway-proxy pods exist in cluster"), multierror.Append(multiWarn, readOnlyErr)
 	}
-	return nil, multiWarn
+	return nil, multierror.Append(multiWarn, readOnlyErr)
 }
 
 func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentName string) error {
