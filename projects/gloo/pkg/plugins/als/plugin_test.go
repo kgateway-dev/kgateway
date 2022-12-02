@@ -7,6 +7,7 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
@@ -85,13 +86,85 @@ var _ = Describe("Plugin", func() {
 
 		})
 
+		Context("grpc with filter", func() {
+
+			var (
+				usRef *core.ResourceRef
+
+				logName            string
+				extraHeaders       []string
+				filter_runtime_key string
+			)
+
+			BeforeEach(func() {
+				logName = "default"
+				extraHeaders = []string{"test"}
+				usRef = &core.ResourceRef{
+					Name:      "default",
+					Namespace: "default",
+				}
+				filter_runtime_key = "10"
+				alsSettings = &als.AccessLoggingService{
+					AccessLog: []*als.AccessLog{
+						{
+							OutputDestination: &als.AccessLog_GrpcService{
+								GrpcService: &als.GrpcService{
+									LogName: logName,
+									ServiceRef: &als.GrpcService_StaticClusterName{
+										StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
+									},
+									AdditionalRequestHeadersToLog:   extraHeaders,
+									AdditionalResponseHeadersToLog:  extraHeaders,
+									AdditionalResponseTrailersToLog: extraHeaders,
+									Filter: &als.AccessLogFilter{
+										FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
+											RuntimeFilter: &als.RuntimeFilter{
+												RuntimeKey: filter_runtime_key,
+												PercentSampled: &v3.FractionalPercent{
+													Numerator:   50,
+													Denominator: v3.FractionalPercent_DenominatorType(40),
+												},
+												UseIndependentRandomness: true,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("works", func() {
+				accessLogConfigs, err := ProcessAccessLogPlugins(alsSettings, nil)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(accessLogConfigs).To(HaveLen(1))
+				alConfig := accessLogConfigs[0]
+
+				Expect(alConfig.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
+				var falCfg envoygrpc.HttpGrpcAccessLogConfig
+				err = translatorutil.ParseTypedConfig(alConfig, &falCfg)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
+				envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
+				Expect(envoyGrpc).NotTo(BeNil())
+				Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
+			})
+
+		})
+
 		Context("file", func() {
 
 			var (
-				strFormat, path string
-				jsonFormat      *structpb.Struct
-				fsStrFormat     *als.FileSink_StringFormat
-				fsJsonFormat    *als.FileSink_JsonFormat
+				strFormat, path    string
+				jsonFormat         *structpb.Struct
+				fsStrFormat        *als.FileSink_StringFormat
+				fsJsonFormat       *als.FileSink_JsonFormat
+				filter_runtime_key string
 			)
 
 			BeforeEach(func() {
@@ -152,6 +225,53 @@ var _ = Describe("Plugin", func() {
 									FileSink: &als.FileSink{
 										Path:         path,
 										OutputFormat: fsJsonFormat,
+									},
+								},
+							},
+						},
+					}
+				})
+
+				It("works", func() {
+					accessLogConfigs, err := ProcessAccessLogPlugins(alsSettings, nil)
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(accessLogConfigs).To(HaveLen(1))
+					alConfig := accessLogConfigs[0]
+
+					Expect(alConfig.Name).To(Equal(wellknown.FileAccessLog))
+					var falCfg envoyalfile.FileAccessLog
+					err = translatorutil.ParseTypedConfig(alConfig, &falCfg)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(falCfg.Path).To(Equal(path))
+					jsn := falCfg.GetLogFormat().GetJsonFormat()
+					Expect(jsn).To(matchers.MatchProto(jsonFormat))
+				})
+
+			})
+
+			Context("with filters", func() {
+
+				BeforeEach(func() {
+					alsSettings = &als.AccessLoggingService{
+						AccessLog: []*als.AccessLog{
+							{
+								OutputDestination: &als.AccessLog_FileSink{
+									FileSink: &als.FileSink{
+										Path:         path,
+										OutputFormat: fsJsonFormat,
+										Filter: &als.AccessLogFilter{
+											FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
+												RuntimeFilter: &als.RuntimeFilter{
+													RuntimeKey: filter_runtime_key,
+													PercentSampled: &v3.FractionalPercent{
+														Numerator:   50,
+														Denominator: v3.FractionalPercent_DenominatorType(40),
+													},
+													UseIndependentRandomness: true,
+												},
+											},
+										},
 									},
 								},
 							},
@@ -239,6 +359,57 @@ var _ = Describe("Plugin", func() {
 										AdditionalRequestHeadersToLog:   extraHeaders,
 										AdditionalResponseHeadersToLog:  extraHeaders,
 										AdditionalResponseTrailersToLog: extraHeaders,
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("does configure access log config", func() {
+				err := plugin.ProcessHcmNetworkFilter(pluginParams, parentListener, listener, envoyHcmConfig)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(envoyHcmConfig.GetAccessLog()).NotTo(BeNil())
+			})
+
+		})
+
+		When("parent listener has access log settings with filters defined", func() {
+
+			BeforeEach(func() {
+				logName := "test"
+				extraHeaders := []string{"test"}
+				usRef := &core.ResourceRef{
+					Name:      "default",
+					Namespace: "default",
+				}
+				filter_runtime_key := "default"
+				parentListener.Options = &v1.ListenerOptions{
+					AccessLoggingService: &als.AccessLoggingService{
+						AccessLog: []*als.AccessLog{
+							{
+								OutputDestination: &als.AccessLog_GrpcService{
+									GrpcService: &als.GrpcService{
+										LogName: logName,
+										ServiceRef: &als.GrpcService_StaticClusterName{
+											StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
+										},
+										AdditionalRequestHeadersToLog:   extraHeaders,
+										AdditionalResponseHeadersToLog:  extraHeaders,
+										AdditionalResponseTrailersToLog: extraHeaders,
+										Filter: &als.AccessLogFilter{
+											FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
+												RuntimeFilter: &als.RuntimeFilter{
+													RuntimeKey: filter_runtime_key,
+													PercentSampled: &v3.FractionalPercent{
+														Numerator:   50,
+														Denominator: v3.FractionalPercent_DenominatorType(40),
+													},
+													UseIndependentRandomness: true,
+												},
+											},
+										},
 									},
 								},
 							},

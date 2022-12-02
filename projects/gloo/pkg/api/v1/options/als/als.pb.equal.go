@@ -154,6 +154,16 @@ func (m *FileSink) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetFilter()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFilter()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetFilter(), target.GetFilter()) {
+			return false
+		}
+	}
+
 	switch m.OutputFormat.(type) {
 
 	case *FileSink_StringFormat:
@@ -248,6 +258,16 @@ func (m *GrpcService) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetFilter()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFilter()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetFilter(), target.GetFilter()) {
+			return false
+		}
+	}
+
 	switch m.ServiceRef.(type) {
 
 	case *GrpcService_StaticClusterName:
@@ -264,6 +284,96 @@ func (m *GrpcService) Equal(that interface{}) bool {
 		if m.ServiceRef != target.ServiceRef {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AccessLogFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AccessLogFilter)
+	if !ok {
+		that2, ok := that.(AccessLogFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.FilterSpecifier.(type) {
+
+	case *AccessLogFilter_RuntimeFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_RuntimeFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRuntimeFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRuntimeFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRuntimeFilter(), target.GetRuntimeFilter()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.FilterSpecifier != target.FilterSpecifier {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *RuntimeFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RuntimeFilter)
+	if !ok {
+		that2, ok := that.(RuntimeFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetRuntimeKey(), target.GetRuntimeKey()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetPercentSampled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPercentSampled()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPercentSampled(), target.GetPercentSampled()) {
+			return false
+		}
+	}
+
+	if m.GetUseIndependentRandomness() != target.GetUseIndependentRandomness() {
+		return false
 	}
 
 	return true

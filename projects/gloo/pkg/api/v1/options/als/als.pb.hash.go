@@ -146,6 +146,26 @@ func (m *FileSink) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if h, ok := interface{}(m.GetFilter()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Filter")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetFilter(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Filter")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.OutputFormat.(type) {
 
 	case *FileSink_StringFormat:
@@ -222,6 +242,26 @@ func (m *GrpcService) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	if h, ok := interface{}(m.GetFilter()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Filter")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetFilter(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Filter")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.ServiceRef.(type) {
 
 	case *GrpcService_StaticClusterName:
@@ -230,6 +270,93 @@ func (m *GrpcService) Hash(hasher hash.Hash64) (uint64, error) {
 			return 0, err
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *AccessLogFilter) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als.AccessLogFilter")); err != nil {
+		return 0, err
+	}
+
+	switch m.FilterSpecifier.(type) {
+
+	case *AccessLogFilter_RuntimeFilter:
+
+		if h, ok := interface{}(m.GetRuntimeFilter()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("RuntimeFilter")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetRuntimeFilter(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("RuntimeFilter")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *RuntimeFilter) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als.RuntimeFilter")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRuntimeKey())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetPercentSampled()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("PercentSampled")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetPercentSampled(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("PercentSampled")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetUseIndependentRandomness())
+	if err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil

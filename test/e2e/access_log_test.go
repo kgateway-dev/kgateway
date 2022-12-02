@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -140,6 +141,52 @@ var _ = Describe("Access Log", func() {
 				}, time.Second*21, time.Second*2)
 
 			})
+
+			It("can stream access logs with filters", func() {
+				gw, err := testClients.GatewayClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Update default gateway to use grpc access log service")
+				gw.Options = &gloov1.ListenerOptions{
+					AccessLoggingService: &als.AccessLoggingService{
+						AccessLog: []*als.AccessLog{
+							{
+								OutputDestination: &als.AccessLog_GrpcService{
+									GrpcService: &als.GrpcService{
+										LogName: "test-log",
+										ServiceRef: &als.GrpcService_StaticClusterName{
+											StaticClusterName: alsplugin.ClusterName,
+										},
+										Filter: &als.AccessLogFilter{
+											FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
+												RuntimeFilter: &als.RuntimeFilter{
+													RuntimeKey: "default",
+													PercentSampled: &v3.FractionalPercent{
+														Numerator:   50,
+														Denominator: v3.FractionalPercent_DenominatorType(40),
+													},
+													UseIndependentRandomness: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				_, err = testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func(g Gomega) {
+					TestUpstreamReachable()
+
+					var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
+					g.Eventually(msgChan, 2*time.Second).Should(Receive(&entry))
+					g.Expect(entry.CommonProperties.UpstreamCluster).To(Equal(translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())))
+				}, time.Second*21, time.Second*2)
+
+			})
 		})
 
 		Context("File", func() {
@@ -205,6 +252,65 @@ var _ = Describe("Access Log", func() {
 															StringValue: "%REQ(:METHOD)%",
 														},
 													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				_, err = testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func(g Gomega) {
+					TestUpstreamReachable()
+
+					logs, err := envoyInstance.Logs()
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(logs).To(ContainSubstring(`"method":"POST"`))
+					g.Expect(logs).To(ContainSubstring(`"protocol":"HTTP/1.1"`))
+				}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
+			})
+
+			It("can create file access logs with filters", func() {
+				gw, err := testClients.GatewayClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+
+				gw.Options = &gloov1.ListenerOptions{
+					AccessLoggingService: &als.AccessLoggingService{
+						AccessLog: []*als.AccessLog{
+							{
+								OutputDestination: &als.AccessLog_FileSink{
+									FileSink: &als.FileSink{
+										Path: "/dev/stdout",
+										OutputFormat: &als.FileSink_JsonFormat{
+											JsonFormat: &structpb.Struct{
+												Fields: map[string]*structpb.Value{
+													"protocol": {
+														Kind: &structpb.Value_StringValue{
+															StringValue: "%PROTOCOL%",
+														},
+													},
+													"method": {
+														Kind: &structpb.Value_StringValue{
+															StringValue: "%REQ(:METHOD)%",
+														},
+													},
+												},
+											},
+										},
+										Filter: &als.AccessLogFilter{
+											FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
+												RuntimeFilter: &als.RuntimeFilter{
+													RuntimeKey: "default",
+													PercentSampled: &v3.FractionalPercent{
+														Numerator:   50,
+														Denominator: v3.FractionalPercent_DenominatorType(40),
+													},
+													UseIndependentRandomness: true,
 												},
 											},
 										},

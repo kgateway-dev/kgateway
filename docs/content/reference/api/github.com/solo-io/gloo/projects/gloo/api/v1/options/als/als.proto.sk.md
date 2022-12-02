@@ -15,6 +15,8 @@ weight: 5
 - [AccessLog](#accesslog)
 - [FileSink](#filesink)
 - [GrpcService](#grpcservice)
+- [AccessLogFilter](#accesslogfilter)
+- [RuntimeFilter](#runtimefilter)
   
 
 
@@ -72,6 +74,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 "path": string
 "stringFormat": string
 "jsonFormat": .google.protobuf.Struct
+"filter": .als.options.gloo.solo.io.AccessLogFilter
 
 ```
 
@@ -80,6 +83,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 | `path` | `string` | the file path to which the file access logging service will sink. |
 | `stringFormat` | `string` | the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#config-access-log-format-strings. Only one of `stringFormat` or `jsonFormat` can be set. |
 | `jsonFormat` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#format-dictionaries. Only one of `jsonFormat` or `stringFormat` can be set. |
+| `filter` | [.als.options.gloo.solo.io.AccessLogFilter](../als.proto.sk/#accesslogfilter) | Filter which is used to determine if the access log needs to be written. |
 
 
 
@@ -95,6 +99,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 "additionalRequestHeadersToLog": []string
 "additionalResponseHeadersToLog": []string
 "additionalResponseTrailersToLog": []string
+"filter": .als.options.gloo.solo.io.AccessLogFilter
 
 ```
 
@@ -105,6 +110,46 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 | `additionalRequestHeadersToLog` | `[]string` |  |
 | `additionalResponseHeadersToLog` | `[]string` |  |
 | `additionalResponseTrailersToLog` | `[]string` |  |
+| `filter` | [.als.options.gloo.solo.io.AccessLogFilter](../als.proto.sk/#accesslogfilter) | Filter which is used to determine if the access log needs to be written. |
+
+
+
+
+---
+### AccessLogFilter
+
+
+
+```yaml
+"runtimeFilter": .als.options.gloo.solo.io.RuntimeFilter
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `runtimeFilter` | [.als.options.gloo.solo.io.RuntimeFilter](../als.proto.sk/#runtimefilter) | Runtime filter. |
+
+
+
+
+---
+### RuntimeFilter
+
+ 
+Filters for random sampling of requests.
+
+```yaml
+"runtimeKey": string
+"percentSampled": .solo.io.envoy.type.v3.FractionalPercent
+"useIndependentRandomness": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `runtimeKey` | `string` | Runtime key to get an optional overridden numerator for use in the ``percent_sampled`` field. If found in runtime, this value will replace the default numerator. |
+| `percentSampled` | [.solo.io.envoy.type.v3.FractionalPercent](../../../../external/envoy/type/v3/percent.proto.sk/#fractionalpercent) | The default sampling percentage. If not specified, defaults to 0% with denominator of 100. |
+| `useIndependentRandomness` | `bool` | By default, sampling pivots on the header :ref:`x-request-id<config_http_conn_man_headers_x-request-id>` being present. If :ref:`x-request-id<config_http_conn_man_headers_x-request-id>` is present, the filter will consistently sample across multiple hosts based on the runtime key value and the value extracted from :ref:`x-request-id<config_http_conn_man_headers_x-request-id>`. If it is missing, or ``use_independent_randomness`` is set to true, the filter will randomly sample based on the runtime key value alone. ``use_independent_randomness`` can be used for logging kill switches within complex nested :ref:`AndFilter <envoy_v3_api_msg_config.accesslog.v3.AndFilter>` and :ref:`OrFilter <envoy_v3_api_msg_config.accesslog.v3.OrFilter>` blocks that are easier to reason about from a probability perspective (i.e., setting to true will cause the filter to behave like an independent random variable when composed within logical operator filters). |
 
 
 

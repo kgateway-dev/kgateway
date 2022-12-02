@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
+
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 )
 
 // ensure the imports are used
@@ -100,6 +102,12 @@ func (m *FileSink) Clone() proto.Message {
 
 	target.Path = m.GetPath()
 
+	if h, ok := interface{}(m.GetFilter()).(clone.Cloner); ok {
+		target.Filter = h.Clone().(*AccessLogFilter)
+	} else {
+		target.Filter = proto.Clone(m.GetFilter()).(*AccessLogFilter)
+	}
+
 	switch m.OutputFormat.(type) {
 
 	case *FileSink_StringFormat:
@@ -162,6 +170,12 @@ func (m *GrpcService) Clone() proto.Message {
 		}
 	}
 
+	if h, ok := interface{}(m.GetFilter()).(clone.Cloner); ok {
+		target.Filter = h.Clone().(*AccessLogFilter)
+	} else {
+		target.Filter = proto.Clone(m.GetFilter()).(*AccessLogFilter)
+	}
+
 	switch m.ServiceRef.(type) {
 
 	case *GrpcService_StaticClusterName:
@@ -171,6 +185,54 @@ func (m *GrpcService) Clone() proto.Message {
 		}
 
 	}
+
+	return target
+}
+
+// Clone function
+func (m *AccessLogFilter) Clone() proto.Message {
+	var target *AccessLogFilter
+	if m == nil {
+		return target
+	}
+	target = &AccessLogFilter{}
+
+	switch m.FilterSpecifier.(type) {
+
+	case *AccessLogFilter_RuntimeFilter:
+
+		if h, ok := interface{}(m.GetRuntimeFilter()).(clone.Cloner); ok {
+			target.FilterSpecifier = &AccessLogFilter_RuntimeFilter{
+				RuntimeFilter: h.Clone().(*RuntimeFilter),
+			}
+		} else {
+			target.FilterSpecifier = &AccessLogFilter_RuntimeFilter{
+				RuntimeFilter: proto.Clone(m.GetRuntimeFilter()).(*RuntimeFilter),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *RuntimeFilter) Clone() proto.Message {
+	var target *RuntimeFilter
+	if m == nil {
+		return target
+	}
+	target = &RuntimeFilter{}
+
+	target.RuntimeKey = m.GetRuntimeKey()
+
+	if h, ok := interface{}(m.GetPercentSampled()).(clone.Cloner); ok {
+		target.PercentSampled = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+	} else {
+		target.PercentSampled = proto.Clone(m.GetPercentSampled()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+	}
+
+	target.UseIndependentRandomness = m.GetUseIndependentRandomness()
 
 	return target
 }
