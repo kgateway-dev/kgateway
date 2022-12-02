@@ -34,9 +34,7 @@ spec:
       {{- if or .Values.settings.linkerd .Values.gateway.certGenJob.extraPodAnnotations }}
       annotations:
         {{- if .Values.settings.linkerd }}
-        {{- if .Values.settings.linkerd }}
         "linkerd.io/inject": disabled
-        {{- end }}
         {{- end }}
         {{- range $key, $value := .Values.gateway.certGenJob.extraPodAnnotations }}
         {{ $key | quote }}: {{ $value | quote }}
