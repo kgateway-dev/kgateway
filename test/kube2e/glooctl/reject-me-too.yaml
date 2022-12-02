@@ -1,0 +1,31 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: reject-me-too
+  namespace: default
+spec:
+  virtualHost:
+    routes:
+      - matchers:
+          - prefix: /good-route
+        routeAction:
+          single:
+            kube:
+              ref:
+                name: petstore
+                namespace: default
+              port: 8080
+        options:
+          prefixRewrite: /api/pets
+      - matchers:
+          - prefix: /bad-route
+        routeAction:
+          single:
+            # this destination does not exist
+            kube:
+              ref:
+                name: does-not-exist
+                namespace: anywhere
+              port: 1234
+        options:
+          prefixRewrite: /api/pets
