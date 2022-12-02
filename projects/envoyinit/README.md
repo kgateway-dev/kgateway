@@ -24,12 +24,12 @@ The `VERSION` env variable determines the name of the tag for the image.
 
 You may either inject the version yourself:
 ```bash
-VERSION=<version name> make gloo-envoy-wrapper-docker
+VERSION=<version name> make gloo-envoy-wrapper-docker -B
 ```
 
 Or rely on the auto-generated version:
 ```shell
-make gloo-envoy-wrapper-docker
+make gloo-envoy-wrapper-docker -B
 ```
 
 ## Release
@@ -60,13 +60,13 @@ Envoy receives dynamic configuration via the [xDS protocol](https://www.envoypro
 It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior. [hack/envoy.yaml](./hack/envoy.yaml) provides example bootstrap that can be used.
 
 ```shell
-docker run --rm -ti -p 8000:8000 -p 19000:19000 -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro -l trace gcr.io/gloo-edge/gloo-envoy-wrapper:1.11.11
+docker run --rm -ti -p 8000:8000 -p 19000:19000 -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro -l trace gcr.io/gloo-edge/gloo-envoy-wrapper:1.12.34
 ```
 
 Envoy supports a series of [command line options](https://www.envoyproxy.io/docs/envoy/latest/operations/cli), which may be helpful as well. `component-log-level` is an especially useful option, below is how it would be used:
 
 ```shell
-docker run --rm -ti -p 8000:8000 -p 19000:19000 -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro -l trace gcr.io/gloo-edge/gloo-envoy-wrapper:1.11.11 --component-log-level upstream:debug,connection:trace
+docker run --rm -ti -p 8000:8000 -p 19000:19000 -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro -l trace gcr.io/gloo-edge/gloo-envoy-wrapper:1.12.34 --component-log-level upstream:debug,connection:trace
 ```
 
 After running this, you should see a lot of Envoy logs:
