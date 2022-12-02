@@ -40,7 +40,7 @@ glooctl create secret authcredentials [flags]
   -o, --output OutputType              output format: (yaml, json, table, kube-yaml, wide) (default table)
       --use-consul                     use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
       --use-vault                      use Vault Key-Value storage as the backend for reading and writing secrets
-      --vault-address string           address of the Vault server. This should be a complete  URL such as "http://vault.example.com". Use with --use-vault (default "https://127.0.0.1:8200")
+      --vault-address string           address of the Vault server. This should be a complete URL such as "http://vault.example.com". Use with --use-vault (default "https://127.0.0.1:8200")
       --vault-ca-cert string           CACert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate.Use with --use-vault
       --vault-ca-path string           CAPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate.Use with --use-vault
       --vault-client-cert string       ClientCert is the path to the certificate for Vault communication.Use with --use-vault
@@ -49,7 +49,7 @@ glooctl create secret authcredentials [flags]
       --vault-root-key string          key prefix for Vault key-value storage inside a storage engine. (default "gloo")
       --vault-tls-insecure             Insecure enables or disables SSL verification.Use with --use-vault
       --vault-tls-server-name string   TLSServerName, if set, is used to set the SNI host when connecting via TLS.Use with --use-vault
-      --vault-token string             address of the Vault server. This should be a complete  URL such as "http://vault.example.com". Use with --use-vault
+      --vault-token string             The root token to authenticate with a Vault server.Use with --use-vault
 ```
 
 ### SEE ALSO
