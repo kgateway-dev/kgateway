@@ -1,8 +1,6 @@
 package api_conversion
 
 import (
-	"fmt"
-
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
@@ -46,29 +44,26 @@ func ToEnvoyOpenCensusConfiguration(glooOpenCensusConfig *envoytracegloo.OpenCen
 			MaxNumberOfLinks:         glooOpenCensusConfig.GetTraceConfig().GetMaxNumberOfLinks(),
 		},
 		OcagentExporterEnabled: glooOpenCensusConfig.GetOcagentExporterEnabled(),
-		OcagentAddress:         glooOpenCensusConfig.GetOcagentAddress(),
-		OcagentGrpcService:     nil,
 		IncomingTraceContext:   translateTraceContext(glooOpenCensusConfig.GetIncomingTraceContext()),
 		OutgoingTraceContext:   translateTraceContext(glooOpenCensusConfig.GetOutgoingTraceContext()),
 	}
 
-	translateTraceConfig(glooOpenCensusConfig.GetTraceConfig(), envoyOpenCensusConfig.GetTraceConfig())
-
-	if len(glooOpenCensusConfig.GetOcagentAddress()) == 0 {
-		grpcService := glooOpenCensusConfig.GetOcagentGrpcService()
-		grpcClusterName := grpcService.GetName()
-		if grpcService.GetNamespace() != "" {
-			grpcClusterName = fmt.Sprintf("%s_%s", grpcService.GetName(), grpcService.GetNamespace())
-		}
-		envoyGrpcService := envoycore.GrpcService{
-			TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-				EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-					ClusterName: grpcClusterName,
+	switch glooOpenCensusConfig.GetOcagentAddress().(type) {
+	case *envoytracegloo.OpenCensusConfig_HttpAddress:
+		envoyOpenCensusConfig.OcagentAddress = glooOpenCensusConfig.GetHttpAddress()
+	case *envoytracegloo.OpenCensusConfig_GrpcAddress:
+		grpcAddress := glooOpenCensusConfig.GetGrpcAddress()
+		envoyOpenCensusConfig.OcagentGrpcService = &envoycore.GrpcService{
+			TargetSpecifier: &envoycore.GrpcService_GoogleGrpc_{
+				GoogleGrpc: &envoycore.GrpcService_GoogleGrpc{
+					TargetUri:  grpcAddress.GetTargetUri(),
+					StatPrefix: grpcAddress.GetStatPrefix(),
 				},
 			},
 		}
-		envoyOpenCensusConfig.OcagentGrpcService = &envoyGrpcService
 	}
+
+	translateTraceConfig(glooOpenCensusConfig.GetTraceConfig(), envoyOpenCensusConfig.GetTraceConfig())
 
 	return envoyOpenCensusConfig, nil
 }

@@ -7,8 +7,6 @@ import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
-import "github.com/solo-io/solo-kit/api/v1/ref.proto";
-
 option java_package = "io.envoyproxy.solo.io.envoy.config.trace.v3";
 option java_outer_classname = "OpenCensusProto";
 option java_multiple_files = true;
@@ -27,28 +25,24 @@ message OpenCensusConfig {
   // See https://github.com/census-instrumentation/opencensus-proto/blob/3619b5dda8bff26ff1974714c24de8f6d4953811/src/opencensus/proto/trace/v1/trace_config.proto#L29 for full documentation
   TraceConfig trace_config = 1;
 
-  // TODO implement Stackdriver if i have the time, if not, delete
-
-  // // Enables the Stackdriver exporter if set to true. The project_id must also
-  // // be set
-  // bool stackdriver_exporter_enabled = 7;
-
-  // // The cloud project_id to use for Stackdriver tracing
-  // string stackdriver_project_id = 8;
-
-  // // Optional: Address at which the Stack
-  // string stackdriver_address = 9;
-  // core.solo.io.ResourceRef stackdriver_grpc_service = 10;
-
   // Enables the OpenCensus agent if set to true. ocagent_address or
   // ocagent_grpc_service must also be set
   bool ocagent_exporter_enabled = 2;
 
-  // Address of the OpenCensus Agent. Must be provided in gRPC format
-  string ocagent_address = 3;
+  message OcagentGrpcAddress {
+    // URI of the target address
+    string target_uri = 1;
+    // Prefix for statistical measurements
+    string stat_prefix = 2;
+  }
 
-  // Only used if ocagent_address is empty
-  core.solo.io.ResourceRef ocagent_grpc_service = 4;
+  // Upstream to which trace data should be sent
+  oneof ocagent_address {
+    // Send to upstream over http
+    string http_address = 3;
+    // Send to upstream over GRPC
+    OcagentGrpcAddress grpc_address = 4;
+  }
 
   enum TraceContext {
     // No-op default, no trace context is utilized.

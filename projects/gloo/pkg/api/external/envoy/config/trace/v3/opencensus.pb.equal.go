@@ -60,20 +60,6 @@ func (m *OpenCensusConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetOcagentAddress(), target.GetOcagentAddress()) != 0 {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetOcagentGrpcService()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetOcagentGrpcService()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetOcagentGrpcService(), target.GetOcagentGrpcService()) {
-			return false
-		}
-	}
-
 	if len(m.GetIncomingTraceContext()) != len(target.GetIncomingTraceContext()) {
 		return false
 	}
@@ -94,6 +80,39 @@ func (m *OpenCensusConfig) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	switch m.OcagentAddress.(type) {
+
+	case *OpenCensusConfig_HttpAddress:
+		if _, ok := target.OcagentAddress.(*OpenCensusConfig_HttpAddress); !ok {
+			return false
+		}
+
+		if strings.Compare(m.GetHttpAddress(), target.GetHttpAddress()) != 0 {
+			return false
+		}
+
+	case *OpenCensusConfig_GrpcAddress:
+		if _, ok := target.OcagentAddress.(*OpenCensusConfig_GrpcAddress); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGrpcAddress()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGrpcAddress()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGrpcAddress(), target.GetGrpcAddress()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.OcagentAddress != target.OcagentAddress {
+			return false
+		}
 	}
 
 	return true
@@ -271,6 +290,38 @@ func (m *RateLimitingSampler) Equal(that interface{}) bool {
 	}
 
 	if m.GetQps() != target.GetQps() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *OpenCensusConfig_OcagentGrpcAddress) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*OpenCensusConfig_OcagentGrpcAddress)
+	if !ok {
+		that2, ok := that.(OpenCensusConfig_OcagentGrpcAddress)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetTargetUri(), target.GetTargetUri()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetStatPrefix(), target.GetStatPrefix()) != 0 {
 		return false
 	}
 

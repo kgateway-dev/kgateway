@@ -63,30 +63,6 @@ func (m *OpenCensusConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetOcagentAddress())); err != nil {
-		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetOcagentGrpcService()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("OcagentGrpcService")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetOcagentGrpcService(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("OcagentGrpcService")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	for _, v := range m.GetIncomingTraceContext() {
 
 		err = binary.Write(hasher, binary.LittleEndian, v)
@@ -101,6 +77,38 @@ func (m *OpenCensusConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		err = binary.Write(hasher, binary.LittleEndian, v)
 		if err != nil {
 			return 0, err
+		}
+
+	}
+
+	switch m.OcagentAddress.(type) {
+
+	case *OpenCensusConfig_HttpAddress:
+
+		if _, err = hasher.Write([]byte(m.GetHttpAddress())); err != nil {
+			return 0, err
+		}
+
+	case *OpenCensusConfig_GrpcAddress:
+
+		if h, ok := interface{}(m.GetGrpcAddress()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("GrpcAddress")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetGrpcAddress(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("GrpcAddress")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
 		}
 
 	}
@@ -271,6 +279,30 @@ func (m *RateLimitingSampler) Hash(hasher hash.Hash64) (uint64, error) {
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetQps())
 	if err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *OpenCensusConfig_OcagentGrpcAddress) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3.OpenCensusConfig_OcagentGrpcAddress")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetTargetUri())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetStatPrefix())); err != nil {
 		return 0, err
 	}
 

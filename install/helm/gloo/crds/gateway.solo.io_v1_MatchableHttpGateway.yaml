@@ -688,22 +688,22 @@ spec:
                                 type: array
                               openCensusConfig:
                                 properties:
+                                  grpcAddress:
+                                    properties:
+                                      statPrefix:
+                                        type: string
+                                      targetUri:
+                                        type: string
+                                    type: object
+                                  httpAddress:
+                                    type: string
                                   incomingTraceContext:
                                     items:
                                       type: string
                                       x-kubernetes-int-or-string: true
                                     type: array
-                                  ocagentAddress:
-                                    type: string
                                   ocagentExporterEnabled:
                                     type: boolean
-                                  ocagentGrpcService:
-                                    properties:
-                                      name:
-                                        type: string
-                                      namespace:
-                                        type: string
-                                    type: object
                                   outgoingTraceContext:
                                     items:
                                       type: string

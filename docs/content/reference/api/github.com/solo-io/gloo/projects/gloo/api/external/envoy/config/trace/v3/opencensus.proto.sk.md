@@ -12,6 +12,7 @@ weight: 5
 
 
 - [OpenCensusConfig](#opencensusconfig)
+- [OcagentGrpcAddress](#ocagentgrpcaddress)
 - [TraceContext](#tracecontext)
 - [TraceConfig](#traceconfig)
 - [ProbabilitySampler](#probabilitysampler)
@@ -38,8 +39,8 @@ Configuration for the OpenCensus tracer.
 ```yaml
 "traceConfig": .solo.io.envoy.config.trace.v3.TraceConfig
 "ocagentExporterEnabled": bool
-"ocagentAddress": string
-"ocagentGrpcService": .core.solo.io.ResourceRef
+"httpAddress": string
+"grpcAddress": .solo.io.envoy.config.trace.v3.OpenCensusConfig.OcagentGrpcAddress
 "incomingTraceContext": []solo.io.envoy.config.trace.v3.OpenCensusConfig.TraceContext
 "outgoingTraceContext": []solo.io.envoy.config.trace.v3.OpenCensusConfig.TraceContext
 
@@ -49,10 +50,29 @@ Configuration for the OpenCensus tracer.
 | ----- | ---- | ----------- | 
 | `traceConfig` | [.solo.io.envoy.config.trace.v3.TraceConfig](../opencensus.proto.sk/#traceconfig) | Configuration of when to submit traces to the collector. See https://github.com/census-instrumentation/opencensus-proto/blob/3619b5dda8bff26ff1974714c24de8f6d4953811/src/opencensus/proto/trace/v1/trace_config.proto#L29 for full documentation. |
 | `ocagentExporterEnabled` | `bool` | Enables the OpenCensus agent if set to true. ocagent_address or ocagent_grpc_service must also be set. |
-| `ocagentAddress` | `string` | Address of the OpenCensus Agent. Must be provided in gRPC format. |
-| `ocagentGrpcService` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Only used if ocagent_address is empty. |
+| `httpAddress` | `string` | Send to upstream over http. Only one of `httpAddress` or `grpcAddress` can be set. |
+| `grpcAddress` | [.solo.io.envoy.config.trace.v3.OpenCensusConfig.OcagentGrpcAddress](../opencensus.proto.sk/#ocagentgrpcaddress) | Send to upstream over GRPC. Only one of `grpcAddress` or `httpAddress` can be set. |
 | `incomingTraceContext` | [[]solo.io.envoy.config.trace.v3.OpenCensusConfig.TraceContext](../opencensus.proto.sk/#tracecontext) | List of incoming trace context headers to accept. First one found wins. |
 | `outgoingTraceContext` | [[]solo.io.envoy.config.trace.v3.OpenCensusConfig.TraceContext](../opencensus.proto.sk/#tracecontext) | List of outgoing trace context headers we will produce. |
+
+
+
+
+---
+### OcagentGrpcAddress
+
+
+
+```yaml
+"targetUri": string
+"statPrefix": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `targetUri` | `string` | URI of the target address. |
+| `statPrefix` | `string` | Prefix for statistical measurements. |
 
 
 

@@ -12,8 +12,6 @@ import (
 
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
-
-	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // ensure the imports are used
@@ -43,14 +41,6 @@ func (m *OpenCensusConfig) Clone() proto.Message {
 
 	target.OcagentExporterEnabled = m.GetOcagentExporterEnabled()
 
-	target.OcagentAddress = m.GetOcagentAddress()
-
-	if h, ok := interface{}(m.GetOcagentGrpcService()).(clone.Cloner); ok {
-		target.OcagentGrpcService = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
-	} else {
-		target.OcagentGrpcService = proto.Clone(m.GetOcagentGrpcService()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
-	}
-
 	if m.GetIncomingTraceContext() != nil {
 		target.IncomingTraceContext = make([]OpenCensusConfig_TraceContext, len(m.GetIncomingTraceContext()))
 		for idx, v := range m.GetIncomingTraceContext() {
@@ -67,6 +57,28 @@ func (m *OpenCensusConfig) Clone() proto.Message {
 			target.OutgoingTraceContext[idx] = v
 
 		}
+	}
+
+	switch m.OcagentAddress.(type) {
+
+	case *OpenCensusConfig_HttpAddress:
+
+		target.OcagentAddress = &OpenCensusConfig_HttpAddress{
+			HttpAddress: m.GetHttpAddress(),
+		}
+
+	case *OpenCensusConfig_GrpcAddress:
+
+		if h, ok := interface{}(m.GetGrpcAddress()).(clone.Cloner); ok {
+			target.OcagentAddress = &OpenCensusConfig_GrpcAddress{
+				GrpcAddress: h.Clone().(*OpenCensusConfig_OcagentGrpcAddress),
+			}
+		} else {
+			target.OcagentAddress = &OpenCensusConfig_GrpcAddress{
+				GrpcAddress: proto.Clone(m.GetGrpcAddress()).(*OpenCensusConfig_OcagentGrpcAddress),
+			}
+		}
+
 	}
 
 	return target
@@ -166,6 +178,21 @@ func (m *RateLimitingSampler) Clone() proto.Message {
 	target = &RateLimitingSampler{}
 
 	target.Qps = m.GetQps()
+
+	return target
+}
+
+// Clone function
+func (m *OpenCensusConfig_OcagentGrpcAddress) Clone() proto.Message {
+	var target *OpenCensusConfig_OcagentGrpcAddress
+	if m == nil {
+		return target
+	}
+	target = &OpenCensusConfig_OcagentGrpcAddress{}
+
+	target.TargetUri = m.GetTargetUri()
+
+	target.StatPrefix = m.GetStatPrefix()
 
 	return target
 }
