@@ -3,13 +3,14 @@ package istio_test
 import (
 	"context"
 	"fmt"
-	"github.com/avast/retry-go"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"io/ioutil"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/avast/retry-go"
+	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/k8s-utils/kubeutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"

@@ -2,6 +2,9 @@ package istio_test
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -20,8 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"net/http"
-	"time"
 )
 
 var _ = Describe("Gloo + Istio integration tests", func() {
