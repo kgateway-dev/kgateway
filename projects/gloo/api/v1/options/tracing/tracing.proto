@@ -5,7 +5,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tr
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opentelemetry.proto";
 
 
 import "google/protobuf/wrappers.proto";
