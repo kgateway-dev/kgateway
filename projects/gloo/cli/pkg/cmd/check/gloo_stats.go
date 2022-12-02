@@ -92,15 +92,18 @@ func checkXdsMetrics(ctx context.Context, opts *options.Options, glooNamespace s
 		defer portFwdCmd.Process.Release()
 		defer portFwdCmd.Process.Kill()
 	}
+
 	if strings.TrimSpace(stats) == "" {
 		err := fmt.Sprint(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+glooDeployment+" deployment")
 		fmt.Println(err)
 		return fmt.Errorf(err)
 	}
+
 	if !ResourcesSyncedOverXds(stats, glooDeployment) {
 		fmt.Println(errMessage)
 		return fmt.Errorf(errMessage)
 	}
+
 	for _, deployment := range deployments.Items {
 		if deployment.Name == rateLimitDeployment {
 			printer.AppendCheck("Checking rate limit server... ")
@@ -110,5 +113,6 @@ func checkXdsMetrics(ctx context.Context, opts *options.Options, glooNamespace s
 			printer.AppendStatus("rate limit server", "OK")
 		}
 	}
+	
 	return nil
 }

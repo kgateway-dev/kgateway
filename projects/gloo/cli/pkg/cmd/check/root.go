@@ -882,11 +882,9 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 	}
 	printer.AppendStatus("proxies", "OK")
 	if warnings != nil && warnings.Len() != 0 {
-		accumulatedWarning := ""
 		for _, warning := range warnings.Errors {
-			accumulatedWarning += warning.Error() + "\n"
+			printer.AppendMessage(warning.Error())
 		}
-		printer.AppendCheck(accumulatedWarning)
 	}
 	return nil
 }
