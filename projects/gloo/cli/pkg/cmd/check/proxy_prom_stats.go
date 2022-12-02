@@ -36,7 +36,7 @@ func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNames
 			if *deployment.Spec.Replicas == 0 {
 				multiWarn = multierror.Append(multiWarn, eris.New("Warning: "+deployment.Namespace+":"+deployment.Name+" has zero replicas"))
 			} else if opts.Top.ReadOnly {
-				readOnlyErr = multierror.Append(multiWarn, eris.New("Warning: checking proxies with port forwarding is disabled"))
+				readOnlyErr = eris.New("Warning: checking proxies with port forwarding is disabled")
 			} else {
 				if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
 					return err, multierror.Append(multiWarn, readOnlyErr)
@@ -44,7 +44,6 @@ func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNames
 			}
 		}
 	}
-	//multiWarn =
 	if gatewayProxyDeploymentsFound == 0 || (multiWarn != nil && gatewayProxyDeploymentsFound == len(multiWarn.Errors)) {
 		return eris.New("Gloo installation is incomplete: no active gateway-proxy pods exist in cluster"), multierror.Append(multiWarn, readOnlyErr)
 	}
