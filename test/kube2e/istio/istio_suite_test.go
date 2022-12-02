@@ -197,6 +197,7 @@ func createNamespaceWithIstioInjection(namespace string) {
 }
 
 // uninstalls istio from the cluster
+// todo - delete deployment & make sure this is correct
 func uninstallIstio() {
 	// delete ingress
 	runAndCleanCommand("helm", "delete", "istio-ingress", "-n", ingressNamespace)
@@ -226,9 +227,7 @@ global:
     enableIstioSidecarOnGateway: true
 gatewayProxies:
   gatewayProxy:
-    podTemplate:
-      httpPort: 8080
-      httpsPort: 8443
+    healthyPanicThreshold: 0
 `))
 	Expect(err).NotTo(HaveOccurred())
 	err = values.Close()
