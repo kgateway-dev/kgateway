@@ -45,7 +45,7 @@ You can use DynamoDB with **Gloo Edge Enterprise** version 0.18.29 or later.
    glooctl create secret aws -n gloo-system
    ```
 2. When you [install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation, complete the following steps:
-   1. Disable the default Redis server backing storage.
+   1. Disable the default Redis server backing storage by setting `rateLimit.enabled` to `false`.
    2. Provide the rate limiting DynamoDB Helm chart configuration options, as shown in the following table.
 
 | Option | Type | Description |
@@ -55,6 +55,43 @@ You can use DynamoDB with **Gloo Edge Enterprise** version 0.18.29 or later.
 | rateLimit.deployment.dynamodb.tableName                   | string   | The name of the DynamoDB table that backs the rate limit service. The default name is `rate-limits`. |
 | rateLimit.deployment.dynamodb.consistentReads             | bool     | If `true`, the reading response from DynamoDB is _strongly consistent_, or the most up to date data. The default value is `false`, or _eventually consistent_, which might be less accurate but also has lower latency and less chance of a 500 response than _strongly consistent_. For more information, see the [DynamoDB docs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html).|
 | rateLimit.deployment.dynamodb.batchSize                   | uint8    | The batch size for `GET` requests to DynamoDB. The max value is `100`, which is also the default value. |
+
+As part of the rate limit service deployment, Gloo Edge uses the provided AWS credentials to automatically create the rate limits DynamoDB table (default name `rate-limits`) in your AWS region (default `us-east-2`). If you want to turn the table into a globally replicated table, you
+can select the regions to replicate to in the DynamoDB AWS console UI.
+
+### Aerospike-backed rate limit server {#aerospike}
+
+You can use [Aerospike](https://docs.aerospike.com/database) as the backing storage database for the Gloo Edge rate limit server. Aerospike is a real-time data platform with support for helpful features such as in-memory storage and streaming.
+
+{{% notice note %}}
+You can use Aerospike with **Gloo Edge Enterprise** version 1.13.0 or later.<br><br>
+If you use also use Aerospike to store your Gloo Portal API keys, your Aerospike configurations must match. For example, use the same Aerospike IP address, port, and namespace in your Gloo Portal Storage custom resoure configuration and the rate limit server.
+{{% /notice %}}
+
+1. Create a secret in your cluster that includes your AWS credentials for the DynamoDB that you want to use. The secret must be in the same namespace as your Gloo installation, such as `gloo-system`. For more information, see the [AWS docs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SettingUp.DynamoWebService.html).
+   ```shell
+   glooctl create secret aws -n gloo-system
+   ```
+2. When you [install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation, complete the following steps:
+   1. Disable the default Redis server backing storage by setting `rateLimit.enabled` to `false`.
+   2. Provide the rate limiting Aerospike Helm chart configuration options, as shown in the following table.
+
+| Option | Type | Description |
+| --- | --- | --- |
+|rateLimit.deployment.aerospike.address|string|The IP address or hostname of the Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster. When you set this value, you also enable Aerospike database as the backing storage for the rate limit service.|
+|rateLimit.deployment.aerospike.namespace|string|The Aerospike namespace of the database. Defaults to `solo-namespace`.|
+|rateLimit.deployment.aerospike.set|string|The Aerospike name of the database set. Defaults to `ratelimiter`.|
+|rateLimit.deployment.aerospike.port|int|The port of the `rateLimit.deployment.aerospike.address`. The default port is `3000`.|
+|rateLimit.deployment.aerospike.batchSize|int|The size of the batch.|
+|rateLimit.deployment.aerospike.commitLevel|int|The commit level of guaranteed consistency when commiting a transaction on the Aerospike server. For possible values, see the [Aerospike commit policy](https://github.com/aerospike/aerospike-client-go/blob/master/commit_policy.go).|
+|rateLimit.deployment.aerospike.readModeSC|int|The read mode for strong consistency (SC) options. For possible values, see the [Aerospike read mode SC](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_sc.go).|
+|rateLimit.deployment.aerospike.readModeAP|int|The read mode for availability (AP). For possible values, see the [Aerospike read mode AP](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_ap.go).|
+|rateLimit.deployment.aerospike.tls.name|string|The TLS server name. For more information, see [Aerospike TLS Name Clarification](https://docs.aerospike.com/server/guide/security/tls#tls-name-clarification).|
+|rateLimit.deployment.aerospike.tls.version|string|The TLS version. Version 1.0, 1.1, 1.2, and 1.3 are supported.|
+|rateLimit.deployment.aerospike.tls.insecure|bool|The TLS insecure setting.|
+|rateLimit.deployment.aerospike.tls.certSecretName|string| The name of the `kubernetes.io/tls` secret that has the `tls.crt` and `tls.key` data.|
+|rateLimit.deployment.aerospike.tls.rootCASecretName|string|The secret name for the Opaque root CA that sets the key as `tls.crt`.|
+|rateLimit.deployment.aerospike.tls.curveGroups[]|string|The TLS curve groups.|
 
 As part of the rate limit service deployment, Gloo Edge uses the provided AWS credentials to automatically create the rate limits DynamoDB table (default name `rate-limits`) in your AWS region (default `us-east-2`). If you want to turn the table into a globally replicated table, you
 can select the regions to replicate to in the DynamoDB AWS console UI.
