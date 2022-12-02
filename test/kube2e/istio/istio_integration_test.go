@@ -26,13 +26,15 @@ import (
 
 var _ = Describe("Gloo + Istio integration tests", func() {
 	var (
-	//ctx    context.Context
-	//cancel context.CancelFunc
+		//ctx    context.Context
+		//cancel context.CancelFunc
+		upstreamRef       core.ResourceRef
+		serviceRef        = core.ResourceRef{Name: AppServiceName, Namespace: AppServiceNamespace}
+		virtualServiceRef = core.ResourceRef{Name: "httpbin-vs", Namespace: "gloo-system"}
 	)
 
 	BeforeEach(func() {
 		//ctx, cancel = context.WithCancel(context.Background())
-
 	})
 
 	AfterEach(func() {
@@ -43,8 +45,8 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 	setupHTTPBinServices := func(port int32, targetPort int) {
 		service := corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      AppServiceName,
-				Namespace: AppServiceNamespace,
+				Name:      serviceRef.Name,
+				Namespace: serviceRef.Namespace,
 				Labels:    map[string]string{"app": "httpbin", "service": "httpbin"},
 			},
 			Spec: corev1.ServiceSpec{
@@ -68,19 +70,22 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 		)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(func() error {
-			_, err := resourceClientSet.ServiceClient().Read(AppServiceNamespace, AppServiceName, clients.ReadOpts{})
+			_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, service.Name, clients.ReadOpts{})
 			return err
 		}, "5s", "1s").Should(BeNil())
 		// the upstream should be created by discovery service
+		upstreamRef = core.ResourceRef{
+			Name:      fmt.Sprintf("%s-%s-%d", AppServiceNamespace, AppServiceName, port),
+			Namespace: "gloo-system",
+		}
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			upstreamName := fmt.Sprintf("%s-%s-%d", AppServiceNamespace, AppServiceName, port)
-			return resourceClientSet.UpstreamClient().Read("gloo-system", upstreamName, clients.ReadOpts{})
+			return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
 		})
 
 		virtualService := &v1.VirtualService{
 			Metadata: &core.Metadata{
-				Name:      "httpbin-vs",
-				Namespace: "gloo-system",
+				Name:      virtualServiceRef.Name,
+				Namespace: virtualServiceRef.Namespace,
 			},
 			VirtualHost: &v1.VirtualHost{
 				Domains: []string{"httpbin.local"},
@@ -90,10 +95,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: &core.ResourceRef{
-											Name:      fmt.Sprintf("%s-%s-%d", AppServiceNamespace, AppServiceName, port),
-											Namespace: "gloo-system",
-										},
+										Upstream: &upstreamRef,
 									},
 								},
 							},
@@ -112,57 +114,52 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 		_, err = resourceClientSet.VirtualServiceClient().Write(virtualService, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return resourceClientSet.VirtualServiceClient().Read("gloo-system", "httpbin-vs", clients.ReadOpts{})
-		})
-	}
-
-	// Takes down HTTPBin services
-	tearDownHTTPBinServices := func(port int32, targetPort int) {
-		var err error
-		err = resourceClientSet.VirtualServiceClient().Delete("gloo-system", "httpbin-vs", clients.DeleteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
-			return resourceClientSet.VirtualServiceClient().Read("gloo-system", "httpbin-vs", clients.ReadOpts{})
-		})
-
-		err = resourceClientSet.ServiceClient().Delete(AppServiceNamespace, AppServiceName, clients.DeleteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(func() bool {
-			_, err := resourceClientSet.ServiceClient().Read(AppServiceNamespace, AppServiceName, clients.ReadOpts{})
-			// we should receive a DNE error, meaning it's now deleted
-			return err != nil && skerrors.IsNotExist(err)
-		}, "5s", "1s").Should(BeTrue())
-
-		upstreamName := fmt.Sprintf("%s-%s-%d", AppServiceNamespace, AppServiceName, port)
-		err = resourceClientSet.UpstreamClient().Delete("gloo-system", upstreamName, clients.DeleteOpts{})
-		helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
-			return resourceClientSet.UpstreamClient().Read("gloo-system", upstreamName, clients.ReadOpts{})
+			return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
 		})
 	}
 
 	Context("port settings", func() {
+		AfterEach(func() {
+			var err error
+			err = resourceClientSet.VirtualServiceClient().Delete(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.DeleteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+				return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
+			})
+
+			err = resourceClientSet.ServiceClient().Delete(serviceRef.Namespace, serviceRef.Name, clients.DeleteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, serviceRef.Name, clients.ReadOpts{})
+				// we should receive a DNE error, meaning it's now deleted
+				return err != nil && skerrors.IsNotExist(err)
+			}, "5s", "1s").Should(BeTrue())
+
+			err = resourceClientSet.UpstreamClient().Delete(upstreamRef.Namespace, upstreamRef.Name, clients.DeleteOpts{})
+			helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+				return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
+			})
+		})
+
 		table.DescribeTable("should act as expected with varied ports", func(port int32, targetPort int, expected int) {
 			setupHTTPBinServices(port, targetPort)
 
-			// todo - why does curl fail?
-			// todo - better update, cause it can false-positive if `200` is anywhere in the response
-			//   ex. HTTP/1.1 404 Not Found, so maybe ("HTTP/1.1 %d", status)?
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
 				Path:              "/get",
 				Method:            "GET",
 				Host:              "httpbin.local",
 				Service:           defaults.GatewayProxyName,
-				Port:              8080, // both 80 & 8080 fail
+				Port:              80,
 				ConnectionTimeout: 10,
+				Verbose:           true,
 				WithoutStats:      true,
-			}, fmt.Sprintf("%d", expected), 1, time.Minute*1)
-
-			tearDownHTTPBinServices(port, targetPort)
+			}, fmt.Sprintf("HTTP/1.1 %d", expected), 1, time.Minute*1)
 		},
+			table.Entry("with non-matching, yet valid, port and target (app) port", int32(8000), AppPort, http.StatusOK),
 			table.Entry("with matching port and target port", int32(80), AppPort, http.StatusOK),
-			table.Entry("without target port", int32(8000), -1, http.StatusOK),
-			table.Entry("with non-matching, yet valid, port and target port", int32(8000), AppPort, http.StatusOK),
+			table.Entry("without target port, and port matching pod's port", int32(AppPort), -1, http.StatusOK),
+			table.Entry("without target port, and port not matching app's port", int32(8000), -1, http.StatusServiceUnavailable),
 			table.Entry("pointing to the wrong target port", int32(8000), AppPort+1, http.StatusServiceUnavailable), // or maybe 404?
 		)
 	})

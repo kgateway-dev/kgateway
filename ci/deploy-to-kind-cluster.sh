@@ -144,7 +144,7 @@ RUNNING_REGRESSION_TESTS=true VERSION=$VERSION IMAGE_REPO="localhost:$REGISTRY_P
 make glooctl-$OS-$ARCH
 
 # 5. Install additional resources used for particular KUBE2E tests
-if [ "$KUBE2E_TESTS" = "glooctl" ]; then
+if [[ $KUBE2E_TESTS = "glooctl" || $KUBE2E_TESTS = "istio" ]]; then
   TARGET_ARCH=x86_64
   if [[ $ARCH == 'arm64' ]]; then
     TARGET_ARCH=arm64

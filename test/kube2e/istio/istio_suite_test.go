@@ -8,7 +8,6 @@ import (
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"io/ioutil"
 	"os"
-	osExec "os/exec"
 	"testing"
 	"time"
 
@@ -27,13 +26,8 @@ import (
 )
 
 const (
-	istioNamespace = "istio-system"
-	// `constants.IstioIngressNamespace` returns "istio-system", but guides state it should be "istio-ingress"
-	// https://istio.io/latest/docs/setup/install/helm/
-	ingressNamespace    = "istio-ingress"
-	AppServiceNamespace = "httpbin"
+	AppServiceNamespace = "default"
 	AppServiceName      = "httpbin"
-	AppNamespace        = "httpbin"
 	AppPort             = 80
 )
 
@@ -70,20 +64,18 @@ var _ = BeforeSuite(func() {
 
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
-	// Install Istio
-	err = installIstioHelm()
-	Expect(err).NotTo(HaveOccurred())
 	// enabling istio-injection on default namespace for the httpbin pod
-	_ = testutils.Kubectl("label", "namespace", "default", "istio-injection=enabled")
+	_ = testutils.Kubectl("label", "namespace", AppServiceNamespace, "istio-injection=enabled")
 
 	// Install HTTPBin application
 	filename, httpBinCleanup := getHTTPBinApplication()
 	defer httpBinCleanup()
 	_ = testutils.Kubectl("apply", "-f", filename)
-	// todo wait for it?
+	EventuallyWithOffset(1, func() error {
+		return testutils.Kubectl("get", "deployment/httpbin", "-n", "default")
+	}, "60s", "1s").ShouldNot(HaveOccurred())
 
 	// Install Gloo
-	// todo - check that istio pod is running on the gateway-proxy
 	values, cleanup := getHelmOverrides()
 	defer cleanup()
 
@@ -125,32 +117,13 @@ var _ = AfterSuite(func() {
 			return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
 		}, "60s", "1s").Should(HaveOccurred())
 
-		uninstallIstio()
+		uninstallHTTPBin()
 		cancel()
 	}
 })
 
-func installIstioHelm() error {
-	runAndCleanCommand("helm", "repo", "add", "istio", "https://istio-release.storage.googleapis.com/charts")
-	runAndCleanCommand("helm", "repo", "update")
-
-	_ = testutils.Kubectl("create", "namespace", istioNamespace)
-	runAndCleanCommand("helm", "install", "istio-base", "istio/base", "-n", istioNamespace)
-	runAndCleanCommand("helm", "install", "istiod", "istio/istiod", "-n", istioNamespace, "--wait")
-
-	createNamespaceWithIstioInjection(ingressNamespace)
-	runAndCleanCommand("helm", "install", "istio-ingress", "istio/gateway", "-n", ingressNamespace)
-	// manual check that istio-ingress deployment is ready and had an exit status of 0 (success)
-	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("rollout", "status", "deployment/istio-ingress", "-n", ingressNamespace)
-	}, "60s", "1s").ShouldNot(HaveOccurred())
-
-	return nil
-}
-
 // Only installs the Service Account and Deployment from https://raw.githubusercontent.com/istio/istio/master/samples/httpbin/httpbin.yaml
 func getHTTPBinApplication() (filename string, cleanup func()) {
-	createNamespaceWithIstioInjection(AppNamespace)
 	values, err := ioutil.TempFile("", "*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 	_, err = values.Write([]byte(fmt.Sprintf(`
@@ -191,37 +164,15 @@ spec:
 	}
 }
 
-func createNamespaceWithIstioInjection(namespace string) {
-	_ = testutils.Kubectl("create", "namespace", namespace)
-	_ = testutils.Kubectl("label", "namespace", namespace, "istio-injection=enabled")
-}
-
-// uninstalls istio from the cluster
-// todo - delete deployment & make sure this is correct
-func uninstallIstio() {
-	// delete ingress
-	runAndCleanCommand("helm", "delete", "istio-ingress", "-n", ingressNamespace)
-	_ = testutils.Kubectl("delete", "namespace", ingressNamespace)
-	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("get", "namespace", ingressNamespace)
-	}, "60s", "1s").Should(HaveOccurred())
-
-	// delete istio-system
-	runAndCleanCommand("helm", "delete", "istiod", "-n", istioNamespace)
-	runAndCleanCommand("helm", "delete", "istio-base", "-n", istioNamespace)
-	_ = testutils.Kubectl("delete", "namespace", istioNamespace)
-	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("get", "namespace", istioNamespace)
-	}, "60s", "1s").Should(HaveOccurred())
-
-	_ = testutils.Kubectl("delete", "namespace", AppNamespace)
-	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("get", "namespace", AppNamespace)
-	}, "60s", "1s").Should(HaveOccurred())
-
+func uninstallHTTPBin() {
 	_ = testutils.Kubectl("delete", "deployment/httpbin")
 	EventuallyWithOffset(1, func() error {
 		return testutils.Kubectl("get", "deployment/httpbin")
+	}, "60s", "1s").Should(HaveOccurred())
+
+	_ = testutils.Kubectl("delete", "serviceaccount", "httpbin", "-n", "default")
+	EventuallyWithOffset(1, func() error {
+		return testutils.Kubectl("get", "serviceaccount", "httpbin", "-n", "default")
 	}, "60s", "1s").Should(HaveOccurred())
 }
 
@@ -238,6 +189,12 @@ global:
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
+    gatewaySettings:
+      accessLoggingService:
+        accessLog:
+        - fileSink:
+            path: /dev/stdout
+            stringFormat: ""
 `))
 	Expect(err).NotTo(HaveOccurred())
 	err = values.Close()
@@ -246,19 +203,4 @@ gatewayProxies:
 	return values.Name(), func() {
 		_ = os.Remove(values.Name())
 	}
-}
-
-func runAndCleanCommand(name string, arg ...string) []byte {
-	cmd := osExec.Command(name, arg...)
-	b, err := cmd.Output()
-	// for debugging in Cloud Build
-	if err != nil {
-		if v, ok := err.(*osExec.ExitError); ok {
-			fmt.Println("ExitError: ", string(v.Stderr))
-		}
-	}
-	Expect(err).To(BeNil())
-	_ = cmd.Process.Kill()
-	_ = cmd.Process.Release()
-	return b
 }
