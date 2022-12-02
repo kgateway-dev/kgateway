@@ -90,6 +90,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddPodSelectorFlag(pflags, &opts.Top.PodSelector)
 	flagutils.AddResourceNamespaceFlag(pflags, &opts.Top.ResourceNamespaces)
 	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
+	flagutils.AddReadOnlyFlag(pflags, &opts.Top.ReadOnly)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
@@ -218,7 +219,7 @@ func CheckResources(opts *options.Options) error {
 	}
 
 	if included := doesNotContain(opts.Top.CheckName, "xds-metrics"); included {
-		err = checkXdsMetrics(opts, opts.Metadata.GetNamespace(), deployments)
+		err = checkXdsMetrics(ctx, opts, opts.Metadata.GetNamespace(), deployments)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -871,8 +872,8 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 			}
 		}
 	}
-
-	if err := checkProxiesPromStats(ctx, glooNamespace, deployments); err != nil {
+	err, warnings := checkProxiesPromStats(ctx, opts, glooNamespace, deployments)
+	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
@@ -881,6 +882,11 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 		return multiErr
 	}
 	printer.AppendStatus("proxies", "OK")
+	if warnings != nil && warnings.Len() != 0 {
+		for _, warning := range warnings.Errors {
+			printer.AppendMessage(warning.Error())
+		}
+	}
 	return nil
 }
 
