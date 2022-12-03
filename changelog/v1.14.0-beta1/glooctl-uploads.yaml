@@ -3,4 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/5471
     resolvesIssue: false
     description: >
-      Publish glooctl images for things like arm in github releases.
+      Publish more glooctl images such as darwin-arm64 on github release assets (seperate from brew)
