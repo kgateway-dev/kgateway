@@ -118,6 +118,7 @@ weight: 5
 "tokenSource": .jwt.options.gloo.solo.io.TokenSource
 "keepToken": bool
 "claimsToHeaders": []jwt.options.gloo.solo.io.ClaimToHeader
+"clockSkewSeconds": .google.protobuf.UInt32Value
 
 ```
 
@@ -129,6 +130,7 @@ weight: 5
 | `tokenSource` | [.jwt.options.gloo.solo.io.TokenSource](../jwt.proto.sk/#tokensource) | Where to find the JWT of the current provider. |
 | `keepToken` | `bool` | Should the token forwarded upstream. if false, the header containing the token will be removed. |
 | `claimsToHeaders` | [[]jwt.options.gloo.solo.io.ClaimToHeader](../jwt.proto.sk/#claimtoheader) | What claims should be copied to upstream headers. |
+| `clockSkewSeconds` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional: ClockSkewSeconds is used to verify time constraints, such as `exp` and `npf`. Default is 60s. |
 
 
 
