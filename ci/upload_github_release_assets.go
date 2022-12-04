@@ -42,6 +42,11 @@ func main() {
 			UploadSHA:  true,
 		},
 		{
+			Name:       "glooctl-linux-arm64",
+			ParentPath: buildDir,
+			UploadSHA:  true,
+		},
+		{
 			Name:       "glooctl-darwin-amd64",
 			ParentPath: buildDir,
 			UploadSHA:  true,
