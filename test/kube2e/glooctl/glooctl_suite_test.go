@@ -37,16 +37,19 @@ func TestGlooctl(t *testing.T) {
 }
 
 var (
+	ctx               context.Context
+	cancel            context.CancelFunc
+	namespace         = defaults.GlooSystem
 	testHelper        *helper.SoloTestHelper
 	resourceClientset *kube2e.KubeResourceClientSet
 )
 
-var ctx, _ = context.WithCancel(context.Background())
-var namespace = defaults.GlooSystem
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
 
 func StartTestHelper() {
+	ctx, cancel = context.WithCancel(context.Background())
+
 	var err error
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
@@ -99,4 +102,5 @@ func TearDownTestHelper() {
 		_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 		Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	}
+	cancel()
 }

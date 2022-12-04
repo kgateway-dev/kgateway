@@ -74,39 +74,44 @@ var _ = Describe("Kube2e: glooctl", func() {
 			}, 5*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
 		})
 
-		ExpectIstioInjected := func() {
-			// Check for sds sidecar
-			sdsContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "deployments", "gateway-proxy", "-o", `jsonpath='{.spec.template.spec.containers[?(@.name == "sds")].name}'`)
-			ExpectWithOffset(1, sdsContainer).To(Equal("'sds'"), "sds container should be present after injection")
-			// check that container is started properly
-			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
+		EventuallyIstioInjected := func() {
+			EventuallyWithOffset(1, func(g Gomega) {
+				// Check for sds sidecar
+				sdsContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "deployments", "gateway-proxy", "-o", `jsonpath='{.spec.template.spec.containers[?(@.name == "sds")].name}'`)
+				g.ExpectWithOffset(1, sdsContainer).To(Equal("'sds'"), "sds container should be present after injection")
+				// check that container is started properly
+				g.ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
 
-			// Check for istio-proxy sidecar
-			istioContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "deployments", "gateway-proxy", "-o", `jsonpath='{.spec.template.spec.containers[?(@.name == "istio-proxy")].name}'`)
-			ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present after injection")
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+				// Check for istio-proxy sidecar
+				istioContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "deployments", "gateway-proxy", "-o", `jsonpath='{.spec.template.spec.containers[?(@.name == "istio-proxy")].name}'`)
+				g.ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present after injection")
+				g.ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-			// Check for configMap changes
-			configMapEnvoyYAML, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "configmaps", "gateway-proxy-envoy-config", "-o", `jsonpath='{.data}'`)
-			ExpectWithOffset(1, configMapEnvoyYAML).To(ContainSubstring("clusterName: gateway_proxy_sds"))
-			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
+				// Check for configMap changes
+				configMapEnvoyYAML, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "configmaps", "gateway-proxy-envoy-config", "-o", `jsonpath='{.data}'`)
+				g.ExpectWithOffset(1, configMapEnvoyYAML).To(ContainSubstring("clusterName: gateway_proxy_sds"))
+				g.ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
+			}).Should(Succeed())
+
 		}
 
-		ExpectIstioUninjected := func() {
-			// Check for sds sidecar
-			sdsContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "deployments", "gateway-proxy", "-o", `jsonpath='{.spec.template.spec.containers[?(@.name == "sds")].name}'`)
-			ExpectWithOffset(1, sdsContainer).To(Equal("''"), "sds container should be removed after uninjection")
-			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
+		EventuallyIstioUninjected := func() {
+			EventuallyWithOffset(1, func(g Gomega) {
+				// Check for sds sidecar
+				sdsContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "deployments", "gateway-proxy", "-o", `jsonpath='{.spec.template.spec.containers[?(@.name == "sds")].name}'`)
+				g.ExpectWithOffset(1, sdsContainer).To(Equal("''"), "sds container should be removed after uninjection")
+				g.ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
 
-			// Check for istio-proxy sidecar
-			istioContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "deployments", "gateway-proxy", "-o", `jsonpath='{.spec.template.spec.containers[?(@.name == "istio-proxy")].name}'`)
-			ExpectWithOffset(1, istioContainer).To(Equal("''"), "istio-proxy container should be removed after uninjection")
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+				// Check for istio-proxy sidecar
+				istioContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "deployments", "gateway-proxy", "-o", `jsonpath='{.spec.template.spec.containers[?(@.name == "istio-proxy")].name}'`)
+				g.ExpectWithOffset(1, istioContainer).To(Equal("''"), "istio-proxy container should be removed after uninjection")
+				g.ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-			// Check for configMap changes
-			configMapEnvoyYAML, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "configmaps", "gateway-proxy-envoy-config", "-o", `jsonpath='{.data}'`)
-			ExpectWithOffset(1, configMapEnvoyYAML).NotTo(ContainSubstring("clusterName: gateway_proxy_sds"), "gateway_proxy_sds cluster should be removed after uninject")
-			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
+				// Check for configMap changes
+				configMapEnvoyYAML, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "configmaps", "gateway-proxy-envoy-config", "-o", `jsonpath='{.data}'`)
+				g.ExpectWithOffset(1, configMapEnvoyYAML).NotTo(ContainSubstring("clusterName: gateway_proxy_sds"), "gateway_proxy_sds cluster should be removed after uninject")
+				g.ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
+			}).Should(Succeed())
 		}
 
 		Context("istio inject", func() {
@@ -117,7 +122,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio inject' without errors")
 
-				ExpectIstioInjected()
+				EventuallyIstioInjected()
 
 				// Enable sslConfig on the upstream
 				err = runGlooctlCommand("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
@@ -134,7 +139,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
 
-				ExpectIstioUninjected()
+				EventuallyIstioUninjected()
 			})
 
 		})
@@ -147,7 +152,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio inject' without errors")
 
-				ExpectIstioInjected()
+				EventuallyIstioInjected()
 
 				err = runGlooctlCommand("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls on the petstore upstream via sslConfig")
@@ -163,7 +168,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				// Tests may have already successfully run uninject, so we can ignore the error
 				_ = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
 
-				ExpectIstioUninjected()
+				EventuallyIstioUninjected()
 			})
 
 			It("succeeds when no upstreams contain sds configuration", func() {
@@ -178,7 +183,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
 
-				ExpectIstioUninjected()
+				EventuallyIstioUninjected()
 
 				// Expect it to work
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
@@ -197,7 +202,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
 				Expect(err).NotTo(HaveOccurred(), "should not be able to run 'glooctl istio uninject' without errors")
 
-				ExpectIstioUninjected()
+				EventuallyIstioUninjected()
 
 				// Expect it to work
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
