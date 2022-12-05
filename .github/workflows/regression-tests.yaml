@@ -23,7 +23,7 @@ jobs:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.4.1
       with:
-        access_token: ${{ env.GITHUB_TOKEN }}
+        access_token: ${{ github.token }}
     - id: is-draft-pr
       name: Process draft Pull Requests
       if: ${{ github.event.pull_request.draft }}
@@ -77,7 +77,7 @@ jobs:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.4.1
       with:
-        access_token: ${{ env.GITHUB_TOKEN }}
+        access_token: ${{ github.token }}
     - name: Free disk space
       if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       run: |
