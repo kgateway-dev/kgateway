@@ -2,7 +2,7 @@ package istio_test
 
 import (
 	"context"
-	"fmt"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -26,9 +26,8 @@ import (
 )
 
 const (
-	AppServiceNamespace = "default"
-	AppServiceName      = "httpbin"
-	AppPort             = 80
+	gatewayProxy = gatewaydefaults.GatewayProxyName
+	gatewayPort  = int(80)
 )
 
 func TestIstio(t *testing.T) {
@@ -60,21 +59,12 @@ var _ = BeforeSuite(func() {
 	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
+	// enabling istio-injection for the test-runner
+	createIstioInjectableNamespace(namespace)
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
-
-	// enabling istio-injection on default namespace for the httpbin pod
-	_ = testutils.Kubectl("label", "namespace", AppServiceNamespace, "istio-injection=enabled")
-
-	// Install HTTPBin application
-	filename, httpBinCleanup := getHTTPBinApplication()
-	defer httpBinCleanup()
-	_ = testutils.Kubectl("apply", "-f", filename)
-	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("get", "deployment/httpbin", "-n", "default")
-	}, "60s", "1s").ShouldNot(HaveOccurred())
 
 	// Install Gloo
 	values, cleanup := getHelmOverrides()
@@ -92,6 +82,12 @@ var _ = BeforeSuite(func() {
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
 	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+
+	// delete test-runner Service, as the tests create and manage their own
+	_ = testutils.Kubectl("delete", "service", helper.TestrunnerName, "-n", namespace)
+	EventuallyWithOffset(1, func() error {
+		return testutils.Kubectl("get", "service", helper.TestrunnerName, "-n", namespace)
+	}, "60s", "1s").Should(HaveOccurred())
 
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
@@ -116,63 +112,17 @@ var _ = AfterSuite(func() {
 			return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
 		}, "60s", "1s").Should(HaveOccurred())
 
-		uninstallHTTPBin()
 		cancel()
 	}
 })
 
-// Only installs the Service Account and Deployment from https://raw.githubusercontent.com/istio/istio/master/samples/httpbin/httpbin.yaml
-func getHTTPBinApplication() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "*.yaml")
-	Expect(err).NotTo(HaveOccurred())
-	_, err = values.Write([]byte(fmt.Sprintf(`
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: httpbin
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: httpbin
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: httpbin
-      version: v1
-  template:
-    metadata:
-      labels:
-        app: httpbin
-        version: v1
-    spec:
-      serviceAccountName: httpbin
-      containers:
-      - image: docker.io/kennethreitz/httpbin
-        imagePullPolicy: IfNotPresent
-        name: httpbin
-        ports:
-        - containerPort: %d
-`, AppPort)))
-	Expect(err).NotTo(HaveOccurred())
-	err = values.Close()
-	Expect(err).NotTo(HaveOccurred())
-	return values.Name(), func() {
-		_ = os.Remove(values.Name())
-	}
-}
+func createIstioInjectableNamespace(ns string) {
+	var err error
 
-func uninstallHTTPBin() {
-	_ = testutils.Kubectl("delete", "deployment/httpbin")
-	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("get", "deployment/httpbin")
-	}, "60s", "1s").Should(HaveOccurred())
-
-	_ = testutils.Kubectl("delete", "serviceaccount", "httpbin", "-n", "default")
-	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("get", "serviceaccount", "httpbin", "-n", "default")
-	}, "60s", "1s").Should(HaveOccurred())
+	err = testutils.Kubectl("create", "ns", ns)
+	Expect(err).NotTo(HaveOccurred())
+	err = testutils.Kubectl("label", "namespace", ns, "istio-injection=enabled")
+	Expect(err).NotTo(HaveOccurred())
 }
 
 func getHelmOverrides() (filename string, cleanup func()) {

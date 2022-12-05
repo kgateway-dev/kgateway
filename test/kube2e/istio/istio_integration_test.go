@@ -2,16 +2,15 @@ package istio_test
 
 import (
 	"fmt"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	kubeService "github.com/solo-io/solo-kit/api/external/kubernetes/service"
@@ -28,26 +27,27 @@ import (
 var _ = Describe("Gloo + Istio integration tests", func() {
 	var (
 		upstreamRef       core.ResourceRef
-		serviceRef        = core.ResourceRef{Name: AppServiceName, Namespace: AppServiceNamespace}
-		virtualServiceRef = core.ResourceRef{Name: "httpbin-vs", Namespace: "gloo-system"}
+		serviceRef        = core.ResourceRef{Name: helper.TestrunnerName, Namespace: "gloo-system"}
+		virtualServiceRef = core.ResourceRef{Name: helper.TestrunnerName, Namespace: "gloo-system"}
 	)
 
-	// Sets up HTTPBin services
-	setupHTTPBinServices := func(port int32, targetPort int) {
+	// Sets up services
+	setupServices := func(port int32, targetPort int) {
 		service := corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      serviceRef.Name,
 				Namespace: serviceRef.Namespace,
-				Labels:    map[string]string{"app": "httpbin", "service": "httpbin"},
+				Labels:    map[string]string{"gloo": helper.TestrunnerName},
 			},
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{
-						Name: "http",
-						Port: port,
+						Name:     "http",
+						Port:     port,
+						Protocol: corev1.ProtocolTCP,
 					},
 				},
-				Selector: map[string]string{"app": "httpbin"},
+				Selector: map[string]string{"gloo": helper.TestrunnerName},
 			},
 		}
 		// set a targetPort if needed
@@ -64,9 +64,10 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 			_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, service.Name, clients.ReadOpts{})
 			return err
 		}, "5s", "1s").Should(BeNil())
+
 		// the upstream should be created by discovery service
 		upstreamRef = core.ResourceRef{
-			Name:      fmt.Sprintf("%s-%s-%d", AppServiceNamespace, AppServiceName, port),
+			Name:      fmt.Sprintf("%s-%s-%d", "gloo-system", helper.TestrunnerName, port),
 			Namespace: "gloo-system",
 		}
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
@@ -79,7 +80,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 				Namespace: virtualServiceRef.Namespace,
 			},
 			VirtualHost: &v1.VirtualHost{
-				Domains: []string{"httpbin.local"},
+				Domains: []string{helper.TestrunnerName},
 				Routes: []*v1.Route{{
 					Action: &v1.Route_RouteAction{
 						RouteAction: &gloov1.RouteAction{
@@ -133,25 +134,25 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 		})
 
 		table.DescribeTable("should act as expected with varied ports", func(port int32, targetPort int, expected int) {
-			setupHTTPBinServices(port, targetPort)
+			setupServices(port, targetPort)
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
-				Path:              "/get",
+				Path:              "/",
 				Method:            "GET",
-				Host:              "httpbin.local",
-				Service:           defaults.GatewayProxyName,
-				Port:              80,
+				Host:              helper.TestrunnerName,
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
 				ConnectionTimeout: 10,
 				Verbose:           true,
 				WithoutStats:      true,
 			}, fmt.Sprintf("HTTP/1.1 %d", expected), 1, time.Minute*1)
 		},
-			table.Entry("with non-matching, yet valid, port and target (app) port", int32(8000), AppPort, http.StatusOK),
-			table.Entry("with matching port and target port", int32(80), AppPort, http.StatusOK),
-			table.Entry("without target port, and port matching pod's port", int32(AppPort), -1, http.StatusOK),
+			table.Entry("with non-matching, yet valid, port and target (app) port", int32(8000), helper.TestRunnerPort, http.StatusOK),
+			table.Entry("with matching port and target port", int32(80), helper.TestRunnerPort, http.StatusOK),
+			table.Entry("without target port, and port matching pod's port", int32(helper.TestRunnerPort), -1, http.StatusOK),
 			table.Entry("without target port, and port not matching app's port", int32(8000), -1, http.StatusServiceUnavailable),
-			table.Entry("pointing to the wrong target port", int32(8000), AppPort+1, http.StatusServiceUnavailable), // or maybe 404?
+			table.Entry("pointing to the wrong target port", int32(8000), helper.TestRunnerPort+1, http.StatusServiceUnavailable), // or maybe 404?
 		)
 	})
 })
