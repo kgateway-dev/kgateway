@@ -91,7 +91,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				configMapEnvoyYAML, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "configmaps", "gateway-proxy-envoy-config", "-o", `jsonpath='{.data}'`)
 				g.ExpectWithOffset(1, configMapEnvoyYAML).To(ContainSubstring("clusterName: gateway_proxy_sds"))
 				g.ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
-			}).Should(Succeed())
+			}, time.Second*5, time.Second*1).Should(Succeed())
 
 		}
 
@@ -111,7 +111,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				configMapEnvoyYAML, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "configmaps", "gateway-proxy-envoy-config", "-o", `jsonpath='{.data}'`)
 				g.ExpectWithOffset(1, configMapEnvoyYAML).NotTo(ContainSubstring("clusterName: gateway_proxy_sds"), "gateway_proxy_sds cluster should be removed after uninject")
 				g.ExpectWithOffset(1, err).NotTo(HaveOccurred(), "should be able to kubectl get the gateway-proxy containers")
-			}).Should(Succeed())
+			}, time.Second*5, time.Second*1).Should(Succeed())
 		}
 
 		Context("istio inject", func() {
@@ -226,5 +226,4 @@ func toggleStictModePetstore(strictModeEnabled bool) error {
 		yamlPath = testHelper.RootDir + "/test/kube2e/glooctl/petstore_peerauth_strict.yaml"
 	}
 	return exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", yamlPath)
-
 }
