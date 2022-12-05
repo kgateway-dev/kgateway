@@ -62,6 +62,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
+	skhelpers.RegisterPreFailHandler(helpers.PrintNamespaceEvents(GinkgoWriter, testHelper.InstallNamespace))
 
 	// enabling istio-injection on default namespace for the httpbin pod
 	_ = testutils.Kubectl("label", "namespace", AppServiceNamespace, "istio-injection=enabled")

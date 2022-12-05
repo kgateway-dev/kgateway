@@ -27,20 +27,10 @@ import (
 
 var _ = Describe("Gloo + Istio integration tests", func() {
 	var (
-		//ctx    context.Context
-		//cancel context.CancelFunc
 		upstreamRef       core.ResourceRef
 		serviceRef        = core.ResourceRef{Name: AppServiceName, Namespace: AppServiceNamespace}
 		virtualServiceRef = core.ResourceRef{Name: "httpbin-vs", Namespace: "gloo-system"}
 	)
-
-	BeforeEach(func() {
-		//ctx, cancel = context.WithCancel(context.Background())
-	})
-
-	AfterEach(func() {
-		//defer cancel()
-	})
 
 	// Sets up HTTPBin services
 	setupHTTPBinServices := func(port int32, targetPort int) {

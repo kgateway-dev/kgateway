@@ -50,6 +50,16 @@ func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
 	}
 }
 
+func PrintNamespaceEvents(out io.Writer, namespaces ...string) func() {
+	return func() {
+		kubeCli := &install.CmdKubectl{}
+		for _, ns := range namespaces {
+			kubeEvents, _ := kubeCli.KubectlOut(nil, "get", "events", "-n", ns)
+			_, _ = fmt.Fprintf(out, string(kubeEvents))
+		}
+	}
+}
+
 func PrintKubeState() {
 	kubeCli := &install.CmdKubectl{}
 	kubeState, err := kubeCli.KubectlOut(nil, "get", "all", "-A")
