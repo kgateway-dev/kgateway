@@ -16,6 +16,7 @@ var dumpCommands = func(namespace string) []string {
 		fmt.Sprintf("echo PODS FROM %s: && kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name", namespace, namespace),
 		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo STATUS FOR %s.$i: $(kubectl get pod -n %s $i -o go-template=\"{{range .status.containerStatuses}}{{.state}}{{end}}\"); done", namespace, namespace, namespace),
 		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo LOGS FROM %s.$i: $(kubectl logs -n %s $i --all-containers); done", namespace, namespace, namespace),
+		fmt.Sprintf("kubectl get events -n %s", namespace),
 	}
 }
 
@@ -47,16 +48,6 @@ func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
 			fmt.Fprintf(out, "getting kube dump failed: %v", err)
 		}
 		fmt.Fprintf(out, dump)
-	}
-}
-
-func PrintNamespaceEvents(out io.Writer, namespaces ...string) func() {
-	return func() {
-		kubeCli := &install.CmdKubectl{}
-		for _, ns := range namespaces {
-			kubeEvents, _ := kubeCli.KubectlOut(nil, "get", "events", "-n", ns)
-			_, _ = fmt.Fprintf(out, string(kubeEvents))
-		}
 	}
 }
 

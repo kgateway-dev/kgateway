@@ -55,6 +55,8 @@ var (
 
 var _ = BeforeSuite(func() {
 	var err error
+
+	// todo - may not need to set the pod namespace, since just using the deafult "gloo-system"
 	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -62,7 +64,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
-	skhelpers.RegisterPreFailHandler(helpers.PrintNamespaceEvents(GinkgoWriter, testHelper.InstallNamespace))
 
 	// enabling istio-injection on default namespace for the httpbin pod
 	_ = testutils.Kubectl("label", "namespace", AppServiceNamespace, "istio-injection=enabled")
