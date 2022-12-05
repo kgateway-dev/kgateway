@@ -84,7 +84,7 @@ kubectl config use-context kind-"$1"
 
 # Install gloo-fed to cluster $1
 if [ "$5" == "" ]; then
-  glooctl install gateway enterprise --license-key=$4 --version=$3 
+  glooctl install gateway enterprise --license-key=$4 --version=$3
 else
   glooctl install gateway enterprise --license-key=$4 --file $5
 fi
