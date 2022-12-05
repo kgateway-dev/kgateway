@@ -72,19 +72,21 @@ var _ = Describe("Kube2e: helm", func() {
 
 		cwd, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
+		// the version we upgrade to - this can be stored in an environment variable, the latest released version or a version built locally
+		fromRelease = kube2e.GetTestReleasedVersion(ctx, "gloo")
+
 		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = filepath.Join(cwd, "../../..")
 			defaults.HelmChartName = "gloo"
 			defaults.InstallNamespace = namespace
 			defaults.Verbose = true
+			defaults.ReleasedVersion = fromRelease
 			return defaults
 		})
 		Expect(err).NotTo(HaveOccurred())
 
 		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
-		// the version we upgrade to - this can be stored in an environment variable, the latest released version or a version built locally
-		fromRelease = kube2e.GetTestReleasedVersion(ctx, "gloo")
 		strictValidation = false
 	})
 
