@@ -378,6 +378,11 @@ spec:
                                         type: string
                                     type: object
                                   type: array
+                                clockSkewSeconds:
+                                  maximum: 4294967295
+                                  minimum: 0
+                                  nullable: true
+                                  type: integer
                                 issuer:
                                   type: string
                                 jwks:
@@ -452,6 +457,11 @@ spec:
                                             type: string
                                         type: object
                                       type: array
+                                    clockSkewSeconds:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
+                                      type: integer
                                     issuer:
                                       type: string
                                     jwks:
@@ -524,6 +534,11 @@ spec:
                                             type: string
                                         type: object
                                       type: array
+                                    clockSkewSeconds:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
+                                      type: integer
                                     issuer:
                                       type: string
                                     jwks:
