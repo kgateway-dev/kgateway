@@ -2,11 +2,12 @@ package istio_test
 
 import (
 	"context"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"io/ioutil"
 	"os"
 	"testing"
 	"time"
+
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/k8s-utils/kubeutils"
