@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7406
+    description: >
+      Support W3C-compliant Trace Context headers via the OpenTelemetry plugin
