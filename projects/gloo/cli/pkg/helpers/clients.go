@@ -225,7 +225,7 @@ func UpstreamClient(ctx context.Context, namespaces []string) (v1.UpstreamClient
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache(context.TODO())
+	cache := kube.NewKubeCache(ctx)
 	upstreamClient, err := v1.NewUpstreamClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                v1.UpstreamCrd,
 		Cfg:                cfg,
@@ -268,7 +268,7 @@ func UpstreamGroupClient(ctx context.Context, namespaces []string) (v1.UpstreamG
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache(context.TODO())
+	cache := kube.NewKubeCache(ctx)
 	upstreamGroupClient, err := v1.NewUpstreamGroupClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                v1.UpstreamGroupCrd,
 		Cfg:                cfg,
@@ -311,7 +311,7 @@ func ProxyClient(ctx context.Context, namespaces []string) (v1.ProxyClient, erro
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache(context.TODO())
+	cache := kube.NewKubeCache(ctx)
 	proxyClient, err := v1.NewProxyClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                v1.ProxyCrd,
 		Cfg:                cfg,
@@ -354,7 +354,7 @@ func GatewayClient(ctx context.Context, namespaces []string) (gatewayv1.GatewayC
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache(context.TODO())
+	cache := kube.NewKubeCache(ctx)
 	gatewayClient, err := gatewayv1.NewGatewayClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                gatewayv1.GatewayCrd,
 		Cfg:                cfg,
@@ -397,7 +397,7 @@ func VirtualServiceClient(ctx context.Context, namespaces []string) (gatewayv1.V
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache(context.TODO())
+	cache := kube.NewKubeCache(ctx)
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                gatewayv1.VirtualServiceCrd,
 		Cfg:                cfg,
@@ -521,7 +521,7 @@ func GetSecretClient(ctx context.Context, timeout time.Duration, namespaces []st
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	coreCache, err := cache.NewKubeCoreCacheWithOptions(context.TODO(), clientset, 12*time.Hour, namespaces)
+	coreCache, err := cache.NewKubeCoreCacheWithOptions(ctx, clientset, 12*time.Hour, namespaces)
 	if err != nil {
 		return nil, err
 	}
@@ -655,7 +655,7 @@ func RateLimitConfigClient(ctx context.Context, namespaces []string) (v1alpha1.R
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	kubeCache := kube.NewKubeCache(context.TODO())
+	kubeCache := kube.NewKubeCache(ctx)
 	rlConfigClient, err := v1alpha1.NewRateLimitConfigClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                v1alpha1.RateLimitConfigCrd,
 		Cfg:                cfg,
@@ -697,7 +697,7 @@ func VirtualHostOptionClient(ctx context.Context, namespaces []string) (gatewayv
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache(context.TODO())
+	cache := kube.NewKubeCache(ctx)
 	virtualHostOptClient, err := gatewayv1.NewVirtualHostOptionClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                gatewayv1.VirtualHostOptionCrd,
 		Cfg:                cfg,
@@ -739,7 +739,7 @@ func RouteOptionClient(ctx context.Context, namespaces []string) (gatewayv1.Rout
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache(context.TODO())
+	cache := kube.NewKubeCache(ctx)
 	routeOptClient, err := gatewayv1.NewRouteOptionClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                gatewayv1.RouteOptionCrd,
 		Cfg:                cfg,

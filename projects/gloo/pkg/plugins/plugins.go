@@ -43,6 +43,23 @@ type Params struct {
 	Messages map[*core.ResourceRef][]string
 }
 
+// CopyWithoutContext returns a version of params without ctx
+// Mainly should be used for tests.
+// Still copies pointer to snapshot.
+func (p Params) CopyWithoutContext() Params {
+	out := Params{
+		Ctx:      context.Background(),
+		Snapshot: p.Snapshot,
+		Messages: map[*core.ResourceRef][]string{},
+	}
+
+	for k, v := range p.Messages {
+		out.Messages[k] = v
+	}
+
+	return out
+}
+
 type VirtualHostParams struct {
 	Params
 	Proxy        *v1.Proxy
