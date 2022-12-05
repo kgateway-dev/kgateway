@@ -1,5 +1,5 @@
-
-
+# This make file contains targets that are used in CI
+# No other targets should be comingled.
 
 #----------------------------------------------------------------------------------
 # glooctl
