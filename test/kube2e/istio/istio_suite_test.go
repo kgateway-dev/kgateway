@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/k8s-utils/kubeutils"
 
@@ -52,7 +51,6 @@ var (
 
 	namespace         = defaults.GlooSystem
 	resourceClientSet *kube2e.KubeResourceClientSet
-	snapshotWriter    helpers.SnapshotWriter
 )
 
 var _ = BeforeSuite(func() {
@@ -98,8 +96,6 @@ var _ = BeforeSuite(func() {
 
 	resourceClientSet, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
 	Expect(err).NotTo(HaveOccurred())
-
-	snapshotWriter = helpers.NewSnapshotWriter(resourceClientSet, []retry.Option{})
 })
 
 var _ = AfterSuite(func() {
