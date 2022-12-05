@@ -84,7 +84,7 @@ kubectl config use-context kind-"$1"
 
 # Install gloo-fed to cluster $1
 if [ "$5" == "" ]; then
-  glooctl install gateway enterprise --license-key=$4 --version=$3
+  glooctl install gateway enterprise --license-key=$4 --version=$3 
 else
   glooctl install gateway enterprise --license-key=$4 --file $5
 fi
@@ -114,7 +114,7 @@ kubectl patch settings -n gloo-system default --type=merge -p '{"spec":{"watchNa
 
 # Generate downstream cert and key
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-   -keyout tls.key -out tls.crt -subj "/CN=solo.io"
+   -keyout tls.key -out tls.crt -subj "/CN=solo.io" 
 
 # Generate upstream ca cert and key
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
