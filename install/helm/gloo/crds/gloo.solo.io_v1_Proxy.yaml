@@ -77,6 +77,25 @@ spec:
                                 properties:
                                   fileSink:
                                     properties:
+                                      filter:
+                                        properties:
+                                          runtimeFilter:
+                                            properties:
+                                              percentSampled:
+                                                properties:
+                                                  denominator:
+                                                    type: string
+                                                    x-kubernetes-int-or-string: true
+                                                  numerator:
+                                                    format: int32
+                                                    type: integer
+                                                type: object
+                                              runtimeKey:
+                                                type: string
+                                              useIndependentRandomness:
+                                                type: boolean
+                                            type: object
+                                        type: object
                                       jsonFormat:
                                         type: object
                                         x-kubernetes-preserve-unknown-fields: true
@@ -99,6 +118,25 @@ spec:
                                         items:
                                           type: string
                                         type: array
+                                      filter:
+                                        properties:
+                                          runtimeFilter:
+                                            properties:
+                                              percentSampled:
+                                                properties:
+                                                  denominator:
+                                                    type: string
+                                                    x-kubernetes-int-or-string: true
+                                                  numerator:
+                                                    format: int32
+                                                    type: integer
+                                                type: object
+                                              runtimeKey:
+                                                type: string
+                                              useIndependentRandomness:
+                                                type: boolean
+                                            type: object
+                                        type: object
                                       logName:
                                         type: string
                                       staticClusterName:
