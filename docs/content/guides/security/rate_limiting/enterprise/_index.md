@@ -80,7 +80,7 @@ If you use also use Aerospike to store your Gloo Portal API keys, your Aerospike
 |rateLimit.deployment.aerospike.namespace|string|The Aerospike namespace of the database. The default value is `solo-namespace`.|
 |rateLimit.deployment.aerospike.set|string|The Aerospike name of the database set. The default value is `ratelimiter`.|
 |rateLimit.deployment.aerospike.port|int|The port of the `rateLimit.deployment.aerospike.address`. The default port is `3000`.|
-|rateLimit.deployment.aerospike.batchSize|int|The size of the batch, or number of keys sent in the request. The default value is `5000`.|
+|rateLimit.deployment.aerospike.batchSize|int|The size of the batch, which is the number of keys sent in the request. The default value is `5000`.|
 |rateLimit.deployment.aerospike.commitLevel|int|The commit level of guaranteed consistency when commiting a transaction on the Aerospike server. For possible values, see the [Aerospike commit policy](https://github.com/aerospike/aerospike-client-go/blob/master/commit_policy.go). The default value is `1`.|
 |rateLimit.deployment.aerospike.readModeSC|int|The read mode for strong consistency (SC) options. For possible values, see the [Aerospike read mode SC](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_sc.go). The default value is `0`.|
 |rateLimit.deployment.aerospike.readModeAP|int|The read mode for availability (AP). For possible values, see the [Aerospike read mode AP](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_ap.go). The default value is `0`.|
