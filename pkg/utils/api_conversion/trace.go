@@ -32,7 +32,7 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytracegloo.ZipkinConfig, c
 	return envoyZipkinConfig, nil
 }
 
-func ToEnvoyOpenCensusConfiguration(glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName string) (*envoytrace.OpenTelemetryConfig, error) {
+func ToEnvoyOpenTelemetryonfiguration(glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName string) (*envoytrace.OpenTelemetryConfig, error) {
 	envoyOpenTelemetryConfig := &envoytrace.OpenTelemetryConfig{
 		GrpcService: &envoy_config_core_v3.GrpcService{
 			TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{

@@ -246,7 +246,7 @@ func processEnvoyOpenTelemetryTracing(
 		collectorClusterName = collectorCluster.ClusterName
 	}
 
-	envoyConfig, err := api_conversion.ToEnvoyOpenCensusConfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName)
+	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryonfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName)
 	if err != nil {
 		return nil, err
 	}
