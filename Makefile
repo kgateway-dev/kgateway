@@ -142,6 +142,8 @@ BUILD_ID := $(BUILD_ID)
 
 TEST_ASSET_DIR := $(ROOTDIR)/_test
 
+GINKGO_ENV := GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=1.16.5
+
 #----------------------------------------------------------------------------------
 # Macros
 #----------------------------------------------------------------------------------
@@ -197,13 +199,13 @@ install-test-tools:
 .PHONY: run-tests
 run-tests: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
-	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests
 run-ci-regression-tests: install-test-tools  ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
 	# We intentionally leave out the `-r` ginkgo flag, since we are specifying the exact package that we want run
-	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
 
 .PHONY: check-format
 check-format:
