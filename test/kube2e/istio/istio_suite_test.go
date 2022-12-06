@@ -145,13 +145,12 @@ gloo:
           memory: 256Mi
 gatewayProxies:
   gatewayProxy:
+    podTemplate:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
     healthyPanicThreshold: 0
-    gatewaySettings:
-      accessLoggingService:
-        accessLog:
-        - fileSink:
-            path: /dev/stdout
-            stringFormat: ""
 `))
 	Expect(err).NotTo(HaveOccurred())
 	err = values.Close()
