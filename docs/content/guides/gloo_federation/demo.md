@@ -135,7 +135,7 @@ For Gloo Edge to be federated, each Kubernetes cluster that runs Gloo Edge Enter
 
 Gloo Edge Federation lets you create consistent configurations across multiple Gloo Edge instances. You can configure Gloo resources such as Upstreams, UpstreamGroups, and Virtual Services. Then, Gloo creates federated versions with separate Custom Resource Definitions, like FederatedUpstream and FederatedVirtualService. The federated versions target one or more clusters and a namespace within each cluster.
 
-In the demo environment, two Kubernetes app are created:
+In the demo environment, two Kubernetes apps are created:
 * A federated `echo-blue` deployment and related services in the local cluster.
 * An unfederated `echo-green` deployment and related services in the remote cluster.
 
