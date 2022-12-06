@@ -5,6 +5,7 @@ import (
 	"github.com/solo-io/go-utils/testutils/exec"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -101,6 +102,14 @@ var _ = BeforeSuite(func() {
 	resourceClientSet, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
 	Expect(err).NotTo(HaveOccurred())
 })
+
+// runGlooctlCommand take a set of arguments for glooctl and then executes local glooctl with these arguments
+func runGlooctlCommand(args ...string) (string, error) {
+	glooctlCommand := []string{filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName)}
+	glooctlCommand = append(glooctlCommand, args...)
+	// execute the command with verbose output
+	return exec.RunCommandOutput(testHelper.RootDir, true, glooctlCommand...)
+}
 
 var _ = AfterSuite(func() {
 	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
