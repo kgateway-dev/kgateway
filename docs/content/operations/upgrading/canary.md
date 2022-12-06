@@ -74,7 +74,7 @@ glooctl install gateway enterprise --version $TARGET_VERSION -n gloo-system-$TAR
    kubectl get all -n gloo-system
    kubectl get all -n gloo-system-$TARGET_VERSION
    ```
-5. Modify any custom resources for any changes or new capabilities that you noticed the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) for the target version.
+5. Modify any custom resources for any changes or new capabilities that you noticed in the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) for the target version.
 6. Test your routes and monitor the metrics of the newer version.
     ```shell
     glooctl check
@@ -98,25 +98,25 @@ You can upgrade Gloo Edge Federation in a canary model in version 1.13 or later.
    ```
    kubectl apply -f gloo-fed/charts/gloo/crds
    ```
-3. Install the target version of Gloo Edge in the new namespace in your cluster.
+3. Install the target version of Gloo Edge Federation in the new namespace in your local cluster.
    ```
    glooctl install gateway enterprise --version $TARGET_VERSION -n gloo-system-$TARGET_VERSION --license-key $GLOO_LICENSE
    ```
-4. Verify that your current and target versions of Gloo Edge are running. 
+4. Verify that your current and target versions of Gloo Edge Federation are running. 
    ```shell
    kubectl get all -n gloo-system-$OLD_VERSION
    kubectl get all -n gloo-system-$TARGET_VERSION
    ```
-5. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) for the target version's Gloo Edge Federation on a remote test cluster.
-6. In your remote test cluster, modify any custom resources for any changes or new capabilities that you noticed the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) for the target version.
+5. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) on one of your remote clusters. Make sure that the version of Gloo Edge Enterprise matches the version of Gloo Edge Federation that you installed earlier.
+6. In your remote test cluster, modify any custom resources for any changes or new capabilities that you noticed in the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) for the target version.
 7. Test your routes and monitor the metrics of the target version in your remote test cluster.
     ```shell
     glooctl check
     ```
 8. Shift traffic to the target version of Gloo Edge Federation.
    1. [Deregister]({{< versioned_link_path fromRoot="/reference/cli/glooctl_cluster_deregister/" >}}) your other remote clusters that still use the old version of Gloo Edge Federation.
-   2. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) for the target version's Gloo Edge Federation on each remote cluster.
-   3. Optionally delete the old version namespace. The deregister command does not clean up the namespace and custom resources in the old version.
+   2. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) on each of your remote clusters. Make sure that the version of Gloo Edge Enterprise matches the version of Gloo Edge Federation that you installed earlier.
+   3. Optionally delete the old version namespace from each remote cluster. The deregister command does not clean up the namespace and custom resources in the old version.
       ```shell
       kubectl delete ns gloo-system-$OLD_VERSION
       ```
@@ -161,7 +161,7 @@ glooctl install gateway enterprise --version $ROLLBACK_VERSION -n gloo-system-$R
 glooctl install gateway enterprise --version $ROLLBACK_VERSION -n gloo-system-$ROLLBACK_VERSION --license-key $GLOO_LICENSE
 {{< /tab >}} 
       {{< /tabs >}}
-3.  Revert any changes to custom resources that you previously modified during the upgrade to the newer target version. For differences between versions, check [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}).
+3.  Revert any changes to custom resources that you previously modified during the upgrade to the newer target version. For differences between versions, check the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}).
 4. **Gloo Edge Federation**: Shift traffic from the newer target version to the rollback version of Gloo Edge Federation.
    1. [Deregister]({{< versioned_link_path fromRoot="/reference/cli/glooctl_cluster_deregister/" >}}) your remote clusters that still use the newer target version of Gloo Edge Federation.
    2. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) for the rollback version's Gloo Edge Federation on each remote cluster.
