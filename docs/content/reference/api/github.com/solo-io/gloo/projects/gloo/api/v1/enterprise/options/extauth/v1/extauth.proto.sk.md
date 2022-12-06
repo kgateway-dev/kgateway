@@ -1177,7 +1177,7 @@ For the Aerospike backend, this data is stored as bins on the key's record
 | `keyPath` | `string` | The path to the key. |
 | `allowInsecure` | `bool` | The TLS insecure setting. If set to `true`, the authority of the certificate on the client's end is not authenticated. You might use insecure mode in non-production environments when the certificate is not known. |
 | `rootCaPath` | `string` | If the root certificate authority (CA) is not set, add the system certs by default. |
-| `tlsVersion` | `string` | The TLS version. Version 1.0, 1.1, 1.2, and 1.3 are supported. Defaults to 1.3. |
+| `tlsVersion` | `string` | The TLS version. Versions 1.0, 1.1, 1.2, and 1.3 are supported. Defaults to 1.3. |
 | `tlsCurveGroups` | [[]enterprise.gloo.solo.io.AerospikeApiKeyStorage.tlsCurveID](../extauth.proto.sk/#tlscurveid) | The TLS identifier for an elliptic curve. For more information, see [TLS supported groups](https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8). |
 
 

@@ -2917,7 +2917,7 @@ type AerospikeApiKeyStorage struct {
 	AllowInsecure bool `protobuf:"varint,13,opt,name=allow_insecure,json=allowInsecure,proto3" json:"allow_insecure,omitempty"`
 	// If the root certificate authority (CA) is not set, add the system certs by default.
 	RootCaPath string `protobuf:"bytes,14,opt,name=root_ca_path,json=rootCaPath,proto3" json:"root_ca_path,omitempty"`
-	// The TLS version. Version 1.0, 1.1, 1.2, and 1.3 are supported. Defaults to 1.3
+	// The TLS version. Versions 1.0, 1.1, 1.2, and 1.3 are supported. Defaults to 1.3
 	TlsVersion string `protobuf:"bytes,15,opt,name=tls_version,json=tlsVersion,proto3" json:"tls_version,omitempty"`
 	// The TLS identifier for an elliptic curve. For more information, see [TLS supported groups](https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8).
 	TlsCurveGroups []*AerospikeApiKeyStorageTlsCurveID `protobuf:"bytes,16,rep,name=tls_curve_groups,json=tlsCurveGroups,proto3" json:"tls_curve_groups,omitempty"`

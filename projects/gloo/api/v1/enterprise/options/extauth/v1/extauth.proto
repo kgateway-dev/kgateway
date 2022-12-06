@@ -943,7 +943,7 @@ message AerospikeApiKeyStorage {
 	bool allow_insecure = 13;
 	// If the root certificate authority (CA) is not set, add the system certs by default.
 	string root_ca_path = 14;
-	// The TLS version. Version 1.0, 1.1, 1.2, and 1.3 are supported. Defaults to 1.3
+	// The TLS version. Versions 1.0, 1.1, 1.2, and 1.3 are supported. Defaults to 1.3
 	string tls_version = 15;
 	// The TLS identifier for an elliptic curve. For more information, see [TLS supported groups](https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8).
     repeated tlsCurveID tls_curve_groups = 16;
