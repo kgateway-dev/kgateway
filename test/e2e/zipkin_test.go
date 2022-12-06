@@ -32,9 +32,14 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-const zipkinPort = 9411
+const (
+	tracingCollectorPort         = 9411
+	tracingCollectorUpstreamName = "tracing-collector"
+	openTelemetryCollectionPath  = "/opentelemetry.proto.collector.trace.v1.TraceService/Export"
+	zipkinCollectionPath         = "/api/v2/spans"
+)
 
-var _ = Describe("Zipkin config loading", func() {
+var _ = Describe("Tracing config loading", func() {
 
 	var (
 		ctx           context.Context
@@ -67,11 +72,11 @@ var _ = Describe("Zipkin config loading", func() {
 			apiHit := make(chan bool, 1)
 			zipkinHandler := http.NewServeMux()
 			zipkinHandler.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				Expect(r.URL.Path).To(Equal("/api/v2/spans")) // Zipkin json collector API
+				Expect(r.URL.Path).To(Equal(zipkinCollectionPath))
 				fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
 				apiHit <- true
 			}))
-			startCancellableZipkinServer(ctx, fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), zipkinPort), zipkinHandler)
+			startCancellableTracingServer(ctx, fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tracingCollectorPort), zipkinHandler)
 
 			// Execute a request against the admin endpoint, as this should result in a trace
 			testRequest := createRequestWithTracingEnabled("127.0.0.1", 11082)
@@ -92,8 +97,6 @@ var _ = Describe("Zipkin config loading", func() {
 			resourcesToCreate *gloosnapshot.ApiSnapshot
 
 			writeNamespace = defaults.GlooSystem
-
-			zipkinApiHit chan bool
 		)
 
 		BeforeEach(func() {
@@ -123,10 +126,10 @@ var _ = Describe("Zipkin config loading", func() {
 				WithRouteActionToUpstream("test", testUpstream.Upstream).
 				Build()
 
-			// create zipkin upstream
-			zipkinUs := &gloov1.Upstream{
+			// create tracing collector upstream
+			tracingCollectorUs := &gloov1.Upstream{
 				Metadata: &core.Metadata{
-					Name:      "zipkin",
+					Name:      tracingCollectorUpstreamName,
 					Namespace: writeNamespace,
 				},
 				UpstreamType: &gloov1.Upstream_Static{
@@ -134,7 +137,7 @@ var _ = Describe("Zipkin config loading", func() {
 						Hosts: []*static_plugin_gloo.Host{
 							{
 								Addr: envoyInstance.LocalAddr(),
-								Port: zipkinPort,
+								Port: tracingCollectorPort,
 							},
 						},
 					},
@@ -150,20 +153,10 @@ var _ = Describe("Zipkin config loading", func() {
 					vsToTestUpstream,
 				},
 				Upstreams: gloov1.UpstreamList{
-					zipkinUs,
+					tracingCollectorUs,
 					testUpstream.Upstream,
 				},
 			}
-
-			// Start a dummy server listening on 9411 for Zipkin requests
-			zipkinApiHit = make(chan bool, 1)
-			zipkinHandler := http.NewServeMux()
-			zipkinHandler.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				Expect(r.URL.Path).To(Equal("/api/v2/spans")) // Zipkin json collector API
-				fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
-				zipkinApiHit <- true
-			}))
-			startCancellableZipkinServer(ctx, fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), zipkinPort), zipkinHandler)
 		})
 
 		AfterEach(func() {
@@ -171,7 +164,16 @@ var _ = Describe("Zipkin config loading", func() {
 			cancel()
 		})
 
-		JustBeforeEach(func() {
+		startTracingCollectionServer := func(collectorApiChannel chan bool, collectionURLPath string) {
+			// Start a dummy server listening on 9411 for tracing requests
+			tracingCollectorHandler := http.NewServeMux()
+			tracingCollectorHandler.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				Expect(r.URL.Path).To(Equal(collectionURLPath))
+				fmt.Fprintf(w, "Dummy tracing Collector received request on - %q", html.EscapeString(r.URL.Path))
+				collectorApiChannel <- true
+			}))
+			startCancellableTracingServer(ctx, fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tracingCollectorPort), tracingCollectorHandler)
+
 			// Create Resources
 			err := testClients.WriteSnapshot(ctx, resourcesToCreate)
 			Expect(err).NotTo(HaveOccurred())
@@ -196,14 +198,92 @@ var _ = Describe("Zipkin config loading", func() {
 					Message: "",
 				},
 			)
+		}
+
+		It("should send trace msgs with valid opentelemetry provider (collector_ref)", func() {
+			collectorApiHit := make(chan bool, 1)
+			startTracingCollectionServer(collectorApiHit, openTelemetryCollectionPath)
+
+			err := gloohelpers.PatchResource(
+				ctx,
+				&core.ResourceRef{
+					Name:      gatewaydefaults.GatewayProxyName,
+					Namespace: writeNamespace,
+				},
+				func(resource resources.Resource) {
+					gw := resource.(*gatewayv1.Gateway)
+					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
+							Tracing: &tracing.ListenerTracingSettings{
+								ProviderConfig: &tracing.ListenerTracingSettings_OpenTelemetryConfig{
+									OpenTelemetryConfig: &envoytrace_gloo.OpenTelemetryConfig{
+										CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_CollectorUpstreamRef{
+											CollectorUpstreamRef: &core.ResourceRef{
+												Name:      tracingCollectorUpstreamName,
+												Namespace: writeNamespace,
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+				},
+				testClients.GatewayClient.BaseClient(),
+			)
+			Expect(err).NotTo(HaveOccurred())
+
+			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			Eventually(func(g Gomega) {
+				g.Eventually(testRequest).Should(BeEmpty())
+				g.Eventually(collectorApiHit).Should(Receive())
+			}, time.Second*10, time.Second, "tracing server should receive trace request").Should(Succeed())
 		})
 
-		JustAfterEach(func() {
-			// We do not need to clean up the Snapshot that was written in the JustBeforeEach
-			// That is because each test uses its own InMemoryCache
+		It("should send trace msgs with valid opentelemetry provider (cluster_name)", func() {
+			collectorApiHit := make(chan bool, 1)
+			startTracingCollectionServer(collectorApiHit, openTelemetryCollectionPath)
+
+			err := gloohelpers.PatchResource(
+				ctx,
+				&core.ResourceRef{
+					Name:      gatewaydefaults.GatewayProxyName,
+					Namespace: writeNamespace,
+				},
+				func(resource resources.Resource) {
+					gw := resource.(*gatewayv1.Gateway)
+					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
+							Tracing: &tracing.ListenerTracingSettings{
+								ProviderConfig: &tracing.ListenerTracingSettings_OpenTelemetryConfig{
+									OpenTelemetryConfig: &envoytrace_gloo.OpenTelemetryConfig{
+										CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_ClusterName{
+											ClusterName: translator.UpstreamToClusterName(&core.ResourceRef{
+												Name:      tracingCollectorUpstreamName,
+												Namespace: writeNamespace,
+											}),
+										},
+									},
+								},
+							},
+						},
+					}
+				},
+				testClients.GatewayClient.BaseClient(),
+			)
+			Expect(err).NotTo(HaveOccurred())
+
+			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			Eventually(func(g Gomega) {
+				g.Eventually(testRequest).Should(BeEmpty())
+				g.Eventually(collectorApiHit).Should(Receive())
+			}, time.Second*10, time.Second, "tracing server should receive trace request").Should(Succeed())
 		})
 
 		It("should not send trace msgs with nil provider", func() {
+			collectorApiHit := make(chan bool, 1)
+			startTracingCollectionServer(collectorApiHit, zipkinCollectionPath)
+
 			err := gloohelpers.PatchResource(
 				ctx,
 				&core.ResourceRef{
@@ -225,11 +305,14 @@ var _ = Describe("Zipkin config loading", func() {
 			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
-				g.Eventually(zipkinApiHit).Should(Not(Receive()))
+				g.Eventually(collectorApiHit).Should(Not(Receive()))
 			}, time.Second*5, time.Millisecond*250, "zipkin server should not receive trace request")
 		})
 
 		It("should send trace msgs with valid zipkin provider (collector_ref)", func() {
+			collectorApiHit := make(chan bool, 1)
+			startTracingCollectionServer(collectorApiHit, zipkinCollectionPath)
+
 			err := gloohelpers.PatchResource(
 				ctx,
 				&core.ResourceRef{
@@ -245,11 +328,11 @@ var _ = Describe("Zipkin config loading", func() {
 									ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
 										CollectorCluster: &envoytrace_gloo.ZipkinConfig_CollectorUpstreamRef{
 											CollectorUpstreamRef: &core.ResourceRef{
-												Name:      "zipkin", // matches the name of the zipkin upstream we created in the BeforeEach
+												Name:      tracingCollectorUpstreamName,
 												Namespace: writeNamespace,
 											},
 										},
-										CollectorEndpoint:        "/api/v2/spans",
+										CollectorEndpoint:        zipkinCollectionPath,
 										CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 									},
 								},
@@ -264,11 +347,14 @@ var _ = Describe("Zipkin config loading", func() {
 			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
-				g.Eventually(zipkinApiHit).Should(Receive())
-			}, time.Second*10, time.Second, "zipkin server should receive trace request").Should(Succeed())
+				g.Eventually(collectorApiHit).Should(Receive())
+			}, time.Second*10, time.Second, "tracing server should receive trace request").Should(Succeed())
 		})
 
 		It("should send trace msgs with valid zipkin provider (cluster_name)", func() {
+			collectorApiHit := make(chan bool, 1)
+			startTracingCollectionServer(collectorApiHit, zipkinCollectionPath)
+
 			err := gloohelpers.PatchResource(
 				ctx,
 				&core.ResourceRef{
@@ -284,11 +370,11 @@ var _ = Describe("Zipkin config loading", func() {
 									ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
 										CollectorCluster: &envoytrace_gloo.ZipkinConfig_ClusterName{
 											ClusterName: translator.UpstreamToClusterName(&core.ResourceRef{
-												Name:      "zipkin",
+												Name:      tracingCollectorUpstreamName,
 												Namespace: writeNamespace,
 											}),
 										},
-										CollectorEndpoint:        "/api/v2/spans",
+										CollectorEndpoint:        zipkinCollectionPath,
 										CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 									},
 								},
@@ -303,11 +389,14 @@ var _ = Describe("Zipkin config loading", func() {
 			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
-				g.Eventually(zipkinApiHit).Should(Receive())
+				g.Eventually(collectorApiHit).Should(Receive())
 			}, time.Second*10, time.Second, "zipkin server should receive trace request").Should(Succeed())
 		})
 
 		It("should error with invalid zipkin provider", func() {
+			collectorApiHit := make(chan bool, 1)
+			startTracingCollectionServer(collectorApiHit, zipkinCollectionPath)
+
 			err := gloohelpers.PatchResource(
 				ctx,
 				&core.ResourceRef{
@@ -324,7 +413,7 @@ var _ = Describe("Zipkin config loading", func() {
 										CollectorCluster: &envoytrace_gloo.ZipkinConfig_CollectorUpstreamRef{
 											CollectorUpstreamRef: nil,
 										},
-										CollectorEndpoint:        "/api/v2/spans",
+										CollectorEndpoint:        zipkinCollectionPath,
 										CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 									},
 								},
@@ -351,12 +440,12 @@ var _ = Describe("Zipkin config loading", func() {
 				return tracingConfigsFound
 			}, time.Second*3, time.Second).Should(Equal(0))
 		})
-
 	})
+
 })
 
-func startCancellableZipkinServer(serverContext context.Context, address string, handler http.Handler) {
-	zipkinServer := &http.Server{
+func startCancellableTracingServer(serverContext context.Context, address string, handler http.Handler) {
+	tracingServer := &http.Server{
 		Addr:    address,
 		Handler: handler,
 	}
@@ -364,7 +453,7 @@ func startCancellableZipkinServer(serverContext context.Context, address string,
 	// Start a goroutine to handle requests
 	go func() {
 		defer GinkgoRecover()
-		if err := zipkinServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := tracingServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		}
 	}()
@@ -374,9 +463,10 @@ func startCancellableZipkinServer(serverContext context.Context, address string,
 		defer GinkgoRecover()
 
 		<-serverCtx.Done()
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer shutdownCancel()
-		ExpectWithOffset(1, zipkinServer.Shutdown(shutdownCtx)).NotTo(HaveOccurred())
+		// tracingServer.Shutdown hangs with opentelemetry tests, probably
+		// because the agent leaves the connection open. There's no need for a
+		// graceful shutdown anyway, so just force it using Close() instead
+		tracingServer.Close()
 	}(serverContext)
 }
 
