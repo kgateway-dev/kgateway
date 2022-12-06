@@ -1,5 +1,10 @@
+# imports should be after the set up flags so are lower
+
 # https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
 .DEFAULT_GOAL := help
+
+
+
 
 #----------------------------------------------------------------------------------
 # Help
@@ -152,6 +157,15 @@ GINKGO_ENV := GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true AC
 # in the tree rooted at that directory that match the given criteria.
 get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.go | grep -v mock_)
 
+
+#----------------------------------------------------------------------------------
+# Imports
+#----------------------------------------------------------------------------------
+
+# glooctl and other ci related targets are in this file.
+# they rely on some of the args set above
+include Makefile.ci
+
 #----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
@@ -301,34 +315,11 @@ generate-client-mocks:
 #----------------------------------------------------------------------------------
 # glooctl
 #----------------------------------------------------------------------------------
-
-CLI_DIR=projects/gloo/cli
-
-$(OUTPUT_DIR)/glooctl: $(SOURCES)
-	GO111MODULE=on go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
-
-$(OUTPUT_DIR)/glooctl-linux-$(GOARCH): $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
-
-# NOTE: the output of the file is hard coded to amd64 regardless of GOARCH
-$(OUTPUT_DIR)/glooctl-darwin-$(GOARCH): $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $(OUTPUT_DIR)/glooctl-darwin-amd64 $(CLI_DIR)/cmd/main.go
-
-$(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe: $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+# build-ci and glooctl along with others are in the ci makefile
 
 
-.PHONY: glooctl
-glooctl: $(OUTPUT_DIR)/glooctl ## Builds the command line tool
-.PHONY: glooctl-linux-$(GOARCH)
-glooctl-linux-$(GOARCH): $(OUTPUT_DIR)/glooctl-linux-$(GOARCH)
-.PHONY: glooctl-darwin-$(GOARCH)
-glooctl-darwin-$(GOARCH): $(OUTPUT_DIR)/glooctl-darwin-$(GOARCH)
-.PHONY: glooctl-windows-$(GOARCH)
-glooctl-windows-$(GOARCH): $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe
 
-.PHONY: build-cli
-build-cli: glooctl-linux-$(GOARCH) glooctl-darwin-$(GOARCH) glooctl-windows-$(GOARCH)
+
 
 #----------------------------------------------------------------------------------
 # Ingress
