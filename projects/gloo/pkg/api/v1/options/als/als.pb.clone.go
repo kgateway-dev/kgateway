@@ -61,6 +61,12 @@ func (m *AccessLog) Clone() proto.Message {
 	}
 	target = &AccessLog{}
 
+	if h, ok := interface{}(m.GetFilter()).(clone.Cloner); ok {
+		target.Filter = h.Clone().(*AccessLogFilter)
+	} else {
+		target.Filter = proto.Clone(m.GetFilter()).(*AccessLogFilter)
+	}
+
 	switch m.OutputDestination.(type) {
 
 	case *AccessLog_FileSink:
@@ -101,12 +107,6 @@ func (m *FileSink) Clone() proto.Message {
 	target = &FileSink{}
 
 	target.Path = m.GetPath()
-
-	if h, ok := interface{}(m.GetFilter()).(clone.Cloner); ok {
-		target.Filter = h.Clone().(*AccessLogFilter)
-	} else {
-		target.Filter = proto.Clone(m.GetFilter()).(*AccessLogFilter)
-	}
 
 	switch m.OutputFormat.(type) {
 
@@ -168,12 +168,6 @@ func (m *GrpcService) Clone() proto.Message {
 			target.AdditionalResponseTrailersToLog[idx] = v
 
 		}
-	}
-
-	if h, ok := interface{}(m.GetFilter()).(clone.Cloner); ok {
-		target.Filter = h.Clone().(*AccessLogFilter)
-	} else {
-		target.Filter = proto.Clone(m.GetFilter()).(*AccessLogFilter)
 	}
 
 	switch m.ServiceRef.(type) {

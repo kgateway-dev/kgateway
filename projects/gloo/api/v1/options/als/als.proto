@@ -28,6 +28,8 @@ message AccessLog {
         // Send access logs to gRPC service
         GrpcService grpc_service = 3;
     }
+    // Filter which is used to determine if the access log needs to be written.
+    AccessLogFilter filter = 4;
 }
 
 message FileSink {
@@ -42,10 +44,6 @@ message FileSink {
         // https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#format-dictionaries
         google.protobuf.Struct json_format = 3;
     }
-
-    // Filter which is used to determine if the access log needs to be written.
-    AccessLogFilter filter = 4;
-
 }
 
 message GrpcService {
@@ -61,9 +59,6 @@ message GrpcService {
     repeated string additional_response_headers_to_log = 5;
 
     repeated string additional_response_trailers_to_log = 6;
-
-    // Filter which is used to determine if the access log needs to be written.
-    AccessLogFilter filter = 7;
 }
 
 message AccessLogFilter {

@@ -78,6 +78,26 @@ func (m *AccessLog) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if h, ok := interface{}(m.GetFilter()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Filter")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetFilter(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Filter")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.OutputDestination.(type) {
 
 	case *AccessLog_FileSink:
@@ -144,26 +164,6 @@ func (m *FileSink) Hash(hasher hash.Hash64) (uint64, error) {
 
 	if _, err = hasher.Write([]byte(m.GetPath())); err != nil {
 		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetFilter()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Filter")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetFilter(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("Filter")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
 	}
 
 	switch m.OutputFormat.(type) {
@@ -240,26 +240,6 @@ func (m *GrpcService) Hash(hasher hash.Hash64) (uint64, error) {
 			return 0, err
 		}
 
-	}
-
-	if h, ok := interface{}(m.GetFilter()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Filter")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetFilter(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("Filter")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
 	}
 
 	switch m.ServiceRef.(type) {

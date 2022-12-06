@@ -54,6 +54,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 ```yaml
 "fileSink": .als.options.gloo.solo.io.FileSink
 "grpcService": .als.options.gloo.solo.io.GrpcService
+"filter": .als.options.gloo.solo.io.AccessLogFilter
 
 ```
 
@@ -61,6 +62,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 | ----- | ---- | ----------- | 
 | `fileSink` | [.als.options.gloo.solo.io.FileSink](../als.proto.sk/#filesink) | Output access logs to local file. Only one of `fileSink` or `grpcService` can be set. |
 | `grpcService` | [.als.options.gloo.solo.io.GrpcService](../als.proto.sk/#grpcservice) | Send access logs to gRPC service. Only one of `grpcService` or `fileSink` can be set. |
+| `filter` | [.als.options.gloo.solo.io.AccessLogFilter](../als.proto.sk/#accesslogfilter) | Filter which is used to determine if the access log needs to be written. |
 
 
 
@@ -74,7 +76,6 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 "path": string
 "stringFormat": string
 "jsonFormat": .google.protobuf.Struct
-"filter": .als.options.gloo.solo.io.AccessLogFilter
 
 ```
 
@@ -83,7 +84,6 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 | `path` | `string` | the file path to which the file access logging service will sink. |
 | `stringFormat` | `string` | the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#config-access-log-format-strings. Only one of `stringFormat` or `jsonFormat` can be set. |
 | `jsonFormat` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#format-dictionaries. Only one of `jsonFormat` or `stringFormat` can be set. |
-| `filter` | [.als.options.gloo.solo.io.AccessLogFilter](../als.proto.sk/#accesslogfilter) | Filter which is used to determine if the access log needs to be written. |
 
 
 
@@ -99,7 +99,6 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 "additionalRequestHeadersToLog": []string
 "additionalResponseHeadersToLog": []string
 "additionalResponseTrailersToLog": []string
-"filter": .als.options.gloo.solo.io.AccessLogFilter
 
 ```
 
@@ -110,7 +109,6 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 | `additionalRequestHeadersToLog` | `[]string` |  |
 | `additionalResponseHeadersToLog` | `[]string` |  |
 | `additionalResponseTrailersToLog` | `[]string` |  |
-| `filter` | [.als.options.gloo.solo.io.AccessLogFilter](../als.proto.sk/#accesslogfilter) | Filter which is used to determine if the access log needs to be written. |
 
 
 

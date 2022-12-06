@@ -86,7 +86,7 @@ var _ = Describe("Plugin", func() {
 
 		})
 
-		Context("grpc with filter", func() {
+		Context("Access log with filter", func() {
 
 			var (
 				usRef *core.ResourceRef
@@ -116,17 +116,17 @@ var _ = Describe("Plugin", func() {
 									AdditionalRequestHeadersToLog:   extraHeaders,
 									AdditionalResponseHeadersToLog:  extraHeaders,
 									AdditionalResponseTrailersToLog: extraHeaders,
-									Filter: &als.AccessLogFilter{
-										FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
-											RuntimeFilter: &als.RuntimeFilter{
-												RuntimeKey: filter_runtime_key,
-												PercentSampled: &v3.FractionalPercent{
-													Numerator:   50,
-													Denominator: v3.FractionalPercent_DenominatorType(40),
-												},
-												UseIndependentRandomness: true,
-											},
+								},
+							},
+							Filter: &als.AccessLogFilter{
+								FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
+									RuntimeFilter: &als.RuntimeFilter{
+										RuntimeKey: filter_runtime_key,
+										PercentSampled: &v3.FractionalPercent{
+											Numerator:   50,
+											Denominator: v3.FractionalPercent_DenominatorType(40),
 										},
+										UseIndependentRandomness: true,
 									},
 								},
 							},
@@ -160,11 +160,10 @@ var _ = Describe("Plugin", func() {
 		Context("file", func() {
 
 			var (
-				strFormat, path    string
-				jsonFormat         *structpb.Struct
-				fsStrFormat        *als.FileSink_StringFormat
-				fsJsonFormat       *als.FileSink_JsonFormat
-				filter_runtime_key string
+				strFormat, path string
+				jsonFormat      *structpb.Struct
+				fsStrFormat     *als.FileSink_StringFormat
+				fsJsonFormat    *als.FileSink_JsonFormat
 			)
 
 			BeforeEach(func() {
@@ -249,54 +248,6 @@ var _ = Describe("Plugin", func() {
 				})
 
 			})
-
-			Context("with filters", func() {
-
-				BeforeEach(func() {
-					alsSettings = &als.AccessLoggingService{
-						AccessLog: []*als.AccessLog{
-							{
-								OutputDestination: &als.AccessLog_FileSink{
-									FileSink: &als.FileSink{
-										Path:         path,
-										OutputFormat: fsJsonFormat,
-										Filter: &als.AccessLogFilter{
-											FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
-												RuntimeFilter: &als.RuntimeFilter{
-													RuntimeKey: filter_runtime_key,
-													PercentSampled: &v3.FractionalPercent{
-														Numerator:   50,
-														Denominator: v3.FractionalPercent_DenominatorType(40),
-													},
-													UseIndependentRandomness: true,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					}
-				})
-
-				It("works", func() {
-					accessLogConfigs, err := ProcessAccessLogPlugins(alsSettings, nil)
-					Expect(err).NotTo(HaveOccurred())
-
-					Expect(accessLogConfigs).To(HaveLen(1))
-					alConfig := accessLogConfigs[0]
-
-					Expect(alConfig.Name).To(Equal(wellknown.FileAccessLog))
-					var falCfg envoyalfile.FileAccessLog
-					err = translatorutil.ParseTypedConfig(alConfig, &falCfg)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(falCfg.Path).To(Equal(path))
-					jsn := falCfg.GetLogFormat().GetJsonFormat()
-					Expect(jsn).To(matchers.MatchProto(jsonFormat))
-				})
-
-			})
-
 		})
 
 	})
@@ -398,17 +349,17 @@ var _ = Describe("Plugin", func() {
 										AdditionalRequestHeadersToLog:   extraHeaders,
 										AdditionalResponseHeadersToLog:  extraHeaders,
 										AdditionalResponseTrailersToLog: extraHeaders,
-										Filter: &als.AccessLogFilter{
-											FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
-												RuntimeFilter: &als.RuntimeFilter{
-													RuntimeKey: filter_runtime_key,
-													PercentSampled: &v3.FractionalPercent{
-														Numerator:   50,
-														Denominator: v3.FractionalPercent_DenominatorType(40),
-													},
-													UseIndependentRandomness: true,
-												},
+									},
+								},
+								Filter: &als.AccessLogFilter{
+									FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
+										RuntimeFilter: &als.RuntimeFilter{
+											RuntimeKey: filter_runtime_key,
+											PercentSampled: &v3.FractionalPercent{
+												Numerator:   50,
+												Denominator: v3.FractionalPercent_DenominatorType(40),
 											},
+											UseIndependentRandomness: true,
 										},
 									},
 								},

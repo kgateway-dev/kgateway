@@ -87,6 +87,16 @@ func (m *AccessLog) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetFilter()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFilter()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetFilter(), target.GetFilter()) {
+			return false
+		}
+	}
+
 	switch m.OutputDestination.(type) {
 
 	case *AccessLog_FileSink:
@@ -152,16 +162,6 @@ func (m *FileSink) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetPath(), target.GetPath()) != 0 {
 		return false
-	}
-
-	if h, ok := interface{}(m.GetFilter()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetFilter()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetFilter(), target.GetFilter()) {
-			return false
-		}
 	}
 
 	switch m.OutputFormat.(type) {
@@ -256,16 +256,6 @@ func (m *GrpcService) Equal(that interface{}) bool {
 			return false
 		}
 
-	}
-
-	if h, ok := interface{}(m.GetFilter()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetFilter()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetFilter(), target.GetFilter()) {
-			return false
-		}
 	}
 
 	switch m.ServiceRef.(type) {
